@@ -17,7 +17,11 @@ export const marketingRoutes = {
   brands: () => "/marketing/brands",
   brand: (brandId: string) => `/marketing/brands/${brandId}`,
   sites: () => "/marketing/sites",
-  newSite: () => "/marketing/sites/new",
+  /** Pass a brandId to pre-bind the new site to that brand (`?brand=`). */
+  newSite: (brandId?: string) =>
+    brandId
+      ? `/marketing/sites/new?brand=${brandId}`
+      : "/marketing/sites/new",
   connections: () => "/marketing/connections",
   /**
    * Canonical site base. Falls back to the legacy flat path (which

@@ -10,27 +10,30 @@ interface CloseIdentity {
   instanceId: string;
 }
 
+export type WindowCloseIntent =
+  | ({ scope: "exact" } & CloseIdentity)
+  | { scope: "overlay"; overlayId: OverlayId }
+  | { scope: "all" };
+
 interface PersistenceRootState {
   overlays: {
-    overlays: Partial<
-      Record<OverlayId, Record<string, { isOpen?: boolean }>>
-    >;
+    overlays: Partial<Record<OverlayId, Record<string, { isOpen?: boolean }>>>;
   };
   windowManager: WindowManagerState;
 }
 
 let flushLocalWorkspace: (() => void) | null = null;
-let observeClosedWindows: ((identities: CloseIdentity[]) => void) | null = null;
+let observeCloseIntent: ((intent: WindowCloseIntent) => void) | null = null;
 
 export function registerWindowPersistenceFlusher(
   flush: () => void,
-  observeClosed?: (identities: CloseIdentity[]) => void,
+  observeClosed?: (intent: WindowCloseIntent) => void,
 ): () => void {
   flushLocalWorkspace = flush;
-  observeClosedWindows = observeClosed ?? null;
+  observeCloseIntent = observeClosed ?? null;
   return () => {
     if (flushLocalWorkspace === flush) flushLocalWorkspace = null;
-    if (observeClosedWindows === observeClosed) observeClosedWindows = null;
+    if (observeCloseIntent === observeClosed) observeCloseIntent = null;
   };
 }
 
@@ -81,9 +84,11 @@ export const windowPersistenceCloseMiddleware: Middleware =
     const payload = "payload" in action ? action.payload : null;
     const before = api.getState() as PersistenceRootState;
     let closing: CloseIdentity[] = [];
+    let intent: WindowCloseIntent | null = null;
 
     if (type === "overlays/closeAllOverlays") {
       closing = preservedIdentities(before);
+      intent = { scope: "all" };
     } else if (
       type === "overlays/closeOverlay" ||
       type === "overlays/toggleOverlay" ||
@@ -96,6 +101,7 @@ export const windowPersistenceCloseMiddleware: Middleware =
       if (typeof rawOverlayId === "string" && isOverlayId(rawOverlayId)) {
         if (type === "overlays/closeAllInstancesOfOverlay") {
           closing = preservedIdentities(before, rawOverlayId);
+          intent = { scope: "overlay", overlayId: rawOverlayId };
         } else {
           const instanceId =
             payload &&
@@ -109,6 +115,11 @@ export const windowPersistenceCloseMiddleware: Middleware =
             true;
           if (type === "overlays/closeOverlay" || wasOpen) {
             closing = [{ overlayId: rawOverlayId, instanceId }];
+            intent = {
+              scope: "exact",
+              overlayId: rawOverlayId,
+              instanceId,
+            };
           }
         }
       }
@@ -118,9 +129,10 @@ export const windowPersistenceCloseMiddleware: Middleware =
     const exact = dedupe(closing);
     if (exact.length > 0) {
       exact.forEach((identity) => api.dispatch(markWindowClosing(identity)));
-      observeClosedWindows?.(exact);
-      flushLocalWorkspace?.();
-    } else if (
+    }
+    if (intent) observeCloseIntent?.(intent);
+    if (
+      exact.length > 0 ||
       type === "overlays/closeAllOverlays" ||
       type === "overlays/closeAllInstancesOfOverlay"
     ) {

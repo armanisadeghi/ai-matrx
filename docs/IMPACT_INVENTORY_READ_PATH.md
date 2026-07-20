@@ -498,7 +498,6 @@ The following files matched a tag scan but are not in scope (they render unrelat
 - `app/(authenticated)/ai/prompts/experimental/chatbot-customizer/page.tsx`
 - `app/(authenticated)/flash-cards/fast-fire/{FastFireContainer,FastFirePractice,page}.tsx`
 - `app/(authenticated)/tests/applet-tests/applet-builder-3/components/steps/IntelligenceStep.tsx`
-- `app/(authenticated)/tests/audio-recorder-test/initial/page.tsx`
 - `app/(authenticated)/tests/oauth/components/SlackManager.tsx`
 - `app/(legacy)/legacy/demo/component-demo/ai-prog/sample-data.ts`
 - `app/entities/fields/field-components/custom-fields/EntitySpecialMultiSwitch.tsx`

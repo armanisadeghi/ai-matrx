@@ -91,8 +91,7 @@ export function shareTrayPreview({ data }: TrayPreviewContext): ReactNode {
     typeof data.resourceName === "string" && data.resourceName
       ? data.resourceName
       : "Shared resource";
-  const type =
-    typeof data.resourceType === "string" ? data.resourceType : null;
+  const type = typeof data.resourceType === "string" ? data.resourceType : null;
   return (
     <div className="truncate">
       <span className="text-foreground/80 font-medium">{name}</span>
@@ -107,9 +106,7 @@ export function transcriptStudioTrayPreview({
   const sessionId = compactId(data.activeSessionId);
   return (
     <div className="truncate">
-      <span className="text-foreground/80 font-medium">
-        Transcript Studio
-      </span>
+      <span className="text-foreground/80 font-medium">Transcript Studio</span>
       {sessionId && (
         <span className="ml-1 text-muted-foreground/60">· {sessionId}</span>
       )}
@@ -146,9 +143,7 @@ export function notesTrayPreview({ data }: TrayPreviewContext): ReactNode {
         <span className="italic">No active note</span>
       )}
       {tabCount > 1 && (
-        <span className="text-muted-foreground/60 ml-1">
-          · {tabCount} open
-        </span>
+        <span className="text-muted-foreground/60 ml-1">· {tabCount} open</span>
       )}
     </div>
   );
@@ -156,18 +151,14 @@ export function notesTrayPreview({ data }: TrayPreviewContext): ReactNode {
 
 // ─── Quick Tasks ──────────────────────────────────────────────────────────────
 
-export function quickTasksTrayPreview({
-  data,
-}: TrayPreviewContext): ReactNode {
+export function quickTasksTrayPreview({ data }: TrayPreviewContext): ReactNode {
   const search = typeof data?.search === "string" ? data.search : "";
-  const projectId =
-    typeof data?.projectId === "string" ? data.projectId : null;
+  const projectId = typeof data?.projectId === "string" ? data.projectId : null;
   return (
     <div className="truncate">
       {search ? (
         <span>
-          Searching:{" "}
-          <span className="text-foreground/80">{search}</span>
+          Searching: <span className="text-foreground/80">{search}</span>
         </span>
       ) : projectId ? (
         <span>Filtered by project</span>
@@ -187,14 +178,10 @@ const CLOUD_FILES_TAB_LABELS: Record<string, string> = {
   trash: "Trash",
 };
 
-export function cloudFilesTrayPreview({
-  data,
-}: TrayPreviewContext): ReactNode {
+export function cloudFilesTrayPreview({ data }: TrayPreviewContext): ReactNode {
   const tab = typeof data?.activeTab === "string" ? data.activeTab : "browse";
   return (
-    <div className="truncate">
-      {CLOUD_FILES_TAB_LABELS[tab] ?? "Browsing"}
-    </div>
+    <div className="truncate">{CLOUD_FILES_TAB_LABELS[tab] ?? "Browsing"}</div>
   );
 }
 

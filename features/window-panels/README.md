@@ -56,27 +56,27 @@ export default function MyFeatureWindow({
 
 **That's all.** The controller and static registry drive rendering and mobile routing. URL sync needs a hydrator, Tools-grid placement needs `toolsGridTiles.ts`, and refresh preservation is enabled only by an audited `preservation` allowlist.
 
-Do **not** edit `components/overlays/OverlayController.tsx` (legacy; being retired), `overlaySlice.ts`'s `initialState`, or the shell sidebar import list. Those are registry-driven now.
+Do **not** seed `overlaySlice.ts`'s `initialState` or add windows to a shell import list. Overlay rendering is explicit in `features/overlays/OverlayController.tsx`; static metadata stays component-free.
 
 ---
 
 ## Registry fields (summary)
 
-| Field                        | Required          | Purpose                                                                                    |
-| ---------------------------- | ----------------- | ------------------------------------------------------------------------------------------ |
-| `slug`                       | ✅                | Stable kebab-case URL/diagnostic identifier. Must be unique.                               |
-| `overlayId`                  | ✅                | camelCase; key in `overlaySlice`. Must be unique.                                          |
-| `kind`                       | ✅                | `"window"` / `"widget"` / `"sheet"` / `"modal"`.                                           |
-| Lazy renderer                | ✅                | `lazyOverlay(() => import(...), { ssr: false })` in `OverlayController.tsx`.               |
-| `label`                      | ✅                | Human-readable. Shown in tray + window manager.                                            |
-| `defaultData`                | ✅                | Fallback payload shape. Docs the data keys the component expects.                          |
-| `mobilePresentation`         | ✅ for `"window"` | `"fullscreen"` / `"drawer"` / `"card"` / `"hidden"`.                                       |
-| `mobileSidebarAs`            |                   | `"drawer"` (default) or `"inline"`. Only for windows with a sidebar.                       |
-| `instanceMode`               |                   | `"singleton"` (default) or `"multi"`.                                                      |
-| `urlSync`                    |                   | `{ key: string }` — activates `?panels=<key>` deep-linking. Must have a matching hydrator. |
-| `ephemeral`                  |                   | Skip local refresh preservation.                                                           |
-| `preservation`               |                   | Default-deny semantic-data allowlist for local refresh restore.                            |
-| `heavySnapshot` / `autosave` |                   | Phase 7 opt-ins — not wired yet.                                                           |
+| Field                        | Required          | Purpose                                                                                                         |
+| ---------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------- |
+| `slug`                       | ✅                | Stable kebab-case URL/diagnostic identifier. Must be unique.                                                    |
+| `overlayId`                  | ✅                | camelCase; key in `overlaySlice`. Must be unique.                                                               |
+| `kind`                       | ✅                | `"window"` / `"widget"` / `"sheet"` / `"modal"`.                                                                |
+| Lazy renderer                | ✅                | `lazyOverlay(() => import(...), { ssr: false })` in `OverlayController.tsx`.                                    |
+| `label`                      | ✅                | Human-readable. Shown in tray + window manager.                                                                 |
+| `defaultData`                | ✅                | Fallback payload shape. Docs the data keys the component expects.                                               |
+| `mobilePresentation`         | ✅ for `"window"` | `"fullscreen"` / `"drawer"` / `"card"` / `"hidden"`.                                                            |
+| `mobileSidebarAs`            |                   | `"drawer"` (default) or `"inline"`. Only for windows with a sidebar.                                            |
+| `instanceMode`               |                   | `"singleton"` (default) or `"multi"`.                                                                           |
+| `urlSync`                    |                   | Dormant `{ key: string }` metadata for `?panels=`. It has no runtime effect until `UrlPanelManager` is mounted. |
+| `ephemeral`                  |                   | Skip local refresh preservation.                                                                                |
+| `preservation`               |                   | Default-deny semantic-data allowlist for local refresh restore.                                                 |
+| `heavySnapshot` / `autosave` |                   | Phase 7 opt-ins — not wired yet.                                                                                |
 
 See [`FEATURE.md`](./FEATURE.md) for the full schema with doc comments.
 
@@ -93,6 +93,8 @@ See [`FEATURE.md`](./FEATURE.md) for the full schema with doc comments.
 
 ## URL deep-linking
 
+`UrlPanelManager` is currently **not mounted**, so registry `urlSync` metadata and hydrators are dormant. Do not rely on URL restoration in a window workflow today. If URL sync is re-enabled, mount the manager first, then use the contract below and test every context-dependent hydrator.
+
 Set `urlSync: { key: "my_feature" }` on the registry entry. Register a hydrator in [`url-sync/initUrlHydration.ts`](./url-sync/initUrlHydration.ts):
 
 ```ts
@@ -106,7 +108,7 @@ registerPanelHydrator("my_feature", (dispatch, id, args) => {
 });
 ```
 
-A dev-time assertion in that file logs an error if any registry `urlSync.key` lacks a hydrator.
+A dev-time assertion in that file logs an error if any registry `urlSync.key` lacks a hydrator once the manager is mounted.
 
 ---
 
@@ -114,7 +116,7 @@ A dev-time assertion in that file logs an error if any registry `urlSync.key` la
 
 Non-negotiable:
 
-- **Never** statically `import` a window component outside `windowRegistry.ts`. Use `componentImport` on the entry; `OverlaySurface` handles lazy mount.
+- **Never** statically import a window component into registry metadata, a route, layout, provider, or boot module. Add its lazy renderer to `features/overlays/OverlayController.tsx`.
 - **Never** import `SidebarWindowToggle` statically anywhere other than its single mount in `features/shell/components/sidebar/Sidebar.tsx` (which uses `dynamic()`).
 - `scripts/check-bundle-size.ts` gates per-route bundle growth at +2 KB per PR. Capture a baseline with `pnpm check:bundle:capture`; verify with `pnpm check:bundle`.
 
@@ -125,17 +127,18 @@ Non-negotiable:
 - Redux changes are coalesced into a bounded tab/identity-scoped workspace; close and pagehide synchronously update its localStorage mirror.
 - Geometry and allowlisted semantic `data` are mirrored to localStorage and queued to IndexedDB. No screenshot or callback data is persisted.
 - Rect restores clamp to viewport via `utils/rectClamp.ts` — stored rects never land off-screen.
+- Preservation is deliberately enabled for 5 of 106 registered windows; the remaining windows require a state-contract audit before opt-in.
 - Idle GC every 30 min prunes closed multi-instance entries.
 
-See `FEATURE.md` for the full lifecycle and opt-ins that are coming in Phase 7.
+See `FEATURE.md` for the full lifecycle, safety limits, and rollout criteria.
 
 ---
 
 ## Common pitfalls
 
 1. **`kind: "window"` without `mobilePresentation`** — dev assertion fails.
-2. **Registry `urlSync.key` with no hydrator** — dev assertion logs; `?panels=<key>` silently no-ops.
-3. **Prop names not matching `defaultData` keys** — `OverlaySurface` spreads the data; your component needs prop names that align. Rename either side.
+2. **Assuming `urlSync` is live** — `UrlPanelManager` is currently unmounted; `?panels=` does not hydrate windows.
+3. **Prop names not matching `defaultData` keys** — `OverlayController` passes typed data explicitly; keep the metadata shape and renderer props aligned.
 4. **Opening a multi-instance overlay without a fresh `instanceId`** — instances overwrite each other. Use `instanceId: \`${slug}-${Date.now()}\``or let the Tools grid's`instanceStrategy: "fresh-per-click"` handle it.
 5. **Editing `overlaySlice.ts` `initialState`** — don't. It's `{}` by design; overlay keys grow lazily.
 
@@ -143,9 +146,8 @@ See `FEATURE.md` for the full lifecycle and opt-ins that are coming in Phase 7.
 
 ## Key files to know
 
-- [`registry/windowRegistry.ts`](./registry/windowRegistry.ts) — the only source of truth for overlays.
-- [`UnifiedOverlayController.tsx`](./UnifiedOverlayController.tsx) — the renderer. Iterates the registry.
-- [`OverlaySurface.tsx`](./OverlaySurface.tsx) — per-entry lazy-loader + Suspense boundary.
+- [`registry/windowRegistryMetadata.ts`](./registry/windowRegistryMetadata.ts) — component-free window metadata and preservation policy.
+- [`../overlays/OverlayController.tsx`](../overlays/OverlayController.tsx) — typed lazy renderer for open overlays.
 - [`WindowPanel.tsx`](./WindowPanel.tsx) — desktop shell; mobile branch routes through `mobile/`.
 - [`tools-grid/toolsGridTiles.ts`](./tools-grid/toolsGridTiles.ts) — declarative Tools-grid config.
 - [`FEATURE.md`](./FEATURE.md) — deep reference.

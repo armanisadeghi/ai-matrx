@@ -161,17 +161,138 @@ export interface CreateSiteInput {
   name: string;
   rootUrl: string;
   domain: string;
+  /** Explicit owning brand — always wins over name-match-or-create. */
+  brandId?: string;
 }
 
+/**
+ * Every user-editable site field. `root_url` / `domain` are deliberately
+ * absent — changing them is a page-registry migration, not an edit.
+ */
 export interface UpdateSiteIdentityInput {
   siteId: string;
   expectedVersion: number;
   patch: Partial<
     Pick<
       MarketingSite,
-      "name" | "description" | "logo_url" | "favicon_url" | "og_image_url"
+      | "name"
+      | "description"
+      | "logo_url"
+      | "favicon_url"
+      | "og_image_url"
+      | "status"
+      | "visibility"
     >
   >;
+}
+
+/** Manually register a canonical page (provenance 'manual'). */
+export interface CreateManualPageInput {
+  siteId: string;
+  organizationId: string;
+  url: string;
+}
+
+/** Property kinds accepted by web.property's CHECK constraint. */
+export const PROPERTY_KINDS = [
+  "website",
+  "instagram",
+  "facebook",
+  "x",
+  "tiktok",
+  "youtube",
+  "linkedin",
+  "pinterest",
+  "google_business_profile",
+  "other",
+] as const;
+export type PropertyKind = (typeof PROPERTY_KINDS)[number];
+
+export interface CreatePropertyInput {
+  organizationId: string;
+  brandId: string;
+  kind: PropertyKind;
+  url: string | null;
+  handle: string | null;
+  displayName: string | null;
+  status: string;
+}
+
+export interface UpdatePropertyInput {
+  propertyId: string;
+  expectedVersion: number;
+  patch: Partial<
+    Pick<BrandProperty, "kind" | "url" | "handle" | "display_name" | "status">
+  >;
+}
+
+/** Asset kinds accepted by web.brand_asset's CHECK constraint. */
+export const BRAND_ASSET_KINDS = [
+  "logo",
+  "logo_dark",
+  "favicon",
+  "wordmark",
+  "hero_image",
+  "image",
+  "video",
+  "color",
+  "font",
+  "document",
+  "other",
+] as const;
+export type BrandAssetKind = (typeof BRAND_ASSET_KINDS)[number];
+
+export interface CreateBrandAssetInput {
+  organizationId: string;
+  brandId: string;
+  kind: BrandAssetKind;
+  sourceUrl: string | null;
+  title: string | null;
+  notes: string | null;
+  isPrimary: boolean;
+}
+
+export interface UpdateBrandAssetInput {
+  assetId: string;
+  expectedVersion: number;
+  patch: Partial<
+    Pick<
+      BrandAsset,
+      "kind" | "source_url" | "title" | "notes" | "is_primary" | "sort_order"
+    >
+  >;
+}
+
+/** Fact kinds accepted by web.business_fact's CHECK constraint. */
+export const BUSINESS_FACT_KINDS = [
+  "phone",
+  "email",
+  "address",
+  "hours",
+  "tagline",
+  "legal_name",
+  "social_profile",
+  "service_area",
+  "registration",
+  "other",
+] as const;
+export type BusinessFactKind = (typeof BUSINESS_FACT_KINDS)[number];
+
+export interface CreateBusinessFactInput {
+  organizationId: string;
+  brandId: string;
+  kind: BusinessFactKind;
+  label: string | null;
+  /** Stored as `{ text }` (or `{ url }` when the value is a URL). */
+  value: string;
+}
+
+export interface UpdateBusinessFactInput {
+  factId: string;
+  expectedVersion: number;
+  kind: BusinessFactKind;
+  label: string | null;
+  value: string;
 }
 
 export type DiscoveredItemStatus = "pending" | "confirmed" | "dismissed";

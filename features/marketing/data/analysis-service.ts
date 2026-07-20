@@ -19,6 +19,7 @@ import type {
   MarketingFinding,
   PriorityQueueRow,
 } from "@/features/marketing/data/analysis-types";
+import { assertFound } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
@@ -299,8 +300,12 @@ export async function getFindingDetail(
     .eq("id", findingId)
     .is("deleted_at", null)
     .abortSignal(abortSignal)
-    .single();
-  const finding: MarketingFinding = assertData(response.data, response.error);
+    .maybeSingle();
+  const finding: MarketingFinding = assertFound(
+    response.data,
+    response.error,
+    "finding",
+  );
 
   const [pages, item, results] = await Promise.all([
     loadPageReferences(siteId, [finding.page_id], abortSignal),

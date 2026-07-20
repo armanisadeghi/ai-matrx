@@ -1,13 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Play, RefreshCw, ScanSearch } from "lucide-react";
+import { Play, RefreshCw, ScanSearch, Trash2 } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
-import { useCrawls } from "@/features/marketing/data/hooks";
+import {
+  useCrawls,
+  useDeleteCrawlSession,
+} from "@/features/marketing/data/hooks";
+import { extractErrorMessage } from "@/utils/errors";
 import type { CrawlSession } from "@/features/marketing/types";
 import {
   formatCompactDate,
@@ -37,6 +44,22 @@ export function CrawlsTable() {
     defaultSort: { id: "started_at", direction: "desc" },
   });
   const crawls = useCrawls(site.id, table.queryState);
+  const deleteMutation = useDeleteCrawlSession(site.id);
+  const [deleting, setDeleting] = useState<CrawlSession | null>(null);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteMutation.mutateAsync(deleting.id);
+      toast.success("Crawl session deleted");
+      setDeleting(null);
+    } catch (error) {
+      toast.error("Could not delete crawl session", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
   const columns: MatrxColumnDef<CrawlSession>[] = [
     {
       id: "started_at",
@@ -185,12 +208,36 @@ export function CrawlsTable() {
         onRowOpen={(row) =>
           router.push(`${sitePath}/crawls/${row.id}`)
         }
+        rowActions={(row) => (
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            title="Delete crawl session"
+            onClick={(event) => {
+              event.stopPropagation();
+              setDeleting(row);
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
         emptyState={{
           icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,
           title: "No crawl sessions",
           description:
             "Crawl commands are sent directly to the scraper; durable sessions will appear here from Supabase.",
         }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Delete crawl session?"
+        description="The session moves to trash with its URL ledger and event log attached. Snapshots it captured stay with their pages."
+        variant="destructive"
+        confirmLabel="Delete session"
+        busy={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
       />
     </main>
   );

@@ -1,5 +1,6 @@
 import reducer, {
   maximizeWindow,
+  minimizeAll,
   minimizeWindow,
   moveTraySlot,
   popOutWindow,
@@ -74,6 +75,75 @@ describe("minimized window tray layout", () => {
       width: 171,
       height: 72,
     });
+  });
+
+  it.each([
+    [800, 800],
+    [1280, 800],
+    [390, 844],
+  ])(
+    "keeps all 64 supported minimized sessions reachable at %d×%d",
+    (viewportWidth, viewportHeight) => {
+      const rects = Array.from({ length: 64 }, (_, slot) =>
+        traySlotRect(slot, viewportWidth, viewportHeight, 64),
+      );
+      rects.forEach((rect) => {
+        expect(rect.x).toBeGreaterThanOrEqual(0);
+        expect(rect.y).toBeGreaterThanOrEqual(0);
+        expect(rect.x + rect.width).toBeLessThanOrEqual(viewportWidth);
+        expect(rect.y + rect.height).toBeLessThanOrEqual(viewportHeight);
+        expect(rect.height).toBe(32);
+      });
+    },
+  );
+
+  it("reflows every card into and out of compact overflow mode", () => {
+    const ids = Array.from({ length: 21 }, (_, index) => `w-${index}`);
+    let state = stateWithMinimized(ids);
+
+    expect(
+      Object.values(state.windows).every((win) => win.windowed.height === 32),
+    ).toBe(true);
+
+    state = reducer(state, restoreWindow("w-20"));
+
+    expect(state.trayCount).toBe(20);
+    expect(
+      Object.values(state.windows)
+        .filter((win) => win.state === "minimized")
+        .every((win) => win.windowed.height === 160),
+    ).toBe(true);
+  });
+
+  it("uses the supplied viewport when minimizing all from an empty tray", () => {
+    let state = reducer(undefined, { type: "@@INIT" });
+    state = reducer(
+      state,
+      registerWindow({ id: "a", initial: initialRect(0) }),
+    );
+    state = reducer(
+      state,
+      registerWindow({ id: "b", initial: initialRect(1) }),
+    );
+
+    state = reducer(
+      state,
+      minimizeAll({
+        viewportWidth: MOBILE_WIDTH,
+        viewportHeight: MOBILE_HEIGHT,
+      }),
+    );
+
+    expect(state.trayViewport).toEqual({
+      width: MOBILE_WIDTH,
+      height: MOBILE_HEIGHT,
+    });
+    expect(state.windows.a.windowed).toEqual(
+      traySlotRect(0, MOBILE_WIDTH, MOBILE_HEIGHT, 2),
+    );
+    expect(state.windows.b.windowed).toEqual(
+      traySlotRect(1, MOBILE_WIDTH, MOBILE_HEIGHT, 2),
+    );
   });
 
   it("compacts both slots and rectangles when a middle card is restored", () => {

@@ -2,7 +2,7 @@
 
 This inventory lists **App Router** `page.tsx` entry points that exist primarily for **demos**, **QA experiments**, **component playgrounds**, or **internal harnesses** — not end-user product flows.
 
-**Total routes:** 346 (generated from filesystem rules; adjust `docs/DEMO_AND_TEST_ROUTES.md` if a route is miscategorized.)
+**Total routes:** 341 (generated from filesystem rules; adjust `docs/DEMO_AND_TEST_ROUTES.md` if a route is miscategorized.)
 
 URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-auth)`).
 
@@ -168,17 +168,13 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 ### Authenticated — `/tests`
 
-*61 routes*
+*56 routes*
 
 - `/tests` — `app/(authenticated)/tests/page.tsx`
 - `/tests/_maps` — `app/(authenticated)/tests/_maps/page.tsx`
 - `/tests/applet-tests` — `app/(authenticated)/tests/applet-tests/page.tsx`
 - `/tests/applet-tests/applet-builder-3` — `app/(authenticated)/tests/applet-tests/applet-builder-3/page.tsx`
 - `/tests/applet-tests/resume-builder-test` — `app/(authenticated)/tests/applet-tests/resume-builder-test/page.tsx`
-- `/tests/audio-recorder-test` — `app/(authenticated)/tests/audio-recorder-test/page.tsx`
-- `/tests/audio-recorder-test/combined-page` — `app/(authenticated)/tests/audio-recorder-test/combined-page/page.tsx`
-- `/tests/audio-recorder-test/initial` — `app/(authenticated)/tests/audio-recorder-test/initial/page.tsx`
-- `/tests/audio-recorder-test/recording-management` — `app/(authenticated)/tests/audio-recorder-test/recording-management/page.tsx`
 - `/tests/camera-test` — `app/(authenticated)/tests/camera-test/page.tsx`
 - `/tests/chat-tests` — `app/(authenticated)/tests/chat-tests/page.tsx`
 - `/tests/chat-tests/chat-assistant` — `app/(authenticated)/tests/chat-tests/chat-assistant/page.tsx`
@@ -202,7 +198,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/markdown-tests/tui-tests` — `app/(authenticated)/tests/markdown-tests/tui-tests/page.tsx`
 - `/tests/matrx-local` — `app/(authenticated)/tests/matrx-local/page.tsx`
 - `/tests/matrx-table` — `app/(authenticated)/tests/matrx-table/page.tsx`
-- `/tests/metadata-test` — `app/(authenticated)/tests/metadata-test/page.tsx`
 - `/tests/modals` — `app/(authenticated)/tests/modals/page.tsx`
 - `/tests/modals/modal-test` — `app/(authenticated)/tests/modals/modal-test/page.tsx`
 - `/tests/modals/table-modal-test` — `app/(authenticated)/tests/modals/table-modal-test/page.tsx`
@@ -758,10 +753,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/applet-tests`
 - `/tests/applet-tests/applet-builder-3`
 - `/tests/applet-tests/resume-builder-test`
-- `/tests/audio-recorder-test`
-- `/tests/audio-recorder-test/combined-page`
-- `/tests/audio-recorder-test/initial`
-- `/tests/audio-recorder-test/recording-management`
 - `/tests/camera-test`
 - `/tests/chat-tests`
 - `/tests/chat-tests/chat-assistant`
@@ -785,7 +776,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/markdown-tests/tui-tests`
 - `/tests/matrx-local`
 - `/tests/matrx-table`
-- `/tests/metadata-test`
 - `/tests/modals`
 - `/tests/modals/modal-test`
 - `/tests/modals/table-modal-test`

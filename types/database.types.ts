@@ -45001,6 +45001,7 @@ export type Database = {
       }
       create_site: {
         Args: {
+          p_brand_id?: string
           p_domain: string
           p_integrations?: Json
           p_name: string
@@ -45009,6 +45010,43 @@ export type Database = {
           p_settings?: Json
           p_visibility?: Database["platform"]["Enums"]["visibility"]
         }
+        Returns: {
+          brand_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          domain: string
+          favicon_url: string | null
+          gsc_sync: Json
+          gsc_synced_at: string | null
+          homepage_screenshot_id: string | null
+          id: string
+          initialization: Json
+          initialized_at: string | null
+          integrations: Json
+          logo_url: string | null
+          metadata: Json
+          name: string
+          og_image_url: string | null
+          organization_id: string
+          root_url: string
+          settings: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "site"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      move_site_brand: {
+        Args: { p_brand_id: string; p_site_id: string }
         Returns: {
           brand_id: string | null
           created_at: string

@@ -667,7 +667,8 @@ export function WindowPanel({
   }, [preservationEnabled, overlayLaunchData, onCollectData]);
 
   /**
-   * Wrap the onClose prop to also delete the DB row for this window.
+   * Route every close through the overlay slice. The persistence middleware
+   * tombstones the matching local workspace session before the window unmounts.
    */
   const handleClose = useCallback(() => {
     const hasExactOverlayIdentity =
@@ -943,7 +944,15 @@ export function WindowPanel({
   >(undefined);
 
   const handleMinimize = useCallback(() => {
-    const collected = onCollectData?.();
+    let collected: Record<string, unknown> | undefined;
+    try {
+      collected = onCollectData?.();
+    } catch (error) {
+      console.error(
+        `[window-panels] preview collector failed for ${trayRegistryKey}`,
+        error,
+      );
+    }
     if (collected && typeof collected === "object") {
       setTrayPreviewData(collected);
     }
@@ -962,7 +971,13 @@ export function WindowPanel({
       setPendingTrayCapture(null);
     }
     onMinimize();
-  }, [effectiveTrayCapture, onCollectData, onMinimize, preservationEnabled]);
+  }, [
+    effectiveTrayCapture,
+    onCollectData,
+    onMinimize,
+    preservationEnabled,
+    trayRegistryKey,
+  ]);
 
   useEffect(() => {
     if (windowState !== "minimized" || !pendingTrayCapture) return undefined;
@@ -1070,8 +1085,15 @@ export function WindowPanel({
   const isPopoutCandidate = popoutCandidateId === id;
 
   useEffect(() => {
-    if (isMobile && isMinimized) onRestore();
-  }, [isMinimized, isMobile, onRestore]);
+    if (!isMobile || !isMinimized) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) handleRestoreClearingSnapshot();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [handleRestoreClearingSnapshot, isMinimized, isMobile]);
   const minimizedTitle =
     title?.trim() ||
     getStaticEntryByOverlayId(trayRegistryKey)?.label ||
@@ -1575,12 +1597,14 @@ function WindowHeader({
       className={cn(
         "relative flex items-center justify-between gap-1 px-2 py-1.5 min-h-[26px] z-20 shrink-0",
         "border-b border-border/50 bg-muted/40 select-none",
-        isMaximized ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+        isMaximized || isMinimized
+          ? "cursor-default"
+          : "cursor-grab active:cursor-grabbing",
         isMinimized && "h-8 min-h-8 py-0 border-b border-border/50",
       )}
       data-window-panel-state={isMinimized ? "minimized" : undefined}
-      style={isMaximized ? undefined : { touchAction: "none" }}
-      onPointerDown={isMaximized ? undefined : onDragStart}
+      style={isMaximized || isMinimized ? undefined : { touchAction: "none" }}
+      onPointerDown={isMaximized || isMinimized ? undefined : onDragStart}
     >
       {/* macOS-style hot zone: absolutely positioned to cover the full
           left side of the header (top-to-bottom, no padding). The traffic
@@ -1755,19 +1779,21 @@ function TrafficLightGroup({
       />
 
       {/* Green — Maximize / dropdown */}
-      <GreenTrafficLight
-        isMaximized={isMaximized}
-        onToggleMaximize={onToggleMaximize}
-        onRestore={onRestore}
-        snapLeft={snapLeft}
-        snapRight={snapRight}
-        snapTop={snapTop}
-        snapBottom={snapBottom}
-        snapCentre={snapCentre}
-        arrangeAll={arrangeAll}
-        onSaveWindowState={onSaveWindowState}
-        onPopOut={onPopOut}
-      />
+      {!isMinimized && (
+        <GreenTrafficLight
+          isMaximized={isMaximized}
+          onToggleMaximize={onToggleMaximize}
+          onRestore={onRestore}
+          snapLeft={snapLeft}
+          snapRight={snapRight}
+          snapTop={snapTop}
+          snapBottom={snapBottom}
+          snapCentre={snapCentre}
+          arrangeAll={arrangeAll}
+          onSaveWindowState={onSaveWindowState}
+          onPopOut={onPopOut}
+        />
+      )}
 
       {/* Sidebar toggle — sits tight next to the traffic lights */}
       {hasSidebar && !isMinimized && (

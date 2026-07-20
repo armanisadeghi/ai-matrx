@@ -1163,7 +1163,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Window Persistence Tester",
         description:
-          "Diagnostic loop for window_sessions: DB rows, Redux overlays, window manager geometry, and persistence context side-by-side.",
+          "Diagnostic loop for the local workspace cache, Redux overlays, window geometry, and preservation context side-by-side.",
         iconName: "Layout",
         link: "/administration/persistence-test",
         isNew: true,

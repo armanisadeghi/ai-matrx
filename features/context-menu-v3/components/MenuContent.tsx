@@ -668,7 +668,6 @@ export default function MenuContent(props: MenuContentProps) {
       resourceType: entity.resourceType,
       resourceId: entity.id,
       resourceName: entity.title,
-      isOwner: entity.isOwner ?? false,
     });
   };
 

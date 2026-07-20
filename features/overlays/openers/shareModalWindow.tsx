@@ -16,15 +16,14 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type { ResourceType } from "@/utils/permissions/registry";
 
 const OVERLAY_ID = "shareModalWindow" as const;
 
 export interface OpenShareModalWindowOptions {
-  /** TODO: tighten to `ResourceType` once that type is imported. */
-  resourceType: unknown;
+  resourceType: ResourceType;
   resourceId: string;
   resourceName: string;
-  isOwner: boolean;
 }
 
 export interface ShareModalWindowHandle {
@@ -42,7 +41,6 @@ export function useOpenShareModalWindow() {
             resourceType: opts.resourceType,
             resourceId: opts.resourceId,
             resourceName: opts.resourceName,
-            isOwner: opts.isOwner,
           },
         }),
       );
@@ -59,11 +57,13 @@ export function useOpenShareModalWindow() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function ShareModalWindowController(props: OpenShareModalWindowOptions): null {
+export function ShareModalWindowController(
+  props: OpenShareModalWindowOptions,
+): null {
   const open = useOpenShareModalWindow();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.resourceType, props.resourceId, props.resourceName, props.isOwner]);
+  }, [open, props.resourceType, props.resourceId, props.resourceName]);
   return null;
 }

@@ -38,6 +38,8 @@ competing with the one persistent shell header.
 
 ## Change log
 
+- 2026-07-20 — Deleted the obsolete Metadata Test duplicate; `/seo/metadata` remains the maintained Meta Width Calculator.
+- 2026-07-20 — Deleted the isolated Audio Recorder Test suite and its four routes.
 - 2026-07-20 — Deleted the isolated Full Screen API toggle demo.
 - 2026-07-20 — Deleted the obsolete App Shell test tree and its six route entries.
 - 2026-07-20 — Corrected every nested test index, module-home, and metadata prefix to `/demos/tests/**`; removed the deleted legacy test tree from manifest generation and deleted the obsolete hand-maintained links catalogue.

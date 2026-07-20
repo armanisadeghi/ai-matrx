@@ -60,6 +60,20 @@ interface JsonSanitizeResult {
   bytes: number;
 }
 
+function invalidAllowedDataKey(
+  data: Record<string, unknown>,
+  entry: WindowStaticMetadata,
+): string | null {
+  const domains = entry.preservation?.allowedDataValues;
+  if (!domains) return null;
+  return (
+    Object.entries(domains).find(([key, allowed]) => {
+      const value = data[key];
+      return typeof value !== "string" || !allowed.includes(value);
+    })?.[0] ?? null
+  );
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -244,6 +258,16 @@ function sessionFromWindow(
       message: `Discarded ${sanitized.bytes} bytes of window data for ${sessionKey}; limit is ${maxBytes}.`,
     });
   }
+  const invalidDataKey = invalidAllowedDataKey(sanitized.data, registryEntry);
+  if (invalidDataKey) {
+    diagnostics.push({
+      level: "error",
+      code: "invalid-session",
+      sessionKey,
+      message: `Skipped ${sessionKey} because ${invalidDataKey} was outside its allowed domain.`,
+    });
+    return null;
+  }
 
   const windowedRect =
     entry.state === "minimized"
@@ -409,6 +433,16 @@ function readSession(
     });
     return null;
   }
+  const invalidDataKey = invalidAllowedDataKey(sanitized.data, registryEntry);
+  if (invalidDataKey) {
+    diagnostics.push({
+      level: "error",
+      code: "invalid-session",
+      sessionKey: windowSessionKey(overlayId, instanceId),
+      message: `Ignored ${overlayId} because ${invalidDataKey} was outside its allowed domain.`,
+    });
+    return null;
+  }
   const maxBytes =
     registryEntry.preservation.maxDataBytes ?? DEFAULT_WINDOW_DATA_BYTES;
   if (sanitized.bytes > maxBytes) {
@@ -486,6 +520,24 @@ export function hydrateWindowWorkspace(
     }
     return { sessions: [], diagnostics };
   }
+  try {
+    const workspaceBytes = utf8Bytes(JSON.stringify(raw));
+    if (workspaceBytes > MAX_WINDOW_WORKSPACE_BYTES) {
+      diagnostics.push({
+        level: "error",
+        code: "workspace-too-large",
+        message: `Ignored a ${workspaceBytes}-byte window workspace above the ${MAX_WINDOW_WORKSPACE_BYTES}-byte limit.`,
+      });
+      return { sessions: [], diagnostics };
+    }
+  } catch {
+    diagnostics.push({
+      level: "error",
+      code: "invalid-workspace",
+      message: "Ignored a window workspace that could not be serialized.",
+    });
+    return { sessions: [], diagnostics };
+  }
 
   const byKey = new Map<string, PersistedWindowSession>();
   if (raw.sessions.length > MAX_PERSISTED_WINDOW_SESSIONS) {
@@ -531,7 +583,7 @@ export function hydrateWindowWorkspace(
     const slot = normalizedSlot.get(session.sessionKey) ?? null;
     const renderRect =
       state === "minimized" && slot !== null
-        ? traySlotRect(slot, viewport.width, viewport.height)
+        ? traySlotRect(slot, viewport.width, viewport.height, minimized.length)
         : state === "windowed" || state === "maximized"
           ? fullRect
           : fallbackRect(viewport);

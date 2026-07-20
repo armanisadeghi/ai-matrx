@@ -5,6 +5,7 @@ import type {
   InspectionScreenshotRow,
   InspectionSnapshotRow,
 } from "@/features/marketing/data/inspection-types";
+import { assertFound } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
@@ -32,8 +33,8 @@ export async function getHomepageScreenshot(
     .eq("site_id", siteId)
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
-    .single();
-  return assertData(response.data, response.error);
+    .maybeSingle();
+  return assertFound(response.data, response.error, "screenshot");
 }
 
 /** Read every screenshot variant attached to one immutable snapshot. */

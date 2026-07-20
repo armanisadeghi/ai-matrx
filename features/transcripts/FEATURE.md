@@ -120,6 +120,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-07-20` — Removed the obsolete Audio Recorder Test suite from the transcripts admin resource map after the demo tree was deleted.
 - `2026-07-15` — Routed upload and recording transcription through aidream's authenticated catalog STT endpoints; removed the duplicate Next Groq middle tier.
 
 - `2026-07-10` — **Header Surface Agents chrome: live scope.** `TranscriptViewer` mounts `SurfaceRuntimeProvider` (`matrx-user/transcripts`); Run uses editor scope while body-editing, otherwise viewer scope.

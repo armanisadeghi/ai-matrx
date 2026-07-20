@@ -9,6 +9,7 @@ import { PublicAuthSync } from "./PublicAuthSync";
 import OverlayController from "@/features/overlays/OverlayController";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
+import { WindowPersistenceManager } from "@/features/window-panels/WindowPersistenceManager";
 
 interface PublicProvidersProps {
   children: React.ReactNode;
@@ -32,14 +33,16 @@ export function PublicProviders({
   return (
     <ReactQueryProvider>
       <StoreProvider initialState={initialState}>
-        <TooltipProvider delayDuration={200}>
-          <PublicAuthSync />
-          <OverlayController />
-          {/* See app/Providers.tsx for the rationale. */}
-          <ConfirmDialogHost />
-          <ValuePromptsDialogHost />
-          {children}
-        </TooltipProvider>
+        <WindowPersistenceManager>
+          <TooltipProvider delayDuration={200}>
+            <PublicAuthSync />
+            <OverlayController />
+            {/* See app/Providers.tsx for the rationale. */}
+            <ConfirmDialogHost />
+            <ValuePromptsDialogHost />
+            {children}
+          </TooltipProvider>
+        </WindowPersistenceManager>
       </StoreProvider>
     </ReactQueryProvider>
   );

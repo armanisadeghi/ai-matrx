@@ -1,9 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Images, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Images,
+  Loader2,
+  Trash2,
+} from "lucide-react";
+import { toast } from "@/lib/toast";
 import { safeQueryPage } from "@/components/official/matrx-data-table/query-control";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,9 +28,11 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useDeleteScreenshot } from "@/features/marketing/data/hooks";
 import { useSiteScreenshots } from "@/features/marketing/data/inspection-hooks";
 import type { InspectionScreenshotRow } from "@/features/marketing/data/inspection-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import { extractErrorMessage } from "@/utils/errors";
 
 const SCREENSHOT_KINDS = ["homepage", "full", "viewport"] as const;
 const SORT_OPTIONS = [
@@ -34,9 +45,11 @@ const SORT_OPTIONS = [
 function ScreenshotCard({
   screenshot,
   sitePath,
+  onDelete,
 }: {
   screenshot: InspectionScreenshotRow;
   sitePath: string;
+  onDelete: () => void;
 }) {
   const imageRef = screenshot.file_id
     ? fileIdToMediaRef(screenshot.file_id, "image/png")
@@ -74,9 +87,19 @@ function ScreenshotCard({
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5">
         <div className="flex items-center justify-between gap-2">
           <StatusBadge value={screenshot.kind} />
-          <span className="text-[10px] tabular-nums text-muted-foreground">
-            {screenshot.width ?? "—"} × {screenshot.height ?? "—"}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] tabular-nums text-muted-foreground">
+              {screenshot.width ?? "—"} × {screenshot.height ?? "—"}
+            </span>
+            <button
+              type="button"
+              title="Delete screenshot"
+              onClick={onDelete}
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
         {pageHref ? (
           <Link
@@ -120,6 +143,24 @@ export function ScreenshotGallery() {
     defaultPageSize: 25,
   });
   const screenshots = useSiteScreenshots(site.id, table.queryState);
+  const deleteMutation = useDeleteScreenshot(site.id);
+  const [deleting, setDeleting] = useState<InspectionScreenshotRow | null>(
+    null,
+  );
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteMutation.mutateAsync(deleting.id);
+      toast.success("Screenshot deleted");
+      setDeleting(null);
+    } catch (error) {
+      toast.error("Could not delete screenshot", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
   const total = screenshots.data?.total ?? 0;
   const currentPage = safeQueryPage(
     table.state.page,
@@ -254,6 +295,7 @@ export function ScreenshotGallery() {
                 key={screenshot.id}
                 screenshot={screenshot}
                 sitePath={sitePath}
+                onDelete={() => setDeleting(screenshot)}
               />
             ))}
           </div>
@@ -299,6 +341,17 @@ export function ScreenshotGallery() {
           </Button>
         </div>
       </footer>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Delete screenshot?"
+        description="The capture record moves to trash and leaves this gallery. The stored file itself is not destroyed."
+        variant="destructive"
+        confirmLabel="Delete screenshot"
+        busy={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
+      />
     </main>
   );
 }

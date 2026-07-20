@@ -23,9 +23,21 @@ import {
   countPendingDiscovered,
   countSites,
   createBrand,
+  createBrandAsset,
+  createBusinessFact,
+  createManualPage,
+  createProperty,
   createSite,
   deleteBrand,
+  deleteBrandAsset,
+  deleteBusinessFact,
+  deleteCrawlSession,
+  deleteDiscoveredItem,
+  deletePage,
+  deleteProperty,
+  deleteScreenshot,
   deleteSite,
+  deleteSitemap,
   dismissDiscoveredItem,
   getCoverageMatrix,
   getCrawl,
@@ -44,10 +56,17 @@ import {
   listPageSitemapMemberships,
   listSiteOptions,
   listSites,
+  listBrandOptions,
   listSiteScreenshots,
   listSnapshots,
+  moveSiteBrand,
+  setSitemapActive,
+  undismissDiscoveredItem,
   updateBrand,
+  updateBrandAsset,
+  updateBusinessFact,
   updatePageIntent,
+  updateProperty,
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
 import type {
@@ -502,8 +521,184 @@ export function useDeleteSite() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteSite,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
+    onSuccess: (_result, siteId) => {
+      // Drop the deleted site's own subtree WITHOUT refetching it — an open
+      // view racing this invalidation must not re-request a dead row (the
+      // PGRST116 class). List keys refetch; the entity key is only removed
+      // for inactive observers.
+      void queryClient.removeQueries({
+        queryKey: marketingKeys.site(siteId),
+        type: "inactive",
+      });
+      for (const key of [
+        [...marketingKeys.root, "sites"],
+        [...marketingKeys.root, "site-count"],
+        marketingKeys.siteOptions(),
+        [...marketingKeys.root, "brand"],
+        [...marketingKeys.root, "brands"],
+      ]) {
+        void queryClient.invalidateQueries({ queryKey: key });
+      }
     },
   });
+}
+
+// ============================================================================
+// Full-CRUD mutations — pages, sitemaps, discovery, properties, assets,
+// facts, screenshots, crawl sessions
+// ============================================================================
+
+/** Invalidate one site's subtree (pages, sitemaps, coverage, crawls, …). */
+function useSiteMutation<TInput, TResult>(
+  mutationFn: (input: TInput) => Promise<TResult>,
+  siteId: string,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: marketingKeys.site(siteId),
+      });
+    },
+  });
+}
+
+export function useCreateManualPage(siteId: string) {
+  return useSiteMutation(createManualPage, siteId);
+}
+
+export function useDeletePage(siteId: string) {
+  return useSiteMutation(
+    (pageId: string) => deletePage(siteId, pageId),
+    siteId,
+  );
+}
+
+export function useSetSitemapActive(siteId: string) {
+  return useSiteMutation(
+    (input: { sitemapId: string; isActive: boolean }) =>
+      setSitemapActive(siteId, input.sitemapId, input.isActive),
+    siteId,
+  );
+}
+
+export function useDeleteSitemap(siteId: string) {
+  return useSiteMutation(
+    (sitemapId: string) => deleteSitemap(siteId, sitemapId),
+    siteId,
+  );
+}
+
+export function useDeleteScreenshot(siteId: string) {
+  return useSiteMutation(
+    (screenshotId: string) => deleteScreenshot(siteId, screenshotId),
+    siteId,
+  );
+}
+
+export function useDeleteCrawlSession(siteId: string) {
+  return useSiteMutation(
+    (crawlId: string) => deleteCrawlSession(siteId, crawlId),
+    siteId,
+  );
+}
+
+export function useDeleteDiscoveredItem() {
+  return useDiscoveryMutation(deleteDiscoveredItem);
+}
+
+export function useUndismissDiscoveredItem() {
+  return useDiscoveryMutation(undismissDiscoveredItem);
+}
+
+/** Invalidate every brand-scoped read (cockpit sections + brands list). */
+function useBrandScopedMutation<TInput, TResult>(
+  mutationFn: (input: TInput) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brand"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brands"],
+      });
+    },
+  });
+}
+
+export function useCreateProperty() {
+  return useBrandScopedMutation(createProperty);
+}
+
+export function useUpdateProperty() {
+  return useBrandScopedMutation(updateProperty);
+}
+
+export function useDeleteProperty() {
+  return useBrandScopedMutation(deleteProperty);
+}
+
+export function useCreateBrandAsset() {
+  return useBrandScopedMutation(createBrandAsset);
+}
+
+export function useUpdateBrandAsset() {
+  return useBrandScopedMutation(updateBrandAsset);
+}
+
+export function useDeleteBrandAsset() {
+  return useBrandScopedMutation(deleteBrandAsset);
+}
+
+/** Light brand options (id/name) for one organization — pickers only. */
+export function useBrandOptions(organizationId: string | null) {
+  return useQuery({
+    queryKey: [
+      ...marketingKeys.root,
+      "brand-options",
+      organizationId ?? "none",
+    ] as const,
+    queryFn: ({ signal }) => listBrandOptions(organizationId ?? "", signal),
+    enabled: Boolean(organizationId),
+    staleTime: 30_000,
+  });
+}
+
+/** Reassign a site to another brand; refreshes both cockpits + all lists. */
+export function useMoveSiteBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { siteId: string; brandId: string }) =>
+      moveSiteBrand(input.siteId, input.brandId),
+    onSuccess: (site) => {
+      void queryClient.invalidateQueries({
+        queryKey: marketingKeys.site(site.id),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "sites"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brand"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brands"],
+      });
+    },
+  });
+}
+
+export function useCreateBusinessFact() {
+  return useBrandScopedMutation(createBusinessFact);
+}
+
+export function useUpdateBusinessFact() {
+  return useBrandScopedMutation(updateBusinessFact);
+}
+
+export function useDeleteBusinessFact() {
+  return useBrandScopedMutation(deleteBusinessFact);
 }

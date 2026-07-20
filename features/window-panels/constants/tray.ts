@@ -31,6 +31,12 @@ export const TRAY_MARGIN_B = 20;
 /** Left boundary: cards never flow farther left than this. */
 export const TRAY_MARGIN_L = 8;
 
+/** Header-only height used when full cards no longer fit in the viewport. */
+export const TRAY_COMPACT_H = 32;
+
+/** Tighter gap for the overflow overview grid. */
+export const TRAY_COMPACT_GAP = 4;
+
 /**
  * Mobile chip width target. The tray becomes a horizontal-scroll strip on
  * mobile, so the width is a target upper bound clamped against the viewport.
@@ -83,11 +89,53 @@ export function traySlotRect(
   slot: number,
   viewportWidth: number,
   viewportHeight: number,
+  totalSlots = slot + 1,
 ): { x: number; y: number; width: number; height: number } {
   const chipWidth = computeTrayChipWidth(viewportWidth);
   const chipHeight = computeTrayChipHeight(viewportWidth);
   const perRow = trayChipsPerRow(viewportWidth);
   const safeSlot = Math.max(0, Math.floor(slot));
+  const usableHeight = Math.max(1, viewportHeight - TRAY_MARGIN_B - 8);
+  const fullRows = Math.max(
+    1,
+    Math.floor((usableHeight + TRAY_GAP_Y) / (chipHeight + TRAY_GAP_Y)),
+  );
+  const fullCardCapacity = perRow * fullRows;
+
+  if (totalSlots > fullCardCapacity) {
+    const compactRows = Math.max(
+      1,
+      Math.floor(
+        (viewportHeight - 16 + TRAY_COMPACT_GAP) /
+          (TRAY_COMPACT_H + TRAY_COMPACT_GAP),
+      ),
+    );
+    const compactColumns = Math.max(1, Math.ceil(totalSlots / compactRows));
+    const availableWidth = Math.max(
+      compactColumns,
+      viewportWidth - 16 - TRAY_COMPACT_GAP * (compactColumns - 1),
+    );
+    const compactWidth = Math.min(
+      TRAY_CHIP_W_DESKTOP,
+      Math.max(1, Math.floor(availableWidth / compactColumns)),
+    );
+    const compactCol = safeSlot % compactColumns;
+    const compactRow = Math.floor(safeSlot / compactColumns);
+    return {
+      x:
+        viewportWidth -
+        8 -
+        compactWidth -
+        compactCol * (compactWidth + TRAY_COMPACT_GAP),
+      y:
+        viewportHeight -
+        8 -
+        TRAY_COMPACT_H -
+        compactRow * (TRAY_COMPACT_H + TRAY_COMPACT_GAP),
+      width: compactWidth,
+      height: TRAY_COMPACT_H,
+    };
+  }
   const col = safeSlot % perRow;
   const row = Math.floor(safeSlot / perRow);
 

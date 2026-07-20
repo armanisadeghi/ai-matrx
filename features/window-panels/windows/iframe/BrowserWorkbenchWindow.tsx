@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { EmbedSiteFrame } from "@/features/window-panels/components/EmbedSiteFrame";
 import {
@@ -31,6 +31,9 @@ export interface BrowserWorkbenchTab {
   url: string;
 }
 
+export const BROWSER_WORKBENCH_TABS_MAX = 12;
+const DEFAULT_INITIAL_TAB_ID = "default";
+
 function newId(): string {
   return globalThis.crypto.randomUUID();
 }
@@ -45,9 +48,24 @@ function isTabRow(x: unknown): x is BrowserWorkbenchTab {
   );
 }
 
-function parseTabs(raw: unknown): BrowserWorkbenchTab[] {
+export function parseBrowserWorkbenchTabs(raw: unknown): BrowserWorkbenchTab[] {
   if (!Array.isArray(raw)) return [];
-  return raw.filter(isTabRow);
+  const seenIds = new Set<string>();
+  const tabs: BrowserWorkbenchTab[] = [];
+  for (const candidate of raw) {
+    if (!isTabRow(candidate)) continue;
+    const id = candidate.id.trim().slice(0, 128);
+    const url = normalizeUserUrl(candidate.url);
+    if (!id || !url || seenIds.has(id)) continue;
+    seenIds.add(id);
+    tabs.push({
+      id,
+      url,
+      label: candidate.label.trim().slice(0, 80) || shortUrlLabel(url),
+    });
+    if (tabs.length === BROWSER_WORKBENCH_TABS_MAX) break;
+  }
+  return tabs;
 }
 
 export interface BrowserWorkbenchWindowProps {
@@ -157,14 +175,19 @@ function BrowserWorkbenchWindowInner({
   );
 
   const [tabs, setTabs] = useState<BrowserWorkbenchTab[]>(() => {
-    const parsed = parseTabs(initialTabs);
+    const parsed = parseBrowserWorkbenchTabs(initialTabs);
     if (parsed.length > 0) return parsed;
-    const id = newId();
-    return [{ id, label: "Lucide", url: SITE_WORKBENCH_DEFAULT_URL }];
+    return [
+      {
+        id: DEFAULT_INITIAL_TAB_ID,
+        label: "Lucide",
+        url: SITE_WORKBENCH_DEFAULT_URL,
+      },
+    ];
   });
 
   const [activeTabId, setActiveTabId] = useState<string | null>(() => {
-    const parsed = parseTabs(initialTabs);
+    const parsed = parseBrowserWorkbenchTabs(initialTabs);
     const firstId = parsed[0]?.id ?? null;
     if (
       typeof initialActiveTabId === "string" &&
@@ -172,7 +195,7 @@ function BrowserWorkbenchWindowInner({
     ) {
       return initialActiveTabId;
     }
-    return firstId;
+    return firstId ?? DEFAULT_INITIAL_TAB_ID;
   });
 
   const activeTab = useMemo(
@@ -182,16 +205,6 @@ function BrowserWorkbenchWindowInner({
 
   const [addressDraft, setAddressDraft] = useState(activeTab?.url ?? "");
 
-  useEffect(() => {
-    if (activeTab) setAddressDraft(activeTab.url);
-  }, [activeTab?.id, activeTab?.url]);
-
-  useEffect(() => {
-    if (!activeTabId && tabs.length > 0) {
-      setActiveTabId(tabs[0].id);
-    }
-  }, [activeTabId, tabs]);
-
   const collectData = useCallback(
     (): Record<string, unknown> => ({
       tabs,
@@ -200,26 +213,35 @@ function BrowserWorkbenchWindowInner({
     [tabs, activeTabId],
   );
 
-  const openOrFocusUrl = useCallback((url: string, label: string) => {
-    const normalized = normalizeUserUrl(url);
-    if (!normalized) {
-      toast.error("Invalid URL");
-      return;
-    }
-    setTabs((prev) => {
-      const hit = prev.find((t) => t.url === normalized);
+  const openOrFocusUrl = useCallback(
+    (url: string, label: string) => {
+      const normalized = normalizeUserUrl(url);
+      if (!normalized) {
+        toast.error("Invalid URL");
+        return;
+      }
+      const hit = tabs.find((tab) => tab.url === normalized);
       if (hit) {
         setActiveTabId(hit.id);
-        return prev;
+        setAddressDraft(hit.url);
+        return;
+      }
+      if (tabs.length >= BROWSER_WORKBENCH_TABS_MAX) {
+        toast.error(
+          `You can keep up to ${BROWSER_WORKBENCH_TABS_MAX} tabs open`,
+        );
+        return;
       }
       const id = newId();
       setActiveTabId(id);
-      return [
-        ...prev,
+      setAddressDraft(normalized);
+      setTabs([
+        ...tabs,
         { id, url: normalized, label: shortUrlLabel(normalized) || label },
-      ];
-    });
-  }, []);
+      ]);
+    },
+    [tabs],
+  );
 
   const go = useCallback(() => {
     const next = normalizeUserUrl(addressDraft);
@@ -228,6 +250,7 @@ function BrowserWorkbenchWindowInner({
       return;
     }
     if (!activeTab) return;
+    setAddressDraft(next);
     setTabs((prev) =>
       prev.map((t) =>
         t.id === activeTab.id
@@ -238,23 +261,28 @@ function BrowserWorkbenchWindowInner({
   }, [addressDraft, activeTab]);
 
   const newTab = useCallback(() => {
+    if (tabs.length >= BROWSER_WORKBENCH_TABS_MAX) {
+      toast.error(`You can keep up to ${BROWSER_WORKBENCH_TABS_MAX} tabs open`);
+      return;
+    }
     const id = newId();
     const url = SITE_WORKBENCH_DEFAULT_URL;
     setTabs((prev) => [...prev, { id, url, label: "New" }]);
     setActiveTabId(id);
-  }, []);
+    setAddressDraft(url);
+  }, [tabs.length]);
 
   const closeTab = useCallback(
     (id: string) => {
-      setTabs((prev) => {
-        const next = prev.filter((t) => t.id !== id);
-        if (activeTabId === id) {
-          setActiveTabId(next[0]?.id ?? null);
-        }
-        return next;
-      });
+      const next = tabs.filter((tab) => tab.id !== id);
+      setTabs(next);
+      if (activeTabId === id) {
+        const fallback = next[0] ?? null;
+        setActiveTabId(fallback?.id ?? null);
+        setAddressDraft(fallback?.url ?? "");
+      }
     },
-    [activeTabId],
+    [activeTabId, tabs],
   );
 
   const bookmarkActive = useCallback(() => {
@@ -400,7 +428,10 @@ function BrowserWorkbenchWindowInner({
               <button
                 type="button"
                 className="min-w-0 flex-1 truncate px-2 py-1 text-left font-medium"
-                onClick={() => setActiveTabId(t.id)}
+                onClick={() => {
+                  setActiveTabId(t.id);
+                  setAddressDraft(t.url);
+                }}
               >
                 {t.label}
               </button>

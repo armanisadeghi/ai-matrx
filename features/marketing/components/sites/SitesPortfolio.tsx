@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -7,18 +8,27 @@ import {
   ArrowRight,
   ExternalLink,
   Globe2,
+  Pencil,
   Plus,
-  RefreshCw,
   SearchCheck,
+  Trash2,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
-import { useSiteCount, useSites } from "@/features/marketing/data/hooks";
-import type { SiteListRow } from "@/features/marketing/types";
+import {
+  useDeleteSite,
+  useSiteCount,
+  useSites,
+} from "@/features/marketing/data/hooks";
+import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
+import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   formatCompactDate,
   QueryError,
@@ -50,6 +60,23 @@ export function SitesPortfolio() {
   });
   const sites = useSites(table.queryState);
   const siteCount = useSiteCount();
+  const deleteMutation = useDeleteSite();
+  const [editing, setEditing] = useState<MarketingSite | null>(null);
+  const [deleting, setDeleting] = useState<MarketingSite | null>(null);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteMutation.mutateAsync(deleting.id);
+      toast.success(`Deleted ${deleting.name}`);
+      setDeleting(null);
+    } catch (error) {
+      toast.error("Could not delete site", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
   const hasFilters =
     Boolean(table.state.search || table.state.anyOf) ||
     Object.values(table.state.columnFilters).some(Boolean);
@@ -217,15 +244,40 @@ export function SitesPortfolio() {
               detail={{ enabled: false }}
               onRowOpen={(row) => router.push(marketingRoutes.site(row.brand_id, row.id))}
               rowActions={(row) => (
-                <a
-                  href={row.root_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                  title="Open live site"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
+                <div className="flex items-center gap-0.5">
+                  <a
+                    href={row.root_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    title="Open live site"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    title="Edit site"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setEditing(row);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    title="Delete site"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDeleting(row);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               )}
               emptyState={{
                 icon: <Globe2 className="h-8 w-8 text-muted-foreground" />,
@@ -261,6 +313,22 @@ export function SitesPortfolio() {
           </div>
         )}
       </main>
+
+      <SiteEditorDialog
+        open={Boolean(editing)}
+        onOpenChange={(open) => !open && setEditing(null)}
+        site={editing}
+      />
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={deleting ? `Delete ${deleting.name}?` : "Delete site?"}
+        description="The site moves to trash and disappears from every list. This does not delete the brand."
+        variant="destructive"
+        confirmLabel="Delete site"
+        busy={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
+      />
     </>
   );
 }

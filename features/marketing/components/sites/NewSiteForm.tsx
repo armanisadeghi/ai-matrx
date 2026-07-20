@@ -3,8 +3,8 @@
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Building2, Globe2, Loader2, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Building2, Globe2, Landmark, Loader2, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,19 +18,27 @@ import {
 } from "@/components/ui/select";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
-import { useCreateSite } from "@/features/marketing/data/hooks";
+import { useBrand, useCreateSite } from "@/features/marketing/data/hooks";
 import { normalizeWebsiteUrl } from "@/features/marketing/lib/website-url";
 import { extractErrorMessage } from "@/utils/errors";
 
 export function NewSiteForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const orgs = useActiveOrganizationPicker();
   const create = useCreateSite();
   const [rootUrl, setRootUrl] = useState("");
   const [urlTouched, setUrlTouched] = useState(false);
   const [name, setName] = useState("");
   const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const selectedOrgId = organizationId ?? orgs.activeOrgId ?? undefined;
+  // `?brand=` pre-binds the new site to that brand: the RPC receives the id
+  // explicitly (an explicit brand ALWAYS wins over name matching) and the
+  // organization is locked to the brand's.
+  const targetBrandId = searchParams.get("brand");
+  const targetBrand = useBrand(targetBrandId ?? "");
+  const selectedOrgId = targetBrand.data
+    ? targetBrand.data.organization_id
+    : (organizationId ?? orgs.activeOrgId ?? undefined);
   let urlIsValid = false;
   try {
     normalizeWebsiteUrl(rootUrl);
@@ -40,7 +48,13 @@ export function NewSiteForm() {
   }
   const busy = create.isPending;
   const canSubmit = Boolean(
-    selectedOrgId && urlIsValid && !busy && !orgs.loading,
+    selectedOrgId &&
+      urlIsValid &&
+      !busy &&
+      !orgs.loading &&
+      // With a target brand in the URL, wait until it resolves so the create
+      // can never silently fall back to name matching.
+      (!targetBrandId || targetBrand.data),
   );
 
   const normalizeVisibleUrl = () => {
@@ -75,6 +89,7 @@ export function NewSiteForm() {
         name: name.trim() || parsed.hostname,
         rootUrl: parsed.toString(),
         domain: parsed.hostname.toLowerCase(),
+        brandId: targetBrand.data?.id,
       });
     } catch (error) {
       toast.error("Could not add site", {
@@ -90,7 +105,11 @@ export function NewSiteForm() {
   return (
     <>
       <EntityModeHeader
-        backHref="/marketing/sites"
+        backHref={
+          targetBrandId
+            ? marketingRoutes.brand(targetBrandId)
+            : marketingRoutes.sites()
+        }
         entityLabel="Add site"
         actions={[
           {
@@ -124,6 +143,28 @@ export function NewSiteForm() {
             </p>
           </div>
           <div className="grid gap-4 p-4 sm:grid-cols-2">
+            {targetBrandId ? (
+              <div className="flex items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 sm:col-span-2">
+                <Landmark className="h-4 w-4 shrink-0 text-primary" />
+                {targetBrand.isLoading ? (
+                  <span className="text-xs text-muted-foreground">
+                    Resolving brand…
+                  </span>
+                ) : targetBrand.data ? (
+                  <span className="text-xs text-foreground">
+                    Adding a website to{" "}
+                    <span className="font-semibold">
+                      {targetBrand.data.name}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-xs text-destructive">
+                    The target brand could not be loaded — creation is blocked
+                    so the site can't attach to the wrong brand.
+                  </span>
+                )}
+              </div>
+            ) : null}
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="site-url" className="text-xs">
                 Website URL
@@ -169,7 +210,7 @@ export function NewSiteForm() {
               <Select
                 value={selectedOrgId}
                 onValueChange={setOrganizationId}
-                disabled={orgs.loading}
+                disabled={orgs.loading || Boolean(targetBrand.data)}
               >
                 <SelectTrigger>
                   <SelectValue

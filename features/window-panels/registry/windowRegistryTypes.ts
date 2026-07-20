@@ -27,6 +27,8 @@ export interface WindowPreservationConfig {
   dataKeys: readonly string[];
   /** Keys that must contain a non-empty value before the window can restore. */
   requiredDataKeys?: readonly string[];
+  /** Optional finite string domains for security/context-sensitive keys. */
+  allowedDataValues?: Readonly<Record<string, readonly string[]>>;
   /** Per-window ceiling after JSON serialization. Default: 32 KiB. */
   maxDataBytes?: number;
 }

@@ -70,11 +70,17 @@ export const TrayChipPreview = memo(function TrayChipPreview({
         )
       : null,
   );
+  const collectedData = useAppSelector(
+    (state) => state.windowManager.windows[snapshotKey]?.persistence?.data,
+  );
 
   // ── 1. Custom render mode ────────────────────────────────────────────────
   if (trayPreview?.renderTrayPreview && staticEntry) {
     const ctx: TrayPreviewContext = {
-      data: previewData ?? (isPlainRecord(overlayData) ? overlayData : {}),
+      data:
+        previewData ??
+        collectedData ??
+        (isPlainRecord(overlayData) ? overlayData : {}),
       overlayId: staticEntry.overlayId,
       instanceId: overlayInstanceId,
       title,
@@ -89,7 +95,6 @@ export const TrayChipPreview = memo(function TrayChipPreview({
       // Custom renderer threw — fall through to snapshot/default rather
       // than blowing up the entire tray. Log in dev for debugging.
       if (process.env.NODE_ENV !== "production") {
-        // eslint-disable-next-line no-console
         console.warn(
           `[TrayChipPreview] renderTrayPreview threw for "${registryKey}":`,
           err,
@@ -104,21 +109,48 @@ export const TrayChipPreview = memo(function TrayChipPreview({
   }
 
   // ── 3. Default — muted label + subtle hint ───────────────────────────────
-  return <DefaultTrayChipBody registryLabel={staticEntry?.label ?? null} />;
+  return (
+    <DefaultTrayChipBody
+      registryLabel={staticEntry?.label ?? null}
+      category={staticEntry?.category ?? null}
+      title={title}
+    />
+  );
 });
 
 // ─── Default body ─────────────────────────────────────────────────────────────
 
 const DefaultTrayChipBody = memo(function DefaultTrayChipBody({
   registryLabel,
+  category,
+  title,
 }: {
   registryLabel: string | null;
+  category: string | null;
+  title: string;
 }) {
+  const label = registryLabel ?? title;
   return (
-    <div className="flex-1 flex items-center px-3 py-1 overflow-hidden">
-      <span className="truncate text-[11px] text-muted-foreground/70">
-        {registryLabel ?? "Click to restore"}
-      </span>
+    <div className="flex flex-1 flex-col justify-between overflow-hidden bg-gradient-to-br from-muted/45 via-background to-primary/5 px-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <div
+          aria-hidden="true"
+          className="flex h-8 w-8 shrink-0 flex-col gap-1 rounded-md border border-border/60 bg-background/70 p-1.5 shadow-sm"
+        >
+          <span className="h-1 w-4 rounded-full bg-primary/45" />
+          <span className="h-1 w-3 rounded-full bg-muted-foreground/25" />
+          <span className="h-1 w-4 rounded-full bg-muted-foreground/15" />
+        </div>
+        <span className="min-w-0 truncate text-xs font-medium text-foreground/85">
+          {label}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground/60">
+        <span className="truncate uppercase tracking-wide">
+          {category ?? "Window"}
+        </span>
+        <span className="shrink-0">Click to restore</span>
+      </div>
     </div>
   );
 });
@@ -160,7 +192,6 @@ const TraySnapshotImage = memo(function TraySnapshotImage({
 
   return (
     <div className="flex-1 overflow-hidden bg-muted/30 relative">
-      {/* eslint-disable-next-line @next/next/no-img-element -- local ephemeral object URL */}
       <img
         src={snapshot}
         alt=""

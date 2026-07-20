@@ -7,7 +7,7 @@
  *
  * Architecture (thin composition root — mirrors NotesWindow / FeedbackWindow):
  *  - WindowPanel provides: title bar, drag/resize, maximize/minimize, native
- *    resizable sidebar (file explorer), persistence to window_sessions.
+ *    resizable sidebar (file explorer), and in-session window geometry.
  *  - useCodeEditorWindowState: all tab + editor state, owned HERE at the root so
  *    both the header toolbar and the body editor read/write the same state — no
  *    dependency on the standalone MultiFileCodeEditor's hook.
@@ -41,7 +41,7 @@ import {
   Save,
   Loader2,
   AlertCircle,
-  CircleDot
+  CircleDot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeMode } from "@/styles/themes/useThemeMode";

@@ -231,27 +231,6 @@
     "code": 7030
   },
   {
-    "file": "/Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/audio-recorder-test/combined-page/page.dev.tsx",
-    "line": 305,
-    "column": 82,
-    "message": "Argument of type 'number | undefined' is not assignable to parameter of type 'number'.\n  Type 'undefined' is not assignable to type 'number'.",
-    "code": 2345
-  },
-  {
-    "file": "/Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/audio-recorder-test/hooks/useRecorder.ts",
-    "line": 195,
-    "column": 33,
-    "message": "Argument of type 'Recording | null | undefined' is not assignable to parameter of type 'SetStateAction<Recording | null>'.\n  Type 'undefined' is not assignable to type 'SetStateAction<Recording | null>'.",
-    "code": 2345
-  },
-  {
-    "file": "/Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/audio-recorder-test/recording-management/page.dev.tsx",
-    "line": 116,
-    "column": 74,
-    "message": "Argument of type 'number | undefined' is not assignable to parameter of type 'number'.\n  Type 'undefined' is not assignable to type 'number'.",
-    "code": 2345
-  },
-  {
     "file": "/Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/integrations/option-two/constants.tsx",
     "line": 11,
     "column": 3,

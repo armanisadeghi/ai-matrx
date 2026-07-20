@@ -10,12 +10,15 @@ import {
   MapPin,
   Phone,
   Share2,
+  Trash2,
   Type,
+  Undo2,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Select,
   SelectContent,
@@ -27,8 +30,10 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import {
   useConfirmDiscoveredAsset,
   useConfirmDiscoveredFact,
+  useDeleteDiscoveredItem,
   useDiscoveredItems,
   useDismissDiscoveredItem,
+  useUndismissDiscoveredItem,
 } from "@/features/marketing/data/hooks";
 import {
   LoadingSurface,
@@ -243,11 +248,18 @@ function DiscoveryRow({
   const confirmAsset = useConfirmDiscoveredAsset();
   const confirmFact = useConfirmDiscoveredFact();
   const dismiss = useDismissDiscoveredItem();
+  const undismiss = useUndismissDiscoveredItem();
+  const deleteMutation = useDeleteDiscoveredItem();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [kind, setKind] = useState(() => defaultKind(item));
   const media = isMediaCategory(item.category);
   const kindOptions = media ? ASSET_KINDS : FACT_KINDS;
   const busy =
-    confirmAsset.isPending || confirmFact.isPending || dismiss.isPending;
+    confirmAsset.isPending ||
+    confirmFact.isPending ||
+    dismiss.isPending ||
+    undismiss.isPending ||
+    deleteMutation.isPending;
   const display = itemDisplayValue(item);
   const context = itemContextSnippet(item);
   const previewUrl =
@@ -275,6 +287,29 @@ function DiscoveryRow({
       await dismiss.mutateAsync(item.id);
     } catch (error) {
       toast.error("Could not dismiss item", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const restore = async () => {
+    try {
+      await undismiss.mutateAsync(item.id);
+      toast.success("Returned to pending");
+    } catch (error) {
+      toast.error("Could not restore item", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const remove = async () => {
+    try {
+      await deleteMutation.mutateAsync(item.id);
+      toast.success("Discovery deleted");
+      setConfirmingDelete(false);
+    } catch (error) {
+      toast.error("Could not delete item", {
         description: extractErrorMessage(error),
       });
     }
@@ -329,12 +364,38 @@ function DiscoveryRow({
       </div>
 
       {readOnly ? (
-        <Badge
-          variant={item.status === "confirmed" ? "success" : "outline"}
-          className="capitalize"
-        >
-          {item.status}
-        </Badge>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Badge
+            variant={item.status === "confirmed" ? "success" : "outline"}
+            className="capitalize"
+          >
+            {item.status}
+          </Badge>
+          {item.status === "dismissed" ? (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1 text-muted-foreground"
+                disabled={busy}
+                onClick={() => void restore()}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Restore
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1 text-muted-foreground hover:text-destructive"
+                disabled={busy}
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </Button>
+            </>
+          ) : null}
+        </div>
       ) : (
         <div className="flex shrink-0 items-center gap-1.5">
           <Select value={kind} onValueChange={setKind}>
@@ -368,8 +429,29 @@ function DiscoveryRow({
             <X className="h-3.5 w-3.5" />
             Dismiss
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+            title="Delete discovery"
+            disabled={busy}
+            onClick={() => setConfirmingDelete(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title="Delete this discovery?"
+        description="The candidate moves to trash. If the crawler finds the same value again it will not reappear."
+        variant="destructive"
+        confirmLabel="Delete"
+        busy={deleteMutation.isPending}
+        onConfirm={() => void remove()}
+      />
     </li>
   );
 }

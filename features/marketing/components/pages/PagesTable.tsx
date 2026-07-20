@@ -1,14 +1,23 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FileQuestion, RefreshCw, X } from "lucide-react";
+import { FileQuestion, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
-import { usePages } from "@/features/marketing/data/hooks";
+import {
+  useCreateManualPage,
+  useDeletePage,
+  usePages,
+} from "@/features/marketing/data/hooks";
+import { normalisePageUrl } from "@/features/marketing/lib/page-url";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   PAGE_COVERAGE_FILTERS,
   isPageCoverageFilter,
@@ -94,6 +103,24 @@ export function PagesTable() {
     defaultSort: { id: "last_seen", direction: "desc" },
   });
   const pages = usePages(site.id, table.queryState, coverage);
+  const createMutation = useCreateManualPage(site.id);
+  const deleteMutation = useDeletePage(site.id);
+  const [adding, setAdding] = useState(false);
+  const [deleting, setDeleting] = useState<PageListRow | null>(null);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteMutation.mutateAsync(deleting.id);
+      toast.success("Page deleted");
+      setDeleting(null);
+    } catch (error) {
+      toast.error("Could not delete page", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
   const columns: MatrxColumnDef<PageListRow>[] = [
     {
       id: "path",
@@ -264,26 +291,49 @@ export function PagesTable() {
           toolbar={{
             searchPlaceholder: "Search URL, path, or target keyword…",
             actions: (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5"
-                onClick={() => void pages.refetch()}
-                disabled={pages.isFetching}
-              >
-                <RefreshCw
-                  className={
-                    pages.isFetching
-                      ? "h-3.5 w-3.5 animate-spin"
-                      : "h-3.5 w-3.5"
-                  }
-                />
-                Refresh
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => void pages.refetch()}
+                  disabled={pages.isFetching}
+                >
+                  <RefreshCw
+                    className={
+                      pages.isFetching
+                        ? "h-3.5 w-3.5 animate-spin"
+                        : "h-3.5 w-3.5"
+                    }
+                  />
+                  Refresh
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => setAdding(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add page
+                </Button>
+              </div>
             ),
           }}
           detail={{ enabled: false }}
           onRowOpen={(row) => router.push(`${sitePath}/pages/${row.id}`)}
+          rowActions={(row) => (
+            <button
+              type="button"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              title="Delete page"
+              onClick={(event) => {
+                event.stopPropagation();
+                setDeleting(row);
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
           emptyState={{
             icon: <FileQuestion className="h-8 w-8 text-muted-foreground" />,
             title: coverage
@@ -295,6 +345,53 @@ export function PagesTable() {
           }}
         />
       </div>
+
+      <TextInputDialog
+        open={adding}
+        onOpenChange={(open) => !createMutation.isPending && setAdding(open)}
+        title="Add page manually"
+        description="Registers a canonical page with provenance “manual”. It joins coverage and can be crawled like any discovered page."
+        placeholder={`${site.root_url.replace(/\/$/, "")}/pricing`}
+        confirmLabel="Add page"
+        busy={createMutation.isPending}
+        validate={(value) => {
+          try {
+            normalisePageUrl(value);
+            return null;
+          } catch (error) {
+            return extractErrorMessage(error);
+          }
+        }}
+        onConfirm={async (value) => {
+          try {
+            await createMutation.mutateAsync({
+              siteId: site.id,
+              organizationId: site.organization_id,
+              url: value,
+            });
+            toast.success("Page added");
+            setAdding(false);
+          } catch (error) {
+            toast.error("Could not add page", {
+              description: extractErrorMessage(error),
+            });
+          }
+        }}
+      />
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Delete page?"
+        description={
+          deleting
+            ? `${deleting.url} moves to trash and leaves the registry. Its snapshots stay in the database. A future crawl, sitemap, or GSC sync that finds the URL again will NOT resurrect it automatically.`
+            : ""
+        }
+        variant="destructive"
+        confirmLabel="Delete page"
+        busy={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
+      />
     </main>
   );
 }

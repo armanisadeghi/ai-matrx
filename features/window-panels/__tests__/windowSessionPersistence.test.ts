@@ -23,6 +23,10 @@ import {
 } from "@/features/window-panels/persistence/windowSessionSerialization";
 import { traySlotRect } from "@/features/window-panels/constants/tray";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import {
+  closeAllInstancesOfOverlay,
+  closeOverlay,
+} from "@/lib/redux/slices/overlaySlice";
 
 const VIEWPORT = { width: 1280, height: 800 };
 const FULL_RECT = { x: 120, y: 80, width: 700, height: 520 };
@@ -136,6 +140,114 @@ describe("window preservation reducer", () => {
     expect(state.pendingRestores[session.sessionKey]).toBeUndefined();
   });
 
+  it("does not double-release a family-close slot shared by pending and live state", () => {
+    const first = restoredSession({
+      overlayId: "singleMessageWindow",
+      instanceId: "one",
+      sessionKey: "singleMessageWindow:one",
+      traySlot: 0,
+    });
+    const second = restoredSession({
+      overlayId: "singleMessageWindow",
+      instanceId: "two",
+      sessionKey: "singleMessageWindow:two",
+      traySlot: 1,
+    });
+    const survivor = restoredSession({
+      overlayId: "messagesWindow",
+      instanceId: "default",
+      sessionKey: "messagesWindow:default",
+      traySlot: 2,
+    });
+    let state = reducer(fresh(), hydrateAction([first, second, survivor]));
+    state = reducer(
+      state,
+      registerWindow({
+        id: "single-message-one",
+        initial: FULL_RECT,
+        persistence: preservation("singleMessageWindow", "one"),
+      }),
+    );
+
+    state = reducer(
+      state,
+      closeAllInstancesOfOverlay({ overlayId: "singleMessageWindow" }),
+    );
+    state = reducer(state, unregisterWindow("single-message-one"));
+
+    expect(state.trayCount).toBe(1);
+    expect(state.pendingRestores["messagesWindow:default"]?.traySlot).toBe(0);
+    expect(state.pendingRestores["messagesWindow:default"]?.renderRect).toEqual(
+      traySlotRect(0, VIEWPORT.width, VIEWPORT.height, 1),
+    );
+  });
+
+  it("releases a pending slot when a same-key live window does not own it", () => {
+    let state = reducer(
+      fresh(),
+      registerWindow({
+        id: "old-messages-window",
+        initial: FULL_RECT,
+        persistence: preservation("messagesWindow"),
+      }),
+    );
+    state = reducer(
+      state,
+      markWindowClosing({
+        overlayId: "messagesWindow",
+        instanceId: "default",
+      }),
+    );
+    state = reducer(state, hydrateAction([restoredSession()]));
+
+    expect(state.windows["old-messages-window"].traySlot).toBeNull();
+    expect(state.pendingRestores["messagesWindow:default"]?.traySlot).toBe(0);
+    expect(state.trayCount).toBe(1);
+
+    state = reducer(
+      state,
+      closeOverlay({ overlayId: "messagesWindow", instanceId: "default" }),
+    );
+    state = reducer(state, unregisterWindow("old-messages-window"));
+
+    expect(state.trayCount).toBe(0);
+    expect(state.pendingRestores).toEqual({});
+  });
+
+  it("releases an old live slot when the next same-key session owns another", () => {
+    let state = reducer(fresh(), hydrateAction([restoredSession()]));
+    state = reducer(
+      state,
+      registerWindow({
+        id: "old-minimized-window",
+        initial: FULL_RECT,
+        persistence: preservation("messagesWindow"),
+      }),
+    );
+    state = reducer(
+      state,
+      markWindowClosing({
+        overlayId: "messagesWindow",
+        instanceId: "default",
+      }),
+    );
+    state = reducer(
+      state,
+      hydrateAction([
+        restoredSession({ savedAt: 84, data: { conversationId: "next" } }),
+      ]),
+    );
+
+    expect(state.windows["old-minimized-window"].traySlot).toBe(0);
+    expect(state.pendingRestores["messagesWindow:default"]?.traySlot).toBe(1);
+    expect(state.trayCount).toBe(2);
+
+    state = reducer(state, unregisterWindow("old-minimized-window"));
+
+    expect(state.trayCount).toBe(1);
+    expect(state.pendingRestores["messagesWindow:default"]?.traySlot).toBe(0);
+  });
+
   it("lets a live manual or URL-opened instance beat late hydration", () => {
     let state = reducer(
       fresh(),
@@ -155,6 +267,48 @@ describe("window preservation reducer", () => {
     });
   });
 
+  it("stages the next identity behind a closing same-key window", () => {
+    let state = reducer(
+      fresh(),
+      registerWindow({
+        id: "messages-window",
+        initial: FULL_RECT,
+        persistence: {
+          ...preservation(),
+          data: { conversationId: "previous-identity" },
+        },
+      }),
+    );
+    state = reducer(
+      state,
+      markWindowClosing({
+        overlayId: "messagesWindow",
+        instanceId: "default",
+      }),
+    );
+    state = reducer(
+      state,
+      hydrateAction([
+        restoredSession({ data: { conversationId: "next-identity" } }),
+      ]),
+    );
+    expect(state.pendingRestores["messagesWindow:default"]).toBeDefined();
+
+    state = reducer(state, unregisterWindow("messages-window"));
+    state = reducer(
+      state,
+      registerWindow({
+        id: "messages-window",
+        initial: FULL_RECT,
+        persistence: preservation(),
+        viewport: VIEWPORT,
+      }),
+    );
+    expect(state.windows["messages-window"].persistence?.data).toEqual({
+      conversationId: "next-identity",
+    });
+  });
+
   it("uses overlayId plus instanceId as the multi-instance identity", () => {
     const one = restoredSession({
       overlayId: "singleMessageWindow",
@@ -170,6 +324,47 @@ describe("window preservation reducer", () => {
       "singleMessageWindow:one",
       "singleMessageWindow:two",
     ]);
+  });
+
+  it("preserves per-instance tray order independently of z-order", () => {
+    const first = restoredSession({
+      overlayId: "singleMessageWindow",
+      instanceId: "first",
+      windowId: "single-first",
+      traySlot: 0,
+      zIndex: 1010,
+    });
+    const second = restoredSession({
+      overlayId: "singleMessageWindow",
+      instanceId: "second",
+      windowId: "single-second",
+      traySlot: 1,
+      zIndex: 1001,
+    });
+    let state = reducer(fresh(), hydrateAction([first, second]));
+    expect(state.pendingRestores[first.sessionKey].traySlot).toBe(0);
+    expect(state.pendingRestores[second.sessionKey].traySlot).toBe(1);
+
+    state = reducer(
+      state,
+      registerWindow({
+        id: "single-first",
+        initial: FULL_RECT,
+        persistence: preservation("singleMessageWindow", "first"),
+        viewport: VIEWPORT,
+      }),
+    );
+    state = reducer(
+      state,
+      registerWindow({
+        id: "single-second",
+        initial: FULL_RECT,
+        persistence: preservation("singleMessageWindow", "second"),
+        viewport: VIEWPORT,
+      }),
+    );
+    expect(state.windows["single-first"].traySlot).toBe(0);
+    expect(state.windows["single-second"].traySlot).toBe(1);
   });
 
   it("reserves pending tray and z slots across lazy registration", () => {
@@ -429,6 +624,67 @@ describe("window workspace serialization", () => {
       width: 280,
       height: 180,
     });
+  });
+
+  it("enforces session-count and workspace-byte ceilings on hydration", () => {
+    const manySessions = Array.from({ length: 70 }, (_, index) =>
+      restoredSession({
+        overlayId: "singleMessageWindow",
+        instanceId: `instance-${index}`,
+        data: { conversationId: `conversation-${index}` },
+      }),
+    );
+    const countLimited = hydrateWindowWorkspace(
+      {
+        schemaVersion: WINDOW_WORKSPACE_SCHEMA_VERSION,
+        workspaceId: "workspace-1",
+        savedAt: 5,
+        sessions: manySessions,
+      },
+      VIEWPORT,
+    );
+    expect(countLimited.sessions).toHaveLength(64);
+
+    const oversized = hydrateWindowWorkspace(
+      {
+        schemaVersion: WINDOW_WORKSPACE_SCHEMA_VERSION,
+        workspaceId: "workspace-1",
+        savedAt: 5,
+        sessions: [
+          restoredSession({
+            data: { conversationId: "x".repeat(300_000) },
+          }),
+        ],
+      },
+      VIEWPORT,
+    );
+    expect(oversized.sessions).toEqual([]);
+    expect(
+      oversized.diagnostics.some(
+        (diagnostic) => diagnostic.code === "workspace-too-large",
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects tampered finite-domain semantic data", () => {
+    const result = hydrateWindowWorkspace(
+      {
+        schemaVersion: WINDOW_WORKSPACE_SCHEMA_VERSION,
+        workspaceId: "workspace-1",
+        savedAt: 5,
+        sessions: [
+          restoredSession({
+            overlayId: "shareModalWindow",
+            data: {
+              resourceType: "not-a-resource",
+              resourceId: "resource-1",
+            },
+          }),
+        ],
+      },
+      VIEWPORT,
+    );
+    expect(result.sessions).toEqual([]);
   });
 
   it("drops callbacks and cycles while retaining allowlisted JSON", () => {

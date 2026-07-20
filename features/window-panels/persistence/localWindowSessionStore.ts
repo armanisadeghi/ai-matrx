@@ -16,6 +16,7 @@ const MAX_WORKSPACES_PER_IDENTITY = 5;
 const INDEX_REFRESH_MS = 60 * 1000;
 const writeQueues = new Map<string, Promise<void>>();
 const runtimeId = randomWorkspaceId();
+const fallbackWorkspaceId = `fallback-${runtimeId}`;
 let leasedWorkspaceId: string | null = null;
 
 export interface LocalWindowWorkspaceRead {
@@ -64,14 +65,24 @@ export function getWindowWorkspaceId(): string {
     return workspaceId;
   } catch (error) {
     console.warn(
-      "[window-preservation] sessionStorage unavailable; using the tab fallback workspace.",
+      "[window-preservation] sessionStorage unavailable; using a document-local fallback. Refresh preservation is unavailable for this tab.",
       error,
     );
-    return "tab-fallback";
+    claimWorkspaceLease(fallbackWorkspaceId);
+    return fallbackWorkspaceId;
   }
 }
 
 function claimWorkspaceLease(workspaceId: string): void {
+  if (leasedWorkspaceId && leasedWorkspaceId !== workspaceId) {
+    const previousKey = `${LEASE_PREFIX}:${leasedWorkspaceId}`;
+    const previousLease = localStorageAdapter.read(previousKey);
+    const previousBody = previousLease?.body as
+      { runtimeId?: unknown } | undefined;
+    if (previousBody?.runtimeId === runtimeId) {
+      localStorageAdapter.remove(previousKey);
+    }
+  }
   leasedWorkspaceId = workspaceId;
   localStorageAdapter.write(`${LEASE_PREFIX}:${workspaceId}`, {
     version: 1,
@@ -80,14 +91,18 @@ function claimWorkspaceLease(workspaceId: string): void {
   });
 }
 
-if (typeof window !== "undefined") {
-  window.addEventListener("pagehide", () => {
-    if (!leasedWorkspaceId) return;
-    const key = `${LEASE_PREFIX}:${leasedWorkspaceId}`;
-    const lease = localStorageAdapter.read(key);
-    const body = lease?.body as { runtimeId?: unknown } | undefined;
-    if (body?.runtimeId === runtimeId) localStorageAdapter.remove(key);
-  });
+/** Event-driven lease heartbeat; no polling or background write loop. */
+export function renewWindowWorkspaceLease(workspaceId: string): void {
+  claimWorkspaceLease(workspaceId);
+}
+
+/** Release only the lease owned by this document/runtime. */
+export function releaseWindowWorkspaceLease(workspaceId: string): void {
+  const key = `${LEASE_PREFIX}:${workspaceId}`;
+  const lease = localStorageAdapter.read(key);
+  const body = lease?.body as { runtimeId?: unknown } | undefined;
+  if (body?.runtimeId === runtimeId) localStorageAdapter.remove(key);
+  if (leasedWorkspaceId === workspaceId) leasedWorkspaceId = null;
 }
 
 function sliceName(workspaceId: string): string {
@@ -101,6 +116,72 @@ function localStorageKey(identity: IdentityKey, workspaceId: string): string {
 interface WorkspaceIndexEntry {
   workspaceId: string;
   lastUsedAt: number;
+}
+
+function workspaceIndexEntryKey(
+  identity: IdentityKey,
+  workspaceId: string,
+): string {
+  return `${INDEX_PREFIX}:${identity.key}:${workspaceId}`;
+}
+
+function hasActiveWorkspaceLease(workspaceId: string, now: number): boolean {
+  const lease = localStorageAdapter.read(`${LEASE_PREFIX}:${workspaceId}`);
+  const body = lease?.body as { expiresAt?: unknown } | undefined;
+  return typeof body?.expiresAt === "number" && body.expiresAt > now;
+}
+
+function listWorkspaceIndexEntries(
+  identity: IdentityKey,
+): WorkspaceIndexEntry[] {
+  if (typeof window === "undefined") return [];
+  const prefix = `${INDEX_PREFIX}:${identity.key}:`;
+  const entries = new Map<string, WorkspaceIndexEntry>();
+  try {
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+      if (!key?.startsWith(prefix)) continue;
+      const record = localStorageAdapter.read(key);
+      const body = record?.body as Partial<WorkspaceIndexEntry> | undefined;
+      if (
+        typeof body?.workspaceId === "string" &&
+        typeof body.lastUsedAt === "number"
+      ) {
+        entries.set(body.workspaceId, {
+          workspaceId: body.workspaceId,
+          lastUsedAt: body.lastUsedAt,
+        });
+      }
+    }
+  } catch (error) {
+    console.warn(
+      "[window-preservation] Could not enumerate workspace index records; cleanup will retry on a later save.",
+      error,
+    );
+  }
+
+  // One-shot compatibility with the original shared-array index. Converting
+  // to one key per workspace removes cross-tab read/modify/write races.
+  const legacyKey = `${INDEX_PREFIX}:${identity.key}`;
+  const legacy = localStorageAdapter.read(legacyKey);
+  if (Array.isArray(legacy?.body)) {
+    (legacy.body as WorkspaceIndexEntry[]).forEach((row) => {
+      if (
+        row &&
+        typeof row.workspaceId === "string" &&
+        typeof row.lastUsedAt === "number" &&
+        !entries.has(row.workspaceId)
+      ) {
+        entries.set(row.workspaceId, row);
+        localStorageAdapter.write(
+          workspaceIndexEntryKey(identity, row.workspaceId),
+          { version: 1, identityKey: identity.key, body: row },
+        );
+      }
+    });
+    localStorageAdapter.remove(legacyKey);
+  }
+  return [...entries.values()];
 }
 
 function enqueueWorkspaceOperation(
@@ -129,17 +210,12 @@ function enqueueWorkspaceOperation(
 }
 
 function indexWorkspace(identity: IdentityKey, workspaceId: string): void {
-  const key = `${INDEX_PREFIX}:${identity.key}`;
-  const existing = localStorageAdapter.read(key);
   const now = Date.now();
-  const rows = Array.isArray(existing?.body)
-    ? (existing.body as WorkspaceIndexEntry[]).filter(
-        (row) =>
-          row &&
-          typeof row.workspaceId === "string" &&
-          typeof row.lastUsedAt === "number",
-      )
-    : [];
+  const key = workspaceIndexEntryKey(identity, workspaceId);
+  const existing = localStorageAdapter.read(key);
+  const existingBody = existing?.body as
+    Partial<WorkspaceIndexEntry> | undefined;
+  const rows = listWorkspaceIndexEntries(identity);
   const current = rows.find((row) => row.workspaceId === workspaceId);
   if (
     current &&
@@ -149,24 +225,44 @@ function indexWorkspace(identity: IdentityKey, workspaceId: string): void {
     return;
   }
   const nextRows = rows.filter((row) => row.workspaceId !== workspaceId);
-  nextRows.push({ workspaceId, lastUsedAt: now });
-  nextRows.sort((a, b) => b.lastUsedAt - a.lastUsedAt);
-  const retained = nextRows.slice(0, MAX_WORKSPACES_PER_IDENTITY);
-  nextRows.slice(MAX_WORKSPACES_PER_IDENTITY).forEach((stale) => {
-    localStorageAdapter.remove(localStorageKey(identity, stale.workspaceId));
-    localStorageAdapter.remove(`${LEASE_PREFIX}:${stale.workspaceId}`);
-    void enqueueWorkspaceOperation(identity.key, stale.workspaceId, () =>
-      deleteSlice(
-        identity.key,
-        sliceName(stale.workspaceId),
-        WINDOW_WORKSPACE_SCHEMA_VERSION,
-      ),
-    );
-  });
+  const currentEntry = {
+    workspaceId,
+    lastUsedAt:
+      typeof existingBody?.lastUsedAt === "number" &&
+      now - existingBody.lastUsedAt < INDEX_REFRESH_MS
+        ? existingBody.lastUsedAt
+        : now,
+  };
+  nextRows.push(currentEntry);
   localStorageAdapter.write(key, {
     version: 1,
     identityKey: identity.key,
-    body: retained,
+    body: currentEntry,
+  });
+  nextRows.sort((a, b) => b.lastUsedAt - a.lastUsedAt);
+  nextRows.slice(MAX_WORKSPACES_PER_IDENTITY).forEach((stale) => {
+    if (hasActiveWorkspaceLease(stale.workspaceId, now)) return;
+    void enqueueWorkspaceOperation(
+      identity.key,
+      stale.workspaceId,
+      async () => {
+        // Recheck inside the cross-tab workspace lock. A background tab may
+        // have become active after the index scan but before cleanup ran.
+        if (hasActiveWorkspaceLease(stale.workspaceId, Date.now())) return;
+        localStorageAdapter.remove(
+          localStorageKey(identity, stale.workspaceId),
+        );
+        localStorageAdapter.remove(`${LEASE_PREFIX}:${stale.workspaceId}`);
+        localStorageAdapter.remove(
+          workspaceIndexEntryKey(identity, stale.workspaceId),
+        );
+        await deleteSlice(
+          identity.key,
+          sliceName(stale.workspaceId),
+          WINDOW_WORKSPACE_SCHEMA_VERSION,
+        );
+      },
+    );
   });
 }
 
@@ -209,16 +305,16 @@ export async function loadLocalWindowWorkspace(
   let budgetTimer: ReturnType<typeof setTimeout> | undefined;
   const timeout = Symbol("idb-window-read-timeout");
   const idbRead = readSlice(
-      identity.key,
-      sliceName(workspaceId),
-      WINDOW_WORKSPACE_SCHEMA_VERSION,
-    ).catch((error: unknown) => {
-      console.warn(
-        "[window-preservation] IndexedDB read failed; using the synchronous mirror.",
-        error,
-      );
-      return null;
-    });
+    identity.key,
+    sliceName(workspaceId),
+    WINDOW_WORKSPACE_SCHEMA_VERSION,
+  ).catch((error: unknown) => {
+    console.warn(
+      "[window-preservation] IndexedDB read failed; using the synchronous mirror.",
+      error,
+    );
+    return null;
+  });
   const idbRecord = await Promise.race([
     idbRead,
     new Promise<typeof timeout>((resolve) => {
@@ -257,24 +353,28 @@ export function saveLocalWindowWorkspace(
 ): Promise<void> {
   claimWorkspaceLease(workspace.workspaceId);
   indexWorkspace(identity, workspace.workspaceId);
-  localStorageAdapter.write(localStorageKey(identity, workspace.workspaceId), {
+  const mirrorKey = localStorageKey(identity, workspace.workspaceId);
+  const mirrorWritten = localStorageAdapter.write(mirrorKey, {
     version: WINDOW_WORKSPACE_SCHEMA_VERSION,
     identityKey: identity.key,
     body: workspace,
   });
-  return enqueueWorkspaceOperation(
-    identity.key,
-    workspace.workspaceId,
-    () =>
-      writeSlice(
-        identity.key,
-        sliceName(workspace.workspaceId),
-        WINDOW_WORKSPACE_SCHEMA_VERSION,
-        workspace,
-      ),
+  if (!mirrorWritten) {
+    // Never leave a previously-valid mirror looking authoritative when the
+    // newer write only reached IDB (quota/disabled-storage partial failure).
+    localStorageAdapter.remove(mirrorKey);
+  }
+  return enqueueWorkspaceOperation(identity.key, workspace.workspaceId, () =>
+    writeSlice(
+      identity.key,
+      sliceName(workspace.workspaceId),
+      WINDOW_WORKSPACE_SCHEMA_VERSION,
+      workspace,
+    ),
   );
 }
 
 export function __resetWindowSessionStoreForTests(): void {
   writeQueues.clear();
+  leasedWorkspaceId = null;
 }

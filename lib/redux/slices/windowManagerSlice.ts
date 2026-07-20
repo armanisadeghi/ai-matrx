@@ -127,6 +127,8 @@ export interface WindowManagerState {
   nextZIndex: number;
   /** How many slots are currently occupied in the tray */
   trayCount: number;
+  /** Last viewport used to place tray cards; enables safe reflow on removal. */
+  trayViewport: { width: number; height: number } | null;
   /** Global visibility toggle — windows stay mounted but are visually hidden */
   windowsHidden: boolean;
   /**
@@ -154,8 +156,8 @@ export interface WindowManagerState {
 //  │                                                   ↕ MARGIN_BOTTOM      │
 //  └─────────────────────────────────────────────────────────────────────────┘
 //
-//  Row 0 starts at the bottom-right. Once a row is full, row 1 opens directly
-//  above it (separated by GAP_Y). Rows keep growing upward as needed.
+//  Row 0 starts at the bottom-right. Once full cards would exceed the viewport,
+//  every minimized window reflows into the bounded header-only overview grid.
 
 export const TRAY_CHIP_W = TRAY_CHIP_W_DESKTOP;
 export const TRAY_CHIP_H = TRAY_CHIP_H_DESKTOP;
@@ -172,10 +174,49 @@ const initialState: WindowManagerState = {
   pendingRestores: {},
   nextZIndex: BASE_Z,
   trayCount: 0,
+  trayViewport: null,
   windowsHidden: false,
   activePipWindowId: null,
   popoutCandidateId: null,
 };
+
+function recomputeAllTrayRects(state: WindowManagerState): void {
+  const viewport = state.trayViewport;
+  if (!viewport) return;
+  Object.values(state.windows).forEach((entry) => {
+    if (entry.traySlot === null) return;
+    entry.windowed = traySlotRect(
+      entry.traySlot,
+      viewport.width,
+      viewport.height,
+      state.trayCount,
+    );
+  });
+  Object.values(state.pendingRestores).forEach((session) => {
+    if (session.traySlot === null) return;
+    session.renderRect = traySlotRect(
+      session.traySlot,
+      viewport.width,
+      viewport.height,
+      state.trayCount,
+    );
+  });
+}
+
+function hasMatchingLiveTrayReservation(
+  state: WindowManagerState,
+  overlayId: string,
+  instanceId: string,
+  traySlot: number | null,
+): boolean {
+  if (traySlot === null) return false;
+  return Object.values(state.windows).some(
+    (entry) =>
+      entry.persistence?.overlayId === overlayId &&
+      entry.persistence.instanceId === instanceId &&
+      entry.traySlot === traySlot,
+  );
+}
 
 /**
  * Free a minimized slot and close the visual gap in the same reducer update.
@@ -201,6 +242,7 @@ function compactReservedTraySlot(
   });
 
   state.trayCount = Math.max(0, state.trayCount - 1);
+  if (state.trayCount === 0) state.trayViewport = null;
   Object.values(state.windows).forEach((entry) => {
     if (entry.traySlot === null || entry.traySlot <= freedSlot) return;
     const nextSlot = entry.traySlot - 1;
@@ -215,6 +257,7 @@ function compactReservedTraySlot(
     const nextRect = rectBySlot.get(nextSlot);
     if (nextRect) session.renderRect = nextRect;
   });
+  recomputeAllTrayRects(state);
 }
 
 function releaseTraySlot(state: WindowManagerState, win: WindowEntry): void {
@@ -252,7 +295,12 @@ const windowManagerSlice = createSlice({
         : undefined;
       const pendingRenderRect = pending
         ? pending.state === "minimized" && pending.traySlot !== null && viewport
-          ? traySlotRect(pending.traySlot, viewport.width, viewport.height)
+          ? traySlotRect(
+              pending.traySlot,
+              viewport.width,
+              viewport.height,
+              state.trayCount,
+            )
           : viewport
             ? clampRectToViewport(pending.windowedRect, viewport)
             : pending.renderRect
@@ -331,8 +379,7 @@ const windowManagerSlice = createSlice({
               a.sessionKey.localeCompare(b.sessionKey),
           )
           .map(
-            (session, index) =>
-              [session.sessionKey, trayBase + index] as const,
+            (session, index) => [session.sessionKey, trayBase + index] as const,
           ),
       );
       accepted
@@ -365,6 +412,11 @@ const windowManagerSlice = createSlice({
           };
         });
       state.trayCount = trayBase + acceptedTraySlots.size;
+      state.trayViewport = {
+        width: action.payload.viewportWidth,
+        height: action.payload.viewportHeight,
+      };
+      recomputeAllTrayRects(state);
       liveEntries.forEach((entry, index) => {
         entry.zIndex = BASE_Z + accepted.length + index;
       });
@@ -378,7 +430,16 @@ const windowManagerSlice = createSlice({
 
     discardPendingWindowSession(state, action: PayloadAction<string>) {
       const pending = state.pendingRestores[action.payload];
-      if (pending?.traySlot !== null && pending?.traySlot !== undefined) {
+      if (
+        pending?.traySlot !== null &&
+        pending?.traySlot !== undefined &&
+        !hasMatchingLiveTrayReservation(
+          state,
+          pending.overlayId,
+          pending.instanceId,
+          pending.traySlot,
+        )
+      ) {
         compactReservedTraySlot(state, pending.traySlot, pending.renderRect);
       }
       delete state.pendingRestores[action.payload];
@@ -426,13 +487,16 @@ const windowManagerSlice = createSlice({
         action.payload.instanceId,
       );
       const pending = state.pendingRestores[key];
-      const hasMatchingLiveWindow = Object.values(state.windows).some(
-        (entry) =>
-          entry.persistence?.overlayId === action.payload.overlayId &&
-          entry.persistence.instanceId === action.payload.instanceId,
-      );
+      const hasMatchingLiveReservation = pending
+        ? hasMatchingLiveTrayReservation(
+            state,
+            action.payload.overlayId,
+            action.payload.instanceId,
+            pending.traySlot,
+          )
+        : false;
       if (
-        !hasMatchingLiveWindow &&
+        !hasMatchingLiveReservation &&
         pending?.traySlot !== null &&
         pending?.traySlot !== undefined
       ) {
@@ -453,7 +517,14 @@ const windowManagerSlice = createSlice({
       Object.values(state.pendingRestores)
         .filter(
           (session) =>
-            session.traySlot !== null && session.traySlot !== undefined,
+            session.traySlot !== null &&
+            session.traySlot !== undefined &&
+            !hasMatchingLiveTrayReservation(
+              state,
+              session.overlayId,
+              session.instanceId,
+              session.traySlot,
+            ),
         )
         .sort((a, b) => (b.traySlot ?? -1) - (a.traySlot ?? -1))
         .forEach((session) => {
@@ -480,17 +551,25 @@ const windowManagerSlice = createSlice({
     unregisterWindow(state, action: PayloadAction<string>) {
       const win = state.windows[action.payload];
       if (!win) return;
-      const restoreStillPending = win.persistence
-        ? Boolean(
-            state.pendingRestores[
-              windowSessionKey(
-                win.persistence.overlayId,
-                win.persistence.instanceId,
-              )
-            ],
-          )
-        : false;
-      if (!restoreStillPending) releaseTraySlot(state, win);
+      const pending = win.persistence
+        ? state.pendingRestores[
+            windowSessionKey(
+              win.persistence.overlayId,
+              win.persistence.instanceId,
+            )
+          ]
+        : undefined;
+      const pendingOwnsLiveReservation = Boolean(
+        win.persistence &&
+        pending &&
+        hasMatchingLiveTrayReservation(
+          state,
+          win.persistence.overlayId,
+          win.persistence.instanceId,
+          pending.traySlot,
+        ),
+      );
+      if (!pendingOwnsLiveReservation) releaseTraySlot(state, win);
       // Free the PiP slot if this window held it
       if (state.activePipWindowId === action.payload) {
         state.activePipWindowId = null;
@@ -615,9 +694,9 @@ const windowManagerSlice = createSlice({
       const slot = state.trayCount;
       win.traySlot = slot;
       state.trayCount += 1;
-
-      win.windowed = traySlotRect(slot, viewportWidth, viewportHeight);
+      state.trayViewport = { width: viewportWidth, height: viewportHeight };
       win.state = "minimized";
+      recomputeAllTrayRects(state);
     },
 
     /**
@@ -629,6 +708,7 @@ const windowManagerSlice = createSlice({
       action: PayloadAction<{ viewportWidth: number; viewportHeight: number }>,
     ) {
       const { viewportWidth, viewportHeight } = action.payload;
+      state.trayViewport = { width: viewportWidth, height: viewportHeight };
       Object.values(state.windows).forEach((win) => {
         if (win.state !== "windowed") return;
         // Skip popped-out windows — they live in separate browser windows
@@ -638,9 +718,9 @@ const windowManagerSlice = createSlice({
         const slot = state.trayCount;
         win.traySlot = slot;
         state.trayCount += 1;
-        win.windowed = traySlotRect(slot, viewportWidth, viewportHeight);
         win.state = "minimized";
       });
+      recomputeAllTrayRects(state);
     },
 
     /** Update the windowed rect (called during drag or resize). */
@@ -768,26 +848,12 @@ const windowManagerSlice = createSlice({
       action: PayloadAction<{ viewportWidth: number; viewportHeight: number }>,
     ) {
       const { viewportWidth, viewportHeight } = action.payload;
+      state.trayViewport = { width: viewportWidth, height: viewportHeight };
       const minimized = Object.values(state.windows).filter(
         (w) => w.state === "minimized" && w.traySlot !== null,
       );
       if (minimized.length === 0) return;
-      minimized.forEach((win) => {
-        if (win.traySlot === null) return;
-        win.windowed = traySlotRect(
-          win.traySlot,
-          viewportWidth,
-          viewportHeight,
-        );
-      });
-      Object.values(state.pendingRestores).forEach((session) => {
-        if (session.state !== "minimized" || session.traySlot === null) return;
-        session.renderRect = traySlotRect(
-          session.traySlot,
-          viewportWidth,
-          viewportHeight,
-        );
-      });
+      recomputeAllTrayRects(state);
     },
 
     /**
@@ -812,6 +878,7 @@ const windowManagerSlice = createSlice({
         session.renderRect = session.windowedRect;
       });
       state.trayCount = 0;
+      state.trayViewport = null;
     },
 
     /** Toggle global visibility of all windows (they stay mounted). */
@@ -885,6 +952,7 @@ const windowManagerSlice = createSlice({
         const nextRect = rectBySlot.get(session.traySlot);
         if (nextRect) session.renderRect = nextRect;
       });
+      recomputeAllTrayRects(state);
     },
 
     /**
@@ -1042,11 +1110,14 @@ const windowManagerSlice = createSlice({
             session.overlayId === overlayId &&
             session.instanceId === instanceId,
         );
-        const hasMatchingLive = Object.values(state.windows).some(
-          (entry) =>
-            entry.persistence?.overlayId === overlayId &&
-            entry.persistence.instanceId === instanceId,
-        );
+        const hasMatchingLive = pending
+          ? hasMatchingLiveTrayReservation(
+              state,
+              overlayId,
+              instanceId,
+              pending.traySlot,
+            )
+          : false;
         if (!hasMatchingLive && pending?.traySlot != null) {
           compactReservedTraySlot(state, pending.traySlot, pending.renderRect);
         }
@@ -1065,7 +1136,16 @@ const windowManagerSlice = createSlice({
       (action) => action.type === "overlays/closeAllOverlays",
       (state) => {
         Object.values(state.pendingRestores)
-          .filter((session) => session.traySlot !== null)
+          .filter(
+            (session) =>
+              session.traySlot !== null &&
+              !hasMatchingLiveTrayReservation(
+                state,
+                session.overlayId,
+                session.instanceId,
+                session.traySlot,
+              ),
+          )
           .sort((a, b) => (b.traySlot ?? -1) - (a.traySlot ?? -1))
           .forEach((session) => {
             if (session.traySlot !== null) {
@@ -1094,7 +1174,14 @@ const windowManagerSlice = createSlice({
         Object.values(state.pendingRestores)
           .filter(
             (session) =>
-              session.overlayId === overlayId && session.traySlot !== null,
+              session.overlayId === overlayId &&
+              session.traySlot !== null &&
+              !hasMatchingLiveTrayReservation(
+                state,
+                session.overlayId,
+                session.instanceId,
+                session.traySlot,
+              ),
           )
           .sort((a, b) => (b.traySlot ?? -1) - (a.traySlot ?? -1))
           .forEach((session) => {
@@ -1107,7 +1194,8 @@ const windowManagerSlice = createSlice({
             }
           });
         Object.entries(state.pendingRestores).forEach(([key, session]) => {
-          if (session.overlayId === overlayId) delete state.pendingRestores[key];
+          if (session.overlayId === overlayId)
+            delete state.pendingRestores[key];
         });
         Object.values(state.windows).forEach((entry) => {
           if (entry.persistence?.overlayId === overlayId) {

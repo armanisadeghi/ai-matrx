@@ -8,6 +8,7 @@ import type {
   WorkspaceCostMode,
   WorkspaceCostRow,
 } from "@/features/marketing/data/operations-types";
+import { assertFound } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
@@ -114,8 +115,8 @@ export async function getBatch(
     .eq("id", batchId)
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
-    .single();
-  return assertData(response.data, response.error);
+    .maybeSingle();
+  return assertFound(response.data, response.error, "batch");
 }
 
 /** List execution units for one batch and attach bounded per-item costs. */

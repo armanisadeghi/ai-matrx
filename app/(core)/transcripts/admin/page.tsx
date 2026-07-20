@@ -358,13 +358,6 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(dev)/demos/general/voice/tts-with-controls/page.dev.tsx",
     },
     {
-      url: "/demos/tests/audio-recorder-test",
-      label: "Audio recorder test suite",
-      description:
-        "Multiple recording test routes under audio-recorder-test/*.",
-      filePath: "app/(dev)/demos/tests/audio-recorder-test/",
-    },
-    {
       url: "/demos/feature-tests/microphone-icon-button",
       label: "Microphone icon button",
       description: "UI test for the mic button.",

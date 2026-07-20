@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -206,7 +206,10 @@ export function SectionCard({
   className,
 }: {
   title: string;
-  action?: { label: string; href: string };
+  /** Link action (`href`) or in-place action (`onClick`). */
+  action?:
+    | { label: string; href: string }
+    | { label: string; onClick: () => void };
   children: React.ReactNode;
   className?: string;
 }) {
@@ -221,7 +224,7 @@ export function SectionCard({
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </h2>
-        {action ? (
+        {action && "href" in action ? (
           <Link
             href={action.href}
             className="inline-flex items-center gap-1 text-xs font-medium text-primary"
@@ -229,6 +232,15 @@ export function SectionCard({
             {action.label}
             <ArrowRight className="h-3 w-3" />
           </Link>
+        ) : action ? (
+          <button
+            type="button"
+            onClick={action.onClick}
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary"
+          >
+            {action.label}
+            <Plus className="h-3 w-3" />
+          </button>
         ) : null}
       </div>
       {children}

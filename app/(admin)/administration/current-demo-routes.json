@@ -660,36 +660,6 @@
                 ]
             }
         },
-        "audio-recorder-test": {
-            "_files": [
-                "config.ts",
-                "layout.tsx",
-                "page.tsx"
-            ],
-            "combined-page": {
-                "_files": [
-                    "page.tsx"
-                ]
-            },
-            "hooks": {
-                "_files": [
-                    "useRecorder.ts",
-                    "useRecorderBase.ts",
-                    "useVideoNotes.ts",
-                    "useVoiceNotes.ts"
-                ]
-            },
-            "initial": {
-                "_files": [
-                    "page.tsx"
-                ]
-            },
-            "recording-management": {
-                "_files": [
-                    "page.tsx"
-                ]
-            }
-        },
         "backup": {
             "_files": [
                 "page-backup-hardcode.tsx",
@@ -1085,12 +1055,6 @@
                     "sample-flashcards.ts"
                 ]
             }
-        },
-        "metadata-test": {
-            "_files": [
-                "meta-calculator.tsx",
-                "page.tsx"
-            ]
         },
         "modals": {
             "_files": [

@@ -613,7 +613,6 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       resourceType: entity.resourceType,
       resourceId: entity.id,
       resourceName: entity.title,
-      isOwner: entity.isOwner ?? false,
     });
   };
   const handleInspectValues = () => {

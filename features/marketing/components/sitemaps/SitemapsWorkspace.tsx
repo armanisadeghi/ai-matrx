@@ -4,18 +4,24 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  CirclePause,
+  CirclePlay,
   ExternalLink,
   FileCode2,
   Loader2,
   Map as MapIcon,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   marketingKeys,
+  useDeleteSitemap,
+  useSetSitemapActive,
   useSitemapCoverage,
   useSitemaps,
 } from "@/features/marketing/data/hooks";
@@ -38,6 +44,38 @@ export function SitemapsWorkspace() {
   const sitemaps = useSitemaps(site.id);
   const coverage = useSitemapCoverage(site.id);
   const [syncing, setSyncing] = useState(false);
+  const setActiveMutation = useSetSitemapActive(site.id);
+  const deleteMutation = useDeleteSitemap(site.id);
+  const [deleting, setDeleting] = useState<SiteSitemap | null>(null);
+
+  const toggleActive = async (sitemap: SiteSitemap) => {
+    try {
+      await setActiveMutation.mutateAsync({
+        sitemapId: sitemap.id,
+        isActive: !sitemap.is_active,
+      });
+      toast.success(
+        sitemap.is_active ? "Sitemap deactivated" : "Sitemap activated",
+      );
+    } catch (error) {
+      toast.error("Could not update sitemap", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteMutation.mutateAsync(deleting.id);
+      toast.success("Sitemap deleted");
+      setDeleting(null);
+    } catch (error) {
+      toast.error("Could not delete sitemap", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
 
   const runSync = async () => {
     setSyncing(true);
@@ -158,12 +196,30 @@ export function SitemapsWorkspace() {
                       ? router.push(`${sitePath}/sitemaps/${sitemap.id}`)
                       : undefined
                   }
+                  onToggleActive={() => void toggleActive(sitemap)}
+                  onDelete={() => setDeleting(sitemap)}
+                  mutating={setActiveMutation.isPending}
                 />
               ))}
             </ul>
           </section>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Delete sitemap?"
+        description={
+          deleting
+            ? `${deleting.url} and its page-membership evidence move to trash. Canonical pages stay in the registry. A future sync that re-discovers this sitemap re-creates it.`
+            : ""
+        }
+        variant="destructive"
+        confirmLabel="Delete sitemap"
+        busy={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
+      />
     </main>
   );
 }
@@ -171,9 +227,15 @@ export function SitemapsWorkspace() {
 function SitemapRow({
   sitemap,
   onOpen,
+  onToggleActive,
+  onDelete,
+  mutating,
 }: {
   sitemap: SiteSitemap;
   onOpen: () => void;
+  onToggleActive: () => void;
+  onDelete: () => void;
+  mutating: boolean;
 }) {
   const isIndex = sitemap.kind === "sitemapindex";
   const healthy =
@@ -214,6 +276,11 @@ function SitemapRow({
       <Badge variant={isIndex ? "default" : "outline"} className="text-[10px]">
         {isIndex ? `Index · ${sitemap.child_count ?? 0} children` : "URL set"}
       </Badge>
+      {!sitemap.is_active ? (
+        <Badge variant="secondary" className="text-[10px]">
+          Inactive
+        </Badge>
+      ) : null}
       {!isIndex ? (
         <span className="w-20 text-right font-mono text-xs tabular-nums">
           {sitemap.url_count?.toLocaleString() ?? "—"} URLs
@@ -237,6 +304,33 @@ function SitemapRow({
       >
         <ExternalLink className="h-3.5 w-3.5" />
       </a>
+      <button
+        type="button"
+        title={sitemap.is_active ? "Deactivate sitemap" : "Activate sitemap"}
+        disabled={mutating}
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleActive();
+        }}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+      >
+        {sitemap.is_active ? (
+          <CirclePause className="h-3.5 w-3.5" />
+        ) : (
+          <CirclePlay className="h-3.5 w-3.5" />
+        )}
+      </button>
+      <button
+        type="button"
+        title="Delete sitemap"
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete();
+        }}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
     </li>
   );
 }

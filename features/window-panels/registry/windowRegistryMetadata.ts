@@ -25,6 +25,7 @@ import type {
   InstanceMode,
 } from "./windowRegistryTypes";
 import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { RESOURCE_TYPES } from "@/utils/permissions/registry";
 
 // Re-export types so callers can import them from one place
 export type {
@@ -825,6 +826,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     preservation: {
       dataKeys: ["resourceType", "resourceId", "resourceName"],
       requiredDataKeys: ["resourceType", "resourceId"],
+      allowedDataValues: { resourceType: RESOURCE_TYPES },
     },
   },
 
@@ -1047,10 +1049,9 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // "quick-ai-results" sheet that pointed at the deprecated prompts system.
   //
   // 2026-05-05 RENAME: previously slug "quick-ai-results" / overlayId
-  // "quickAIResults" / file AIResultsWindow.tsx. Existing window_sessions
-  // rows are migrated automatically by WindowPersistenceManager
-  // (SLUG_MIGRATIONS map). New code MUST use "quick-chat-history" /
-  // "quickChatHistory".
+  // "quickAIResults" / file AIResultsWindow.tsx. The former cloud-row
+  // migration path is retired with window_sessions; new code and local
+  // workspaces use "quick-chat-history" / "quickChatHistory" only.
   {
     slug: "quick-chat-history",
     overlayId: "quickChatHistory",

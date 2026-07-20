@@ -54,7 +54,7 @@ interface AgentShortcutQuickCreateWindowProps {
   isOpen: boolean;
   onClose: () => void;
   agentId?: string | null;
-  /** Initial tab to open on, restored from `window_sessions.data.activeTab`. */
+  /** Initial tab supplied by the opener's overlay data. */
   initialActiveTab?: QuickCreateTab;
 }
 

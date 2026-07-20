@@ -13,6 +13,10 @@ import type {
   CreateSiteInput,
   DiscoveredItem,
   DiscoveredItemStatus,
+  CreateBrandAssetInput,
+  CreateBusinessFactInput,
+  CreateManualPageInput,
+  CreatePropertyInput,
   HomepageObservedMeta,
   MarketingBrand,
   MarketingPage,
@@ -29,12 +33,20 @@ import type {
   SiteListRow,
   SiteOverviewMetrics,
   SiteScreenshot,
+  UpdateBrandAssetInput,
   UpdateBrandInput,
+  UpdateBusinessFactInput,
   UpdatePageIntentInput,
+  UpdatePropertyInput,
   UpdateSiteIdentityInput,
 } from "@/features/marketing/types";
 import { isJsonRecord } from "@/features/marketing/types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
+import {
+  normalisePageUrl,
+  pagePathOf,
+  pageUrlHash,
+} from "@/features/marketing/lib/page-url";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
@@ -88,6 +100,25 @@ function visibilityFilter(
 function assertData<T>(data: T | null, error: unknown): T {
   if (error) throw error;
   if (data === null) throw new Error("Supabase returned no data.");
+  return data;
+}
+
+/**
+ * Resolve a single-entity read whose row can be soft-deleted out from under an
+ * open view (delete in another tab/session racing a refetch). Callers MUST use
+ * `.maybeSingle()` — never `.single()`, whose 0-row PGRST116 leaks a red
+ * "Cannot coerce the result…" error into the inspector instead of this
+ * human-readable one.
+ */
+export function assertFound<T>(
+  data: T | null,
+  error: unknown,
+  entity: string,
+): T {
+  if (error) throw error;
+  if (data === null) {
+    throw new Error(`This ${entity} was deleted or is no longer accessible.`);
+  }
   return data;
 }
 
@@ -220,8 +251,8 @@ export async function getSite(
     .eq("id", siteId)
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
-    .single();
-  return assertData(response.data, response.error);
+    .maybeSingle();
+  return assertFound(response.data, response.error, "site");
 }
 
 export async function getSiteOverview(
@@ -338,7 +369,42 @@ export async function createSite(
     p_settings: {},
     p_integrations: {},
     p_visibility: "private",
+    // An explicit brand ALWAYS wins; name-match-or-create only when absent.
+    ...(input.brandId ? { p_brand_id: input.brandId } : {}),
   });
+  return assertData(response.data, response.error);
+}
+
+/**
+ * Reassign a site (and its website property row) to another same-org brand
+ * via `web.move_site_brand` — the repair path for mis-attached sites.
+ */
+export async function moveSiteBrand(
+  siteId: string,
+  brandId: string,
+): Promise<MarketingSite> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  ).rpc("move_site_brand", { p_site_id: siteId, p_brand_id: brandId });
+  return assertData(response.data, response.error);
+}
+
+/** Light brand options (id/name) for one organization, name-ordered. */
+export async function listBrandOptions(
+  organizationId: string,
+  signal?: AbortSignal,
+): Promise<Array<Pick<MarketingBrand, "id" | "name">>> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("brand")
+    .select("id, name")
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null)
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .limit(1000)
+    .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error);
 }
 
@@ -784,8 +850,8 @@ export async function getPageWorkspace(
     .eq("id", pageId)
     .is("deleted_at", null)
     .abortSignal(abortSignal)
-    .single();
-  const page = assertData(pageResponse.data, pageResponse.error);
+    .maybeSingle();
+  const page = assertFound(pageResponse.data, pageResponse.error, "page");
 
   const [snapshotResponse, scoreResponse, findingsResponse] = await Promise.all(
     [
@@ -852,8 +918,14 @@ export async function updatePageIntent(
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, target_keyword, meta_title_desired, meta_description_desired, latest_snapshot_id",
     )
-    .single();
-  return assertData(response.data, response.error);
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) {
+    throw new Error(
+      "This page changed in another session. Reload and try again.",
+    );
+  }
+  return response.data;
 }
 
 export async function listSnapshots(
@@ -926,8 +998,8 @@ export async function getSnapshot(
     .eq("page_id", pageId)
     .eq("id", snapshotId)
     .abortSignal(signal ?? new AbortController().signal)
-    .single();
-  return assertData(response.data, response.error);
+    .maybeSingle();
+  return assertFound(response.data, response.error, "snapshot");
 }
 
 export async function listCrawls(
@@ -992,8 +1064,8 @@ export async function getCrawl(
     .eq("id", crawlId)
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
-    .single();
-  return assertData(response.data, response.error);
+    .maybeSingle();
+  return assertFound(response.data, response.error, "crawl session");
 }
 
 export async function listCrawlUrls(
@@ -1447,8 +1519,8 @@ export async function getBrand(
     .eq("id", brandId)
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
-    .single();
-  return assertData(response.data, response.error);
+    .maybeSingle();
+  return assertFound(response.data, response.error, "brand");
 }
 
 export async function listBrandSites(
@@ -1567,8 +1639,8 @@ export async function getSitemap(
     .eq("id", sitemapId)
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
-    .single();
-  return assertData(response.data, response.error);
+    .maybeSingle();
+  return assertFound(response.data, response.error, "sitemap");
 }
 
 export type SitemapPagesFilter = "all" | "never_crawled";
@@ -1773,6 +1845,356 @@ export async function deleteSite(siteId: string): Promise<void> {
     .from("site")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", siteId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+// ============================================================================
+// Pages — manual registration + soft-delete
+// ============================================================================
+
+/**
+ * Manually register a canonical page (provenance 'manual'). Normalizes and
+ * hashes the URL exactly like the scraper so `(site_id, url_hash)` dedupes
+ * against sitemap/GSC/crawl-written rows.
+ */
+export async function createManualPage(
+  input: CreateManualPageInput,
+): Promise<MarketingPage> {
+  const normalized = normalisePageUrl(input.url);
+  const digest = await pageUrlHash(normalized);
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("page")
+    .insert({
+      organization_id: input.organizationId,
+      site_id: input.siteId,
+      url: normalized,
+      url_hash: digest,
+      path: pagePathOf(normalized),
+      provenance: "manual",
+      status: "active",
+    })
+    .select(PAGE_COLUMNS)
+    .single();
+  if (response.error?.code === "23505") {
+    throw new Error(`${normalized} is already in this site's page registry.`);
+  }
+  return assertData(response.data, response.error);
+}
+
+/** Soft-delete a canonical page (its snapshots and evidence stay). */
+export async function deletePage(
+  siteId: string,
+  pageId: string,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("page")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("site_id", siteId)
+    .eq("id", pageId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+// ============================================================================
+// Sitemaps — activation + soft-delete (documents are user-manageable;
+// page_sitemap membership evidence is system-written and only cascades here)
+// ============================================================================
+
+/** Toggle whether a sitemap document participates in syncs/coverage. */
+export async function setSitemapActive(
+  siteId: string,
+  sitemapId: string,
+  isActive: boolean,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("sitemap")
+    .update({ is_active: isActive })
+    .eq("site_id", siteId)
+    .eq("id", sitemapId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+/**
+ * Soft-delete a sitemap document AND its membership evidence — orphaned
+ * `page_sitemap` rows would keep counting pages as "in a sitemap" that no
+ * longer exists. A future sync that re-discovers the document re-creates both.
+ */
+export async function deleteSitemap(
+  siteId: string,
+  sitemapId: string,
+): Promise<void> {
+  const db = await authenticatedWebDb(supabase);
+  const now = new Date().toISOString();
+  const memberships = await db
+    .from("page_sitemap")
+    .update({ deleted_at: now })
+    .eq("site_id", siteId)
+    .eq("sitemap_id", sitemapId)
+    .is("deleted_at", null);
+  if (memberships.error) throw memberships.error;
+  const response = await db
+    .from("sitemap")
+    .update({ deleted_at: now })
+    .eq("site_id", siteId)
+    .eq("id", sitemapId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+// ============================================================================
+// Discovery inbox — delete + un-dismiss (review verbs live above)
+// ============================================================================
+
+/** Soft-delete a discovered candidate outright (any status). */
+export async function deleteDiscoveredItem(itemId: string): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("discovered_item")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", itemId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+/** Return a dismissed candidate to the pending queue. */
+export async function undismissDiscoveredItem(itemId: string): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("discovered_item")
+    .update({ status: "pending", reviewed_at: null, reviewed_by: null })
+    .eq("id", itemId)
+    .eq("status", "dismissed");
+  if (response.error) throw response.error;
+}
+
+// ============================================================================
+// Properties — full CRUD (socials and other brand presences)
+// ============================================================================
+
+export async function createProperty(
+  input: CreatePropertyInput,
+): Promise<BrandProperty> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("property")
+    .insert({
+      organization_id: input.organizationId,
+      brand_id: input.brandId,
+      kind: input.kind,
+      url: input.url,
+      handle: input.handle,
+      display_name: input.displayName,
+      status: input.status,
+    })
+    .select(PROPERTY_COLUMNS)
+    .single();
+  return assertData(response.data, response.error);
+}
+
+export async function updateProperty(
+  input: UpdatePropertyInput,
+): Promise<BrandProperty> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("property")
+    .update(input.patch)
+    .eq("id", input.propertyId)
+    .eq("version", input.expectedVersion)
+    .is("deleted_at", null)
+    .select(PROPERTY_COLUMNS)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) {
+    throw new Error(
+      "This property changed in another session. Reload and try again.",
+    );
+  }
+  return response.data;
+}
+
+export async function deleteProperty(propertyId: string): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("property")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", propertyId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+// ============================================================================
+// Brand assets — full CRUD (manual create by URL; promotion lives above)
+// ============================================================================
+
+export async function createBrandAsset(
+  input: CreateBrandAssetInput,
+): Promise<BrandAsset> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("brand_asset")
+    .insert({
+      organization_id: input.organizationId,
+      brand_id: input.brandId,
+      kind: input.kind,
+      source_url: input.sourceUrl,
+      title: input.title,
+      notes: input.notes,
+      is_primary: input.isPrimary,
+      source: "manual",
+      confirmed_at: new Date().toISOString(),
+    })
+    .select(BRAND_ASSET_COLUMNS)
+    .single();
+  return assertData(response.data, response.error);
+}
+
+export async function updateBrandAsset(
+  input: UpdateBrandAssetInput,
+): Promise<BrandAsset> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("brand_asset")
+    .update(input.patch)
+    .eq("id", input.assetId)
+    .eq("version", input.expectedVersion)
+    .is("deleted_at", null)
+    .select(BRAND_ASSET_COLUMNS)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) {
+    throw new Error(
+      "This asset changed in another session. Reload and try again.",
+    );
+  }
+  return response.data;
+}
+
+export async function deleteBrandAsset(assetId: string): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("brand_asset")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", assetId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+// ============================================================================
+// Business facts — full CRUD (manual create; promotion lives above)
+// ============================================================================
+
+function factValuePayload(value: string): { [key: string]: string } {
+  return /^https?:\/\//i.test(value.trim())
+    ? { url: value.trim() }
+    : { text: value.trim() };
+}
+
+export async function createBusinessFact(
+  input: CreateBusinessFactInput,
+): Promise<BusinessFact> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("business_fact")
+    .insert({
+      organization_id: input.organizationId,
+      brand_id: input.brandId,
+      kind: input.kind,
+      label: input.label,
+      value: factValuePayload(input.value),
+      source: "manual",
+      confirmed_at: new Date().toISOString(),
+    })
+    .select(BUSINESS_FACT_COLUMNS)
+    .single();
+  return assertData(response.data, response.error);
+}
+
+export async function updateBusinessFact(
+  input: UpdateBusinessFactInput,
+): Promise<BusinessFact> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("business_fact")
+    .update({
+      kind: input.kind,
+      label: input.label,
+      value: factValuePayload(input.value),
+    })
+    .eq("id", input.factId)
+    .eq("version", input.expectedVersion)
+    .is("deleted_at", null)
+    .select(BUSINESS_FACT_COLUMNS)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) {
+    throw new Error(
+      "This fact changed in another session. Reload and try again.",
+    );
+  }
+  return response.data;
+}
+
+export async function deleteBusinessFact(factId: string): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("business_fact")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", factId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+// ============================================================================
+// Screenshots + crawl sessions — soft-delete of stored evidence records
+// ============================================================================
+
+/** Soft-delete a stored screenshot (the canonical file record remains). */
+export async function deleteScreenshot(
+  siteId: string,
+  screenshotId: string,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("screenshot")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("site_id", siteId)
+    .eq("id", screenshotId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+/** Soft-delete a crawl session (its URL ledger and events stay attached). */
+export async function deleteCrawlSession(
+  siteId: string,
+  crawlId: string,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("crawl_session")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("site_id", siteId)
+    .eq("id", crawlId)
     .is("deleted_at", null);
   if (response.error) throw response.error;
 }

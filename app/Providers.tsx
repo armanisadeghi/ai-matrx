@@ -47,7 +47,7 @@ import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 // persistence silently disappears. This also hydrates the identity/tab-scoped
 // local workspace cache on session boot and runs the idle GC sweep. Keep this
 // OUTSIDE DeferredSingletons
-// so the context is available to UnifiedOverlayController's children
+// so the context is available to OverlayController's children
 // and so hydration begins as soon as the user is authenticated rather
 // than waiting on idle. Imports only metadata + local-cache helpers — none
 // of the heavy window-panel core files are pulled into this graph.
@@ -211,7 +211,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 <AudioSessionHost />
                                 {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
-                                  the UnifiedOverlayController — no host needed
+                                  the OverlayController — no host needed
                                   here. Anywhere in the app:
                                     import { openFilePreview } from
                                       "@/features/files/components/preview/openFilePreview";

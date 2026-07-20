@@ -18,6 +18,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BrandEditorDialog } from "@/features/marketing/components/brands/BrandEditorDialog";
+import { BrandAssetEditorDialog } from "@/features/marketing/components/brands/BrandAssetEditorDialog";
+import { BusinessFactEditorDialog } from "@/features/marketing/components/brands/BusinessFactEditorDialog";
+import { PropertyEditorDialog } from "@/features/marketing/components/brands/PropertyEditorDialog";
+import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import {
@@ -27,6 +31,10 @@ import {
   useBrandSites,
   useBusinessFacts,
   useDeleteBrand,
+  useDeleteBrandAsset,
+  useDeleteBusinessFact,
+  useDeleteProperty,
+  useDeleteSite,
   usePendingDiscoveredCount,
 } from "@/features/marketing/data/hooks";
 import {
@@ -41,8 +49,44 @@ import {
 } from "@/features/marketing/components/shared/SiteConnectionChips";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isJsonRecord } from "@/features/marketing/types";
-import type { BrandAsset, BusinessFact } from "@/features/marketing/types";
+import type {
+  BrandAsset,
+  BrandProperty,
+  BusinessFact,
+  MarketingSite,
+} from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+
+/** Compact icon-button used by every cockpit row's edit/delete actions. */
+function RowActionButton({
+  title,
+  destructive,
+  onClick,
+  children,
+}: {
+  title: string;
+  destructive?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className={
+        destructive
+          ? "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          : "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+      }
+    >
+      {children}
+    </button>
+  );
+}
 
 function factValueText(fact: BusinessFact): string {
   if (isJsonRecord(fact.value)) {
@@ -64,8 +108,30 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const router = useRouter();
   const brand = useBrand(brandId);
   const deleteMutation = useDeleteBrand();
+  const deleteSiteMutation = useDeleteSite();
+  const deletePropertyMutation = useDeleteProperty();
+  const deleteAssetMutation = useDeleteBrandAsset();
+  const deleteFactMutation = useDeleteBusinessFact();
   const [editorOpen, setEditorOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [editingSite, setEditingSite] = useState<MarketingSite | null>(null);
+  const [deletingSite, setDeletingSite] = useState<MarketingSite | null>(null);
+  const [propertyEditor, setPropertyEditor] = useState<{
+    open: boolean;
+    property: BrandProperty | null;
+  }>({ open: false, property: null });
+  const [deletingProperty, setDeletingProperty] =
+    useState<BrandProperty | null>(null);
+  const [assetEditor, setAssetEditor] = useState<{
+    open: boolean;
+    asset: BrandAsset | null;
+  }>({ open: false, asset: null });
+  const [deletingAsset, setDeletingAsset] = useState<BrandAsset | null>(null);
+  const [factEditor, setFactEditor] = useState<{
+    open: boolean;
+    fact: BusinessFact | null;
+  }>({ open: false, fact: null });
+  const [deletingFact, setDeletingFact] = useState<BusinessFact | null>(null);
   const sites = useBrandSites(brandId);
   const properties = useBrandProperties(brandId);
   const assets = useBrandAssets(brandId);
@@ -198,7 +264,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
 
           <SectionCard
             title="Websites"
-            action={{ label: "Add site", href: marketingRoutes.newSite() }}
+            action={{ label: "Add site", href: marketingRoutes.newSite(brandId) }}
           >
             {websiteSites.length === 0 ? (
               <p className="p-4 text-xs text-muted-foreground">
@@ -224,6 +290,21 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                       </p>
                     </div>
                     <SiteConnectionChips site={site} />
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <RowActionButton
+                        title="Edit site"
+                        onClick={() => setEditingSite(site)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </RowActionButton>
+                      <RowActionButton
+                        title="Delete site"
+                        destructive
+                        onClick={() => setDeletingSite(site)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </RowActionButton>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -231,13 +312,20 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           </SectionCard>
 
           <div className="grid gap-3 lg:grid-cols-2">
-            <SectionCard title="Social profiles & other properties">
+            <SectionCard
+              title="Social profiles & other properties"
+              action={{
+                label: "Add property",
+                onClick: () =>
+                  setPropertyEditor({ open: true, property: null }),
+              }}
+            >
               {socialProperties.length === 0 ? (
                 <div className="flex flex-col items-start gap-2 p-4">
                   <p className="text-xs text-muted-foreground">
-                    No social properties yet. Site initialization discovers
-                    profile links; confirming them will register the property
-                    here.
+                    No social properties yet. Add one directly, or initialize a
+                    site — discovered profile links register here once
+                    confirmed.
                   </p>
                 </div>
               ) : (
@@ -251,6 +339,9 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium capitalize text-foreground">
                           {property.kind.replace(/_/g, " ")}
+                          {property.display_name
+                            ? ` · ${property.display_name}`
+                            : ""}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {property.url || property.handle || "—"}
@@ -266,17 +357,41 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       ) : null}
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        <RowActionButton
+                          title="Edit property"
+                          onClick={() =>
+                            setPropertyEditor({ open: true, property })
+                          }
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </RowActionButton>
+                        <RowActionButton
+                          title="Delete property"
+                          destructive
+                          onClick={() => setDeletingProperty(property)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </RowActionButton>
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
             </SectionCard>
 
-            <SectionCard title="Business facts">
+            <SectionCard
+              title="Business facts"
+              action={{
+                label: "Add fact",
+                onClick: () => setFactEditor({ open: true, fact: null }),
+              }}
+            >
               {(facts.data ?? []).length === 0 ? (
                 <p className="p-4 text-xs text-muted-foreground">
-                  No confirmed facts yet. Review the discovery inbox to confirm
-                  phones, emails, addresses, and taglines.
+                  No confirmed facts yet. Add one directly, or review the
+                  discovery inbox to confirm phones, emails, addresses, and
+                  taglines.
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
@@ -294,6 +409,21 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                           {factValueText(fact)}
                         </p>
                       </div>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        <RowActionButton
+                          title="Edit fact"
+                          onClick={() => setFactEditor({ open: true, fact })}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </RowActionButton>
+                        <RowActionButton
+                          title="Delete fact"
+                          destructive
+                          onClick={() => setDeletingFact(fact)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </RowActionButton>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -301,14 +431,20 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             </SectionCard>
           </div>
 
-          <SectionCard title="Brand assets">
+          <SectionCard
+            title="Brand assets"
+            action={{
+              label: "Add asset",
+              onClick: () => setAssetEditor({ open: true, asset: null }),
+            }}
+          >
             {(assets.data ?? []).length === 0 ? (
               <div className="flex min-h-28 flex-col items-center justify-center gap-2 p-4 text-center">
                 <Images className="h-6 w-6 text-muted-foreground" />
                 <p className="max-w-md text-xs text-muted-foreground">
-                  No confirmed assets yet. Initialize a site, then confirm
-                  logos, favicons, and imagery from its discovery inbox — they
-                  become the brand's asset library here.
+                  No confirmed assets yet. Add one directly, or initialize a
+                  site and confirm logos, favicons, and imagery from its
+                  discovery inbox — they become the brand's asset library here.
                 </p>
               </div>
             ) : (
@@ -318,9 +454,9 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   return (
                     <li
                       key={asset.id}
-                      className="overflow-hidden rounded-md border border-border bg-muted/20"
+                      className="group overflow-hidden rounded-md border border-border bg-muted/20"
                     >
-                      <div className="flex aspect-square items-center justify-center bg-card p-2">
+                      <div className="relative flex aspect-square items-center justify-center bg-card p-2">
                         {preview ? (
                           // Confirmed assets reference the brand's own public URLs.
                           // eslint-disable-next-line @next/next/no-img-element
@@ -333,6 +469,21 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                         ) : (
                           <Globe2 className="h-6 w-6 text-muted-foreground/50" />
                         )}
+                        <div className="absolute right-1 top-1 flex items-center gap-0.5 rounded-md bg-card/90 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+                          <RowActionButton
+                            title="Edit asset"
+                            onClick={() => setAssetEditor({ open: true, asset })}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </RowActionButton>
+                          <RowActionButton
+                            title="Delete asset"
+                            destructive
+                            onClick={() => setDeletingAsset(asset)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </RowActionButton>
+                        </div>
                       </div>
                       <p className="truncate border-t border-border px-2 py-1 text-[10px] font-medium capitalize text-muted-foreground">
                         {asset.kind.replace(/_/g, " ")}
@@ -351,6 +502,118 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
         open={editorOpen}
         onOpenChange={setEditorOpen}
         brand={current}
+      />
+      <SiteEditorDialog
+        open={Boolean(editingSite)}
+        onOpenChange={(open) => !open && setEditingSite(null)}
+        site={editingSite}
+      />
+      <ConfirmDialog
+        open={Boolean(deletingSite)}
+        onOpenChange={(open) => !open && setDeletingSite(null)}
+        title={deletingSite ? `Delete ${deletingSite.name}?` : "Delete site?"}
+        description="The site moves to trash and disappears from every list. This does not delete the brand."
+        variant="destructive"
+        confirmLabel="Delete site"
+        busy={deleteSiteMutation.isPending}
+        onConfirm={async () => {
+          if (!deletingSite) return;
+          try {
+            await deleteSiteMutation.mutateAsync(deletingSite.id);
+            toast.success(`Deleted ${deletingSite.name}`);
+            setDeletingSite(null);
+          } catch (error) {
+            toast.error("Could not delete site", {
+              description: extractErrorMessage(error),
+            });
+          }
+        }}
+      />
+      <PropertyEditorDialog
+        open={propertyEditor.open}
+        onOpenChange={(open) =>
+          setPropertyEditor((state) => ({ ...state, open }))
+        }
+        brandId={current.id}
+        organizationId={current.organization_id}
+        property={propertyEditor.property}
+      />
+      <ConfirmDialog
+        open={Boolean(deletingProperty)}
+        onOpenChange={(open) => !open && setDeletingProperty(null)}
+        title="Delete property?"
+        description="The property moves to trash and disappears from this brand."
+        variant="destructive"
+        confirmLabel="Delete property"
+        busy={deletePropertyMutation.isPending}
+        onConfirm={async () => {
+          if (!deletingProperty) return;
+          try {
+            await deletePropertyMutation.mutateAsync(deletingProperty.id);
+            toast.success("Property deleted");
+            setDeletingProperty(null);
+          } catch (error) {
+            toast.error("Could not delete property", {
+              description: extractErrorMessage(error),
+            });
+          }
+        }}
+      />
+      <BrandAssetEditorDialog
+        open={assetEditor.open}
+        onOpenChange={(open) => setAssetEditor((state) => ({ ...state, open }))}
+        brandId={current.id}
+        organizationId={current.organization_id}
+        asset={assetEditor.asset}
+      />
+      <ConfirmDialog
+        open={Boolean(deletingAsset)}
+        onOpenChange={(open) => !open && setDeletingAsset(null)}
+        title="Delete asset?"
+        description="The asset moves to trash and leaves the brand library."
+        variant="destructive"
+        confirmLabel="Delete asset"
+        busy={deleteAssetMutation.isPending}
+        onConfirm={async () => {
+          if (!deletingAsset) return;
+          try {
+            await deleteAssetMutation.mutateAsync(deletingAsset.id);
+            toast.success("Asset deleted");
+            setDeletingAsset(null);
+          } catch (error) {
+            toast.error("Could not delete asset", {
+              description: extractErrorMessage(error),
+            });
+          }
+        }}
+      />
+      <BusinessFactEditorDialog
+        open={factEditor.open}
+        onOpenChange={(open) => setFactEditor((state) => ({ ...state, open }))}
+        brandId={current.id}
+        organizationId={current.organization_id}
+        fact={factEditor.fact}
+      />
+      <ConfirmDialog
+        open={Boolean(deletingFact)}
+        onOpenChange={(open) => !open && setDeletingFact(null)}
+        title="Delete fact?"
+        description="The fact moves to trash and disappears from this brand."
+        variant="destructive"
+        confirmLabel="Delete fact"
+        busy={deleteFactMutation.isPending}
+        onConfirm={async () => {
+          if (!deletingFact) return;
+          try {
+            await deleteFactMutation.mutateAsync(deletingFact.id);
+            toast.success("Fact deleted");
+            setDeletingFact(null);
+          } catch (error) {
+            toast.error("Could not delete fact", {
+              description: extractErrorMessage(error),
+            });
+          }
+        }}
       />
       <ConfirmDialog
         open={confirmingDelete}

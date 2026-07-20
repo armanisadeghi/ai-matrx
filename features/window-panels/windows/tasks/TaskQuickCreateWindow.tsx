@@ -25,9 +25,9 @@ const BASE_WINDOW_ID = "task-quick-create-window";
 /**
  * Non-blocking, draggable, resizable OS-style window for creating a task.
  *
- * Mirrors QuickNoteSaveWindow's shape. The window is ephemeral — not
- * persisted to window_sessions — because each invocation is a one-shot
- * capture with a different source/prePopulate payload.
+ * Mirrors QuickNoteSaveWindow's shape. The window is excluded from the local
+ * refresh workspace because each invocation is a one-shot capture with a
+ * different source/prePopulate payload.
  */
 export default function TaskQuickCreateWindow({
   isOpen,

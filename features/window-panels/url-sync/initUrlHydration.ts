@@ -63,9 +63,9 @@ export function initUrlHydration() {
     dispatch(openOverlay({ overlayId: "quickTasksWindow" }));
   });
 
-  // Quick Data Window — `?panels=quick_data` opens with the last-used selection
-  // restored from `window_sessions`, while `?panels=quick_data:<tableId>` deep
-  // links to a specific table (used after saving a new table from a chat).
+  // Quick Data Window — if UrlPanelManager is re-enabled,
+  // `?panels=quick_data:<tableId>` deep-links to a specific table. The bare
+  // key opens without a selected table; no cloud window-session fallback exists.
   registerPanelHydrator("quick_data", (dispatch, id) => {
     dispatch(
       openOverlay({

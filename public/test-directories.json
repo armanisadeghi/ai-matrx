@@ -4,10 +4,6 @@
     "name": "applet-tests"
   },
   {
-    "path": "/demos/tests/audio-recorder-test",
-    "name": "audio-recorder-test"
-  },
-  {
     "path": "/demos/tests/camera-test",
     "name": "camera-test"
   },
@@ -46,10 +42,6 @@
   {
     "path": "/demos/tests/matrx-table",
     "name": "matrx-table"
-  },
-  {
-    "path": "/demos/tests/metadata-test",
-    "name": "metadata-test"
   },
   {
     "path": "/demos/tests/modals",

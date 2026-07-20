@@ -20,11 +20,13 @@ import React, {
 } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
+  selectAuthReady,
   selectFingerprintId,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import {
   DEFAULT_INSTANCE_ID,
+  closeAllOverlays,
   closeOverlay,
   openOverlay,
   pruneStaleInstances,
@@ -50,6 +52,8 @@ import { toast } from "@/lib/toast";
 import {
   getWindowWorkspaceId,
   loadLocalWindowWorkspace,
+  releaseWindowWorkspaceLease,
+  renewWindowWorkspaceLease,
   saveLocalWindowWorkspace,
 } from "./persistence/localWindowSessionStore";
 import {
@@ -132,6 +136,7 @@ export function WindowPersistenceManager({
 }: WindowPersistenceManagerProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const fingerprintId = useAppSelector(selectFingerprintId);
   const identityKey = deriveIdentity({ userId, fingerprintId }).key;
@@ -139,6 +144,7 @@ export function WindowPersistenceManager({
   const workspaceIdRef = useRef<string | null>(null);
   const identityRef = useRef<IdentityKey | null>(null);
   const hydratedRef = useRef(false);
+  const writeSafeRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastWorkspaceJsonRef = useRef<string | null>(null);
   const lastWorkspaceFingerprintRef = useRef<string | null>(null);
@@ -147,11 +153,20 @@ export function WindowPersistenceManager({
     Array<{ overlayId: OverlayId; instanceId: string }>
   >([]);
   const closedBeforeHydrationRef = useRef(new Set<string>());
+  const closedOverlayBeforeHydrationRef = useRef(new Set<OverlayId>());
+  const closedAllBeforeHydrationRef = useRef(false);
 
   const saveCurrentWorkspace = useCallback(() => {
     const identity = identityRef.current;
     const workspaceId = workspaceIdRef.current;
-    if (!identity || !workspaceId || !hydratedRef.current) return;
+    if (
+      !identity ||
+      !workspaceId ||
+      !hydratedRef.current ||
+      !writeSafeRef.current
+    ) {
+      return;
+    }
 
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -183,17 +198,18 @@ export function WindowPersistenceManager({
 
   useEffect(
     () =>
-      registerWindowPersistenceFlusher(
-        saveCurrentWorkspace,
-        (identities) => {
-          if (hydratedRef.current) return;
-          identities.forEach(({ overlayId, instanceId }) => {
-            closedBeforeHydrationRef.current.add(
-              windowSessionKey(overlayId, instanceId),
-            );
-          });
-        },
-      ),
+      registerWindowPersistenceFlusher(saveCurrentWorkspace, (intent) => {
+        if (writeSafeRef.current) return;
+        if (intent.scope === "all") {
+          closedAllBeforeHydrationRef.current = true;
+        } else if (intent.scope === "overlay") {
+          closedOverlayBeforeHydrationRef.current.add(intent.overlayId);
+        } else {
+          closedBeforeHydrationRef.current.add(
+            windowSessionKey(intent.overlayId, intent.instanceId),
+          );
+        }
+      }),
     [saveCurrentWorkspace],
   );
 
@@ -219,15 +235,31 @@ export function WindowPersistenceManager({
       }
       saveCurrentWorkspace();
     };
-    const flushWhenHidden = () => {
-      if (document.visibilityState === "hidden") flush();
+    const renewLease = () => {
+      if (workspaceIdRef.current) {
+        renewWindowWorkspaceLease(workspaceIdRef.current);
+      }
     };
-    window.addEventListener("pagehide", flush);
-    document.addEventListener("visibilitychange", flushWhenHidden);
+    const flushAndRelease = () => {
+      flush();
+      if (workspaceIdRef.current) {
+        releaseWindowWorkspaceLease(workspaceIdRef.current);
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") flush();
+      else renewLease();
+    };
+    window.addEventListener("pagehide", flushAndRelease);
+    window.addEventListener("pageshow", renewLease);
+    window.addEventListener("focus", renewLease);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       unsubscribe();
-      window.removeEventListener("pagehide", flush);
-      document.removeEventListener("visibilitychange", flushWhenHidden);
+      window.removeEventListener("pagehide", flushAndRelease);
+      window.removeEventListener("pageshow", renewLease);
+      window.removeEventListener("focus", renewLease);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [saveCurrentWorkspace, store]);
@@ -235,12 +267,55 @@ export function WindowPersistenceManager({
   // Explicit identity/workspace readiness. A cache miss is a completed load,
   // not a forever-loading state.
   useEffect(() => {
+    if (!authReady) {
+      hydratedRef.current = false;
+      writeSafeRef.current = false;
+      if (identityRef.current) {
+        const unresolvedInstances = new Map<
+          string,
+          { overlayId: OverlayId; instanceId: string }
+        >();
+        const currentWindowState = store.getState().windowManager;
+        Object.values(currentWindowState.windows).forEach((entry) => {
+          if (!entry.persistence) return;
+          unresolvedInstances.set(
+            windowSessionKey(
+              entry.persistence.overlayId,
+              entry.persistence.instanceId,
+            ),
+            {
+              overlayId: entry.persistence.overlayId,
+              instanceId: entry.persistence.instanceId,
+            },
+          );
+        });
+        Object.values(currentWindowState.pendingRestores).forEach((session) => {
+          unresolvedInstances.set(session.sessionKey, {
+            overlayId: session.overlayId,
+            instanceId: session.instanceId,
+          });
+        });
+        identityRef.current = null;
+        unresolvedInstances.forEach(({ overlayId, instanceId }) => {
+          dispatch(markWindowClosing({ overlayId, instanceId }));
+        });
+        dispatch(closeAllOverlays());
+        restoredInstancesRef.current = [];
+        dispatch(clearWindowPersistenceState());
+        closedBeforeHydrationRef.current.clear();
+        closedOverlayBeforeHydrationRef.current.clear();
+        closedAllBeforeHydrationRef.current = false;
+      }
+      queueMicrotask(() => setHydrated(false));
+      return;
+    }
     const workspaceId = workspaceIdRef.current ?? getWindowWorkspaceId();
     workspaceIdRef.current = workspaceId;
     const identity = deriveIdentity({ userId, fingerprintId });
     let cancelled = false;
 
     hydratedRef.current = false;
+    writeSafeRef.current = false;
     queueMicrotask(() => {
       if (!cancelled) setHydrated(false);
     });
@@ -284,12 +359,14 @@ export function WindowPersistenceManager({
       });
       previousInstances.forEach(({ overlayId, instanceId }) => {
         dispatch(markWindowClosing({ overlayId, instanceId }));
-        dispatch(closeOverlay({ overlayId, instanceId }));
       });
+      dispatch(closeAllOverlays());
       restoredInstancesRef.current = [];
       dispatch(clearWindowPersistenceState());
       // Account teardown closes are not user intent for the next identity.
       closedBeforeHydrationRef.current.clear();
+      closedOverlayBeforeHydrationRef.current.clear();
+      closedAllBeforeHydrationRef.current = false;
     }
     identityRef.current = identity;
 
@@ -297,68 +374,86 @@ export function WindowPersistenceManager({
       ? new Promise<void>((resolve) => window.setTimeout(resolve, 0))
       : Promise.resolve();
 
-    void waitForPriorUnmount
-      .then(() => loadLocalWindowWorkspace(identity, workspaceId))
-      .then(({ workspace, source }) => {
-        if (cancelled || identityRef.current?.key !== identity.key) return;
-        const result = hydrateWindowWorkspace(
-          workspace,
-          {
-            width: window.innerWidth,
-            height: window.innerHeight,
-          },
-          workspaceId,
-        );
-        reportDiagnostics(result.diagnostics);
-        const currentOverlayState = store.getState().overlays.overlays;
-        const sessionsToRestore = result.sessions.filter(
-          (session) =>
-            !closedBeforeHydrationRef.current.has(session.sessionKey) &&
-            !currentOverlayState[session.overlayId]?.[session.instanceId]
-              ?.isOpen,
-        );
+    const applyWorkspace = (
+      workspace: Awaited<
+        ReturnType<typeof loadLocalWindowWorkspace>
+      >["workspace"],
+    ) => {
+      if (cancelled || identityRef.current?.key !== identity.key) return;
+      const result = hydrateWindowWorkspace(
+        workspace,
+        {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        },
+        workspaceId,
+      );
+      reportDiagnostics(result.diagnostics);
+      const currentOverlayState = store.getState().overlays.overlays;
+      const sessionsToRestore = result.sessions.filter(
+        (session) =>
+          !closedAllBeforeHydrationRef.current &&
+          !closedOverlayBeforeHydrationRef.current.has(session.overlayId) &&
+          !closedBeforeHydrationRef.current.has(session.sessionKey) &&
+          !currentOverlayState[session.overlayId]?.[session.instanceId]?.isOpen,
+      );
+      dispatch(
+        hydrateWindowSessions({
+          sessions: sessionsToRestore,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+        }),
+      );
+      sessionsToRestore.forEach((session) => {
         dispatch(
-          hydrateWindowSessions({
-            sessions: sessionsToRestore,
-            viewportWidth: window.innerWidth,
-            viewportHeight: window.innerHeight,
+          openOverlay({
+            overlayId: session.overlayId,
+            instanceId: session.instanceId,
+            data: session.data,
           }),
         );
-        sessionsToRestore.forEach((session) => {
-          dispatch(
-            openOverlay({
-              overlayId: session.overlayId,
-              instanceId: session.instanceId,
-              data: session.data,
-            }),
-          );
-        });
-        restoredInstancesRef.current = sessionsToRestore.map(
-          ({ overlayId, instanceId }) => ({ overlayId, instanceId }),
-        );
-        lastWorkspaceJsonRef.current = workspace
-          ? JSON.stringify(workspace)
-          : null;
-        lastWorkspaceFingerprintRef.current = workspace
-          ? JSON.stringify(
-              workspace.sessions.map((session) => ({
-                ...session,
-                savedAt: 0,
-              })),
-            )
-          : null;
-        lastSavedAtRef.current = workspace?.savedAt ?? 0;
-        hydratedRef.current = true;
-        setHydrated(true);
-        surfacePopoutRecoveryToast();
-        // Let restored WindowPanels register before taking the normalized
-        // initial snapshot. This also records a clean empty-cache miss.
-        if (source !== "timeout") {
-          window.setTimeout(() => {
-            saveCurrentWorkspace();
-            closedBeforeHydrationRef.current.clear();
-          }, 0);
+      });
+      restoredInstancesRef.current = sessionsToRestore.map(
+        ({ overlayId, instanceId }) => ({ overlayId, instanceId }),
+      );
+      lastWorkspaceJsonRef.current = workspace
+        ? JSON.stringify(workspace)
+        : null;
+      lastWorkspaceFingerprintRef.current = workspace
+        ? JSON.stringify(
+            workspace.sessions.map((session) => ({
+              ...session,
+              savedAt: 0,
+            })),
+          )
+        : null;
+      lastSavedAtRef.current = workspace?.savedAt ?? 0;
+      writeSafeRef.current = true;
+      hydratedRef.current = true;
+      setHydrated(true);
+      surfacePopoutRecoveryToast();
+      // Let restored WindowPanels register before taking the normalized
+      // initial snapshot. This also records an authoritative empty-cache miss.
+      window.setTimeout(() => {
+        saveCurrentWorkspace();
+        closedBeforeHydrationRef.current.clear();
+        closedOverlayBeforeHydrationRef.current.clear();
+        closedAllBeforeHydrationRef.current = false;
+      }, 0);
+    };
+
+    void waitForPriorUnmount
+      .then(() => loadLocalWindowWorkspace(identity, workspaceId))
+      .then(({ workspace, source, pendingWorkspace }) => {
+        if (source === "timeout" && pendingWorkspace) {
+          // UI readiness is not write readiness. Keep every automatic writer
+          // gated until the authoritative slow IDB read resolves.
+          hydratedRef.current = true;
+          setHydrated(true);
+          void pendingWorkspace.then(applyWorkspace);
+          return;
         }
+        applyWorkspace(workspace);
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -371,7 +466,7 @@ export function WindowPersistenceManager({
       cancelled = true;
     };
     // identityKey intentionally collapses fingerprint changes while signed in.
-  }, [dispatch, identityKey, saveCurrentWorkspace, store]);
+  }, [authReady, dispatch, identityKey, saveCurrentWorkspace, store]);
 
   useEffect(() => {
     const THIRTY_MINUTES_MS = 30 * 60 * 1000;

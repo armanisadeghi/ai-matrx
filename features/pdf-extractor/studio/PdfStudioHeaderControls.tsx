@@ -143,7 +143,6 @@ export function PdfStudioHeaderControls({
       resourceType: "file",
       resourceId: doc.sourceId,
       resourceName: doc.name,
-      isOwner: true,
     });
   }, [doc, openShare]);
 
