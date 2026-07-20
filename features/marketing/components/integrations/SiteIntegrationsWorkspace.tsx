@@ -11,6 +11,7 @@ import {
   KeyRound,
   Loader2,
   Plus,
+  RefreshCw,
   Save,
   SearchCheck,
   Trash2,
@@ -45,6 +46,10 @@ import {
 } from "@/features/marketing/data/integrations-schema";
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
 import { marketingKeys } from "@/features/marketing/data/hooks";
+import { syncGsc } from "@/features/marketing/crawler/direct-client";
+import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
+import { extractErrorMessage } from "@/utils/errors";
+import { cn } from "@/lib/utils";
 import {
   useConnectGoogle,
   useGoogleConnectionInventory,
@@ -357,6 +362,17 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               key={key}
               providerKey={key}
               {...provider}
+              footer={
+                key === "googleSearchConsole" ? (
+                  <GscSyncRow
+                    site={site}
+                    status={providerReferenceStatus(
+                      draft.googleSearchConsole,
+                      true,
+                    )}
+                  />
+                ) : undefined
+              }
               value={draft[key]}
               connections={googleInventory.data?.connections ?? []}
               resources={googleInventory.data?.resources ?? []}
@@ -476,6 +492,69 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   );
 }
 
+/** "Sync now" + freshness for the Search Console card. Command-only path. */
+function GscSyncRow({
+  site,
+  status,
+}: {
+  site: MarketingSite;
+  status: ReturnType<typeof providerReferenceStatus>;
+}) {
+  const queryClient = useQueryClient();
+  const [syncing, setSyncing] = useState(false);
+  const connected = status === "reference_configured";
+  const runSync = async () => {
+    setSyncing(true);
+    try {
+      await syncGsc(site.id);
+      await queryClient.invalidateQueries({
+        queryKey: marketingKeys.site(site.id),
+      });
+      toast.success("Search Console synced", {
+        description: `Fresh page stats are stored for ${site.domain}.`,
+      });
+    } catch (error) {
+      toast.error("Search Console sync failed", {
+        description: extractErrorMessage(error),
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/20 p-2">
+      <p
+        className={cn(
+          "text-[10px] leading-4",
+          connected && !site.gsc_synced_at
+            ? "font-medium text-amber-600 dark:text-amber-400"
+            : "text-muted-foreground",
+        )}
+      >
+        {site.gsc_synced_at
+          ? `Last synced ${formatCompactDate(site.gsc_synced_at)}`
+          : connected
+            ? "Connected, never synced"
+            : "Connect a property to enable sync"}
+      </p>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 shrink-0 gap-1.5"
+        disabled={syncing || !connected}
+        onClick={() => void runSync()}
+      >
+        {syncing ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5" />
+        )}
+        {syncing ? "Syncing…" : "Sync now"}
+      </Button>
+    </div>
+  );
+}
+
 function BuiltInProviderCard({
   providerKey,
   label,
@@ -488,6 +567,7 @@ function BuiltInProviderCard({
   resources,
   dirty,
   saving,
+  footer,
   onSave,
   onEnable,
   onChange,
@@ -503,6 +583,7 @@ function BuiltInProviderCard({
   resources: GoogleConnectionResource[];
   dirty: boolean;
   saving: boolean;
+  footer?: React.ReactNode;
   onSave: () => void;
   onEnable: () => void;
   onChange: (next: ProviderIntegrationDraft) => void;
@@ -576,6 +657,7 @@ function BuiltInProviderCard({
             {value.enabled ? actionLabel : "Enable PageSpeed Insights"}
           </Button>
         ) : null}
+        {footer}
       </div>
     </section>
   );

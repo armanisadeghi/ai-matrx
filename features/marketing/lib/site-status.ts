@@ -105,7 +105,10 @@ export function parseInitialization(
 
 /** Derive the five connection statuses from a site row. Pure; no fetching. */
 export function siteConnectionStatuses(
-  site: Pick<MarketingSite, "initialized_at" | "initialization" | "integrations">,
+  site: Pick<
+    MarketingSite,
+    "initialized_at" | "initialization" | "integrations" | "gsc_synced_at"
+  >,
 ): SiteConnectionStatus[] {
   const init = parseInitialization(site);
   const integrations = parseSiteIntegrations(site.integrations);
@@ -158,15 +161,32 @@ export function siteConnectionStatuses(
           : offDetail,
   });
 
+  const gscBase = providerStatus(
+    "search_console",
+    "GSC",
+    "Google Search Console",
+    providerReferenceStatus(integrations.googleSearchConsole, true),
+    "Not connected",
+  );
+  // A configured GSC binding without one completed sync is not "connected":
+  // no data has ever flowed. gsc_synced_at is stamped by the sync command.
+  const searchConsole: SiteConnectionStatus =
+    gscBase.state === "connected"
+      ? site.gsc_synced_at
+        ? {
+            ...gscBase,
+            detail: `Connected · last synced ${new Date(site.gsc_synced_at).toLocaleDateString()}`,
+          }
+        : {
+            ...gscBase,
+            state: "attention",
+            detail: "Connected, never synced",
+          }
+      : gscBase;
+
   return [
     initialized,
-    providerStatus(
-      "search_console",
-      "GSC",
-      "Google Search Console",
-      providerReferenceStatus(integrations.googleSearchConsole, true),
-      "Not connected",
-    ),
+    searchConsole,
     providerStatus(
       "analytics",
       "GA4",

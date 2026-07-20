@@ -182,6 +182,51 @@ export function PagesTable() {
       ),
     },
     {
+      id: "gsc_clicks_28d",
+      accessorKey: "gsc_clicks_28d",
+      header: "Clicks 28d",
+      filter: false,
+      sortable: false,
+      align: "right",
+      cell: (row) => (
+        <span className="font-mono text-xs tabular-nums">
+          {row.gsc_clicks_28d === null
+            ? "—"
+            : row.gsc_clicks_28d.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: "gsc_impressions_28d",
+      accessorKey: "gsc_impressions_28d",
+      header: "Impr 28d",
+      filter: false,
+      sortable: false,
+      align: "right",
+      cell: (row) => (
+        <span className="font-mono text-xs tabular-nums">
+          {row.gsc_impressions_28d === null
+            ? "—"
+            : row.gsc_impressions_28d.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: "gsc_position_28d",
+      accessorKey: "gsc_position_28d",
+      header: "Pos",
+      filter: false,
+      sortable: false,
+      align: "right",
+      cell: (row) => (
+        <span className="font-mono text-xs tabular-nums">
+          {row.gsc_position_28d === null
+            ? "—"
+            : row.gsc_position_28d.toFixed(1)}
+        </span>
+      ),
+    },
+    {
       id: "last_seen",
       accessorKey: "last_seen",
       header: "Last seen",

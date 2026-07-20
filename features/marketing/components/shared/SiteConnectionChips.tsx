@@ -30,7 +30,7 @@ export function SiteConnectionChips({
 }: {
   site: Pick<
     MarketingSite,
-    "initialized_at" | "initialization" | "integrations"
+    "initialized_at" | "initialization" | "integrations" | "gsc_synced_at"
   >;
   className?: string;
 }) {

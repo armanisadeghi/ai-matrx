@@ -117,6 +117,14 @@ export interface PageListRow extends MarketingPage {
   observed_title: string | null;
   /** Observed word count from the latest accepted snapshot. */
   word_count: number | null;
+  /** Whether Google reports this page in search results (any GSC stat row). */
+  in_gsc: boolean;
+  /** 28-day GSC click sum; null when Google has no data for the page. */
+  gsc_clicks_28d: number | null;
+  /** 28-day GSC impression sum; null when Google has no data for the page. */
+  gsc_impressions_28d: number | null;
+  /** Impression-weighted 28-day average position; null without data. */
+  gsc_position_28d: number | null;
 }
 
 /** One page↔sitemap membership joined with its sitemap document identity. */

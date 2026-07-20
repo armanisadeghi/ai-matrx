@@ -277,6 +277,17 @@ export function initializeSite(
   return streamCommand(`sites/${siteId}/initialize`, null, callbacks);
 }
 
+/**
+ * Pull Search Console page stats into web.gsc_page_stat for one site and
+ * stamp web.site.gsc_synced_at / gsc_sync. Requires a configured GSC binding.
+ */
+export function syncGsc(
+  siteId: string,
+  callbacks?: CrawlStreamCallbacks,
+): Promise<CrawlStreamResult> {
+  return streamCommand(`sites/${siteId}/gsc/sync`, null, callbacks);
+}
+
 /** Standalone sitemap discovery + canonical-page ingestion for one site. */
 export function syncSitemaps(
   siteId: string,

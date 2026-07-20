@@ -43720,6 +43720,78 @@ export type Database = {
           },
         ]
       }
+      gsc_page_stat: {
+        Row: {
+          clicks: number
+          created_at: string
+          created_by: string | null
+          ctr: number | null
+          date: string
+          deleted_at: string | null
+          id: string
+          impressions: number
+          metadata: Json
+          organization_id: string
+          page_id: string
+          position: number | null
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          clicks?: number
+          created_at?: string
+          created_by?: string | null
+          ctr?: number | null
+          date: string
+          deleted_at?: string | null
+          id?: string
+          impressions?: number
+          metadata?: Json
+          organization_id: string
+          page_id: string
+          position?: number | null
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          clicks?: number
+          created_at?: string
+          created_by?: string | null
+          ctr?: number | null
+          date?: string
+          deleted_at?: string | null
+          id?: string
+          impressions?: number
+          metadata?: Json
+          organization_id?: string
+          page_id?: string
+          position?: number | null
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_page_stat_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_page_stat_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       link_edge: {
         Row: {
           anchor_text: string | null
@@ -44284,6 +44356,8 @@ export type Database = {
           description: string | null
           domain: string
           favicon_url: string | null
+          gsc_sync: Json
+          gsc_synced_at: string | null
           homepage_screenshot_id: string | null
           id: string
           initialization: Json
@@ -44310,6 +44384,8 @@ export type Database = {
           description?: string | null
           domain: string
           favicon_url?: string | null
+          gsc_sync?: Json
+          gsc_synced_at?: string | null
           homepage_screenshot_id?: string | null
           id?: string
           initialization?: Json
@@ -44336,6 +44412,8 @@ export type Database = {
           description?: string | null
           domain?: string
           favicon_url?: string | null
+          gsc_sync?: Json
+          gsc_synced_at?: string | null
           homepage_screenshot_id?: string | null
           id?: string
           initialization?: Json
@@ -44939,6 +45017,8 @@ export type Database = {
           description: string | null
           domain: string
           favicon_url: string | null
+          gsc_sync: Json
+          gsc_synced_at: string | null
           homepage_screenshot_id: string | null
           id: string
           initialization: Json

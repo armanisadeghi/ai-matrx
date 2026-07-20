@@ -93,7 +93,7 @@ function assertData<T>(data: T | null, error: unknown): T {
 
 /** Every `web.site` column — ONE list so selects can never drift per call site. */
 export const SITE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync";
 
 export async function listSites(
   state: MatrxDataTableQueryState,
@@ -355,7 +355,10 @@ export type PageCoverageFilter =
   | "crawled"
   | "never_crawled"
   | "sitemap_not_crawled"
-  | "crawled_no_sitemap";
+  | "crawled_no_sitemap"
+  | "in_gsc"
+  | "gsc_no_sitemap"
+  | "sitemap_no_gsc";
 
 export const PAGE_COVERAGE_FILTERS: readonly PageCoverageFilter[] = [
   "in_sitemap",
@@ -363,6 +366,9 @@ export const PAGE_COVERAGE_FILTERS: readonly PageCoverageFilter[] = [
   "never_crawled",
   "sitemap_not_crawled",
   "crawled_no_sitemap",
+  "in_gsc",
+  "gsc_no_sitemap",
+  "sitemap_no_gsc",
 ];
 
 export function isPageCoverageFilter(
@@ -397,14 +403,21 @@ export async function listPages(
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "last_seen";
   const ascending = state.sort?.direction === "asc";
 
-  // The left-joined membership embed powers both the coverage filters and the
-  // per-row "in N sitemaps" signal; soft-deleted memberships never count.
+  // The left-joined embeds power the coverage filters and the per-row
+  // "in N sitemaps" signal; soft-deleted evidence never counts. The GSC embed
+  // is a presence probe only — its returned rows are capped at 1 below, and
+  // the top-level `is null` / `not is null` semi-join filters are unaffected
+  // by that cap.
   let query = db
     .from("page")
-    .select(`${PAGE_COLUMNS}, page_sitemap!left(id)`, { count: "exact" })
+    .select(`${PAGE_COLUMNS}, page_sitemap!left(id), gsc_page_stat!left(id)`, {
+      count: "exact",
+    })
     .eq("site_id", siteId)
     .is("deleted_at", null)
-    .is("page_sitemap.deleted_at", null);
+    .is("page_sitemap.deleted_at", null)
+    .is("gsc_page_stat.deleted_at", null)
+    .limit(1, { referencedTable: "gsc_page_stat" });
 
   if (coverage === "in_sitemap") {
     query = query.not("page_sitemap", "is", null);
@@ -420,6 +433,16 @@ export async function listPages(
     query = query
       .is("page_sitemap", null)
       .not("latest_snapshot_id", "is", null);
+  } else if (coverage === "in_gsc") {
+    query = query.not("gsc_page_stat", "is", null);
+  } else if (coverage === "gsc_no_sitemap") {
+    query = query
+      .not("gsc_page_stat", "is", null)
+      .is("page_sitemap", null);
+  } else if (coverage === "sitemap_no_gsc") {
+    query = query
+      .not("page_sitemap", "is", null)
+      .is("gsc_page_stat", null);
   }
 
   const search = cleanSearch(state.search);
@@ -474,16 +497,75 @@ export async function listPages(
     }
   }
 
+  // Batched 28-day GSC rollup: paginate past PostgREST's row cap so sums are
+  // never silently truncated; (page_id, date) is unique, so the ordering is
+  // deterministic across pages.
+  const since = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const gscByPage = new Map<
+    string,
+    {
+      clicks: number;
+      impressions: number;
+      positionWeight: number;
+      weightSum: number;
+    }
+  >();
+  const pageIds = pages.map((page) => page.id);
+  for (let offset = 0; ; offset += 1000) {
+    if (offset >= 20000) {
+      throw new Error(
+        "GSC stat enrichment exceeded its expected row bound — aborting instead of returning truncated sums.",
+      );
+    }
+    const statResponse = await db
+      .from("gsc_page_stat")
+      .select("page_id, clicks, impressions, position")
+      .eq("site_id", siteId)
+      .in("page_id", pageIds)
+      .gte("date", since)
+      .is("deleted_at", null)
+      .order("page_id", { ascending: true })
+      .order("date", { ascending: true })
+      .range(offset, offset + 999)
+      .abortSignal(signal ?? new AbortController().signal);
+    const stats = assertData(statResponse.data, statResponse.error);
+    for (const stat of stats) {
+      const bucket = gscByPage.get(stat.page_id) ?? {
+        clicks: 0,
+        impressions: 0,
+        positionWeight: 0,
+        weightSum: 0,
+      };
+      bucket.clicks += stat.clicks;
+      bucket.impressions += stat.impressions;
+      if (stat.position !== null) {
+        const weight = Math.max(stat.impressions, 1);
+        bucket.positionWeight += stat.position * weight;
+        bucket.weightSum += weight;
+      }
+      gscByPage.set(stat.page_id, bucket);
+    }
+    if (stats.length < 1000) break;
+  }
+
   return {
-    rows: pages.map(({ page_sitemap, ...page }) => {
+    rows: pages.map(({ page_sitemap, gsc_page_stat, ...page }) => {
       const observed = page.latest_snapshot_id
         ? bySnapshot.get(page.latest_snapshot_id)
         : undefined;
+      const gsc = gscByPage.get(page.id);
       return {
         ...page,
         sitemap_count: page_sitemap.length,
+        in_gsc: gsc_page_stat.length > 0,
         observed_title: observed?.title ?? null,
         word_count: observed?.wordCount ?? null,
+        gsc_clicks_28d: gsc ? gsc.clicks : null,
+        gsc_impressions_28d: gsc ? gsc.impressions : null,
+        gsc_position_28d:
+          gsc && gsc.weightSum > 0 ? gsc.positionWeight / gsc.weightSum : null,
       };
     }),
     total: response.count ?? 0,
@@ -551,6 +633,12 @@ export interface SiteCoverageMatrix {
   neverCrawled: number;
   sitemapNotCrawled: number;
   crawledNoSitemap: number;
+  /** Pages with any GSC stat rows (Google reports them in search results). */
+  inGsc: number;
+  /** Pages Google reports that no sitemap advertises. */
+  gscNoSitemap: number;
+  /** Advertised pages Google never reports — invisible to search. */
+  sitemapNoGsc: number;
   byProvenance: Record<PageProvenance, number>;
 }
 
@@ -588,6 +676,14 @@ export async function getCoverageMatrix(
       .is("page_sitemap.deleted_at", null)
       .is("page_sitemap", null);
 
+  const gscPages = () =>
+    db
+      .from("page")
+      .select("id, gsc_page_stat!inner(id)", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .is("gsc_page_stat.deleted_at", null);
+
   const [
     total,
     inSitemaps,
@@ -595,6 +691,9 @@ export async function getCoverageMatrix(
     neverCrawled,
     sitemapNotCrawled,
     crawledNoSitemap,
+    inGsc,
+    gscNoSitemap,
+    sitemapNoGsc,
     ...provenanceCounts
   ] = await Promise.all([
     basePages().abortSignal(abortSignal),
@@ -604,6 +703,31 @@ export async function getCoverageMatrix(
     membershipPages().is("latest_snapshot_id", null).abortSignal(abortSignal),
     antiMembershipPages()
       .not("latest_snapshot_id", "is", null)
+      .abortSignal(abortSignal),
+    gscPages().abortSignal(abortSignal),
+    db
+      .from("page")
+      .select("id, gsc_page_stat!inner(id), page_sitemap!left(id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .is("gsc_page_stat.deleted_at", null)
+      .is("page_sitemap.deleted_at", null)
+      .is("page_sitemap", null)
+      .abortSignal(abortSignal),
+    db
+      .from("page")
+      .select("id, page_sitemap!inner(id), gsc_page_stat!left(id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .is("page_sitemap.deleted_at", null)
+      .is("gsc_page_stat.deleted_at", null)
+      .is("gsc_page_stat", null)
       .abortSignal(abortSignal),
     ...PAGE_PROVENANCES.map((provenance) =>
       basePages().eq("provenance", provenance).abortSignal(abortSignal),
@@ -617,6 +741,9 @@ export async function getCoverageMatrix(
     neverCrawled,
     sitemapNotCrawled,
     crawledNoSitemap,
+    inGsc,
+    gscNoSitemap,
+    sitemapNoGsc,
     ...provenanceCounts,
   ]) {
     if (response.error) throw response.error;
@@ -634,6 +761,9 @@ export async function getCoverageMatrix(
     neverCrawled: neverCrawled.count ?? 0,
     sitemapNotCrawled: sitemapNotCrawled.count ?? 0,
     crawledNoSitemap: crawledNoSitemap.count ?? 0,
+    inGsc: inGsc.count ?? 0,
+    gscNoSitemap: gscNoSitemap.count ?? 0,
+    sitemapNoGsc: sitemapNoGsc.count ?? 0,
     byProvenance,
   };
 }

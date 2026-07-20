@@ -11,6 +11,7 @@ import type {
 import { PAGE_PROVENANCES } from "@/features/marketing/data/service";
 import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
 import {
+  formatCompactDate,
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
@@ -166,23 +167,62 @@ export function CoverageWorkspace() {
           </div>
         </section>
 
-        {/* TODO(gsc-sync): once web.gsc_page_stat lands in the generated
-            database types, replace this placeholder with real GSC cells (in
-            GSC, traffic-but-not-in-sitemap, in-sitemap-but-no-impressions)
-            fed by the same getCoverageMatrix service shape. */}
-        <section className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-card/50 p-4">
-          <SearchCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              Search Console coverage — sync not yet available
-            </p>
-            <p className="mt-1 max-w-xl text-xs text-muted-foreground">
-              Once GSC synchronization lands, this matrix gains the third
-              evidence source: pages Google knows about, pages receiving
-              traffic that no sitemap advertises, and advertised pages with no
-              impressions.
-            </p>
-          </div>
+        <section className="grid gap-2">
+          <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <SearchCheck className="h-3.5 w-3.5" />
+            Google Search coverage
+            {site.gsc_synced_at ? (
+              <span className="font-normal normal-case tracking-normal">
+                · last synced {formatCompactDate(site.gsc_synced_at)}
+              </span>
+            ) : null}
+          </h2>
+          {site.gsc_synced_at ? (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <CoverageTile
+                label={COVERAGE_FILTER_COPY.in_gsc.label}
+                description={COVERAGE_FILTER_COPY.in_gsc.description}
+                value={data?.inGsc ?? null}
+                href={pagesHref("in_gsc")}
+              />
+              <CoverageTile
+                label={COVERAGE_FILTER_COPY.gsc_no_sitemap.label}
+                description={COVERAGE_FILTER_COPY.gsc_no_sitemap.description}
+                value={data?.gscNoSitemap ?? null}
+                href={pagesHref("gsc_no_sitemap")}
+                tone="attention"
+              />
+              <CoverageTile
+                label={COVERAGE_FILTER_COPY.sitemap_no_gsc.label}
+                description={COVERAGE_FILTER_COPY.sitemap_no_gsc.description}
+                value={data?.sitemapNoGsc ?? null}
+                href={pagesHref("sitemap_no_gsc")}
+                tone="attention"
+              />
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-card/50 p-4">
+              <SearchCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Search Console has never been synced for this site
+                </p>
+                <p className="mt-1 max-w-xl text-xs text-muted-foreground">
+                  Connect Search Console and run a sync from the Integrations
+                  workspace to add Google's evidence to this matrix: pages
+                  Google serves, traffic no sitemap advertises, and advertised
+                  pages Google never reports.
+                </p>
+                <Link
+                  href={`${sitePath}/integrations`}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary"
+                >
+                  Open Integrations
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </main>
