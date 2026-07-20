@@ -61,7 +61,9 @@ function MarketingConnectionsContent() {
   const [connectingOwner, setConnectingOwner] = useState<
     "user" | "organization" | null
   >(null);
-  const selectedSite = sites.data?.find((site) => site.id === siteId);
+  const effectiveSiteId =
+    siteId || (sites.data?.length === 1 ? sites.data[0].id : "");
+  const selectedSite = sites.data?.find((site) => site.id === effectiveSiteId);
   const searchResourcesByConnection = new Map<string, number>();
   const analyticsResourcesByConnection = new Map<string, number>();
   for (const resource of inventory.data?.resources ?? []) {
@@ -284,7 +286,10 @@ function MarketingConnectionsContent() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 p-3">
-              <Select value={siteId || undefined} onValueChange={setSiteId}>
+              <Select
+                value={effectiveSiteId || undefined}
+                onValueChange={setSiteId}
+              >
                 <SelectTrigger className="w-full sm:w-80" size="sm">
                   <SelectValue
                     placeholder={
@@ -310,6 +315,10 @@ function MarketingConnectionsContent() {
                     Choose Search Console property for {selectedSite.name}{" "}
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
+                </Button>
+              ) : sites.data?.length ? (
+                <Button size="sm" variant="outline" className="h-8" disabled>
+                  Select a managed site
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="outline" className="h-8">
