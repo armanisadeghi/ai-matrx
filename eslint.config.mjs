@@ -749,6 +749,17 @@ export default [
                         ...deletedFileHooksRestriction.paths,
                         ...parallelSliceRestriction.paths,
                         ...ttsHookDirectImportRestriction.paths,
+                        // Error-capture chokepoint: `toast` from bare "sonner" is
+                        // INVISIBLE to the admin Error Inspector. The captured
+                        // wrapper at @/lib/toast is a drop-in replacement (only
+                        // lib/toast.ts itself may import sonner's toast; the
+                        // <Toaster> mount import stays legal). Swept 2026-07-20.
+                        {
+                            name: 'sonner',
+                            importNames: ['toast'],
+                            message:
+                                'Import { toast } from "@/lib/toast", not "sonner" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts.',
+                        },
                     ],
                 },
             ],
@@ -800,6 +811,16 @@ export default [
             ],
             'no-restricted-syntax': [
                 'error',
+                // Twin of the sonner `paths` ban above — several override blocks
+                // below turn `no-restricted-imports` fully off (redux dirs, tests,
+                // tts, window-panels windows, …); this selector keeps the
+                // error-capture chokepoint enforced there too.
+                {
+                    selector:
+                        "ImportDeclaration[source.value='sonner'] ImportSpecifier[imported.name='toast']",
+                    message:
+                        'Import { toast } from "@/lib/toast", not "sonner" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts.',
+                },
                 // Legacy Supabase API key env vars are hard-banned — no exceptions.
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
@@ -957,6 +978,16 @@ export default [
         files: ['features/window-panels/windows/**/*'],
         rules: {
             'no-restricted-imports': 'off',
+        },
+    },
+    {
+        // The captured toast wrapper is the ONE sanctioned importer of
+        // sonner's `toast` (it wraps error/warning with captureError).
+        // Both halves of the sonner ban must stand down here.
+        files: ['lib/toast.ts'],
+        rules: {
+            'no-restricted-imports': 'off',
+            'no-restricted-syntax': 'off',
         },
     },
     {

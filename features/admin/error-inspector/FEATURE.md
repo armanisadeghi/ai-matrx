@@ -205,6 +205,13 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-20 — **Repo-wide sonner sweep + ESLint chokepoint.** Migrated every
+  `import { toast } from "sonner"` under app/components/features/hooks/lib
+  (608 files) to the captured `@/lib/toast` wrapper, so all toast.error/warning
+  calls now feed `user-toast` capture. Banned bare-sonner `toast` imports in
+  `eslint.config.mjs` (a `no-restricted-imports` paths entry plus a
+  `no-restricted-syntax` twin that survives the rule-off override blocks);
+  only `lib/toast.ts` and the `<Toaster>` mount may touch sonner directly.
 - 2026-07-20 — **sonner capture gap closed + marketing-crawler source.** Found
   that modern code toasting via bare sonner bypassed capture entirely; added
   the `@/lib/toast` captured wrapper (marketing migrated), and the
