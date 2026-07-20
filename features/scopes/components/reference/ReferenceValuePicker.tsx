@@ -10,7 +10,9 @@
  * ```matrx reference fence string (or `null` when cleared) — never a bare id.
  *
  * One sub-picker per reference type, added here as the taxonomy grows:
- *   - `file`   → the canonical file browser (`useFilePicker`)
+ *   - `file`   → the canonical stored-files picker (`FilePickerSheet` around
+ *                `FilesResourcePicker` — the same picker as Smart Agent
+ *                Input's "Stored Files"; never a plain file list)
  *   - `url`    → a plain URL + optional label form (no Matrx-owned id)
  *   - `scope`  → the org's scope tree, filtered by `allowed_scope_type_ids`
  *   - default  → `useUniversalEntitySearch` for any other listable
@@ -28,7 +30,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useFilePicker } from "@/features/files";
+import { FilePickerSheet } from "@/features/resource-manager/resource-picker/FilePickerSheet";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
   makeSelectScope,
@@ -36,7 +38,6 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { fetchEntityTitles } from "@/features/scopes/service/entityTitles";
 import { useResolvedReferenceLabel } from "@/features/matrx-envelope/referenceResolvers";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
@@ -85,6 +86,7 @@ export function ReferenceValuePicker({
   const canAddMore = remaining > 0 && allowedTypes.length > 0;
 
   const [addOpen, setAddOpen] = useState(false);
+  const [fileSheetOpen, setFileSheetOpen] = useState(false);
   const [addType, setAddType] = useState<string>(
     currentType ?? allowedTypes[0] ?? "",
   );
@@ -187,6 +189,12 @@ export function ReferenceValuePicker({
               type={activeAddType}
               scopeId={scopeId}
               allowedScopeTypeIds={config.allowed_scope_type_ids}
+              onBrowseFiles={() => {
+                // The canonical picker lives in a portal Sheet — close the
+                // popover first so its dismiss logic can't unmount the sheet.
+                setAddOpen(false);
+                setFileSheetOpen(true);
+              }}
               onPickMany={(picked) => {
                 addItems(activeAddType, picked);
                 if (remaining - picked.length <= 0) setAddOpen(false);
@@ -194,6 +202,28 @@ export function ReferenceValuePicker({
             />
           </PopoverContent>
         </Popover>
+      )}
+
+      {/* Canonical stored-files picker for `file` references. Mounted at the
+          component root (not inside the popover) so it survives the popover
+          closing. Stays open for multi-pick until max_items is reached. */}
+      {!disabled && (
+        <FilePickerSheet
+          open={fileSheetOpen}
+          onOpenChange={setFileSheetOpen}
+          title="Choose file(s)"
+          description="Pick from your stored files"
+          onPick={(selection) => {
+            const label = selection.details.filename || undefined;
+            addItems("file", [
+              {
+                file_id: selection.fileId,
+                ...(label ? { label } : {}),
+              } as unknown as ReferenceItem,
+            ]);
+            return remaining - 1 <= 0 ? "close" : undefined;
+          }}
+        />
       )}
 
       {!disabled && !canAddMore && items.length > 0 && (
@@ -261,15 +291,17 @@ function ReferenceTypeAdder({
   type,
   scopeId,
   allowedScopeTypeIds,
+  onBrowseFiles,
   onPickMany,
 }: {
   type: string;
   scopeId: string;
   allowedScopeTypeIds: string[] | null;
+  onBrowseFiles: () => void;
   onPickMany: (items: ReferenceItem[]) => void;
 }) {
   if (!type) return null;
-  if (type === "file") return <FileTypeAdder onPickMany={onPickMany} />;
+  if (type === "file") return <FileTypeAdder onBrowseFiles={onBrowseFiles} />;
   if (type === "url") return <UrlTypeAdder onPickMany={onPickMany} />;
   if (type === "scope") {
     return (
@@ -283,14 +315,7 @@ function ReferenceTypeAdder({
   return <RecordTypeAdder type={type} onPickMany={onPickMany} />;
 }
 
-function FileTypeAdder({
-  onPickMany,
-}: {
-  onPickMany: (items: ReferenceItem[]) => void;
-}) {
-  const { open, element } = useFilePicker();
-  const [busy, setBusy] = useState(false);
-
+function FileTypeAdder({ onBrowseFiles }: { onBrowseFiles: () => void }) {
   return (
     <div className="space-y-2">
       <Button
@@ -299,36 +324,11 @@ function FileTypeAdder({
         size="sm"
         variant="secondary"
         className="w-full"
-        disabled={busy}
-        onClick={async () => {
-          setBusy(true);
-          try {
-            const ids = await open({ multi: true, title: "Choose file(s)" });
-            if (ids && ids.length > 0) {
-              const titles = await fetchEntityTitles("file", ids);
-              onPickMany(
-                ids.map(
-                  (id) =>
-                    ({
-                      file_id: id,
-                      ...(titles.get(id) ? { label: titles.get(id) } : {}),
-                    }) as unknown as ReferenceItem,
-                ),
-              );
-            }
-          } finally {
-            setBusy(false);
-          }
-        }}
+        onClick={onBrowseFiles}
       >
-        {busy ? (
-          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <FileText className="mr-1.5 h-3.5 w-3.5" />
-        )}
+        <FileText className="mr-1.5 h-3.5 w-3.5" />
         Browse files
       </Button>
-      {element}
     </div>
   );
 }

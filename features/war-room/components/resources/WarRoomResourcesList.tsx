@@ -38,7 +38,7 @@ import { deleteDocument } from "@/features/data-tables/document-service";
 import { deleteFile } from "@/features/files/redux/thunks";
 import { deleteNote } from "@/features/notes/redux/thunks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import { AssociationPickerSheet } from "@/features/scopes/components/associations/AssociationPickerSheet";
+import { AssociationPicker } from "@/features/scopes/components/associations/AssociationPicker";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import {
   UniversalAssociationPicker,
@@ -472,7 +472,7 @@ export function WarRoomResourcesList({
       {/* Conversations get the proper /chat-style picker window (NOT the
           token-generic right-side drawer) — browsing/searching chats to attach
           feels identical to the Chat sidebar. Every other token keeps the
-          shared AssociationPickerSheet. */}
+          shared AssociationPicker (files → canonical FilesResourcePicker). */}
       {pickerToken === "conversation" ? (
         <ConversationPickerWindow
           open
@@ -492,7 +492,7 @@ export function WarRoomResourcesList({
           }
         />
       ) : pickerToken ? (
-        <AssociationPickerSheet
+        <AssociationPicker
           open
           onOpenChange={(open) => {
             if (!open) setPickerToken(null);

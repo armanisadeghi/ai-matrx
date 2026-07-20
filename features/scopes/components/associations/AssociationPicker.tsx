@@ -1,12 +1,15 @@
-// features/scopes/components/associations/AssociationPickerSheet.tsx
+// features/scopes/components/associations/AssociationPicker.tsx
 //
-// The generic, token-driven "pick a record to associate" surface. Adaptive:
-// a right-side Sheet on desktop, a bottom Drawer on mobile (project rule —
-// never a Dialog on mobile). All data comes from the entity registry +
-// candidate reader; the component holds NO per-entity knowledge.
+// The token-driven "pick a record to associate" surface. Adaptive: a right
+// Sheet on desktop, a bottom Drawer on mobile (project rule — never a Dialog
+// on mobile).
 //
-// It lists every candidate of `token` the user may attach, marks the ones
-// already linked to the container, and toggles the edge on click.
+// Files are NOT listed with the generic candidate list — the `file` token
+// always mounts the canonical stored-files browser (`FilesResourcePicker`:
+// search, filters, recents, folder tree, thumbnails), the same picker as
+// Smart Agent Input's "Stored Files". The generic list is only for non-file
+// tokens, whose candidates come from the registry-driven
+// `useAssociationCandidates` reader.
 
 "use client";
 
@@ -15,6 +18,10 @@ import { Check, Loader2, Plus, Search } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAssociationCandidates } from "@/features/scopes/hooks/useAssociationCandidates";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  FilesResourcePicker,
+  type FileSelection,
+} from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import {
   Sheet,
   SheetContent,
@@ -33,7 +40,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
-export interface AssociationPickerSheetProps {
+export interface AssociationPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   token: EntityTypeToken;
@@ -47,22 +54,26 @@ export interface AssociationPickerSheetProps {
   onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
 }
 
-export function AssociationPickerSheet(props: AssociationPickerSheetProps) {
+export function AssociationPicker(props: AssociationPickerProps) {
   const isMobile = useIsMobile();
+  const info = getEntityInfo(props.token);
+  const title = `Add ${info.labelPlural}`;
+  const subtitle = props.containerLabel
+    ? `Attach to ${props.containerLabel}`
+    : props.token === "file"
+      ? "Pick from your stored files"
+      : "Click an item to attach or detach it";
+
   const body = (
-    <TokenCandidateList
+    <AssociationCandidateBody
       token={props.token}
       enabled={props.open}
       attachedIds={props.attachedIds}
       onAttach={props.onAttach}
       onDetach={props.onDetach}
+      onClose={() => props.onOpenChange(false)}
     />
   );
-  const info = getEntityInfo(props.token);
-  const title = `Add ${info.labelPlural}`;
-  const subtitle = props.containerLabel
-    ? `Attach to ${props.containerLabel}`
-    : "Click an item to attach or detach it";
 
   if (isMobile) {
     return (
@@ -75,7 +86,9 @@ export function AssociationPickerSheet(props: AssociationPickerSheetProps) {
             </DrawerTitle>
             <DrawerDescription>{subtitle}</DrawerDescription>
           </DrawerHeader>
-          <div className="flex-1 min-h-0 px-4 pb-4 flex flex-col">{body}</div>
+          <div className="flex-1 min-h-0 px-4 pb-4 flex flex-col overflow-y-auto">
+            {body}
+          </div>
         </DrawerContent>
       </Drawer>
     );
@@ -85,7 +98,10 @@ export function AssociationPickerSheet(props: AssociationPickerSheetProps) {
     <Sheet open={props.open} onOpenChange={props.onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-md flex flex-col gap-3"
+        className={cn(
+          "w-full flex flex-col gap-3",
+          props.token === "file" ? "sm:max-w-lg" : "sm:max-w-md",
+        )}
       >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
@@ -94,35 +110,98 @@ export function AssociationPickerSheet(props: AssociationPickerSheetProps) {
           </SheetTitle>
           <SheetDescription>{subtitle}</SheetDescription>
         </SheetHeader>
-        <div className="flex-1 min-h-0 flex flex-col">{body}</div>
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+          {body}
+        </div>
       </SheetContent>
     </Sheet>
   );
 }
 
-export interface TokenCandidateListProps {
+export interface AssociationCandidateBodyProps {
   token: EntityTypeToken;
   /** Load candidates only while true (mirror of the sheet's `open`). */
   enabled: boolean;
   attachedIds: Set<string>;
   onAttach: (resourceId: string, title: string) => Promise<{ ok: boolean }>;
   onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
+  /** Wired to the canonical file browser's back affordance. */
+  onClose?: () => void;
 }
 
 /**
- * The searchable candidate list for ONE token — the reusable body of the
- * picker sheet, also mounted inline by per-token "add" affordances
- * (AssociationList sections).
+ * The attach/detach body for ONE token — reused by the picker sheet and by
+ * `UniversalAssociationPicker`'s per-token browse mode. Routes `file` to the
+ * canonical `FilesResourcePicker`; every other token gets the registry-driven
+ * candidate list. Do NOT add a plain file list here — file enumeration only
+ * happens through the canonical picker's listing-gated data paths.
  */
-export function TokenCandidateList({
-  enabled,
+export function AssociationCandidateBody({
   token,
+  enabled,
   attachedIds,
   onAttach,
   onDetach,
-}: TokenCandidateListProps) {
+  onClose,
+}: AssociationCandidateBodyProps) {
+  const [fileBusy, setFileBusy] = useState(false);
+
+  if (token === "file") {
+    const handleFilePick = async (selection: FileSelection) => {
+      if (fileBusy) return;
+      setFileBusy(true);
+      try {
+        if (attachedIds.has(selection.fileId)) {
+          await onDetach(selection.fileId);
+        } else {
+          await onAttach(
+            selection.fileId,
+            selection.details.filename || "File",
+          );
+        }
+      } finally {
+        setFileBusy(false);
+      }
+    };
+    return (
+      <div
+        className={cn("flex min-h-0 flex-1 flex-col", fileBusy && "opacity-70")}
+      >
+        <FilesResourcePicker
+          onBack={() => onClose?.()}
+          onSelect={(selection) => void handleFilePick(selection)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <EntityCandidateList
+      token={token}
+      enabled={enabled}
+      attachedIds={attachedIds}
+      onAttach={onAttach}
+      onDetach={onDetach}
+    />
+  );
+}
+
+function EntityCandidateList({
+  token,
+  enabled,
+  attachedIds,
+  onAttach,
+  onDetach,
+}: {
+  token: EntityTypeToken;
+  enabled: boolean;
+  attachedIds: Set<string>;
+  onAttach: (resourceId: string, title: string) => Promise<{ ok: boolean }>;
+  onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
+}) {
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const info = getEntityInfo(token);
   const { candidates, loading, error, reload } = useAssociationCandidates({
     token,
     enabled,
@@ -149,7 +228,7 @@ export function TokenCandidateList({
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search…"
+          placeholder={`Search ${info.labelPlural.toLowerCase()}…`}
           className="pl-8 text-base"
           style={{ fontSize: 16 }}
         />
@@ -192,6 +271,7 @@ export function TokenCandidateList({
                       attached && "bg-accent/40",
                     )}
                   >
+                    <info.Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span className="flex-1 min-w-0 truncate text-foreground">
                       {c.title}
                     </span>

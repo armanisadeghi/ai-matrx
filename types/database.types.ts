@@ -13347,6 +13347,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_listable_for: {
+        Args: { p_file_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_safe_webhook_url: { Args: { p_url: string }; Returns: boolean }
       webhook_dispatch: { Args: { p_limit?: number }; Returns: number }
       webhook_event_payload: {

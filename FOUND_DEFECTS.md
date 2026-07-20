@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D73 — Consolidate remaining thin file-picker consumers onto the canonical picker (2026-07-20)
+
+Follow-up to the 2026-07-20 file-listing leak fix (see `features/files/FEATURE.md` change log). The scopes reference flow and the association pickers now mount the canonical `FilesResourcePicker` (via `features/resource-manager/resource-picker/FilePickerSheet.tsx`); the bare-list `AssociationPickerSheet` is deleted. Three consumers still use the thin `useFilePicker`/`PickerShell` browser: `features/pdf-demo/components/PdfSourcePicker.tsx`, `features/image-studio/components/EmbeddedImageStudio.tsx`, and `features/files/components/pickers/FolderPicker.tsx` (folder mode — no canonical equivalent yet). They are SAFE (the DB listing gate `files.is_listable_for` protects every consumer of `get_user_file_tree`), but for one canonical picking UX they should migrate to `FilePickerSheet`/`FilesResourcePicker`, after which `FilePicker.tsx`/`useFilePicker` and `PickerShell`'s file mode can be deleted. FolderPicker needs a folder-mode story first. Also tried filing this via the matrx-feedback MCP: `submit_feedback` fails with FK violation `user_feedback_user_id_fkey` for agent submissions — that's its own backend bug.
+
 ### D72 — CRITICAL: /files desktop table row click can create a real share link as a side effect (2026-07-19)
 
 **Data-exposure risk — highest priority in this batch.** Observed live: clicking a table row's hover-revealed inline action area on the desktop `/files` table can trigger `onShare` (creating a real, persisted share link) even though the click looked like a plain row activation, not a deliberate Share click. `Unverified — from live testing only; code analysis pending.`

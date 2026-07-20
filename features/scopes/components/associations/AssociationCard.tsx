@@ -10,7 +10,8 @@
 // shows a LIVE count of how many of that entity are attached to the primary
 // (container) entity, and a plus button that opens a picker side-sheet to
 // attach/detach. ALL logic lives in hooks/utilities — this is pure presentation
-// wiring over `useContainerLinks` + `AssociationPickerSheet`.
+// wiring over `useContainerLinks` + `AssociationPicker` (files open the
+// canonical FilesResourcePicker, never a plain list).
 
 "use client";
 
@@ -25,7 +26,7 @@ import {
   usePrimaryEntity,
   type PrimaryEntity,
 } from "@/features/scopes/components/associations/PrimaryEntityContext";
-import { AssociationPickerSheet } from "@/features/scopes/components/associations/AssociationPickerSheet";
+import { AssociationPicker } from "@/features/scopes/components/associations/AssociationPicker";
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
@@ -123,7 +124,7 @@ export function AssociationCard({
       </div>
 
       {canAttach && (
-        <AssociationPickerSheet
+        <AssociationPicker
           open={open}
           onOpenChange={setOpen}
           token={token}

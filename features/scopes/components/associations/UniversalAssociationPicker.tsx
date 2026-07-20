@@ -3,7 +3,8 @@
 // ONE search box over EVERY listable entity type — "attach anything from
 // anywhere". Type a name and results from all tokens stream in, grouped with
 // registry icons; click to attach/detach. An optional token chip rail narrows
-// to per-token browsing (the classic TokenCandidateList).
+// to per-token browsing (AssociationCandidateBody — files open the canonical
+// FilesResourcePicker, never a plain list).
 //
 // Fully registry-driven: register a token + one overlay line and it appears
 // here with zero changes. Empty query shows the caller's recently-touched
@@ -20,7 +21,7 @@ import {
   getEntityInfo,
   curatedTokens,
 } from "@/features/scopes/registry/entityRegistry";
-import { TokenCandidateList } from "./AssociationPickerSheet";
+import { AssociationCandidateBody } from "./AssociationPicker";
 import type { UniversalCandidate } from "@/features/scopes/service/associationCandidates";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
@@ -130,9 +131,10 @@ export function UniversalAssociationPicker(
       {/* ── results ──────────────────────────────────────────────────── */}
       {browseToken ? (
         <div className="flex min-h-0 flex-1 flex-col">
-          <TokenCandidateList
+          <AssociationCandidateBody
             token={browseToken}
             enabled
+            onClose={() => setBrowseToken(null)}
             attachedIds={
               new Set(
                 [...attachedKeys]

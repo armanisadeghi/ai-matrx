@@ -39,7 +39,7 @@ import {
   type EntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
 import { usePrimaryEntity, type PrimaryEntity } from "./PrimaryEntityContext";
-import { AssociationPickerSheet } from "./AssociationPickerSheet";
+import { AssociationPicker } from "./AssociationPicker";
 import {
   UniversalAssociationPicker,
   attachedKey,
@@ -464,7 +464,7 @@ export function AssociationList(props: AssociationListProps) {
 
       {/* ── per-token picker sheet ───────────────────────────────────── */}
       {pickerToken && (
-        <AssociationPickerSheet
+        <AssociationPicker
           open
           onOpenChange={(open) => {
             if (!open) setPickerToken(null);

@@ -99,7 +99,7 @@ const EMPTY_PROCESSED_FILE_IDS = new Set<string>();
 // Types (preserve the legacy surface)
 // ---------------------------------------------------------------------------
 
-type FileSelection = {
+export type FileSelection = {
   /**
    * cld_files UUID. When present, downstream code that needs to send the
    * file to a backend AI API should build a `MediaRef` from this id (via

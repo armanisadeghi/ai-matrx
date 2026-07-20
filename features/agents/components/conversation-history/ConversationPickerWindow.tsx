@@ -4,7 +4,7 @@
  * ConversationPickerWindow — a floating, draggable picker for attaching an
  * EXISTING conversation to some container (a war-room thread/room, a note, a
  * task, …). It is the "proper component" replacement for the token-generic
- * `AssociationPickerSheet` right-side drawer when the entity is a conversation:
+ * `AssociationPicker` right-side drawer when the entity is a conversation:
  * it renders the SAME UI as the /chat sidebar (the canonical
  * `ConversationHistorySidebar`), so browsing/searching/filtering chats to pick
  * one feels identical to picking one in Chat.
