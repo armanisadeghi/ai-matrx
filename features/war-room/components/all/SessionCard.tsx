@@ -4,10 +4,18 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Loader2, Clock } from "lucide-react";
+import {
+  Trash2,
+  Loader2,
+  Clock,
+  MessageSquare,
+  Pin,
+  FolderKanban,
+} from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { deleteSession } from "@/features/war-room/redux/thunks";
+import { selectRoomCardStats } from "@/features/war-room/redux/selectors";
 import {
   roomColorOf,
   roomIconOf,
@@ -22,6 +30,7 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
+  const stats = useAppSelector(selectRoomCardStats(session.id));
 
   const RoomIcon = roomIconOf(session.icon);
   const roomColor = roomColorOf(session.color);
@@ -116,15 +125,36 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
         ) : null}
       </div>
 
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        <Clock className="size-3" />
-        <span>
+      {/* Stat row — the at-a-glance facts. Thread count always shows; pinned
+          and project only when present so empty rooms stay quiet. */}
+      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1 tabular-nums">
+          <MessageSquare className="size-3" />
+          {stats.threadCount} {stats.threadCount === 1 ? "thread" : "threads"}
+        </span>
+        {stats.pinnedCount > 0 ? (
+          <span
+            className="flex items-center gap-1 tabular-nums"
+            title={`${stats.pinnedCount} pinned`}
+          >
+            <Pin className="size-3" />
+            {stats.pinnedCount}
+          </span>
+        ) : null}
+        {stats.hasProject ? (
+          <span className="flex items-center gap-1" title="Tied to a project">
+            <FolderKanban className="size-3" />
+            Project
+          </span>
+        ) : null}
+        <span className="ml-auto flex items-center gap-1">
+          <Clock className="size-3" />
           {formatRelativeTime(session.last_opened_at, {
             fallback: "Never opened",
           })}
         </span>
         {pending ? (
-          <Loader2 className="size-3 animate-spin ml-auto text-primary" />
+          <Loader2 className="size-3 animate-spin text-primary" />
         ) : null}
       </div>
     </div>

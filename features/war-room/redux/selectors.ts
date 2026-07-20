@@ -132,6 +132,49 @@ export function selectOrderedGalleryThreadIds(roomId: string | null) {
   return sel;
 }
 
+// ── Room card stats (/war-room/all) ─────────────────────────────────────
+export interface RoomCardStats {
+  threadCount: number;
+  pinnedCount: number;
+  /** Room-level project association exists (title not resolved here). */
+  hasProject: boolean;
+}
+const EMPTY_ROOM_STATS: RoomCardStats = {
+  threadCount: 0,
+  pinnedCount: 0,
+  hasProject: false,
+};
+const roomStatsCache = new Map<string, (state: RootState) => RoomCardStats>();
+export function selectRoomCardStats(roomId: string | null) {
+  if (!roomId) return () => EMPTY_ROOM_STATS;
+  let sel = roomStatsCache.get(roomId);
+  if (!sel) {
+    sel = createSelector(
+      [
+        selectThreadIdsByRoom,
+        selectThreadUserStateById,
+        selectAssignmentsByContainer,
+      ],
+      (idsByRoom, userStateById, byContainer): RoomCardStats => {
+        const ids = idsByRoom[roomId] ?? EMPTY_IDS;
+        let pinned = 0;
+        for (const id of ids) {
+          if (userStateById[id]?.isPinned) pinned++;
+        }
+        const roomBucket =
+          byContainer[containerKey("room", roomId)] ?? EMPTY_ASSIGNMENTS;
+        const hasProject = roomBucket.some((r) => r.entity_type === "project");
+        if (ids.length === 0 && pinned === 0 && !hasProject) {
+          return EMPTY_ROOM_STATS;
+        }
+        return { threadCount: ids.length, pinnedCount: pinned, hasProject };
+      },
+    );
+    roomStatsCache.set(roomId, sel);
+  }
+  return sel;
+}
+
 const hiddenThreadsCache = new Map<
   string,
   (state: RootState) => WarRoomThread[]
