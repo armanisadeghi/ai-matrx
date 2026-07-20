@@ -1,5 +1,6 @@
 "use client";
 
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -68,7 +69,7 @@ export function SitesPortfolio() {
           <SiteIdentityMark site={row} size={30} />
           <div className="min-w-0">
             <Link
-              href={`/marketing/sites/${row.id}`}
+              href={marketingRoutes.site(row.brand_id, row.id)}
               className="block truncate text-sm font-medium text-foreground hover:text-primary hover:underline"
               onClick={(event) => event.stopPropagation()}
             >
@@ -222,7 +223,7 @@ export function SitesPortfolio() {
                 ),
               }}
               detail={{ enabled: false }}
-              onRowOpen={(row) => router.push(`/marketing/sites/${row.id}`)}
+              onRowOpen={(row) => router.push(marketingRoutes.site(row.brand_id, row.id))}
               rowActions={(row) => (
                 <a
                   href={row.root_url}

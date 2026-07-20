@@ -53,6 +53,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "data-shape": "Data-shape contract violation",
   "org-resolution": "Org resolution fallback",
   "user-toast": "User-facing error toast",
+  "marketing-crawler": "Marketing crawler",
   "redux-rejected": "Rejected action (thunk)",
   "content-ir": "Content IR parse/parity failure",
 };

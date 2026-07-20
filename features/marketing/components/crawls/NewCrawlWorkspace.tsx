@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Ban, Play, RotateCcw } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ function siteCrawlOptions(settings: Json): CrawlStartOptions {
 }
 
 export function NewCrawlWorkspace() {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const queryClient = useQueryClient();
   const [options, setOptions] = useState<CrawlStartOptions>(() =>
     siteCrawlOptions(site.settings),
@@ -156,7 +156,7 @@ export function NewCrawlWorkspace() {
               <p className="text-[11px] text-muted-foreground">{site.domain}</p>
             </div>
             <Button asChild variant="ghost" size="sm" className="h-7 px-2">
-              <Link href={`/marketing/sites/${site.id}/crawls`}>
+              <Link href={`${sitePath}/crawls`}>
                 <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Sessions
               </Link>
             </Button>

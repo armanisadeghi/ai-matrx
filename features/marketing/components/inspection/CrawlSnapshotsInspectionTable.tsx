@@ -25,7 +25,7 @@ export function CrawlSnapshotsInspectionTable({
 }: {
   crawlId: string;
 }) {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "captured_at", direction: "desc" },
     defaultPageSize: 50,
@@ -41,7 +41,7 @@ export function CrawlSnapshotsInspectionTable({
       cellKind: "text",
       cell: (row) => (
         <Link
-          href={`/marketing/sites/${site.id}/pages/${row.page_id}`}
+          href={`${sitePath}/pages/${row.page_id}`}
           className="block min-w-72 max-w-2xl truncate font-mono text-xs text-primary hover:underline"
           title={pageUrl(row)}
         >
@@ -136,7 +136,7 @@ export function CrawlSnapshotsInspectionTable({
       cellKind: "uuid",
       fk: {
         href: (id, row) =>
-          `/marketing/sites/${site.id}/pages/${row.page_id}/snapshots/${id}`,
+          `${sitePath}/pages/${row.page_id}/snapshots/${id}`,
       },
     },
   ];

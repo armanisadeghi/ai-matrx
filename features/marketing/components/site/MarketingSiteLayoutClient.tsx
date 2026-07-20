@@ -26,9 +26,12 @@ import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 interface MarketingSiteContextValue {
   site: MarketingSite;
+  /** Canonical brand-first base path for this site (no trailing slash). */
+  sitePath: string;
 }
 
 const MarketingSiteContext = createContext<MarketingSiteContextValue | null>(
@@ -44,8 +47,10 @@ export function useMarketingSite() {
   return value;
 }
 
-function sectionSuffix(pathname: string, siteId: string): string {
-  const rest = pathname.slice(`/marketing/sites/${siteId}`.length);
+function sectionSuffix(pathname: string, brandId: string, siteId: string): string {
+  const rest = pathname.slice(
+    marketingRoutes.site(brandId, siteId).length,
+  );
   for (const section of [
     "discovery",
     "pages",
@@ -79,8 +84,9 @@ export function MarketingSiteLayoutClient({
 }: {
   children: React.ReactNode;
 }) {
-  const params = useParams<{ siteId: string }>();
+  const params = useParams<{ brandId: string; siteId: string }>();
   const pathname = usePathname();
+  const brandId = params.brandId;
   const siteId = params.siteId;
   const site = useSite(siteId);
   const options = useSiteOptions();
@@ -107,71 +113,85 @@ export function MarketingSiteLayoutClient({
   }
 
   const current = site.data;
+  if (current.brand_id !== brandId) {
+    // A cross-brand URL must never resolve another brand's site.
+    return (
+      <>
+        <FallbackHeader />
+        <QueryError
+          error={
+            new Error("This site does not belong to the brand in the URL.")
+          }
+        />
+      </>
+    );
+  }
+  const base = marketingRoutes.site(brandId, siteId);
   return (
-    <MarketingSiteContext.Provider value={{ site: current }}>
+    <MarketingSiteContext.Provider value={{ site: current, sitePath: base }}>
       <EntityModeHeader
-        backHref="/marketing/sites"
+        backHref={marketingRoutes.brand(brandId)}
         entityLabel={current.name}
         entityOptions={(options.data ?? []).map((option) => ({
           label: option.name,
-          href: `/marketing/sites/${option.id}${sectionSuffix(pathname, siteId)}`,
+          href: `${marketingRoutes.site(option.brand_id, option.id)}${sectionSuffix(pathname, brandId, siteId)}`,
           active: option.id === siteId,
         }))}
         modes={[
-          { name: "Overview", href: `/marketing/sites/${siteId}`, icon: Gauge },
+          { name: "Overview", href: `${base}`, icon: Gauge },
           {
             name: "Discovery",
-            href: `/marketing/sites/${siteId}/discovery`,
+            href: `${base}/discovery`,
             icon: Inbox,
           },
           {
             name: "Pages",
-            href: `/marketing/sites/${siteId}/pages`,
+            href: `${base}/pages`,
             icon: FileText,
           },
           {
             name: "Crawls",
-            href: `/marketing/sites/${siteId}/crawls`,
+            href: `${base}/crawls`,
             icon: ScanSearch,
           },
           {
             name: "Analysis",
-            href: `/marketing/sites/${siteId}/analysis`,
+            href: `${base}/analysis`,
             icon: Activity,
           },
           {
             name: "Findings",
-            href: `/marketing/sites/${siteId}/findings`,
+            href: `${base}/findings`,
             icon: AlertTriangle,
           },
           {
             name: "Links",
-            href: `/marketing/sites/${siteId}/links`,
+            href: `${base}/links`,
             icon: Link2,
           },
           {
             name: "Screenshots",
-            href: `/marketing/sites/${siteId}/screenshots`,
+            href: `${base}/screenshots`,
             icon: Images,
           },
           {
             name: "Integrations",
-            href: `/marketing/sites/${siteId}/integrations`,
+            href: `${base}/integrations`,
             icon: Plug,
           },
           {
             name: "Cost",
-            href: `/marketing/sites/${siteId}/cost`,
+            href: `${base}/cost`,
             icon: CircleDollarSign,
           },
           {
             name: "Access",
-            href: `/marketing/sites/${siteId}/access`,
+            href: `${base}/access`,
             icon: ShieldCheck,
           },
           {
             name: "Settings",
-            href: `/marketing/sites/${siteId}/settings`,
+            href: `${base}/settings`,
             icon: Settings,
           },
         ]}

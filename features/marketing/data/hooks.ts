@@ -9,6 +9,12 @@ import {
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
   confirmDiscoveredAsset,
+  getBrand,
+  listBrands,
+  listBrandAssets,
+  listBrandProperties,
+  listBrandSites,
+  listBusinessFacts,
   confirmDiscoveredFact,
   countPendingDiscovered,
   countSites,
@@ -313,4 +319,52 @@ export function useConfirmDiscoveredFact() {
 
 export function useDismissDiscoveredItem() {
   return useDiscoveryMutation(dismissDiscoveredItem);
+}
+
+export function useBrands(state: MatrxDataTableQueryState) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "brands", state] as const,
+    queryFn: ({ signal }) => listBrands(state, signal),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useBrand(brandId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "brand", brandId, "detail"] as const,
+    queryFn: ({ signal }) => getBrand(brandId, signal),
+    enabled: Boolean(brandId),
+  });
+}
+
+export function useBrandSites(brandId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "brand", brandId, "sites"] as const,
+    queryFn: ({ signal }) => listBrandSites(brandId, signal),
+    enabled: Boolean(brandId),
+  });
+}
+
+export function useBrandProperties(brandId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "brand", brandId, "properties"] as const,
+    queryFn: ({ signal }) => listBrandProperties(brandId, signal),
+    enabled: Boolean(brandId),
+  });
+}
+
+export function useBrandAssets(brandId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "brand", brandId, "assets"] as const,
+    queryFn: ({ signal }) => listBrandAssets(brandId, signal),
+    enabled: Boolean(brandId),
+  });
+}
+
+export function useBusinessFacts(brandId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "brand", brandId, "facts"] as const,
+    queryFn: ({ signal }) => listBusinessFacts(brandId, signal),
+    enabled: Boolean(brandId),
+  });
 }

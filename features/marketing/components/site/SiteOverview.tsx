@@ -14,8 +14,9 @@ import {
   RefreshCw,
   ScanSearch,
   Sparkles,
+  TriangleAlert,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,8 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SiteIdentityMark } from "@/features/marketing/components/shared/SiteConnectionChips";
 import { initializeSite } from "@/features/marketing/crawler/direct-client";
+import { getSite } from "@/features/marketing/data/service";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   parseInitialization,
   siteConnectionStatuses,
@@ -58,7 +61,7 @@ const stateDotClass: Record<SiteConnectionState, string> = {
 };
 
 export function SiteOverview() {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const overview = useSiteOverview(site.id);
   const hero = useSiteHeroScreenshot(site.id);
   const pendingDiscovered = usePendingDiscoveredCount(site.brand_id);
@@ -77,8 +80,40 @@ export function SiteOverview() {
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(site.id),
       });
-      toast.success("Site initialized");
-      setInitPhase("idle");
+      // The stream finishing is NOT success — the server records per-step
+      // failures in site.initialization.errors. Read the fresh row and scream
+      // about any failed step (toast + Error Inspector), never a false green.
+      const fresh = await getSite(site.id);
+      const { stepErrors } = parseInitialization(fresh);
+      if (stepErrors.length) {
+        const summary = stepErrors
+          .map((stepError) => stepError.step)
+          .join(", ");
+        setInitPhase("failed");
+        setInitError(
+          `Initialization completed with failed steps: ${summary}. Details below.`,
+        );
+        toast.error(
+          `Initialization finished with ${stepErrors.length} failed step${stepErrors.length === 1 ? "" : "s"}`,
+          { description: summary },
+        );
+        for (const stepError of stepErrors) {
+          try {
+            captureError({
+              source: "marketing-crawler",
+              relation: `initialize:${stepError.step}`,
+              message: stepError.message,
+              name: stepError.errorType ?? undefined,
+              raw: stepError,
+            });
+          } catch {
+            /* capture must never break the flow */
+          }
+        }
+      } else {
+        toast.success("Site initialized");
+        setInitPhase("idle");
+      }
     } catch (error) {
       const message = extractErrorMessage(error);
       setInitPhase("failed");
@@ -129,6 +164,44 @@ export function SiteOverview() {
             error={initError}
             onInitialize={() => void runInitialize()}
           />
+        ) : null}
+
+        {init.stepErrors.length ? (
+          <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+            <div className="flex items-center gap-2">
+              <TriangleAlert className="h-4 w-4 text-destructive" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Initialization issues — {init.stepErrors.length} step
+                {init.stepErrors.length === 1 ? "" : "s"} failed
+              </h2>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto h-7 text-xs"
+                disabled={initBusy}
+                onClick={() => void runInitialize()}
+              >
+                Retry initialization
+              </Button>
+            </div>
+            <ul className="mt-2 space-y-2">
+              {init.stepErrors.map((stepError) => (
+                <li key={stepError.step} className="text-xs leading-5">
+                  <span className="font-semibold capitalize text-foreground">
+                    {stepError.step}
+                  </span>
+                  {stepError.errorType ? (
+                    <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                      {stepError.errorType}
+                    </span>
+                  ) : null}
+                  <p className="break-words text-muted-foreground">
+                    {stepError.message}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
         ) : null}
 
         <section className="overflow-hidden rounded-lg border border-border bg-card">
@@ -183,7 +256,7 @@ export function SiteOverview() {
                     variant="outline"
                     className="h-7 text-xs"
                   >
-                    <Link href={`/marketing/sites/${site.id}/integrations`}>
+                    <Link href={`${sitePath}/integrations`}>
                       {status.state === "connected" ? "Manage" : "Set up"}
                     </Link>
                   </Button>
@@ -243,7 +316,7 @@ export function SiteOverview() {
                 </p>
               </div>
               <Button asChild size="sm" variant="outline" className="h-8">
-                <Link href={`/marketing/sites/${site.id}/discovery`}>
+                <Link href={`${sitePath}/discovery`}>
                   Review
                 </Link>
               </Button>
@@ -257,7 +330,7 @@ export function SiteOverview() {
                 variant="outline"
                 className="h-9 justify-start gap-2"
               >
-                <Link href={`/marketing/sites/${site.id}/pages`}>
+                <Link href={`${sitePath}/pages`}>
                   <FileText className="h-4 w-4" />
                   Review canonical pages
                 </Link>
@@ -267,7 +340,7 @@ export function SiteOverview() {
                 variant="outline"
                 className="h-9 justify-start gap-2"
               >
-                <Link href={`/marketing/sites/${site.id}/crawls/new`}>
+                <Link href={`${sitePath}/crawls/new`}>
                   <Play className="h-4 w-4" />
                   Start a crawl
                 </Link>
@@ -277,7 +350,7 @@ export function SiteOverview() {
                 variant="outline"
                 className="h-9 justify-start gap-2"
               >
-                <Link href={`/marketing/sites/${site.id}/screenshots`}>
+                <Link href={`${sitePath}/screenshots`}>
                   <ScanSearch className="h-4 w-4" />
                   Screenshot gallery
                 </Link>

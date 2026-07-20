@@ -26,6 +26,18 @@ the safety net, not the main event.
 
 **Capture adapters (all → `captureError`):**
 
+- **Sonner toasts** — `lib/toast.ts`, the captured wrapper around sonner's
+  `toast`. `toast.error`/`toast.warning` feed `captureError` (source
+  `user-toast`, orange). A bare `import { toast } from "sonner"` is INVISIBLE
+  to the inspector — only the legacy `lib/toast-service.ts` and this wrapper
+  capture; migrate sonner imports to `@/lib/toast` opportunistically (repo-wide
+  sweep pending, ~580 files).
+- **Marketing crawler** — chokepoints in
+  `features/marketing/crawler/direct-client.ts` (HTTP/stream/broken-stream
+  failures, `relation: scraper:<path>`) plus per-step "initialize site"
+  failures read back from `web.site.initialization.errors`
+  (`relation: initialize:<step>`). Source `marketing-crawler`, red.
+
 - **Agent stream (the central artery)** — `lib/diagnostics/captureStreamError.ts`.
   `captureStreamEvent` is wired at the ONE chokepoint every stream consumer pulls
   events through: `parseNdjsonStream` (`lib/api/stream-parser.ts`). It captures
@@ -193,6 +205,11 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-20 — **sonner capture gap closed + marketing-crawler source.** Found
+  that modern code toasting via bare sonner bypassed capture entirely; added
+  the `@/lib/toast` captured wrapper (marketing migrated), and the
+  `marketing-crawler` red source for scraper-boundary + initialize-step
+  failures.
 - 2026-07-05 — **python-client capture.** `capturePythonClientError.ts` wired at
   the failure chokepoint in `lib/python-client.ts` so RAG/cloud-files/PDF REST
   failures (previously swallowed into hook state) appear in the Error Inspector

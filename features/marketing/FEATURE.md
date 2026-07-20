@@ -10,10 +10,15 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
 
 ## Entry points
 
-- `/marketing/sites` — accessible-site portfolio.
+**The URL hierarchy is brand-first.** Canonical entity paths come ONLY from `features/marketing/lib/routes.ts` (`marketingRoutes`) — never hand-built.
+
+- `/marketing/brands` — brand portfolio (the anchor list).
+- `/marketing/brands/[brandId]` — brand cockpit: identity, website properties with connection chips, social properties, confirmed business facts, brand asset library, pending-review count.
+- `/marketing/brands/[brandId]/sites/[siteId]/**` — every site vertical (overview, discovery, pages, crawls, analysis, findings, links, screenshots, integrations, cost, access, settings) lives nested under its brand. `/socials/...` will join as a sibling.
+- `/marketing/sites` — flattened all-sites view (kept deliberately); rows link to the nested canonical URLs.
+- `/marketing/sites/[siteId]/**` — LEGACY shim only: client redirect that resolves the brand under the caller's session and replaces the URL. Cross-links built from rows that only carry `site_id` may target it.
 - `/marketing/connections` — user/org credential onboarding and site-provider binding guide.
-- `/marketing/sites/new` — selected-organization site creation.
-- `/marketing/sites/[siteId]` — shared site shell and overview.
+- `/marketing/sites/new` — selected-organization site creation (creates-or-reuses the brand via `web.create_site`).
 - `.../pages`, `.../pages/[pageId]`, and `.../snapshots/**` — canonical page registry, user intent, and observed history.
 - `.../crawls`, `.../crawls/new`, `.../crawls/[crawlId]`, `.../urls`, and `.../logs` — direct live commands, sessions, reconciliation, encountered URLs, and durable events.
 - `.../analysis` — open, non-suppressed priority queue from `web.v_priority_queue`.
@@ -70,6 +75,8 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 ## Invariants & gotchas
 
 - **The five connection statuses (Init / GSC / GA4 / PSI / CMS) are derived ONLY through `features/marketing/lib/site-status.ts`** — the portfolio list and the site page must never compute them independently.
+- **A finished initialize stream is NOT success.** The server records per-step failures in `web.site.initialization.errors`; the overview re-reads the row after every run, toasts the failed steps, renders the "Initialization issues" panel, and captures each step to the Error Inspector (`source: "marketing-crawler"`). A green toast with failed steps hidden is the exact defect this exists to prevent.
+- **Every scraper-boundary failure feeds `captureError`** via the chokepoints in `features/marketing/crawler/direct-client.ts`. Marketing components import `toast` from `@/lib/toast` (the captured sonner wrapper), never from `"sonner"` — bare sonner toasts are invisible to the admin Error Inspector.
 - **Machine discovery writes ONLY `web.discovered_item`.** Confirmed identity (`brand_asset`, `business_fact`, site identity columns) is written by humans (or by explicit promotion code) — never directly by a scraper.
 - Site/brand identity URLs (logo, favicon, og image) are the brand's own public URLs. Scraper-produced media (screenshots) goes through the canonical AWS file pipeline and renders via `InlineMediaRef` + `file_id` — never a Supabase Storage URL.
 - Persisted data always flows browser ↔ Supabase under the caller's JWT and RLS. Never add a Python, AI Dream, or Next.js read proxy.
@@ -123,3 +130,4 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 - 2026-07-19 — Codex: site overview hero now top-aligns site identity, reads observed homepage meta title/description from the bootstrap snapshot's `head_tags`, and refreshes that metadata after homepage capture retries.
 - 2026-07-19 — Codex: crawl new/summary workspaces now fill the available viewport height; live feed scrolls in-panel, and session scope/stats/metadata render as condensed field grids instead of raw JSON.
 - 2026-07-20 — Claude: shipped the Brand layer (`web.brand` / `property` / `brand_asset` / `business_fact` / `discovered_item`, migration `web_brand_layer.sql`, canonical RLS, entity registry, one-brand-per-site backfill; test crawl data wiped). Sites portfolio now leads with identity (favicon/logo mark) plus the five connection chips derived solely from `lib/site-status.ts`; site overview rebuilt around pre/post-initialization states with an Initialize command, connections board, edit-in-place identity, and hero screenshot via `InlineMediaRef`; new `/discovery` review inbox promotes discovered candidates to confirmed assets/facts (verified end-to-end). CMS provider slot added to the integrations schema. Scraper `sites/{id}/initialize` command is being built in aidream.
+- 2026-07-20 — Claude: brand-first routing — moved every site vertical under `/marketing/brands/[brandId]/sites/[siteId]`, added the `marketingRoutes` builders, the brands portfolio + brand cockpit, a client-side legacy redirect for all flat `/marketing/sites/[siteId]` URLs, and made `web.create_site` create-or-reuse the brand + website property (migration `web_brand_layer_fixes.sql`, which also fixed the discovered_item dedup index to a NULLS NOT DISTINCT unique so the scraper's ON CONFLICT works). Initialization failures are now loud end-to-end: per-step server errors render on the overview, toast, and land in the Error Inspector; marketing toasts route through the captured `@/lib/toast` wrapper.

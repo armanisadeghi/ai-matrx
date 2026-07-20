@@ -111,7 +111,7 @@ function EvidenceInspector({ result }: { result: MarketingAnalysisResult }) {
 export function FindingDetail({ findingId }: { findingId: string }) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "computed_at", direction: "desc" },
   });
@@ -246,7 +246,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
                 variant="ghost"
                 size="sm"
                 className="h-7 gap-1 px-2"
-                onClick={() => navigate(`/marketing/sites/${site.id}/findings`)}
+                onClick={() => navigate(`${sitePath}/findings`)}
                 disabled={isNavigating}
               >
                 {isNavigating ? (

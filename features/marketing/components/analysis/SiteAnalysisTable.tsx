@@ -16,19 +16,19 @@ import { useSitePriorityQueue } from "@/features/marketing/data/analysis-hooks";
 import type { PriorityQueueRow } from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 
-function filteredFindingsHref(siteId: string, row: PriorityQueueRow) {
+function filteredFindingsHref(basePath: string, row: PriorityQueueRow) {
   const params = new URLSearchParams();
   if (row.item_key) params.set("f_item_key", `text:${row.item_key}`);
   if (row.item_id) params.set("f_item_id", `text:${row.item_id}`);
   if (row.page_id) params.set("f_page_id", `text:${row.page_id}`);
   const query = params.toString();
-  return `/marketing/sites/${siteId}/findings${query ? `?${query}` : ""}`;
+  return `${basePath}/findings${query ? `?${query}` : ""}`;
 }
 
 export function SiteAnalysisTable() {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "priority", direction: "desc" },
   });
@@ -162,7 +162,7 @@ export function SiteAnalysisTable() {
               <Button
                 size="sm"
                 className="h-8 gap-1.5"
-                onClick={() => navigate(`/marketing/sites/${site.id}/findings`)}
+                onClick={() => navigate(`${sitePath}/findings`)}
                 disabled={isNavigating}
               >
                 {isNavigating ? (
@@ -176,7 +176,7 @@ export function SiteAnalysisTable() {
           ),
         }}
         detail={{ enabled: false }}
-        onRowOpen={(row) => navigate(filteredFindingsHref(site.id, row))}
+        onRowOpen={(row) => navigate(filteredFindingsHref(sitePath, row))}
         emptyState={{
           icon: <CircleGauge className="h-8 w-8 text-muted-foreground" />,
           title: "No prioritized findings",

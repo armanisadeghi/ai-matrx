@@ -1,5 +1,9 @@
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import type {
+  BrandAsset,
+  BrandListRow,
+  BrandProperty,
+  BusinessFact,
   ConfirmAssetInput,
   ConfirmFactInput,
   CrawlEvent,
@@ -9,6 +13,7 @@ import type {
   DiscoveredItem,
   DiscoveredItemStatus,
   HomepageObservedMeta,
+  MarketingBrand,
   MarketingPage,
   MarketingSite,
   PageListRow,
@@ -966,4 +971,178 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
     .eq("id", itemId)
     .eq("status", "pending");
   if (response.error) throw response.error;
+}
+
+// ============================================================================
+// Brands — the anchor entity's own reads
+// ============================================================================
+
+const BRAND_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings";
+
+export async function listBrands(
+  state: MatrxDataTableQueryState,
+  signal?: AbortSignal,
+): Promise<PagedResult<BrandListRow>> {
+  const db = await authenticatedWebDb(supabase);
+  const { from, to } = rangeFor(state);
+  const sortColumns = {
+    name: "name",
+    status: "status",
+    updated_at: "updated_at",
+    created_at: "created_at",
+  } as const;
+  const requestedSort = state.sort?.id ?? "name";
+  const sortColumn =
+    sortColumns[requestedSort as keyof typeof sortColumns] ?? "name";
+  const ascending = state.sort?.direction !== "desc";
+
+  let query = db
+    .from("brand")
+    .select(BRAND_COLUMNS, { count: "exact" })
+    .is("deleted_at", null);
+  const search = cleanSearch(state.search);
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,website_url.ilike.%${search}%`);
+  }
+  query = query.order(sortColumn, { ascending, nullsFirst: false });
+  query = query.order("id", { ascending });
+  const response = await query
+    .range(from, to)
+    .abortSignal(signal ?? new AbortController().signal);
+  const brands = assertData(response.data, response.error);
+  if (brands.length === 0) return { rows: [], total: response.count ?? 0 };
+
+  const brandIds = brands.map((brand) => brand.id);
+  const abortSignal = signal ?? new AbortController().signal;
+  const [sitesResponse, pendingResponse] = await Promise.all([
+    db
+      .from("site")
+      .select("id, brand_id, name, domain, favicon_url, logo_url, initialized_at")
+      .in("brand_id", brandIds)
+      .is("deleted_at", null)
+      .order("name", { ascending: true })
+      .abortSignal(abortSignal),
+    db
+      .from("discovered_item")
+      .select("brand_id")
+      .in("brand_id", brandIds)
+      .eq("status", "pending")
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+  ]);
+  const sites = assertData(sitesResponse.data, sitesResponse.error);
+  const pending = assertData(pendingResponse.data, pendingResponse.error);
+  const sitesByBrand = new Map<string, BrandListRow["sites"]>();
+  for (const site of sites) {
+    if (!site.brand_id) continue;
+    const bucket = sitesByBrand.get(site.brand_id) ?? [];
+    bucket.push(site);
+    sitesByBrand.set(site.brand_id, bucket);
+  }
+  const pendingByBrand = new Map<string, number>();
+  for (const item of pending) {
+    pendingByBrand.set(item.brand_id, (pendingByBrand.get(item.brand_id) ?? 0) + 1);
+  }
+
+  return {
+    rows: brands.map((brand) => ({
+      ...brand,
+      sites: sitesByBrand.get(brand.id) ?? [],
+      pending_discovered: pendingByBrand.get(brand.id) ?? 0,
+    })),
+    total: response.count ?? 0,
+  };
+}
+
+export async function getBrand(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<MarketingBrand> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("brand")
+    .select(BRAND_COLUMNS)
+    .eq("id", brandId)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal)
+    .single();
+  return assertData(response.data, response.error);
+}
+
+export async function listBrandSites(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<MarketingSite[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("site")
+    .select(SITE_COLUMNS)
+    .eq("brand_id", brandId)
+    .is("deleted_at", null)
+    .order("name", { ascending: true })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+const PROPERTY_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, kind, url, handle, display_name, status, site_id, connection, settings";
+
+export async function listBrandProperties(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<BrandProperty[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("property")
+    .select(PROPERTY_COLUMNS)
+    .eq("brand_id", brandId)
+    .is("deleted_at", null)
+    .order("kind", { ascending: true })
+    .order("created_at", { ascending: true })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+const BRAND_ASSET_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, kind, file_id, source_url, title, notes, source, is_primary, sort_order, data, confirmed_by, confirmed_at";
+
+export async function listBrandAssets(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<BrandAsset[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("brand_asset")
+    .select(BRAND_ASSET_COLUMNS)
+    .eq("brand_id", brandId)
+    .is("deleted_at", null)
+    .order("kind", { ascending: true })
+    .order("sort_order", { ascending: true })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+const BUSINESS_FACT_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, kind, label, value, source, confirmed_by, confirmed_at";
+
+export async function listBusinessFacts(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<BusinessFact[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("business_fact")
+    .select(BUSINESS_FACT_COLUMNS)
+    .eq("brand_id", brandId)
+    .is("deleted_at", null)
+    .order("kind", { ascending: true })
+    .order("created_at", { ascending: true })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
 }

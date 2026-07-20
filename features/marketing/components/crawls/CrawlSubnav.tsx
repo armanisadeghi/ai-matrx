@@ -9,10 +9,12 @@ import {
   formatCompactDate,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 
 export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
   const pathname = usePathname();
-  const root = `/marketing/sites/${crawl.site_id}/crawls/${crawl.id}`;
+  const { sitePath } = useMarketingSite();
+  const root = `${sitePath}/crawls/${crawl.id}`;
   const items = [
     { label: "Summary", href: root, icon: Activity },
     { label: "URLs", href: `${root}/urls`, icon: Link2 },

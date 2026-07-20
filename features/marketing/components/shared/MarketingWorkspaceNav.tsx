@@ -1,9 +1,10 @@
 "use client";
 
-import { Boxes, CircleDollarSign, Globe2, Plug } from "lucide-react";
+import { Boxes, CircleDollarSign, Globe2, Landmark, Plug } from "lucide-react";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 
 const WORKSPACE_ROUTES = [
+  { name: "Brands", href: "/marketing/brands", icon: Landmark },
   { name: "Sites", href: "/marketing/sites", icon: Globe2 },
   { name: "Connections", href: "/marketing/connections", icon: Plug },
   { name: "Batches", href: "/marketing/batches", icon: Boxes },

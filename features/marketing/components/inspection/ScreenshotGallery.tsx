@@ -33,10 +33,10 @@ const SORT_OPTIONS = [
 
 function ScreenshotCard({
   screenshot,
-  siteId,
+  sitePath,
 }: {
   screenshot: InspectionScreenshotRow;
-  siteId: string;
+  sitePath: string;
 }) {
   const imageRef = screenshot.file_id
     ? fileIdToMediaRef(screenshot.file_id, "image/png")
@@ -45,7 +45,7 @@ function ScreenshotCard({
     ? `/files/f/${screenshot.file_id}`
     : undefined;
   const pageHref = screenshot.page_id
-    ? `/marketing/sites/${siteId}/pages/${screenshot.page_id}`
+    ? `${sitePath}/pages/${screenshot.page_id}`
     : null;
   const snapshotHref =
     screenshot.page_id && screenshot.snapshot_id
@@ -114,7 +114,7 @@ function ScreenshotCard({
 }
 
 export function ScreenshotGallery() {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "captured_at", direction: "desc" },
     defaultPageSize: 25,
@@ -253,7 +253,7 @@ export function ScreenshotGallery() {
               <ScreenshotCard
                 key={screenshot.id}
                 screenshot={screenshot}
-                siteId={site.id}
+                sitePath={sitePath}
               />
             ))}
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import Link from "next/link";
 import {
   Activity,
@@ -41,6 +42,7 @@ export function LiveCrawlFeed({
   siteId?: string;
   className?: string;
 }) {
+  const { sitePath } = useMarketingSite();
   const progress = [...events]
     .reverse()
     .find((event) =>
@@ -133,7 +135,7 @@ export function LiveCrawlFeed({
       {sessionId && siteId ? (
         <div className="flex shrink-0 justify-end border-t border-border px-3 py-2">
           <Button asChild variant="outline" size="sm" className="h-8">
-            <Link href={`/marketing/sites/${siteId}/crawls/${sessionId}`}>
+            <Link href={`${sitePath}/crawls/${sessionId}`}>
               Open durable session
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>

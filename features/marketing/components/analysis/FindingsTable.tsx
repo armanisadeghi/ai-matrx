@@ -26,7 +26,7 @@ import { useMarketingTableState } from "@/features/marketing/data/query-state";
 export function FindingsTable() {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "last_detected_at", direction: "desc" },
   });
@@ -173,7 +173,7 @@ export function FindingsTable() {
               <Button
                 size="sm"
                 className="h-8 gap-1.5"
-                onClick={() => navigate(`/marketing/sites/${site.id}/analysis`)}
+                onClick={() => navigate(`${sitePath}/analysis`)}
                 disabled={isNavigating}
               >
                 {isNavigating ? (
@@ -188,7 +188,7 @@ export function FindingsTable() {
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>
-          navigate(`/marketing/sites/${site.id}/findings/${row.id}`)
+          navigate(`${sitePath}/findings/${row.id}`)
         }
         emptyState={{
           icon: <ListChecks className="h-8 w-8 text-muted-foreground" />,

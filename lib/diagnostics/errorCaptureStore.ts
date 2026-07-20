@@ -98,6 +98,15 @@ export type CapturedErrorSource =
   | "org-resolution"
   /** A user-facing `toast.error(...)` — already handled + shown to the user. */
   | "user-toast"
+  /**
+   * The marketing crawler/scraper boundary (features/marketing/crawler):
+   * a direct scraper command failed (HTTP error, stream error event, broken
+   * stream), or a server-side "initialize site" step reported a failure in
+   * `web.site.initialization.errors`. These are real cross-service failures —
+   * the site UI shows a friendly message, but the underlying cause must land
+   * in the inspector with its status/step intact.
+   */
+  | "marketing-crawler"
   /** An RTK rejected thunk (action type ending in /rejected) — a real failure. */
   | "redux-rejected"
   /**

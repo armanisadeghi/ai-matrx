@@ -25,7 +25,7 @@ function sourceUrl(row: InspectionLinkRow): string {
 }
 
 export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "created_at", direction: "desc" },
     defaultPageSize: 50,
@@ -48,7 +48,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       cellKind: "text",
       cell: (row) => (
         <Link
-          href={`/marketing/sites/${site.id}/pages/${row.source_page_id}`}
+          href={`${sitePath}/pages/${row.source_page_id}`}
           className="block min-w-64 max-w-xl truncate font-mono text-xs text-primary hover:underline"
           title={sourceUrl(row)}
         >
@@ -154,7 +154,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       cellKind: "uuid",
       fk: {
         href: (id, row) =>
-          `/marketing/sites/${site.id}/pages/${row.source_page_id}/snapshots/${id}`,
+          `${sitePath}/pages/${row.source_page_id}/snapshots/${id}`,
       },
     },
   ];

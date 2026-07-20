@@ -1,6 +1,29 @@
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type { TypedStreamEvent } from "@/lib/api/types";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { supabase } from "@/utils/supabase/client";
+
+/** Feed every scraper-boundary failure to the admin Error Inspector. */
+function captureCrawlerError(input: {
+  path: string;
+  message: string;
+  userMessage?: string;
+  status?: number;
+  raw?: unknown;
+}): void {
+  try {
+    captureError({
+      source: "marketing-crawler",
+      relation: `scraper:${input.path}`,
+      message: input.message,
+      userMessage: input.userMessage,
+      status: input.status,
+      raw: input.raw,
+    });
+  } catch {
+    /* capture must never break the caller */
+  }
+}
 
 const DEFAULT_SCRAPER_ORIGIN = "https://scraper.app.matrxserver.com";
 
@@ -152,22 +175,32 @@ export function crawlerErrorMessage(
     : `The crawler couldn’t complete this request (HTTP ${status}). Please retry.`;
 }
 
-async function responseError(response: Response): Promise<Error> {
+async function responseError(
+  response: Response,
+  path: string,
+): Promise<Error> {
+  let detail: string | undefined;
+  let raw: unknown;
   try {
     const payload = (await response.json()) as {
       detail?: string;
       user_message?: string;
       message?: string;
     };
-    return new Error(
-      crawlerErrorMessage(
-        response.status,
-        payload.user_message || payload.detail || payload.message,
-      ),
-    );
+    raw = payload;
+    detail = payload.user_message || payload.detail || payload.message;
   } catch {
-    return new Error(crawlerErrorMessage(response.status, undefined));
+    /* non-JSON body */
   }
+  const friendly = crawlerErrorMessage(response.status, detail);
+  captureCrawlerError({
+    path,
+    message: detail ?? `HTTP ${response.status}`,
+    userMessage: friendly,
+    status: response.status,
+    raw,
+  });
+  return new Error(friendly);
 }
 
 async function streamCommand(
@@ -186,7 +219,7 @@ async function streamCommand(
     body: body ? JSON.stringify(body) : undefined,
     signal: callbacks.signal,
   });
-  if (!response.ok) throw await responseError(response);
+  if (!response.ok) throw await responseError(response, path);
 
   const sessionId = response.headers.get("X-Crawl-Session-Id") || "";
   const siteId = response.headers.get("X-Site-Id");
@@ -210,17 +243,23 @@ async function streamCommand(
         message?: string;
         detail?: string;
       };
-      throw new Error(
+      const message =
         data.user_message ||
-          data.message ||
-          data.detail ||
-          "The crawler reported an error.",
-      );
+        data.message ||
+        data.detail ||
+        "The crawler reported an error.";
+      captureCrawlerError({ path, message, userMessage: message, raw: data });
+      throw new Error(message);
     }
     if (event.event === "end") ended = true;
   }
 
   if (!ended && !callbacks.signal?.aborted) {
+    captureCrawlerError({
+      path,
+      message: "Stream ended before its completion event.",
+      userMessage: "The crawler stream ended before its completion event.",
+    });
     throw new Error("The crawler stream ended before its completion event.");
   }
   return { sessionId, siteId, lastSequence };
@@ -269,5 +308,6 @@ export async function cancelCrawl(sessionId: string): Promise<void> {
       },
     },
   );
-  if (!response.ok) throw await responseError(response);
+  if (!response.ok)
+    throw await responseError(response, `sessions/${sessionId}/cancel`);
 }

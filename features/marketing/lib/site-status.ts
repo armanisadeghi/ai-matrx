@@ -22,16 +22,63 @@ export interface SiteConnectionStatus {
   detail: string;
 }
 
+export interface InitializationStepError {
+  step: string;
+  errorType: string | null;
+  /** ANSI-stripped, first meaningful lines only — safe to render. */
+  message: string;
+}
+
 export interface ParsedInitialization {
   homepageOk: boolean;
   sitemapsFound: number | null;
   screenshotsCaptured: number | null;
   discoveredTotal: number | null;
-  errors: string[];
+  stepErrors: InitializationStepError[];
 }
 
 function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** Strip ANSI escapes and collapse a server traceback to its readable head. */
+export function cleanServerErrorMessage(raw: string): string {
+  const noAnsi = raw.replace(/\[[0-9;]*m/g, "");
+  const lines = noAnsi
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(
+      (line) =>
+        line &&
+        !/^-{4,}$/.test(line) &&
+        !line.startsWith("Traceback") &&
+        !line.startsWith("File \"") &&
+        !line.startsWith("...("),
+    );
+  return lines.slice(0, 4).join(" · ") || raw.slice(0, 200);
+}
+
+function parseStepErrors(value: unknown): InitializationStepError[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (typeof entry === "string") {
+      return [{ step: "unknown", errorType: null, message: cleanServerErrorMessage(entry) }];
+    }
+    if (typeof entry === "object" && entry !== null && !Array.isArray(entry)) {
+      const record = entry as { [key: string]: unknown };
+      const message =
+        typeof record.message === "string" ? record.message : JSON.stringify(record);
+      return [
+        {
+          step: typeof record.step === "string" ? record.step : "unknown",
+          errorType:
+            typeof record.error_type === "string" ? record.error_type : null,
+          message: cleanServerErrorMessage(message),
+        },
+      ];
+    }
+    return [];
+  });
 }
 
 /** Normalize the scraper-written `web.site.initialization` summary. */
@@ -52,11 +99,7 @@ export function parseInitialization(
     discoveredTotal: discoveredCounts.length
       ? discoveredCounts.reduce((sum, count) => sum + count, 0)
       : null,
-    errors: Array.isArray(root.errors)
-      ? root.errors.flatMap((entry) =>
-          typeof entry === "string" ? [entry] : [],
-        )
-      : [],
+    stepErrors: parseStepErrors(root.errors),
   };
 }
 
@@ -68,13 +111,13 @@ export function siteConnectionStatuses(
   const integrations = parseSiteIntegrations(site.integrations);
 
   const initialized: SiteConnectionStatus = site.initialized_at
-    ? init.errors.length
+    ? init.stepErrors.length
       ? {
           key: "initialized",
           label: "Init",
           name: "Site initialized",
           state: "attention",
-          detail: `Initialized with ${init.errors.length} failed step${init.errors.length === 1 ? "" : "s"}`,
+          detail: `Initialized with ${init.stepErrors.length} failed step${init.stepErrors.length === 1 ? "" : "s"} (${init.stepErrors.map((error) => error.step).join(", ")})`,
         }
       : {
           key: "initialized",

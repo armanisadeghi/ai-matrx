@@ -31,7 +31,7 @@ const PROVENANCE_OPTIONS = [
 
 export function PagesTable() {
   const router = useRouter();
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "last_seen", direction: "desc" },
   });
@@ -170,7 +170,7 @@ export function PagesTable() {
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>
-          router.push(`/marketing/sites/${site.id}/pages/${row.id}`)
+          router.push(`${sitePath}/pages/${row.id}`)
         }
         emptyState={{
           icon: <FileQuestion className="h-8 w-8 text-muted-foreground" />,

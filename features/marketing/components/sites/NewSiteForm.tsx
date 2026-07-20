@@ -1,10 +1,11 @@
 "use client";
 
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Building2, Globe2, Loader2, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,7 +84,7 @@ export function NewSiteForm() {
     }
 
     toast.success("Site added");
-    router.push(`/marketing/sites/${site.id}?capture=homepage`);
+    router.push(`${marketingRoutes.site(site.brand_id, site.id)}?capture=homepage`);
   };
 
   return (

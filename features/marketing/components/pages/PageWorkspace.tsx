@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { History, Loader2, Save } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,7 +126,7 @@ function IntentForm({ page }: { page: MarketingPage }) {
 }
 
 export function PageWorkspace({ pageId }: { pageId: string }) {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const workspace = usePageWorkspace(site.id, pageId);
   if (workspace.isLoading)
     return <LoadingSurface label="Loading canonical page…" />;
@@ -160,7 +160,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           </div>
           <Button asChild variant="outline" size="sm" className="h-8 shrink-0">
             <Link
-              href={`/marketing/sites/${site.id}/pages/${page.id}/snapshots`}
+              href={`${sitePath}/pages/${page.id}/snapshots`}
             >
               <History className="mr-1.5 h-3.5 w-3.5" />
               Snapshot history
@@ -214,7 +214,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             title="Current observed snapshot"
             action={{
               label: "View timeline",
-              href: `/marketing/sites/${site.id}/pages/${page.id}/snapshots`,
+              href: `${sitePath}/pages/${page.id}/snapshots`,
             }}
           >
             {snapshot ? (

@@ -15,7 +15,7 @@ import {
 
 export function SnapshotsTable({ pageId }: { pageId: string }) {
   const router = useRouter();
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "captured_at", direction: "desc" },
   });
@@ -87,7 +87,7 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
       filter: false,
       sortable: false,
       cellKind: "uuid",
-      fk: { href: (id) => `/marketing/sites/${site.id}/crawls/${id}` },
+      fk: { href: (id) => `${sitePath}/crawls/${id}` },
     },
   ];
   if (snapshots.isError)
@@ -117,7 +117,7 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
         detail={{ enabled: false }}
         onRowOpen={(row) =>
           router.push(
-            `/marketing/sites/${site.id}/pages/${pageId}/snapshots/${row.id}`,
+            `${sitePath}/pages/${pageId}/snapshots/${row.id}`,
           )
         }
         emptyState={{

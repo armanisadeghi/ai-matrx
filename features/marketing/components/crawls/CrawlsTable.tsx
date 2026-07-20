@@ -32,7 +32,7 @@ const TRIGGER_OPTIONS = [
 
 export function CrawlsTable() {
   const router = useRouter();
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "started_at", direction: "desc" },
   });
@@ -173,7 +173,7 @@ export function CrawlsTable() {
                 size="sm"
                 className="h-8 gap-1.5"
                 onClick={() =>
-                  router.push(`/marketing/sites/${site.id}/crawls/new`)
+                  router.push(`${sitePath}/crawls/new`)
                 }
               >
                 <Play className="h-3.5 w-3.5" /> Start crawl
@@ -183,7 +183,7 @@ export function CrawlsTable() {
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>
-          router.push(`/marketing/sites/${site.id}/crawls/${row.id}`)
+          router.push(`${sitePath}/crawls/${row.id}`)
         }
         emptyState={{
           icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,

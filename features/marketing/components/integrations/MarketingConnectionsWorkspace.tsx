@@ -1,5 +1,6 @@
 "use client";
 
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -12,7 +13,7 @@ import {
   Unplug,
   UserRound,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -318,7 +319,7 @@ function MarketingConnectionsContent() {
               {selectedSite ? (
                 <Button asChild size="sm" className="h-8 gap-1.5">
                   <Link
-                    href={`/marketing/sites/${selectedSite.id}/integrations`}
+                    href={marketingRoutes.site(selectedSite.brand_id, selectedSite.id, "/integrations")}
                   >
                     Choose Search Console property for {selectedSite.name}{" "}
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -364,7 +365,7 @@ function MarketingConnectionsContent() {
               {selectedSite ? (
                 <Button asChild size="sm" variant="outline" className="h-8">
                   <Link
-                    href={`/marketing/sites/${selectedSite.id}/integrations`}
+                    href={marketingRoutes.site(selectedSite.brand_id, selectedSite.id, "/integrations")}
                   >
                     Configure for {selectedSite.name}
                     <ArrowRight className="ml-1.5 h-3.5 w-3.5" />

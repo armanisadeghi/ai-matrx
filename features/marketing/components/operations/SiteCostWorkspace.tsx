@@ -28,7 +28,7 @@ const SITE_COST_MODES = [
 ] as const;
 
 export function SiteCostWorkspace() {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "cost", direction: "desc" },
     defaultPageSize: 50,
@@ -57,7 +57,7 @@ export function SiteCostWorkspace() {
         if (row.page_id) {
           return (
             <Link
-              href={`/marketing/sites/${site.id}/pages/${row.page_id}`}
+              href={`${sitePath}/pages/${row.page_id}`}
               className="block min-w-72 max-w-3xl truncate font-mono text-xs text-primary hover:underline"
               title={row.label}
             >

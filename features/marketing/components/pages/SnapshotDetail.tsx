@@ -22,7 +22,7 @@ export function SnapshotDetail({
   pageId: string;
   snapshotId: string;
 }) {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const snapshot = useSnapshot(site.id, pageId, snapshotId);
   if (snapshot.isLoading) return <LoadingSurface label="Loading snapshot…" />;
   if (snapshot.isError || !snapshot.data) {
@@ -52,7 +52,7 @@ export function SnapshotDetail({
           <div className="flex shrink-0 items-center gap-1">
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link
-                href={`/marketing/sites/${site.id}/pages/${pageId}/snapshots`}
+                href={`${sitePath}/pages/${pageId}/snapshots`}
               >
                 <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
                 Timeline

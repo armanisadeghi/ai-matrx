@@ -25,6 +25,22 @@ export interface PagedResult<T> {
   total: number;
 }
 
+export interface BrandListRow extends MarketingBrand {
+  sites: Array<
+    Pick<
+      MarketingSite,
+      | "id"
+      | "brand_id"
+      | "name"
+      | "domain"
+      | "favicon_url"
+      | "logo_url"
+      | "initialized_at"
+    >
+  >;
+  pending_discovered: number;
+}
+
 export interface SiteListRow extends MarketingSite {
   health_score: number | null;
   scored_pages: number;
