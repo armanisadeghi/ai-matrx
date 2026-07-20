@@ -163,6 +163,42 @@ export function MetricCell({
   );
 }
 
+export function CondensedFieldGrid({
+  fields,
+}: {
+  fields: Array<{
+    label: string;
+    value: React.ReactNode;
+    span?: 1 | 2;
+    tone?: "default" | "good" | "warning" | "bad";
+  }>;
+}) {
+  return (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+      {fields.map((field) => (
+        <div
+          key={field.label}
+          className={cn("min-w-0", field.span === 2 && "col-span-2")}
+        >
+          <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {field.label}
+          </dt>
+          <dd
+            className={cn(
+              "mt-0.5 break-words font-medium text-foreground",
+              field.tone === "good" && "text-emerald-600 dark:text-emerald-400",
+              field.tone === "warning" && "text-amber-600 dark:text-amber-400",
+              field.tone === "bad" && "text-destructive",
+            )}
+          >
+            {field.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export function SectionCard({
   title,
   action,
@@ -181,7 +217,7 @@ export function SectionCard({
         className,
       )}
     >
-      <div className="flex h-9 items-center justify-between border-b border-border px-3">
+      <div className="flex h-9 shrink-0 items-center justify-between border-b border-border px-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </h2>

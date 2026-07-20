@@ -176,7 +176,7 @@ export function MarketingSiteLayoutClient({
           },
         ]}
       />
-      <div className="flex h-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
+      <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
       </div>
     </MarketingSiteContext.Provider>

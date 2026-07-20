@@ -2,11 +2,15 @@
 
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
+import {
+  CrawlMetadataPanel,
+  CrawlRunStatsPanel,
+  CrawlScopePanel,
+} from "@/features/marketing/components/crawls/crawl-session-panels";
 import { useCrawl } from "@/features/marketing/data/hooks";
 import {
   formatDate,
   formatDuration,
-  JsonPreview,
   jsonNumber,
   jsonNumberPath,
   LoadingSurface,
@@ -29,49 +33,49 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
   }
   const row = crawl.data;
   return (
-    <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
-      <div className="grid w-full gap-3">
-        <CrawlSubnav crawl={row} />
-        <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
-          <MetricCell
-            label="URLs discovered"
-            value={jsonNumber(row.stats, ["pages_discovered"]).toLocaleString()}
-          />
-          <MetricCell
-            label="Captured"
-            value={jsonNumber(row.stats, ["pages_fetched"]).toLocaleString()}
-          />
-          <MetricCell
-            label="New pages"
-            value={jsonNumberPath(row.stats, [
-              "reconciliation",
-              "new",
-            ]).toLocaleString()}
-          />
-          <MetricCell
-            label="Missing"
-            value={jsonNumberPath(row.stats, [
-              "reconciliation",
-              "missing",
-            ]).toLocaleString()}
-            tone={
-              jsonNumberPath(row.stats, ["reconciliation", "missing"])
-                ? "warning"
-                : "good"
-            }
-          />
-          <MetricCell
-            label="Failed"
-            value={jsonNumber(row.stats, ["pages_failed"]).toLocaleString()}
-            tone={jsonNumber(row.stats, ["pages_failed"]) ? "bad" : "good"}
-          />
-          <MetricCell
-            label="Duration"
-            value={formatDuration(row.started_at, row.finished_at)}
-          />
-        </section>
-        <div className="grid gap-3 lg:grid-cols-2">
-          <SectionCard title="Session timing">
+    <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
+      <CrawlSubnav crawl={row} />
+      <section className="grid shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
+        <MetricCell
+          label="URLs discovered"
+          value={jsonNumber(row.stats, ["pages_discovered"]).toLocaleString()}
+        />
+        <MetricCell
+          label="Captured"
+          value={jsonNumber(row.stats, ["pages_fetched"]).toLocaleString()}
+        />
+        <MetricCell
+          label="New pages"
+          value={jsonNumberPath(row.stats, [
+            "reconciliation",
+            "new",
+          ]).toLocaleString()}
+        />
+        <MetricCell
+          label="Missing"
+          value={jsonNumberPath(row.stats, [
+            "reconciliation",
+            "missing",
+          ]).toLocaleString()}
+          tone={
+            jsonNumberPath(row.stats, ["reconciliation", "missing"])
+              ? "warning"
+              : "good"
+          }
+        />
+        <MetricCell
+          label="Failed"
+          value={jsonNumber(row.stats, ["pages_failed"]).toLocaleString()}
+          tone={jsonNumber(row.stats, ["pages_failed"]) ? "bad" : "good"}
+        />
+        <MetricCell
+          label="Duration"
+          value={formatDuration(row.started_at, row.finished_at)}
+        />
+      </section>
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-2 lg:grid-rows-2 lg:[grid-template-rows:minmax(0,1fr)_minmax(0,1fr)] [&>section]:flex [&>section]:min-h-0 [&>section]:flex-col">
+        <SectionCard title="Session timing" className="min-h-0">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <dl className="grid grid-cols-2 gap-3 p-3 text-xs">
               <div>
                 <dt className="text-[10px] uppercase text-muted-foreground">
@@ -103,17 +107,23 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
                 {row.error}
               </p>
             ) : null}
-          </SectionCard>
-          <SectionCard title="Frozen crawl scope">
-            <JsonPreview value={row.scope} />
-          </SectionCard>
-          <SectionCard title="Reconciliation and run stats">
-            <JsonPreview value={row.stats} />
-          </SectionCard>
-          <SectionCard title="Session metadata">
-            <JsonPreview value={row.metadata} />
-          </SectionCard>
-        </div>
+          </div>
+        </SectionCard>
+        <SectionCard title="Frozen crawl scope" className="min-h-0">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <CrawlScopePanel scope={row.scope} />
+          </div>
+        </SectionCard>
+        <SectionCard title="Reconciliation and run stats" className="min-h-0">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <CrawlRunStatsPanel stats={row.stats} />
+          </div>
+        </SectionCard>
+        <SectionCard title="Session metadata" className="min-h-0">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <CrawlMetadataPanel metadata={row.metadata} />
+          </div>
+        </SectionCard>
       </div>
     </main>
   );

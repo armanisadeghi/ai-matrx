@@ -11,6 +11,7 @@ import {
   countSites,
   createSite,
   getCrawl,
+  getHomepageObservedMeta,
   getPageWorkspace,
   getSite,
   getSiteOverview,
@@ -33,6 +34,8 @@ export const marketingKeys = {
   site: (siteId: string) => [...marketingKeys.root, "site", siteId] as const,
   overview: (siteId: string) =>
     [...marketingKeys.site(siteId), "overview"] as const,
+  homepageMeta: (siteId: string) =>
+    [...marketingKeys.site(siteId), "homepage-meta"] as const,
   pages: (siteId: string, state: MatrxDataTableQueryState) =>
     [...marketingKeys.site(siteId), "pages", state] as const,
   page: (siteId: string, pageId: string) =>
@@ -96,6 +99,14 @@ export function useSiteOverview(siteId: string) {
   return useQuery({
     queryKey: marketingKeys.overview(siteId),
     queryFn: ({ signal }) => getSiteOverview(siteId, signal),
+    enabled: Boolean(siteId),
+  });
+}
+
+export function useHomepageObservedMeta(siteId: string) {
+  return useQuery({
+    queryKey: marketingKeys.homepageMeta(siteId),
+    queryFn: ({ signal }) => getHomepageObservedMeta(siteId, signal),
     enabled: Boolean(siteId),
   });
 }

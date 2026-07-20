@@ -4,13 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowUpRight,
-  Camera,
-  CheckCircle2,
   CircleDashed,
   ExternalLink,
   Globe2,
-  Images,
   Loader2,
   Play,
   Plug,
@@ -20,7 +16,10 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
-import { useSiteOverview } from "@/features/marketing/data/hooks";
+import {
+  useSiteOverview,
+  useHomepageObservedMeta,
+} from "@/features/marketing/data/hooks";
 import {
   displayScore,
   formatDate,
@@ -43,10 +42,16 @@ import { useHomepageScreenshot } from "@/features/marketing/data/inspection-hook
 import { screenshotPublicUrl } from "@/features/marketing/data/inspection-queries";
 import { InlineMediaRef } from "@/features/files";
 import type { InspectionScreenshotRow } from "@/features/marketing/data/inspection-types";
+import type {
+  HomepageObservedMeta,
+  MarketingSite,
+} from "@/features/marketing/types";
+import { cn } from "@/lib/utils";
 
 export function SiteOverview() {
   const { site } = useMarketingSite();
   const overview = useSiteOverview(site.id);
+  const homepageMeta = useHomepageObservedMeta(site.id);
   const screenshot = useHomepageScreenshot(
     site.id,
     site.homepage_screenshot_id,
@@ -72,6 +77,9 @@ export function SiteOverview() {
       });
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.overview(site.id),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: marketingKeys.homepageMeta(site.id),
       });
       toast.success("Homepage preview updated");
       setCapturePhase("idle");
@@ -158,7 +166,19 @@ export function SiteOverview() {
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
-        <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
+        <SiteHeroHeader
+          site={site}
+          screenshot={screenshot.data ?? null}
+          observedMeta={homepageMeta.data ?? null}
+          metaLoading={homepageMeta.isLoading || capturing}
+          loading={screenshot.isLoading}
+          capturing={capturing}
+          capturePhase={capturePhase}
+          captureError={captureError}
+          onCapture={() => void retryHomepageCapture()}
+        />
+
+        <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-5">
           <MetricCell
             label="Site health"
             value={displayScore(metrics.siteScore)}
@@ -193,84 +213,11 @@ export function SiteOverview() {
                 : "No crawl sessions"
             }
           />
-          <MetricCell
-            label="Screenshot"
-            value={site.homepage_screenshot_id ? "Stored" : "Pending"}
-            detail="Homepage baseline"
-            tone={site.homepage_screenshot_id ? "good" : "warning"}
-          />
         </section>
 
-        <HomepagePreview
-          siteId={site.id}
-          domain={site.domain}
-          rootUrl={site.root_url}
-          screenshot={screenshot.data ?? null}
-          loading={screenshot.isLoading}
-          capturing={capturing}
-          capturePhase={capturePhase}
-          captureError={captureError}
-          onCapture={() => void retryHomepageCapture()}
-        />
-
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-          <SectionCard title="Site identity">
-            <dl className="grid gap-x-6 gap-y-3 p-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Name
-                </dt>
-                <dd className="mt-0.5 font-medium text-foreground">
-                  {site.name}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Domain
-                </dt>
-                <dd className="mt-0.5 font-mono text-xs text-foreground">
-                  {site.domain}
-                </dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Root URL
-                </dt>
-                <dd className="mt-0.5 flex min-w-0 items-center gap-2">
-                  <a
-                    href={site.root_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="truncate text-sm text-primary hover:underline"
-                  >
-                    {site.root_url}
-                  </a>
-                  <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                </dd>
-              </div>
-              <div className="flex items-center gap-2">
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Status
-                </dt>
-                <dd>
-                  <StatusBadge value={site.status} />
-                </dd>
-              </div>
-              <div className="flex items-center gap-2">
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Visibility
-                </dt>
-                <dd>
-                  <Badge variant="outline" className="capitalize">
-                    {site.visibility}
-                  </Badge>
-                </dd>
-              </div>
-            </dl>
-          </SectionCard>
-
+        <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard title="Quick work">
-            <div className="grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="grid gap-2 p-3">
               <Button
                 asChild
                 variant="outline"
@@ -303,9 +250,7 @@ export function SiteOverview() {
               </Button>
             </div>
           </SectionCard>
-        </div>
 
-        <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard title="Integration bindings">
             {integrations.length === 0 ? (
               <div className="flex min-h-28 flex-wrap items-center gap-3 p-4 text-muted-foreground">
@@ -360,21 +305,21 @@ export function SiteOverview() {
   );
 }
 
-function HomepagePreview({
-  siteId,
-  domain,
-  rootUrl,
+function SiteHeroHeader({
+  site,
   screenshot,
+  observedMeta,
+  metaLoading,
   loading,
   capturing,
   capturePhase,
   captureError,
   onCapture,
 }: {
-  siteId: string;
-  domain: string;
-  rootUrl: string;
+  site: MarketingSite;
   screenshot: InspectionScreenshotRow | null;
+  observedMeta: HomepageObservedMeta | null;
+  metaLoading: boolean;
   loading: boolean;
   capturing: boolean;
   capturePhase: "idle" | "connecting" | "capturing" | "failed";
@@ -382,190 +327,130 @@ function HomepagePreview({
   onCapture: () => void;
 }) {
   const imageUrl = screenshot ? screenshotPublicUrl(screenshot) : null;
-  const statusLabel =
-    capturePhase === "connecting"
-      ? "Starting secure browser…"
-      : capturePhase === "capturing"
-        ? "Rendering and saving homepage…"
-        : capturePhase === "failed"
-          ? "Capture needs attention"
-          : screenshot
-            ? "Homepage preview"
-            : "No homepage preview yet";
+  const captureBusy =
+    capturing || capturePhase === "connecting" || capturePhase === "capturing";
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      <div className="grid min-h-[340px] xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.7fr)]">
-        <div className="flex min-w-0 flex-col border-b border-border bg-zinc-950 xl:border-b-0 xl:border-r">
-          <div className="flex h-10 items-center gap-2 border-b border-white/10 bg-zinc-900 px-3">
-            <div className="flex gap-1.5" aria-hidden="true">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
-            </div>
-            <div className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-3 py-1 text-center font-mono text-[10px] text-zinc-300">
-              <span className="block truncate">{rootUrl}</span>
-            </div>
-          </div>
-          <div className="relative flex min-h-[300px] flex-1 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,#27272a,#09090b_65%)]">
+    <section className="-ml-3 sm:-ml-4">
+      <div className="flex flex-col sm:flex-row sm:items-start">
+        <div className="group relative w-full shrink-0 sm:w-1/2 lg:w-[55%]">
+          <div className="relative aspect-[16/10] w-full overflow-hidden sm:rounded-r-lg">
             {imageUrl && screenshot ? (
-              <a
-                href={imageUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="absolute inset-0 flex items-center justify-center p-3"
-                aria-label="Open full homepage screenshot"
-              >
-                <InlineMediaRef
-                  ref={imageUrl}
-                  size="fill"
-                  fit="contain"
-                  rounded="md"
-                  fallback="icon"
-                  errorFallback="icon"
-                  alt={`${domain} homepage captured ${formatDate(screenshot.captured_at)}`}
-                  className="shadow-2xl ring-1 ring-white/10"
-                />
-              </a>
-            ) : loading || capturing ? (
-              <div className="flex flex-col items-center gap-3 text-zinc-300">
-                <div className="relative flex h-20 w-28 items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-white/5">
-                  <Globe2 className="h-8 w-8 text-primary" />
-                  <span className="absolute inset-x-3 top-1/2 h-px animate-pulse bg-primary shadow-[0_0_12px_hsl(var(--primary))]" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium">{statusLabel}</p>
-                  <p className="mt-1 text-[11px] text-zinc-500">
-                    The preview will appear here automatically.
-                  </p>
-                </div>
+              <InlineMediaRef
+                ref={imageUrl}
+                size="fill"
+                fit="cover"
+                rounded="none"
+                fallback="icon"
+                errorFallback="icon"
+                alt=""
+                className="absolute inset-0 h-full w-full"
+              />
+            ) : loading || captureBusy ? (
+              <div className="flex h-full min-h-40 items-center justify-center text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-3 px-6 text-center text-zinc-300">
-                <Camera className="h-10 w-10 text-zinc-600" />
-                <div>
-                  <p className="text-sm font-medium">Capture the homepage</p>
-                  <p className="mt-1 max-w-sm text-[11px] leading-5 text-zinc-500">
-                    Create the visual baseline used for site review and later AI
-                    vision analysis.
-                  </p>
-                </div>
+              <div className="flex h-full min-h-40 items-center justify-center text-muted-foreground/60">
+                <Globe2 className="h-10 w-10" />
               </div>
             )}
+
+            {!captureBusy ? (
+              <button
+                type="button"
+                onClick={onCapture}
+                className="absolute bottom-2 right-2 rounded-md border border-border/60 bg-background/90 p-1.5 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                aria-label="Refresh site preview"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col">
-          <div className="border-b border-border p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Visual baseline
-                </p>
-                <h2 className="mt-1 text-base font-semibold">{domain}</h2>
-              </div>
-              {screenshot && !capturing ? (
-                <Badge variant="success" className="gap-1 text-[10px]">
-                  <CheckCircle2 className="h-3 w-3" /> Ready
-                </Badge>
-              ) : capturing ? (
-                <Badge variant="secondary" className="gap-1 text-[10px]">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Capturing
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-[10px]">
-                  Pending
-                </Badge>
-              )}
-            </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              {statusLabel}
-            </p>
-          </div>
+        <div className="flex min-w-0 flex-1 flex-col py-3 pl-4 sm:py-4 sm:pl-8">
+          <div className="space-y-4">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              {site.name}
+            </h1>
 
-          <dl className="grid grid-cols-2 divide-x divide-y divide-border border-b border-border text-xs">
-            <div className="p-3">
-              <dt className="text-[10px] text-muted-foreground">Captured</dt>
-              <dd className="mt-1 font-medium">
-                {screenshot ? formatDate(screenshot.captured_at) : "—"}
-              </dd>
+            <a
+              href={site.root_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex max-w-full items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary sm:text-base"
+            >
+              <span className="truncate">{site.root_url}</span>
+              <ExternalLink className="h-4 w-4 shrink-0 opacity-60" />
+            </a>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge value={site.status} />
+              <Badge variant="outline" className="capitalize">
+                {site.visibility}
+              </Badge>
             </div>
-            <div className="p-3">
-              <dt className="text-[10px] text-muted-foreground">Dimensions</dt>
-              <dd className="mt-1 font-medium tabular-nums">
-                {screenshot?.width && screenshot?.height
-                  ? `${screenshot.width} × ${screenshot.height}`
-                  : "—"}
-              </dd>
+
+            <div className="space-y-3 border-t border-border pt-4">
+              <ObservedMetaField
+                value={observedMeta?.metaTitle ?? null}
+                loading={metaLoading}
+                emptyMessage="Homepage title appears after the first capture completes."
+                className="text-lg font-semibold"
+              />
+              <ObservedMetaField
+                value={observedMeta?.metaDescription ?? null}
+                loading={metaLoading}
+                emptyMessage="Homepage description appears after the first capture completes."
+                className="text-sm font-normal"
+              />
             </div>
-            <div className="p-3">
-              <dt className="text-[10px] text-muted-foreground">Type</dt>
-              <dd className="mt-1 font-medium capitalize">
-                {screenshot?.kind ?? "Homepage"}
-              </dd>
-            </div>
-            <div className="p-3">
-              <dt className="text-[10px] text-muted-foreground">Source</dt>
-              <dd
-                className="mt-1 truncate font-mono text-[10px]"
-                title={rootUrl}
-              >
-                Direct scraper
-              </dd>
-            </div>
-          </dl>
+          </div>
 
           {captureError ? (
-            <p className="border-b border-destructive/30 bg-destructive/5 p-3 text-[11px] leading-4 text-destructive">
-              {captureError}
+            <p className="mt-4 text-[11px] leading-4 text-destructive">
+              Preview capture failed: {captureError}
             </p>
           ) : null}
-
-          <div className="mt-auto grid gap-2 p-3">
-            <Button
-              size="sm"
-              className="h-9 gap-2"
-              disabled={capturing}
-              onClick={onCapture}
-            >
-              {capturing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : screenshot ? (
-                <RefreshCw className="h-4 w-4" />
-              ) : (
-                <Camera className="h-4 w-4" />
-              )}
-              {capturing
-                ? "Capturing homepage…"
-                : screenshot
-                  ? "Capture a new baseline"
-                  : "Capture homepage"}
-            </Button>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1.5"
-              >
-                <Link href={`/marketing/sites/${siteId}/screenshots`}>
-                  <Images className="h-3.5 w-3.5" /> All captures
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1.5"
-              >
-                <a href={rootUrl} target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-3.5 w-3.5" /> Live site
-                </a>
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function ObservedMetaField({
+  label,
+  value,
+  loading,
+  emptyMessage,
+  className,
+}: React.PropsWithChildren<{
+  label: string;
+  value: string | null;
+  loading?: boolean;
+  emptyMessage?: string;
+  className?: string;
+}>) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      {loading && !value ? (
+        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Capturing homepage metadata…
+        </div>
+      ) : value ? (
+        <p className={cn("mt-1 text-sm leading-5 text-foreground", className)}>
+          {value}
+        </p>
+      ) : (
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          {emptyMessage}
+        </p>
+      )}
+    </div>
   );
 }

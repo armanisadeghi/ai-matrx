@@ -195,7 +195,11 @@
     ".next-agent-c5f617fb15f7/types/**/*.ts",
     ".next-agent-c5f617fb15f7/dev/types/**/*.ts",
     ".next-agent-f06ec30b775a/types/**/*.ts",
-    ".next-agent-f06ec30b775a/dev/types/**/*.ts"
+    ".next-agent-f06ec30b775a/dev/types/**/*.ts",
+    ".next-agent-1033ad9ce00e/types/**/*.ts",
+    ".next-agent-1033ad9ce00e/dev/types/**/*.ts",
+    ".next-agent-175ae6f205f9/types/**/*.ts",
+    ".next-agent-175ae6f205f9/dev/types/**/*.ts"
   ],
   "exclude": [
     ".next*/**",

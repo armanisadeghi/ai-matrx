@@ -147,10 +147,10 @@ export function NewCrawlWorkspace() {
   };
 
   return (
-    <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
-      <div className="grid w-full gap-3 xl:grid-cols-[23rem_minmax(0,1fr)]">
-        <section className="h-fit overflow-hidden rounded-lg border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-3 py-2">
+    <main className="flex h-full max-h-full min-h-0 flex-col overflow-hidden bg-textured p-3 sm:p-4">
+      <div className="flex min-h-0 flex-1 gap-3 overflow-hidden sm:flex-row">
+        <section className="flex w-full shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card sm:h-full sm:w-[23rem] sm:max-h-full">
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
             <div>
               <h1 className="text-sm font-semibold">Start crawl</h1>
               <p className="text-[11px] text-muted-foreground">{site.domain}</p>
@@ -162,7 +162,7 @@ export function NewCrawlWorkspace() {
             </Button>
           </div>
 
-          <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-1">
+          <div className="grid shrink-0 gap-3 p-3 sm:grid-cols-2 xl:grid-cols-1">
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label htmlFor="crawl-max-pages" className="text-[11px]">
@@ -285,7 +285,7 @@ export function NewCrawlWorkspace() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2 border-t border-border px-3 py-2">
+          <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-border px-3 py-2">
             <Button
               size="sm"
               className="h-8 flex-1"
@@ -314,27 +314,20 @@ export function NewCrawlWorkspace() {
             ) : null}
           </div>
           {error ? (
-            <p className="border-t border-border bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            <p className="shrink-0 border-t border-border bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {error}
             </p>
           ) : null}
         </section>
 
-        <div className="space-y-3">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden sm:min-h-0">
           <LiveCrawlFeed
             events={events}
             status={status}
             sessionId={sessionId}
+            siteId={site.id}
+            className="h-full max-h-full min-h-0"
           />
-          {sessionId ? (
-            <div className="flex justify-end">
-              <Button asChild variant="outline" size="sm" className="h-8">
-                <Link href={`/marketing/sites/${site.id}/crawls/${sessionId}`}>
-                  Open durable session
-                </Link>
-              </Button>
-            </div>
-          ) : null}
         </div>
       </div>
     </main>

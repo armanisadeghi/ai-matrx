@@ -4,6 +4,7 @@ import type {
   CrawlSession,
   CrawlUrl,
   CreateSiteInput,
+  HomepageObservedMeta,
   MarketingPage,
   MarketingSite,
   PageListRow,
@@ -15,6 +16,7 @@ import type {
   SiteOverviewMetrics,
   UpdatePageIntentInput,
 } from "@/features/marketing/types";
+import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
@@ -259,6 +261,45 @@ export async function getSiteOverview(
     openFindings: findings.count ?? 0,
     snapshots: snapshots.count ?? 0,
     latestCrawl: latestCrawl.data,
+  };
+}
+
+/** Read observed homepage `<title>` and meta description from the latest snapshot. */
+export async function getHomepageObservedMeta(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<HomepageObservedMeta | null> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const pageResponse = await db
+    .from("page")
+    .select("id, latest_snapshot_id")
+    .eq("site_id", siteId)
+    .eq("path", "/")
+    .is("deleted_at", null)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (pageResponse.error) throw pageResponse.error;
+
+  const page = pageResponse.data;
+  if (!page?.latest_snapshot_id) return null;
+
+  const snapshotResponse = await db
+    .from("snapshot")
+    .select("head_tags, captured_at")
+    .eq("site_id", siteId)
+    .eq("id", page.latest_snapshot_id)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (snapshotResponse.error) throw snapshotResponse.error;
+  if (!snapshotResponse.data) return null;
+
+  const parsed = parseSnapshotHeadTags(snapshotResponse.data.head_tags);
+  return {
+    pageId: page.id,
+    metaTitle: parsed.title,
+    metaDescription: parsed.metaDescription,
+    capturedAt: snapshotResponse.data.captured_at,
   };
 }
 

@@ -38,6 +38,13 @@ export interface SiteOverviewMetrics {
   latestCrawl: CrawlSession | null;
 }
 
+export interface HomepageObservedMeta {
+  pageId: string;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  capturedAt: string;
+}
+
 export interface PageWorkspaceData {
   page: MarketingPage;
   latestSnapshot: PageSnapshot | null;
