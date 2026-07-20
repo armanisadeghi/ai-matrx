@@ -54,6 +54,7 @@ export default function SingleMessageWindow({
       minHeight={320}
       onClose={onClose}
       overlayId="singleMessageWindow"
+      overlayInstanceId={instanceId}
       onCollectData={collectData}
     >
       <ChatThread

@@ -83,6 +83,7 @@ export default function MessagesWindow({
       sidebarMinSize={220}
       sidebarClassName="bg-muted/10 border-r"
       urlSyncKey="messages"
+      urlSyncId={activeConversationId ?? ""}
       onClose={onClose}
       overlayId="messagesWindow"
       onCollectData={collectData}

@@ -33,6 +33,7 @@ export type {
   MobilePresentation,
   InstanceMode,
   MobileSidebarAs,
+  WindowPreservationConfig,
 } from "./windowRegistryTypes";
 export type {
   PanelState,
@@ -1394,6 +1395,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
     mobileSidebarAs: "drawer",
     urlSync: { key: "messages" },
+    preservation: { dataKeys: ["conversationId"] },
   },
 
   // ── Single conversation (just one chat thread, multi-instance) ───────────
@@ -1405,6 +1407,10 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: { conversationId: null },
     mobilePresentation: "drawer",
     instanceMode: "multi",
+    preservation: {
+      dataKeys: ["conversationId"],
+      requiredDataKeys: ["conversationId"],
+    },
   },
 
   // ── Working Document ──────────────────────────────────────────────────────

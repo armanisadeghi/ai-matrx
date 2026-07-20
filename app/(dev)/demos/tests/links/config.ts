@@ -4,60 +4,6 @@ import {ModulePage} from "@/components/matrx/navigation/types";
 
 export const pages: ModulePage[] = [
     {
-        title: 'Animated Menu',
-        path: 'tests/animated-menu',
-        relative: false,
-        description: ''
-    },
-    {
-        title: 'With Css',
-        path: 'tests/animated-menu/with-css',
-        relative: false,
-        description: ''
-    },
-    {
-        title: 'Animation Show',
-        path: 'tests/animation-show',
-        relative: false,
-        description: ''
-    },
-    {
-        title: 'Draw',
-        path: 'tests/animation-tests/draw',
-        relative: false,
-        description: ''
-    },
-    {
-        title: 'Add Item',
-        path: 'tests/animations/add-item',
-        relative: false,
-        description: ''
-    },
-    {
-        title: 'Drag Sort List',
-        path: 'tests/animations/drag-sort-list',
-        relative: false,
-        description: ''
-    },
-    {
-        title: 'Scale',
-        path: 'tests/animations/scale',
-        relative: false,
-        description: ''
-    },
-    {
-        title: 'Animation_flip',
-        path: 'tests/animation_flip',
-        relative: false,
-        description: ''
-    },
-    {
-        title: 'Gpt',
-        path: 'tests/animation_flip/gpt',
-        relative: false,
-        description: ''
-    },
-    {
         title: 'App Shell Test',
         path: 'tests/app-shell-test',
         relative: false,

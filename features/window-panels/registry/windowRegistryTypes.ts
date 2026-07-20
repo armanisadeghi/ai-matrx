@@ -22,6 +22,15 @@ export type LucideIconName = string;
 
 export type ToolsCategory = string;
 
+export interface WindowPreservationConfig {
+  /** Allowlisted semantic keys; geometry/chrome are handled by the platform. */
+  dataKeys: readonly string[];
+  /** Keys that must contain a non-empty value before the window can restore. */
+  requiredDataKeys?: readonly string[];
+  /** Per-window ceiling after JSON serialization. Default: 32 KiB. */
+  maxDataBytes?: number;
+}
+
 // MATRX-EXCEPTION: heterogeneous registry of lazy window components — each
 // entry's dynamically-imported component has an entirely different prop
 // shape (rendered generically by overlayId via OverlayController), so there
@@ -116,6 +125,11 @@ export interface WindowStaticMetadata {
   heavySnapshot?: boolean;
   /** Opt-in to autosave-on-blur / visibilitychange persistence. */
   autosave?: boolean;
+  /**
+   * Explicit local refresh-preservation contract. Default-deny: an entry is
+   * not restorable until its data keys and runtime dependencies are audited.
+   */
+  preservation?: WindowPreservationConfig;
   /**
    * Optional seed data builder invoked when opening this overlay from the
    * Tools grid (or other generic entry points). Runs client-side at click

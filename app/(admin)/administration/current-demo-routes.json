@@ -618,33 +618,6 @@
                 "page.tsx"
             ]
         },
-        "animation-tests": {
-            "_files": [],
-            "animated-menu": {
-                "_files": [
-                    "page.tsx"
-                ],
-                "with-css": {
-                    "_files": [
-                        "module.css",
-                        "page.tsx"
-                    ]
-                }
-            },
-            "animation-show": {
-                "_files": [
-                    "Input.tsx",
-                    "module.css",
-                    "page.tsx"
-                ]
-            },
-            "scale": {
-                "_files": [
-                    "module.css",
-                    "page.tsx"
-                ]
-            }
-        },
         "app-shell-test": {
             "_files": [
                 "app-data.ts",

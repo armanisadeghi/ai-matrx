@@ -219,7 +219,7 @@ export function initUrlHydration() {
     dispatch(
       openOverlay({
         overlayId: "messagesWindow",
-        data: id ? { activeConversationId: id } : null,
+        data: id ? { conversationId: id } : null,
       }),
     );
   });

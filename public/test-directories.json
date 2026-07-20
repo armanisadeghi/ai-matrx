@@ -4,10 +4,6 @@
     "name": "_maps"
   },
   {
-    "path": "/demos/tests/animation-tests",
-    "name": "animation-tests"
-  },
-  {
     "path": "/demos/tests/app-shell-test",
     "name": "app-shell-test"
   },

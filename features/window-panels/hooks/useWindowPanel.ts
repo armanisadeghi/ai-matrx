@@ -230,6 +230,7 @@ export function useWindowPanel(
         title: opts.title,
         initial,
         persistence: opts.persistence,
+        viewport: { width: window.innerWidth, height: window.innerHeight },
       }),
     );
     const pendingKey = opts.persistence

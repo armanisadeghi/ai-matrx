@@ -50,8 +50,10 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   updateWindowRect,
+  updateWindowPersistence,
   selectWindowsHidden,
   selectAllWindows,
+  selectWindowPersistence,
   arrangeActiveWindows,
 } from "@/lib/redux/slices/windowManagerSlice";
 import type { GlobalLayoutType } from "./utils/windowArrangements";
@@ -98,6 +100,11 @@ import {
 } from "./WindowTray/traySnapshotMap";
 import { MinimizedWindowContent } from "./WindowTray/MinimizedWindowContent";
 import { getTrayPreviewEntry } from "./registry/trayPreviewRegistry";
+import {
+  DEFAULT_INSTANCE_ID,
+  selectOverlayData,
+} from "@/lib/redux/slices/overlaySlice";
+import { sanitizeWindowSessionData } from "./persistence/windowSessionSerialization";
 
 // ─── Resize handle descriptors ───────────────────────────────────────────────
 
@@ -414,6 +421,27 @@ export function WindowPanel({
   const id = hookOpts.id ?? reactId;
   const trayRegistryKey = overlayId ?? id;
   const isMobile = useIsMobile();
+  const registryEntry = overlayId
+    ? getStaticEntryByOverlayId(overlayId)
+    : undefined;
+  const effectiveInstanceId = overlayInstanceId ?? DEFAULT_INSTANCE_ID;
+  const preservationEnabled = Boolean(
+    overlayId &&
+      registryEntry?.preservation &&
+      !registryEntry.ephemeral &&
+      (registryEntry.instanceMode !== "multi" || overlayInstanceId),
+  );
+  const overlayLaunchData = useAppSelector((state) =>
+    overlayId
+      ? selectOverlayData(state, overlayId, effectiveInstanceId)
+      : null,
+  );
+  const initialPreservationData = registryEntry?.preservation
+    ? sanitizeWindowSessionData(
+        overlayLaunchData,
+        registryEntry.preservation.dataKeys,
+      ).data
+    : {};
 
   const popoutCapabilityRef = useRef<PopoutCapability | null>(null);
   if (popoutCapabilityRef.current === null) {
@@ -468,7 +496,23 @@ export function WindowPanel({
     onMinimize,
     onToggleMaximize,
     isInteracting,
-  } = useWindowPanel({ ...hookOpts, id, title, onTriggerPopout });
+  } = useWindowPanel({
+    ...hookOpts,
+    id,
+    title,
+    onTriggerPopout,
+    ...(preservationEnabled && overlayId
+      ? {
+          persistence: {
+            overlayId,
+            instanceId: effectiveInstanceId,
+            data: initialPreservationData,
+            sidebarOpen: defaultSidebarOpen,
+            sidebarSize: sidebarDefaultSize,
+          },
+        }
+      : {}),
+  });
 
   const dispatch = useAppDispatch();
   const windowsHidden = useAppSelector(selectWindowsHidden);
@@ -489,9 +533,7 @@ export function WindowPanel({
   // A window with `urlSync.key` in its registry entry auto-activates without
   // any prop wiring — fixes the "urlSyncKey set but urlSyncId missing" silent
   // no-op that previously left ~7 windows without deep-link support.
-  const urlSyncRegEntry = overlayId
-    ? getStaticEntryByOverlayId(overlayId)
-    : undefined;
+  const urlSyncRegEntry = registryEntry;
   const effectiveUrlSyncKey = urlSyncKey ?? urlSyncRegEntry?.urlSync?.key;
   const effectiveUrlSyncId =
     urlSyncId ?? (effectiveUrlSyncKey ? overlayId : undefined);
@@ -510,6 +552,12 @@ export function WindowPanel({
   // ── Sidebar state ─────────────────────────────────────────────────────────
   const hasSidebar = !!sidebar;
   const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
+  const [sidebarSize, setSidebarSize] = useState<number | null>(
+    sidebarDefaultSize,
+  );
+  const restoredPersistence = useAppSelector(selectWindowPersistence(id));
+  const sidebarPanelRef = useRef<PanelImperativeHandle>(null);
+  const restoredChromeAppliedRef = useRef(false);
 
   // ── Persistence ───────────────────────────────────────────────────────────
   const persistence = useWindowPersistence();
@@ -517,25 +565,53 @@ export function WindowPanel({
   /**
    * Collect the current panel chrome state from Redux + local state and
    * merge it with whatever the child provides via onCollectData(), then
-   * save to the DB. This is the shared path for both explicit saves and
-   * piggyback saves.
+   * stage it in the canonical Redux entry. The manager writes the compact
+   * workspace to local storage without blocking this interaction.
    *
    * Phase 7: when `onHeavySnapshot` is provided, awaits the snapshot and
    * merges the result into `data.snapshot` before writing. Fire-and-forget
    * — errors are swallowed (persistence layer already logs).
    */
   const handleSaveWindowState = useCallback(() => {
-    if (!overlayId) return;
+    if (!overlayId || !preservationEnabled || !registryEntry?.preservation) {
+      return;
+    }
     const panelState = {
       windowState,
       rect,
       sidebarOpen,
       zIndex,
     };
-    const base = onCollectData?.() ?? {};
+    let collected: Record<string, unknown> = {};
+    try {
+      collected = onCollectData?.() ?? {};
+    } catch (error) {
+      console.error(
+        `[window-preservation] collector failed for ${overlayId}:${effectiveInstanceId}`,
+        error,
+      );
+    }
+    const base = sanitizeWindowSessionData(
+      { ...initialPreservationData, ...collected },
+      registryEntry.preservation.dataKeys,
+    ).data;
+    dispatch(
+      updateWindowPersistence({
+        id,
+        data: base,
+        sidebarOpen,
+        sidebarSize,
+      }),
+    );
 
     if (!onHeavySnapshot) {
-      persistence.saveWindow(overlayId, panelState, base, onSessionSaved);
+      persistence.saveWindow(
+        overlayId,
+        panelState,
+        base,
+        onSessionSaved,
+        effectiveInstanceId,
+      );
       return;
     }
 
@@ -548,6 +624,7 @@ export function WindowPanel({
           panelState,
           { ...base, snapshot },
           onSessionSaved,
+          effectiveInstanceId,
         );
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -555,14 +632,26 @@ export function WindowPanel({
           `[WindowPanel] heavy snapshot failed for "${overlayId}", saving without it:`,
           err,
         );
-        persistence.saveWindow(overlayId, panelState, base, onSessionSaved);
+        persistence.saveWindow(
+          overlayId,
+          panelState,
+          base,
+          onSessionSaved,
+          effectiveInstanceId,
+        );
       }
     })();
   }, [
     overlayId,
+    preservationEnabled,
+    registryEntry,
+    effectiveInstanceId,
+    initialPreservationData,
+    id,
     windowState,
     rect,
     sidebarOpen,
+    sidebarSize,
     zIndex,
     onCollectData,
     onSessionSaved,
@@ -571,61 +660,52 @@ export function WindowPanel({
   ]);
 
   /**
-   * Phase 7 — Autosave-on-blur: when the registry entry opts in via
-   * `autosave: true` (or implicitly via `heavySnapshot: true`), save the
-   * window state whenever the tab becomes hidden or the window unmounts.
-   * A 500 ms debounce guards against a flurry of visibility events.
-   *
-   * Only the most recent save wins — earlier pending timers are canceled.
+   * Keep semantic data current while the child changes. This never writes to
+   * storage directly and deliberately has no unmount flush; explicit close
+   * tombstones must always win over late cleanup.
    */
   const saveRef = useRef(handleSaveWindowState);
   saveRef.current = handleSaveWindowState;
 
   useEffect(() => {
-    if (!overlayId) return undefined;
-    const entry = getStaticEntryByOverlayId(overlayId);
-    if (!entry || (!entry.autosave && !entry.heavySnapshot)) return undefined;
-    if (entry.ephemeral) return undefined;
-
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const scheduleSave = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        timer = null;
-        saveRef.current();
-      }, 500);
-    };
-
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") scheduleSave();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      if (timer) {
-        clearTimeout(timer);
-        timer = null;
-      }
-      // Flush once on unmount so unloading mid-session doesn't lose state.
-      saveRef.current();
-    };
-  }, [overlayId]);
+    if (!preservationEnabled) return;
+    saveRef.current();
+  }, [preservationEnabled, overlayLaunchData, onCollectData]);
 
   /**
    * Wrap the onClose prop to also delete the DB row for this window.
    */
   const handleClose = useCallback(() => {
-    if (overlayId) persistence.closeWindow(overlayId);
+    const hasExactOverlayIdentity =
+      registryEntry?.instanceMode !== "multi" || Boolean(overlayInstanceId);
+    if (overlayId && hasExactOverlayIdentity) {
+      persistence.closeWindow(overlayId, effectiveInstanceId);
+    } else if (overlayId && !onClose) {
+      console.error(
+        `[window-panels] Cannot close multi-instance ${overlayId} without overlayInstanceId or onClose.`,
+      );
+    }
     onClose?.();
-  }, [overlayId, onClose, persistence]);
-  const sidebarPanelRef = useRef<PanelImperativeHandle>(null);
+  }, [
+    effectiveInstanceId,
+    overlayId,
+    onClose,
+    overlayInstanceId,
+    persistence,
+    registryEntry?.instanceMode,
+  ]);
 
   useEffect(() => {
-    if (!defaultSidebarOpen) {
+    if (!restoredPersistence || restoredChromeAppliedRef.current) return;
+    restoredChromeAppliedRef.current = true;
+    setSidebarOpen(restoredPersistence.sidebarOpen);
+    setSidebarSize(restoredPersistence.sidebarSize);
+    if (!restoredPersistence.sidebarOpen) {
       sidebarPanelRef.current?.collapse();
+    } else if (restoredPersistence.sidebarSize) {
+      sidebarPanelRef.current?.resize(restoredPersistence.sidebarSize);
     }
-  }, [defaultSidebarOpen]);
+  }, [restoredPersistence]);
 
   // ── fitContent: sync measured shell size back into Redux ─────────────────
   const fitContentRef = useRef<HTMLDivElement>(null);
@@ -695,8 +775,19 @@ export function WindowPanel({
   const handleSidebarResize = useCallback(
     (panelSize: { asPercentage: number; inPixels: number }) => {
       setSidebarOpen(panelSize.asPercentage > 0);
+      if (panelSize.inPixels > 0) setSidebarSize(panelSize.inPixels);
+      if (preservationEnabled) {
+        dispatch(
+          updateWindowPersistence({
+            id,
+            sidebarOpen: panelSize.asPercentage > 0,
+            sidebarSize:
+              panelSize.inPixels > 0 ? panelSize.inPixels : sidebarSize,
+          }),
+        );
+      }
     },
-    [],
+    [dispatch, id, preservationEnabled, sidebarSize],
   );
 
   // ── Portal target (client-only) ──────────────────────────────────────────
@@ -859,6 +950,7 @@ export function WindowPanel({
   } | null>(null);
 
   const handleMinimize = useCallback(() => {
+    if (preservationEnabled) saveRef.current();
     const bodyEl = bodyRef.current;
     const generation = ++captureGenerationRef.current;
     if (effectiveTrayCapture && bodyEl) {
@@ -873,7 +965,7 @@ export function WindowPanel({
       setPendingTrayCapture(null);
     }
     onMinimize();
-  }, [effectiveTrayCapture, onMinimize]);
+  }, [effectiveTrayCapture, onMinimize, preservationEnabled]);
 
   useEffect(() => {
     if (windowState !== "minimized" || !pendingTrayCapture) return undefined;

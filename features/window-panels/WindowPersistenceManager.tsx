@@ -1,19 +1,13 @@
 "use client";
 
 /**
- * WindowPersistenceManager
+ * Local-first window preservation coordinator.
  *
- * Replaces the localStorage-based UrlPanelManager for window geometry/state persistence.
- *
- * This component wraps all overlay children in OverlayController.
- * It provides WindowPersistenceContext so every WindowPanel can:
- *  - Retrieve its existing sessionId (loaded from DB on hydration)
- *  - Trigger a save (piggyback on data-save or explicit user action)
- *  - Clean up its DB row on close
- *
- * On mount it fetches all window_sessions rows for the current user and:
- *  1. Dispatches openOverlay for each row so OverlayController mounts the component
- *  2. Dispatches restoreWindowState so geometry is in Redux before windowPanel registers
+ * Window layout is a tab-scoped device cache, not durable domain data. The
+ * synchronous localStorage mirror protects reload/pagehide; IndexedDB is the
+ * warm cache. Registry allowlists decide which windows and semantic keys may
+ * restore. No screenshots, callbacks, blobs, or arbitrary feature state enter
+ * this path.
  */
 
 import React, {
@@ -24,120 +18,97 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
+  selectFingerprintId,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import {
+  DEFAULT_INSTANCE_ID,
   closeOverlay,
   openOverlay,
   pruneStaleInstances,
 } from "@/lib/redux/slices/overlaySlice";
-import { restoreWindowState } from "@/lib/redux/slices/windowManagerSlice";
 import {
-  loadWindowSessions,
-  migrateWindowSessionSlug,
-  saveWindowSession,
-  deleteWindowSession,
-} from "./service/windowPersistenceService";
-import {
-  getStaticEntryByOverlayId,
-  getStaticEntryBySlug,
-  type PanelState,
-} from "./registry/windowRegistryMetadata";
-import { isOverlayId, type OverlayId } from "./registry/overlay-ids";
-import type { WindowEntry } from "@/lib/redux/slices/windowManagerSlice";
-import { clampRectToCurrentViewport } from "./utils/rectClamp";
+  clearWindowPersistenceState,
+  hydrateWindowSessions,
+  markWindowClosing,
+  updateWindowPersistence,
+  windowSessionKey,
+  type WindowManagerState,
+} from "@/lib/redux/slices/windowManagerSlice";
+import { deriveIdentity } from "@/lib/sync/identity";
+import type { IdentityKey } from "@/lib/sync/types";
+import type { OverlayId } from "./registry/overlay-ids";
+import type { PanelState } from "./registry/windowRegistryMetadata";
 import {
   getPendingPopoutWindowIds,
   clearAllPopoutPending,
 } from "./popout/popoutPendingStorage";
 import { getPopoutOpener } from "./popout/usePopoutControl";
 import { toast } from "@/lib/toast";
+import {
+  getWindowWorkspaceId,
+  loadLocalWindowWorkspace,
+  saveLocalWindowWorkspace,
+} from "./persistence/localWindowSessionStore";
+import {
+  hydrateWindowWorkspace,
+  serializeWindowWorkspace,
+  type WindowPersistenceDiagnostic,
+} from "./persistence/windowSessionSerialization";
 
-// ─── Popout recovery toast ────────────────────────────────────────────────────
+const SAVE_DEBOUNCE_MS = 250;
 
-/**
- * Surface a toast for any windows that were popped out at the time of the
- * last parent-page unload. Clicking the toast action triggers a fresh
- * popout via `usePopoutControl` — the click counts as a user gesture so
- * `documentPictureInPicture.requestWindow()` will be accepted.
- *
- * The window must be mounted by the time the user clicks. We delay reading
- * the opener until click time so the registration ordering is forgiving.
- */
-function surfacePopoutRecoveryToast(): void {
-  const pendingIds = getPendingPopoutWindowIds();
-  if (pendingIds.length === 0) return;
-
-  // Clear immediately so a fast reload doesn't double-show the toast.
-  // If the user dismisses without action, that's fine — the windows
-  // restored docked, with their original geometry preserved.
-  clearAllPopoutPending();
-
-  const label =
-    pendingIds.length === 1
-      ? "A floating window was open before reload"
-      : `${pendingIds.length} floating windows were open before reload`;
-
-  toast(label, {
-    description: "Click to restore.",
-    duration: 10_000,
-    action: {
-      label: "Restore",
-      onClick: () => {
-        for (const id of pendingIds) {
-          const opener = getPopoutOpener(id);
-          if (!opener) {
-            // Window not mounted — silently skip. The persistence layer
-            // already restored its docked geometry; the user can manually
-            // pop it out from the menu.
-            continue;
-          }
-          // We don't have the saved width/height here — use defaults.
-          // The opener honors the user-gesture chain because `onClick` is
-          // a real click handler.
-          void opener({
-            width: 480,
-            height: 320,
-            title: "Window",
-          });
-        }
-      },
-    },
+function reportDiagnostics(diagnostics: WindowPersistenceDiagnostic[]): void {
+  diagnostics.forEach((diagnostic) => {
+    const log =
+      diagnostic.level === "error" ? console.error : console.warn;
+    log(`[window-preservation:${diagnostic.code}] ${diagnostic.message}`);
   });
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+function surfacePopoutRecoveryToast(): void {
+  const pendingIds = getPendingPopoutWindowIds();
+  if (pendingIds.length === 0) return;
+  clearAllPopoutPending();
+  toast(
+    pendingIds.length === 1
+      ? "A floating window was open before reload"
+      : `${pendingIds.length} floating windows were open before reload`,
+    {
+      description: "Click to restore.",
+      duration: 10_000,
+      action: {
+        label: "Restore",
+        onClick: () => {
+          pendingIds.forEach((id) => {
+            void getPopoutOpener(id)?.({
+              width: 480,
+              height: 320,
+              title: "Window",
+            });
+          });
+        },
+      },
+    },
+  );
+}
 
 export interface WindowPersistenceContextValue {
-  /**
-   * Get the existing DB session id for an overlayId, if one was loaded
-   * during hydration. Returns undefined for windows opened fresh this session.
-   */
-  getSessionId: (overlayId: OverlayId) => string | undefined;
-
-  /**
-   * Persist the current state for a window.
-   * Upserts a window_sessions row. No-op for ephemeral windows.
-   *
-   * @param overlayId  The window's overlay ID
-   * @param panelState Chrome state (geometry, sidebar, z-index, etc.)
-   * @param data       Window-type-specific content state
-   * @param onSaved    Called with the session id after successful save
-   */
+  getSessionId: (
+    overlayId: OverlayId,
+    instanceId?: string,
+  ) => string | undefined;
   saveWindow: (
     overlayId: OverlayId,
     panelState: PanelState,
     data: Record<string, unknown>,
     onSaved?: (sessionId: string) => void,
+    instanceId?: string,
   ) => void;
-
-  /**
-   * Delete the DB row for a window.
-   * Called when the user closes a window. No-op if no row exists.
-   */
-  closeWindow: (overlayId: OverlayId) => void;
-
-  /** True once the initial DB hydration completes. */
+  closeWindow: (overlayId: OverlayId, instanceId?: string) => void;
+  /** True after this identity/workspace has produced a hit or a confirmed miss. */
   hydrated: boolean;
 }
 
@@ -148,15 +119,9 @@ const WindowPersistenceContext = createContext<WindowPersistenceContextValue>({
   hydrated: false,
 });
 
-/**
- * Hook for WindowPanel components to access persistence operations.
- * Must be used inside <WindowPersistenceManager>.
- */
 export function useWindowPersistence(): WindowPersistenceContextValue {
   return useContext(WindowPersistenceContext);
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 interface WindowPersistenceManagerProps {
   children: React.ReactNode;
@@ -166,223 +131,235 @@ export function WindowPersistenceManager({
   children,
 }: WindowPersistenceManagerProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const userId = useAppSelector(selectUserId);
+  const fingerprintId = useAppSelector(selectFingerprintId);
+  const identityKey = deriveIdentity({ userId, fingerprintId }).key;
   const [hydrated, setHydrated] = useState(false);
+  const workspaceIdRef = useRef<string | null>(null);
+  const identityRef = useRef<IdentityKey | null>(null);
+  const hydratedRef = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastWorkspaceJsonRef = useRef<string | null>(null);
+  const lastWorkspaceFingerprintRef = useRef<string | null>(null);
+  const lastSavedAtRef = useRef(0);
+  const restoredInstancesRef = useRef<
+    Array<{ overlayId: OverlayId; instanceId: string }>
+  >([]);
 
-  /**
-   * Maps overlayId → sessionId for all persisted rows.
-   * Ref (not state) so save/close callbacks always see the latest value
-   * without triggering re-renders.
-   */
-  const sessionMapRef = useRef<Map<OverlayId, string>>(new Map());
+  if (workspaceIdRef.current === null && typeof window !== "undefined") {
+    workspaceIdRef.current = getWindowWorkspaceId();
+  }
 
-  // ── Hydrate on mount ────────────────────────────────────────────────────────
+  const saveCurrentWorkspace = useCallback(() => {
+    const identity = identityRef.current;
+    const workspaceId = workspaceIdRef.current;
+    if (!identity || !workspaceId || !hydratedRef.current) return;
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const savedAt = Math.max(Date.now(), lastSavedAtRef.current + 1);
+    const result = serializeWindowWorkspace(
+      store.getState().windowManager,
+      workspaceId,
+      savedAt,
+    );
+    reportDiagnostics(result.diagnostics);
+    const fingerprint = JSON.stringify(
+      result.workspace.sessions.map((session) => ({
+        ...session,
+        savedAt: 0,
+      })),
+    );
+    if (fingerprint === lastWorkspaceFingerprintRef.current) return;
+    lastWorkspaceFingerprintRef.current = fingerprint;
+    lastSavedAtRef.current = savedAt;
+    const nextJson = JSON.stringify(result.workspace);
+    if (nextJson === lastWorkspaceJsonRef.current) return;
+    lastWorkspaceJsonRef.current = nextJson;
+    // localStorage completes synchronously inside this call; IDB may finish
+    // after the event/paint and is intentionally not awaited.
+    void saveLocalWindowWorkspace(identity, result.workspace);
+  }, [store]);
+
+  // Observe the canonical Redux source once. No render-driven whole-state
+  // selector and no per-window timers.
   useEffect(() => {
-    // One-time migration off the legacy `matrx_window_manager_state`
-    // localStorage sidecar. Reads the old blob, seeds Redux geometry
-    // synchronously, then removes the key. Later DB hydration will
-    // overwrite geometry with the authoritative row. Safe no-op on
-    // subsequent loads once the key is gone.
-    //
-    // Delete this block after the next release cycle — by then every
-    // active user will have hydrated at least once.
-    try {
-      const LEGACY_LS_KEY = "matrx_window_manager_state";
-      const saved = localStorage.getItem(LEGACY_LS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as Record<string, WindowEntry> | null;
-        if (parsed && typeof parsed === "object") {
-          // Clamp each stored rect into the current viewport before seeding
-          // Redux — the saved geometry may be from a larger screen.
-          const clamped: Record<string, WindowEntry> = {};
-          for (const [id, entry] of Object.entries(parsed)) {
-            if (!entry || typeof entry !== "object") continue;
-            clamped[id] = {
-              ...entry,
-              windowed: entry.windowed
-                ? clampRectToCurrentViewport(entry.windowed)
-                : entry.windowed,
-            };
-          }
-          dispatch(restoreWindowState(clamped));
-        }
-        localStorage.removeItem(LEGACY_LS_KEY);
+    let previousWindowState = store.getState().windowManager;
+    const unsubscribe = store.subscribe(() => {
+      if (!hydratedRef.current) return;
+      const nextWindowState = store.getState().windowManager;
+      if (nextWindowState === previousWindowState) return;
+      previousWindowState = nextWindowState;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null;
+        saveCurrentWorkspace();
+      }, SAVE_DEBOUNCE_MS);
+    });
+    const flush = () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
       }
-    } catch {
-      // Malformed LS blob — drop silently.
-    }
+      saveCurrentWorkspace();
+    };
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", flushWhenHidden);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", flushWhenHidden);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [saveCurrentWorkspace, store]);
 
-    if (!userId) {
-      setHydrated(true);
-      return undefined;
-    }
-    // Narrow once for the closures below — `userId` is nullable at the
-    // effect's type but is guaranteed non-null past this guard.
-    const currentUserId = userId;
-
+  // Explicit identity/workspace readiness. A cache miss is a completed load,
+  // not a forever-loading state.
+  useEffect(() => {
+    const workspaceId = workspaceIdRef.current;
+    if (!workspaceId) return undefined;
+    const identity = deriveIdentity({ userId, fingerprintId });
     let cancelled = false;
 
-    /**
-     * One-shot slug migrations. Each row maps an old slug to its new slug
-     * after a registry rename. Gated by a localStorage key per user-agnostic
-     * migration so it runs once per browser. Failures are swallowed — the
-     * row simply stays stranded and the user can manually re-open the
-     * window from the sidebar. Add new entries here and rev `MIGRATION_KEY`
-     * if a future rename needs to reach already-migrated browsers.
-     *
-     * Delete entries here once telemetry shows zero stranded rows.
-     */
-    const SLUG_MIGRATIONS: Array<{ from: string; to: string }> = [
-      // 2026-05-05 — quickAIResults → quickChatHistory rename (commit e62188b04)
-      { from: "quick-ai-results", to: "quick-chat-history" },
-    ];
-    const MIGRATION_KEY = "window-panels-slug-migrations:2026-05-06";
-
-    async function runSlugMigrations() {
-      if (!userId) return;
-      try {
-        if (localStorage.getItem(MIGRATION_KEY) === "1") return;
-      } catch {
-        // localStorage unavailable — run anyway, idempotent.
-      }
-      try {
-        await Promise.all(
-          SLUG_MIGRATIONS.map((m) =>
-            migrateWindowSessionSlug(userId, m.from, m.to),
-          ),
-        );
-        try {
-          localStorage.setItem(MIGRATION_KEY, "1");
-        } catch {
-          // Best-effort; if LS is unavailable the migration is harmlessly
-          // re-run on next mount.
-        }
-      } catch (err) {
-        console.warn(
-          "WindowPersistenceManager: slug migration failed (continuing)",
-          err,
-        );
-      }
+    hydratedRef.current = false;
+    setHydrated(false);
+    lastWorkspaceJsonRef.current = null;
+    lastWorkspaceFingerprintRef.current = null;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
     }
 
-    async function hydrate() {
-      try {
-        await runSlugMigrations();
-        if (cancelled) return;
-        const sessions = await loadWindowSessions(currentUserId);
-        if (cancelled) return;
+    const previousIdentity = identityRef.current;
+    if (previousIdentity && previousIdentity.key !== identity.key) {
+      // An account/fingerprint swap cannot leave the prior identity's windows
+      // visible or let their unmounts write into the next identity's cache.
+      const previousInstances = new Map<
+        string,
+        { overlayId: OverlayId; instanceId: string }
+      >();
+      const currentWindowState = store.getState().windowManager;
+      Object.values(currentWindowState.windows).forEach((entry) => {
+        if (!entry.persistence) return;
+        previousInstances.set(
+          windowSessionKey(
+            entry.persistence.overlayId,
+            entry.persistence.instanceId,
+          ),
+          {
+            overlayId: entry.persistence.overlayId,
+            instanceId: entry.persistence.instanceId,
+          },
+        );
+      });
+      Object.values(currentWindowState.pendingRestores).forEach((session) => {
+        previousInstances.set(session.sessionKey, {
+          overlayId: session.overlayId,
+          instanceId: session.instanceId,
+        });
+      });
+      previousInstances.forEach(({ overlayId, instanceId }) => {
+        dispatch(markWindowClosing({ overlayId, instanceId }));
+        dispatch(closeOverlay({ overlayId, instanceId }));
+      });
+      restoredInstancesRef.current = [];
+      dispatch(clearWindowPersistenceState());
+    }
+    identityRef.current = identity;
 
-        // Geometry restore payload: slug → WindowEntry shape.
-        // Keys must be the window manager id (slug, e.g. "agent-settings-window"),
-        // not the overlayId (e.g. "agentSettingsWindow") — WindowPanel registers
-        // in windowManagerSlice under its `id` prop which is always the slug.
-        const windowEntries: Record<string, WindowEntry> = {};
-
-        for (const session of sessions) {
-          // window_type column stores the slug (e.g. "notes-window")
-          const regEntry = getStaticEntryBySlug(session.window_type);
-          if (!regEntry || !isOverlayId(regEntry.overlayId)) continue;
-
-          const overlayId = regEntry.overlayId;
-
-          // Track the session id keyed by overlayId (used by WindowPanel)
-          sessionMapRef.current.set(overlayId, session.id);
-
-          // Re-open the overlay in Redux so OverlayController mounts the
-          // component. overlayId is narrowed via isOverlayId (check-registry
-          // keeps registry slugs in sync with OVERLAY_IDS).
+    void loadLocalWindowWorkspace(identity, workspaceId)
+      .then(({ workspace }) => {
+        if (cancelled || identityRef.current?.key !== identity.key) return;
+        const result = hydrateWindowWorkspace(workspace, {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        }, workspaceId);
+        reportDiagnostics(result.diagnostics);
+        dispatch(
+          hydrateWindowSessions({
+            sessions: result.sessions,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+          }),
+        );
+        result.sessions.forEach((session) => {
           dispatch(
             openOverlay({
-              overlayId,
+              overlayId: session.overlayId,
+              instanceId: session.instanceId,
               data: session.data,
             }),
           );
+        });
+        restoredInstancesRef.current = result.sessions.map(
+          ({ overlayId, instanceId }) => ({ overlayId, instanceId }),
+        );
+        lastWorkspaceJsonRef.current = workspace
+          ? JSON.stringify(workspace)
+          : null;
+        lastWorkspaceFingerprintRef.current = workspace
+          ? JSON.stringify(
+              workspace.sessions.map((session) => ({
+                ...session,
+                savedAt: 0,
+              })),
+            )
+          : null;
+        lastSavedAtRef.current = workspace?.savedAt ?? 0;
+        hydratedRef.current = true;
+        setHydrated(true);
+        surfacePopoutRecoveryToast();
+        // Let restored WindowPanels register before taking the normalized
+        // initial snapshot. This also records a clean empty-cache miss.
+        window.setTimeout(saveCurrentWorkspace, 0);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.error("[window-preservation] local hydration failed", error);
+        hydratedRef.current = true;
+        setHydrated(true);
+      });
 
-          // Build the geometry entry for windowManagerSlice. Clamp the
-          // restored rect into the current viewport — a rect saved at a
-          // larger screen can land off-screen on a smaller device.
-          //
-          // Key by regEntry.slug (e.g. "agent-settings-window"), NOT by
-          // overlayId (e.g. "agentSettingsWindow"). WindowPanel registers in
-          // windowManagerSlice under its `id` prop, which window components
-          // set to the kebab-case slug — restoreWindowState skips any entry
-          // whose key doesn't match an already-registered window id. (D6)
-          const ps = session.panel_state as PanelState | null;
-          if (ps?.rect) {
-            const clamped = clampRectToCurrentViewport(ps.rect);
-            windowEntries[regEntry.slug] = {
-              id: regEntry.slug,
-              title: session.label ?? regEntry.label,
-              state: ps.windowState ?? "windowed",
-              windowed: clamped,
-              preMinimizedRect: null,
-              zIndex: ps.zIndex ?? 1000,
-              traySlot: null,
-              // Popout state never restores from DB — see restoreWindowState reducer.
-              popoutMode: null,
-              prePopoutRect: null,
-            };
-          }
-        }
-
-        if (Object.keys(windowEntries).length > 0) {
-          dispatch(restoreWindowState(windowEntries));
-        }
-
-        // ── Popout recovery on reload ────────────────────────────────────
-        // If any windows were popped out at the time of the last unload,
-        // surface a toast offering to restore them. The user must click
-        // (fresh user gesture) — we can't programmatically reopen.
-        if (!cancelled) {
-          surfacePopoutRecoveryToast();
-        }
-      } catch (err) {
-        console.warn("WindowPersistenceManager: hydration failed", err);
-      } finally {
-        if (!cancelled) setHydrated(true);
-      }
-    }
-
-    hydrate();
     return () => {
       cancelled = true;
     };
+    // identityKey intentionally collapses fingerprint changes while signed in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [dispatch, identityKey, saveCurrentWorkspace, store]);
 
-  // ── Idle GC sweep ──────────────────────────────────────────────────────────
-  //
-  // Every 30 minutes (idle-only), prune closed multi-instance overlay entries
-  // that haven't been used in the same window. Keeps `state.overlays` from
-  // growing unbounded when users repeatedly open/close Content Editors,
-  // Smart Code Editor instances, image viewers, etc. Singleton slots are
-  // preserved so stable-reference selectors don't thrash.
   useEffect(() => {
     const THIRTY_MINUTES_MS = 30 * 60 * 1000;
-
     const runSweep = () => {
       const idleRun = () =>
         dispatch(pruneStaleInstances({ olderThanMs: THIRTY_MINUTES_MS }));
-
-      // Prefer requestIdleCallback so the sweep never steals paint time.
-      // Fall back to a microtask on Safari (no rIC support yet).
       if (typeof window.requestIdleCallback === "function") {
         window.requestIdleCallback(idleRun);
       } else {
         setTimeout(idleRun, 0);
       }
     };
-
     const interval = window.setInterval(runSweep, THIRTY_MINUTES_MS);
     return () => window.clearInterval(interval);
   }, [dispatch]);
 
-  // ── Context callbacks ───────────────────────────────────────────────────────
-
   const getSessionId = useCallback(
-    (overlayId: OverlayId): string | undefined =>
-      sessionMapRef.current.get(overlayId),
-    [],
+    (overlayId: OverlayId, instanceId = DEFAULT_INSTANCE_ID) => {
+      const key = windowSessionKey(overlayId, instanceId);
+      const state = store.getState().windowManager as WindowManagerState;
+      const isLive = Object.values(state.windows).some(
+        (entry) =>
+          entry.persistence?.overlayId === overlayId &&
+          entry.persistence.instanceId === instanceId,
+      );
+      return isLive || state.pendingRestores[key] ? key : undefined;
+    },
+    [store],
   );
 
   const saveWindow = useCallback(
@@ -391,72 +368,50 @@ export function WindowPersistenceManager({
       panelState: PanelState,
       data: Record<string, unknown>,
       onSaved?: (sessionId: string) => void,
+      instanceId = DEFAULT_INSTANCE_ID,
     ) => {
-      if (!userId) return;
-
-      const regEntry = getStaticEntryByOverlayId(overlayId);
-      if (!regEntry || regEntry.ephemeral) return;
-
-      const existingSessionId = sessionMapRef.current.get(overlayId);
-
-      saveWindowSession({
-        sessionId: existingSessionId,
-        userId,
-        windowType: regEntry.slug,
-        label: regEntry.label,
-        panelState,
-        data,
-      })
-        .then((sessionId) => {
-          sessionMapRef.current.set(overlayId, sessionId);
-          onSaved?.(sessionId);
-        })
-        .catch((err) => {
-          console.warn(
-            `WindowPersistenceManager: save failed for overlayId="${overlayId}"`,
-            err,
-          );
-        });
+      const entry = Object.values(store.getState().windowManager.windows).find(
+        (candidate) =>
+          candidate.persistence?.overlayId === overlayId &&
+          candidate.persistence.instanceId === instanceId,
+      );
+      if (!entry) return;
+      dispatch(
+        updateWindowPersistence({
+          id: entry.id,
+          data,
+          sidebarOpen: panelState.sidebarOpen,
+        }),
+      );
+      saveCurrentWorkspace();
+      onSaved?.(windowSessionKey(overlayId, instanceId));
     },
-    [userId],
+    [dispatch, saveCurrentWorkspace, store],
   );
 
   const closeWindow = useCallback(
-    (overlayId: OverlayId) => {
-      // Structural close: dispatch the overlay-slice close so OverlayController
-      // unmounts the component. Every unmount-driven cleanup (URL sync,
-      // autosave-on-blur, tray snapshot, popout opener registry) depends on
-      // this firing — without it the X button is silently dead for any
-      // window whose controller block forgot to wire `onClose`. The reducer
-      // is idempotent (no-op when the bucket is missing or already closed)
-      // and defaults to the singleton instance slot, so callers that already
-      // dispatch `closeOverlay` themselves continue to work, and
-      // multi-instance windows are untouched (they pass an explicit
-      // instanceId from their controller block).
-      dispatch(closeOverlay({ overlayId }));
-
-      const sessionId = sessionMapRef.current.get(overlayId);
-      if (!sessionId) return;
-      sessionMapRef.current.delete(overlayId);
-      deleteWindowSession(sessionId).catch((err) => {
-        console.warn(
-          `WindowPersistenceManager: delete failed for overlayId="${overlayId}" session="${sessionId}"`,
-          err,
-        );
-      });
+    (overlayId: OverlayId, instanceId = DEFAULT_INSTANCE_ID) => {
+      // Tombstone precedes every unmount/collector path.
+      dispatch(markWindowClosing({ overlayId, instanceId }));
+      dispatch(closeOverlay({ overlayId, instanceId }));
+      restoredInstancesRef.current = restoredInstancesRef.current.filter(
+        (item) =>
+          item.overlayId !== overlayId || item.instanceId !== instanceId,
+      );
+      saveCurrentWorkspace();
     },
-    [dispatch],
+    [dispatch, saveCurrentWorkspace],
   );
 
-  const contextValue: WindowPersistenceContextValue = {
-    getSessionId,
-    saveWindow,
-    closeWindow,
-    hydrated,
-  };
-
   return (
-    <WindowPersistenceContext.Provider value={contextValue}>
+    <WindowPersistenceContext.Provider
+      value={{
+        getSessionId,
+        saveWindow,
+        closeWindow,
+        hydrated,
+      }}
+    >
       {children}
     </WindowPersistenceContext.Provider>
   );

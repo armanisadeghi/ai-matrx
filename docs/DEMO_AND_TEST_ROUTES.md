@@ -2,7 +2,7 @@
 
 This inventory lists **App Router** `page.tsx` entry points that exist primarily for **demos**, **QA experiments**, **component playgrounds**, or **internal harnesses** — not end-user product flows.
 
-**Total routes:** 359 (generated from filesystem rules; adjust `docs/DEMO_AND_TEST_ROUTES.md` if a route is miscategorized.)
+**Total routes:** 354 (generated from filesystem rules; adjust `docs/DEMO_AND_TEST_ROUTES.md` if a route is miscategorized.)
 
 URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-auth)`).
 
@@ -168,15 +168,10 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 ### Authenticated — `/tests`
 
-*74 routes*
+*69 routes*
 
 - `/tests` — `app/(authenticated)/tests/page.tsx`
 - `/tests/_maps` — `app/(authenticated)/tests/_maps/page.tsx`
-- `/tests/animation-tests` — `app/(authenticated)/tests/animation-tests/page.tsx`
-- `/tests/animation-tests/animated-menu` — `app/(authenticated)/tests/animation-tests/animated-menu/page.tsx`
-- `/tests/animation-tests/animated-menu/with-css` — `app/(authenticated)/tests/animation-tests/animated-menu/with-css/page.tsx`
-- `/tests/animation-tests/animation-show` — `app/(authenticated)/tests/animation-tests/animation-show/page.tsx`
-- `/tests/animation-tests/scale` — `app/(authenticated)/tests/animation-tests/scale/page.tsx`
 - `/tests/app-shell-test` — `app/(authenticated)/tests/app-shell-test/page.tsx`
 - `/tests/app-shell-test/layout-choices` — `app/(authenticated)/tests/app-shell-test/layout-choices/page.tsx`
 - `/tests/app-shell-test/single-option` — `app/(authenticated)/tests/app-shell-test/single-option/page.tsx`
@@ -768,11 +763,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/demos/window-demo`
 - `/tests`
 - `/tests/_maps`
-- `/tests/animation-tests`
-- `/tests/animation-tests/animated-menu`
-- `/tests/animation-tests/animated-menu/with-css`
-- `/tests/animation-tests/animation-show`
-- `/tests/animation-tests/scale`
 - `/tests/app-shell-test`
 - `/tests/app-shell-test/layout-choices`
 - `/tests/app-shell-test/single-option`

@@ -12,6 +12,7 @@ import {
   clampRectToViewport,
 } from "@/features/window-panels/utils/rectClamp";
 import type { DockWindowPayload } from "@/features/window-panels/popout/dockWindowPayload";
+import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import {
   TRAY_CHIP_H_DESKTOP,
   TRAY_CHIP_W_DESKTOP,
@@ -26,6 +27,55 @@ import type { WindowRect } from "@/features/window-panels/window-panel.types";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type WindowState = "windowed" | "maximized" | "minimized";
+
+export const WINDOW_SESSION_SCHEMA_VERSION = 1 as const;
+
+/** Canonical persistence identity. Runtime window ids and registry slugs are not identities. */
+export function windowSessionKey(
+  overlayId: OverlayId,
+  instanceId: string,
+): string {
+  return `${overlayId}:${instanceId}`;
+}
+
+export interface WindowPersistenceRegistration {
+  overlayId: OverlayId;
+  instanceId: string;
+  data: Record<string, unknown>;
+  sidebarOpen: boolean;
+  sidebarSize: number | null;
+}
+
+export interface WindowPersistenceState extends WindowPersistenceRegistration {
+  /** Explicit close suppresses every later snapshot/unmount path. */
+  closing: boolean;
+}
+
+/** Compact, JSON-only record written to the local window workspace cache. */
+export interface PersistedWindowSession {
+  schemaVersion: typeof WINDOW_SESSION_SCHEMA_VERSION;
+  sessionKey: string;
+  overlayId: OverlayId;
+  instanceId: string;
+  /** Runtime id is diagnostic/matching metadata, never the canonical identity. */
+  windowId: string;
+  title: string;
+  state: WindowState;
+  /** Always the full windowed rect, never minimized-card geometry. */
+  windowedRect: WindowRect;
+  traySlot: number | null;
+  zIndex: number;
+  sidebarOpen: boolean;
+  sidebarSize: number | null;
+  data: Record<string, unknown>;
+  savedAt: number;
+}
+
+/** Viewport-normalized session staged for a live WindowPanel registration. */
+export interface HydratedWindowSession extends PersistedWindowSession {
+  /** Current-viewport render rect; tray geometry is recomputed, never stored. */
+  renderRect: WindowRect;
+}
 
 /**
  * Pop-out mode for windows that have been detached into a separate browser
@@ -65,10 +115,14 @@ export interface WindowEntry {
    * via `dockWindow`. `null` while docked (matches `preMinimizedRect` pattern).
    */
   prePopoutRect: WindowRect | null;
+  /** Present only for registry entries explicitly approved for preservation. */
+  persistence?: WindowPersistenceState;
 }
 
 export interface WindowManagerState {
   windows: Record<string, WindowEntry>;
+  /** Validated sessions waiting for their WindowPanel registration. */
+  pendingRestores: Record<string, HydratedWindowSession>;
   /** Next z-index to assign when a window is focused */
   nextZIndex: number;
   /** How many slots are currently occupied in the tray */
@@ -115,6 +169,7 @@ const TRAY_SLOT_WIDTH = TRAY_CHIP_W; // kept for selector compat
 
 const initialState: WindowManagerState = {
   windows: {},
+  pendingRestores: {},
   nextZIndex: BASE_Z,
   trayCount: 0,
   windowsHidden: false,
@@ -127,18 +182,24 @@ const initialState: WindowManagerState = {
  * Rectangles are mapped by their old slot so compaction does not need viewport
  * dimensions and cannot leave renumbered cards at stale coordinates.
  */
-function releaseTraySlot(state: WindowManagerState, win: WindowEntry): void {
-  const freedSlot = win.traySlot;
-  if (freedSlot === null) return;
-
+function compactReservedTraySlot(
+  state: WindowManagerState,
+  freedSlot: number,
+  freedRect: WindowRect,
+): void {
   const rectBySlot = new Map<number, WindowRect>();
+  rectBySlot.set(freedSlot, freedRect);
   Object.values(state.windows).forEach((entry) => {
     if (entry.traySlot !== null) {
       rectBySlot.set(entry.traySlot, { ...entry.windowed });
     }
   });
+  Object.values(state.pendingRestores).forEach((session) => {
+    if (session.traySlot !== null) {
+      rectBySlot.set(session.traySlot, { ...session.renderRect });
+    }
+  });
 
-  win.traySlot = null;
   state.trayCount = Math.max(0, state.trayCount - 1);
   Object.values(state.windows).forEach((entry) => {
     if (entry.traySlot === null || entry.traySlot <= freedSlot) return;
@@ -147,6 +208,21 @@ function releaseTraySlot(state: WindowManagerState, win: WindowEntry): void {
     const nextRect = rectBySlot.get(nextSlot);
     if (nextRect) entry.windowed = nextRect;
   });
+  Object.values(state.pendingRestores).forEach((session) => {
+    if (session.traySlot === null || session.traySlot <= freedSlot) return;
+    const nextSlot = session.traySlot - 1;
+    session.traySlot = nextSlot;
+    const nextRect = rectBySlot.get(nextSlot);
+    if (nextRect) session.renderRect = nextRect;
+  });
+}
+
+function releaseTraySlot(state: WindowManagerState, win: WindowEntry): void {
+  const freedSlot = win.traySlot;
+  if (freedSlot === null) return;
+  const freedRect = { ...win.windowed };
+  win.traySlot = null;
+  compactReservedTraySlot(state, freedSlot, freedRect);
 }
 
 // ─── Slice ────────────────────────────────────────────────────────────────────
@@ -162,25 +238,206 @@ const windowManagerSlice = createSlice({
         id: string;
         title?: string;
         initial: WindowRect;
+        persistence?: WindowPersistenceRegistration;
+        viewport?: { width: number; height: number };
       }>,
     ) {
-      const { id, title, initial } = action.payload;
+      const { id, title, initial, persistence, viewport } = action.payload;
       if (state.windows[id]) return;
+
+      const pending = persistence
+        ? state.pendingRestores[
+            windowSessionKey(persistence.overlayId, persistence.instanceId)
+          ]
+        : undefined;
+      const pendingRenderRect = pending
+        ? pending.state === "minimized" && pending.traySlot !== null && viewport
+          ? traySlotRect(
+              pending.traySlot,
+              viewport.width,
+              viewport.height,
+            )
+          : viewport
+            ? clampRectToViewport(pending.windowedRect, viewport)
+            : pending.renderRect
+        : undefined;
       state.windows[id] = {
         id,
-        title: title ?? id,
-        state: "windowed",
-        windowed: initial,
-        preMinimizedRect: null,
-        zIndex: state.nextZIndex++,
-        traySlot: null,
+        title: title ?? pending?.title ?? id,
+        state: pending?.state ?? "windowed",
+        windowed: pendingRenderRect ?? initial,
+        preMinimizedRect:
+          pending?.state === "minimized" ? pending.windowedRect : null,
+        zIndex: pending?.zIndex ?? state.nextZIndex++,
+        traySlot: pending?.state === "minimized" ? pending.traySlot : null,
         popoutMode: null,
         prePopoutRect: null,
+        ...(persistence
+          ? {
+              persistence: {
+                ...persistence,
+                data: { ...(pending?.data ?? {}), ...persistence.data },
+                sidebarOpen: pending?.sidebarOpen ?? persistence.sidebarOpen,
+                sidebarSize: pending?.sidebarSize ?? persistence.sidebarSize,
+                closing: false,
+              },
+            }
+          : {}),
       };
+
+      if (pending?.state === "minimized" && pending.traySlot !== null) {
+        state.trayCount = Math.max(state.trayCount, pending.traySlot + 1);
+      }
+      if (pending && pending.zIndex >= state.nextZIndex) {
+        state.nextZIndex = pending.zIndex + 1;
+      }
       // Opening a brand-new window is an explicit "show me" intent. Never let a
       // stale global hide-all (windowsHidden) silently render it invisible —
       // that is the silent-failure class this slice must structurally prevent.
       if (state.windowsHidden) state.windowsHidden = false;
+    },
+
+    /** Stage validated local sessions without creating phantom live windows. */
+    hydrateWindowSessions(
+      state,
+      action: PayloadAction<{
+        sessions: HydratedWindowSession[];
+        viewportWidth: number;
+        viewportHeight: number;
+      }>,
+    ) {
+      const liveEntries = Object.values(state.windows).sort(
+        (a, b) => a.zIndex - b.zIndex || a.id.localeCompare(b.id),
+      );
+      const accepted: HydratedWindowSession[] = [];
+      action.payload.sessions.forEach((session) => {
+        const alreadyLive = Object.values(state.windows).some(
+          (entry) =>
+            entry.persistence?.overlayId === session.overlayId &&
+            entry.persistence.instanceId === session.instanceId,
+        );
+        // Current URL/manual intent wins over a late local hydration.
+        if (alreadyLive) return;
+        accepted.push(session);
+      });
+      accepted
+        .sort(
+          (a, b) => a.zIndex - b.zIndex || a.sessionKey.localeCompare(b.sessionKey),
+        )
+        .forEach((session, index) => {
+          const key = windowSessionKey(session.overlayId, session.instanceId);
+          const traySlot =
+            session.state === "minimized" ? state.trayCount++ : null;
+          state.pendingRestores[key] = {
+            ...session,
+            sessionKey: key,
+            traySlot,
+            zIndex: BASE_Z + index,
+            renderRect:
+              traySlot !== null
+                ? traySlotRect(
+                    traySlot,
+                    action.payload.viewportWidth,
+                    action.payload.viewportHeight,
+                  )
+                : clampRectToViewport(session.windowedRect, {
+                    width: action.payload.viewportWidth,
+                    height: action.payload.viewportHeight,
+                  }),
+          };
+        });
+      liveEntries.forEach((entry, index) => {
+        entry.zIndex = BASE_Z + accepted.length + index;
+      });
+      state.nextZIndex = BASE_Z + accepted.length + liveEntries.length;
+    },
+
+    /** StrictMode-safe: the first mount cleanup may run before the real mount settles. */
+    confirmWindowRestored(state, action: PayloadAction<string>) {
+      delete state.pendingRestores[action.payload];
+    },
+
+    discardPendingWindowSession(state, action: PayloadAction<string>) {
+      const pending = state.pendingRestores[action.payload];
+      if (pending?.traySlot !== null && pending?.traySlot !== undefined) {
+        compactReservedTraySlot(state, pending.traySlot, pending.renderRect);
+      }
+      delete state.pendingRestores[action.payload];
+    },
+
+    updateWindowPersistence(
+      state,
+      action: PayloadAction<{
+        id: string;
+        data?: Record<string, unknown>;
+        sidebarOpen?: boolean;
+        sidebarSize?: number | null;
+      }>,
+    ) {
+      const entry = state.windows[action.payload.id];
+      if (!entry?.persistence || entry.persistence.closing) return;
+      if (action.payload.data !== undefined) {
+        entry.persistence.data = action.payload.data;
+      }
+      if (action.payload.sidebarOpen !== undefined) {
+        entry.persistence.sidebarOpen = action.payload.sidebarOpen;
+      }
+      if (action.payload.sidebarSize !== undefined) {
+        entry.persistence.sidebarSize = action.payload.sidebarSize;
+      }
+    },
+
+    /** Synchronous tombstone: close can never be undone by an unmount snapshot. */
+    markWindowClosing(
+      state,
+      action: PayloadAction<{ overlayId: OverlayId; instanceId: string }>,
+    ) {
+      const key = windowSessionKey(
+        action.payload.overlayId,
+        action.payload.instanceId,
+      );
+      const pending = state.pendingRestores[key];
+      const hasMatchingLiveWindow = Object.values(state.windows).some(
+        (entry) =>
+          entry.persistence?.overlayId === action.payload.overlayId &&
+          entry.persistence.instanceId === action.payload.instanceId,
+      );
+      if (
+        !hasMatchingLiveWindow &&
+        pending?.traySlot !== null &&
+        pending?.traySlot !== undefined
+      ) {
+        compactReservedTraySlot(state, pending.traySlot, pending.renderRect);
+      }
+      delete state.pendingRestores[key];
+      Object.values(state.windows).forEach((entry) => {
+        if (
+          entry.persistence?.overlayId === action.payload.overlayId &&
+          entry.persistence.instanceId === action.payload.instanceId
+        ) {
+          entry.persistence.closing = true;
+        }
+      });
+    },
+
+    clearWindowPersistenceState(state) {
+      Object.values(state.pendingRestores)
+        .filter(
+          (session) =>
+            session.traySlot !== null && session.traySlot !== undefined,
+        )
+        .sort((a, b) => (b.traySlot ?? -1) - (a.traySlot ?? -1))
+        .forEach((session) => {
+          compactReservedTraySlot(
+            state,
+            session.traySlot as number,
+            session.renderRect,
+          );
+        });
+      state.pendingRestores = {};
+      Object.values(state.windows).forEach((entry) => {
+        if (entry.persistence) entry.persistence.closing = true;
+      });
     },
 
     /** Update just the title (e.g. when prop changes). */
@@ -196,7 +453,17 @@ const windowManagerSlice = createSlice({
     unregisterWindow(state, action: PayloadAction<string>) {
       const win = state.windows[action.payload];
       if (!win) return;
-      releaseTraySlot(state, win);
+      const restoreStillPending = win.persistence
+        ? Boolean(
+            state.pendingRestores[
+              windowSessionKey(
+                win.persistence.overlayId,
+                win.persistence.instanceId,
+              )
+            ],
+          )
+        : false;
+      if (!restoreStillPending) releaseTraySlot(state, win);
       // Free the PiP slot if this window held it
       if (state.activePipWindowId === action.payload) {
         state.activePipWindowId = null;
@@ -715,6 +982,12 @@ export const {
   clampWindowRect,
   clampAllWindowRects,
   restoreWindowState,
+  hydrateWindowSessions,
+  confirmWindowRestored,
+  discardPendingWindowSession,
+  updateWindowPersistence,
+  markWindowClosing,
+  clearWindowPersistenceState,
 } = windowManagerSlice.actions;
 
 // ─── Selectors ────────────────────────────────────────────────────────────────
@@ -723,6 +996,12 @@ type StateWithWM = { windowManager: WindowManagerState };
 
 // Raw slice accessor — used as input selector for derived selectors
 const selectWindowsMap = (state: StateWithWM) => state.windowManager.windows;
+
+export const selectPendingWindowRestores = (state: StateWithWM) =>
+  state.windowManager.pendingRestores;
+
+export const selectWindowPersistence = (id: string) => (state: StateWithWM) =>
+  state.windowManager.windows[id]?.persistence;
 
 export const selectWindow = (id: string) => (state: StateWithWM) =>
   state.windowManager.windows[id];
