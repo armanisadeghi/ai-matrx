@@ -346,10 +346,22 @@ export function ConversationContextRail({
     }
 
     for (const e of valued) {
-      // Doc-like keys (working doc, scratchpad, attached-scratchpad extras)
-      // already have their slice-driven pills above — never re-surface their
-      // published context values as generic pills.
-      if (docKindForContextKey(e.key) !== null) continue;
+      // Doc-like keys (working doc, scratchpad, attached-scratchpad extras):
+      // when their slice-driven pill rendered above, never re-surface the
+      // published context value as a generic pill. But a doc-kind entry can
+      // be published by a NON-editor-slice source (War Room / Scribe publish
+      // the studio session document under `working_document`), in which case
+      // there is no slice pill — hiding the entry would make the rail LIE
+      // about what the agent receives. The rail is the truth of the wire:
+      // anything published must show. Fall through to a generic pill so the
+      // user can see and inspect it (X removes it from context like any
+      // other entry).
+      const docKind = docKindForContextKey(e.key);
+      if (docKind !== null) {
+        const slicePillShown =
+          docKind === "working" ? workingDocEnabled : showScratchPill;
+        if (slicePillShown) continue;
+      }
 
       // Pinned canvas artifacts (key = canvas_items UUID) — open in canvas
       // with version history; X unpins from context (row is kept).
