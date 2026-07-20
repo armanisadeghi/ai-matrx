@@ -22,7 +22,7 @@ import type {
   PageUpdate,
   PageWorkspaceData,
   PagedResult,
-  PageSitemapMembership,
+  PageSitemapMembershipRow,
   SitemapCoverage,
   SitemapPageRow,
   SiteSitemap,
@@ -450,13 +450,88 @@ export async function listPages(
   const pages = assertData(response.data, response.error);
   if (pages.length === 0) return { rows: [], total: response.count ?? 0 };
 
+  // Batched observed-content enrichment: one snapshot read for the whole page.
+  const snapshotIds = pages.flatMap((page) =>
+    page.latest_snapshot_id ? [page.latest_snapshot_id] : [],
+  );
+  const bySnapshot = new Map<
+    string,
+    { title: string | null; wordCount: number | null }
+  >();
+  if (snapshotIds.length > 0) {
+    const snapshotResponse = await db
+      .from("snapshot")
+      .select("id, head_tags, word_count")
+      .eq("site_id", siteId)
+      .in("id", snapshotIds)
+      .abortSignal(signal ?? new AbortController().signal);
+    const snapshots = assertData(snapshotResponse.data, snapshotResponse.error);
+    for (const snapshot of snapshots) {
+      bySnapshot.set(snapshot.id, {
+        title: parseSnapshotHeadTags(snapshot.head_tags).title,
+        wordCount: snapshot.word_count,
+      });
+    }
+  }
+
   return {
-    rows: pages.map(({ page_sitemap, ...page }) => ({
-      ...page,
-      sitemap_count: page_sitemap.length,
-    })),
+    rows: pages.map(({ page_sitemap, ...page }) => {
+      const observed = page.latest_snapshot_id
+        ? bySnapshot.get(page.latest_snapshot_id)
+        : undefined;
+      return {
+        ...page,
+        sitemap_count: page_sitemap.length,
+        observed_title: observed?.title ?? null,
+        word_count: observed?.wordCount ?? null,
+      };
+    }),
     total: response.count ?? 0,
   };
+}
+
+/** Live sitemap memberships for one canonical page, with each sitemap's URL. */
+export async function listPageSitemapMemberships(
+  siteId: string,
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<PageSitemapMembershipRow[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("page_sitemap")
+    .select(
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, sitemap_id, lastmod, changefreq, priority, first_seen, last_seen, sitemap:sitemap_id!inner(id, url, kind)",
+    )
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .is("deleted_at", null)
+    .order("last_seen", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: true })
+    .limit(100)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+/** All stored screenshots for one canonical page, newest first, bounded. */
+export async function listPageScreenshots(
+  siteId: string,
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<SiteScreenshot[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("screenshot")
+    .select(SCREENSHOT_COLUMNS)
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .is("deleted_at", null)
+    .order("captured_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(60)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
 }
 
 /** Per-provenance canonical-page counts (registry stamp of who found the URL). */

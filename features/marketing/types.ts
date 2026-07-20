@@ -113,6 +113,15 @@ export interface SiteListRow extends MarketingSite {
 export interface PageListRow extends MarketingPage {
   /** Live sitemap memberships for this canonical page (0 = in no sitemap). */
   sitemap_count: number;
+  /** Observed `<title>` from the latest accepted snapshot's head_tags. */
+  observed_title: string | null;
+  /** Observed word count from the latest accepted snapshot. */
+  word_count: number | null;
+}
+
+/** One page↔sitemap membership joined with its sitemap document identity. */
+export interface PageSitemapMembershipRow extends PageSitemapMembership {
+  sitemap: Pick<SiteSitemap, "id" | "url" | "kind">;
 }
 
 export interface SiteOverviewMetrics {

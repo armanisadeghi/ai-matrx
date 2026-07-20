@@ -40,6 +40,8 @@ import {
   listCrawlUrls,
   listDiscoveredItems,
   listPages,
+  listPageScreenshots,
+  listPageSitemapMemberships,
   listSiteOptions,
   listSites,
   listSiteScreenshots,
@@ -198,6 +200,23 @@ export function useUpdatePageIntent() {
         queryKey: [...marketingKeys.site(page.site_id), "pages"],
       });
     },
+  });
+}
+
+export function usePageSitemapMemberships(siteId: string, pageId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.page(siteId, pageId), "sitemaps"] as const,
+    queryFn: ({ signal }) =>
+      listPageSitemapMemberships(siteId, pageId, signal),
+    enabled: Boolean(siteId && pageId),
+  });
+}
+
+export function usePageScreenshots(siteId: string, pageId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.page(siteId, pageId), "screenshots"] as const,
+    queryFn: ({ signal }) => listPageScreenshots(siteId, pageId, signal),
+    enabled: Boolean(siteId && pageId),
   });
 }
 

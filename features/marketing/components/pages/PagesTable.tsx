@@ -103,11 +103,17 @@ export function PagesTable() {
       cellKind: "text",
       cell: (row) => (
         <div className="min-w-64 max-w-xl">
-          <p className="truncate font-mono text-xs font-medium text-foreground">
-            {row.path || "/"}
-          </p>
+          {row.observed_title ? (
+            <p className="truncate text-xs font-medium text-foreground">
+              {row.observed_title}
+            </p>
+          ) : (
+            <p className="truncate font-mono text-xs font-medium text-foreground">
+              {row.path || "/"}
+            </p>
+          )}
           <p className="truncate text-[10px] text-muted-foreground">
-            {row.url}
+            {row.observed_title ? `${row.path || "/"} · ${row.url}` : row.url}
           </p>
         </div>
       ),
@@ -147,6 +153,19 @@ export function PagesTable() {
           )}
         >
           {row.sitemap_count}
+        </span>
+      ),
+    },
+    {
+      id: "word_count",
+      accessorKey: "word_count",
+      header: "Words",
+      filter: false,
+      sortable: false,
+      align: "right",
+      cell: (row) => (
+        <span className="font-mono text-xs tabular-nums">
+          {row.word_count === null ? "—" : row.word_count.toLocaleString()}
         </span>
       ),
     },
