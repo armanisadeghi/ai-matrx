@@ -69,6 +69,7 @@ import { useUrlSync } from "./url-sync/useUrlSync";
 import { useWindowPersistence } from "./WindowPersistenceManager";
 import { Save } from "lucide-react";
 import { DebugStrip } from "./WindowPanel/DebugStrip";
+import motionStyles from "./WindowPanel.module.css";
 import { MobileWindowHeader } from "./WindowPanel/MobileHeader";
 import {
   WINDOW_CHROME_ACTIONS,
@@ -466,6 +467,7 @@ export function WindowPanel({
     onMaximize,
     onMinimize,
     onToggleMaximize,
+    isInteracting,
   } = useWindowPanel({ ...hookOpts, id, title, onTriggerPopout });
 
   const dispatch = useAppDispatch();
@@ -1272,6 +1274,7 @@ export function WindowPanel({
           "fixed inset-0 flex flex-col",
           "bg-card/98 backdrop-blur-md border border-border shadow-2xl",
           "overflow-hidden",
+          motionStyles.enter,
           deprecatedRingClass,
           className,
         )}
@@ -1298,6 +1301,9 @@ export function WindowPanel({
       ref={fitContent ? fitContentRef : undefined}
       className={cn(
         "fixed overflow-visible",
+        motionStyles.enter,
+        // Programmatic rect changes glide; pointer drag/resize stays 1:1.
+        !isInteracting && motionStyles.glide,
         // Drag-out candidate: ring-2 highlight signals "release here to pop out".
         isPopoutCandidate &&
           "ring-2 ring-primary ring-offset-2 ring-offset-background transition-shadow",

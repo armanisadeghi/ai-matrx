@@ -315,12 +315,6 @@ export const pages: ModulePage[] = [
         relative: false,
         description: ''
     },
-    {
-        title: 'Windows',
-        path: 'tests/windows',
-        relative: false,
-        description: ''
-    },
 ];
 
 export const filteredPages = pages.filter(page => page.path !== 'link-here');

@@ -17,7 +17,7 @@
  * Pure CSS resize via inline styles; no Tailwind width classes after mount.
  */
 
-import { useEffect, useRef, useCallback, useId } from "react";
+import { useEffect, useRef, useCallback, useId, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   registerWindow,
@@ -32,6 +32,9 @@ import {
   clampWindowRect,
   selectWindow,
   type WindowRect,
+  type WindowPersistenceRegistration,
+  confirmWindowRestored,
+  windowSessionKey,
 } from "@/lib/redux/slices/windowManagerSlice";
 import {
   evaluateDragOut,
@@ -148,6 +151,8 @@ export interface UseWindowPanelOptions {
    * so we don't waste cycles on the per-move evaluation.
    */
   onTriggerPopout?: (rect: WindowRect) => void;
+  /** Audited local preservation identity and initial semantic/chrome state. */
+  persistence?: WindowPersistenceRegistration;
 }
 
 /** Shared subset of MouseEvent / PointerEvent / TouchEvent we need. */
@@ -180,6 +185,13 @@ export interface UseWindowPanelReturn {
   onMinimize: () => void;
   /** Toggle maximized ↔ windowed. */
   onToggleMaximize: () => void;
+  /**
+   * True while the user is actively dragging or resizing with the pointer.
+   * The shell disables its geometry transition during interaction so the
+   * window tracks the pointer 1:1, and re-enables it for programmatic rect
+   * changes (snap, arrange, minimize→tray, restore, clamp) which then glide.
+   */
+  isInteracting: boolean;
 }
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
@@ -196,6 +208,9 @@ export function useWindowPanel(
   const maxWidth = opts.maxWidth ?? Infinity;
   const maxHeight = opts.maxHeight ?? Infinity;
 
+  // True during an active pointer drag/resize gesture — see UseWindowPanelReturn.
+  const [isInteracting, setIsInteracting] = useState(false);
+
   // ── Registration ────────────────────────────────────────────────────────────
   useEffect(() => {
     const w = opts.initialRect?.width ?? resolveSize(opts.width, DEFAULT_WIDTH);
@@ -209,12 +224,30 @@ export function useWindowPanel(
           }
         : resolvePosition(opts.position, w, h);
     const initial: WindowRect = { ...pos, width: w, height: h };
-    dispatch(registerWindow({ id, title: opts.title, initial }));
-    // Bring the newly opened window to the top of the z-stack immediately.
-    // registerWindow assigns the current nextZIndex, but existing windows may
-    // have been focused after their registration, giving them higher z-values.
-    dispatch(focusWindow(id));
+    dispatch(
+      registerWindow({
+        id,
+        title: opts.title,
+        initial,
+        persistence: opts.persistence,
+      }),
+    );
+    const pendingKey = opts.persistence
+      ? windowSessionKey(
+          opts.persistence.overlayId,
+          opts.persistence.instanceId,
+        )
+      : null;
+    // StrictMode mounts, cleans up, then mounts again in development. The
+    // first cleanup must not consume the pending restore before the stable
+    // mount gets a chance to register.
+    const confirmationTimer = pendingKey
+      ? window.setTimeout(() => {
+          dispatch(confirmWindowRestored(pendingKey));
+        }, 0)
+      : null;
     return () => {
+      if (confirmationTimer !== null) window.clearTimeout(confirmationTimer);
       dispatch(unregisterWindow(id));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -251,6 +284,7 @@ export function useWindowPanel(
         wx: entry.windowed.x,
         wy: entry.windowed.y,
       };
+      setIsInteracting(true);
 
       // Per-drag local state for drag-out detection. Only allocated/used
       // when popout is enabled for this window.
@@ -293,6 +327,7 @@ export function useWindowPanel(
         const wasCandidate = dragOutState.isCandidate;
         const dragOrigin = dragStart.current;
         dragStart.current = null;
+        setIsInteracting(false);
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
         document.removeEventListener("pointercancel", onUp);
@@ -355,6 +390,7 @@ export function useWindowPanel(
       const startMx = e.clientX;
       const startMy = e.clientY;
       const { x, y, width, height } = entry.windowed;
+      setIsInteracting(true);
 
       const onMove = (ev: PointerEvent) => {
         const dx = ev.clientX - startMx;
@@ -386,6 +422,7 @@ export function useWindowPanel(
       };
 
       const onUp = () => {
+        setIsInteracting(false);
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
         document.removeEventListener("pointercancel", onUp);
@@ -442,5 +479,6 @@ export function useWindowPanel(
     onMaximize,
     onMinimize,
     onToggleMaximize,
+    isInteracting,
   };
 }
