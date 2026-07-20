@@ -12,6 +12,13 @@ import { createAdminClient } from '@/utils/supabase/adminClient';
 import { ensureOrgIdServer } from '@/lib/organizations/personalOrg';
 import { sendVerification, checkVerification } from '@/lib/sms/verify';
 import { normalizePhoneNumber, isValidE164 } from '@/lib/sms/phoneUtils';
+import {
+  SMS_CONSENT_DISCLOSURE,
+  SMS_CONSENT_VERSION,
+  SMS_OPT_IN_PATH,
+  SMS_PRIVACY_PATH,
+  SMS_TERMS_PATH,
+} from '@/features/sms/compliance';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,8 +32,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    let { action, phoneNumber, code } = body;
+    const body = (await request.json()) as Partial<{
+      action: string;
+      phoneNumber: string;
+      code: string;
+      consentAccepted: boolean;
+      source: string;
+    }>;
+    let { action, phoneNumber } = body;
+    const { code, consentAccepted, source } = body;
 
     if (!action || !phoneNumber) {
       return NextResponse.json(
@@ -49,6 +63,13 @@ export async function POST(request: NextRequest) {
     // Normalize action names (support both 'start'/'send' and 'verify'/'check')
     if (action === 'start') action = 'send';
     if (action === 'verify') action = 'check';
+
+    if ((action === 'send' || action === 'check') && consentAccepted !== true) {
+      return NextResponse.json(
+        { success: false, msg: 'Explicit SMS consent is required before verification' },
+        { status: 400 }
+      );
+    }
 
     switch (action) {
       case 'send': {
@@ -85,12 +106,51 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Phone verified — update user's notification preferences
+        // Phone verified — persist the exact web-form consent contract before
+        // enabling notification delivery.
         const adminSupabase = createAdminClient();
         const organizationId = await ensureOrgIdServer(supabase, undefined);
+        const forwardedFor = request.headers.get('x-forwarded-for');
+        const ipAddress = forwardedFor?.split(',')[0]?.trim() || null;
 
-        await adminSupabase
-          .schema('communication').from('sms_notification_preferences')
+        const { error: consentError } = await adminSupabase
+          .schema('communication')
+          .from('sms_consent')
+          .upsert(
+          {
+            phone_number: phoneNumber,
+            user_id: user.id,
+            organization_id: organizationId,
+            consent_type: 'transactional',
+            status: 'opted_in',
+            opted_in_at: new Date().toISOString(),
+            opted_out_at: null,
+            opt_in_method: 'web_form',
+            ip_address: ipAddress,
+            metadata: {
+              consent_version: SMS_CONSENT_VERSION,
+              disclosure: SMS_CONSENT_DISCLOSURE,
+              opt_in_path: SMS_OPT_IN_PATH,
+              privacy_path: SMS_PRIVACY_PATH,
+              terms_path: SMS_TERMS_PATH,
+              source: source === 'sms-demo' ? 'sms-demo' : 'settings',
+              verification_channel: 'sms',
+            },
+          },
+          { onConflict: 'phone_number,consent_type' }
+        );
+
+        if (consentError) {
+          console.error('Failed to record verified SMS consent:', consentError);
+          return NextResponse.json(
+            { success: false, msg: 'Phone verified, but consent could not be recorded' },
+            { status: 500 }
+          );
+        }
+
+        const { error: preferencesError } = await adminSupabase
+          .schema('communication')
+          .from('sms_notification_preferences')
           .upsert(
             {
               user_id: user.id,
@@ -101,19 +161,13 @@ export async function POST(request: NextRequest) {
             { onConflict: 'user_id' }
           );
 
-        // Create consent record
-        await adminSupabase.schema('communication').from('sms_consent').upsert(
-          {
-            phone_number: phoneNumber,
-            user_id: user.id,
-            organization_id: organizationId,
-            consent_type: 'transactional',
-            status: 'opted_in',
-            opted_in_at: new Date().toISOString(),
-            opt_in_method: 'web_form',
-          },
-          { onConflict: 'phone_number,consent_type' }
-        );
+        if (preferencesError) {
+          console.error('Failed to enable verified SMS preferences:', preferencesError);
+          return NextResponse.json(
+            { success: false, msg: 'Phone verified, but SMS preferences could not be enabled' },
+            { status: 500 }
+          );
+        }
 
         return NextResponse.json({
           success: true,

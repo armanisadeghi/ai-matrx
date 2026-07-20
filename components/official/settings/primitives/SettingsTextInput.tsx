@@ -21,7 +21,8 @@ export type SettingsTextInputProps = SettingsCommonProps & {
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
-  type?: "text" | "email" | "url" | "password";
+  type?: "text" | "email" | "url" | "password" | "tel";
+  inputMode?: "text" | "email" | "url" | "tel" | "numeric" | "decimal";
   /** Commit on blur/enter instead of every keystroke. Useful for expensive writes. */
   commitOnBlur?: boolean;
   maxLength?: number;
@@ -37,6 +38,7 @@ export function SettingsTextInput({
   onValueChange,
   placeholder,
   type = "text",
+  inputMode,
   commitOnBlur,
   maxLength,
   size = "md",
@@ -69,6 +71,7 @@ export function SettingsTextInput({
       <input
         id={id}
         type={type}
+        inputMode={inputMode}
         value={effective}
         placeholder={placeholder}
         maxLength={maxLength}

@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
           timezone: 'America/New_York',
           max_messages_per_hour: 10,
           max_messages_per_day: 50,
+          sms_consent_status: null,
         },
       });
     }
@@ -67,10 +68,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const { data: consent } = data.phone_number
+      ? await adminSupabase
+          .schema('communication')
+          .from('sms_consent')
+          .select('status')
+          .eq('user_id', user.id)
+          .eq('phone_number', data.phone_number)
+          .eq('consent_type', 'transactional')
+          .maybeSingle()
+      : { data: null };
+
     return NextResponse.json({
       success: true,
       msg: 'Preferences fetched',
-      data,
+      data: { ...data, sms_consent_status: consent?.status ?? null },
     });
   } catch (err) {
     console.error('Error in preferences GET:', err);
@@ -100,6 +112,20 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const adminSupabase = createAdminClient();
 
+    const { data: existingPreferences, error: existingError } = await adminSupabase
+      .schema('communication')
+      .from('sms_notification_preferences')
+      .select('phone_number, sms_enabled')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existingError) {
+      return NextResponse.json(
+        { success: false, msg: 'Failed to inspect current SMS preferences', error: existingError.message },
+        { status: 500 }
+      );
+    }
+
     // Allowlisted fields
     const allowedFields = [
       'phone_number', 'sms_enabled',
@@ -122,6 +148,48 @@ export async function PUT(request: NextRequest) {
       updateData.phone_number = normalizePhoneNumber(updateData.phone_number);
     }
 
+    const effectivePhone =
+      typeof updateData.phone_number === 'string'
+        ? updateData.phone_number
+        : existingPreferences?.phone_number;
+    const effectiveEnabled =
+      typeof updateData.sms_enabled === 'boolean'
+        ? updateData.sms_enabled
+        : existingPreferences?.sms_enabled ?? false;
+
+    if (effectiveEnabled) {
+      if (!effectivePhone) {
+        return NextResponse.json(
+          { success: false, msg: 'Verify a mobile number before enabling SMS notifications' },
+          { status: 400 }
+        );
+      }
+
+      const { data: consent, error: consentError } = await adminSupabase
+        .schema('communication')
+        .from('sms_consent')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('phone_number', effectivePhone)
+        .eq('consent_type', 'transactional')
+        .eq('status', 'opted_in')
+        .maybeSingle();
+
+      if (consentError) {
+        return NextResponse.json(
+          { success: false, msg: 'Failed to validate SMS consent', error: consentError.message },
+          { status: 500 }
+        );
+      }
+
+      if (!consent) {
+        return NextResponse.json(
+          { success: false, msg: 'Verify this mobile number and accept the SMS terms before enabling notifications' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Upsert preferences (scoped to the user's personal org)
     const organizationId = await ensureOrgIdServer(supabase, undefined);
     const { data, error } = await adminSupabase
@@ -140,20 +208,26 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // If they enabled SMS and provided a phone number, ensure consent record exists
-    if (updateData.sms_enabled && updateData.phone_number) {
-      await adminSupabase.schema('communication').from('sms_consent').upsert(
-        {
-          phone_number: updateData.phone_number as string,
-          user_id: user.id,
-          organization_id: organizationId,
-          consent_type: 'transactional',
-          status: 'opted_in',
-          opted_in_at: new Date().toISOString(),
-          opt_in_method: 'web_form',
-        },
-        { onConflict: 'phone_number,consent_type' }
-      );
+    if (updateData.sms_enabled === false && effectivePhone) {
+      const { error: optOutError } = await adminSupabase
+        .schema('communication')
+        .from('sms_consent')
+        .update({
+          status: 'opted_out',
+          opted_out_at: new Date().toISOString(),
+          opt_out_method: 'web_form',
+        })
+        .eq('user_id', user.id)
+        .eq('phone_number', effectivePhone)
+        .eq('consent_type', 'transactional');
+
+      if (optOutError) {
+        console.error('Failed to record SMS web-form opt-out:', optOutError);
+        return NextResponse.json(
+          { success: false, msg: 'SMS was disabled, but the opt-out record could not be updated' },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({

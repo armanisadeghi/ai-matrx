@@ -15,6 +15,7 @@ import {
   requestNotificationPermission,
   getNotificationPermission,
 } from "@/features/messaging/utils/notificationSound";
+import { SmsEnrollmentSettingsSection } from "@/features/sms/components/SmsEnrollmentSettingsSection";
 
 type PermissionStatus = "granted" | "denied" | "default" | "unsupported";
 
@@ -145,6 +146,8 @@ export default function MessagingTab() {
           address bar and allow notifications for this site to change this.
         </SettingsCallout>
       )}
+
+      <SmsEnrollmentSettingsSection />
     </>
   );
 }
