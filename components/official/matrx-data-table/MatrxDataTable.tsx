@@ -512,7 +512,7 @@ export function MatrxDataTable<T>({
             exact desktop rendering. Written mobile-first rather than with
             `max-sm:` because a base `w-full` outranks `max-sm:w-max`. */}
         <table className="w-max min-w-full max-w-none caption-bottom text-sm sm:w-full sm:min-w-0 sm:max-w-full">
-          <thead className="sticky top-0 z-10 border-b border-border bg-card shadow-[0_1px_0_0_var(--border)]">
+          <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
             <tr>
               {visibleColumns.map((col, colIdx) => {
                 const id = columnId(col);
@@ -524,7 +524,7 @@ export function MatrxDataTable<T>({
                     className={cn(
                       "h-9 px-2 text-left align-middle max-sm:whitespace-nowrap",
                       colIdx === 0 &&
-                        "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-card",
+                        "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit",
                       col.headerClassName,
                       col.align === "center" && "text-center",
                       col.align === "right" && "text-right",

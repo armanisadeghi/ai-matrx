@@ -429,7 +429,7 @@ export async function getPageWorkspace(
         ? db
             .from("snapshot")
             .select(
-              "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_ref, head_tags, headings, links_summary, images, structured_data, perf, extracted",
+              "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted",
             )
             .eq("site_id", siteId)
             .eq("page_id", pageId)
@@ -513,7 +513,7 @@ export async function listSnapshots(
   let query = (await authenticatedWebDb(supabase))
     .from("snapshot")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_ref, head_tags, headings, links_summary, images, structured_data, perf, extracted",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted",
       { count: "exact" },
     )
     .eq("site_id", siteId)
@@ -521,7 +521,7 @@ export async function listSnapshots(
   const search = cleanSearch(state.search);
   if (search) {
     query = query.or(
-      `final_url.ilike.%${search}%,content_hash.ilike.%${search}%,body_ref.ilike.%${search}%`,
+      `final_url.ilike.%${search}%,content_hash.ilike.%${search}%`,
     );
   }
   const finalUrl = textFilter(state, "final_url");
@@ -556,7 +556,7 @@ export async function getSnapshot(
   )
     .from("snapshot")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_ref, head_tags, headings, links_summary, images, structured_data, perf, extracted",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted",
     )
     .eq("site_id", siteId)
     .eq("page_id", pageId)

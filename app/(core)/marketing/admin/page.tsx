@@ -172,7 +172,8 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/marketing/sites/[siteId]/screenshots",
       label: "Screenshot gallery",
-      description: "Site and page visual evidence from Supabase Storage.",
+      description:
+        "Site and page visual evidence from canonical private files.",
       filePath: "app/(core)/marketing/sites/[siteId]/screenshots/page.tsx",
       status: "Live",
     },

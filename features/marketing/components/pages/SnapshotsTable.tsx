@@ -112,7 +112,7 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
           onStateChange: table.onStateChange,
         }}
         toolbar={{
-          searchPlaceholder: "Search final URL, hash, or body reference…",
+          searchPlaceholder: "Search final URL or content hash…",
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>

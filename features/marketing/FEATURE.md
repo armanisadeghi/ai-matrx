@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-07-19
+**Last updated:** 2026-07-20
 
 ## Purpose
 
@@ -58,7 +58,7 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 4. Inspect a crawl: summary reads `crawl_session`; URL and log children independently page through `crawl_url` and `crawl_event` by `session_id`.
 5. Run a crawl: `/crawls/new` sends the command directly to the scraper with the caller's Supabase JWT, renders the transient NDJSON feed, supports cancellation, and links to the durable session. Stored events and reloads come from Supabase, never Python replay.
 6. Triage analysis: `/analysis` pages through `v_priority_queue` and links each projection into a URL-filtered finding register; `/findings/[findingId]` reads lifecycle state, catalog context, first/latest evidence pointers, and paged result history directly from Supabase.
-7. Inspect evidence: site/crawl link workspaces and the screenshot gallery read records directly from Supabase; screenshot media resolves through the canonical Files renderer using direct Supabase Storage URLs.
+7. Inspect evidence: site/crawl link workspaces and the screenshot gallery read records directly from Supabase; snapshot bodies, markdown, and screenshots are identified only by canonical `files.files` UUIDs and rendered through `@/features/files` (`fileIdToMediaRef` / `InlineMediaRef`).
 8. Share and configure: `/access` calls canonical IAM grant/list/revoke RPCs for the `web_site` root; `/settings` uses version-checked direct Supabase updates.
 9. Monitor execution: batch and cost workspaces page through `web.batch_*` and the canonical cost views; runtime cost is attributed only through `link_kind='web_batch_item'` and the batch item id.
 10. Configure integrations: `/marketing/connections` and each site's `/integrations` route use the existing Google Identity Services provider in popup authorization-code mode to connect a reusable personal or organization account without a redirect callback. The command endpoint exchanges the one-time code, encrypts the refresh token, and discovers Search Console and GA4 resources. The browser reads connection metadata and resource choices directly from Supabase. A site's workspace binds only the selected connection/resource references; PageSpeed uses the application's API key and does not require user OAuth.
@@ -74,7 +74,9 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 - `v_priority_queue` deliberately has no finding ID. Priority rows open the findings register with canonical item/page filters; only `web.finding.id` opens finding detail.
 - Finding detail evidence is scoped by `site_id + subject_type + subject_id + item_id`; a same-item result from another subject must never appear.
 - `crawl_event.sequence` defaults ascending; every sort adds `id` as a deterministic tie-breaker.
-- Snapshot body and screenshot fields are durable references. Screenshot media is fetched directly from Supabase Storage; it is never fetched through the scraper or AI Dream.
+- Snapshot body and screenshot fields are direct UUID FKs to `files.files`. The browser never sees a bucket/path/native URI and never constructs a storage URL; private bytes and signed URLs resolve through the canonical Files pipeline in AI Dream.
+- `body_ref`, `markdown_ref`, `storage_bucket`, `storage_path`, `supabase://`, and `user-public-assets` are forbidden crawler contracts. There is no compatibility reader because all pre-cutover crawl data was disposable and wiped.
+- Crawl artifact access fails closed: immutable metadata/direct web FKs classify the file, the database requires an exact tenant-matched `crawl_artifact` edge plus current site-viewer access, and the complete `file -> web_site` association pair is backend-managed. Missing, forged, cross-tenant, or removed edges never fall back to file ownership.
 - No legacy crawler data is migrated or read.
 - Google OAuth credentials are encrypted at rest in `users.integration_connections`; authenticated browser roles cannot select the credential columns. Site JSON contains only connection/resource references, never tokens or client secrets.
 - OAuth API routes exchange/revoke credentials only. Connection lists, discovered resources, site bindings, and all crawler/analysis history are read directly from Supabase under RLS.
@@ -98,6 +100,7 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 
 ## Change log
 
+- 2026-07-20 — Codex: cut Marketing artifacts over to canonical Files UUIDs, added complete per-snapshot body/markdown/screenshot rendering, and removed all Supabase Storage URL construction and legacy crawler reference fields.
 - 2026-07-18 — Codex: added the first production vertical with direct Supabase portfolio, site creation/shell, pages/snapshots, crawl sessions, URL ledger, durable event log, and admin map.
 - 2026-07-18 — Codex: connected site bootstrap and crawl start/cancel/live progress directly to the standalone scraper; no persisted-data proxy or replay endpoint was added.
 - 2026-07-18 — Codex: added site-scoped priority analysis, the finding lifecycle register, and immutable result evidence detail with URL-controlled direct-Supabase tables.

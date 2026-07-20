@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink, History, Loader2, Save } from "lucide-react";
+import { History, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ import {
   SectionCard,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { MarketingUrlRow } from "@/features/marketing/components/shared/MarketingUrlRow";
+import { SnapshotArtifacts } from "@/features/marketing/components/pages/SnapshotArtifacts";
 import { extractErrorMessage } from "@/utils/errors";
 
 function IntentForm({ page }: { page: MarketingPage }) {
@@ -154,15 +156,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             <h1 className="mt-2 truncate font-mono text-sm font-semibold text-foreground">
               {page.path || "/"}
             </h1>
-            <a
-              href={page.url}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary hover:underline"
-            >
-              <span className="truncate">{page.url}</span>
-              <ExternalLink className="h-3 w-3 shrink-0" />
-            </a>
+            <MarketingUrlRow url={page.url} className="mt-0.5" />
           </div>
           <Button asChild variant="outline" size="sm" className="h-8 shrink-0">
             <Link
@@ -243,12 +237,11 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                   </p>
                 </div>
                 <div className="sm:col-span-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Content body reference
-                  </p>
-                  <p className="mt-0.5 break-all font-mono text-[11px] text-muted-foreground">
-                    {snapshot.body_ref || "No durable body reference"}
-                  </p>
+                  <SnapshotArtifacts
+                    siteId={site.id}
+                    snapshot={snapshot}
+                    showMarkdown
+                  />
                 </div>
               </div>
             ) : (

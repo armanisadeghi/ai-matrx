@@ -109,17 +109,23 @@ export function CrawlSnapshotsInspectionTable({
       ),
     },
     {
-      id: "body_ref",
-      accessorKey: "body_ref",
-      header: "Body ref",
+      id: "body_file_id",
+      accessorKey: "body_file_id",
+      header: "Body file",
       filter: false,
       sortable: false,
       cellKind: "text",
-      cell: (row) => (
-        <span className="block max-w-48 truncate font-mono text-[11px] text-muted-foreground">
-          {row.body_ref || "—"}
-        </span>
-      ),
+      cell: (row) =>
+        row.body_file_id ? (
+          <Link
+            href={`/files/f/${row.body_file_id}`}
+            className="block max-w-48 truncate font-mono text-[11px] text-primary hover:underline"
+          >
+            {row.body_file_id}
+          </Link>
+        ) : (
+          "—"
+        ),
     },
     {
       id: "id",

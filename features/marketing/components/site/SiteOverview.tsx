@@ -39,8 +39,7 @@ import {
 } from "@/features/marketing/data/integrations-schema";
 import { extractErrorMessage } from "@/utils/errors";
 import { useHomepageScreenshot } from "@/features/marketing/data/inspection-hooks";
-import { screenshotPublicUrl } from "@/features/marketing/data/inspection-queries";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef, fileIdToMediaRef } from "@/features/files";
 import type { InspectionScreenshotRow } from "@/features/marketing/data/inspection-types";
 import type {
   HomepageObservedMeta,
@@ -326,7 +325,9 @@ function SiteHeroHeader({
   captureError: string | null;
   onCapture: () => void;
 }) {
-  const imageUrl = screenshot ? screenshotPublicUrl(screenshot) : null;
+  const imageRef = screenshot?.file_id
+    ? fileIdToMediaRef(screenshot.file_id, "image/png")
+    : null;
   const captureBusy =
     capturing || capturePhase === "connecting" || capturePhase === "capturing";
 
@@ -335,9 +336,9 @@ function SiteHeroHeader({
       <div className="flex flex-col sm:flex-row sm:items-start">
         <div className="group relative w-full shrink-0 sm:w-1/2 lg:w-[55%]">
           <div className="relative aspect-[16/10] w-full overflow-hidden sm:rounded-r-lg">
-            {imageUrl && screenshot ? (
+            {imageRef && screenshot ? (
               <InlineMediaRef
-                ref={imageUrl}
+                ref={imageRef}
                 size="fill"
                 fit="cover"
                 rounded="none"
@@ -394,12 +395,14 @@ function SiteHeroHeader({
 
             <div className="space-y-3 border-t border-border pt-4">
               <ObservedMetaField
+                label="Homepage title"
                 value={observedMeta?.metaTitle ?? null}
                 loading={metaLoading}
                 emptyMessage="Homepage title appears after the first capture completes."
                 className="text-lg font-semibold"
               />
               <ObservedMetaField
+                label="Homepage description"
                 value={observedMeta?.metaDescription ?? null}
                 loading={metaLoading}
                 emptyMessage="Homepage description appears after the first capture completes."

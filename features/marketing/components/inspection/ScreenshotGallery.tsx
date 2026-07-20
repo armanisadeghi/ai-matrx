@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef, fileIdToMediaRef } from "@/features/files";
 import {
   formatCompactDate,
   QueryError,
@@ -20,11 +20,10 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useSiteScreenshots } from "@/features/marketing/data/inspection-hooks";
-import { screenshotPublicUrl } from "@/features/marketing/data/inspection-queries";
 import type { InspectionScreenshotRow } from "@/features/marketing/data/inspection-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 
-const SCREENSHOT_KINDS = ["homepage", "page", "full", "viewport"] as const;
+const SCREENSHOT_KINDS = ["homepage", "full", "viewport"] as const;
 const SORT_OPTIONS = [
   { value: "captured_at:desc", label: "Newest first" },
   { value: "captured_at:asc", label: "Oldest first" },
@@ -39,7 +38,12 @@ function ScreenshotCard({
   screenshot: InspectionScreenshotRow;
   siteId: string;
 }) {
-  const imageUrl = screenshotPublicUrl(screenshot);
+  const imageRef = screenshot.file_id
+    ? fileIdToMediaRef(screenshot.file_id, "image/png")
+    : null;
+  const fileHref = screenshot.file_id
+    ? `/files/f/${screenshot.file_id}`
+    : undefined;
   const pageHref = screenshot.page_id
     ? `/marketing/sites/${siteId}/pages/${screenshot.page_id}`
     : null;
@@ -50,14 +54,14 @@ function ScreenshotCard({
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
       <a
-        href={imageUrl ?? undefined}
+        href={fileHref}
         target="_blank"
         rel="noreferrer"
         className="relative flex aspect-[16/10] min-h-32 items-center justify-center overflow-hidden border-b border-border bg-muted/40"
         aria-label={`Open ${screenshot.kind} screenshot`}
       >
         <InlineMediaRef
-          ref={imageUrl}
+          ref={imageRef}
           size="fill"
           fit="contain"
           rounded="none"
@@ -89,9 +93,9 @@ function ScreenshotCard({
         )}
         <p
           className="truncate font-mono text-[10px] text-muted-foreground"
-          title={`${screenshot.storage_bucket}/${screenshot.storage_path}`}
+          title={screenshot.file_id ?? undefined}
         >
-          {screenshot.storage_path}
+          {screenshot.file_id ?? "Missing canonical file"}
         </p>
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/60 pt-1.5 text-[10px] text-muted-foreground">
           <span>{formatCompactDate(screenshot.captured_at)}</span>
@@ -178,7 +182,7 @@ export function ScreenshotGallery() {
         <Input
           value={table.state.search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search storage path, bucket, or kind…"
+          placeholder="Search capture kind…"
           aria-label="Search screenshots"
           className="h-8 min-w-64 flex-1 text-base sm:max-w-md sm:text-xs"
         />
@@ -261,7 +265,7 @@ export function ScreenshotGallery() {
             </p>
             <p className="mt-1 max-w-md text-xs text-muted-foreground">
               Captures appear here after site bootstrap or a screenshot-enabled
-              crawl persists them to Supabase Storage.
+              crawl persists them to the canonical private file system.
             </p>
           </div>
         )}

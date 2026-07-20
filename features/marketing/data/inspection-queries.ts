@@ -12,10 +12,10 @@ const CRAWL_LINK_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, snapshot_id, source_page_id, target_url, target_page_id, is_internal, rel, anchor_text, http_status, position, source_page:page!link_edge_source_page_id_fkey(url), target_page:page!link_edge_target_page_id_fkey(url), snapshot:snapshot!inner(captured_at, session_id)";
 
 const SNAPSHOT_SELECT =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_ref, head_tags, headings, links_summary, images, structured_data, perf, extracted, page:page(url)";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted, page:page(url)";
 
 const SCREENSHOT_SELECT =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, snapshot_id, kind, storage_bucket, storage_path, width, height, captured_at, page:page(url)";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, snapshot_id, kind, file_id, width, height, captured_at, page:page(url)";
 
 /** Read the durable homepage screenshot selected by the site record. */
 export async function getHomepageScreenshot(
@@ -33,6 +33,26 @@ export async function getHomepageScreenshot(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
     .single();
+  return assertData(response.data, response.error);
+}
+
+/** Read every screenshot variant attached to one immutable snapshot. */
+export async function getSnapshotScreenshots(
+  siteId: string,
+  snapshotId: string,
+  signal?: AbortSignal,
+): Promise<InspectionScreenshotRow[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("screenshot")
+    .select(SCREENSHOT_SELECT)
+    .eq("site_id", siteId)
+    .eq("snapshot_id", snapshotId)
+    .is("deleted_at", null)
+    .order("captured_at", { ascending: true })
+    .order("id", { ascending: true })
+    .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error);
 }
 
@@ -192,7 +212,7 @@ export async function listCrawlSnapshots(
   const search = cleanSearch(state.search);
   if (search) {
     query = query.or(
-      `final_url.ilike.%${search}%,content_hash.ilike.%${search}%,body_ref.ilike.%${search}%`,
+      `final_url.ilike.%${search}%,content_hash.ilike.%${search}%`,
     );
   }
   const finalUrl = textFilter(state, "final_url");
@@ -220,7 +240,7 @@ export async function listCrawlSnapshots(
   };
 }
 
-/** List screenshot records for one site; image bytes remain in public Storage. */
+/** List canonical screenshot file references for one accessible site. */
 export async function listSiteScreenshots(
   siteId: string,
   state: MatrxDataTableQueryState,
@@ -230,8 +250,7 @@ export async function listSiteScreenshots(
   const sortColumns = {
     captured_at: "captured_at",
     kind: "kind",
-    storage_bucket: "storage_bucket",
-    storage_path: "storage_path",
+    file_id: "file_id",
     width: "width",
     height: "height",
   } as const;
@@ -246,14 +265,12 @@ export async function listSiteScreenshots(
     .is("deleted_at", null);
   const search = cleanSearch(state.search);
   if (search) {
-    query = query.or(
-      `storage_path.ilike.%${search}%,storage_bucket.ilike.%${search}%,kind.ilike.%${search}%`,
-    );
+    query = query.ilike("kind", `%${search}%`);
   }
   const kind = selectFilter(state, "kind");
-  const storagePath = textFilter(state, "storage_path");
+  const fileId = textFilter(state, "file_id");
   if (kind) query = query.eq("kind", kind);
-  if (storagePath) query = query.ilike("storage_path", `%${storagePath}%`);
+  if (fileId) query = query.eq("file_id", fileId);
   query = query.order(sortColumn, { ascending, nullsFirst: false });
   query = query.order("id", { ascending });
   const response = await query
@@ -263,22 +280,4 @@ export async function listSiteScreenshots(
     rows: assertData(response.data, response.error),
     total: response.count ?? 0,
   };
-}
-
-/** Build the durable public-object URL stored by the standalone crawler. */
-export function screenshotPublicUrl(
-  screenshot: Pick<InspectionScreenshotRow, "storage_bucket" | "storage_path">,
-): string | null {
-  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(
-    /\/+$/,
-    "",
-  );
-  if (!baseUrl) return null;
-  const bucket = encodeURIComponent(screenshot.storage_bucket);
-  const path = screenshot.storage_path
-    .split("/")
-    .filter(Boolean)
-    .map(encodeURIComponent)
-    .join("/");
-  return path ? `${baseUrl}/storage/v1/object/public/${bucket}/${path}` : null;
 }

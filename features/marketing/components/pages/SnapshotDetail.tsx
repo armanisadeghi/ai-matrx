@@ -13,6 +13,7 @@ import {
   QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { SnapshotArtifacts } from "@/features/marketing/components/pages/SnapshotArtifacts";
 
 export function SnapshotDetail({
   pageId,
@@ -83,18 +84,12 @@ export function SnapshotDetail({
             value={row.content_hash ? row.content_hash.slice(0, 12) : "—"}
           />
           <MetricCell label="Crawl" value={row.session_id.slice(0, 8)} />
-          <MetricCell label="Body" value={row.body_ref ? "Stored" : "None"} />
+          <MetricCell
+            label="Body"
+            value={row.body_file_id ? "Stored" : "None"}
+          />
         </section>
-        {row.body_ref ? (
-          <div className="rounded-lg border border-border bg-card px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Durable body reference
-            </p>
-            <p className="mt-1 break-all font-mono text-[11px] text-foreground">
-              {row.body_ref}
-            </p>
-          </div>
-        ) : null}
+        <SnapshotArtifacts siteId={site.id} snapshot={row} showMarkdown />
         <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard title="Head tags">
             <JsonPreview value={row.head_tags} />

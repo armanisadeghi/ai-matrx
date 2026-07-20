@@ -268,7 +268,8 @@ final_url
 http_status
 content_hash
 word_count
-body_ref
+body_file_id                required FK → files.files.id (captured HTML)
+markdown_file_id            optional FK → files.files.id (extracted Markdown)
 head_tags jsonb
 headings jsonb
 links_summary jsonb
@@ -278,7 +279,9 @@ perf jsonb
 extracted jsonb
 ```
 
-Raw HTML is stored externally and addressed by `body_ref`.
+Captured HTML and optional Markdown are private immutable S3 artifacts addressed
+only by canonical `files.files` UUIDs. Clients render or open them through the
+shared Files feature; storage locations never enter the web contract.
 
 ### `web.screenshot` — token `web_screenshot`
 
@@ -289,15 +292,16 @@ site_id
 page_id                     nullable for pre-page homepage capture
 snapshot_id
 kind                        homepage | page | full | viewport
-storage_bucket
-storage_path
+file_id                     required FK → files.files.id (PNG)
 width
 height
 captured_at
 ```
 
-The site-create bootstrap creates a homepage screenshot and sets
-`site.homepage_screenshot_id`.
+Every requested capture variant is a private immutable S3 artifact addressed by
+`file_id`. The site-create bootstrap creates a homepage screenshot and sets
+`site.homepage_screenshot_id`; multi-page crawls persist screenshot rows for
+every successfully captured page and requested variant.
 
 ### `web.analysis_item` — token `web_analysis_item`
 

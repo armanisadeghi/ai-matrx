@@ -13330,6 +13330,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_access_for: {
+        Args: {
+          p_file_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      has_web_site_edge: { Args: { p_file_id: string }; Returns: boolean }
+      is_crawl_artifact: { Args: { p_file_id: string }; Returns: boolean }
+      is_discoverable_for: {
+        Args: {
+          p_file_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       is_safe_webhook_url: { Args: { p_url: string }; Returns: boolean }
       webhook_dispatch: { Args: { p_limit?: number }; Returns: number }
       webhook_event_payload: {
@@ -20085,6 +20103,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_access_for_base: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_access_for: {
         Args: { p_org: string; p_user_id: string }
@@ -20093,6 +20120,15 @@ export type Database = {
       has_org_admin: { Args: { p_org: string }; Returns: boolean }
       has_org_owner: { Args: { p_org: string }; Returns: boolean }
       is_discoverable: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      is_discoverable_base: {
         Args: {
           p_id: string
           p_required?: Database["public"]["Enums"]["permission_level"]
@@ -43679,6 +43715,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          file_id: string
           height: number | null
           id: string
           kind: string
@@ -43687,8 +43724,6 @@ export type Database = {
           page_id: string | null
           site_id: string
           snapshot_id: string | null
-          storage_bucket: string
-          storage_path: string
           updated_at: string
           updated_by: string | null
           version: number
@@ -43699,6 +43734,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          file_id: string
           height?: number | null
           id?: string
           kind?: string
@@ -43707,8 +43743,6 @@ export type Database = {
           page_id?: string | null
           site_id: string
           snapshot_id?: string | null
-          storage_bucket: string
-          storage_path: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -43719,6 +43753,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          file_id?: string
           height?: number | null
           id?: string
           kind?: string
@@ -43727,8 +43762,6 @@ export type Database = {
           page_id?: string | null
           site_id?: string
           snapshot_id?: string | null
-          storage_bucket?: string
-          storage_path?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -43904,7 +43937,7 @@ export type Database = {
       }
       snapshot: {
         Row: {
-          body_ref: string | null
+          body_file_id: string
           captured_at: string
           content_hash: string | null
           created_at: string
@@ -43918,6 +43951,7 @@ export type Database = {
           id: string
           images: Json
           links_summary: Json
+          markdown_file_id: string | null
           metadata: Json
           organization_id: string
           page_id: string
@@ -43931,7 +43965,7 @@ export type Database = {
           word_count: number | null
         }
         Insert: {
-          body_ref?: string | null
+          body_file_id: string
           captured_at?: string
           content_hash?: string | null
           created_at?: string
@@ -43945,6 +43979,7 @@ export type Database = {
           id?: string
           images?: Json
           links_summary?: Json
+          markdown_file_id?: string | null
           metadata?: Json
           organization_id: string
           page_id: string
@@ -43958,7 +43993,7 @@ export type Database = {
           word_count?: number | null
         }
         Update: {
-          body_ref?: string | null
+          body_file_id?: string
           captured_at?: string
           content_hash?: string | null
           created_at?: string
@@ -43972,6 +44007,7 @@ export type Database = {
           id?: string
           images?: Json
           links_summary?: Json
+          markdown_file_id?: string | null
           metadata?: Json
           organization_id?: string
           page_id?: string
@@ -44256,6 +44292,16 @@ export type Database = {
           p_id: string
           p_label: string
           p_relation: unknown
+          p_site_id: string
+        }
+        Returns: undefined
+      }
+      assert_crawl_artifact_file: {
+        Args: {
+          p_file_id: string
+          p_mime_prefix: string
+          p_organization_id: string
+          p_session_id: string
           p_site_id: string
         }
         Returns: undefined

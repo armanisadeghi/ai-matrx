@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
   getHomepageScreenshot,
+  getSnapshotScreenshots,
   listCrawlLinks,
   listCrawlSnapshots,
   listSiteLinks,
@@ -22,6 +23,12 @@ const inspectionKeys = {
     [...marketingKeys.site(siteId), "inspection-links", state] as const,
   siteScreenshots: (siteId: string, state: MatrxDataTableQueryState) =>
     [...marketingKeys.site(siteId), "inspection-screenshots", state] as const,
+  snapshotScreenshots: (siteId: string, snapshotId: string) =>
+    [
+      ...marketingKeys.site(siteId),
+      "snapshot-screenshots",
+      snapshotId,
+    ] as const,
   crawlSnapshots: (
     siteId: string,
     crawlId: string,
@@ -57,6 +64,15 @@ export function useHomepageScreenshot(
     queryFn: ({ signal }) =>
       getHomepageScreenshot(siteId, screenshotId as string, signal),
     enabled: Boolean(siteId && screenshotId),
+  });
+}
+
+/** Canonical screenshot file references for one immutable snapshot. */
+export function useSnapshotScreenshots(siteId: string, snapshotId: string) {
+  return useQuery({
+    queryKey: inspectionKeys.snapshotScreenshots(siteId, snapshotId),
+    queryFn: ({ signal }) => getSnapshotScreenshots(siteId, snapshotId, signal),
+    enabled: Boolean(siteId && snapshotId),
   });
 }
 
