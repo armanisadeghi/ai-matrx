@@ -67,6 +67,21 @@ export interface WarRoomState {
 
   autoApproveByThread: Record<string, Record<string, boolean>>;
 
+  /**
+   * A just-minted conversation that is NOT yet a durable edge, keyed by
+   * `containerKey()`. Ephemeral by design and never persisted.
+   *
+   * A client-minted conversation id has no `chat.conversation` row until its
+   * first turn commits, so writing its association edge immediately is what
+   * produced permanent phantom chats (edges pointing at conversations that
+   * never came to exist). The edge write is deferred until the conversation is
+   * materialized; this holds the binding in the meantime so the user can
+   * actually chat in it, and the surfaces can list it.
+   *
+   * Losing this on reload is CORRECT: an unsent chat should leave no trace.
+   */
+  pendingConversationByContainer: Record<string, string>;
+
   /** Room-level recording ownership — see WarRoomAudioRecording. */
   audioRecording: WarRoomAudioRecording | null;
 }
@@ -86,6 +101,7 @@ export const initialWarRoomState: WarRoomState = {
   assignmentsLoadedKeys: {},
   agentConversationByThread: {},
   autoApproveByThread: {},
+  pendingConversationByContainer: {},
   audioRecording: null,
 };
 

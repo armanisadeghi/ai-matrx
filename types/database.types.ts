@@ -28190,6 +28190,12 @@ export type Database = {
           resource_key: string
         }[]
       }
+      conversations_exist: {
+        Args: { p_ids: string[] }
+        Returns: {
+          id: string
+        }[]
+      }
       convert_frontend_to_db_fields: {
         Args: { input_json: Json }
         Returns: {

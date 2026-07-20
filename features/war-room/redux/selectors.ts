@@ -480,6 +480,21 @@ export const selectActiveConversationIdForRoom =
       ? activeEntityId(bucket(state, "room", roomId), "conversation")
       : null;
 
+/**
+ * A just-minted conversation for this container that has no durable edge yet
+ * (it has no server row until its first turn commits). Surfaces must merge this
+ * with the edge-backed ids so a brand-new chat is usable immediately — see
+ * `pendingConversationByContainer`.
+ */
+export const selectPendingConversationForContainer =
+  (containerType: "thread" | "room", containerId: string | null) =>
+  (state: RootState): string | null =>
+    containerId
+      ? (state.warRoom.pendingConversationByContainer[
+          containerKey(containerType, containerId)
+        ] ?? null)
+      : null;
+
 const attachmentsCache = new Map<
   string,
   (state: RootState) => WarRoomAssignment[]

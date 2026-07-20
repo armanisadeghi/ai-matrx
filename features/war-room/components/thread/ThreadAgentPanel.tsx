@@ -43,6 +43,7 @@ import {
 } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
 import { useStudioAssistant } from "@/features/transcript-studio/hooks/useStudioAssistant";
 import { fetchStudioDocumentsThunk } from "@/features/transcript-studio/redux/thunks";
 import { selectActiveAssistantAgentId } from "@/features/transcript-studio/redux/selectors";
@@ -260,6 +261,13 @@ export default function ThreadAgentPanel({
     });
   }, [threadId, sessionId]);
 
+  // GATE: only a conversation that actually exists server-side may be written
+  // into a durable association edge. A freshly-provisioned chat is a client-only
+  // placeholder until its first turn commits; edging it early is what created
+  // permanent phantom rows in every thread's chat list (an edge pointing at a
+  // conversation that never came into being, unfixable after the fact).
+  const conversationIsReal = useConversationMaterialized(conversationId);
+
   useEffect(() => {
     if (!conversationId) return;
     traceWarRoomRenderPath(10, "ThreadAgentPanel.tsx", "conversation ready", {
@@ -271,12 +279,20 @@ export default function ThreadAgentPanel({
     // room agent, and the master SEE it in the resources roster and can read
     // it. Idempotent — createAssignment no-ops when the edge already matches.
     //
+    // Deferred until `conversationIsReal`: this effect re-runs the moment the
+    // first turn is server-confirmed, so a real chat still gets its edge within
+    // milliseconds of becoming real — while a provisioned-but-never-used chat
+    // correctly leaves NOTHING behind. This is the single write point for a
+    // thread's agent-chat edge; `startThreadConversation` deliberately does not
+    // pre-write one.
+    //
     // NO `label` here: this fires on every bind, so a hardcoded label would
     // clobber the real chat title stamped at attach time (the "Add existing
     // chat" flow) and mask every conversation as a generic placeholder in the
     // Resources surface + the agent roster. createAssignment preserves the
     // existing edge label when none is passed; the title resolver fills the
     // display name from the live chat title.
+    if (!conversationIsReal) return;
     void dispatch(
       attachEntityToThread(threadId, "conversation", conversationId, {
         metadata: {
@@ -285,7 +301,7 @@ export default function ThreadAgentPanel({
         },
       }),
     );
-  }, [threadId, conversationId, activeAgentId, dispatch]);
+  }, [threadId, conversationId, conversationIsReal, activeAgentId, dispatch]);
 
   // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
   // The war-room agent is the same studio-assistant agent used by Scribe; the

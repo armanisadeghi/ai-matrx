@@ -39,12 +39,16 @@ import {
   selectActiveConversationIdForRoom,
   selectAssignmentsForContainer,
   selectContainerAssignmentsLoaded,
+  selectPendingConversationForContainer,
   selectThreadIdsForRoom,
 } from "@/features/war-room/redux/selectors";
 import {
   attachEntityToContainer,
   hydrateRoomAssignments,
+  materializeConversationEdge,
+  pruneContainerPhantomConversations,
 } from "@/features/war-room/redux/thunks";
+import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
 import { roomRef } from "@/features/war-room/types";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import {
@@ -105,43 +109,87 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   const activeEdgeId = useAppSelector(
     selectActiveConversationIdForRoom(sessionId),
   );
+  // A chat just started from the toolbar has no edge yet — it gets one only
+  // once it materializes server-side. Bind it meanwhile so the user can
+  // actually type into it; the edge write follows on its own.
+  const pendingId = useAppSelector(
+    selectPendingConversationForContainer("room", sessionId),
+  );
+  const targetId = activeEdgeId ?? pendingId;
 
   // ── Hydrate the room bucket (never creates) ───────────────────────────────
   useEffect(() => {
     if (sessionId) void dispatch(hydrateRoomAssignments(sessionId));
   }, [sessionId, dispatch]);
 
-  // ── One-time legacy migration: localStorage chat → durable edge ──────────
+  // ── One-shot sweep of phantom edges (chats with no server row) ───────────
   useEffect(() => {
-    if (!sessionId || !loaded || activeEdgeId) return;
-    const legacyId = readLegacyRoomConversationId(sessionId);
-    if (!legacyId) return;
+    if (!sessionId || !loaded) return;
+    void dispatch(pruneContainerPhantomConversations(roomRef(sessionId)));
+  }, [sessionId, loaded, dispatch]);
+
+  // ── Promote the pending chat to a durable edge, once it's real ───────────
+  // GATE: a client-minted conversation has no `chat.conversation` row until its
+  // first turn commits. Edging it before then is what stranded phantom chats in
+  // room chat lists forever. This fires within milliseconds of the first turn
+  // being server-confirmed; a chat that's never used correctly leaves nothing.
+  const pendingIsReal = useConversationMaterialized(pendingId);
+  useEffect(() => {
+    if (!sessionId || !pendingId || !pendingIsReal) return;
+    void dispatch(
+      materializeConversationEdge(roomRef(sessionId), pendingId, {
+        makeActive: true,
+        metadata: { role: "agent", agentId: WAR_ROOM_ROOM_AGENT_ID },
+      }),
+    );
+  }, [sessionId, pendingId, pendingIsReal, dispatch]);
+
+  // ── One-time legacy migration: localStorage chat → durable edge ──────────
+  // Same gate: a legacy id can name a chat that was minted but never sent, and
+  // migrating that into an edge would mint fresh phantom debris.
+  // Read during render (not in an effect) because `useConversationMaterialized`
+  // must gate on it — a legacy id can name a chat that was minted but never
+  // sent, and migrating that into an edge would mint fresh phantom debris.
+  // Deliberately NOT wrapped in useState/useMemo: state would go stale when
+  // `sessionId` changes, and manual memoization is banned (React Compiler).
+  // The cost is one `localStorage.getItem` per render of a hook that renders
+  // rarely, and only while a room still has no chat.
+  const legacyId =
+    loaded && !activeEdgeId ? readLegacyRoomConversationId(sessionId) : null;
+  const legacyIsReal = useConversationMaterialized(legacyId);
+  useEffect(() => {
+    if (!sessionId || !loaded || activeEdgeId || !legacyId || !legacyIsReal) {
+      return;
+    }
     void dispatch(
       attachEntityToContainer(roomRef(sessionId), "conversation", legacyId, {
         makeActive: true,
         metadata: { role: "agent", agentId: WAR_ROOM_ROOM_AGENT_ID },
       }),
     );
-  }, [sessionId, loaded, activeEdgeId, dispatch]);
+  }, [sessionId, loaded, activeEdgeId, legacyId, legacyIsReal, dispatch]);
 
-  // ── Bind to the active edge (instance + tolerant rehydrate) — NO minting ──
+  // ── Bind to the target chat (instance + tolerant rehydrate) — NO minting ──
+  // `targetId` is the edge-backed chat, or the pending one when a chat was just
+  // started and hasn't earned its edge yet. Binding a pending chat is what lets
+  // the user send the first turn — which is precisely what makes it real.
   useEffect(() => {
-    if (!sessionId || !activeEdgeId || boundId === activeEdgeId) return;
-    const bindKey = `${sessionId}::${activeEdgeId}`;
+    if (!sessionId || !targetId || boundId === targetId) return;
+    const bindKey = `${sessionId}::${targetId}`;
     if (inFlightBinds.has(bindKey)) return;
     inFlightBinds.add(bindKey);
     let cancelled = false;
     void (async () => {
       try {
         const inMemory =
-          !!store.getState().conversations.byConversationId[activeEdgeId];
+          !!store.getState().conversations.byConversationId[targetId];
         if (!inMemory) {
           const row = selectAssignmentsForContainer(
             "room",
             sessionId,
           )(store.getState()).find(
             (a) =>
-              a.entity_type === "conversation" && a.entity_id === activeEdgeId,
+              a.entity_type === "conversation" && a.entity_id === targetId,
           );
           const agentId =
             (row?.metadata as { agentId?: string } | null)?.agentId ??
@@ -149,7 +197,7 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
           await dispatch(
             createManualInstance({
               agentId,
-              conversationId: activeEdgeId,
+              conversationId: targetId,
               apiEndpointMode: "agent",
               sourceFeature: "agent-runner",
               allowChat: true,
@@ -161,13 +209,13 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
           // resolves benignly (nothing to hydrate).
           try {
             await dispatch(
-              loadConversation({ conversationId: activeEdgeId }),
+              loadConversation({ conversationId: targetId }),
             ).unwrap();
           } catch (err) {
             reportWarRoomError("room-agent/load", err, { toast: false });
           }
         }
-        if (!cancelled) setBoundId(activeEdgeId);
+        if (!cancelled) setBoundId(targetId);
       } catch (err) {
         reportWarRoomError("room-agent/bind", err, { toast: false });
       } finally {
@@ -177,7 +225,7 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, activeEdgeId, boundId, dispatch, store]);
+  }, [sessionId, targetId, boundId, dispatch, store]);
 
   // ── Arm the room tool set on the bound conversation ──────────────────────
   useEffect(() => {

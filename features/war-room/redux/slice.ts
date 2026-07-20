@@ -239,6 +239,34 @@ const warRoomSlice = createSlice({
       }
     },
 
+    /**
+     * Hold a just-minted conversation for a container until it materializes
+     * server-side. NOT an assignment — no edge exists yet, and none may be
+     * written until the first turn commits. See `pendingConversationByContainer`.
+     */
+    pendingConversationSet(
+      state,
+      action: PayloadAction<{ key: string; conversationId: string }>,
+    ) {
+      state.pendingConversationByContainer[action.payload.key] =
+        action.payload.conversationId;
+    },
+    /**
+     * Clear the placeholder — either because its durable edge just landed, or
+     * because the container is gone. Only clears when the id still matches, so
+     * a stale clear can never drop a newer pending chat.
+     */
+    pendingConversationCleared(
+      state,
+      action: PayloadAction<{ key: string; conversationId?: string }>,
+    ) {
+      const { key, conversationId } = action.payload;
+      const current = state.pendingConversationByContainer[key];
+      if (!current) return;
+      if (conversationId && current !== conversationId) return;
+      delete state.pendingConversationByContainer[key];
+    },
+
     agentConversationsLoaded(
       state,
       action: PayloadAction<Record<string, string | null>>,
@@ -338,6 +366,8 @@ export const {
   assignmentUpserted,
   assignmentRemoved,
   assignmentActiveSet,
+  pendingConversationSet,
+  pendingConversationCleared,
   agentConversationsLoaded,
   setThreadAutoApprove,
   clearThreadAutoApprove,

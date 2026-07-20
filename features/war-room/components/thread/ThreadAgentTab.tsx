@@ -204,12 +204,14 @@ export function ThreadAgentTab({
     dispatch,
   ]);
 
-  // One-shot cleanup of refresh-mint debris (conversation edges whose chat
-  // never existed server-side). Loud — see the thunk.
+  // One-shot cleanup of phantom conversation edges (chats that never existed
+  // server-side). Loud — see the thunk. Needs only the hydrated bucket: the
+  // session pointer is deliberately NOT consulted, because a broken pointer
+  // names exactly the debris we're here to remove.
   useEffect(() => {
-    if (!sessionId || !loaded) return;
-    void dispatch(pruneThreadPhantomConversations(threadId, sessionId));
-  }, [threadId, sessionId, loaded, dispatch]);
+    if (!loaded) return;
+    void dispatch(pruneThreadPhantomConversations(threadId));
+  }, [threadId, loaded, dispatch]);
 
   useEffect(() => {
     traceWarRoomRenderPath(7, "ThreadAgentTab.tsx", "mount", { threadId });

@@ -42,6 +42,7 @@ import {
   selectConversationIdsForRoom,
   selectConversationIdsForThread,
   selectNoteIdsForThread,
+  selectPendingConversationForContainer,
 } from "@/features/war-room/redux/selectors";
 import {
   addAudioSessionToThread,
@@ -231,11 +232,22 @@ export function useRoomConversationSelectAdapter(
   const loaded = useAppSelector(
     selectContainerAssignmentsLoaded("room", roomId),
   );
-  const ids = useAppSelector(selectConversationIdsForRoom(roomId));
-  const activeId = useAppSelector(selectActiveConversationIdForRoom(roomId));
+  const edgeIds = useAppSelector(selectConversationIdsForRoom(roomId));
+  const activeEdgeId = useAppSelector(selectActiveConversationIdForRoom(roomId));
   const rows = useAppSelector(selectAssignmentsForContainer("room", roomId));
   const listById = useAppSelector((s) => s.conversationList.byConversationId);
   const agentsById = useAppSelector(selectAllAgents);
+
+  // A just-started chat has no edge until its first turn commits — surface it
+  // anyway so the switcher shows what the panel is actually bound to.
+  const pendingId = useAppSelector(
+    selectPendingConversationForContainer("room", roomId),
+  );
+  const ids =
+    pendingId && !edgeIds.includes(pendingId)
+      ? [...edgeIds, pendingId]
+      : edgeIds;
+  const activeId = activeEdgeId ?? pendingId;
 
   useEntityTitles(
     ids.map((id) => ({
@@ -267,6 +279,10 @@ export function useRoomConversationSelectAdapter(
     activeId,
     setActive: (id) => dispatch(setRoomActiveConversation(roomId, id)),
     rename: async (id, title) => {
+      // A pending chat has no `chat.conversation` row yet, so a rename would
+      // hit zero rows and surface as a failure. The server names it on its
+      // first turn anyway; refuse rather than pretend.
+      if (id === pendingId) return false;
       try {
         await dispatch(renameConversation({ conversationId: id, title })).unwrap();
         primeEntityTitle("conversation", id, title);

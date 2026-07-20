@@ -473,6 +473,44 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
     `,
   },
   {
+    id: "dangling-conversation-associations",
+    kind: "sql",
+    title: "Association edges pointing at conversations that do not exist",
+    category: "Associations",
+    severity: "error",
+    description:
+      "A `platform.associations` edge whose source is a conversation with no " +
+      "`chat.conversation` row. Conversation ids are minted CLIENT-side and only " +
+      "become real when the first turn commits, so any code that writes the edge " +
+      "at mint time strands a permanent ghost — it shows up forever in the " +
+      "container's chat list and looks like a duplicate. Creation paths now defer " +
+      "the edge until the conversation materializes (features/agents/hooks/" +
+      "useConversationMaterialized.ts), so a NON-ZERO count here means a writer " +
+      "regressed or a new one skipped the gate. The 15-minute floor keeps a chat " +
+      "whose first turn is mid-flight from being reported.",
+    remediation:
+      "Find the writer and gate it on materialization (useConversationMaterialized " +
+      "for render paths, waitForConversationPersisted for async callers), then " +
+      "delete the stranded edges. The client-side sweeper " +
+      "`pruneContainerPhantomConversations` clears them for any War Room " +
+      "container a user opens.",
+    sql: `
+      select a.id,
+             a.source_id as conversation_id,
+             a.target_type,
+             a.target_id,
+             a.created_at,
+             count(*) over() as _total
+      from platform.associations a
+      left join chat.conversation c on c.id = a.source_id
+      where a.source_type = 'conversation'
+        and c.id is null
+        and a.created_at < now() - interval '15 minutes'
+      order by a.created_at desc
+      limit ${SAMPLE_LIMIT}
+    `,
+  },
+  {
     id: "definer-authenticated-identity",
     kind: "sql",
     title:

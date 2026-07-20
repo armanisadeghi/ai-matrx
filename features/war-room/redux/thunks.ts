@@ -26,7 +26,6 @@ import {
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
 import {
-  persistAssistantConversationThunk,
   setActiveAssistantConversationThunk,
   switchAssistantAgentThunk,
 } from "@/features/transcript-studio/redux/assistantAgent.thunk";
@@ -35,7 +34,6 @@ import {
   selectRawSegmentsLoaded,
 } from "@/features/transcript-studio/redux/selectors";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -89,6 +87,8 @@ import {
   assignmentUpserted,
   clearRoomThreads,
   orphanThreadsLoaded,
+  pendingConversationCleared,
+  pendingConversationSet,
   sessionRemoved,
   sessionsLoaded,
   sessionUpserted,
@@ -1056,8 +1056,14 @@ export const hydrateThreadAssignments =
 // durable edge, never auto-minted.
 
 /**
- * Start a NEW oversight chat on a room with a picked agent — mint + attach +
- * make active. The ONLY way a room conversation is ever created.
+ * Start a NEW oversight chat on a room with a picked agent — the ONLY way a
+ * room conversation is ever created.
+ *
+ * Mints and holds it as the room's PENDING conversation; writes nothing
+ * durable. The `conversation → war_room` edge is written by `useRoomAgent` the
+ * moment the conversation materializes server-side, exactly as the thread path
+ * does. Pre-writing the edge here is what left permanent phantom room chats
+ * behind whenever a provisioned chat was never used.
  */
 export const startRoomConversation =
   (roomId: string, agentId: string) =>
@@ -1073,10 +1079,10 @@ export const startRoomConversation =
           displayMode: "chat-assistant",
         }),
       ).unwrap();
-      await dispatch(
-        attachEntityToContainer(roomRef(roomId), "conversation", conversationId, {
-          makeActive: true,
-          metadata: { role: "agent", agentId },
+      dispatch(
+        pendingConversationSet({
+          key: containerKey("room", roomId),
+          conversationId,
         }),
       );
       return conversationId;
@@ -1089,8 +1095,45 @@ export const startRoomConversation =
   };
 
 /**
+ * Promote a PENDING conversation to a durable edge, once it is known to exist
+ * server-side. The single place a deferred conversation edge is written.
+ *
+ * Callers MUST have gated on materialization (`useConversationMaterialized` /
+ * `waitForConversationPersisted`) — this thunk trusts that and does not re-check,
+ * so it stays a plain write with no extra round trip. Idempotent:
+ * `createAssignment` no-ops when the edge already matches, and the pending entry
+ * is cleared only for this exact id.
+ */
+export const materializeConversationEdge =
+  (
+    ref: ContainerRef,
+    conversationId: string,
+    opts: AttachEntityOptions = {},
+  ) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    const ok = await dispatch(
+      attachEntityToContainer(ref, "conversation", conversationId, opts),
+    );
+    if (ok) {
+      dispatch(
+        pendingConversationCleared({
+          key: containerKey(ref.type, ref.id),
+          conversationId,
+        }),
+      );
+    }
+    return ok;
+  };
+
+/**
  * One-time room provisioning — the ONLY automatic creator of the room's
  * oversight conversation. Fired right after the war_room row is created.
+ *
+ * The provisioned chat is PENDING, not durable (see `startRoomConversation`).
+ * If the user never sends a first turn and reloads, it is gone and the room
+ * falls back to its explicit "Start chat" empty state. That is intentional:
+ * re-provisioning on mount is precisely the refresh-mint bug invariant 11
+ * exists to prevent, and a chat nobody used is not worth a permanent row.
  */
 export const provisionRoomDefaults =
   (roomId: string) =>
@@ -1145,7 +1188,17 @@ export const removeConversationFromRoom =
     const row = selectAssignmentsForContainer("room", roomId)(getState()).find(
       (a) => a.entity_type === "conversation" && a.entity_id === conversationId,
     );
-    if (!row) return false;
+    // A PENDING chat has no edge to remove — it exists only in Redux. Dropping
+    // the placeholder IS the removal; without this the switcher's unlink is a
+    // silent no-op on the one chat a user is most likely to discard.
+    if (!row) {
+      const pending = getState().warRoom.pendingConversationByContainer[key];
+      if (pending === conversationId) {
+        dispatch(pendingConversationCleared({ key, conversationId }));
+        return true;
+      }
+      return false;
+    }
     dispatch(assignmentRemoved({ key, id: row.id }));
     try {
       await assoc.removeAssignmentByEntity(
@@ -1199,71 +1252,119 @@ export const hydrateRoomAssignments =
   };
 
 /**
- * One-shot cleanup of PHANTOM conversation edges — debris from the old
- * refresh-mint bug (every page load minted a fresh conversation and attached
- * it; the id never got a cx_conversation row, so the thread's chat list grew
- * with dead entries). An edge is pruned only when ALL of: its conversation
- * has no server row, it isn't referenced by the session pointer/roster, and
- * it carries no `metadata.agentId` (every post-fix mint stamps one). Loud:
- * each prune is a console.error — this firing after today means a creation
- * path regressed.
+ * Grace period before an edge with no conversation row is judged phantom.
+ *
+ * Post-fix, an edge is only ever written AFTER the conversation is confirmed
+ * real, so this should never mask anything. It exists purely so a read that
+ * races a just-landed write (or a replica lagging the commit) can't delete a
+ * healthy edge — the cleanup must never be able to destroy live data.
+ *
+ * Kept in step with the 15-minute floor in the `dangling-conversation-associations`
+ * integrity check (lib/integrity/checks.ts) so the alarm and the sweeper never
+ * disagree about what counts as debris.
  */
-const phantomPrunedThreads = new Set<string>();
-export const pruneThreadPhantomConversations =
-  (threadId: string, sessionId: string) =>
+const PHANTOM_EDGE_GRACE_MS = 15 * 60 * 1000;
+
+/**
+ * Cleanup of PHANTOM conversation edges — an edge pointing at a conversation
+ * that has no `chat.conversation` row and never will.
+ *
+ * These are debris from the era when a conversation edge was written at MINT
+ * time: a client-minted id has no row until its first turn commits, so every
+ * provisioned-but-never-used chat left an immortal ghost in the chat list. The
+ * creation paths are fixed (edges are now written only after materialization —
+ * see `materializeConversationEdge`), so this exists to sweep pre-existing
+ * debris and to stay a loud tripwire if a creation path ever regresses.
+ *
+ * HISTORY — why this used to be a no-op: it skipped any edge carrying
+ * `metadata.agentId`, on the theory that a stamp meant "post-fix, therefore
+ * healthy". But EVERY creation path stamps `agentId`, so the filter excluded
+ * 100% of its own targets and the cleanup never deleted anything. It also
+ * protected ids referenced by the session pointer — but a phantom id is
+ * precisely what a broken pointer names, so that protected the debris too.
+ *
+ * The rule now is the only one that is actually true: prune an edge when its
+ * conversation does not exist AND the edge is older than the grace window AND
+ * the caller wrote the edge. Nothing else can distinguish a ghost from a live
+ * chat.
+ *
+ * TWO GUARDS, BOTH LOAD-BEARING — deleting a live chat must be impossible:
+ *
+ *  1. **Existence via `conversations_exist`, never a direct read.**
+ *     `platform.associations` is readable AND deletable ORG-WIDE
+ *     (`iam.has_org_access`), but `chat.conversation` SELECT is PER-ROW
+ *     (`created_by = auth.uid() OR iam.has_access(...)`). A direct
+ *     `select id from chat.conversation where id in (...)` therefore returns
+ *     nothing both when a row is absent and when the caller merely can't read
+ *     it — so a teammate opening your War Room would read your edges, fail to
+ *     read your private chats, call them all phantom, and delete them. The
+ *     SECURITY DEFINER RPC makes absence mean absence.
+ *  2. **Own edges only.** Even with (1) correct, a user has no business
+ *     deleting an edge someone else wrote. `created_by` is the backstop.
+ *
+ * Loud by design: every prune is a `console.error`. After the backfill, this
+ * firing means a creation path regressed and is minting fresh debris.
+ */
+const phantomPrunedContainers = new Set<string>();
+export const pruneContainerPhantomConversations =
+  (ref: ContainerRef) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
-  ): Promise<void> => {
-    if (phantomPrunedThreads.has(threadId)) return;
-    phantomPrunedThreads.add(threadId);
+  ): Promise<number> => {
+    const key = containerKey(ref.type, ref.id);
+    if (phantomPrunedContainers.has(key)) return 0;
+    phantomPrunedContainers.add(key);
+    const userId = getState().userAuth?.id ?? null;
+    // Without a known caller we cannot prove ownership — do nothing.
+    if (!userId) return 0;
     const rows = selectAssignmentsForContainer(
-      "thread",
-      threadId,
-    )(getState()).filter((a) => a.entity_type === "conversation");
-    if (rows.length === 0) return;
+      ref.type,
+      ref.id,
+    )(getState()).filter(
+      (a) => a.entity_type === "conversation" && a.created_by === userId,
+    );
+    if (rows.length === 0) return 0;
 
-    const info = getEntityInfo("conversation");
     const ids = rows.map((r) => r.entity_id);
-    const db = (
-      info.schema && info.schema !== "public"
-        ? supabase.schema(info.schema as "files")
-        : supabase
-    ) as typeof supabase;
-    const { data, error } = await db
-      .from(info.table as never)
-      .select("id")
-      .in("id" as never, ids as never[]);
+    const { data, error } = await supabase.rpc("conversations_exist", {
+      p_ids: ids,
+    });
+    // A failed read is not evidence of absence — never prune on an unknown.
     if (error) {
-      reportWarRoomError("pruneThreadPhantomConversations", error, {
+      reportWarRoomError("pruneContainerPhantomConversations", error, {
         toast: false,
       });
-      return;
+      return 0;
     }
     const real = new Set(
-      ((data as Array<{ id: unknown }>) ?? []).map((r) => String(r.id)),
+      ((data as Array<{ id: string }> | null) ?? []).map((r) => String(r.id)),
     );
-    const session = getState().transcriptStudio.byId[sessionId];
-    const protectedIds = new Set<string>([
-      ...(session?.assistantConversations ?? []).map((r) => r.conversationId),
-      ...(session?.assistantConversationId
-        ? [session.assistantConversationId]
-        : []),
-    ]);
 
+    const cutoff = Date.now() - PHANTOM_EDGE_GRACE_MS;
+    let pruned = 0;
     for (const row of rows) {
       const id = row.entity_id;
-      const hasAgentStamp = Boolean(
-        (row.metadata as { agentId?: string } | null)?.agentId,
-      );
-      if (real.has(id) || protectedIds.has(id) || hasAgentStamp) continue;
+      if (real.has(id)) continue;
+      const createdAt = row.created_at ? Date.parse(row.created_at) : NaN;
+      // Unparseable timestamp ⇒ treat as young and leave it alone.
+      if (!Number.isFinite(createdAt) || createdAt > cutoff) continue;
       console.error(
-        "[war-room] pruning phantom conversation edge (refresh-mint debris)",
-        { threadId, conversationId: id },
+        "[war-room] pruning phantom conversation edge (no server row)",
+        { container: key, conversationId: id, createdAt: row.created_at },
       );
-      await dispatch(removeEntityFromThread(threadId, "conversation", id));
+      const ok =
+        ref.type === "thread"
+          ? await dispatch(removeEntityFromThread(ref.id, "conversation", id))
+          : await dispatch(removeConversationFromRoom(ref.id, id));
+      if (ok !== false) pruned += 1;
     }
+    return pruned;
   };
+
+/** Thread-scoped convenience — the shape the Chat tab calls. */
+export const pruneThreadPhantomConversations = (threadId: string) =>
+  pruneContainerPhantomConversations(threadRef(threadId));
 
 /**
  * Bind the thread's Chat tab to one of its attached conversations: flips the
@@ -1301,11 +1402,24 @@ export const setThreadActiveConversation =
  * Start a NEW chat on a thread with a picked agent — the ONLY way a thread
  * conversation is ever created (called from thread provisioning and the Chat
  * toolbar's "+ New Chat"; the panel itself never mints — autoCreate:false).
- * Mints a fresh conversation for the thread's session, PERSISTS the pointer +
- * roster onto the session row immediately (so a refresh re-binds instead of
- * fabricating a new chat — the resolve path tolerates the row not existing
- * until the first turn streams), and attaches it to the thread. Until the
- * server auto-labels it, surfaces show the agent's name as the chat label.
+ *
+ * Mints a fresh conversation for the thread's session and binds it in REDUX
+ * ONLY. It writes NOTHING durable — no association edge, no session pointer —
+ * because a client-minted id has no `chat.conversation` row until its first
+ * turn commits, and persisting it early leaves a dangling pointer that can
+ * never self-heal (the phantom-chat class: a provisioned chat nobody used,
+ * stuck in the chat list forever).
+ *
+ * Both durable writes are deferred to the moment the conversation becomes real:
+ *   • the association edge — `ThreadAgentPanel`, gated on
+ *     `useConversationMaterialized`;
+ *   • the session pointer — `useStudioAssistant`, gated on the same
+ *     server-confirmed request status.
+ *
+ * Consequence by design: a chat that is never sent into leaves no trace, and a
+ * reload before the first turn returns the thread to its "Start chat" empty
+ * state instead of resurrecting a ghost. Until the server auto-labels it,
+ * surfaces show the agent's name as the chat label.
  */
 export const startThreadConversation =
   (threadId: string, sessionId: string, agentId: string) =>
@@ -1315,14 +1429,6 @@ export const startThreadConversation =
         switchAssistantAgentThunk({ sessionId, agentId, mode: "fresh" }),
       ).unwrap();
       if (!conversationId) return null;
-      await dispatch(
-        persistAssistantConversationThunk({ sessionId, conversationId }),
-      );
-      await dispatch(
-        attachEntityToThread(threadId, "conversation", conversationId, {
-          metadata: { role: "agent", agentId },
-        }),
-      );
       return conversationId;
     } catch (err) {
       reportWarRoomError("startThreadConversation", err, {
