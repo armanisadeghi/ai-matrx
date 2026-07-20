@@ -44,7 +44,9 @@ export interface RoomViewState {
   toggleDensity: () => void;
 
   /** Free-text thread filter (Feature ba9f72e4). Empty string ⇒ no filter.
-   *  Filters the rail + gallery in place by NAME → DESCRIPTION → CONTENTS. */
+   *  Filters the rail + gallery in place by thread TITLE (tile title, falling
+   *  back to the anchored task's title — see useThreadSearch). Parked/stowed
+   *  threads are not searched; they live in the Parked tray. */
   threadQuery: string;
   setThreadQuery: (q: string) => void;
 
