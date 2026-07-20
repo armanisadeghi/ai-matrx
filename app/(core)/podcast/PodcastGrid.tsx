@@ -34,12 +34,16 @@ export function PodcastGrid({
           key={show.id}
           className="group relative flex flex-col rounded-2xl overflow-hidden bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all active:scale-[0.97]"
         >
+          {/* Whole-card click target. Sits ABOVE the artwork (z-10) so the
+              cursor + click behave identically across the full card, and
+              BELOW the Manage link / Draft badge (z-20) so those stay
+              independently clickable. */}
           <Link
             href={`/podcast/${show.slug}`}
             aria-label={show.title}
-            className="absolute inset-0 z-10"
+            className="absolute inset-0 z-[15]"
           />
-          <div className="relative aspect-square overflow-hidden bg-zinc-800">
+          <div className="relative aspect-square overflow-hidden bg-muted">
             {show.image_url ? (
               <>
                 {/* Blurred backdrop — durable render via the handler. Decorative,
@@ -54,19 +58,25 @@ export function PodcastGrid({
                   className="absolute inset-0 scale-110 blur-xl opacity-40"
                   alt=""
                 />
+                {/* Consumer surface: a dead URL degrades to the same quiet
+                    mic tile as "no artwork" — never the debug error panel. */}
                 <InlineMediaRef
                   ref={(show.thumbnail_url ?? show.image_url) ?? null}
                   size="fill"
                   fit="cover"
                   rounded="none"
-                  fallback={null}
+                  fallback="icon"
+                  errorFallback="icon"
+                  fallbackIcon={
+                    <Mic className="h-12 w-12 text-muted-foreground/40" />
+                  }
                   className="relative z-10 transition-transform duration-300 group-hover:scale-105"
                   alt={show.title}
                 />
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Mic className="h-12 w-12 text-white/20" />
+                <Mic className="h-12 w-12 text-muted-foreground/40" />
               </div>
             )}
             {manage && !show.is_published && (

@@ -208,6 +208,7 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
                       fit="cover"
                       rounded="lg"
                       fallbackIcon={<Music className="h-6 w-6 text-muted-foreground/50" />}
+                      errorFallback="icon"
                       className="shadow-sm"
                       alt={ep.title}
                     />

@@ -27,12 +27,13 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
 
   return (
     <div className="h-full w-full overflow-y-auto overscroll-contain bg-background">
-      {/* Hero */}
-      <div className="relative overflow-hidden bg-zinc-900 px-4 pt-10 pb-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-transparent pointer-events-none" />
+      {/* Hero — semantic tokens only, so it reads correctly in both themes
+          (a hardcoded dark slab here was invisible-text city in light mode). */}
+      <div className="relative overflow-hidden border-b border-border px-4 pt-10 pb-12">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent pointer-events-none" />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
-          <h1 className="text-white font-bold text-4xl">Podcasts</h1>
-          <p className="text-white/50 text-sm mt-2">
+          <h1 className="text-foreground font-bold text-4xl">Podcasts</h1>
+          <p className="text-muted-foreground text-sm mt-2">
             Listen to shows on the platform — or generate a fully produced
             episode of your own in minutes.
           </p>
@@ -43,11 +44,7 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
                 Create a podcast
               </Link>
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-            >
+            <Button asChild variant="outline" className="gap-2">
               <Link href="/podcast/studio">
                 <Mic className="h-4 w-4" />
                 Open Studio
