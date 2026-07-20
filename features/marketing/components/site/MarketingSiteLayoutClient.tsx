@@ -9,6 +9,7 @@ import {
   ExternalLink,
   FileText,
   Gauge,
+  Grid3x3,
   Images,
   Inbox,
   Link2,
@@ -55,6 +56,7 @@ function sectionSuffix(pathname: string, brandId: string, siteId: string): strin
   for (const section of [
     "discovery",
     "sitemaps",
+    "coverage",
     "pages",
     "crawls",
     "analysis",
@@ -150,6 +152,11 @@ export function MarketingSiteLayoutClient({
             name: "Sitemaps",
             href: `${base}/sitemaps`,
             icon: Map,
+          },
+          {
+            name: "Coverage",
+            href: `${base}/coverage`,
+            icon: Grid3x3,
           },
           {
             name: "Pages",

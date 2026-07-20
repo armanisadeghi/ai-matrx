@@ -27,6 +27,7 @@ import {
   deleteBrand,
   deleteSite,
   dismissDiscoveredItem,
+  getCoverageMatrix,
   getCrawl,
   getHomepageObservedMeta,
   getPageWorkspace,
@@ -47,7 +48,10 @@ import {
   updatePageIntent,
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
-import type { SitemapPagesFilter } from "@/features/marketing/data/service";
+import type {
+  PageCoverageFilter,
+  SitemapPagesFilter,
+} from "@/features/marketing/data/service";
 import type { DiscoveredItemStatus } from "@/features/marketing/types";
 
 export const marketingKeys = {
@@ -153,12 +157,24 @@ export function useCreateSite() {
   });
 }
 
-export function usePages(siteId: string, state: MatrxDataTableQueryState) {
+export function usePages(
+  siteId: string,
+  state: MatrxDataTableQueryState,
+  coverage: PageCoverageFilter | null = null,
+) {
   return useQuery({
-    queryKey: marketingKeys.pages(siteId, state),
-    queryFn: ({ signal }) => listPages(siteId, state, signal),
+    queryKey: [...marketingKeys.pages(siteId, state), coverage] as const,
+    queryFn: ({ signal }) => listPages(siteId, state, coverage, signal),
     enabled: Boolean(siteId),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useCoverageMatrix(siteId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.site(siteId), "coverage-matrix"] as const,
+    queryFn: ({ signal }) => getCoverageMatrix(siteId, signal),
+    enabled: Boolean(siteId),
   });
 }
 

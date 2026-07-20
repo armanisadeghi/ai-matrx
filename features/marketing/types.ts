@@ -111,8 +111,8 @@ export interface SiteListRow extends MarketingSite {
 }
 
 export interface PageListRow extends MarketingPage {
-  latest_score: number | null;
-  fail_count: number;
+  /** Live sitemap memberships for this canonical page (0 = in no sitemap). */
+  sitemap_count: number;
 }
 
 export interface SiteOverviewMetrics {

@@ -342,9 +342,42 @@ export async function createSite(
   return assertData(response.data, response.error);
 }
 
+/** Every `web.page` column — ONE list so selects can never drift per call site. */
+export const PAGE_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, target_keyword, meta_title_desired, meta_description_desired, latest_snapshot_id";
+
+/**
+ * Source-disagreement coverage filters over the canonical page registry.
+ * Membership = a live `web.page_sitemap` row; crawled = `latest_snapshot_id`.
+ */
+export type PageCoverageFilter =
+  | "in_sitemap"
+  | "crawled"
+  | "never_crawled"
+  | "sitemap_not_crawled"
+  | "crawled_no_sitemap";
+
+export const PAGE_COVERAGE_FILTERS: readonly PageCoverageFilter[] = [
+  "in_sitemap",
+  "crawled",
+  "never_crawled",
+  "sitemap_not_crawled",
+  "crawled_no_sitemap",
+];
+
+export function isPageCoverageFilter(
+  value: string | null,
+): value is PageCoverageFilter {
+  return (
+    value !== null &&
+    (PAGE_COVERAGE_FILTERS as readonly string[]).includes(value)
+  );
+}
+
 export async function listPages(
   siteId: string,
   state: MatrxDataTableQueryState,
+  coverage: PageCoverageFilter | null = null,
   signal?: AbortSignal,
 ): Promise<PagedResult<PageListRow>> {
   const db = await authenticatedWebDb(supabase);
@@ -364,14 +397,30 @@ export async function listPages(
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "last_seen";
   const ascending = state.sort?.direction === "asc";
 
+  // The left-joined membership embed powers both the coverage filters and the
+  // per-row "in N sitemaps" signal; soft-deleted memberships never count.
   let query = db
     .from("page")
-    .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, target_keyword, meta_title_desired, meta_description_desired, latest_snapshot_id",
-      { count: "exact" },
-    )
+    .select(`${PAGE_COLUMNS}, page_sitemap!left(id)`, { count: "exact" })
     .eq("site_id", siteId)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .is("page_sitemap.deleted_at", null);
+
+  if (coverage === "in_sitemap") {
+    query = query.not("page_sitemap", "is", null);
+  } else if (coverage === "crawled") {
+    query = query.not("latest_snapshot_id", "is", null);
+  } else if (coverage === "never_crawled") {
+    query = query.is("latest_snapshot_id", null);
+  } else if (coverage === "sitemap_not_crawled") {
+    query = query
+      .not("page_sitemap", "is", null)
+      .is("latest_snapshot_id", null);
+  } else if (coverage === "crawled_no_sitemap") {
+    query = query
+      .is("page_sitemap", null)
+      .not("latest_snapshot_id", "is", null);
+  }
 
   const search = cleanSearch(state.search);
   if (search) {
@@ -401,28 +450,116 @@ export async function listPages(
   const pages = assertData(response.data, response.error);
   if (pages.length === 0) return { rows: [], total: response.count ?? 0 };
 
-  const scoreResponse = await db
-    .from("v_page_score")
-    .select("site_id, page_id, page_score, fail_count")
-    .eq("site_id", siteId)
-    .in(
-      "page_id",
-      pages.map((page) => page.id),
-    )
-    .abortSignal(signal ?? new AbortController().signal);
-  const scores = assertData(scoreResponse.data, scoreResponse.error);
-  const byPage = new Map(scores.map((score) => [score.page_id, score]));
+  return {
+    rows: pages.map(({ page_sitemap, ...page }) => ({
+      ...page,
+      sitemap_count: page_sitemap.length,
+    })),
+    total: response.count ?? 0,
+  };
+}
+
+/** Per-provenance canonical-page counts (registry stamp of who found the URL). */
+export type PageProvenance = "gsc" | "sitemap" | "crawl" | "manual";
+
+export const PAGE_PROVENANCES: readonly PageProvenance[] = [
+  "gsc",
+  "sitemap",
+  "crawl",
+  "manual",
+];
+
+export interface SiteCoverageMatrix {
+  totalPages: number;
+  inSitemaps: number;
+  crawled: number;
+  neverCrawled: number;
+  sitemapNotCrawled: number;
+  crawledNoSitemap: number;
+  byProvenance: Record<PageProvenance, number>;
+}
+
+/**
+ * The source-disagreement matrix over the canonical page registry: how the
+ * evidence sources (sitemap membership, crawl snapshots, provenance) agree or
+ * disagree about every canonical page.
+ */
+export async function getCoverageMatrix(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteCoverageMatrix> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+
+  const basePages = () =>
+    db
+      .from("page")
+      .select("id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .is("deleted_at", null);
+  const membershipPages = () =>
+    db
+      .from("page")
+      .select("id, page_sitemap!inner(id)", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .is("page_sitemap.deleted_at", null);
+  const antiMembershipPages = () =>
+    db
+      .from("page")
+      .select("id, page_sitemap!left(id)", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .is("page_sitemap.deleted_at", null)
+      .is("page_sitemap", null);
+
+  const [
+    total,
+    inSitemaps,
+    crawled,
+    neverCrawled,
+    sitemapNotCrawled,
+    crawledNoSitemap,
+    ...provenanceCounts
+  ] = await Promise.all([
+    basePages().abortSignal(abortSignal),
+    membershipPages().abortSignal(abortSignal),
+    basePages().not("latest_snapshot_id", "is", null).abortSignal(abortSignal),
+    basePages().is("latest_snapshot_id", null).abortSignal(abortSignal),
+    membershipPages().is("latest_snapshot_id", null).abortSignal(abortSignal),
+    antiMembershipPages()
+      .not("latest_snapshot_id", "is", null)
+      .abortSignal(abortSignal),
+    ...PAGE_PROVENANCES.map((provenance) =>
+      basePages().eq("provenance", provenance).abortSignal(abortSignal),
+    ),
+  ]);
+
+  for (const response of [
+    total,
+    inSitemaps,
+    crawled,
+    neverCrawled,
+    sitemapNotCrawled,
+    crawledNoSitemap,
+    ...provenanceCounts,
+  ]) {
+    if (response.error) throw response.error;
+  }
+
+  const byProvenance = {} as Record<PageProvenance, number>;
+  PAGE_PROVENANCES.forEach((provenance, index) => {
+    byProvenance[provenance] = provenanceCounts[index]?.count ?? 0;
+  });
 
   return {
-    rows: pages.map((page) => {
-      const score = byPage.get(page.id);
-      return {
-        ...page,
-        latest_score: score?.page_score ?? null,
-        fail_count: Number(score?.fail_count ?? 0),
-      };
-    }),
-    total: response.count ?? 0,
+    totalPages: total.count ?? 0,
+    inSitemaps: inSitemaps.count ?? 0,
+    crawled: crawled.count ?? 0,
+    neverCrawled: neverCrawled.count ?? 0,
+    sitemapNotCrawled: sitemapNotCrawled.count ?? 0,
+    crawledNoSitemap: crawledNoSitemap.count ?? 0,
+    byProvenance,
   };
 }
 
@@ -861,7 +998,7 @@ export async function listSiteScreenshots(
 }
 
 const DISCOVERED_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, context, confidence, status, resolved_asset_id, resolved_fact_id, reviewed_by, reviewed_at";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, value_hash, context, confidence, status, resolved_asset_id, resolved_fact_id, reviewed_by, reviewed_at";
 
 /** Discovery inbox for a brand, optionally narrowed by status. Bounded. */
 export async function listDiscoveredItems(

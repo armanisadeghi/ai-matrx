@@ -59,6 +59,24 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/sitemaps",
+      label: "Sitemaps",
+      description:
+        "Discovered sitemap documents, per-sitemap page membership, and sync.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/sitemaps/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/coverage",
+      label: "Coverage matrix",
+      description:
+        "Source-disagreement matrix over the canonical page registry with one-click filtered page lists.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/coverage/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/sites/[siteId]/pages",
       label: "Canonical pages",
       description:
