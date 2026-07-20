@@ -1,7 +1,7 @@
 import type { Json } from "@/types/database.types";
 import type { MarketingSite } from "@/features/marketing/types";
 import { createClient } from "@/utils/supabase/client";
-import { webDb } from "@/utils/supabase/webDb";
+import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
 export interface SiteSettingsInput {
   siteId: string;
@@ -16,7 +16,9 @@ export async function updateSiteSettings(
   input: SiteSettingsInput,
 ): Promise<MarketingSite> {
   const supabase = createClient();
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("site")
     .update({
       name: input.name,

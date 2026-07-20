@@ -16,7 +16,7 @@ import type {
   UpdatePageIntentInput,
 } from "@/features/marketing/types";
 import { supabase } from "@/utils/supabase/client";
-import { webDb } from "@/utils/supabase/webDb";
+import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
 function rangeFor(state: MatrxDataTableQueryState) {
   const from = (state.page - 1) * state.pageSize;
@@ -75,7 +75,7 @@ export async function listSites(
   state: MatrxDataTableQueryState,
   signal?: AbortSignal,
 ): Promise<PagedResult<SiteListRow>> {
-  const db = webDb(supabase);
+  const db = await authenticatedWebDb(supabase);
   const { from, to } = rangeFor(state);
   const sortColumns = {
     name: "name",
@@ -150,9 +150,10 @@ export async function listSiteOptions(
 ): Promise<MarketingSite[]> {
   const rows: MarketingSite[] = [];
   const abortSignal = signal ?? new AbortController().signal;
+  const db = await authenticatedWebDb(supabase);
   for (let page = 0; page < 5; page += 1) {
     const from = page * 1000;
-    const response = await webDb(supabase)
+    const response = await db
       .from("site")
       .select(
         "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings",
@@ -170,7 +171,9 @@ export async function listSiteOptions(
 }
 
 export async function countSites(signal?: AbortSignal): Promise<number> {
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("site")
     .select("id", { count: "exact", head: true })
     .is("deleted_at", null)
@@ -183,7 +186,9 @@ export async function getSite(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<MarketingSite> {
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("site")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings",
@@ -199,7 +204,7 @@ export async function getSiteOverview(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<SiteOverviewMetrics> {
-  const db = webDb(supabase);
+  const db = await authenticatedWebDb(supabase);
   const abortSignal = signal ?? new AbortController().signal;
   const [score, pages, findings, snapshots, latestCrawl] = await Promise.all([
     db
@@ -260,7 +265,9 @@ export async function getSiteOverview(
 export async function createSite(
   input: CreateSiteInput,
 ): Promise<MarketingSite> {
-  const response = await webDb(supabase).rpc("create_site", {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  ).rpc("create_site", {
     p_organization_id: input.organizationId,
     p_name: input.name,
     p_root_url: input.rootUrl,
@@ -277,7 +284,7 @@ export async function listPages(
   state: MatrxDataTableQueryState,
   signal?: AbortSignal,
 ): Promise<PagedResult<PageListRow>> {
-  const db = webDb(supabase);
+  const db = await authenticatedWebDb(supabase);
   const { from, to } = rangeFor(state);
   const sortColumns = {
     url: "url",
@@ -361,7 +368,7 @@ export async function getPageWorkspace(
   pageId: string,
   signal?: AbortSignal,
 ): Promise<PageWorkspaceData> {
-  const db = webDb(supabase);
+  const db = await authenticatedWebDb(supabase);
   const abortSignal = signal ?? new AbortController().signal;
   const pageResponse = await db
     .from("page")
@@ -428,7 +435,9 @@ export async function updatePageIntent(
     meta_title_desired: input.desiredMetaTitle,
     meta_description_desired: input.desiredMetaDescription,
   };
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("page")
     .update(patch)
     .eq("site_id", input.siteId)
@@ -460,7 +469,7 @@ export async function listSnapshots(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "captured_at";
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("snapshot")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_ref, head_tags, headings, links_summary, images, structured_data, perf, extracted",
@@ -501,7 +510,9 @@ export async function getSnapshot(
   snapshotId: string,
   signal?: AbortSignal,
 ): Promise<PageSnapshot> {
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("snapshot")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_ref, head_tags, headings, links_summary, images, structured_data, perf, extracted",
@@ -531,7 +542,7 @@ export async function listCrawls(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "started_at";
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("crawl_session")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, status, trigger, scope, stats, started_at, finished_at, error",
@@ -565,7 +576,9 @@ export async function getCrawl(
   crawlId: string,
   signal?: AbortSignal,
 ): Promise<CrawlSession> {
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("crawl_session")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, status, trigger, scope, stats, started_at, finished_at, error",
@@ -600,7 +613,7 @@ export async function listCrawlUrls(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "sequence";
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("crawl_url")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, session_id, sequence, page_id, snapshot_id, discovered_from_page_id, raw_url, normalized_url, url_hash, discovery_source, classification, outcome, is_in_scope, depth, http_status, final_url, reason_code, reason, discovered_at, completed_at",
@@ -661,7 +674,7 @@ export async function listCrawlEvents(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "sequence";
   const ascending = state.sort?.direction !== "desc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("crawl_event")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, session_id, sequence, event_type, phase, level, message, page_id, crawl_url_id, payload, occurred_at",

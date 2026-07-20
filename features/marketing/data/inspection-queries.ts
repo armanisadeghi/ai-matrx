@@ -6,7 +6,7 @@ import type {
   InspectionSnapshotRow,
 } from "@/features/marketing/data/inspection-types";
 import { supabase } from "@/utils/supabase/client";
-import { webDb } from "@/utils/supabase/webDb";
+import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
 const CRAWL_LINK_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, snapshot_id, source_page_id, target_url, target_page_id, is_internal, rel, anchor_text, http_status, position, source_page:page!link_edge_source_page_id_fkey(url), target_page:page!link_edge_target_page_id_fkey(url), snapshot:snapshot!inner(captured_at, session_id)";
@@ -23,7 +23,9 @@ export async function getHomepageScreenshot(
   screenshotId: string,
   signal?: AbortSignal,
 ): Promise<InspectionScreenshotRow> {
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("screenshot")
     .select(SCREENSHOT_SELECT)
     .eq("id", screenshotId)
@@ -103,7 +105,7 @@ async function listLinks(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "created_at";
   const ascending = state.sort?.direction === "asc";
-  const db = webDb(supabase);
+  const db = await authenticatedWebDb(supabase);
   let query = db
     .from("link_edge")
     .select(CRAWL_LINK_SELECT, { count: "exact" })
@@ -181,7 +183,7 @@ export async function listCrawlSnapshots(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "captured_at";
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("snapshot")
     .select(SNAPSHOT_SELECT, { count: "exact" })
     .eq("site_id", siteId)
@@ -237,7 +239,7 @@ export async function listSiteScreenshots(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "captured_at";
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("screenshot")
     .select(SCREENSHOT_SELECT, { count: "exact" })
     .eq("site_id", siteId)

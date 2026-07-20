@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/client";
 import { iamDb } from "@/utils/supabase/iamDb";
+import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 
 export type SiteGrantTarget = "user" | "organization";
 export type SiteGrantLevel = "viewer" | "editor" | "admin";
@@ -38,6 +39,7 @@ export async function listSitePermissions(
   siteId: string,
 ): Promise<SitePermissionGrant[]> {
   const supabase = createClient();
+  await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await iamDb(supabase).rpc(
     "fn_list_resource_permissions",
     {
@@ -57,6 +59,7 @@ export async function grantSitePermission(input: {
   expiresAt?: string | null;
 }): Promise<SitePermissionGrant> {
   const supabase = createClient();
+  await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await iamDb(supabase).rpc(
     "fn_grant_resource_permission",
     {
@@ -78,6 +81,7 @@ export async function revokeSitePermission(input: {
   granteeType: SiteGrantTarget;
 }): Promise<boolean> {
   const supabase = createClient();
+  await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await iamDb(supabase).rpc(
     "fn_revoke_resource_permission",
     {

@@ -20,7 +20,7 @@ import type {
   PriorityQueueRow,
 } from "@/features/marketing/data/analysis-types";
 import { supabase } from "@/utils/supabase/client";
-import { webDb } from "@/utils/supabase/webDb";
+import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
 const FINDING_STATUS = new Set([
   "open",
@@ -52,7 +52,9 @@ async function loadPageReferences(
   );
   if (ids.length === 0) return new Map();
 
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("page")
     .select("id, path, url")
     .eq("site_id", siteId)
@@ -67,7 +69,9 @@ async function loadAnalysisItem(
   itemId: string,
   signal: AbortSignal,
 ): Promise<AnalysisItemReference | null> {
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("analysis_item")
     .select(
       "id, key, label, description, category, subcategory, weight, score_contract, severity_map",
@@ -92,7 +96,9 @@ async function loadReferencedResults(
   );
   if (ids.length === 0) return new Map();
 
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("analysis_result")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, provider_id, provider_version, run_id, batch_id, computed_at, status, score, severity, issue_count, confidence, payload_instance_id",
@@ -124,7 +130,7 @@ export async function listSitePriorityQueue(
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "priority";
   const ascending = state.sort?.direction === "asc";
 
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("v_priority_queue")
     .select(
       "site_id, page_id, item_id, item_key, category, subcategory, severity, priority",
@@ -207,7 +213,7 @@ export async function listSiteFindings(
     "last_detected_at";
   const ascending = state.sort?.direction === "asc";
 
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("finding")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, severity, status, suppressed, suppressed_reason, first_result_id, last_result_id, first_detected_at, last_detected_at, resolved_at",
@@ -282,7 +288,9 @@ export async function getFindingDetail(
   signal?: AbortSignal,
 ): Promise<FindingDetailData> {
   const abortSignal = signal ?? new AbortController().signal;
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("finding")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, severity, status, suppressed, suppressed_reason, first_result_id, last_result_id, first_detected_at, last_detected_at, resolved_at",
@@ -337,7 +345,7 @@ export async function listFindingResults(
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "computed_at";
   const ascending = state.sort?.direction === "asc";
 
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("analysis_result")
     .select(
       "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, provider_id, provider_version, run_id, batch_id, computed_at, status, score, severity, issue_count, confidence, payload_instance_id",

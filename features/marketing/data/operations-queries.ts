@@ -9,7 +9,7 @@ import type {
   WorkspaceCostRow,
 } from "@/features/marketing/data/operations-types";
 import { supabase } from "@/utils/supabase/client";
-import { webDb } from "@/utils/supabase/webDb";
+import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
 const BATCH_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, provider_id, kind, status, external_ref, submitted_at, completed_at, counts, error, provider:provider(label, key, kind), site:site(name, domain, organization_id)";
@@ -76,15 +76,13 @@ export async function listBatches(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "created_at";
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("batch_job")
     .select(BATCH_SELECT, { count: "exact" })
     .is("deleted_at", null);
   const search = cleanSearch(state.search);
   if (search) {
-    query = query.or(
-      `external_ref.ilike.%${search}%,error.ilike.%${search}%`,
-    );
+    query = query.or(`external_ref.ilike.%${search}%,error.ilike.%${search}%`);
   }
   const status = selectFilter(state, "status");
   const kind = selectFilter(state, "kind");
@@ -108,7 +106,9 @@ export async function getBatch(
   batchId: string,
   signal?: AbortSignal,
 ): Promise<OperationsBatchRow> {
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("batch_job")
     .select(BATCH_SELECT)
     .eq("id", batchId)
@@ -137,7 +137,8 @@ export async function listBatchItems(
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "created_at";
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  const db = await authenticatedWebDb(supabase);
+  let query = db
     .from("batch_item")
     .select(BATCH_ITEM_SELECT, { count: "exact" })
     .eq("site_id", siteId)
@@ -145,9 +146,7 @@ export async function listBatchItems(
     .is("deleted_at", null);
   const search = cleanSearch(state.search);
   if (search) {
-    query = query.or(
-      `external_ref.ilike.%${search}%,error.ilike.%${search}%`,
-    );
+    query = query.or(`external_ref.ilike.%${search}%,error.ilike.%${search}%`);
   }
   const status = selectFilter(state, "status");
   const subjectType = selectFilter(state, "subject_type");
@@ -161,7 +160,7 @@ export async function listBatchItems(
   const response = await query.range(from, to).abortSignal(abortSignal);
   const items = assertData(response.data, response.error);
   if (items.length === 0) return { rows: [], total: response.count ?? 0 };
-  const costResponse = await webDb(supabase)
+  const costResponse = await db
     .from("v_cost_by_item")
     .select("batch_item_id, cost")
     .eq("site_id", siteId)
@@ -196,7 +195,7 @@ async function listSitePageCosts(
 ): Promise<OperationsPagedResult<SiteCostRow>> {
   const { from, to } = rangeFor(state);
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("v_cost_by_page")
     .select("site_id, page_id, cost, page:page(url)", { count: "exact" })
     .eq("site_id", siteId);
@@ -231,7 +230,7 @@ async function listSiteRunCosts(
 ): Promise<OperationsPagedResult<SiteCostRow>> {
   const { from, to } = rangeFor(state);
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("v_cost_by_run")
     .select("site_id, run_id, cost", { count: "exact" })
     .eq("site_id", siteId);
@@ -266,12 +265,11 @@ async function listSiteItemCosts(
 ): Promise<OperationsPagedResult<SiteCostRow>> {
   const { from, to } = rangeFor(state);
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("v_cost_by_item")
-    .select(
-      "site_id, batch_id, batch_item_id, page_id, run_id, cost",
-      { count: "exact" },
-    )
+    .select("site_id, batch_id, batch_item_id, page_id, run_id, cost", {
+      count: "exact",
+    })
     .eq("site_id", siteId);
   const cost = numberFilter(state, "cost");
   if (cost?.min !== undefined) query = query.gte("cost", cost.min);
@@ -314,7 +312,9 @@ export async function getSiteCostTotal(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<number> {
-  const response = await webDb(supabase)
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("v_cost_by_site")
     .select("cost")
     .eq("site_id", siteId)
@@ -330,12 +330,11 @@ async function listWorkspaceSiteCosts(
 ): Promise<OperationsPagedResult<WorkspaceCostRow>> {
   const { from, to } = rangeFor(state);
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("v_cost_by_site")
-    .select(
-      "site_id, cost, site:site(name, domain, organization_id)",
-      { count: "exact" },
-    );
+    .select("site_id, cost, site:site(name, domain, organization_id)", {
+      count: "exact",
+    });
   const cost = numberFilter(state, "cost");
   if (cost?.min !== undefined) query = query.gte("cost", cost.min);
   if (cost?.max !== undefined) query = query.lte("cost", cost.max);
@@ -365,7 +364,7 @@ async function listWorkspaceClientCosts(
 ): Promise<OperationsPagedResult<WorkspaceCostRow>> {
   const { from, to } = rangeFor(state);
   const ascending = state.sort?.direction === "asc";
-  let query = webDb(supabase)
+  let query = (await authenticatedWebDb(supabase))
     .from("v_cost_by_client")
     .select("client_org_id, cost", { count: "exact" });
   const cost = numberFilter(state, "cost");
