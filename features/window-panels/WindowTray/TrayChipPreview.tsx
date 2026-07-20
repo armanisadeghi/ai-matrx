@@ -25,7 +25,11 @@ import { selectOverlayData } from "@/lib/redux/slices/overlaySlice";
 import { getTraySnapshot, subscribeTraySnapshotMap } from "./traySnapshotMap";
 
 interface TrayChipPreviewProps {
-  windowId: string;
+  /** Static registry key, normally the overlay id. */
+  registryKey: string;
+  /** Unique runtime window id used for the local snapshot cache. */
+  snapshotKey: string;
+  overlayInstanceId?: string;
   title: string;
 }
 
@@ -42,14 +46,16 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export const TrayChipPreview = memo(function TrayChipPreview({
-  windowId,
+  registryKey,
+  snapshotKey,
+  overlayInstanceId = DEFAULT_INSTANCE_ID,
   title,
 }: TrayChipPreviewProps) {
   // Static metadata for label fallback. Tray-preview callbacks live in a
   // SEPARATE registry (`trayPreviewRegistry`) so the chip render path doesn't
   // pull in the dynamic-import graph that used to hang off `windowRegistry`.
-  const staticEntry = getStaticEntryByOverlayId(windowId);
-  const trayPreview = getTrayPreviewEntry(windowId);
+  const staticEntry = getStaticEntryByOverlayId(registryKey);
+  const trayPreview = getTrayPreviewEntry(registryKey);
 
   // Pull the persisted overlay data so renderTrayPreview can read window-
   // specific state (last note title, file name, message preview, etc.).
@@ -58,7 +64,7 @@ export const TrayChipPreview = memo(function TrayChipPreview({
       ? selectOverlayData(
           state as Parameters<typeof selectOverlayData>[0],
           staticEntry.overlayId,
-          DEFAULT_INSTANCE_ID,
+          overlayInstanceId,
         )
       : null,
   );
@@ -68,7 +74,7 @@ export const TrayChipPreview = memo(function TrayChipPreview({
     const ctx: TrayPreviewContext = {
       data: isPlainRecord(overlayData) ? overlayData : {},
       overlayId: staticEntry.overlayId,
-      instanceId: DEFAULT_INSTANCE_ID,
+      instanceId: overlayInstanceId,
       title,
     };
     try {
@@ -83,7 +89,7 @@ export const TrayChipPreview = memo(function TrayChipPreview({
       if (process.env.NODE_ENV !== "production") {
         // eslint-disable-next-line no-console
         console.warn(
-          `[TrayChipPreview] renderTrayPreview threw for "${windowId}":`,
+          `[TrayChipPreview] renderTrayPreview threw for "${registryKey}":`,
           err,
         );
       }
@@ -92,7 +98,7 @@ export const TrayChipPreview = memo(function TrayChipPreview({
 
   // ── 2. Snapshot mode ─────────────────────────────────────────────────────
   if (trayPreview?.captureTraySnapshot) {
-    return <TraySnapshotImage windowId={windowId} title={title} />;
+    return <TraySnapshotImage snapshotKey={snapshotKey} title={title} />;
   }
 
   // ── 3. Default — muted label + subtle hint ───────────────────────────────
@@ -118,14 +124,14 @@ const DefaultTrayChipBody = memo(function DefaultTrayChipBody({
 // ─── Snapshot image ───────────────────────────────────────────────────────────
 
 const TraySnapshotImage = memo(function TraySnapshotImage({
-  windowId,
+  snapshotKey,
   title,
 }: {
-  windowId: string;
+  snapshotKey: string;
   title: string;
 }) {
   const [snapshot, setSnapshot] = useState<string | null>(() =>
-    getTraySnapshot(windowId),
+    getTraySnapshot(snapshotKey),
   );
 
   // Subscribe to snapshot map changes — the snapshot is captured asynchronously
@@ -133,10 +139,10 @@ const TraySnapshotImage = memo(function TraySnapshotImage({
   // ready. The observer pattern lets us update without polling.
   useEffect(() => {
     const unsubscribe = subscribeTraySnapshotMap(() => {
-      setSnapshot(getTraySnapshot(windowId));
+      setSnapshot(getTraySnapshot(snapshotKey));
     });
     return unsubscribe;
-  }, [windowId]);
+  }, [snapshotKey]);
 
   if (!snapshot) {
     // Snapshot not yet captured (or failed) — show a quiet fallback rather
@@ -152,7 +158,7 @@ const TraySnapshotImage = memo(function TraySnapshotImage({
 
   return (
     <div className="flex-1 overflow-hidden bg-muted/30 relative">
-      {/* eslint-disable-next-line @next/next/no-img-element -- data URL, not a remote asset */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- local ephemeral object URL */}
       <img
         src={snapshot}
         alt=""

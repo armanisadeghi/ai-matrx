@@ -61,15 +61,35 @@ fi
 
 echo ""
 echo -e "${BOLD}  Release quality gates${NC}"
-echo -e "  ${DIM}${#GATES[@]} checks — typically 30–45s${NC}"
+echo -e "  ${DIM}${#GATES[@]} checks — live schema checks may take several minutes${NC}"
 if $STRICT; then
-    echo -e "  ${RED}Mode: strict (blocks on failure)${NC}"
+    echo -e "  ${CYAN}Mode: strict (blocks on failure)${NC}"
 else
-    echo -e "  ${YELLOW}Mode: advisory (loud only — never blocks ship/push)${NC}"
+    echo -e "  ${CYAN}Mode: advisory (reports findings; never blocks ship/push)${NC}"
 fi
 echo ""
 
 _spinner_frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+
+print_gate_details() {
+    local output_file="$1"
+
+    echo -e "      ${DIM}Details from this check:${NC}"
+    awk '
+        NF { last_nonblank = NR }
+        { lines[NR] = $0 }
+        END {
+            first_nonblank = 1
+            while (first_nonblank <= last_nonblank && lines[first_nonblank] ~ /^[[:space:]]*$/) {
+                first_nonblank++
+            }
+            for (line = first_nonblank; line <= last_nonblank; line++) {
+                print "        " lines[line]
+            }
+        }
+    ' "$output_file"
+    echo ""
+}
 
 run_gate() {
     local step="$1"
@@ -106,7 +126,7 @@ run_gate() {
 
     if [[ $exit_code -ne 0 ]]; then
         echo -e "${RED}[FAIL]${NC}  [$step/$total] ${label} (${elapsed}s)"
-        $has_output && cat "$tmp"
+        $has_output && print_gate_details "$tmp"
         rm -f "$tmp"
         return 1
     fi
@@ -115,13 +135,13 @@ run_gate() {
     # while exiting 0. Treat that as a loud advisory failure for the summary.
     if $has_output && grep -qE 'SCHEMA TRUTH-CHECK|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
-        cat "$tmp"
+        print_gate_details "$tmp"
         rm -f "$tmp"
         return 2
     fi
 
     echo -e "${GREEN}[OK]${NC}    [$step/$total] ${label} (${elapsed}s)"
-    $has_output && cat "$tmp"
+    $has_output && print_gate_details "$tmp"
     rm -f "$tmp"
     return 0
 }

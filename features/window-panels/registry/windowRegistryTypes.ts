@@ -163,5 +163,5 @@ export interface WindowRegistryEntry extends WindowStaticMetadata {
   /**
    * Optional snapshot capture function for the tray chip.
    */
-  captureTraySnapshot?: (bodyEl: HTMLElement) => Promise<string | null>;
+  captureTraySnapshot?: (bodyEl: HTMLElement) => Promise<Blob | null>;
 }

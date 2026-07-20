@@ -12,6 +12,11 @@ import {
   clampRectToViewport,
 } from "@/features/window-panels/utils/rectClamp";
 import type { DockWindowPayload } from "@/features/window-panels/popout/dockWindowPayload";
+import {
+  TRAY_CHIP_H_DESKTOP,
+  TRAY_CHIP_W_DESKTOP,
+  traySlotRect,
+} from "@/features/window-panels/constants/tray";
 // WindowRect lives in the shared types file so that windowArrangements.ts
 // (a feature utility) can import it without pulling in this Redux slice,
 // which would create a cycle. Re-exported here for backward compatibility.
@@ -46,7 +51,7 @@ export interface WindowEntry {
   preMinimizedRect: WindowRect | null;
   /** z-index order — higher = on top */
   zIndex: number;
-  /** Order in the minimized tray (0-based, kept for compat but unused in chip-less mode) */
+  /** Order in the minimized tray (0-based). */
   traySlot: number | null;
   /**
    * Pop-out mode. `null` while docked. When set, the window is rendered into
@@ -98,47 +103,8 @@ export interface WindowManagerState {
 //  Row 0 starts at the bottom-right. Once a row is full, row 1 opens directly
 //  above it (separated by GAP_Y). Rows keep growing upward as needed.
 
-export const TRAY_CHIP_W = 270; // px — minimized chip width
-export const TRAY_CHIP_H = 100; // px — minimized chip height
-export const TRAY_GAP_X = 8; // px — horizontal gap between chips
-export const TRAY_GAP_Y = 8; // px — vertical gap between rows
-export const TRAY_MARGIN_R = 20; // px — gap from right viewport edge
-export const TRAY_MARGIN_B = 20; // px — gap from bottom viewport edge
-export const TRAY_MARGIN_L = 8; // px — left boundary: don't go further left
-
-// Chips per row given a viewport width
-export function trayChipsPerRow(viewportWidth: number): number {
-  const usable = viewportWidth - TRAY_MARGIN_R - TRAY_MARGIN_L;
-  return Math.max(
-    1,
-    Math.floor((usable + TRAY_GAP_X) / (TRAY_CHIP_W + TRAY_GAP_X)),
-  );
-}
-
-// Compute (x, y) for a given tray slot index and viewport dimensions
-export function traySlotRect(
-  slot: number,
-  viewportWidth: number,
-  viewportHeight: number,
-): { x: number; y: number; width: number; height: number } {
-  const perRow = trayChipsPerRow(viewportWidth);
-  const col = slot % perRow; // 0 = rightmost
-  const row = Math.floor(slot / perRow); // 0 = bottom row
-
-  const x =
-    viewportWidth -
-    TRAY_MARGIN_R -
-    TRAY_CHIP_W -
-    col * (TRAY_CHIP_W + TRAY_GAP_X);
-
-  const y =
-    viewportHeight -
-    TRAY_MARGIN_B -
-    TRAY_CHIP_H -
-    row * (TRAY_CHIP_H + TRAY_GAP_Y);
-
-  return { x, y, width: TRAY_CHIP_W, height: TRAY_CHIP_H };
-}
+export const TRAY_CHIP_W = TRAY_CHIP_W_DESKTOP;
+export const TRAY_CHIP_H = TRAY_CHIP_H_DESKTOP;
 
 // ─── Base constants ───────────────────────────────────────────────────────────
 
@@ -155,6 +121,33 @@ const initialState: WindowManagerState = {
   activePipWindowId: null,
   popoutCandidateId: null,
 };
+
+/**
+ * Free a minimized slot and close the visual gap in the same reducer update.
+ * Rectangles are mapped by their old slot so compaction does not need viewport
+ * dimensions and cannot leave renumbered cards at stale coordinates.
+ */
+function releaseTraySlot(state: WindowManagerState, win: WindowEntry): void {
+  const freedSlot = win.traySlot;
+  if (freedSlot === null) return;
+
+  const rectBySlot = new Map<number, WindowRect>();
+  Object.values(state.windows).forEach((entry) => {
+    if (entry.traySlot !== null) {
+      rectBySlot.set(entry.traySlot, { ...entry.windowed });
+    }
+  });
+
+  win.traySlot = null;
+  state.trayCount = Math.max(0, state.trayCount - 1);
+  Object.values(state.windows).forEach((entry) => {
+    if (entry.traySlot === null || entry.traySlot <= freedSlot) return;
+    const nextSlot = entry.traySlot - 1;
+    entry.traySlot = nextSlot;
+    const nextRect = rectBySlot.get(nextSlot);
+    if (nextRect) entry.windowed = nextRect;
+  });
+}
 
 // ─── Slice ────────────────────────────────────────────────────────────────────
 
@@ -203,17 +196,7 @@ const windowManagerSlice = createSlice({
     unregisterWindow(state, action: PayloadAction<string>) {
       const win = state.windows[action.payload];
       if (!win) return;
-      // Free tray slot
-      const freedTraySlot = win.traySlot;
-      if (freedTraySlot !== null) {
-        state.trayCount = Math.max(0, state.trayCount - 1);
-        // Compact remaining tray slots
-        Object.values(state.windows).forEach((w) => {
-          if (w.traySlot !== null && w.traySlot > freedTraySlot) {
-            w.traySlot -= 1;
-          }
-        });
-      }
+      releaseTraySlot(state, win);
       // Free the PiP slot if this window held it
       if (state.activePipWindowId === action.payload) {
         state.activePipWindowId = null;
@@ -243,16 +226,7 @@ const windowManagerSlice = createSlice({
     restoreWindow(state, action: PayloadAction<string>) {
       const win = state.windows[action.payload];
       if (!win) return;
-      const restoredTraySlot = win.traySlot;
-      if (restoredTraySlot !== null) {
-        state.trayCount = Math.max(0, state.trayCount - 1);
-        Object.values(state.windows).forEach((w) => {
-          if (w.traySlot !== null && w.traySlot > restoredTraySlot) {
-            w.traySlot -= 1;
-          }
-        });
-        win.traySlot = null;
-      }
+      releaseTraySlot(state, win);
       // Recover the rect we had before minimizing (if any)
       if (win.preMinimizedRect) {
         win.windowed = win.preMinimizedRect;
@@ -294,16 +268,7 @@ const windowManagerSlice = createSlice({
       if (!win) return;
       if (state.windowsHidden) state.windowsHidden = false;
       if (win.popoutMode !== null) return; // OS frame owns popout visibility
-      const revealedTraySlot = win.traySlot;
-      if (revealedTraySlot !== null) {
-        state.trayCount = Math.max(0, state.trayCount - 1);
-        Object.values(state.windows).forEach((w) => {
-          if (w.traySlot !== null && w.traySlot > revealedTraySlot) {
-            w.traySlot -= 1;
-          }
-        });
-        win.traySlot = null;
-      }
+      releaseTraySlot(state, win);
       if (win.state === "minimized") {
         if (win.preMinimizedRect) {
           win.windowed = win.preMinimizedRect;
@@ -324,16 +289,7 @@ const windowManagerSlice = createSlice({
     maximizeWindow(state, action: PayloadAction<string>) {
       const win = state.windows[action.payload];
       if (!win) return;
-      const maximizedTraySlot = win.traySlot;
-      if (maximizedTraySlot !== null) {
-        state.trayCount = Math.max(0, state.trayCount - 1);
-        Object.values(state.windows).forEach((w) => {
-          if (w.traySlot !== null && w.traySlot > maximizedTraySlot) {
-            w.traySlot -= 1;
-          }
-        });
-        win.traySlot = null;
-      }
+      releaseTraySlot(state, win);
       win.state = "maximized";
       win.zIndex = state.nextZIndex++;
     },
@@ -561,24 +517,40 @@ const windowManagerSlice = createSlice({
       const win = state.windows[id];
       if (!win || win.traySlot === null) return;
       const fromSlot = win.traySlot;
+      const boundedSlot = Math.min(
+        Math.max(0, Math.floor(toSlot)),
+        Math.max(0, state.trayCount - 1),
+      );
+      if (fromSlot === boundedSlot) return;
+      const rectBySlot = new Map<number, WindowRect>();
+      Object.values(state.windows).forEach((entry) => {
+        if (entry.traySlot !== null) {
+          rectBySlot.set(entry.traySlot, { ...entry.windowed });
+        }
+      });
       // Shift other windows
       Object.values(state.windows).forEach((w) => {
         if (w.id === id || w.traySlot === null) return;
         if (
-          fromSlot < toSlot &&
+          fromSlot < boundedSlot &&
           w.traySlot > fromSlot &&
-          w.traySlot <= toSlot
+          w.traySlot <= boundedSlot
         ) {
           w.traySlot -= 1;
         } else if (
-          fromSlot > toSlot &&
-          w.traySlot >= toSlot &&
+          fromSlot > boundedSlot &&
+          w.traySlot >= boundedSlot &&
           w.traySlot < fromSlot
         ) {
           w.traySlot += 1;
         }
       });
-      win.traySlot = toSlot;
+      win.traySlot = boundedSlot;
+      Object.values(state.windows).forEach((entry) => {
+        if (entry.traySlot === null) return;
+        const nextRect = rectBySlot.get(entry.traySlot);
+        if (nextRect) entry.windowed = nextRect;
+      });
     },
 
     /**
@@ -616,15 +588,7 @@ const windowManagerSlice = createSlice({
       // Free the tray slot if the window was minimized — the popout is no
       // longer part of the parent tray model.
       if (win.traySlot !== null) {
-        const fromSlot = win.traySlot;
-        state.trayCount = Math.max(0, state.trayCount - 1);
-        Object.values(state.windows).forEach((w) => {
-          if (w.id === id) return;
-          if (w.traySlot !== null && w.traySlot > fromSlot) {
-            w.traySlot -= 1;
-          }
-        });
-        win.traySlot = null;
+        releaseTraySlot(state, win);
         // Pop minimized windows back to the windowed state so dock-back has a
         // sensible target. Use preMinimizedRect if available.
         if (win.preMinimizedRect) {

@@ -117,7 +117,7 @@ function loadBaseline(): string[] {
 }
 
 const RED = "\x1b[31m";
-const YELLOW = "\x1b[33m";
+const CYAN = "\x1b[36m";
 const GREEN = "\x1b[32m";
 const BOLD = "\x1b[1m";
 const RESET = "\x1b[0m";
@@ -152,7 +152,7 @@ function run(): number {
     );
     for (const f of converted) console.log(`  ${GREEN}✓ ${f}${RESET}`);
     console.log(
-      `${YELLOW}  Run \`pnpm check:api-contracts:accept\` to ratchet the baseline down.${RESET}`,
+      `${CYAN}  Next: run \`pnpm check:api-contracts:accept\` to record this reduction in the baseline.${RESET}`,
     );
   }
 

@@ -178,6 +178,7 @@ The previous parallel object-store path is fully removed. Compatibility readers,
 
 ## Change log
 
+- **2026-07-20 — Ephemeral object URLs promoted to a shared browser primitive.** The bounded create/revoke registry moved from handler internals to `lib/media/object-url-registry.ts` so the file normalizer and local-only UI thumbnails share one leak-resistant object-URL lifecycle without importing private handler paths.
 - **2026-07-18 — Contextual files cannot leak into nested-folder discovery.**
   `loadFolderContents` no longer enumerates raw file/folder tables; nested and
   root loads both refresh through the discoverability-gated user-tree RPC.

@@ -18,7 +18,7 @@
  *  - **Tone is the signal.** `tone` tints the icon using the same colour
  *    language as `lib/diagnostics/errorTiers.ts` so severity reads identically
  *    everywhere (blue → yellow → amber → red).
- *  - **Limit what's shown.** A minimized chip is ~270×100; it must stay
+ *  - **Limit what's shown.** A minimized card is 240×160; it must stay
  *    glanceable. One icon, one number, an optional caption, and a tiny
  *    breakdown — no more. Breakdown segments render only when more than one is
  *    non-zero (a single tone is already carried by the icon colour + count).
@@ -114,7 +114,7 @@ export function TrayStatusChip({
 
   // Scale matches the sibling `ErrorInspectorBadge` (h-3.5 icon / text-xs count
   // / text-[10px] detail) — the same tray text scale as every other preview.
-  // Never bump these: a minimized chip is ~270px wide and must stay glanceable.
+  // Never bump these: a minimized card is 240px wide and must stay glanceable.
   return (
     <div className="flex h-full items-center gap-1.5 overflow-hidden">
       <Icon

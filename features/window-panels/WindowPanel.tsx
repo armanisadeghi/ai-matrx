@@ -96,6 +96,7 @@ import {
   clearTraySnapshot,
 } from "./WindowTray/traySnapshotMap";
 import { MinimizedWindowContent } from "./WindowTray/MinimizedWindowContent";
+import { getTrayPreviewEntry } from "./registry/trayPreviewRegistry";
 
 // ─── Resize handle descriptors ───────────────────────────────────────────────
 
@@ -158,11 +159,13 @@ function WindowPanelBodyShell({
   bodyRef,
   fitContent,
   bodyClassName,
+  captureDimensions,
   children,
 }: {
   bodyRef: React.RefObject<HTMLDivElement | null>;
   fitContent?: boolean;
   bodyClassName?: string;
+  captureDimensions?: { width: number; height: number } | null;
   children: React.ReactNode;
 }) {
   return (
@@ -171,7 +174,9 @@ function WindowPanelBodyShell({
       className={cn(
         "relative z-0 min-h-0 flex-1 overflow-hidden p-1.5 pointer-events-none",
         fitContent && "overflow-visible",
+        captureDimensions && "fixed -left-[100000px] top-0 z-[-1] flex",
       )}
+      style={captureDimensions ?? undefined}
     >
       <div
         className={cn(
@@ -291,11 +296,13 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
   onHeavySnapshot?: () => Promise<Record<string, unknown>>;
   /**
    * Optional snapshot capture function for the minimized tray chip.
-   * When provided, WindowPanel calls this just before minimizing and stores
-   * the resulting data URL so the tray chip can show a thumbnail.
+   * WindowPanel invokes it after minimizing against a briefly retained,
+   * offscreen body and stores the resulting Blob in a bounded local cache.
    * Pass this from the window component if it implements custom capture logic.
    */
-  captureTraySnapshot?: (bodyEl: HTMLElement) => Promise<string | null>;
+  captureTraySnapshot?: (bodyEl: HTMLElement) => Promise<Blob | null>;
+  /** Overlay instance used by semantic minimized previews. Defaults to `default`. */
+  overlayInstanceId?: string;
 }
 
 /**
@@ -385,6 +392,7 @@ export function WindowPanel({
   onSessionSaved,
   onHeavySnapshot,
   captureTraySnapshot,
+  overlayInstanceId,
   hidePopOutButton = false,
   ...hookOpts
 }: WindowPanelProps) {
@@ -403,6 +411,7 @@ export function WindowPanel({
   //    derived the same way useWindowPanel does internally (`opts.id ?? useId()`).
   const reactId = useId();
   const id = hookOpts.id ?? reactId;
+  const trayRegistryKey = overlayId ?? id;
   const isMobile = useIsMobile();
 
   const popoutCapabilityRef = useRef<PopoutCapability | null>(null);
@@ -831,41 +840,86 @@ export function WindowPanel({
     dispatch(dockWindow(buildDockWindowPayload(id)));
   }, [dispatch, id]);
 
-  // ── Tray snapshot capture (Pass 3 / Mode D) ──────────────────────────────
-  // When a window is about to be minimized, capture a thumbnail of the body
-  // via the registry's `captureTraySnapshot` callback (if provided). The
-  // capture must happen BEFORE the minimize dispatch, while the body is
-  // still rendered at full size.
-  //
-  // Snapshot is stored in a module-level map (`traySnapshotMap`) which the
-  // tray chip subscribes to. Cleared on restore + on unmount so a future
-  // minimize captures fresh state.
+  // ── Minimized thumbnail lifecycle ───────────────────────────────────────
+  // Minimize dispatches immediately. The full body stays mounted offscreen
+  // only long enough for one low-resolution local capture, then unmounts.
+  // No network, persistent storage, polling, or full-size image is involved.
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const captureGenerationRef = useRef(0);
+  const effectiveTrayCapture =
+    captureTraySnapshot ??
+    getTrayPreviewEntry(trayRegistryKey).captureTraySnapshot;
+  const [pendingTrayCapture, setPendingTrayCapture] = useState<{
+    capture: (bodyEl: HTMLElement) => Promise<Blob | null>;
+    width: number;
+    height: number;
+    generation: number;
+  } | null>(null);
 
   const handleMinimize = useCallback(() => {
-    // Fire-and-forget the snapshot capture — don't block the minimize. The
-    // chip shows a fallback (italic title) while waiting for the data URL.
     const bodyEl = bodyRef.current;
-    if (captureTraySnapshot && bodyEl) {
-      void captureTraySnapshot(bodyEl)
-        .then((dataUrl) => {
-          if (dataUrl) setTraySnapshot(id, dataUrl);
-        })
-        .catch((err) => {
-          if (process.env.NODE_ENV !== "production") {
-            // eslint-disable-next-line no-console
-            console.warn(
-              `[WindowPanel] captureTraySnapshot threw for "${id}":`,
-              err,
-            );
-          }
-        });
+    const generation = ++captureGenerationRef.current;
+    if (effectiveTrayCapture && bodyEl) {
+      const bounds = bodyEl.getBoundingClientRect();
+      setPendingTrayCapture({
+        capture: effectiveTrayCapture,
+        width: Math.max(1, Math.round(bounds.width)),
+        height: Math.max(1, Math.round(bounds.height)),
+        generation,
+      });
+    } else {
+      setPendingTrayCapture(null);
     }
     onMinimize();
-  }, [id, captureTraySnapshot, onMinimize]);
+  }, [effectiveTrayCapture, onMinimize]);
+
+  useEffect(() => {
+    if (windowState !== "minimized" || !pendingTrayCapture) return undefined;
+    const bodyEl = bodyRef.current;
+    if (!bodyEl) {
+      setPendingTrayCapture(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const { capture, generation } = pendingTrayCapture;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<null>((resolve) => {
+      timeoutId = setTimeout(() => resolve(null), 800);
+    });
+    void Promise.race([capture(bodyEl), timeout])
+      .then((blob) => {
+        if (blob && !cancelled && captureGenerationRef.current === generation) {
+          setTraySnapshot(id, blob);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled && process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[WindowPanel] captureTraySnapshot threw for "${id}":`,
+            err,
+          );
+        }
+      })
+      .finally(() => {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (!cancelled && captureGenerationRef.current === generation) {
+          setPendingTrayCapture((current) =>
+            current?.generation === generation ? null : current,
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [id, pendingTrayCapture, windowState]);
 
   const handleRestoreClearingSnapshot = useCallback(() => {
-    // Clear snapshot so the next minimize captures fresh state.
+    captureGenerationRef.current += 1;
+    setPendingTrayCapture(null);
     clearTraySnapshot(id);
     onRestore();
   }, [id, onRestore]);
@@ -873,9 +927,28 @@ export function WindowPanel({
   // Clear any lingering snapshot on unmount.
   useEffect(() => {
     return () => {
+      captureGenerationRef.current += 1;
       clearTraySnapshot(id);
     };
   }, [id]);
+
+  // External exits (reveal, maximize, pop-out) do not pass through the
+  // click-to-restore handler. Invalidate their pending capture and local image
+  // too, so every way out of minimized state has the same cleanup contract.
+  const previousTrayStateRef = useRef(windowState);
+  useEffect(() => {
+    const wasMinimized = previousTrayStateRef.current === "minimized";
+    previousTrayStateRef.current = windowState;
+    if (!wasMinimized || windowState === "minimized") return;
+
+    const invalidGeneration = ++captureGenerationRef.current;
+    clearTraySnapshot(id);
+    queueMicrotask(() => {
+      setPendingTrayCapture((current) =>
+        current && current.generation < invalidGeneration ? null : current,
+      );
+    });
+  }, [id, windowState]);
 
   // ── Off-screen rescue ────────────────────────────────────────────────────
   // If the windowed rect is fully out of reach (drag-released outside the
@@ -905,11 +978,16 @@ export function WindowPanel({
   const isMinimized = windowState === "minimized";
   const isMaximized = windowState === "maximized";
   const isPopoutCandidate = popoutCandidateId === id;
+  const minimizedTitle =
+    title?.trim() ||
+    getStaticEntryByOverlayId(trayRegistryKey)?.label ||
+    "Window";
 
   // ── Header (shared across all states) ───────────────────────────────────
   const header = (
     <WindowHeader
       title={titleNode ?? title}
+      minimizedTitle={minimizedTitle}
       actionsLeft={actionsLeft}
       actionsRight={resolvedActionsRight}
       onDragStart={onDragStart}
@@ -1211,9 +1289,9 @@ export function WindowPanel({
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  // WINDOWED + MINIMIZED — same shell, minimized just has a tiny rect from
-  // Redux (set by minimizeWindow) so no body content is visible.
-  // The body is still rendered (keeps state alive) but clipped by overflow.
+  // WINDOWED + MINIMIZED — same shell, with the minimized rect supplied by
+  // Redux. The full body unmounts after the one-shot offscreen capture; the
+  // lightweight semantic/snapshot preview occupies the remaining card body.
   // ────────────────────────────────────────────────────────────────────────
   const el = (
     <div
@@ -1274,11 +1352,19 @@ export function WindowPanel({
         {/* Debug strip — shown in the body when open, or in the minimized shell */}
         {isDebugMode && <DebugStrip rect={rect} zIndex={zIndex} />}
 
-        {!isMinimized && (
+        {(!isMinimized || pendingTrayCapture) && (
           <WindowPanelBodyShell
             bodyRef={bodyRef}
             fitContent={fitContent}
             bodyClassName={bodyClassName}
+            captureDimensions={
+              isMinimized && pendingTrayCapture
+                ? {
+                    width: pendingTrayCapture.width,
+                    height: pendingTrayCapture.height,
+                  }
+                : null
+            }
           >
             {bodyContent}
           </WindowPanelBodyShell>
@@ -1288,8 +1374,10 @@ export function WindowPanel({
             (registry custom / snapshot / default). Click anywhere to restore. */}
         {isMinimized && (
           <MinimizedWindowContent
-            windowId={overlayId ?? id}
-            title={typeof title === "string" ? title : undefined}
+            registryKey={trayRegistryKey}
+            snapshotKey={id}
+            overlayInstanceId={overlayInstanceId}
+            title={minimizedTitle}
             onRestore={handleRestoreClearingSnapshot}
           />
         )}
@@ -1333,6 +1421,7 @@ function PopOutHeaderButton({ onClick }: { onClick: () => void }) {
 
 interface WindowHeaderProps {
   title?: React.ReactNode;
+  minimizedTitle: string;
   actionsLeft?: React.ReactNode;
   actionsRight?: React.ReactNode;
   onDragStart: (e: React.PointerEvent) => void;
@@ -1362,6 +1451,7 @@ interface WindowHeaderProps {
 
 function WindowHeader({
   title,
+  minimizedTitle,
   actionsLeft,
   actionsRight,
   onDragStart,
@@ -1389,8 +1479,9 @@ function WindowHeader({
         "relative flex items-center justify-between gap-1 px-2 py-1.5 min-h-[26px] z-20 shrink-0",
         "border-b border-border/50 bg-muted/40 select-none",
         isMaximized ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-        isMinimized && "border-b-0",
+        isMinimized && "h-8 min-h-8 py-0 border-b border-border/50",
       )}
+      data-window-panel-state={isMinimized ? "minimized" : undefined}
       style={isMaximized ? undefined : { touchAction: "none" }}
       onPointerDown={isMaximized ? undefined : onDragStart}
     >
@@ -1443,13 +1534,25 @@ function WindowHeader({
         )}
       </div>
 
-      {/* Absolute Centered title — always visible, including when minimized.
-          The outer wrapper keeps pointer-events-none so string titles don't
-          block the draggable header behind them. For interactive title nodes
-          (e.g. a dropdown), we re-enable pointer events on an inner wrapper
-          and stop pointer-down from initiating a window drag. */}
-      <div className="absolute inset-x-0 top-0 bottom-0 flex items-center justify-center pointer-events-none">
-        {typeof title === "string" || title == null ? (
+      {/* Open titles stay centered and may be interactive. Minimized titles use
+          the fixed plain-text branch and can never inherit consumer typography
+          or interaction from a rich titleNode. */}
+      <div
+        className={cn(
+          "absolute top-0 bottom-0 flex items-center pointer-events-none",
+          isMinimized
+            ? "left-20 right-2 justify-start"
+            : "inset-x-0 justify-center",
+        )}
+      >
+        {isMinimized ? (
+          <span
+            className="block min-w-0 truncate text-[11px] leading-none font-semibold text-foreground/80"
+            data-minimized-window-title
+          >
+            {minimizedTitle}
+          </span>
+        ) : typeof title === "string" || title == null ? (
           <span className="text-xs font-medium text-foreground/80 truncate px-16">
             {title ?? ""}
           </span>

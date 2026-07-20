@@ -31,17 +31,20 @@ import {
   selectTrayWindows,
 } from "@/lib/redux/slices/windowManagerSlice";
 
-import { TRAY_GAP_X, TRAY_CHIP_W_DESKTOP } from "./constants/tray";
+import {
+  TRAY_GAP_X,
+  TRAY_CHIP_H_DESKTOP,
+  TRAY_CHIP_W_DESKTOP,
+} from "./constants/tray";
 import { getStaticEntryByOverlayId } from "./registry/windowRegistryMetadata";
 import { renderIcon } from "@/components/official/icons/IconResolver";
 import { TrayChipPreview } from "./WindowTray/TrayChipPreview";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Desktop chip width for rendered tray chips. The slot-placement math in
-// windowManagerSlice uses TRAY_CHIP_W (270) — rendered chip is visually
-// narrower; slot maths account for the difference via TRAY_GAP_X.
-const CHIP_WIDTH = Math.min(210, TRAY_CHIP_W_DESKTOP);
+// Standalone dock chips share the production minimized-card width even though
+// this legacy dock is not currently mounted in production.
+const CHIP_WIDTH = TRAY_CHIP_W_DESKTOP;
 const CHIP_GAP = TRAY_GAP_X;
 const TRAY_BOTTOM = 12;
 const TRAY_RIGHT = 12;
@@ -206,7 +209,12 @@ function TrayChip({ id, title, chipWidth }: TrayChipProps) {
         "hover:bg-accent/60 hover:border-primary/30 transition-colors duration-150",
         "overflow-hidden",
       )}
-      style={{ width: chipWidth, minWidth: chipWidth, touchAction: "none" }}
+      style={{
+        width: chipWidth,
+        minWidth: chipWidth,
+        height: TRAY_CHIP_H_DESKTOP,
+        touchAction: "none",
+      }}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
       title="Click to restore"
@@ -232,7 +240,7 @@ function TrayChip({ id, title, chipWidth }: TrayChipProps) {
       </div>
 
       {/* ── Body row — content varies by registry preview mode ──────────── */}
-      <TrayChipPreview windowId={id} title={title} />
+      <TrayChipPreview registryKey={id} snapshotKey={id} title={title} />
     </div>
   );
 }

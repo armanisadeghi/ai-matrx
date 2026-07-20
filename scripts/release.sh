@@ -69,7 +69,7 @@ info()    { echo -e "${CYAN}[INFO]${NC}  $*"; }
 ok()      { echo -e "${GREEN}[OK]${NC}    $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 fail()    { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
-preview() { echo -e "${YELLOW}[DRY]${NC}   $*"; }
+preview() { echo -e "${CYAN}[DRY]${NC}   $*"; }
 
 # Like fail(), but for failures AFTER the release commit + tag were created.
 # Clears the ERR trap so the generic "nothing was committed" box does not print
@@ -263,11 +263,11 @@ echo ""
 echo -e "${BOLD}  ${PROJECT_NAME} release${NC}"
 echo -e "  ─────────────────────────────────────────────"
 echo -e "  Bump type  : ${CYAN}${BUMP_TYPE}${NC}"
-echo -e "  Old version: ${YELLOW}${CURRENT_VERSION}${NC}"
+echo -e "  Old version: ${CURRENT_VERSION}"
 echo -e "  New version: ${GREEN}${NEW_VERSION}${NC}"
 echo -e "  Tag        : ${GREEN}${NEW_TAG}${NC}"
 echo -e "  Commit msg : ${CYAN}${COMMIT_MSG}${NC}"
-$DRY_RUN && echo -e "  Mode       : ${YELLOW}DRY RUN — nothing will be changed${NC}"
+$DRY_RUN && echo -e "  Mode       : ${CYAN}DRY RUN — nothing will be changed${NC}"
 echo -e "  ─────────────────────────────────────────────"
 echo ""
 
@@ -465,8 +465,8 @@ _monitor_vercel() {
         if [[ "$status" != "$prev_status" ]]; then
             echo ""
             case "$status" in
-                QUEUED)      echo -e "  ${YELLOW}⏳  QUEUED${NC}     — waiting in build queue" ;;
-                INITIALIZING) echo -e "  ${YELLOW}🔧  INITIALIZING${NC} — preparing build environment" ;;
+                QUEUED)      echo -e "  ${CYAN}⏳  QUEUED${NC}     — waiting in build queue" ;;
+                INITIALIZING) echo -e "  ${CYAN}🔧  INITIALIZING${NC} — preparing build environment" ;;
                 BUILDING)    echo -e "  ${CYAN}🔨  BUILDING${NC}   — compiling your app" ;;
                 DEPLOYING)   echo -e "  ${CYAN}🚀  DEPLOYING${NC}  — uploading to edge network" ;;
                 READY)       break ;;

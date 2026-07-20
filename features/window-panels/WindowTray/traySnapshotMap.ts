@@ -1,13 +1,12 @@
 /**
  * traySnapshotMap — module-level registry mapping a window id to a captured
- * data-URL snapshot used in the minimized tray chip.
+ * local object-URL snapshot used in the minimized tray card.
  *
  * Why module-level (not Redux):
  *
- *   - Data URLs can be 50–200 KB. Keeping them out of Redux avoids
- *     cluttering DevTools time-travel with megabytes of base64.
- *   - serializableCheck would warn on every dispatch (technically a string
- *     IS serializable but the volume is wasteful).
+ *   - Image blobs stay out of Redux and never touch cloud/local storage.
+ *   - Object URLs avoid base64 expansion and are revoked on replacement,
+ *     restore, unmount, or bounded-cache eviction.
  *   - Subscribers need re-render on snapshot ready — we expose a tiny
  *     subscribe API for `useSyncExternalStore`-style consumers.
  *
@@ -21,6 +20,12 @@
  *   - On unregister, the snapshot is cleared.
  */
 
+import {
+  createTrackedObjectUrl,
+  revokeTrackedObjectUrl,
+} from "@/lib/media/object-url-registry";
+
+const MAX_SNAPSHOTS = 16;
 const map = new Map<string, string>();
 const listeners = new Set<() => void>();
 
@@ -28,17 +33,29 @@ function notify(): void {
   for (const fn of listeners) fn();
 }
 
-/** Set the snapshot for a given window id. Notifies subscribers. */
-export function setTraySnapshot(id: string, dataUrl: string): void {
-  if (map.get(id) === dataUrl) return;
-  map.set(id, dataUrl);
+/** Store a local snapshot blob for a window and notify subscribers. */
+export function setTraySnapshot(id: string, blob: Blob): void {
+  const previous = map.get(id);
+  if (previous) revokeTrackedObjectUrl(previous);
+  const objectUrl = createTrackedObjectUrl(blob);
+  map.delete(id);
+  map.set(id, objectUrl);
+  while (map.size > MAX_SNAPSHOTS) {
+    const oldestId = map.keys().next().value as string | undefined;
+    if (!oldestId) break;
+    const oldestUrl = map.get(oldestId);
+    map.delete(oldestId);
+    revokeTrackedObjectUrl(oldestUrl);
+  }
   notify();
 }
 
 /** Clear the snapshot for a given window id. */
 export function clearTraySnapshot(id: string): void {
-  if (!map.has(id)) return;
+  const objectUrl = map.get(id);
+  if (!objectUrl) return;
   map.delete(id);
+  revokeTrackedObjectUrl(objectUrl);
   notify();
 }
 

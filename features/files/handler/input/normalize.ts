@@ -12,7 +12,7 @@
 import type { CloudFile } from "@/features/files/types";
 import { classify } from "../utils/classify";
 import { pythonShareUrl } from "../utils/python-base";
-import { createTrackedObjectUrl } from "../utils/object-url-registry";
+import { createTrackedObjectUrl } from "@/lib/media/object-url-registry";
 import {
   EPHEMERAL_CAPS,
   EXTERNAL_CAPS,

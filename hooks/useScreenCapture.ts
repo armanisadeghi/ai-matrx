@@ -39,6 +39,13 @@ export interface ScreenCaptureResult {
   dataUrl: string;
 }
 
+export interface ElementThumbnailOptions {
+  /** Longest output edge in CSS pixels. Defaults to 320. */
+  maxEdge?: number;
+  /** WebP quality from 0–1. Defaults to 0.62. */
+  quality?: number;
+}
+
 // ─── Low-level capture primitives ─────────────────────────────────────────────
 
 /**
@@ -69,6 +76,36 @@ export async function captureTabViaCanvas(
   const blob = await res.blob();
   const filename = opts.filename ?? `screenshot-${Date.now()}.png`;
   return { file: new File([blob], filename, { type: "image/png" }), dataUrl };
+}
+
+/**
+ * Capture a small, display-ready thumbnail of one DOM element.
+ *
+ * The renderer is loaded only when capture is requested. Output is capped at
+ * one CSS pixel per target pixel and encoded as WebP, keeping this suitable
+ * for transient UI previews without uploading or retaining full screenshots.
+ */
+export async function captureElementThumbnail(
+  element: HTMLElement,
+  options: ElementThumbnailOptions = {},
+): Promise<Blob | null> {
+  const sourceWidth = Math.max(1, element.offsetWidth);
+  const sourceHeight = Math.max(1, element.offsetHeight);
+  const maxEdge = Math.max(64, options.maxEdge ?? 320);
+  const scale = Math.min(1, maxEdge / Math.max(sourceWidth, sourceHeight));
+  const canvasWidth = Math.max(1, Math.round(sourceWidth * scale));
+  const canvasHeight = Math.max(1, Math.round(sourceHeight * scale));
+  const htmlToImage = await import("html-to-image");
+  const canvas = await htmlToImage.toCanvas(element, {
+    pixelRatio: 1,
+    canvasWidth,
+    canvasHeight,
+    skipFonts: true,
+  });
+
+  return new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/webp", options.quality ?? 0.62);
+  });
 }
 
 /**

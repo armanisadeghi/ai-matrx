@@ -25,11 +25,16 @@ import {
   smartCodeEditorTrayPreview,
 } from "./tray-previews";
 import type { ReactNode } from "react";
+import { captureElementThumbnail } from "@/hooks/useScreenCapture";
 
 export interface TrayPreviewEntry {
   renderTrayPreview?: (ctx: TrayPreviewContext) => ReactNode;
-  captureTraySnapshot?: (bodyEl: HTMLElement) => Promise<string | null>;
+  captureTraySnapshot?: (bodyEl: HTMLElement) => Promise<Blob | null>;
 }
+
+const DEFAULT_TRAY_PREVIEW: TrayPreviewEntry = {
+  captureTraySnapshot: captureElementThumbnail,
+};
 
 const TRAY_PREVIEW_REGISTRY: Record<string, TrayPreviewEntry> = {
   notesWindow: { renderTrayPreview: notesTrayPreview },
@@ -40,8 +45,6 @@ const TRAY_PREVIEW_REGISTRY: Record<string, TrayPreviewEntry> = {
   errorInspectorWindow: { renderTrayPreview: errorInspectorTrayPreview },
 };
 
-export function getTrayPreviewEntry(
-  overlayId: string,
-): TrayPreviewEntry | undefined {
-  return TRAY_PREVIEW_REGISTRY[overlayId];
+export function getTrayPreviewEntry(overlayId: string): TrayPreviewEntry {
+  return TRAY_PREVIEW_REGISTRY[overlayId] ?? DEFAULT_TRAY_PREVIEW;
 }

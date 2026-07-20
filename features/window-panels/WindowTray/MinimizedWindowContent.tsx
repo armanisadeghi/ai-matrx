@@ -3,8 +3,8 @@
 /**
  * MinimizedWindowContent — the body of a minimized WindowPanel shell.
  *
- * When a window is minimized it shrinks to a ~270×100 card showing only its
- * header; this fills the previously-empty body with the canonical tray preview
+ * When a window is minimized it shrinks to a 240×160 card; this fills the body
+ * below its fixed header with the canonical tray preview
  * (`TrayChipPreview` — custom / snapshot / default, in that order) and makes the
  * whole area click-to-restore. It is the single seam that brings the tray
  * preview registry to the *production* minimized state (the standalone
@@ -21,7 +21,10 @@ import { TrayChipPreview } from "./TrayChipPreview";
 
 interface MinimizedWindowContentProps {
   /** Registry key — `overlayId` for overlay-managed windows, else runtime id. */
-  windowId: string;
+  registryKey: string;
+  /** Unique runtime id for the local screenshot cache. */
+  snapshotKey: string;
+  overlayInstanceId?: string;
   /** Window title; falls back to the registry label when not a plain string. */
   title?: string;
   /** Restore (un-minimize) the window. Wired to a click on the whole body. */
@@ -29,11 +32,13 @@ interface MinimizedWindowContentProps {
 }
 
 export function MinimizedWindowContent({
-  windowId,
+  registryKey,
+  snapshotKey,
+  overlayInstanceId,
   title,
   onRestore,
 }: MinimizedWindowContentProps) {
-  const label = title ?? getStaticEntryByOverlayId(windowId)?.label ?? "";
+  const label = title ?? getStaticEntryByOverlayId(registryKey)?.label ?? "";
 
   return (
     <button
@@ -42,7 +47,12 @@ export function MinimizedWindowContent({
       title="Click to restore"
       className="flex min-h-0 flex-1 flex-col text-left focus:outline-none"
     >
-      <TrayChipPreview windowId={windowId} title={label} />
+      <TrayChipPreview
+        registryKey={registryKey}
+        snapshotKey={snapshotKey}
+        overlayInstanceId={overlayInstanceId}
+        title={label}
+      />
     </button>
   );
 }
