@@ -540,6 +540,18 @@ export const executeInstance = createAsyncThunk<
         payload.tools_replace = injection.tools_replace;
       if (injection.client) payload.client = injection.client;
 
+      // The top-level desktop target only rides when the presence-gated
+      // injection actually declared `desktop-native` (see buildToolInjection):
+      // aidream bridges a bare top-level target back into client.state, which
+      // would re-fabricate the capability and instance-target every delegated
+      // tool call while no desktop is bound.
+      if (
+        payload.target_instance_id &&
+        !injection.client?.state?.["desktop-native"]
+      ) {
+        delete payload.target_instance_id;
+      }
+
       attachSkillConfigFromState(state, conversationId, payload);
 
       // Promote the sandbox binding to the top-level `sandbox` field. aidream

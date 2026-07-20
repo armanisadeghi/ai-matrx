@@ -90,12 +90,12 @@ export function useRunAgent(): UseRunAgent {
         variables:
           variables && Object.keys(variables).length > 0 ? variables : undefined,
         config_overrides: configOverrides,
-        ...(desktopTargetInstanceId && {
-          target_instance_id: desktopTargetInstanceId,
-        }),
         stream: true,
         debug: false,
       };
+      // Gated: only stamps the target when the body already declares a live
+      // `desktop-native` capability (this quick-run body never does, so the
+      // sticky admin preference no longer rides — see desktop-target-request).
       applyDesktopTargetToRequestBody(body, desktopTargetInstanceId);
 
       try {

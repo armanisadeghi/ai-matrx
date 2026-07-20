@@ -215,9 +215,13 @@ export const resumeInstance = createAsyncThunk<
         }),
         ...(injection.client && { client: injection.client }),
         ...(userOverrides && { user: userOverrides }),
-        ...(desktopTargetInstanceId && {
-          target_instance_id: desktopTargetInstanceId,
-        }),
+        // Desktop targeting only rides when the presence-gated injection
+        // declared `desktop-native` (see buildToolInjection) — a bare target
+        // makes aidream re-fabricate the capability with no desktop bound.
+        ...(desktopTargetInstanceId &&
+          injection.client?.state?.["desktop-native"] && {
+            target_instance_id: desktopTargetInstanceId,
+          }),
         ...(organization_id && { organization_id }),
         ...(project_id && { project_id }),
         ...(task_id && { task_id }),

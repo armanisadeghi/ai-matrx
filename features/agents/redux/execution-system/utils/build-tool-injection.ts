@@ -217,20 +217,20 @@ export async function buildToolInjection(
     ] = entry.payload;
   }
 
+  // The admin desktop-target preference may only DIRECT a desktop that the
+  // presence-gated provider already declared — never fabricate the
+  // `desktop-native` capability from the preference alone. Doing so overrode
+  // the provider's null (no live desktop) and made every delegated tool call
+  // instance-targeted while the UI truthfully showed no desktop bound; the
+  // browser's own /tool_results then failed the submission-binding check
+  // (404) and wedged the turn.
   const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
-  if (desktopTargetInstanceId) {
-    const existingDesktopState = stateMap["desktop-native"];
+  const existingDesktopState = stateMap["desktop-native"];
+  if (desktopTargetInstanceId && existingDesktopState) {
     stateMap["desktop-native"] = {
-      platform: "",
-      engine_version: "",
-      instance_id: "",
-      tunnel_state: "none",
-      ...(existingDesktopState ?? {}),
+      ...existingDesktopState,
       target_instance_id: desktopTargetInstanceId,
     };
-    if (!activeCapabilities.includes("desktop-native")) {
-      activeCapabilities.push("desktop-native");
-    }
   }
 
   // STOPGAP: arm the coding toolset client-side while a sandbox is bound.

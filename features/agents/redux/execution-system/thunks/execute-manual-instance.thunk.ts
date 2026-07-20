@@ -480,8 +480,13 @@ export async function assembleManualRequest(
   if (selectIsBlockMode(state)) request.block_mode = true;
   if (selectIsSnapshot(state)) request.snapshot = true;
 
+  // Desktop targeting only rides when the presence-gated injection declared
+  // `desktop-native` — a bare target with no live desktop makes aidream
+  // re-fabricate the capability and instance-target every delegated tool
+  // call (browser tools then 404 their own /tool_results). See
+  // buildToolInjection.
   const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
-  if (desktopTargetInstanceId) {
+  if (desktopTargetInstanceId && injection.client?.state?.["desktop-native"]) {
     (request as Record<string, unknown>).target_instance_id =
       desktopTargetInstanceId;
   }
