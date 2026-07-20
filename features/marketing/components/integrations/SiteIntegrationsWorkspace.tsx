@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   BarChart3,
+  CheckCircle2,
   Gauge,
   KeyRound,
   Loader2,
@@ -52,7 +53,7 @@ import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
-import { MARKETING_GOOGLE_SCOPES } from "@/features/marketing/google/types";
+import { GOOGLE_SEARCH_CONSOLE_SCOPES } from "@/features/marketing/google/types";
 import type { MarketingSite } from "@/features/marketing/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
@@ -81,27 +82,27 @@ const builtIns: Array<{
     icon: SearchCheck,
   },
   {
-    key: "googleAnalytics4",
-    label: "Google Analytics 4",
-    description:
-      "Traffic, engagement, landing pages, conversions, and channel context.",
-    resourceLabel: "GA4 property",
-    resourcePlaceholder: "properties/123456789",
-    icon: BarChart3,
-  },
-  {
     key: "pageSpeedInsights",
     label: "PageSpeed Insights",
     description:
       "Lighthouse and field-performance collection for canonical pages.",
     icon: Gauge,
   },
+  {
+    key: "googleAnalytics4",
+    label: "Google Analytics 4 (optional)",
+    description:
+      "Optional traffic and engagement context. Analytics setup does not affect Search Console or PageSpeed.",
+    resourceLabel: "GA4 property",
+    resourcePlaceholder: "properties/123456789",
+    icon: BarChart3,
+  },
 ];
 
 export function SiteIntegrationsWorkspace() {
   const { site } = useMarketingSite();
   return (
-    <LazyGoogleAPIProvider scopes={[...MARKETING_GOOGLE_SCOPES]}>
+    <LazyGoogleAPIProvider scopes={[...GOOGLE_SEARCH_CONSOLE_SCOPES]}>
       <SiteIntegrationsEditor key={`${site.id}:${site.version}`} site={site} />
     </LazyGoogleAPIProvider>
   );
@@ -127,7 +128,6 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     onSuccess: (next) => {
       queryClient.setQueryData(marketingKeys.site(site.id), next);
       void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
-      toast.success("Integrations saved.");
     },
     onError: (error) => toast.error(error.message),
   });
@@ -171,13 +171,31 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
       ),
     }));
 
+  const persistDraft = async (
+    nextDraft: SiteIntegrationsDraft,
+    successTitle: string,
+    successDescription?: string,
+  ) => {
+    const nextIssues = validateSiteIntegrations(nextDraft);
+    if (nextIssues.length) {
+      throw new Error(nextIssues[0].message);
+    }
+    setDraft(nextDraft);
+    await update.mutateAsync({
+      siteId: site.id,
+      expectedVersion: site.version,
+      integrations: buildSiteIntegrations(site.integrations, nextDraft),
+    });
+    toast.success(successTitle, { description: successDescription });
+  };
+
   const startGoogleConnection = async (
     owner: "organization" | "user" = "organization",
   ) => {
     setGoogleConnectionOwner(owner);
     try {
       const code = await google.requestAuthorizationCode([
-        ...MARKETING_GOOGLE_SCOPES,
+        ...GOOGLE_SEARCH_CONSOLE_SCOPES,
       ]);
       const result = await connectGoogle.mutateAsync({
         code,
@@ -196,11 +214,6 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
           resource.connection_id === connectionId &&
           resource.resource_type === "search_console_property",
       );
-      const analyticsResources = resources.filter(
-        (resource) =>
-          resource.connection_id === connectionId &&
-          resource.resource_type === "analytics_property",
-      );
       const matchingSearch =
         searchResources.find((resource) => {
           const ref = resource.resource_ref.toLowerCase();
@@ -213,38 +226,34 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             return false;
           }
         }) ?? (searchResources.length === 1 ? searchResources[0] : null);
-      const matchingAnalytics =
-        analyticsResources.length === 1 ? analyticsResources[0] : null;
-
-      setDraft((current) => ({
-        ...current,
+      const nextDraft: SiteIntegrationsDraft = {
+        ...draft,
         googleSearchConsole: {
-          ...current.googleSearchConsole,
-          enabled:
-            Boolean(matchingSearch) || current.googleSearchConsole.enabled,
+          ...draft.googleSearchConsole,
+          enabled: Boolean(matchingSearch) || draft.googleSearchConsole.enabled,
           credentialAuthority: "external_connection",
           credentialRef: connectionId,
           resourceRef:
             matchingSearch?.resource_ref ??
-            current.googleSearchConsole.resourceRef,
+            draft.googleSearchConsole.resourceRef,
         },
-        googleAnalytics4: {
-          ...current.googleAnalytics4,
-          enabled:
-            Boolean(matchingAnalytics) || current.googleAnalytics4.enabled,
-          credentialAuthority: "external_connection",
-          credentialRef: connectionId,
-          resourceRef:
-            matchingAnalytics?.resource_ref ??
-            current.googleAnalytics4.resourceRef,
-        },
-      }));
-      toast.success("Google connected", {
-        description:
-          matchingSearch || matchingAnalytics
-            ? "Matching properties were selected. Review and save the site bindings."
-            : "Choose the Search Console and Analytics properties below.",
-      });
+      };
+      setDraft(nextDraft);
+
+      if (matchingSearch) {
+        await persistDraft(
+          nextDraft,
+          "Search Console connected",
+          `${matchingSearch.display_name} is now connected to ${site.domain}.`,
+        );
+      } else {
+        toast.success("Google Search Console authorized", {
+          description:
+            searchResources.length > 0
+              ? "Select this site's Search Console property below, then click Connect selected property."
+              : "No Search Console properties were returned for this Google account.",
+        });
+      }
     } catch (error) {
       toast.error("Could not connect Google", {
         description:
@@ -260,11 +269,14 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const save = () => {
     if (issues.length) return;
     try {
-      update.mutate({
-        siteId: site.id,
-        expectedVersion: site.version,
-        integrations: buildSiteIntegrations(site.integrations, draft),
-      });
+      update.mutate(
+        {
+          siteId: site.id,
+          expectedVersion: site.version,
+          integrations: buildSiteIntegrations(site.integrations, draft),
+        },
+        { onSuccess: () => toast.success("Site integrations saved.") },
+      );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to save integrations.",
@@ -296,8 +308,9 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             <div>
               <h2 className="text-xs font-semibold">Connect Google directly</h2>
               <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                Authorize once, discover Search Console and GA4 properties, then
-                bind the matching properties to {site.domain} below.
+                Authorize Search Console, choose the property for {site.domain},
+                and connect it to this managed site. Analytics is optional and
+                does not affect this setup.
               </p>
             </div>
           </div>
@@ -317,7 +330,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               ) : (
                 <KeyRound className="h-3.5 w-3.5" />
               )}
-              Connect Google
+              Connect Search Console
             </Button>
             <Button
               size="sm"
@@ -347,6 +360,28 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               value={draft[key]}
               connections={googleInventory.data?.connections ?? []}
               resources={googleInventory.data?.resources ?? []}
+              dirty={
+                JSON.stringify(draft[key]) !== JSON.stringify(initial[key])
+              }
+              saving={update.isPending}
+              onSave={save}
+              onEnable={() => {
+                const nextDraft = {
+                  ...draft,
+                  [key]: { ...draft[key], enabled: true },
+                };
+                void persistDraft(
+                  nextDraft,
+                  `${provider.label} enabled`,
+                  `${provider.label} is now enabled for ${site.domain}.`,
+                ).catch((error) =>
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : `Unable to enable ${provider.label}.`,
+                  ),
+                );
+              }}
               onChange={(next) => setBuiltIn(key, next)}
             />
           ))}
@@ -451,6 +486,10 @@ function BuiltInProviderCard({
   value,
   connections,
   resources,
+  dirty,
+  saving,
+  onSave,
+  onEnable,
   onChange,
 }: {
   providerKey: BuiltInProviderKey;
@@ -462,6 +501,10 @@ function BuiltInProviderCard({
   value: ProviderIntegrationDraft;
   connections: GoogleConnectionSummary[];
   resources: GoogleConnectionResource[];
+  dirty: boolean;
+  saving: boolean;
+  onSave: () => void;
+  onEnable: () => void;
   onChange: (next: ProviderIntegrationDraft) => void;
 }) {
   const status = providerReferenceStatus(
@@ -469,6 +512,22 @@ function BuiltInProviderCard({
     Boolean(resourceLabel),
     providerKey !== "pageSpeedInsights",
   );
+  const readyToApply =
+    value.enabled &&
+    (providerKey === "pageSpeedInsights" ||
+      (Boolean(value.credentialRef) && Boolean(value.resourceRef)));
+  const actionLabel =
+    providerKey === "googleSearchConsole"
+      ? dirty
+        ? "Connect selected property"
+        : "Search Console connected"
+      : providerKey === "pageSpeedInsights"
+        ? dirty
+          ? "Enable PageSpeed Insights"
+          : "PageSpeed Insights enabled"
+        : dirty
+          ? "Connect Analytics property"
+          : "Analytics property connected";
   return (
     <section className="rounded-lg border border-border bg-card">
       <div className="flex min-h-14 items-start justify-between gap-3 border-b border-border p-3">
@@ -500,6 +559,23 @@ function BuiltInProviderCard({
           resourcePlaceholder={resourcePlaceholder}
           onChange={onChange}
         />
+        {readyToApply || providerKey === "pageSpeedInsights" ? (
+          <Button
+            size="sm"
+            className="h-8 w-full gap-1.5"
+            disabled={(value.enabled && !dirty) || saving}
+            onClick={value.enabled ? onSave : onEnable}
+          >
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : dirty ? (
+              <Save className="h-3.5 w-3.5" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            )}
+            {value.enabled ? actionLabel : "Enable PageSpeed Insights"}
+          </Button>
+        ) : null}
       </div>
     </section>
   );
@@ -746,5 +822,5 @@ function StatusBadge({
   if (status === "disabled") return <Badge variant="secondary">Disabled</Badge>;
   if (status === "needs_reference")
     return <Badge variant="warning">Needs reference</Badge>;
-  return <Badge variant="info">Reference configured · not verified</Badge>;
+  return <Badge variant="success">Configured for this site</Badge>;
 }

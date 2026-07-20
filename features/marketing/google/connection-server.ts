@@ -5,6 +5,7 @@ import {
   decryptCredential,
   encryptCredential,
 } from "@/features/marketing/google/server";
+import { googleDiscoveryHealth } from "@/features/marketing/google/discovery-health";
 
 interface TokenResponse {
   access_token?: string;
@@ -215,7 +216,20 @@ export async function exchangeAndStoreGoogleConnection(input: {
         ]
       : [],
   );
+  if (discoveryErrors.length) {
+    console.warn("Google optional provider discovery was incomplete.", {
+      searchConsoleReady: discovery[0].status === "fulfilled",
+      analyticsReady: discovery[1].status === "fulfilled",
+      errors: discoveryErrors,
+    });
+  }
   const now = new Date().toISOString();
+  const searchConsoleReady = discovery[0].status === "fulfilled";
+  const analyticsReady = discovery[1].status === "fulfilled";
+  const discoveryHealth = googleDiscoveryHealth(
+    searchConsoleReady,
+    analyticsReady,
+  );
   const connectionValues = {
     owner_type: input.ownerType,
     owner_user_id: input.ownerType === "user" ? input.userId : null,
@@ -226,13 +240,13 @@ export async function exchangeAndStoreGoogleConnection(input: {
     account_email: stringValue(profile.email),
     account_name: stringValue(profile.name),
     scopes,
-    status: discoveryErrors.length
-      ? ("needs_attention" as const)
-      : ("connected" as const),
+    // A Google identity/refresh credential is connected even when an optional
+    // product API is disabled. Provider discovery health is reported
+    // independently so Analytics cannot poison a working Search Console flow.
+    status: discoveryHealth.status,
     last_verified_at: now,
-    last_error: discoveryErrors.length
-      ? discoveryErrors.join(" ").slice(0, 1000)
-      : null,
+    last_error: discoveryHealth.lastError,
+    metadata: discoveryHealth.metadata,
     credential_ciphertext: encrypted.ciphertext,
     credential_iv: encrypted.iv,
     credential_tag: encrypted.tag,

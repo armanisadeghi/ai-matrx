@@ -36,7 +36,7 @@ import {
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
 import {
-  MARKETING_GOOGLE_SCOPES,
+  GOOGLE_SEARCH_CONSOLE_SCOPES,
   type GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
@@ -44,7 +44,7 @@ import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
 export function MarketingConnectionsWorkspace() {
   return (
-    <LazyGoogleAPIProvider scopes={[...MARKETING_GOOGLE_SCOPES]}>
+    <LazyGoogleAPIProvider scopes={[...GOOGLE_SEARCH_CONSOLE_SCOPES]}>
       <MarketingConnectionsContent />
     </LazyGoogleAPIProvider>
   );
@@ -62,11 +62,16 @@ function MarketingConnectionsContent() {
     "user" | "organization" | null
   >(null);
   const selectedSite = sites.data?.find((site) => site.id === siteId);
-  const resourcesByConnection = new Map<string, number>();
+  const searchResourcesByConnection = new Map<string, number>();
+  const analyticsResourcesByConnection = new Map<string, number>();
   for (const resource of inventory.data?.resources ?? []) {
-    resourcesByConnection.set(
+    const target =
+      resource.resource_type === "search_console_property"
+        ? searchResourcesByConnection
+        : analyticsResourcesByConnection;
+    target.set(
       resource.connection_id,
-      (resourcesByConnection.get(resource.connection_id) ?? 0) + 1,
+      (target.get(resource.connection_id) ?? 0) + 1,
     );
   }
 
@@ -74,7 +79,7 @@ function MarketingConnectionsContent() {
     setConnectingOwner(owner);
     try {
       const code = await google.requestAuthorizationCode([
-        ...MARKETING_GOOGLE_SCOPES,
+        ...GOOGLE_SEARCH_CONSOLE_SCOPES,
       ]);
       await connect.mutateAsync({
         code,
@@ -86,7 +91,7 @@ function MarketingConnectionsContent() {
               }
             : { type: "user" },
       });
-      toast.success("Google account connected and properties discovered.");
+      toast.success("Search Console connected and properties discovered.");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to connect Google.",
@@ -127,19 +132,19 @@ function MarketingConnectionsContent() {
             <ProviderCard
               icon={SearchCheck}
               title="Google Search Console"
-              status="OAuth + offline access"
+              status="Ready to connect"
               description="Seed canonical URLs, search queries, indexing evidence, clicks, and impressions."
             />
             <ProviderCard
               icon={BarChart3}
               title="Google Analytics 4"
-              status="OAuth + property discovery"
-              description="Add traffic, landing-page, engagement, channel, and conversion context."
+              status="Optional"
+              description="Add this later when Analytics access and its Google API are configured. It does not affect Search Console."
             />
             <ProviderCard
               icon={Gauge}
               title="PageSpeed Insights"
-              status="Site binding available"
+              status="No OAuth required"
               description="Collect Lighthouse and field-performance evidence for canonical pages."
             />
           </div>
@@ -150,16 +155,16 @@ function MarketingConnectionsContent() {
                 1. Choose where credentials belong
               </h2>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
-                Personal connections follow you. Organization connections are
-                reusable by authorized team members without exposing tokens.
+                Connect Search Console personally or for the active
+                organization. Analytics can be added independently later.
               </p>
             </div>
             <div className="grid gap-2 p-3 md:grid-cols-2">
               <ConnectionScope
                 icon={UserRound}
                 title="Personal connection"
-                description="Authorize Google once for Search Console and Analytics. Offline access supports scheduled synchronization."
-                action="Connect personal Google"
+                description="Authorize your Search Console properties. Offline access supports scheduled Search Console synchronization."
+                action="Connect personal Search Console"
                 busy={connectingOwner === "user"}
                 disabled={
                   connectingOwner !== null ||
@@ -178,7 +183,7 @@ function MarketingConnectionsContent() {
                 description="Create a shared Google connection for authorized organization members and managed sites."
                 action={
                   organizations.activeOrgId
-                    ? "Connect organization Google"
+                    ? "Connect organization Search Console"
                     : "Choose an organization"
                 }
                 busy={connectingOwner === "organization"}
@@ -239,8 +244,11 @@ function MarketingConnectionsContent() {
                   <ConnectionRow
                     key={connection.id}
                     connection={connection}
-                    resourceCount={
-                      resourcesByConnection.get(connection.id) ?? 0
+                    searchConsoleCount={
+                      searchResourcesByConnection.get(connection.id) ?? 0
+                    }
+                    analyticsCount={
+                      analyticsResourcesByConnection.get(connection.id) ?? 0
                     }
                     busy={disconnect.isPending}
                     onDisconnect={async () => {
@@ -268,11 +276,11 @@ function MarketingConnectionsContent() {
           <section className="rounded-lg border border-border bg-card">
             <div className="border-b border-border px-3 py-2">
               <h2 className="text-sm font-semibold">
-                2. Bind the provider to a site
+                2. Choose the Search Console property for a site
               </h2>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
-                Select the Search Console or Analytics property that represents
-                the real website.
+                Select a managed site, then choose its exact Search Console
+                property and connect it.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 p-3">
@@ -299,7 +307,7 @@ function MarketingConnectionsContent() {
                   <Link
                     href={`/marketing/sites/${selectedSite.id}/integrations`}
                   >
-                    Configure {selectedSite.name}{" "}
+                    Choose Search Console property for {selectedSite.name}{" "}
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </Button>
@@ -317,9 +325,9 @@ function MarketingConnectionsContent() {
               Production OAuth authority enabled
             </AlertTitle>
             <AlertDescription className="text-[11px] leading-4 text-muted-foreground">
-              Search Console and Analytics properties are discovered during
-              connection. PageSpeed uses an application-owned quota key and does
-              not require access to a user account.
+              Search Console properties are discovered during connection.
+              PageSpeed uses the application quota key and does not require a
+              Google account. Analytics is optional and independent.
             </AlertDescription>
           </Alert>
         </div>
@@ -399,15 +407,20 @@ function ConnectionScope({
 
 function ConnectionRow({
   connection,
-  resourceCount,
+  searchConsoleCount,
+  analyticsCount,
   busy,
   onDisconnect,
 }: {
   connection: GoogleConnectionSummary;
-  resourceCount: number;
+  searchConsoleCount: number;
+  analyticsCount: number;
   busy: boolean;
   onDisconnect: () => void;
 }) {
+  const usable =
+    connection.status !== "revoked" &&
+    (searchConsoleCount > 0 || analyticsCount > 0);
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
       <div className="min-w-0">
@@ -417,12 +430,8 @@ function ConnectionRow({
               connection.account_email ||
               "Google account"}
           </span>
-          <Badge
-            variant={connection.status === "connected" ? "success" : "warning"}
-          >
-            {connection.status === "connected"
-              ? "Connected"
-              : "Needs attention"}
+          <Badge variant={usable ? "success" : "warning"}>
+            {usable ? "Connected" : "Reconnect required"}
           </Badge>
           <Badge variant="outline">
             {connection.owner_type === "organization"
@@ -431,12 +440,15 @@ function ConnectionRow({
           </Badge>
         </div>
         <p className="mt-0.5 text-[10px] text-muted-foreground">
-          {connection.account_email || "Email unavailable"} · {resourceCount}{" "}
-          discovered propert{resourceCount === 1 ? "y" : "ies"}
+          Search Console: {searchConsoleCount} propert
+          {searchConsoleCount === 1 ? "y" : "ies"}
+          {analyticsCount > 0
+            ? ` · Analytics: ${analyticsCount} ${analyticsCount === 1 ? "property" : "properties"}`
+            : " · Analytics not connected (optional)"}
         </p>
-        {connection.last_error ? (
+        {!usable ? (
           <p className="mt-1 max-w-3xl text-[10px] text-amber-700 dark:text-amber-400">
-            {connection.last_error}
+            Reconnect this Google account to refresh provider access.
           </p>
         ) : null}
       </div>

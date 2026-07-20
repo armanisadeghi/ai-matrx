@@ -1,8 +1,17 @@
-export const MARKETING_GOOGLE_SCOPES = [
-  "openid",
-  "email",
-  "profile",
+export const GOOGLE_IDENTITY_SCOPES = ["openid", "email", "profile"] as const;
+
+export const GOOGLE_SEARCH_CONSOLE_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
   "https://www.googleapis.com/auth/webmasters.readonly",
+] as const;
+
+export const GOOGLE_ANALYTICS_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  "https://www.googleapis.com/auth/analytics.readonly",
+] as const;
+
+export const MARKETING_GOOGLE_SCOPES = [
+  ...GOOGLE_SEARCH_CONSOLE_SCOPES,
   "https://www.googleapis.com/auth/analytics.readonly",
 ] as const;
 
