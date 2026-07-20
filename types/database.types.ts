@@ -1,10 +1,12 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// Original generated type (replaced by patch-db-types.sh):
+// export type Json =
+//   | string
+//   | number
+//   | boolean
+//   | null
+//   | { [key: string]: Json | undefined }
+//   | Json[]
+export type Json = unknown
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
