@@ -28,10 +28,8 @@ vision: []
 
 ## Remaining work
 
-1. **Land the in-flight fleet (dispatched 2026-07-20, may already be committed — verify, don't redo):**
-   - aidream agent: discovered-items ON CONFLICT retarget to `(brand_id, category, guessed_kind, url, value_hash)` (index already live; value_hash is a stored generated column — never inserted), Wave 2 GSC sync (`web.gsc_page_stat` + `site.gsc_synced_at`/`gsc_sync` via aidream migrations; command `sites/{id}/gsc/sync`), Wave 4 link resolution (`link_edge.target_page_id` + `sites/{id}/links/resolve`).
-   - matrx-frontend agent: Wave 3 Coverage matrix (`/coverage` route, source-disagreement tiles → filtered pages lists), Wave 5 page-workspace rebuild (SERP/social previews, headings, indexability, content stats — kills the JsonPreview dumps), Wave 2 FE (GSC sync button, freshness in site-status, clicks/impressions columns).
-2. **Deploy the scraper service** (scraper.app.matrxserver.com) from aidream main — sitemap sync, initialize screenshot fix, and the fleet's server work are all dormant until deployed. Then E2E on All Green Recycling: initialize (expect 4 screenshots + discovered items + zero `initialization.errors`), sitemaps sync (expect ~33 docs / ~3.7k pages), review discovery inbox, GSC sync.
+1. **Deploy the scraper service** (scraper.app.matrxserver.com) from aidream main (commit 3b8ef547c or later) **with `GOOGLE_OAUTH_TOKEN_ENCRYPTION_KEY` set** (must match the frontend's; GSC sync decrypts stored Google credentials and fails loudly without it). Everything server-side is dormant until then.
+2. **Post-deploy E2E** on All Green Recycling (arman@ account): initialize (expect 4 screenshots + discovered items + zero `initialization.errors`), sitemaps sync (~33 docs / ~3.7k pages), discovery-inbox review, GSC sync (expect `gsc_page_stat` rows + pages Clicks/Impr/Pos columns + coverage Google cells + "last synced" freshness), `links/resolve` backfill. Never-run-verified paths: GSC sync end-to-end; GSC/enrichment columns with real data in-browser.
 3. **Editors for the deeper levels** — properties, brand assets, business facts currently have no edit/delete UI (create-by-promotion only). Per the editing doctrine: full-field editors + delete, table-inline or window panel. Build once real discovery data flows (post-deploy) so they edit real rows.
 4. **Social properties lifecycle** — confirming a discovered social profile should ALSO create/attach the `web.property` row (today confirmation only writes `business_fact`). Then `brands/[id]/socials/...` routes per Arman's URL sketch.
 5. **`/marketing` overview page** — currently a redirect to `/brands` (deliberate stopgap). Build the real workspace overview when the coverage data exists to populate it.
@@ -47,7 +45,8 @@ vision: []
 - Sitemaps vertical (tables + workspace + per-sitemap page lists + sync command) — `components/sitemaps/`, server `sitemap_sync.py`.
 - Site overview rebuilt (initialize flow, connections board, identity edit-in-place, loud per-step failure panel).
 - Error capture: `marketing-crawler` red source at scraper chokepoints; captured sonner wrapper `lib/toast.ts` (marketing migrated).
-- Constraint fixes from first prod run (screenshot kinds, discovered value_hash dedup) — migrations/web_initialize_constraint_fixes.sql.
+- Constraint fixes from first prod run (screenshot kinds, discovered value_hash dedup) — migrations/web_initialize_constraint_fixes.sql; scraper upsert retargeted + regression-tested (aidream 3b8ef547c).
+- Wave 2 (GSC sync server+FE), Wave 3 (Coverage matrix at `/coverage` + `?coverage=` pages filters), Wave 4 (link resolution + `links/resolve`), Wave 5 (page workspace rebuild — SERP/social/indexability/headings/stats) — see components/coverage/, components/pages/, aidream web_crawl/gsc_sync.py + link_resolution.py.
 
 ## Decisions needed
 

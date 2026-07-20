@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,27 @@ export function BrandEditorDialog({
   /** null = create mode */
   brand: MarketingBrand | null;
 }) {
+  return (
+    <BrandEditorDialogBody
+      // Remount per open + brand identity so the draft always starts fresh —
+      // no state-reset effects.
+      key={`${open}:${brand?.id ?? "new"}:${brand?.version ?? 0}`}
+      open={open}
+      onOpenChange={onOpenChange}
+      brand={brand}
+    />
+  );
+}
+
+function BrandEditorDialogBody({
+  open,
+  onOpenChange,
+  brand,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  brand: MarketingBrand | null;
+}) {
   const orgs = useActiveOrganizationPicker();
   const createMutation = useCreateBrand();
   const updateMutation = useUpdateBrand();
@@ -95,10 +116,6 @@ export function BrandEditorDialog({
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const busy = createMutation.isPending || updateMutation.isPending;
   const selectedOrgId = organizationId ?? orgs.activeOrgId ?? undefined;
-
-  useEffect(() => {
-    if (open) setDraft(draftFrom(brand));
-  }, [open, brand]);
 
   const set =
     <K extends keyof BrandDraft>(key: K) =>
