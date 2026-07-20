@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Check as CheckIcon,
   ListFilter,
   ListX,
   X,
@@ -217,44 +218,83 @@ function FilterBody({
 }) {
   if (kind === "text") {
     const text = value?.kind === "text" ? value.value : "";
+    const mode = (value?.kind === "text" ? value.mode : undefined) ?? "contains";
+    const setMode = (next: "contains" | "empty" | "not_empty") => {
+      if (next === "contains") {
+        onChange(text ? { kind: "text", value: text } : undefined);
+      } else {
+        onChange({ kind: "text", value: "", mode: next });
+      }
+    };
     return (
       <div className="space-y-1.5 px-1">
         <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           Filter
         </p>
-        <div className="relative">
-          <Input
-            autoFocus
-            value={text}
-            onChange={(e) =>
-              onChange(
-                e.target.value
-                  ? { kind: "text", value: e.target.value }
-                  : undefined,
-              )
-            }
-            placeholder="Contains…"
-            className="h-8 pr-7 text-sm"
-            style={{ fontSize: "16px" }}
-          />
-          {text ? (
+        <div className="flex gap-1">
+          {(
+            [
+              ["contains", "Contains"],
+              ["empty", "(empty)"],
+              ["not_empty", "(not empty)"],
+            ] as const
+          ).map(([m, label]) => (
             <button
+              key={m}
               type="button"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-              onClick={() => onChange(undefined)}
+              onClick={() => setMode(m)}
+              aria-pressed={mode === m}
+              className={cn(
+                "rounded border px-1.5 py-0.5 text-[10px] transition-colors",
+                mode === m
+                  ? "border-primary/50 bg-primary/10 text-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground",
+              )}
             >
-              <X className="h-3.5 w-3.5" />
+              {label}
             </button>
-          ) : null}
+          ))}
         </div>
+        {mode === "contains" && (
+          <div className="relative">
+            <Input
+              autoFocus
+              value={text}
+              onChange={(e) =>
+                onChange(
+                  e.target.value
+                    ? { kind: "text", value: e.target.value }
+                    : undefined,
+                )
+              }
+              placeholder="Contains…"
+              className="h-8 pr-7 text-sm"
+              style={{ fontSize: "16px" }}
+            />
+            {text ? (
+              <button
+                type="button"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                onClick={() => onChange(undefined)}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </div>
+        )}
       </div>
     );
   }
 
   if (kind === "select") {
+    const selected =
+      value?.kind === "select"
+        ? (value.values ??
+          (value.value && value.value !== "__all__" ? [value.value] : []))
+        : [];
     return (
       <SearchableSelectFilter
-        value={value?.kind === "select" ? value.value : undefined}
+        selected={selected}
         options={selectOptions}
         onChange={onChange}
       />
@@ -293,11 +333,11 @@ function FilterBody({
 }
 
 function SearchableSelectFilter({
-  value,
+  selected,
   options,
   onChange,
 }: {
-  value: string | undefined;
+  selected: string[];
   options: Array<{ value: string; label: string }>;
   onChange: (next: ColumnFilterValue | undefined) => void;
 }) {
@@ -311,13 +351,26 @@ function SearchableSelectFilter({
     );
   }, [options, query]);
 
+  // Multi-select with OR semantics: toggling builds the `values` set; an
+  // empty set clears the filter entirely.
+  const toggle = (v: string) => {
+    const next = selected.includes(v)
+      ? selected.filter((x) => x !== v)
+      : [...selected, v];
+    onChange(
+      next.length === 0
+        ? undefined
+        : { kind: "select", value: next[0], values: next },
+    );
+  };
+
   return (
     <div className="space-y-1 px-0">
       <div className="flex items-center justify-between px-1 pb-1">
         <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          Filter
+          Filter{selected.length > 1 ? ` (any of ${selected.length})` : ""}
         </p>
-        {value ? (
+        {selected.length > 0 ? (
           <button
             type="button"
             className="text-[11px] text-muted-foreground hover:text-foreground"
@@ -346,19 +399,32 @@ function SearchableSelectFilter({
             >
               All
             </CommandItem>
-            {filtered.map((o) => (
-              <CommandItem
-                key={o.value}
-                value={o.value}
-                onSelect={() => onChange({ kind: "select", value: o.value })}
-                className={cn(
-                  "text-xs",
-                  value === o.value && "bg-accent text-accent-foreground",
-                )}
-              >
-                {o.label}
-              </CommandItem>
-            ))}
+            {filtered.map((o) => {
+              const active = selected.includes(o.value);
+              return (
+                <CommandItem
+                  key={o.value}
+                  value={o.value}
+                  onSelect={() => toggle(o.value)}
+                  className={cn(
+                    "gap-1.5 text-xs",
+                    active && "bg-accent text-accent-foreground",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border",
+                      active
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-muted-foreground/40",
+                    )}
+                  >
+                    {active && <CheckIcon className="h-2.5 w-2.5" />}
+                  </span>
+                  {o.label}
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
         </CommandList>
       </Command>

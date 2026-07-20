@@ -61,16 +61,27 @@ export function passesColumnFilter(
 ): boolean {
   switch (filter.kind) {
     case "text": {
+      const s = stringifyCellValue(value);
+      if (filter.mode === "empty") return s.trim() === "";
+      if (filter.mode === "not_empty") return s.trim() !== "";
       const q = filter.value.trim().toLowerCase();
       if (!q) return true;
-      return stringifyCellValue(value).toLowerCase().includes(q);
+      return s.toLowerCase().includes(q);
     }
     case "select": {
-      if (!filter.value || filter.value === "__all__") return true;
+      const selected =
+        filter.values ??
+        (filter.value && filter.value !== "__all__" ? [filter.value] : []);
+      if (selected.length === 0) return true;
       const s = stringifyCellValue(value);
-      if (filter.value === SELECT_EMPTY_VALUE) return s === "";
-      if (filter.value === SELECT_NOT_EMPTY_VALUE) return s !== "";
-      return s === filter.value;
+      // OR semantics across the set; sentinels compose ("A or (empty)").
+      return selected.some((v) =>
+        v === SELECT_EMPTY_VALUE
+          ? s === ""
+          : v === SELECT_NOT_EMPTY_VALUE
+            ? s !== ""
+            : s === v,
+      );
     }
     case "boolean": {
       return Boolean(value) === filter.value;
@@ -134,10 +145,16 @@ export function filterAndSortRows<T>(
     const col = colById.get(sort.id);
     if (col && col.sortable !== false) {
       const dir = sort.direction === "asc" ? 1 : -1;
-      result = [...result].sort(
-        (a, b) =>
-          compareValues(getCellValue(a, col), getCellValue(b, col)) * dir,
-      );
+      result = [...result].sort((a, b) => {
+        const va = getCellValue(a, col);
+        const vb = getCellValue(b, col);
+        // Empty cells (null / "") sort LAST in both directions — sorting a
+        // column should surface its values, never a wall of blanks.
+        const ea = va == null || stringifyCellValue(va) === "";
+        const eb = vb == null || stringifyCellValue(vb) === "";
+        if (ea !== eb) return ea ? 1 : -1;
+        return compareValues(va, vb) * dir;
+      });
     }
   }
 
@@ -150,10 +167,11 @@ export function countActiveColumnFilters(filters: ColumnFiltersState): number {
     if (!f) continue;
     switch (f.kind) {
       case "text":
-        if (f.value.trim()) n += 1;
+        if (f.value.trim() || (f.mode && f.mode !== "contains")) n += 1;
         break;
       case "select":
-        if (f.value && f.value !== "__all__") n += 1;
+        if (f.values ? f.values.length > 0 : f.value && f.value !== "__all__")
+          n += 1;
         break;
       case "boolean":
         n += 1;
@@ -172,9 +190,14 @@ export function isColumnFilterActive(
   if (!filter) return false;
   switch (filter.kind) {
     case "text":
-      return filter.value.trim().length > 0;
+      return (
+        filter.value.trim().length > 0 ||
+        (filter.mode !== undefined && filter.mode !== "contains")
+      );
     case "select":
-      return Boolean(filter.value) && filter.value !== "__all__";
+      return filter.values
+        ? filter.values.length > 0
+        : Boolean(filter.value) && filter.value !== "__all__";
     case "boolean":
       return true;
     case "number":

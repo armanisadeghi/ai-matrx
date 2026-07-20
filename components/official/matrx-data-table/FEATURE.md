@@ -30,7 +30,7 @@ tables (AI Models, relationships, …) can cut over to one contract.
   direct database query and returns only the current rows.
 - **Controlled search feedback is immediate.** Consumers may debounce the query
   state, but must pass the immediate display state back to the table.
-- **Select filters are type-to-search.** Active filters show a clear **X**; toolbar has **Clear all**.
+- **Select filters are type-to-search and MULTI-select (OR semantics)** — toggling options builds a `values` set; single-`value` writers stay valid. Whenever a column has blank cells, the options automatically include **"(empty)" / "(not empty)"** sentinels (composable with real values: "A or (empty)"). An explicit `filter: "select"` lists ALL distinct values (auto-inference still caps at 24 before falling back to text). **Text filters have Contains / (empty) / (not empty) modes.** **Sorting always puts empty cells last**, both directions. Active filters show a clear **X**; toolbar has **Clear all**.
 - **Row click → `SidePanelSurface`** (desktop: `MatrxDynamicPanelHost`; mobile: Drawer). Never blocking `Sheet` / split-pane.
 - **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel.
 - **UUID cells** always: short prefix (8), full on hover, always-visible copy. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
@@ -102,6 +102,8 @@ Do not drop these when replacing `AiModelTable`:
 | `CopyButtons`                 | agent envelope                              | —                                       |
 
 ## Change Log
+
+- `2026-07-19` — Filter overhaul: multi-select (OR `values` set, back-compat with single `value`), automatic (empty)/(not empty) select sentinels, text filter Contains/(empty)/(not empty) modes, explicit-select options uncapped, empties sort last both directions.
 
 - `2026-07-11` — WindowPanel View/Edit tabs; `MatrxUuidCell` (short/hover/copy/FK open/forbidden); `cellKind` + auto UUID; `window.onOpen` / `renderEdit`; AiModelTable UuidCell → MatrxUuidCell.
 - `2026-07-11` — Searchable selects; clear-all; `anyOf`; Copy; deferred inline edit.

@@ -64,10 +64,19 @@ export interface MatrxColumnDef<T> {
   hidden?: boolean;
 }
 
+/** How a text filter matches. Default `"contains"`. */
+export type TextFilterMode = "contains" | "empty" | "not_empty";
+
 /** Active per-column filter value. Shape depends on filter kind. */
 export type ColumnFilterValue =
-  | { kind: "text"; value: string }
-  | { kind: "select"; value: string }
+  | { kind: "text"; value: string; mode?: TextFilterMode }
+  | {
+      kind: "select";
+      /** Single-choice value (legacy writers). Ignored when `values` is set. */
+      value: string;
+      /** Multi-choice OR set — a row passes if it matches ANY entry. */
+      values?: string[];
+    }
   | { kind: "boolean"; value: boolean }
   | { kind: "number"; min?: number; max?: number };
 
