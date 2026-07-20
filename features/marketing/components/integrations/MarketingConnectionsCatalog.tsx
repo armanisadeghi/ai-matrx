@@ -52,16 +52,20 @@ export function MarketingConnectionsCatalog() {
                 variant={
                   inventory.isLoading
                     ? "secondary"
-                    : connectedAccounts.length
-                      ? "success"
-                      : "secondary"
+                    : inventory.isError
+                      ? "warning"
+                      : connectedAccounts.length
+                        ? "success"
+                        : "secondary"
                 }
               >
                 {inventory.isLoading
                   ? "Checking connection…"
-                  : connectedAccounts.length
-                    ? `${connectedAccounts.length} connected account${connectedAccounts.length === 1 ? "" : "s"}`
-                    : "Not connected"}
+                  : inventory.isError
+                    ? "Status unavailable"
+                    : connectedAccounts.length
+                      ? `${connectedAccounts.length} connected account${connectedAccounts.length === 1 ? "" : "s"}`
+                      : "Not connected"}
               </Badge>
             </div>
 
@@ -82,7 +86,9 @@ export function MarketingConnectionsCatalog() {
                 detail={
                   inventory.isLoading || sites.isLoading
                     ? "Loading connection details…"
-                    : `${searchConsoleProperties.length} available properties · ${searchConsoleSites.length} sites configured`
+                    : inventory.isError || sites.isError
+                      ? "Connection details unavailable"
+                      : `${searchConsoleProperties.length} available properties · ${searchConsoleSites.length} sites configured`
                 }
               />
               <ServiceRow
@@ -91,7 +97,9 @@ export function MarketingConnectionsCatalog() {
                 detail={
                   sites.isLoading
                     ? "Loading site configuration…"
-                    : `${pageSpeedSites.length} sites enabled · no account required`
+                    : sites.isError
+                      ? "Site configuration unavailable"
+                      : `${pageSpeedSites.length} sites enabled · no account required`
                 }
               />
             </div>

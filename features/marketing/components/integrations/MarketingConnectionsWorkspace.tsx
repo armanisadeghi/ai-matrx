@@ -61,6 +61,9 @@ function MarketingConnectionsContent() {
   const effectiveSiteId =
     siteId || (sites.data?.length === 1 ? sites.data[0].id : "");
   const selectedSite = sites.data?.find((site) => site.id === effectiveSiteId);
+  const availableGoogleAccounts = inventory.data?.connections.filter(
+    (connection) => connection.status !== "revoked",
+  );
   const connectedGoogleAccounts = inventory.data?.connections.filter(
     (connection) => connection.status === "connected",
   );
@@ -149,14 +152,22 @@ function MarketingConnectionsContent() {
                     </h2>
                     <Badge
                       variant={
-                        connectedGoogleAccounts?.length
-                          ? "success"
-                          : "secondary"
+                        inventory.isLoading
+                          ? "secondary"
+                          : connectedGoogleAccounts?.length
+                            ? "success"
+                            : availableGoogleAccounts?.length
+                              ? "warning"
+                              : "secondary"
                       }
                     >
-                      {connectedGoogleAccounts?.length
-                        ? `${connectedGoogleAccounts.length} account${connectedGoogleAccounts.length === 1 ? "" : "s"} · ${searchConsoleProperties?.length ?? 0} properties`
-                        : "Not connected"}
+                      {inventory.isLoading
+                        ? "Checking connection…"
+                        : connectedGoogleAccounts?.length
+                          ? `${connectedGoogleAccounts.length} account${connectedGoogleAccounts.length === 1 ? "" : "s"} · ${searchConsoleProperties?.length ?? 0} properties`
+                          : availableGoogleAccounts?.length
+                            ? "Needs attention"
+                            : "Not connected"}
                     </Badge>
                   </div>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">
@@ -238,9 +249,9 @@ function MarketingConnectionsContent() {
                   Try again
                 </Button>
               </div>
-            ) : connectedGoogleAccounts?.length ? (
+            ) : availableGoogleAccounts?.length ? (
               <div className="divide-y divide-border">
-                {connectedGoogleAccounts.map((connection) => (
+                {availableGoogleAccounts.map((connection) => (
                   <ConnectionRow
                     key={connection.id}
                     connection={connection}
@@ -337,8 +348,11 @@ function MarketingConnectionsContent() {
                       PageSpeed Insights
                     </h2>
                     <Badge variant="secondary">
-                      {pageSpeedEnabledCount} of {sites.data?.length ?? 0} sites
-                      enabled
+                      {sites.isLoading
+                        ? "Loading sites…"
+                        : sites.isError
+                          ? "Status unavailable"
+                          : `${pageSpeedEnabledCount} of ${sites.data?.length ?? 0} sites enabled`}
                     </Badge>
                   </div>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">
