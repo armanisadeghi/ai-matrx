@@ -1,13 +1,5 @@
 [
   {
-    "path": "/demos/tests/_maps",
-    "name": "_maps"
-  },
-  {
-    "path": "/demos/tests/app-shell-test",
-    "name": "app-shell-test"
-  },
-  {
     "path": "/demos/tests/applet-tests",
     "name": "applet-tests"
   },
@@ -36,20 +28,12 @@
     "name": "field-tests"
   },
   {
-    "path": "/demos/tests/full-screen-demo",
-    "name": "full-screen-demo"
-  },
-  {
     "path": "/demos/tests/google-apis",
     "name": "google-apis"
   },
   {
     "path": "/demos/tests/integrations",
     "name": "integrations"
-  },
-  {
-    "path": "/demos/tests/links",
-    "name": "links"
   },
   {
     "path": "/demos/tests/markdown-tests",
@@ -94,9 +78,5 @@
   {
     "path": "/demos/tests/utility-function-tests",
     "name": "utility-function-tests"
-  },
-  {
-    "path": "/demos/tests/windows",
-    "name": "windows"
   }
 ]

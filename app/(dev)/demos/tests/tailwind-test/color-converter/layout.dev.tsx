@@ -2,7 +2,7 @@ import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Color converter",
   title: "Tests",
   description: "Tailwind color conversion utilities",

@@ -2,7 +2,7 @@ import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Tailwind",
   title: "Tests",
   description: "Tailwind CSS styling and utility tests",
@@ -20,7 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "tests",
         "tailwind-test",
       )}
-      moduleHome="/legacy/tests/tailwind-test"
+moduleHome="/demos/tests/tailwind-test"
       moduleName="Tailwind Tests"
     >
       {children}

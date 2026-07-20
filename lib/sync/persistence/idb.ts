@@ -32,17 +32,19 @@ export const IDB_SCHEMA_VERSION = 1;
  *   - Wipe one slice (version bump): `db.slices.where("sliceName").equals(...).delete()`
  */
 export interface IdbSliceRecord {
-    key: string;
-    identityKey: string;
-    sliceName: string;
-    version: number;
-    body: unknown;
-    persistedAt: number;
+  key: string;
+  identityKey: string;
+  sliceName: string;
+  version: number;
+  body: unknown;
+  persistedAt: number;
 }
 
 function hasIndexedDb(): boolean {
-    if (typeof globalThis === "undefined") return false;
-    return typeof (globalThis as { indexedDB?: unknown }).indexedDB !== "undefined";
+  if (typeof globalThis === "undefined") return false;
+  return (
+    typeof (globalThis as { indexedDB?: unknown }).indexedDB !== "undefined"
+  );
 }
 
 /**
@@ -52,36 +54,38 @@ function hasIndexedDb(): boolean {
  * subsequent wrapper calls become no-ops.
  */
 interface MatrxSyncDb extends Dexie {
-    slices: Table<IdbSliceRecord, string>;
+  slices: Table<IdbSliceRecord, string>;
 }
 
 let dbPromise: Promise<MatrxSyncDb | null> | null = null;
 
 export function openDb(): Promise<MatrxSyncDb | null> {
-    if (dbPromise) return dbPromise;
-    dbPromise = (async () => {
-        if (!hasIndexedDb()) {
-            logger.info("idb.unavailable", { meta: { reason: "no-indexedDB" } });
-            return null;
-        }
-        try {
-            const db = new Dexie(IDB_NAME) as MatrxSyncDb;
-            db.version(IDB_SCHEMA_VERSION).stores({
-                // Primary key `key` is the compound identity:slice:version.
-                // Secondary indexes let us purge by identity or slice.
-                slices: "key, identityKey, sliceName",
-            });
-            await db.open();
-            logger.info("idb.open.success", { meta: { schemaVersion: IDB_SCHEMA_VERSION } });
-            return db;
-        } catch (err) {
-            logger.warn("idb.open.error", {
-                meta: { error: extractErrorMessage(err) },
-            });
-            return null;
-        }
-    })();
-    return dbPromise;
+  if (dbPromise) return dbPromise;
+  dbPromise = (async () => {
+    if (!hasIndexedDb()) {
+      logger.info("idb.unavailable", { meta: { reason: "no-indexedDB" } });
+      return null;
+    }
+    try {
+      const db = new Dexie(IDB_NAME) as MatrxSyncDb;
+      db.version(IDB_SCHEMA_VERSION).stores({
+        // Primary key `key` is the compound identity:slice:version.
+        // Secondary indexes let us purge by identity or slice.
+        slices: "key, identityKey, sliceName",
+      });
+      await db.open();
+      logger.info("idb.open.success", {
+        meta: { schemaVersion: IDB_SCHEMA_VERSION },
+      });
+      return db;
+    } catch (err) {
+      logger.warn("idb.open.error", {
+        meta: { error: extractErrorMessage(err) },
+      });
+      return null;
+    }
+  })();
+  return dbPromise;
 }
 
 /**
@@ -89,20 +93,24 @@ export function openDb(): Promise<MatrxSyncDb | null> {
  * Exported so `fake-indexeddb` test setups can rebuild between cases.
  */
 export function __resetIdbForTests(): void {
-    if (dbPromise) {
-        void dbPromise.then((db) => {
-            try {
-                db?.close();
-            } catch {
-                /* noop */
-            }
-        });
-    }
-    dbPromise = null;
+  if (dbPromise) {
+    void dbPromise.then((db) => {
+      try {
+        db?.close();
+      } catch {
+        /* noop */
+      }
+    });
+  }
+  dbPromise = null;
 }
 
-function buildKey(identityKey: string, sliceName: string, version: number): string {
-    return `${identityKey}:${sliceName}:${version}`;
+function buildKey(
+  identityKey: string,
+  sliceName: string,
+  version: number,
+): string {
+  return `${identityKey}:${sliceName}:${version}`;
 }
 
 /**
@@ -111,27 +119,28 @@ function buildKey(identityKey: string, sliceName: string, version: number): stri
  * (version bumps silently discard — see caps on `definePolicy`).
  */
 export async function readSlice(
-    identityKey: string,
-    sliceName: string,
-    version: number,
+  identityKey: string,
+  sliceName: string,
+  version: number,
 ): Promise<IdbSliceRecord | null> {
-    const db = await openDb();
-    if (!db) return null;
-    try {
-        const record = (await db.slices.get(buildKey(identityKey, sliceName, version))) ?? null;
-        if (!record) return null;
-        if (record.version !== version) {
-            // Mismatched version — orphan, treat as missing.
-            return null;
-        }
-        return record;
-    } catch (err) {
-        logger.warn("idb.read.error", {
-            sliceName,
-            meta: { error: extractErrorMessage(err) },
-        });
-        return null;
+  const db = await openDb();
+  if (!db) return null;
+  try {
+    const record =
+      (await db.slices.get(buildKey(identityKey, sliceName, version))) ?? null;
+    if (!record) return null;
+    if (record.version !== version) {
+      // Mismatched version — orphan, treat as missing.
+      return null;
     }
+    return record;
+  } catch (err) {
+    logger.warn("idb.read.error", {
+      sliceName,
+      meta: { error: extractErrorMessage(err) },
+    });
+    return null;
+  }
 }
 
 /**
@@ -140,33 +149,51 @@ export async function readSlice(
  * contract.
  */
 export async function writeSlice(
-    identityKey: string,
-    sliceName: string,
-    version: number,
-    body: unknown,
+  identityKey: string,
+  sliceName: string,
+  version: number,
+  body: unknown,
 ): Promise<void> {
-    const db = await openDb();
-    if (!db) return;
-    const record: IdbSliceRecord = {
-        key: buildKey(identityKey, sliceName, version),
-        identityKey,
-        sliceName,
-        version,
-        body,
-        persistedAt: Date.now(),
-    };
-    try {
-        await db.slices.put(record);
-        logger.debug("idb.write", {
-            sliceName,
-            meta: { identityKey, version, bytes: approximateBytes(body) },
-        });
-    } catch (err) {
-        logger.warn("idb.write.error", {
-            sliceName,
-            meta: { error: extractErrorMessage(err) },
-        });
-    }
+  const db = await openDb();
+  if (!db) return;
+  const record: IdbSliceRecord = {
+    key: buildKey(identityKey, sliceName, version),
+    identityKey,
+    sliceName,
+    version,
+    body,
+    persistedAt: Date.now(),
+  };
+  try {
+    await db.slices.put(record);
+    logger.debug("idb.write", {
+      sliceName,
+      meta: { identityKey, version, bytes: approximateBytes(body) },
+    });
+  } catch (err) {
+    logger.warn("idb.write.error", {
+      sliceName,
+      meta: { error: extractErrorMessage(err) },
+    });
+  }
+}
+
+/** Delete one exact identity/slice/version record without widening the purge. */
+export async function deleteSlice(
+  identityKey: string,
+  sliceName: string,
+  version: number,
+): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  try {
+    await db.slices.delete(buildKey(identityKey, sliceName, version));
+  } catch (err) {
+    logger.warn("idb.delete.error", {
+      sliceName,
+      meta: { error: extractErrorMessage(err) },
+    });
+  }
 }
 
 /**
@@ -174,42 +201,45 @@ export async function writeSlice(
  * profiles — caches for the old identity must not survive on the device.
  */
 export async function clearIdentity(identityKey: string): Promise<number> {
-    const db = await openDb();
-    if (!db) return 0;
-    try {
-        const count = await db.slices.where("identityKey").equals(identityKey).delete();
-        logger.info("identity.purge", {
-            meta: { fromIdentity: identityKey, recordsRemoved: count },
-        });
-        return count;
-    } catch (err) {
-        logger.warn("idb.clearIdentity.error", {
-            meta: { error: extractErrorMessage(err) },
-        });
-        return 0;
-    }
+  const db = await openDb();
+  if (!db) return 0;
+  try {
+    const count = await db.slices
+      .where("identityKey")
+      .equals(identityKey)
+      .delete();
+    logger.info("identity.purge", {
+      meta: { fromIdentity: identityKey, recordsRemoved: count },
+    });
+    return count;
+  } catch (err) {
+    logger.warn("idb.clearIdentity.error", {
+      meta: { error: extractErrorMessage(err) },
+    });
+    return 0;
+  }
 }
 
 /**
  * Nuke every record. Wipes all identities + slices. Test + admin surface only.
  */
 export async function clearAll(): Promise<void> {
-    const db = await openDb();
-    if (!db) return;
-    try {
-        await db.slices.clear();
-    } catch (err) {
-        logger.warn("idb.clearAll.error", {
-            meta: { error: extractErrorMessage(err) },
-        });
-    }
+  const db = await openDb();
+  if (!db) return;
+  try {
+    await db.slices.clear();
+  } catch (err) {
+    logger.warn("idb.clearAll.error", {
+      meta: { error: extractErrorMessage(err) },
+    });
+  }
 }
 
 /** Rough byte estimate for telemetry. Not exact — just `JSON.stringify(body).length`. */
 function approximateBytes(body: unknown): number {
-    try {
-        return JSON.stringify(body).length;
-    } catch {
-        return -1;
-    }
+  try {
+    return JSON.stringify(body).length;
+  } catch {
+    return -1;
+  }
 }

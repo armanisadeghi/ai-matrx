@@ -274,11 +274,25 @@ export function serializeWindowWorkspace(
   savedAt = Date.now(),
 ): SerializeWindowWorkspaceResult {
   const diagnostics: WindowPersistenceDiagnostic[] = [];
-  const allSessions = Object.values(state.windows)
+  const liveSessions = Object.values(state.windows)
     .map((entry) => sessionFromWindow(entry, savedAt, diagnostics))
-    .filter((entry): entry is PersistedWindowSession => entry !== null)
-    .sort((a, b) => a.zIndex - b.zIndex || a.sessionKey.localeCompare(b.sessionKey));
-  const sessions = allSessions.slice(0, MAX_PERSISTED_WINDOW_SESSIONS);
+    .filter((entry): entry is PersistedWindowSession => entry !== null);
+  const liveKeys = new Set(liveSessions.map((session) => session.sessionKey));
+  // Lazy overlay chunks may not have registered yet. Pending restores remain
+  // part of the canonical workspace until registration is confirmed, so an
+  // early normalized save can never erase them.
+  const pendingSessions = Object.values(state.pendingRestores)
+    .filter((session) => !liveKeys.has(session.sessionKey))
+    .map((session) => readSession({ ...session, savedAt }, diagnostics))
+    .filter((entry): entry is PersistedWindowSession => entry !== null);
+  const allSessions = [...liveSessions, ...pendingSessions].sort(
+    (a, b) => b.zIndex - a.zIndex || a.sessionKey.localeCompare(b.sessionKey),
+  );
+  const sessions = allSessions
+    .slice(0, MAX_PERSISTED_WINDOW_SESSIONS)
+    .sort(
+      (a, b) => a.zIndex - b.zIndex || a.sessionKey.localeCompare(b.sessionKey),
+    );
   if (allSessions.length > sessions.length) {
     diagnostics.push({
       level: "error",
@@ -357,8 +371,7 @@ function readSession(
     return null;
   }
   if (
-    (registryEntry.instanceMode !== "multi" &&
-      instanceId !== "default") ||
+    (registryEntry.instanceMode !== "multi" && instanceId !== "default") ||
     instanceId.length > MAX_ID_LENGTH ||
     (typeof value.windowId === "string" &&
       value.windowId.length > MAX_ID_LENGTH) ||
@@ -411,7 +424,8 @@ function readSession(
     sessionKey: windowSessionKey(overlayId, instanceId),
     overlayId,
     instanceId,
-    windowId: typeof value.windowId === "string" ? value.windowId : registryEntry.slug,
+    windowId:
+      typeof value.windowId === "string" ? value.windowId : registryEntry.slug,
     title: typeof value.title === "string" ? value.title : registryEntry.label,
     state: value.state,
     windowedRect: rect,
@@ -481,21 +495,19 @@ export function hydrateWindowWorkspace(
       message: `Window workspace exceeded ${MAX_PERSISTED_WINDOW_SESSIONS} sessions; extras were ignored.`,
     });
   }
-  raw.sessions
-    .slice(0, MAX_PERSISTED_WINDOW_SESSIONS)
-    .forEach((candidate) => {
-      const session = readSession(candidate, diagnostics);
-      if (!session) return;
-      const existing = byKey.get(session.sessionKey);
-      if (
-        !existing ||
-        existing.savedAt < session.savedAt ||
-        (existing.savedAt === session.savedAt &&
-          JSON.stringify(existing) < JSON.stringify(session))
-      ) {
-        byKey.set(session.sessionKey, session);
-      }
-    });
+  raw.sessions.slice(0, MAX_PERSISTED_WINDOW_SESSIONS).forEach((candidate) => {
+    const session = readSession(candidate, diagnostics);
+    if (!session) return;
+    const existing = byKey.get(session.sessionKey);
+    if (
+      !existing ||
+      existing.savedAt < session.savedAt ||
+      (existing.savedAt === session.savedAt &&
+        JSON.stringify(existing) < JSON.stringify(session))
+    ) {
+      byKey.set(session.sessionKey, session);
+    }
+  });
 
   const ordered = [...byKey.values()].sort(
     (a, b) => a.zIndex - b.zIndex || a.sessionKey.localeCompare(b.sessionKey),

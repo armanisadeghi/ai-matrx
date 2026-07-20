@@ -17,24 +17,26 @@
 
 import type { TrayPreviewContext } from "./windowRegistryTypes";
 import {
+  browserWorkbenchTrayPreview,
   cloudFilesTrayPreview,
   errorInspectorTrayPreview,
+  messagesTrayPreview,
   notesTrayPreview,
   quickTasksTrayPreview,
   scraperTrayPreview,
+  shareTrayPreview,
+  singleMessageTrayPreview,
   smartCodeEditorTrayPreview,
+  transcriptStudioTrayPreview,
 } from "./tray-previews";
 import type { ReactNode } from "react";
-import { captureElementThumbnail } from "@/hooks/useScreenCapture";
 
 export interface TrayPreviewEntry {
   renderTrayPreview?: (ctx: TrayPreviewContext) => ReactNode;
   captureTraySnapshot?: (bodyEl: HTMLElement) => Promise<Blob | null>;
 }
 
-const DEFAULT_TRAY_PREVIEW: TrayPreviewEntry = {
-  captureTraySnapshot: captureElementThumbnail,
-};
+const DEFAULT_TRAY_PREVIEW: TrayPreviewEntry = {};
 
 const TRAY_PREVIEW_REGISTRY: Record<string, TrayPreviewEntry> = {
   notesWindow: { renderTrayPreview: notesTrayPreview },
@@ -43,6 +45,15 @@ const TRAY_PREVIEW_REGISTRY: Record<string, TrayPreviewEntry> = {
   scraperWindow: { renderTrayPreview: scraperTrayPreview },
   smartCodeEditorWindow: { renderTrayPreview: smartCodeEditorTrayPreview },
   errorInspectorWindow: { renderTrayPreview: errorInspectorTrayPreview },
+  messagesWindow: { renderTrayPreview: messagesTrayPreview },
+  singleMessageWindow: { renderTrayPreview: singleMessageTrayPreview },
+  browserWorkbenchWindow: {
+    renderTrayPreview: browserWorkbenchTrayPreview,
+  },
+  shareModalWindow: { renderTrayPreview: shareTrayPreview },
+  transcriptStudioWindow: {
+    renderTrayPreview: transcriptStudioTrayPreview,
+  },
 };
 
 export function getTrayPreviewEntry(overlayId: string): TrayPreviewEntry {

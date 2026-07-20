@@ -22,7 +22,7 @@ const OVERLAY_ID = "singleMessageWindow" as const;
 export interface OpenSingleMessageWindowOptions {
   /** Optional stable instance id. Omit to spawn a fresh instance. */
   instanceId?: string;
-  conversationId?: string | null;
+  conversationId: string;
 }
 
 export interface SingleMessageWindowHandle {
@@ -33,8 +33,10 @@ export interface SingleMessageWindowHandle {
 export function useOpenSingleMessageWindow() {
   const dispatch = useAppDispatch();
   return useCallback(
-    (opts: OpenSingleMessageWindowOptions = {}): SingleMessageWindowHandle => {
-      const instanceId = opts.instanceId ?? `singleMessageWindow-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    (opts: OpenSingleMessageWindowOptions): SingleMessageWindowHandle => {
+      const instanceId =
+        opts.instanceId ??
+        `singleMessageWindow-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
@@ -46,7 +48,8 @@ export function useOpenSingleMessageWindow() {
       );
       return {
         instanceId,
-        close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
+        close: () =>
+          dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
       };
     },
     [dispatch],
@@ -58,11 +61,13 @@ export function useOpenSingleMessageWindow() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function SingleMessageWindowController(props: OpenSingleMessageWindowOptions): null {
+export function SingleMessageWindowController(
+  props: OpenSingleMessageWindowOptions,
+): null {
   const open = useOpenSingleMessageWindow();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.conversationId]);
+  }, [open, props.conversationId, props.instanceId]);
   return null;
 }

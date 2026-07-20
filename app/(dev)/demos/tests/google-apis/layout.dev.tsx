@@ -3,7 +3,7 @@ import GoogleApisLayoutClient from "./GoogleApisLayoutClient";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Google APIs",
   title: "Tests",
   description: "Google APIs integration tests",

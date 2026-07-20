@@ -2,7 +2,7 @@
 
 This inventory lists **App Router** `page.tsx` entry points that exist primarily for **demos**, **QA experiments**, **component playgrounds**, or **internal harnesses** — not end-user product flows.
 
-**Total routes:** 354 (generated from filesystem rules; adjust `docs/DEMO_AND_TEST_ROUTES.md` if a route is miscategorized.)
+**Total routes:** 346 (generated from filesystem rules; adjust `docs/DEMO_AND_TEST_ROUTES.md` if a route is miscategorized.)
 
 URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-auth)`).
 
@@ -168,16 +168,10 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 ### Authenticated — `/tests`
 
-*69 routes*
+*61 routes*
 
 - `/tests` — `app/(authenticated)/tests/page.tsx`
 - `/tests/_maps` — `app/(authenticated)/tests/_maps/page.tsx`
-- `/tests/app-shell-test` — `app/(authenticated)/tests/app-shell-test/page.tsx`
-- `/tests/app-shell-test/layout-choices` — `app/(authenticated)/tests/app-shell-test/layout-choices/page.tsx`
-- `/tests/app-shell-test/single-option` — `app/(authenticated)/tests/app-shell-test/single-option/page.tsx`
-- `/tests/app-shell-test/single-option/layout-choices` — `app/(authenticated)/tests/app-shell-test/single-option/layout-choices/page.tsx`
-- `/tests/app-shell-test/single-option/sample-nested` — `app/(authenticated)/tests/app-shell-test/single-option/sample-nested/page.tsx`
-- `/tests/app-shell-test/single-option/sample-nested/sample-nested-again` — `app/(authenticated)/tests/app-shell-test/single-option/sample-nested/sample-nested-again/page.tsx`
 - `/tests/applet-tests` — `app/(authenticated)/tests/applet-tests/page.tsx`
 - `/tests/applet-tests/applet-builder-3` — `app/(authenticated)/tests/applet-tests/applet-builder-3/page.tsx`
 - `/tests/applet-tests/resume-builder-test` — `app/(authenticated)/tests/applet-tests/resume-builder-test/page.tsx`
@@ -196,7 +190,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/field-tests` — `app/(authenticated)/tests/field-tests/page.tsx`
 - `/tests/field-tests/direct-fields` — `app/(authenticated)/tests/field-tests/direct-fields/page.tsx`
 - `/tests/field-tests/manual-simple-fields` — `app/(authenticated)/tests/field-tests/manual-simple-fields/page.tsx`
-- `/tests/full-screen-demo` — `app/(authenticated)/tests/full-screen-demo/page.tsx`
 - `/tests/google-apis` — `app/(authenticated)/tests/google-apis/page.tsx`
 - `/tests/google-apis/pagespeed` — `app/(authenticated)/tests/google-apis/pagespeed/page.tsx`
 - `/tests/google-apis/search-console` — `app/(authenticated)/tests/google-apis/search-console/page.tsx`
@@ -204,7 +197,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/integrations` — `app/(authenticated)/tests/integrations/page.tsx`
 - `/tests/integrations/option-two` — `app/(authenticated)/tests/integrations/option-two/page.tsx`
 - `/tests/integrations/simple` — `app/(authenticated)/tests/integrations/simple/page.tsx`
-- `/tests/links` — `app/(authenticated)/tests/links/page.tsx`
 - `/tests/markdown-tests` — `app/(authenticated)/tests/markdown-tests/page.tsx`
 - `/tests/markdown-tests/markdown-split-screen` — `app/(authenticated)/tests/markdown-tests/markdown-split-screen/page.tsx`
 - `/tests/markdown-tests/tui-tests` — `app/(authenticated)/tests/markdown-tests/tui-tests/page.tsx`
@@ -763,12 +755,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/demos/window-demo`
 - `/tests`
 - `/tests/_maps`
-- `/tests/app-shell-test`
-- `/tests/app-shell-test/layout-choices`
-- `/tests/app-shell-test/single-option`
-- `/tests/app-shell-test/single-option/layout-choices`
-- `/tests/app-shell-test/single-option/sample-nested`
-- `/tests/app-shell-test/single-option/sample-nested/sample-nested-again`
 - `/tests/applet-tests`
 - `/tests/applet-tests/applet-builder-3`
 - `/tests/applet-tests/resume-builder-test`
@@ -787,7 +773,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/field-tests`
 - `/tests/field-tests/direct-fields`
 - `/tests/field-tests/manual-simple-fields`
-- `/tests/full-screen-demo`
 - `/tests/google-apis`
 - `/tests/google-apis/pagespeed`
 - `/tests/google-apis/search-console`
@@ -795,7 +780,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/integrations`
 - `/tests/integrations/option-two`
 - `/tests/integrations/simple`
-- `/tests/links`
 - `/tests/markdown-tests`
 - `/tests/markdown-tests/markdown-split-screen`
 - `/tests/markdown-tests/tui-tests`

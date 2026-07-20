@@ -29,6 +29,7 @@ import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/p
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
 import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
 import { overlayRenderWatchdogMiddleware } from "@/features/window-panels/diagnostics/overlayRenderWatchdog";
+import { windowPersistenceCloseMiddleware } from "@/features/window-panels/persistence/windowPersistenceCloseMiddleware";
 import { reduxErrorCaptureMiddleware } from "@/lib/diagnostics/reduxErrorCaptureMiddleware";
 import {
   createSyncMiddleware,
@@ -208,6 +209,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         pdfStudioPersistenceMiddleware,
         agentCacheBustMiddleware,
         scopeTreeInvalidationMiddleware,
+        windowPersistenceCloseMiddleware,
         overlayRenderWatchdogMiddleware,
         reduxErrorCaptureMiddleware,
       ),

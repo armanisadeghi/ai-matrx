@@ -53,7 +53,7 @@ export function parseParams(paramString: string | null) {
  */
 /**
  * UrlPanelManager — URL deep-link sync only.
- * localStorage persistence has been moved to WindowPersistenceManager (Supabase-backed).
+ * Local workspace persistence is owned by WindowPersistenceManager.
  * This component handles ?panels= URL parameter sync for shareable deep links.
  * Mount inside a <Suspense> boundary if you need URL-based panel restoration.
  */

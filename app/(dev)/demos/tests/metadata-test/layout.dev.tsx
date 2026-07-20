@@ -1,6 +1,6 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Metadata",
   title: "Tests",
   description: "Metadata and SEO tests",

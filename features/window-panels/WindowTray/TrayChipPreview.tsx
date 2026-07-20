@@ -30,6 +30,7 @@ interface TrayChipPreviewProps {
   /** Unique runtime window id used for the local snapshot cache. */
   snapshotKey: string;
   overlayInstanceId?: string;
+  previewData?: Record<string, unknown>;
   title: string;
 }
 
@@ -49,6 +50,7 @@ export const TrayChipPreview = memo(function TrayChipPreview({
   registryKey,
   snapshotKey,
   overlayInstanceId = DEFAULT_INSTANCE_ID,
+  previewData,
   title,
 }: TrayChipPreviewProps) {
   // Static metadata for label fallback. Tray-preview callbacks live in a
@@ -72,7 +74,7 @@ export const TrayChipPreview = memo(function TrayChipPreview({
   // ── 1. Custom render mode ────────────────────────────────────────────────
   if (trayPreview?.renderTrayPreview && staticEntry) {
     const ctx: TrayPreviewContext = {
-      data: isPlainRecord(overlayData) ? overlayData : {},
+      data: previewData ?? (isPlainRecord(overlayData) ? overlayData : {}),
       overlayId: staticEntry.overlayId,
       instanceId: overlayInstanceId,
       title,

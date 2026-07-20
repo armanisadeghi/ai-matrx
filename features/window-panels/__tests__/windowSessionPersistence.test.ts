@@ -6,6 +6,9 @@ import reducer, {
   minimizeWindow,
   registerWindow,
   restoreWindow,
+  restoreAll,
+  moveTraySlot,
+  recomputeTrayPositions,
   unregisterWindow,
   updateWindowPersistence,
   windowSessionKey,
@@ -172,10 +175,7 @@ describe("window preservation reducer", () => {
   it("reserves pending tray and z slots across lazy registration", () => {
     const pending = restoredSession();
     let state = reducer(fresh(), hydrateAction([pending]));
-    state = reducer(
-      state,
-      registerWindow({ id: "fresh", initial: FULL_RECT }),
-    );
+    state = reducer(state, registerWindow({ id: "fresh", initial: FULL_RECT }));
     state = reducer(
       state,
       minimizeWindow({
@@ -228,6 +228,63 @@ describe("window preservation reducer", () => {
       data: {},
     });
   });
+
+  it("tombstones direct overlay close actions used by generated openers", () => {
+    let state = reducer(
+      fresh(),
+      registerWindow({
+        id: "messages-window",
+        initial: FULL_RECT,
+        persistence: preservation(),
+      }),
+    );
+    state = reducer(state, {
+      type: "overlays/closeOverlay",
+      payload: { overlayId: "messagesWindow" },
+    });
+    expect(state.windows["messages-window"].persistence?.closing).toBe(true);
+    expect(
+      serializeWindowWorkspace(state, "workspace-1").workspace.sessions,
+    ).toEqual([]);
+  });
+
+  it("includes lazy pending sessions in every early workspace save", () => {
+    const state = reducer(fresh(), hydrateAction([restoredSession()]));
+    expect(
+      serializeWindowWorkspace(state, "workspace-1").workspace.sessions,
+    ).toHaveLength(1);
+  });
+
+  it("applies tray restore, move, and resize operations to pending reservations", () => {
+    let state = reducer(fresh(), hydrateAction([restoredSession()]));
+    state = reducer(state, registerWindow({ id: "fresh", initial: FULL_RECT }));
+    state = reducer(
+      state,
+      minimizeWindow({
+        id: "fresh",
+        viewportWidth: VIEWPORT.width,
+        viewportHeight: VIEWPORT.height,
+      }),
+    );
+    state = reducer(state, moveTraySlot({ id: "fresh", toSlot: 0 }));
+    expect(state.windows.fresh.traySlot).toBe(0);
+    expect(state.pendingRestores["messagesWindow:default"].traySlot).toBe(1);
+
+    state = reducer(
+      state,
+      recomputeTrayPositions({ viewportWidth: 900, viewportHeight: 600 }),
+    );
+    expect(state.pendingRestores["messagesWindow:default"].renderRect).toEqual(
+      traySlotRect(1, 900, 600),
+    );
+
+    state = reducer(state, restoreAll());
+    expect(state.trayCount).toBe(0);
+    expect(state.pendingRestores["messagesWindow:default"]).toMatchObject({
+      state: "windowed",
+      traySlot: null,
+    });
+  });
 });
 
 describe("window workspace serialization", () => {
@@ -266,9 +323,7 @@ describe("window workspace serialization", () => {
       height: 600,
     });
     expect(hydrated.sessions[0].windowedRect).toEqual(FULL_RECT);
-    expect(hydrated.sessions[0].renderRect).toEqual(
-      traySlotRect(0, 900, 600),
-    );
+    expect(hydrated.sessions[0].renderRect).toEqual(traySlotRect(0, 900, 600));
     expect(hydrated.sessions[0].traySlot).toBe(0);
 
     let restoredState = reducer(fresh(), hydrateAction(hydrated.sessions));
@@ -334,8 +389,9 @@ describe("window workspace serialization", () => {
       VIEWPORT,
     );
     expect(result.sessions).toEqual([]);
-    expect(result.diagnostics.some((item) => item.code === "preservation-disabled"))
-      .toBe(true);
+    expect(
+      result.diagnostics.some((item) => item.code === "preservation-disabled"),
+    ).toBe(true);
   });
 
   it("rejects workspace mismatches and non-default singleton instances", () => {

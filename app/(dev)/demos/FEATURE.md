@@ -38,6 +38,9 @@ competing with the one persistent shell header.
 
 ## Change log
 
+- 2026-07-20 — Deleted the isolated Full Screen API toggle demo.
+- 2026-07-20 — Deleted the obsolete App Shell test tree and its six route entries.
+- 2026-07-20 — Corrected every nested test index, module-home, and metadata prefix to `/demos/tests/**`; removed the deleted legacy test tree from manifest generation and deleted the obsolete hand-maintained links catalogue.
 - 2026-07-18 — Added `/demos/agent-assignments`, an API-backed UI for secure
   single random variables and durable coordinated, random, and Cartesian agent
   batches with progress, resume, cancellation, and result inspection.

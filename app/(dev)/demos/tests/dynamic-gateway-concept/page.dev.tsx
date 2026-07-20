@@ -5,7 +5,7 @@ export default async function DynamicGatewayConceptPage() {
   return (
     <RouteIndexPage
       directory={join(process.cwd(), "app", "(dev)", "demos", "tests", "dynamic-gateway-concept")}
-      basePath="/legacy/tests/dynamic-gateway-concept"
+basePath="/demos/tests/dynamic-gateway-concept"
       title="Dynamic Gateway Concept"
     />
   );

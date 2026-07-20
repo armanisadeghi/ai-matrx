@@ -1,7 +1,7 @@
 import SlackBrokersLayoutClient from "./SlackBrokersLayoutClient";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Slack",
   title: "Tests",
   description: "Slack broker registration and integration tests",

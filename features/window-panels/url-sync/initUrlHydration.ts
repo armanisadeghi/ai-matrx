@@ -106,11 +106,6 @@ export function initUrlHydration() {
     dispatch(openOverlay({ overlayId: "userPreferencesWindow" }));
   });
 
-  // Share Modal Window
-  registerPanelHydrator("share_modal", (dispatch) => {
-    dispatch(openOverlay({ overlayId: "shareModalWindow" }));
-  });
-
   // Markdown Editor Window
   registerPanelHydrator("markdown_editor", (dispatch) => {
     dispatch(openOverlay({ overlayId: "markdownEditorWindow" }));
@@ -167,18 +162,6 @@ export function initUrlHydration() {
   // Agent Assistant Markdown Debug Window
   registerPanelHydrator("agent-md-debug", (dispatch) => {
     dispatch(openOverlay({ overlayId: "agentAssistantMarkdownDebugWindow" }));
-  });
-
-  // Transcript Studio Window — `?panels=studio` opens the floating studio.
-  // Optional `?panels=studio:<sessionId>` deep-links to a specific session
-  // (StudioView reads activeSessionId from data on mount).
-  registerPanelHydrator("studio", (dispatch, id) => {
-    dispatch(
-      openOverlay({
-        overlayId: "transcriptStudioWindow",
-        data: id ? { activeSessionId: id } : null,
-      }),
-    );
   });
 
   // File Preview Window — `?panels=file_preview:<fileId>:p-<page>` deep-links

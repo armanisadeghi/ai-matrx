@@ -2,7 +2,7 @@ import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Field",
   title: "Tests",
   description: "Form field component tests",
@@ -20,7 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "tests",
         "field-tests",
       )}
-      moduleHome="/legacy/tests/field-tests"
+moduleHome="/demos/tests/field-tests"
       moduleName="Field Tests"
     >
       {children}

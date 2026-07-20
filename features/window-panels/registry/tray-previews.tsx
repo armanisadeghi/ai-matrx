@@ -17,6 +17,106 @@ import type { ReactNode } from "react";
 import type { TrayPreviewContext } from "./windowRegistryTypes";
 import ErrorInspectorTrayChip from "@/features/admin/error-inspector/ErrorInspectorTrayChip";
 
+function compactId(value: unknown): string | null {
+  return typeof value === "string" && value
+    ? value.length > 18
+      ? `${value.slice(0, 8)}…${value.slice(-6)}`
+      : value
+    : null;
+}
+
+export function messagesTrayPreview({ data }: TrayPreviewContext): ReactNode {
+  const conversationId = compactId(data.conversationId);
+  return (
+    <div className="truncate">
+      <span className="text-foreground/80 font-medium">Messages</span>
+      {conversationId && (
+        <span className="ml-1 text-muted-foreground/60">
+          · {conversationId}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function singleMessageTrayPreview({
+  data,
+}: TrayPreviewContext): ReactNode {
+  const conversationId = compactId(data.conversationId);
+  return (
+    <div className="truncate">
+      <span className="text-foreground/80 font-medium">Conversation</span>
+      {conversationId && (
+        <span className="ml-1 text-muted-foreground/60">
+          · {conversationId}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function browserWorkbenchTrayPreview({
+  data,
+}: TrayPreviewContext): ReactNode {
+  const activeTabId =
+    typeof data.activeTabId === "string" ? data.activeTabId : null;
+  const tabs = Array.isArray(data.tabs) ? data.tabs : [];
+  const activeTab = tabs.find(
+    (tab): tab is Record<string, unknown> =>
+      typeof tab === "object" &&
+      tab !== null &&
+      "id" in tab &&
+      tab.id === activeTabId,
+  );
+  const label =
+    activeTab && typeof activeTab.label === "string"
+      ? activeTab.label
+      : activeTab && typeof activeTab.url === "string"
+        ? activeTab.url
+        : "No active site";
+  return (
+    <div className="truncate">
+      <span className="text-foreground/80 font-medium">{label}</span>
+      {tabs.length > 1 && (
+        <span className="ml-1 text-muted-foreground/60">
+          · {tabs.length} tabs
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function shareTrayPreview({ data }: TrayPreviewContext): ReactNode {
+  const name =
+    typeof data.resourceName === "string" && data.resourceName
+      ? data.resourceName
+      : "Shared resource";
+  const type =
+    typeof data.resourceType === "string" ? data.resourceType : null;
+  return (
+    <div className="truncate">
+      <span className="text-foreground/80 font-medium">{name}</span>
+      {type && <span className="ml-1 text-muted-foreground/60">· {type}</span>}
+    </div>
+  );
+}
+
+export function transcriptStudioTrayPreview({
+  data,
+}: TrayPreviewContext): ReactNode {
+  const sessionId = compactId(data.activeSessionId);
+  return (
+    <div className="truncate">
+      <span className="text-foreground/80 font-medium">
+        Transcript Studio
+      </span>
+      {sessionId && (
+        <span className="ml-1 text-muted-foreground/60">· {sessionId}</span>
+      )}
+    </div>
+  );
+}
+
 // ─── Notes ────────────────────────────────────────────────────────────────────
 
 export function notesTrayPreview({ data }: TrayPreviewContext): ReactNode {

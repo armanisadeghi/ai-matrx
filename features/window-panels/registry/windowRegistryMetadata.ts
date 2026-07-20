@@ -438,6 +438,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: { bookmarks: [], tabs: [], activeTabId: null },
     mobilePresentation: "fullscreen",
     mobileSidebarAs: "drawer",
+    preservation: { dataKeys: ["tabs", "activeTabId"] },
   },
 
   // ── List Manager ──────────────────────────────────────────────────────────
@@ -819,10 +820,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
       resourceType: null,
       resourceId: null,
       resourceName: null,
-      isOwner: false,
     },
     mobilePresentation: "drawer",
-    urlSync: { key: "share_modal" },
+    preservation: {
+      dataKeys: ["resourceType", "resourceId", "resourceName"],
+      requiredDataKeys: ["resourceType", "resourceId"],
+    },
   },
 
   // ── Email Dialog ──────────────────────────────────────────────────────────
@@ -1035,7 +1038,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     label: "Transcript Studio",
     defaultData: { activeSessionId: null },
     mobilePresentation: "fullscreen",
-    urlSync: { key: "studio" },
+    preservation: { dataKeys: ["activeSessionId"] },
   },
 
   // ── Chat History ──────────────────────────────────────────────────────────

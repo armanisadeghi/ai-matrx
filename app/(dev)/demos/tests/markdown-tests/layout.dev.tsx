@@ -2,7 +2,7 @@ import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Markdown",
   title: "Tests",
   description: "Markdown rendering and editor tests",
@@ -20,7 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "tests",
         "markdown-tests",
       )}
-      moduleHome="/legacy/tests/markdown-tests"
+      moduleHome="/demos/tests/markdown-tests"
       moduleName="Markdown Tests"
     >
       {children}

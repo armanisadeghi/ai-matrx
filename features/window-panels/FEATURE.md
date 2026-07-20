@@ -24,7 +24,7 @@ features/window-panels/             ← WindowPanel component primitive
   WindowPanel.tsx                      the draggable/resizable frame
   WindowTray.tsx                       minimized-windows dock
   WindowTraySync.tsx                   debounced viewport listener
-  WindowPersistenceManager.tsx         window_sessions DB hydration
+  WindowPersistenceManager.tsx         tab-scoped local preservation coordinator
   windows/<feature>/                   window components (rendered by overlay controller)
   registry/                            DEPRECATED — deleted post-cutover
   OverlaySurface.tsx                   DEPRECATED — deleted post-cutover
@@ -42,6 +42,7 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-07-20 — Reconnected refresh preservation as a local-first, tab-scoped workspace cache. Exact `(overlayId, instanceId)` identity, staged lazy restores, close tombstones, serialized writes, viewport/tray normalization, account isolation, bounded JSON allowlists, and synchronous pagehide/close mirrors replace the disconnected `window_sessions` manager. Preservation is default-deny per audited registry entry; screenshots remain memory-only.
 - 2026-07-20 — Rebuilt the minimized-window contract: desktop cards are 240×160, tray geometry is centralized and every slot release/reorder moves both slot numbers and rectangles, the 32px minimized header ignores rich `titleNode` content, and non-semantic previews use one bounded local WebP capture with no upload or persistent storage.
 - 2026-07-19 — Added `surfaceContextWindow` to the universal Agents header for real-time surface variable inspection, and expanded the admin-gated `surfaceContextInspector` into a two-view WindowPanel (live values + embedded manifest/settings editor). Both use mobile drawer presentation and the canonical overlay controller. Their title bars follow the thin chrome contract: friendly surface labels, 24px icon-only actions, canonical compact Copy for AI, and status metadata in the footer instead of oversized header controls.
 - 2026-07-18 — Context Menu v3 now uses `AgentFlexiblePanel` (`flexible-panel`) as the shared framework-owned presentation for surface-bound/default Agents across Notes and every other managed context-menu surface; shortcut-specific presentations remain untouched.
@@ -112,7 +113,7 @@ Adding a new overlay is a **2-file change**: register it + write the component. 
 
 Parallel subsystems that read the registry:
 
-- **WindowPersistenceManager** — hydrates `window_sessions` rows on mount; clamps rects to viewport; runs the idle GC sweep (`pruneStaleInstances` every 30 min).
+- **WindowPersistenceManager** — hydrates the current tab/identity workspace from localStorage + IndexedDB, stages lazy restores, and runs the idle overlay GC sweep.
 - **UrlPanelManager** — reads `?panels=` query, dispatches hydrators; every `registry.urlSync.key` must have a hydrator in `initUrlHydration.ts` (dev assertion enforces).
 - **WindowPanel** — looks up its own registry entry by `overlayId` to resolve `mobilePresentation`, `mobileSidebarAs`, and `urlSync.key`.
 
@@ -120,14 +121,14 @@ Parallel subsystems that read the registry:
 
 ## The registry (single source of truth)
 
-File: [`registry/windowRegistry.ts`](./registry/windowRegistry.ts)
+Files: [`registry/windowRegistryMetadata.ts`](./registry/windowRegistryMetadata.ts) (static metadata) and the lazy render map in [`../overlays/OverlayController.tsx`](../overlays/OverlayController.tsx)
 
 ### Shape
 
 ```ts
 interface WindowRegistryEntry {
   // Identity
-  slug: string; // kebab-case, stored in window_sessions.window_type
+  slug: string; // stable kebab-case URL/diagnostic identifier
   overlayId: string; // camelCase, key in overlaySlice
   kind: OverlayKind; // "window" | "widget" | "sheet" | "modal"
 
@@ -135,7 +136,7 @@ interface WindowRegistryEntry {
   componentImport: () => Promise<{ default: ComponentType<any> }>;
   label: string; // shown in tray + window manager
   defaultData: Record<string, unknown>; // doc + restore fallback
-  ephemeral?: boolean; // skip DB persistence
+  ephemeral?: boolean; // skip local refresh preservation
 
   // Mobile
   mobilePresentation?: "fullscreen" | "drawer" | "card" | "hidden";
@@ -150,20 +151,25 @@ interface WindowRegistryEntry {
   category?: ToolsCategory; // (reserved — see above)
   heavySnapshot?: boolean; // Phase 7 opt-in
   autosave?: boolean; // Phase 7 opt-in
+  preservation?: {
+    dataKeys: readonly string[]; // explicit JSON allowlist
+    requiredDataKeys?: readonly string[];
+    maxDataBytes?: number; // default 32 KiB
+  };
   seedData?: (ctx) => Record<string, unknown>; // rarely used on registry
 }
 ```
 
-### Invariants (checked by `assertRegistryIntegrity`)
+### Registry invariants
 
-1. Every entry has `kind` + `componentImport`.
+1. Every metadata entry has `kind`; every overlay id has one lazy renderer in `OverlayController`.
 2. Every `kind: "window"` has `mobilePresentation`.
 3. `slug` and `overlayId` are each unique across the registry.
 4. Every entry with `urlSync.key` has a hydrator registered in `initUrlHydration.ts` (separate dev check in that file).
 
 ### How to add a new overlay
 
-**Step 1** — register it in [`registry/windowRegistry.ts`](./registry/windowRegistry.ts):
+**Step 1** — register its static contract in [`registry/windowRegistryMetadata.ts`](./registry/windowRegistryMetadata.ts) and lazy renderer in [`../overlays/OverlayController.tsx`](../overlays/OverlayController.tsx):
 
 ```ts
 {
@@ -171,8 +177,6 @@ interface WindowRegistryEntry {
   overlayId: "myFeatureWindow",
   kind: "window",
   label: "My Feature",
-  componentImport: () =>
-    import("@/features/window-panels/windows/MyFeatureWindow"),
   defaultData: { selectedId: null, search: "" },
   mobilePresentation: "drawer",   // or "fullscreen" / "card" / "hidden"
   // optional:
@@ -224,7 +228,9 @@ export default function MyFeatureWindow({
 }
 ```
 
-**That's it.** Render, Tools-grid placement (via `toolsGridTiles.ts` if desired), persistence, URL sync, mobile routing — all automatic. Nothing else to touch.
+In `OverlayController.tsx`, add the `lazyOverlay(() => import(...), { ssr: false })` declaration and the exact typed render block for `myFeatureWindow`. Keep component code out of the static metadata file.
+
+**That's it.** Render and mobile routing are controller/registry driven. URL sync requires a hydrator when declared, Tools-grid placement requires `toolsGridTiles.ts`, and refresh preservation requires an audited `preservation` allowlist (plus `overlayInstanceId` for multi-instance windows).
 
 ---
 
@@ -236,7 +242,7 @@ export default function MyFeatureWindow({
 
 | Slot                        | Props                                                                                                                                                                               | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Header**                  | `title` (string) / `titleNode` (rich JSX, wins over `title` while open), `actionsLeft`, `actionsRight`                                                                              | The open-window title is **absolute-centered** across the full header width. Keep header actions **compact** — wide action clusters can reach the centered title and overlap it (known rough edge, see Known gaps). The minimized header is framework-owned: fixed 32px height, 11px one-line text from `title` → registry label → `"Window"`, and it never renders `titleNode` or consumer actions. `actions` is deprecated → maps to `actionsRight`.                                                                                                                                                                                                                          |
+| **Header**                  | `title` (string) / `titleNode` (rich JSX, wins over `title` while open), `actionsLeft`, `actionsRight`                                                                              | The open-window title is **absolute-centered** across the full header width. Keep header actions **compact** — wide action clusters can reach the centered title and overlap it (known rough edge, see Known gaps). The minimized header is framework-owned: fixed 32px height, 11px one-line text from `title` → registry label → `"Window"`, and it never renders `titleNode` or consumer actions. `actions` is deprecated → maps to `actionsRight`.                                                                                                                                                                      |
 | **Footer**                  | `footer` (single flex row) **OR** `footerLeft` / `footerCenter` / `footerRight` (zoned, mutually exclusive with `footer`); `footerVariant` (`"bar"` default / `"rich"`)             | Renders only when content is provided. `footer` wins if both are passed. **`footerVariant="bar"`** (default) applies compact metadata-bar chrome (`text-xs`, tiny buttons/icons via descendant selectors, `bg-muted/40`) for status rows like `NoteMetadataBar` — it **crushes rich content**. Pass **`"rich"`** for a composer / input bar (full-size buttons, multi-row textarea, e.g. `SmartAgentInput`): it drops the compact descendant selectors + `bg-muted/40`, leaving just `shrink-0 border-t` so the slot owns its layout. Reference: `windows/multi-file-smart-code-editor/MultiFileSmartCodeEditorWindow.tsx`. |
 | **Sidebar (left)**          | `sidebar`, `sidebarDefaultSize` (200px), `sidebarMinSize` (100px), `defaultSidebarOpen` (true), `sidebarClassName`                                                                  | Resizable + collapsible; a toggle appears next to the traffic lights. **`sidebarExpandsWindow` is a footgun** — it mutates the window rect on every toggle (a second sizing path that fights drag/snap). Avoid; leave it `false`.                                                                                                                                                                                                                                                                                                                                                                                           |
 | **Secondary panel (right)** | `secondaryPanel`, `secondaryPanelOpen` (default true when `secondaryPanel` is set), `secondaryPanelDefaultSize` (360px), `secondaryPanelMinSize` (240px), `secondaryPanelClassName` | The canonical home for a **history / inspector / details pane** that belongs to the window, not the body. Resizable, mirrors the sidebar. **Desktop only** — no built-in mobile presentation; the consumer handles mobile (e.g. a Drawer). Reference: `features/notes` `NoteHistoryPane`.                                                                                                                                                                                                                                                                                                                                   |
@@ -276,33 +282,21 @@ All three live under `lib/redux/slices/`:
 
 ## Persistence
 
-Table: `window_sessions` (Supabase, RLS-enforced per user).
+Window layout is device-local UI state, not cloud/domain data. One workspace id lives in `sessionStorage` so refresh keeps the layout while independent tabs do not overwrite one another. A short local lease detects cloned tabs. Workspaces are identity-scoped (`auth:<userId>` / `guest:<fingerprint>`) and capped at five per identity.
 
-```
-id (uuid) | user_id | window_type (slug) | label | panel_state (jsonb) | data (jsonb) | created_at | updated_at
-```
+**Storage tiers:** a compact localStorage mirror is written synchronously for reload/pagehide safety; the same payload is queued into the existing IndexedDB warm-cache primitive. Writes for one workspace are serialized, so an older completion cannot resurrect a closed window. The whole workspace is capped at 256 KiB / 64 sessions; each window defaults to 32 KiB of semantic JSON.
 
-**Save triggers — only two:**
+**Registry gate:** preservation is default-deny. A non-ephemeral entry restores only when it declares `preservation.dataKeys`; multi-instance windows must also pass `overlayInstanceId`. `requiredDataKeys` prevents context-dependent windows from reopening without the identity they need. Functions, callbacks, blobs, cyclic/custom objects, and non-allowlisted keys never reach storage.
 
-1. **Explicit** — user clicks "Save window state" in the green traffic-light dropdown.
-2. **Piggyback** — child component calls `onCollectData` as part of its own save flow.
+**On refresh:** the manager validates identity/workspace/schema, normalizes z-order and tray slots, clamps full window rects to the current viewport, stages pending sessions, then opens exact overlay instances. `registerWindow` consumes the staged state atomically; current manual/URL opens beat a late cache read. Pending sessions remain serializable while lazy chunks load, so an early save cannot erase them.
 
-Moving, resizing, toggling the sidebar, or switching tabs does **not** trigger a DB write. (Phase 7 will add opt-in `autosave` + `heavySnapshot` for specific windows.)
+**On close:** every `overlays/closeOverlay` / `closeAllOverlays` action tombstones the matching window in the window-manager reducer. The close middleware synchronously flushes the post-close localStorage workspace before unmount, regardless of whether close came from the header, a generated opener, or controller cleanup.
 
-**On close**: `WindowPanel` calls `persistence.closeWindow(overlayId)` which deletes the row.
-
-**On page load**: `WindowPersistenceManager`:
-
-1. Runs a one-time `matrx_window_manager_state` localStorage migration (clamp each rect, dispatch `restoreWindowState`, remove the key).
-2. Fetches all `window_sessions` rows for the user.
-3. For each row: dispatches `openOverlay({ overlayId, data })` and builds a clamped `WindowEntry` for `windowManagerSlice` via `clampRectToCurrentViewport`.
-4. Dispatches `restoreWindowState(entries)` so geometry is in Redux before `WindowPanel` mounts.
-
-**Rect clamping** ([`utils/rectClamp.ts`](./utils/rectClamp.ts)) — restored rects are clamped into the current viewport with a 48 px minimum visible strip so the header stays draggable. Nonsensical rects fall back to a centered default.
+**Minimized windows:** persistence stores the full pre-minimized rect plus logical tray order, never card pixels or screenshot blobs. Tray card geometry is recomputed for the current viewport. Snapshot previews remain the separate bounded in-memory cache described above and intentionally disappear on refresh.
 
 **Instance GC** — every 30 minutes (idle-only via `requestIdleCallback`), `pruneStaleInstances({ olderThanMs: 30min })` sweeps closed multi-instance entries that haven't been reopened. Singleton slots are preserved regardless so stable-reference selectors don't thrash.
 
-**Ephemeral overlays** — registry entries with `ephemeral: true` never write to DB. Use for debug panels, one-shot tool dialogs, and callback-group windows whose caller-side state can't survive reload.
+**Ephemeral overlays** — registry entries with `ephemeral: true` never enter the workspace. Use for debug panels, one-shot tool dialogs, and callback-group windows whose caller-side state cannot survive reload.
 
 ---
 
@@ -407,36 +401,38 @@ Enforced by:
 | `WindowPanel.tsx`                                       | Shell (drag, resize, maximize, minimize, mobile routing, persistence, URL sync). Decomposition into modules is Phase 6.                                                                                                                                |
 | `OverlaySurface.tsx`                                    | Generic renderer for one registry entry — singleton + multi-instance.                                                                                                                                                                                  |
 | `UnifiedOverlayController.tsx`                          | Iterates `ALL_WINDOW_REGISTRY_ENTRIES`; one source of truth for mounted overlays.                                                                                                                                                                      |
-| `WindowPersistenceManager.tsx`                          | Hydrates `window_sessions`; LS migration; idle GC sweep.                                                                                                                                                                                               |
+| `WindowPersistenceManager.tsx`                          | Coordinates identity/tab readiness, staged local restore, bounded saves, close flushes, and idle GC.                                                                                                                                                   |
 | `WindowTray.tsx` / `WindowTraySync.tsx`                 | Standalone minimized-dock chips + debounced viewport sync. **The `WindowTray` dock is NOT mounted in prod** — minimized windows render as the shrunken `WindowPanel` shell (positioned by `traySlotRect`); `WindowTraySync` keeps those shells docked. |
-| `WindowTray/MinimizedWindowContent.tsx`                 | Body of a minimized shell: renders `TrayChipPreview` (registry custom / snapshot / default) + click-to-restore. Registry and runtime snapshot keys stay distinct.                                                                                       |
+| `WindowTray/MinimizedWindowContent.tsx`                 | Body of a minimized shell: renders `TrayChipPreview` (registry custom / snapshot / default) + click-to-restore. Registry and runtime snapshot keys stay distinct.                                                                                      |
 | `WindowTray/TrayChipPreview.tsx` / `TrayStatusChip.tsx` | Canonical minimized-body preview (3 modes) + the reusable status primitive (tinted icon + count + per-tone breakdown; presentational, colour language from `errorTiers.ts`). Custom previews register in `registry/trayPreviewRegistry.ts`.            |
 | `WindowTray/traySnapshotMap.ts`                         | Bounded 16-entry in-memory Blob/object-URL snapshot cache with explicit URL revocation.                                                                                                                                                                |
 
 ### Subdirs
 
-| Path                                  | Role                                                                                                               |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `registry/windowRegistry.ts`          | Single source of truth for all overlays + types.                                                                   |
-| `service/windowPersistenceService.ts` | Supabase CRUD for `window_sessions`.                                                                               |
-| `hooks/useOverlay.ts`                 | Factory hooks (`useOverlayOpen`, `useOverlayData`, `useOverlayInstances`, `useOverlayActions`, `useCloseOverlay`). |
-| `hooks/useWindowPanel.ts`             | Pointer-driven move/resize; Redux window registration.                                                             |
-| `mobile/MobileDrawerSurface.tsx`      | Vaul-based bottom sheet for `mobilePresentation: "drawer"`.                                                        |
-| `mobile/MobileCardSurface.tsx`        | Floating card for `mobilePresentation: "card"`.                                                                    |
-| `tools-grid/toolsGridTiles.ts`        | Declarative config for every Tools-grid tile.                                                                      |
-| `tools-grid/ToolsGrid.tsx`            | Data-driven Tools-grid renderer.                                                                                   |
-| `tools-grid/menuPrimitives.tsx`       | `MenuSection` / `MenuDivider` / `MenuItem` / `MenuGridItem`.                                                       |
-| `url-sync/initUrlHydration.ts`        | `registerPanelHydrator` calls + dev-time integrity check.                                                          |
-| `url-sync/UrlPanelRegistry.ts`        | Hydrator map.                                                                                                      |
-| `url-sync/UrlPanelManager.tsx`        | Reads/writes `?panels=`.                                                                                           |
-| `url-sync/useUrlSync.ts`              | Registers/unregisters open panel in `urlSyncSlice`.                                                                |
-| `constants/tray.ts`                   | Single source for tray dimensions, margins, wrapping, and slot rectangles.                                          |
-| `utils/rectClamp.ts`                  | Viewport-safe geometry clamping.                                                                                   |
-| `utils/windowArrangements.ts`         | `arrangeActiveWindows` tile math.                                                                                  |
-| `utils/embed-site-url.ts`             | URL normalization for iframe windows.                                                                              |
-| `components/SidebarWindowToggle.tsx`  | Shell sidebar toggle (600 LOC post-Phase 3).                                                                       |
-| `components/LayoutIcon.tsx`           | Layout arrangement icon buttons.                                                                                   |
-| `windows/**`                          | 60+ window components — every one referenced by a registry `componentImport`.                                      |
+| Path                                        | Role                                                                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `registry/windowRegistry.ts`                | Single source of truth for all overlays + types.                                                                   |
+| `persistence/windowSessionSerialization.ts` | Validates, bounds, normalizes, and serializes local workspace sessions.                                            |
+| `persistence/localWindowSessionStore.ts`    | Composes localStorage + IndexedDB with tab leases, identity isolation, write ordering, and reaping.                |
+| `service/windowPersistenceService.ts`       | Legacy Supabase CRUD retained for historical/admin migration only; not used by the runtime manager.                |
+| `hooks/useOverlay.ts`                       | Factory hooks (`useOverlayOpen`, `useOverlayData`, `useOverlayInstances`, `useOverlayActions`, `useCloseOverlay`). |
+| `hooks/useWindowPanel.ts`                   | Pointer-driven move/resize; Redux window registration.                                                             |
+| `mobile/MobileDrawerSurface.tsx`            | Vaul-based bottom sheet for `mobilePresentation: "drawer"`.                                                        |
+| `mobile/MobileCardSurface.tsx`              | Floating card for `mobilePresentation: "card"`.                                                                    |
+| `tools-grid/toolsGridTiles.ts`              | Declarative config for every Tools-grid tile.                                                                      |
+| `tools-grid/ToolsGrid.tsx`                  | Data-driven Tools-grid renderer.                                                                                   |
+| `tools-grid/menuPrimitives.tsx`             | `MenuSection` / `MenuDivider` / `MenuItem` / `MenuGridItem`.                                                       |
+| `url-sync/initUrlHydration.ts`              | `registerPanelHydrator` calls + dev-time integrity check.                                                          |
+| `url-sync/UrlPanelRegistry.ts`              | Hydrator map.                                                                                                      |
+| `url-sync/UrlPanelManager.tsx`              | Reads/writes `?panels=`.                                                                                           |
+| `url-sync/useUrlSync.ts`                    | Registers/unregisters open panel in `urlSyncSlice`.                                                                |
+| `constants/tray.ts`                         | Single source for tray dimensions, margins, wrapping, and slot rectangles.                                         |
+| `utils/rectClamp.ts`                        | Viewport-safe geometry clamping.                                                                                   |
+| `utils/windowArrangements.ts`               | `arrangeActiveWindows` tile math.                                                                                  |
+| `utils/embed-site-url.ts`                   | URL normalization for iframe windows.                                                                              |
+| `components/SidebarWindowToggle.tsx`        | Shell sidebar toggle (600 LOC post-Phase 3).                                                                       |
+| `components/LayoutIcon.tsx`                 | Layout arrangement icon buttons.                                                                                   |
+| `windows/**`                                | 60+ window components — every one referenced by a registry `componentImport`.                                      |
 
 ### Deleted (Phase 9)
 
@@ -472,11 +468,7 @@ Enforced by:
 ## Known gaps / future work
 
 1. **Phase 6 — WindowPanel decomposition.** The 1,500-line shell wants to be split into `ResizeFrame` / `WindowHeader` / `TrafficLights` / `Chrome` / `SaveDropdown` / `PersistenceBinding`. Pure internal refactor; public prop surface stays identical. **No header/footer is extracted as a standalone sub-component yet** — chrome lives inline in the shell. Sub-issue: the header has **5 divergent implementations** (desktop `WindowHeader`, mobile-fullscreen `MobileWindowHeader`, mobile-drawer `MobileDrawerSurface`, mobile-card `MobileCardSurface`, popout `PopoutTopBar`) that share no code — consolidate to one core header. Whatever is built **stays behind the lazy boundary** (see Bundle invariant).
-2. **Phase 7 — Persistence hardening.**
-   - Typed link between `defaultData` and `onCollectData` (registry generic parameter).
-   - Autosave-on-blur opt-in per entry.
-   - `heavySnapshot` callback for Scraper / PDF Extractor / Markdown tester / Voice pad transcripts.
-   - `onReopenAfterReload` for callback-group windows (Content Editor, Smart Code Editor, Image Uploader).
+2. **Persistence rollout.** The platform primitive is shipped; registry opt-in remains deliberately audited. Add typed linkage between `defaultData`, `preservation.dataKeys`, and `onCollectData`, then enable additional self-contained windows. Callback-group editors need a real detached/rebind restore contract before opt-in; screenshots and heavy buffers remain excluded.
 3. **Phase 10 — Tests.** Needs a test harness pass first (`vitest` already present). Priorities:
    - Registry integrity (every kind: "window" has mobilePresentation; every urlSync.key has a hydrator).
    - `clampRectToViewport` edge cases.
@@ -590,7 +582,7 @@ dock("notesWindow");
 
 If a window was popped out at the time of parent reload, `WindowPersistenceManager` shows a toast with a **Restore** action. Clicking the action triggers a fresh popout via `usePopoutControl` — the click satisfies the user-gesture requirement that programmatic restore can't.
 
-The window otherwise restores docked at its `prePopoutRect` from the persistence layer (popout state itself is never written to DB).
+The window otherwise restores docked at its `prePopoutRect` from the persistence layer (popout state itself is never cached).
 
 ### Mobile
 

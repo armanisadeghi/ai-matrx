@@ -57,13 +57,13 @@ import {
   serializeWindowWorkspace,
   type WindowPersistenceDiagnostic,
 } from "./persistence/windowSessionSerialization";
+import { registerWindowPersistenceFlusher } from "./persistence/windowPersistenceCloseMiddleware";
 
 const SAVE_DEBOUNCE_MS = 250;
 
 function reportDiagnostics(diagnostics: WindowPersistenceDiagnostic[]): void {
   diagnostics.forEach((diagnostic) => {
-    const log =
-      diagnostic.level === "error" ? console.error : console.warn;
+    const log = diagnostic.level === "error" ? console.error : console.warn;
     log(`[window-preservation:${diagnostic.code}] ${diagnostic.message}`);
   });
 }
@@ -146,10 +146,7 @@ export function WindowPersistenceManager({
   const restoredInstancesRef = useRef<
     Array<{ overlayId: OverlayId; instanceId: string }>
   >([]);
-
-  if (workspaceIdRef.current === null && typeof window !== "undefined") {
-    workspaceIdRef.current = getWindowWorkspaceId();
-  }
+  const closedBeforeHydrationRef = useRef(new Set<string>());
 
   const saveCurrentWorkspace = useCallback(() => {
     const identity = identityRef.current;
@@ -183,6 +180,22 @@ export function WindowPersistenceManager({
     // after the event/paint and is intentionally not awaited.
     void saveLocalWindowWorkspace(identity, result.workspace);
   }, [store]);
+
+  useEffect(
+    () =>
+      registerWindowPersistenceFlusher(
+        saveCurrentWorkspace,
+        (identities) => {
+          if (hydratedRef.current) return;
+          identities.forEach(({ overlayId, instanceId }) => {
+            closedBeforeHydrationRef.current.add(
+              windowSessionKey(overlayId, instanceId),
+            );
+          });
+        },
+      ),
+    [saveCurrentWorkspace],
+  );
 
   // Observe the canonical Redux source once. No render-driven whole-state
   // selector and no per-window timers.
@@ -222,13 +235,15 @@ export function WindowPersistenceManager({
   // Explicit identity/workspace readiness. A cache miss is a completed load,
   // not a forever-loading state.
   useEffect(() => {
-    const workspaceId = workspaceIdRef.current;
-    if (!workspaceId) return undefined;
+    const workspaceId = workspaceIdRef.current ?? getWindowWorkspaceId();
+    workspaceIdRef.current = workspaceId;
     const identity = deriveIdentity({ userId, fingerprintId });
     let cancelled = false;
 
     hydratedRef.current = false;
-    setHydrated(false);
+    queueMicrotask(() => {
+      if (!cancelled) setHydrated(false);
+    });
     lastWorkspaceJsonRef.current = null;
     lastWorkspaceFingerprintRef.current = null;
     if (saveTimerRef.current) {
@@ -237,7 +252,10 @@ export function WindowPersistenceManager({
     }
 
     const previousIdentity = identityRef.current;
-    if (previousIdentity && previousIdentity.key !== identity.key) {
+    const identityChanged = Boolean(
+      previousIdentity && previousIdentity.key !== identity.key,
+    );
+    if (identityChanged) {
       // An account/fingerprint swap cannot leave the prior identity's windows
       // visible or let their unmounts write into the next identity's cache.
       const previousInstances = new Map<
@@ -270,25 +288,43 @@ export function WindowPersistenceManager({
       });
       restoredInstancesRef.current = [];
       dispatch(clearWindowPersistenceState());
+      // Account teardown closes are not user intent for the next identity.
+      closedBeforeHydrationRef.current.clear();
     }
     identityRef.current = identity;
 
-    void loadLocalWindowWorkspace(identity, workspaceId)
-      .then(({ workspace }) => {
+    const waitForPriorUnmount = identityChanged
+      ? new Promise<void>((resolve) => window.setTimeout(resolve, 0))
+      : Promise.resolve();
+
+    void waitForPriorUnmount
+      .then(() => loadLocalWindowWorkspace(identity, workspaceId))
+      .then(({ workspace, source }) => {
         if (cancelled || identityRef.current?.key !== identity.key) return;
-        const result = hydrateWindowWorkspace(workspace, {
-          width: window.innerWidth,
-          height: window.innerHeight,
-        }, workspaceId);
+        const result = hydrateWindowWorkspace(
+          workspace,
+          {
+            width: window.innerWidth,
+            height: window.innerHeight,
+          },
+          workspaceId,
+        );
         reportDiagnostics(result.diagnostics);
+        const currentOverlayState = store.getState().overlays.overlays;
+        const sessionsToRestore = result.sessions.filter(
+          (session) =>
+            !closedBeforeHydrationRef.current.has(session.sessionKey) &&
+            !currentOverlayState[session.overlayId]?.[session.instanceId]
+              ?.isOpen,
+        );
         dispatch(
           hydrateWindowSessions({
-            sessions: result.sessions,
+            sessions: sessionsToRestore,
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
           }),
         );
-        result.sessions.forEach((session) => {
+        sessionsToRestore.forEach((session) => {
           dispatch(
             openOverlay({
               overlayId: session.overlayId,
@@ -297,7 +333,7 @@ export function WindowPersistenceManager({
             }),
           );
         });
-        restoredInstancesRef.current = result.sessions.map(
+        restoredInstancesRef.current = sessionsToRestore.map(
           ({ overlayId, instanceId }) => ({ overlayId, instanceId }),
         );
         lastWorkspaceJsonRef.current = workspace
@@ -317,7 +353,12 @@ export function WindowPersistenceManager({
         surfacePopoutRecoveryToast();
         // Let restored WindowPanels register before taking the normalized
         // initial snapshot. This also records a clean empty-cache miss.
-        window.setTimeout(saveCurrentWorkspace, 0);
+        if (source !== "timeout") {
+          window.setTimeout(() => {
+            saveCurrentWorkspace();
+            closedBeforeHydrationRef.current.clear();
+          }, 0);
+        }
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -330,7 +371,6 @@ export function WindowPersistenceManager({
       cancelled = true;
     };
     // identityKey intentionally collapses fingerprint changes while signed in.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, identityKey, saveCurrentWorkspace, store]);
 
   useEffect(() => {

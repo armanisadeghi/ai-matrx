@@ -44,12 +44,12 @@ import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 // WindowPersistenceManager provides the React context that WindowPanel
 // reads via `useWindowPersistence()` — without this mounted, every
 // `saveWindow`/`closeWindow` call resolves to the no-op default and
-// persistence silently disappears. This is also what runs the one-time
-// hydration of `window_sessions` on session boot, the one-shot slug
-// migrations, and the idle GC sweep. Keep this OUTSIDE DeferredSingletons
+// persistence silently disappears. This also hydrates the identity/tab-scoped
+// local workspace cache on session boot and runs the idle GC sweep. Keep this
+// OUTSIDE DeferredSingletons
 // so the context is available to UnifiedOverlayController's children
 // and so hydration begins as soon as the user is authenticated rather
-// than waiting on idle. Imports only metadata + service helpers — none
+// than waiting on idle. Imports only metadata + local-cache helpers — none
 // of the heavy window-panel core files are pulled into this graph.
 import { WindowPersistenceManager } from "@/features/window-panels/WindowPersistenceManager";
 // ExtensionBridgeSubscriber bridges matrx-extend Chrome extension envelopes

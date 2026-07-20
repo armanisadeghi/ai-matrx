@@ -3,8 +3,10 @@ import type { PersistedWindowWorkspace } from "@/features/window-panels/persiste
 
 const readSliceMock = jest.fn();
 const writeSliceMock = jest.fn();
+const deleteSliceMock = jest.fn();
 
 jest.mock("@/lib/sync/persistence/idb", () => ({
+  deleteSlice: (...args: unknown[]) => deleteSliceMock(...args),
   readSlice: (...args: unknown[]) => readSliceMock(...args),
   writeSlice: (...args: unknown[]) => writeSliceMock(...args),
 }));
@@ -21,10 +23,13 @@ const IDENTITY: IdentityKey = {
   key: "auth:user-a",
 };
 
-function workspace(savedAt: number): PersistedWindowWorkspace {
+function workspace(
+  savedAt: number,
+  workspaceId = "workspace-1",
+): PersistedWindowWorkspace {
   return {
     schemaVersion: 1,
-    workspaceId: "workspace-1",
+    workspaceId,
     savedAt,
     sessions: [],
   };
@@ -35,7 +40,12 @@ describe("local window workspace store", () => {
     window.localStorage.clear();
     readSliceMock.mockReset().mockResolvedValue(null);
     writeSliceMock.mockReset().mockResolvedValue(undefined);
+    deleteSliceMock.mockReset().mockResolvedValue(undefined);
     __resetWindowSessionStoreForTests();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("writes the synchronous mirror before IndexedDB resolves", async () => {
@@ -102,5 +112,43 @@ describe("local window workspace store", () => {
     expect(
       await loadLocalWindowWorkspace(otherIdentity, "workspace-1"),
     ).toEqual({ source: "miss", workspace: null });
+  });
+
+  it("falls back to the synchronous mirror when IndexedDB rejects", async () => {
+    await saveLocalWindowWorkspace(IDENTITY, workspace(30));
+    readSliceMock.mockRejectedValueOnce(new Error("idb unavailable"));
+    jest.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    await expect(
+      loadLocalWindowWorkspace(IDENTITY, "workspace-1"),
+    ).resolves.toMatchObject({
+      source: "local-storage",
+      workspace: { savedAt: 30 },
+    });
+  });
+
+  it("bounds identity workspaces and re-indexes a still-live tab after eviction", async () => {
+    let now = 1_000;
+    const nowSpy = jest.spyOn(Date, "now").mockImplementation(() => now++);
+    for (let index = 1; index <= 6; index += 1) {
+      await saveLocalWindowWorkspace(
+        IDENTITY,
+        workspace(index, `workspace-${index}`),
+      );
+    }
+
+    expect(deleteSliceMock).toHaveBeenCalledWith(
+      IDENTITY.key,
+      "window-workspace:workspace-1",
+      1,
+    );
+
+    await saveLocalWindowWorkspace(IDENTITY, workspace(7, "workspace-1"));
+    expect(deleteSliceMock).toHaveBeenCalledWith(
+      IDENTITY.key,
+      "window-workspace:workspace-2",
+      1,
+    );
+    nowSpy.mockRestore();
   });
 });

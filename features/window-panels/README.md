@@ -1,6 +1,6 @@
 # Window Panels
 
-A Redux-backed, Supabase-persisted OS-style window manager. Handles classic floating windows, bottom sheets, modals, and inline agent widgets through one registry and one renderer.
+A Redux-backed, local-first OS-style window manager. Handles classic floating windows, bottom sheets, modals, and inline agent widgets through one registry and one renderer.
 
 > **Canonical docs**: [`FEATURE.md`](./FEATURE.md) — architecture, invariants, registry fields, slice responsibilities, mobile model, bundle rules, persistence details, known gaps, change log.
 > This README is the lightweight entry point; `FEATURE.md` is the full reference.
@@ -9,7 +9,7 @@ A Redux-backed, Supabase-persisted OS-style window manager. Handles classic floa
 
 ## The two-step recipe
 
-**1. Register it** in [`registry/windowRegistry.ts`](./registry/windowRegistry.ts):
+**1. Register it** in [`registry/windowRegistryMetadata.ts`](./registry/windowRegistryMetadata.ts) and add its lazy render mapping in [`../overlays/OverlayController.tsx`](../overlays/OverlayController.tsx):
 
 ```ts
 {
@@ -17,12 +17,12 @@ A Redux-backed, Supabase-persisted OS-style window manager. Handles classic floa
   overlayId: "myFeatureWindow",
   kind: "window",
   label: "My Feature",
-  componentImport: () =>
-    import("@/features/window-panels/windows/MyFeatureWindow"),
   defaultData: { selectedId: null, search: "" },
   mobilePresentation: "drawer",
 },
 ```
+
+Then add the lazy import and exact typed render block in `OverlayController.tsx`; never import component code into the static metadata registry.
 
 **2. Write the component** — mounts `<WindowPanel>`, implements `onCollectData`:
 
@@ -31,7 +31,12 @@ A Redux-backed, Supabase-persisted OS-style window manager. Handles classic floa
 import { useCallback, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
-export default function MyFeatureWindow({ isOpen, onClose, selectedId, search }) {
+export default function MyFeatureWindow({
+  isOpen,
+  onClose,
+  selectedId,
+  search,
+}) {
   if (!isOpen) return null;
   const [sel, setSel] = useState<string | null>(selectedId ?? null);
   const collect = useCallback(() => ({ selectedId: sel, search: "" }), [sel]);
@@ -49,7 +54,7 @@ export default function MyFeatureWindow({ isOpen, onClose, selectedId, search })
 }
 ```
 
-**That's all.** `UnifiedOverlayController` picks up the new entry automatically. Persistence, URL deep-linking, mobile routing, Tools-grid integration (if `toolsGridTiles.ts` is updated) — all driven by the registry.
+**That's all.** The controller and static registry drive rendering and mobile routing. URL sync needs a hydrator, Tools-grid placement needs `toolsGridTiles.ts`, and refresh preservation is enabled only by an audited `preservation` allowlist.
 
 Do **not** edit `components/overlays/OverlayController.tsx` (legacy; being retired), `overlaySlice.ts`'s `initialState`, or the shell sidebar import list. Those are registry-driven now.
 
@@ -57,20 +62,21 @@ Do **not** edit `components/overlays/OverlayController.tsx` (legacy; being retir
 
 ## Registry fields (summary)
 
-| Field | Required | Purpose |
-|---|---|---|
-| `slug` | ✅ | kebab-case; stored in `window_sessions.window_type`. Must be unique. |
-| `overlayId` | ✅ | camelCase; key in `overlaySlice`. Must be unique. |
-| `kind` | ✅ | `"window"` / `"widget"` / `"sheet"` / `"modal"`. |
-| `componentImport` | ✅ | Lazy `() => import(...)` returning `{ default: Component }`. |
-| `label` | ✅ | Human-readable. Shown in tray + window manager. |
-| `defaultData` | ✅ | Fallback payload shape. Docs the data keys the component expects. |
-| `mobilePresentation` | ✅ for `"window"` | `"fullscreen"` / `"drawer"` / `"card"` / `"hidden"`. |
-| `mobileSidebarAs` |  | `"drawer"` (default) or `"inline"`. Only for windows with a sidebar. |
-| `instanceMode` |  | `"singleton"` (default) or `"multi"`. |
-| `urlSync` |  | `{ key: string }` — activates `?panels=<key>` deep-linking. Must have a matching hydrator. |
-| `ephemeral` |  | Skip DB persistence. |
-| `heavySnapshot` / `autosave` |  | Phase 7 opt-ins — not wired yet. |
+| Field                        | Required          | Purpose                                                                                    |
+| ---------------------------- | ----------------- | ------------------------------------------------------------------------------------------ |
+| `slug`                       | ✅                | Stable kebab-case URL/diagnostic identifier. Must be unique.                               |
+| `overlayId`                  | ✅                | camelCase; key in `overlaySlice`. Must be unique.                                          |
+| `kind`                       | ✅                | `"window"` / `"widget"` / `"sheet"` / `"modal"`.                                           |
+| Lazy renderer                | ✅                | `lazyOverlay(() => import(...), { ssr: false })` in `OverlayController.tsx`.               |
+| `label`                      | ✅                | Human-readable. Shown in tray + window manager.                                            |
+| `defaultData`                | ✅                | Fallback payload shape. Docs the data keys the component expects.                          |
+| `mobilePresentation`         | ✅ for `"window"` | `"fullscreen"` / `"drawer"` / `"card"` / `"hidden"`.                                       |
+| `mobileSidebarAs`            |                   | `"drawer"` (default) or `"inline"`. Only for windows with a sidebar.                       |
+| `instanceMode`               |                   | `"singleton"` (default) or `"multi"`.                                                      |
+| `urlSync`                    |                   | `{ key: string }` — activates `?panels=<key>` deep-linking. Must have a matching hydrator. |
+| `ephemeral`                  |                   | Skip local refresh preservation.                                                           |
+| `preservation`               |                   | Default-deny semantic-data allowlist for local refresh restore.                            |
+| `heavySnapshot` / `autosave` |                   | Phase 7 opt-ins — not wired yet.                                                           |
 
 See [`FEATURE.md`](./FEATURE.md) for the full schema with doc comments.
 
@@ -91,7 +97,12 @@ Set `urlSync: { key: "my_feature" }` on the registry entry. Register a hydrator 
 
 ```ts
 registerPanelHydrator("my_feature", (dispatch, id, args) => {
-  dispatch(openOverlay({ overlayId: "myFeatureWindow", data: { selectedId: args.id ?? null } }));
+  dispatch(
+    openOverlay({
+      overlayId: "myFeatureWindow",
+      data: { selectedId: args.id ?? null },
+    }),
+  );
 });
 ```
 
@@ -111,8 +122,8 @@ Non-negotiable:
 
 ## Persistence (summary)
 
-- Two save triggers only: explicit "Save window state" button, or piggyback via `onCollectData`.
-- Geometry + `data` go into `window_sessions` (Supabase, RLS).
+- Redux changes are coalesced into a bounded tab/identity-scoped workspace; close and pagehide synchronously update its localStorage mirror.
+- Geometry and allowlisted semantic `data` are mirrored to localStorage and queued to IndexedDB. No screenshot or callback data is persisted.
 - Rect restores clamp to viewport via `utils/rectClamp.ts` — stored rects never land off-screen.
 - Idle GC every 30 min prunes closed multi-instance entries.
 
@@ -125,7 +136,7 @@ See `FEATURE.md` for the full lifecycle and opt-ins that are coming in Phase 7.
 1. **`kind: "window"` without `mobilePresentation`** — dev assertion fails.
 2. **Registry `urlSync.key` with no hydrator** — dev assertion logs; `?panels=<key>` silently no-ops.
 3. **Prop names not matching `defaultData` keys** — `OverlaySurface` spreads the data; your component needs prop names that align. Rename either side.
-4. **Opening a multi-instance overlay without a fresh `instanceId`** — instances overwrite each other. Use `instanceId: \`${slug}-${Date.now()}\`` or let the Tools grid's `instanceStrategy: "fresh-per-click"` handle it.
+4. **Opening a multi-instance overlay without a fresh `instanceId`** — instances overwrite each other. Use `instanceId: \`${slug}-${Date.now()}\``or let the Tools grid's`instanceStrategy: "fresh-per-click"` handle it.
 5. **Editing `overlaySlice.ts` `initialState`** — don't. It's `{}` by design; overlay keys grow lazily.
 
 ---

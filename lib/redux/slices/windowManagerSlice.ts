@@ -106,7 +106,7 @@ export interface WindowEntry {
   /**
    * Pop-out mode. `null` while docked. When set, the window is rendered into
    * a separate browser window via Document PiP or `window.open()` fallback.
-   * Never persisted to the DB — always coerced back to `null` on hydration
+   * Never written to the local workspace cache — always reset on hydration
    * (see `restoreWindowState`).
    */
   popoutMode: PopoutMode;
@@ -252,11 +252,7 @@ const windowManagerSlice = createSlice({
         : undefined;
       const pendingRenderRect = pending
         ? pending.state === "minimized" && pending.traySlot !== null && viewport
-          ? traySlotRect(
-              pending.traySlot,
-              viewport.width,
-              viewport.height,
-            )
+          ? traySlotRect(pending.traySlot, viewport.width, viewport.height)
           : viewport
             ? clampRectToViewport(pending.windowedRect, viewport)
             : pending.renderRect
@@ -314,20 +310,42 @@ const windowManagerSlice = createSlice({
         const alreadyLive = Object.values(state.windows).some(
           (entry) =>
             entry.persistence?.overlayId === session.overlayId &&
-            entry.persistence.instanceId === session.instanceId,
+            entry.persistence.instanceId === session.instanceId &&
+            !entry.persistence.closing,
         );
         // Current URL/manual intent wins over a late local hydration.
         if (alreadyLive) return;
         accepted.push(session);
       });
+      const trayBase = state.trayCount;
+      const acceptedTraySlots = new Map(
+        accepted
+          .filter(
+            (session) =>
+              session.state === "minimized" && session.traySlot !== null,
+          )
+          .sort(
+            (a, b) =>
+              (a.traySlot ?? Number.MAX_SAFE_INTEGER) -
+                (b.traySlot ?? Number.MAX_SAFE_INTEGER) ||
+              a.sessionKey.localeCompare(b.sessionKey),
+          )
+          .map(
+            (session, index) =>
+              [session.sessionKey, trayBase + index] as const,
+          ),
+      );
       accepted
         .sort(
-          (a, b) => a.zIndex - b.zIndex || a.sessionKey.localeCompare(b.sessionKey),
+          (a, b) =>
+            a.zIndex - b.zIndex || a.sessionKey.localeCompare(b.sessionKey),
         )
         .forEach((session, index) => {
           const key = windowSessionKey(session.overlayId, session.instanceId);
           const traySlot =
-            session.state === "minimized" ? state.trayCount++ : null;
+            session.state === "minimized"
+              ? (acceptedTraySlots.get(session.sessionKey) ?? null)
+              : null;
           state.pendingRestores[key] = {
             ...session,
             sessionKey: key,
@@ -346,6 +364,7 @@ const windowManagerSlice = createSlice({
                   }),
           };
         });
+      state.trayCount = trayBase + acceptedTraySlots.size;
       liveEntries.forEach((entry, index) => {
         entry.zIndex = BASE_Z + accepted.length + index;
       });
@@ -376,13 +395,23 @@ const windowManagerSlice = createSlice({
     ) {
       const entry = state.windows[action.payload.id];
       if (!entry?.persistence || entry.persistence.closing) return;
-      if (action.payload.data !== undefined) {
+      if (
+        action.payload.data !== undefined &&
+        JSON.stringify(entry.persistence.data) !==
+          JSON.stringify(action.payload.data)
+      ) {
         entry.persistence.data = action.payload.data;
       }
-      if (action.payload.sidebarOpen !== undefined) {
+      if (
+        action.payload.sidebarOpen !== undefined &&
+        entry.persistence.sidebarOpen !== action.payload.sidebarOpen
+      ) {
         entry.persistence.sidebarOpen = action.payload.sidebarOpen;
       }
-      if (action.payload.sidebarSize !== undefined) {
+      if (
+        action.payload.sidebarSize !== undefined &&
+        entry.persistence.sidebarSize !== action.payload.sidebarSize
+      ) {
         entry.persistence.sidebarSize = action.payload.sidebarSize;
       }
     },
@@ -428,11 +457,9 @@ const windowManagerSlice = createSlice({
         )
         .sort((a, b) => (b.traySlot ?? -1) - (a.traySlot ?? -1))
         .forEach((session) => {
-          compactReservedTraySlot(
-            state,
-            session.traySlot as number,
-            session.renderRect,
-          );
+          const traySlot = session.traySlot;
+          if (traySlot === null) return;
+          compactReservedTraySlot(state, traySlot, session.renderRect);
         });
       state.pendingRestores = {};
       Object.values(state.windows).forEach((entry) => {
@@ -753,6 +780,14 @@ const windowManagerSlice = createSlice({
           viewportHeight,
         );
       });
+      Object.values(state.pendingRestores).forEach((session) => {
+        if (session.state !== "minimized" || session.traySlot === null) return;
+        session.renderRect = traySlotRect(
+          session.traySlot,
+          viewportWidth,
+          viewportHeight,
+        );
+      });
     },
 
     /**
@@ -769,6 +804,12 @@ const windowManagerSlice = createSlice({
         win.traySlot = null;
         win.state = "windowed";
         win.zIndex = state.nextZIndex++;
+      });
+      Object.values(state.pendingRestores).forEach((session) => {
+        if (session.state !== "minimized") return;
+        session.state = "windowed";
+        session.traySlot = null;
+        session.renderRect = session.windowedRect;
       });
       state.trayCount = 0;
     },
@@ -795,6 +836,11 @@ const windowManagerSlice = createSlice({
           rectBySlot.set(entry.traySlot, { ...entry.windowed });
         }
       });
+      Object.values(state.pendingRestores).forEach((session) => {
+        if (session.traySlot !== null) {
+          rectBySlot.set(session.traySlot, { ...session.renderRect });
+        }
+      });
       // Shift other windows
       Object.values(state.windows).forEach((w) => {
         if (w.id === id || w.traySlot === null) return;
@@ -812,11 +858,32 @@ const windowManagerSlice = createSlice({
           w.traySlot += 1;
         }
       });
+      Object.values(state.pendingRestores).forEach((session) => {
+        if (session.traySlot === null) return;
+        if (
+          fromSlot < boundedSlot &&
+          session.traySlot > fromSlot &&
+          session.traySlot <= boundedSlot
+        ) {
+          session.traySlot -= 1;
+        } else if (
+          fromSlot > boundedSlot &&
+          session.traySlot >= boundedSlot &&
+          session.traySlot < fromSlot
+        ) {
+          session.traySlot += 1;
+        }
+      });
       win.traySlot = boundedSlot;
       Object.values(state.windows).forEach((entry) => {
         if (entry.traySlot === null) return;
         const nextRect = rectBySlot.get(entry.traySlot);
         if (nextRect) entry.windowed = nextRect;
+      });
+      Object.values(state.pendingRestores).forEach((session) => {
+        if (session.traySlot === null) return;
+        const nextRect = rectBySlot.get(session.traySlot);
+        if (nextRect) session.renderRect = nextRect;
       });
     },
 
@@ -957,6 +1024,98 @@ const windowManagerSlice = createSlice({
         (w) => w.traySlot !== null,
       ).length;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addMatcher(
+      (action) => action.type === "overlays/closeOverlay",
+      (state, action) => {
+        const payload = (action as { payload?: unknown }).payload;
+        if (!payload || typeof payload !== "object") return;
+        const overlayId = (payload as { overlayId?: unknown }).overlayId;
+        const instanceId =
+          (payload as { instanceId?: unknown }).instanceId ?? "default";
+        if (typeof overlayId !== "string" || typeof instanceId !== "string") {
+          return;
+        }
+        const pending = Object.values(state.pendingRestores).find(
+          (session) =>
+            session.overlayId === overlayId &&
+            session.instanceId === instanceId,
+        );
+        const hasMatchingLive = Object.values(state.windows).some(
+          (entry) =>
+            entry.persistence?.overlayId === overlayId &&
+            entry.persistence.instanceId === instanceId,
+        );
+        if (!hasMatchingLive && pending?.traySlot != null) {
+          compactReservedTraySlot(state, pending.traySlot, pending.renderRect);
+        }
+        if (pending) delete state.pendingRestores[pending.sessionKey];
+        Object.values(state.windows).forEach((entry) => {
+          if (
+            entry.persistence?.overlayId === overlayId &&
+            entry.persistence.instanceId === instanceId
+          ) {
+            entry.persistence.closing = true;
+          }
+        });
+      },
+    );
+    builder.addMatcher(
+      (action) => action.type === "overlays/closeAllOverlays",
+      (state) => {
+        Object.values(state.pendingRestores)
+          .filter((session) => session.traySlot !== null)
+          .sort((a, b) => (b.traySlot ?? -1) - (a.traySlot ?? -1))
+          .forEach((session) => {
+            if (session.traySlot !== null) {
+              compactReservedTraySlot(
+                state,
+                session.traySlot,
+                session.renderRect,
+              );
+            }
+          });
+        state.pendingRestores = {};
+        Object.values(state.windows).forEach((entry) => {
+          if (entry.persistence) entry.persistence.closing = true;
+        });
+      },
+    );
+    builder.addMatcher(
+      (action) => action.type === "overlays/closeAllInstancesOfOverlay",
+      (state, action) => {
+        const payload = (action as { payload?: unknown }).payload;
+        const overlayId =
+          payload && typeof payload === "object" && "overlayId" in payload
+            ? payload.overlayId
+            : null;
+        if (typeof overlayId !== "string") return;
+        Object.values(state.pendingRestores)
+          .filter(
+            (session) =>
+              session.overlayId === overlayId && session.traySlot !== null,
+          )
+          .sort((a, b) => (b.traySlot ?? -1) - (a.traySlot ?? -1))
+          .forEach((session) => {
+            if (session.traySlot !== null) {
+              compactReservedTraySlot(
+                state,
+                session.traySlot,
+                session.renderRect,
+              );
+            }
+          });
+        Object.entries(state.pendingRestores).forEach(([key, session]) => {
+          if (session.overlayId === overlayId) delete state.pendingRestores[key];
+        });
+        Object.values(state.windows).forEach((entry) => {
+          if (entry.persistence?.overlayId === overlayId) {
+            entry.persistence.closing = true;
+          }
+        });
+      },
+    );
   },
 });
 

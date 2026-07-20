@@ -8,42 +8,26 @@
  * boundary. Designed to answer "where exactly is persistence breaking?"
  * by showing all four sources of truth side-by-side:
  *
- *   1. DB rows in `public.window_sessions` (refreshable on demand)
- *   2. Redux `state.overlays` (which overlays are open + their data)
- *   3. Redux `state.windowManager` (geometry / z-index / tray slot)
- *   4. The persistence context (hydrated flag, session-id map)
+ *   1. Redux `state.overlays` (which overlays are open + their data)
+ *   2. Redux `state.windowManager` (geometry / z-index / tray / local data)
+ *   3. The local persistence context (readiness + canonical session identity)
  *
  * Action buttons at the top let you push the loop through each step
  * deliberately and watch where it succeeds or fails.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { selectUserId } from "@/lib/redux/slices/userSlice";
-import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useWindowPersistence } from "@/features/window-panels/WindowPersistenceManager";
-import {
-  deleteAllWindowSessions,
-  loadWindowSessions,
-} from "@/features/window-panels/service/windowPersistenceService";
-import type { WindowSessionRow } from "@/features/window-panels/registry/windowRegistryTypes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import {
-  Trash2,
-  RefreshCw,
-  PlayCircle,
-  Save,
-  X,
-  RotateCcw,
-} from "lucide-react";
+import { Trash2, PlayCircle, Save, X, RotateCcw } from "lucide-react";
 
-// Test target: the canonical Notes window — persistable, known componentImport,
-// non-empty defaultData. Uses the default instance slot like other singleton
-// persistence tests.
-const TEST_OVERLAY_ID = "notesWindow";
+// Audited singleton with self-contained local semantic state.
+const TEST_OVERLAY_ID = "browserWorkbenchWindow";
 
 interface LogEntry {
   at: string;
@@ -54,16 +38,12 @@ interface LogEntry {
 export default function PersistenceTestPage() {
   const isProd = process.env.NODE_ENV === "production";
   const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const userId = useAppSelector(selectUserId);
   const dispatch = useAppDispatch();
   const persistence = useWindowPersistence();
 
   const overlaysState = useAppSelector((s) => s.overlays.overlays);
   const windowManagerState = useAppSelector((s) => s.windowManager);
 
-  const [dbRows, setDbRows] = useState<WindowSessionRow[]>([]);
-  const [dbLoading, setDbLoading] = useState(false);
-  const [dbError, setDbError] = useState<string | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
 
   const append = useCallback((level: LogEntry["level"], message: string) => {
@@ -79,41 +59,12 @@ export default function PersistenceTestPage() {
     );
   }, []);
 
-  // ── Load DB rows ────────────────────────────────────────────────────────
-
-  const refreshDb = useCallback(async () => {
-    if (!userId) {
-      append("error", "Cannot read window_sessions — no userId in Redux");
-      return;
-    }
-    setDbLoading(true);
-    setDbError(null);
-    try {
-      const rows = await loadWindowSessions(userId);
-      setDbRows(rows);
-      append("ok", `Loaded ${rows.length} window_sessions row(s) from DB`);
-    } catch (err) {
-      const msg = (err as Error).message ?? String(err);
-      setDbError(msg);
-      append("error", `loadWindowSessions failed: ${msg}`);
-    } finally {
-      setDbLoading(false);
-    }
-  }, [userId, append]);
-
-  // Load on mount + whenever userId changes.
-  useEffect(() => {
-    if (userId) refreshDb();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
   // ── Actions ─────────────────────────────────────────────────────────────
 
   const openTest = useCallback(() => {
     const data = {
-      openTabs: ["test-tab"],
+      tabs: [{ id: "test-tab", label: "Example", url: "https://example.com" }],
       activeTabId: "test-tab",
-      __testStamp: new Date().toISOString(),
     };
     dispatch(openOverlay({ overlayId: TEST_OVERLAY_ID, data }));
     append(
@@ -133,9 +84,8 @@ export default function PersistenceTestPage() {
       sidebarOpen: false,
     };
     const data = {
-      openTabs: ["test-tab"],
+      tabs: [{ id: "test-tab", label: "Example", url: "https://example.com" }],
       activeTabId: "test-tab",
-      __testStamp: new Date().toISOString(),
     };
     append(
       "info",
@@ -143,33 +93,24 @@ export default function PersistenceTestPage() {
     );
     persistence.saveWindow(TEST_OVERLAY_ID, panelState, data, (sessionId) => {
       append("ok", `Save callback fired → sessionId=${sessionId}`);
-      void refreshDb();
     });
-  }, [persistence, append, refreshDb]);
+  }, [persistence, append]);
 
   const closeTest = useCallback(() => {
-    dispatch(closeOverlay({ overlayId: TEST_OVERLAY_ID }));
     persistence.closeWindow(TEST_OVERLAY_ID);
-    append(
-      "ok",
-      `Closed ${TEST_OVERLAY_ID} (overlay slice + persistence row delete)`,
-    );
-    void refreshDb();
-  }, [dispatch, persistence, append, refreshDb]);
+    append("ok", `Closed ${TEST_OVERLAY_ID} and removed its local session`);
+  }, [persistence, append]);
 
-  const wipeAll = useCallback(async () => {
-    if (!userId) return;
-    try {
-      await deleteAllWindowSessions(userId);
-      append("ok", "Deleted all window_sessions rows for this user");
-      void refreshDb();
-    } catch (err) {
-      append(
-        "error",
-        `deleteAllWindowSessions failed: ${(err as Error).message ?? err}`,
+  const wipeAll = useCallback(() => {
+    Object.values(windowManagerState.windows).forEach((entry) => {
+      if (!entry.persistence) return;
+      persistence.closeWindow(
+        entry.persistence.overlayId,
+        entry.persistence.instanceId,
       );
-    }
-  }, [userId, append, refreshDb]);
+    });
+    append("ok", "Closed and removed every live preserved window");
+  }, [append, persistence, windowManagerState.windows]);
 
   const reload = useCallback(() => {
     append("info", "Reloading page to test hydration…");
@@ -207,7 +148,6 @@ export default function PersistenceTestPage() {
           Window Panels — Persistence Loop Tester
         </h1>
         <div className="mt-1 flex flex-wrap gap-2 text-xs">
-          <Field label="userId" value={userId ?? "—"} mono />
           <Field
             label="hydrated"
             value={persistence.hydrated ? "true" : "false"}
@@ -215,8 +155,12 @@ export default function PersistenceTestPage() {
           />
           <Field label="overlays open" value={String(openOverlayCount)} />
           <Field
-            label="DB rows"
-            value={dbLoading ? "…" : String(dbRows.length)}
+            label="local sessions"
+            value={String(
+              Object.values(windowManagerState.windows).filter(
+                (entry) => entry.persistence && !entry.persistence.closing,
+              ).length,
+            )}
           />
           <Field
             label="session-id for test"
@@ -245,17 +189,7 @@ export default function PersistenceTestPage() {
             className="h-7 gap-1.5 text-xs"
           >
             <X className="h-3 w-3" />
-            Close + delete row
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={refreshDb}
-            disabled={dbLoading}
-            className="h-7 gap-1.5 text-xs"
-          >
-            <RefreshCw className={cn("h-3 w-3", dbLoading && "animate-spin")} />
-            Refresh DB
+            Close + remove cache
           </Button>
           <Button
             size="sm"
@@ -273,32 +207,12 @@ export default function PersistenceTestPage() {
             className="h-7 gap-1.5 text-xs"
           >
             <Trash2 className="h-3 w-3" />
-            Delete all rows
+            Close all preserved
           </Button>
         </div>
       </header>
 
       <main className="grid flex-1 grid-cols-1 gap-3 overflow-auto p-3 lg:grid-cols-2">
-        <Section title="window_sessions (DB)">
-          {dbError ? (
-            <pre className="rounded-md border border-red-500/30 bg-red-500/10 p-2 text-[11px] text-red-700 dark:text-red-300">
-              {dbError}
-            </pre>
-          ) : null}
-          {dbRows.length === 0 ? (
-            <Empty message="No rows for this user. Click 'Save state' to write one." />
-          ) : (
-            dbRows.map((row) => (
-              <pre
-                key={row.id}
-                className="overflow-x-auto rounded-md border border-border bg-card p-2 font-mono text-[11px] leading-relaxed"
-              >
-                {JSON.stringify(row, null, 2)}
-              </pre>
-            ))
-          )}
-        </Section>
-
         <Section
           title={`overlays (Redux state.overlays) — ${openOverlayCount} open`}
         >
@@ -311,7 +225,7 @@ export default function PersistenceTestPage() {
           )}
         </Section>
 
-        <Section title="windowManager (Redux state.windowManager)">
+        <Section title="windowManager (local preservation source)">
           <pre className="overflow-x-auto rounded-md border border-border bg-card p-2 font-mono text-[11px] leading-relaxed">
             {JSON.stringify(windowManagerState, null, 2)}
           </pre>

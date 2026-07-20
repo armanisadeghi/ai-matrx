@@ -58,6 +58,7 @@ import {
 } from "@/lib/redux/slices/windowManagerSlice";
 import type { GlobalLayoutType } from "./utils/windowArrangements";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { getStaticEntryByOverlayId } from "./registry/windowRegistryMetadata";
 import {
   ackOverlayRender,
@@ -78,10 +79,7 @@ import {
   WINDOW_CHROME_INTERACTIVE,
 } from "./WindowPanel/chromeClasses";
 import { DeprecationBanner } from "./WindowPanel/DeprecationBanner";
-import {
-  detectPopoutCapability,
-  type PopoutCapability,
-} from "./popout/featureDetection";
+import { detectPopoutCapability } from "./popout/featureDetection";
 import {
   selectPopoutMode,
   selectPopoutCandidateId,
@@ -285,20 +283,20 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
 
   /**
    * Called by WindowPanel before a save so the child component can return
-   * its current content state to include in the window_sessions `data` column.
+   * its current content state for the local refresh-preservation cache.
    * Return value must be a plain object (JSON-serializable).
    */
   onCollectData?: () => Record<string, unknown>;
   /**
-   * Called after the session row has been written with the row's UUID.
-   * Useful if the child needs to track its own session id (rare).
+   * Called after a local session snapshot is accepted, with its stable
+   * `(overlayId, instanceId)` key. Useful for diagnostics (rare).
    */
   onSessionSaved?: (sessionId: string) => void;
   /**
    * Phase 7 — Async snapshot hook for windows with heavy in-memory
    * buffers (Scraper results, PDF Extractor history, Markdown tester
    * state, Voice Pad transcripts). Opt-in via `heavySnapshot: true` on
-   * the registry entry — WindowPanel awaits this BEFORE writing to DB
+   * the registry entry — WindowPanel awaits this before writing the cache
    * and merges the result into `data.snapshot`.
    */
   onHeavySnapshot?: () => Promise<Record<string, unknown>>;
@@ -338,8 +336,8 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
  * would render as a dead button. The Notes incident (Tuesday May 26 2026)
  * traced to exactly this: NotesWindow's controller block in OverlayController
  * supplied `overlayId` on WindowPanel but no `onClose`, and the persistence
- * layer's `closeWindow` only deleted the DB row, so clicking X deleted the
- * window_sessions row but left `isOpen=true` in Redux → window stayed mounted.
+ * layer's `closeWindow` only deleted its persistence entry, so clicking X
+ * left `isOpen=true` in Redux → window stayed mounted.
  *
  * Do NOT change `overlayId` and `onClose` back to both-optional. The
  * discriminated union is what makes the close mechanic structurally
@@ -421,20 +419,19 @@ export function WindowPanel({
   const id = hookOpts.id ?? reactId;
   const trayRegistryKey = overlayId ?? id;
   const isMobile = useIsMobile();
+  const isMounted = useIsMounted();
   const registryEntry = overlayId
     ? getStaticEntryByOverlayId(overlayId)
     : undefined;
   const effectiveInstanceId = overlayInstanceId ?? DEFAULT_INSTANCE_ID;
   const preservationEnabled = Boolean(
     overlayId &&
-      registryEntry?.preservation &&
-      !registryEntry.ephemeral &&
-      (registryEntry.instanceMode !== "multi" || overlayInstanceId),
+    registryEntry?.preservation &&
+    !registryEntry.ephemeral &&
+    (registryEntry.instanceMode !== "multi" || overlayInstanceId),
   );
   const overlayLaunchData = useAppSelector((state) =>
-    overlayId
-      ? selectOverlayData(state, overlayId, effectiveInstanceId)
-      : null,
+    overlayId ? selectOverlayData(state, overlayId, effectiveInstanceId) : null,
   );
   const initialPreservationData = registryEntry?.preservation
     ? sanitizeWindowSessionData(
@@ -443,11 +440,7 @@ export function WindowPanel({
       ).data
     : {};
 
-  const popoutCapabilityRef = useRef<PopoutCapability | null>(null);
-  if (popoutCapabilityRef.current === null) {
-    popoutCapabilityRef.current = detectPopoutCapability();
-  }
-  const popoutCapability = popoutCapabilityRef.current;
+  const popoutCapability = isMounted ? detectPopoutCapability() : null;
 
   // popout lifecycle hook — owns the actual browser popout window and its
   // open/close lifecycle. Always called (id is stable) but its `openPopout`
@@ -627,7 +620,6 @@ export function WindowPanel({
           effectiveInstanceId,
         );
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.warn(
           `[WindowPanel] heavy snapshot failed for "${overlayId}", saving without it:`,
           err,
@@ -665,7 +657,9 @@ export function WindowPanel({
    * tombstones must always win over late cleanup.
    */
   const saveRef = useRef(handleSaveWindowState);
-  saveRef.current = handleSaveWindowState;
+  useEffect(() => {
+    saveRef.current = handleSaveWindowState;
+  }, [handleSaveWindowState]);
 
   useEffect(() => {
     if (!preservationEnabled) return;
@@ -791,11 +785,7 @@ export function WindowPanel({
   );
 
   // ── Portal target (client-only) ──────────────────────────────────────────
-  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
-  useEffect(() => {
-    setPortalTarget(document.body);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const portalTarget = isMounted ? document.body : null;
 
   // ── Render acknowledgement ────────────────────────────────────────────────
   // Tell the render watchdog which window-manager id actually rendered this
@@ -948,8 +938,15 @@ export function WindowPanel({
     height: number;
     generation: number;
   } | null>(null);
+  const [trayPreviewData, setTrayPreviewData] = useState<
+    Record<string, unknown> | undefined
+  >(undefined);
 
   const handleMinimize = useCallback(() => {
+    const collected = onCollectData?.();
+    if (collected && typeof collected === "object") {
+      setTrayPreviewData(collected);
+    }
     if (preservationEnabled) saveRef.current();
     const bodyEl = bodyRef.current;
     const generation = ++captureGenerationRef.current;
@@ -965,7 +962,7 @@ export function WindowPanel({
       setPendingTrayCapture(null);
     }
     onMinimize();
-  }, [effectiveTrayCapture, onMinimize, preservationEnabled]);
+  }, [effectiveTrayCapture, onCollectData, onMinimize, preservationEnabled]);
 
   useEffect(() => {
     if (windowState !== "minimized" || !pendingTrayCapture) return undefined;
@@ -989,7 +986,6 @@ export function WindowPanel({
       })
       .catch((err: unknown) => {
         if (!cancelled && process.env.NODE_ENV !== "production") {
-          // eslint-disable-next-line no-console
           console.warn(
             `[WindowPanel] captureTraySnapshot threw for "${id}":`,
             err,
@@ -1072,6 +1068,10 @@ export function WindowPanel({
   const isMinimized = windowState === "minimized";
   const isMaximized = windowState === "maximized";
   const isPopoutCandidate = popoutCandidateId === id;
+
+  useEffect(() => {
+    if (isMobile && isMinimized) onRestore();
+  }, [isMinimized, isMobile, onRestore]);
   const minimizedTitle =
     title?.trim() ||
     getStaticEntryByOverlayId(trayRegistryKey)?.label ||
@@ -1240,7 +1240,6 @@ export function WindowPanel({
 
     if (mobilePresentation === "hidden") {
       if (process.env.NODE_ENV !== "production" && overlayId) {
-        // eslint-disable-next-line no-console
         console.warn(
           `[WindowPanel] overlay "${overlayId}" has mobilePresentation: "hidden" but was opened on mobile. Add a different mobilePresentation to its registry entry or gate opening.`,
         );
@@ -1311,7 +1310,6 @@ export function WindowPanel({
         <MobileWindowHeader
           title={titleNode ?? title}
           actionsRight={resolvedActionsRight}
-          onMinimize={onMinimize}
           onClose={handleClose}
           hasSidebar={hasSidebar}
           activePaneMobile={activePaneMobile}
@@ -1475,6 +1473,7 @@ export function WindowPanel({
             registryKey={trayRegistryKey}
             snapshotKey={id}
             overlayInstanceId={overlayInstanceId}
+            previewData={trayPreviewData}
             title={minimizedTitle}
             onRestore={handleRestoreClearingSnapshot}
           />

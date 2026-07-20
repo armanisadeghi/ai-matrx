@@ -1,4 +1,4 @@
-import { readSlice, writeSlice } from "@/lib/sync/persistence/idb";
+import { deleteSlice, readSlice, writeSlice } from "@/lib/sync/persistence/idb";
 import { localStorageAdapter } from "@/lib/sync/persistence/local-storage";
 import type { IdentityKey } from "@/lib/sync/types";
 import {
@@ -8,11 +8,19 @@ import {
 
 const WORKSPACE_SESSION_KEY = "matrx:window-workspace-id";
 const SLICE_PREFIX = "window-workspace";
+const LEASE_PREFIX = "matrx:window-workspace-lease";
+const INDEX_PREFIX = "matrx:window-workspace-index";
+const LEASE_MS = 24 * 60 * 60 * 1000;
+const IDB_READ_BUDGET_MS = 750;
+const MAX_WORKSPACES_PER_IDENTITY = 5;
+const INDEX_REFRESH_MS = 60 * 1000;
 const writeQueues = new Map<string, Promise<void>>();
+const runtimeId = randomWorkspaceId();
+let leasedWorkspaceId: string | null = null;
 
 export interface LocalWindowWorkspaceRead {
   workspace: PersistedWindowWorkspace | null;
-  source: "indexed-db" | "local-storage" | "miss";
+  source: "indexed-db" | "local-storage" | "miss" | "timeout";
 }
 
 function randomWorkspaceId(): string {
@@ -32,20 +40,26 @@ export function getWindowWorkspaceId(): string {
   try {
     const existing = window.sessionStorage.getItem(WORKSPACE_SESSION_KEY);
     const navigation = performance.getEntriesByType("navigation")[0] as
-      | PerformanceNavigationTiming
-      | undefined;
-    // sessionStorage may be cloned into a newly opened/duplicated tab. Reuse
-    // only for an actual refresh/history restore; a fresh navigation gets a
-    // new workspace and cannot race the source tab.
-    if (
+      PerformanceNavigationTiming | undefined;
+    const existingLease = existing
+      ? localStorageAdapter.read(`${LEASE_PREFIX}:${existing}`)
+      : null;
+    const leaseBody = existingLease?.body as
+      { runtimeId?: unknown; expiresAt?: unknown } | undefined;
+    const claimedByAnotherLiveDocument = Boolean(
       existing &&
-      (navigation?.type === "reload" || navigation?.type === "back_forward")
-    ) {
-      return existing;
-    }
-    const created = randomWorkspaceId();
-    window.sessionStorage.setItem(WORKSPACE_SESSION_KEY, created);
-    return created;
+      navigation?.type !== "reload" &&
+      leaseBody?.runtimeId !== runtimeId &&
+      typeof leaseBody?.expiresAt === "number" &&
+      leaseBody.expiresAt > Date.now(),
+    );
+    const workspaceId =
+      existing && !claimedByAnotherLiveDocument
+        ? existing
+        : randomWorkspaceId();
+    window.sessionStorage.setItem(WORKSPACE_SESSION_KEY, workspaceId);
+    claimWorkspaceLease(workspaceId);
+    return workspaceId;
   } catch (error) {
     console.warn(
       "[window-preservation] sessionStorage unavailable; using the tab fallback workspace.",
@@ -55,12 +69,103 @@ export function getWindowWorkspaceId(): string {
   }
 }
 
+function claimWorkspaceLease(workspaceId: string): void {
+  leasedWorkspaceId = workspaceId;
+  localStorageAdapter.write(`${LEASE_PREFIX}:${workspaceId}`, {
+    version: 1,
+    identityKey: "tab-lease",
+    body: { runtimeId, expiresAt: Date.now() + LEASE_MS },
+  });
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () => {
+    if (!leasedWorkspaceId) return;
+    const key = `${LEASE_PREFIX}:${leasedWorkspaceId}`;
+    const lease = localStorageAdapter.read(key);
+    const body = lease?.body as { runtimeId?: unknown } | undefined;
+    if (body?.runtimeId === runtimeId) localStorageAdapter.remove(key);
+  });
+}
+
 function sliceName(workspaceId: string): string {
   return `${SLICE_PREFIX}:${workspaceId}`;
 }
 
 function localStorageKey(identity: IdentityKey, workspaceId: string): string {
   return `matrx:${SLICE_PREFIX}:${identity.key}:${workspaceId}`;
+}
+
+interface WorkspaceIndexEntry {
+  workspaceId: string;
+  lastUsedAt: number;
+}
+
+function enqueueWorkspaceOperation(
+  identityKey: string,
+  workspaceId: string,
+  operation: () => Promise<void>,
+): Promise<void> {
+  const queueKey = `${identityKey}:${workspaceId}`;
+  const previous = writeQueues.get(queueKey) ?? Promise.resolve();
+  const next = previous
+    .catch(() => undefined)
+    .then(() => {
+      if (typeof navigator !== "undefined" && navigator.locks) {
+        return navigator.locks.request(
+          `matrx-window-workspace:${queueKey}`,
+          operation,
+        );
+      }
+      return operation();
+    });
+  writeQueues.set(queueKey, next);
+  void next.finally(() => {
+    if (writeQueues.get(queueKey) === next) writeQueues.delete(queueKey);
+  });
+  return next;
+}
+
+function indexWorkspace(identity: IdentityKey, workspaceId: string): void {
+  const key = `${INDEX_PREFIX}:${identity.key}`;
+  const existing = localStorageAdapter.read(key);
+  const now = Date.now();
+  const rows = Array.isArray(existing?.body)
+    ? (existing.body as WorkspaceIndexEntry[]).filter(
+        (row) =>
+          row &&
+          typeof row.workspaceId === "string" &&
+          typeof row.lastUsedAt === "number",
+      )
+    : [];
+  const current = rows.find((row) => row.workspaceId === workspaceId);
+  if (
+    current &&
+    rows.length <= MAX_WORKSPACES_PER_IDENTITY &&
+    now - current.lastUsedAt < INDEX_REFRESH_MS
+  ) {
+    return;
+  }
+  const nextRows = rows.filter((row) => row.workspaceId !== workspaceId);
+  nextRows.push({ workspaceId, lastUsedAt: now });
+  nextRows.sort((a, b) => b.lastUsedAt - a.lastUsedAt);
+  const retained = nextRows.slice(0, MAX_WORKSPACES_PER_IDENTITY);
+  nextRows.slice(MAX_WORKSPACES_PER_IDENTITY).forEach((stale) => {
+    localStorageAdapter.remove(localStorageKey(identity, stale.workspaceId));
+    localStorageAdapter.remove(`${LEASE_PREFIX}:${stale.workspaceId}`);
+    void enqueueWorkspaceOperation(identity.key, stale.workspaceId, () =>
+      deleteSlice(
+        identity.key,
+        sliceName(stale.workspaceId),
+        WINDOW_WORKSPACE_SCHEMA_VERSION,
+      ),
+    );
+  });
+  localStorageAdapter.write(key, {
+    version: 1,
+    identityKey: identity.key,
+    body: retained,
+  });
 }
 
 function readWorkspace(value: unknown): PersistedWindowWorkspace | null {
@@ -92,23 +197,47 @@ export async function loadLocalWindowWorkspace(
       ? readWorkspace(localRecord.body)
       : null;
 
-  const idbRecord = await readSlice(
-    identity.key,
-    sliceName(workspaceId),
-    WINDOW_WORKSPACE_SCHEMA_VERSION,
-  );
+  // The synchronous mirror is the authoritative fast path. Every save writes
+  // it before IDB, so waiting on IDB here adds latency without increasing
+  // freshness.
+  if (localWorkspace) {
+    return { workspace: localWorkspace, source: "local-storage" };
+  }
+
+  let budgetTimer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = Symbol("idb-window-read-timeout");
+  const idbRecord = await Promise.race([
+    readSlice(
+      identity.key,
+      sliceName(workspaceId),
+      WINDOW_WORKSPACE_SCHEMA_VERSION,
+    ).catch((error: unknown) => {
+      console.warn(
+        "[window-preservation] IndexedDB read failed; using the synchronous mirror.",
+        error,
+      );
+      return null;
+    }),
+    new Promise<typeof timeout>((resolve) => {
+      budgetTimer = setTimeout(() => resolve(timeout), IDB_READ_BUDGET_MS);
+    }),
+  ]);
+  if (budgetTimer) clearTimeout(budgetTimer);
+  if (idbRecord === timeout) {
+    console.warn(
+      "[window-preservation] IndexedDB did not answer within the hydration budget; preserving the unknown cache without overwriting it.",
+    );
+    return { workspace: null, source: "timeout" };
+  }
   const idbWorkspace = readWorkspace(idbRecord?.body);
 
   if (!localWorkspace && !idbWorkspace) {
     return { workspace: null, source: "miss" };
   }
-  if (
-    idbWorkspace &&
-    (!localWorkspace || idbWorkspace.savedAt > localWorkspace.savedAt)
-  ) {
+  if (idbWorkspace) {
     return { workspace: idbWorkspace, source: "indexed-db" };
   }
-  return { workspace: localWorkspace, source: "local-storage" };
+  return { workspace: null, source: "miss" };
 }
 
 /**
@@ -119,46 +248,24 @@ export function saveLocalWindowWorkspace(
   identity: IdentityKey,
   workspace: PersistedWindowWorkspace,
 ): Promise<void> {
-  localStorageAdapter.write(
-    localStorageKey(identity, workspace.workspaceId),
-    {
-      version: WINDOW_WORKSPACE_SCHEMA_VERSION,
-      identityKey: identity.key,
-      body: workspace,
-    },
-  );
-  const queueKey = `${identity.key}:${workspace.workspaceId}`;
-  const previous = writeQueues.get(queueKey) ?? Promise.resolve();
-  const next = previous
-    .catch(() => undefined)
-    .then(() =>
+  claimWorkspaceLease(workspace.workspaceId);
+  indexWorkspace(identity, workspace.workspaceId);
+  localStorageAdapter.write(localStorageKey(identity, workspace.workspaceId), {
+    version: WINDOW_WORKSPACE_SCHEMA_VERSION,
+    identityKey: identity.key,
+    body: workspace,
+  });
+  return enqueueWorkspaceOperation(
+    identity.key,
+    workspace.workspaceId,
+    () =>
       writeSlice(
         identity.key,
         sliceName(workspace.workspaceId),
         WINDOW_WORKSPACE_SCHEMA_VERSION,
         workspace,
       ),
-    );
-  writeQueues.set(queueKey, next);
-  void next.finally(() => {
-    if (writeQueues.get(queueKey) === next) writeQueues.delete(queueKey);
-  });
-  return next;
-}
-
-/** Remove only the synchronous mirror; an empty workspace write supersedes IDB. */
-export function clearLocalWindowWorkspace(
-  identity: IdentityKey,
-  workspaceId: string,
-): Promise<void> {
-  localStorageAdapter.remove(localStorageKey(identity, workspaceId));
-  const empty: PersistedWindowWorkspace = {
-    schemaVersion: WINDOW_WORKSPACE_SCHEMA_VERSION,
-    workspaceId,
-    savedAt: Date.now(),
-    sessions: [],
-  };
-  return saveLocalWindowWorkspace(identity, empty);
+  );
 }
 
 export function __resetWindowSessionStoreForTests(): void {

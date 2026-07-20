@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectFetchStatus } from "../redux/selectors";
+import {
+  selectActiveSessionId,
+  selectFetchStatus,
+  selectSessionsById,
+} from "../redux/selectors";
 import { fetchSessionsThunk } from "../redux/thunks";
+import { activeSessionIdSet } from "../redux/slice";
 import { useStudioSessionRoute } from "../hooks/useStudioSessionRoute";
 import type { StudioViewConfig } from "../types";
 import { StudioLayout } from "./StudioLayout";
@@ -23,6 +28,9 @@ interface StudioViewProps {
 export function StudioView({ config }: StudioViewProps) {
   const dispatch = useAppDispatch();
   const fetchStatus = useAppSelector(selectFetchStatus);
+  const sessionsById = useAppSelector(selectSessionsById);
+  const activeSessionId = useAppSelector(selectActiveSessionId);
+  const appliedInitialSessionRef = useRef<string | null>(null);
   const syncSessionRoute = config.containerVariant === "page";
   const { navigateToSession } = useStudioSessionRoute(syncSessionRoute);
 
@@ -33,6 +41,21 @@ export function StudioView({ config }: StudioViewProps) {
       void dispatch(fetchSessionsThunk());
     }
   }, [fetchStatus, dispatch]);
+
+  useEffect(() => {
+    const initialSessionId = config.initialSessionId ?? null;
+    if (
+      !initialSessionId ||
+      !sessionsById[initialSessionId] ||
+      appliedInitialSessionRef.current === initialSessionId
+    ) {
+      return;
+    }
+    appliedInitialSessionRef.current = initialSessionId;
+    if (activeSessionId !== initialSessionId) {
+      dispatch(activeSessionIdSet(initialSessionId));
+    }
+  }, [activeSessionId, config.initialSessionId, dispatch, sessionsById]);
 
   return (
     <StudioLayout

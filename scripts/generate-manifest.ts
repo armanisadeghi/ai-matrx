@@ -2,6 +2,7 @@
 import path from 'path';
 
 import fs from 'fs/promises';
+import { discoverRoutesFromPageFiles } from '../utils/route-discovery/scan-fs';
 
 async function findProjectRoot(startPath: string) {
     let currentPath = startPath;
@@ -26,29 +27,24 @@ async function generateManifest() {
 
         const projectRoot = await findProjectRoot(__dirname);
 
-        // Entity-isolation migration: /demos/tests is mid-audit. Some test routes
-        // moved to (legacy)/legacy/tests because they actually used the
-        // entity system; the rest live under (dev)/demos/tests (the consolidated
-        // /demos/* URL prefix). Look in both locations and merge — drop
-        // duplicates by name.
+        // Test and experimental routes are consolidated under /demos/tests.
+        // Keep this manifest aligned with the only supported route tree.
         const candidatePaths = [
             { path: path.join(projectRoot, 'app', '(dev)', 'demos', 'tests'), urlPrefix: '/demos/tests' },
-            { path: path.join(projectRoot, 'app', '(legacy)', 'legacy', 'tests'), urlPrefix: '/legacy/tests' },
         ];
 
-        const seen = new Set<string>();
         const directories: { path: string; name: string }[] = [];
 
         for (const { path: dirPath, urlPrefix } of candidatePaths) {
             try {
-                const entries = await fs.readdir(dirPath, { withFileTypes: true });
-                for (const dirent of entries) {
-                    if (!dirent.isDirectory()) continue;
-                    if (seen.has(dirent.name)) continue;
-                    seen.add(dirent.name);
+                await fs.access(dirPath);
+                const routeDirectories = new Set(
+                    discoverRoutesFromPageFiles(dirPath).map((route) => route.split('/')[0])
+                );
+                for (const name of [...routeDirectories].sort()) {
                     directories.push({
-                        path: `${urlPrefix}/${dirent.name}`,
-                        name: dirent.name,
+                        path: `${urlPrefix}/${name}`,
+                        name,
                     });
                 }
             } catch (err) {

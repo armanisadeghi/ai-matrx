@@ -618,53 +618,6 @@
                 "page.tsx"
             ]
         },
-        "app-shell-test": {
-            "_files": [
-                "app-data.ts",
-                "config.ts",
-                "HeaderControls.tsx",
-                "layout.tsx",
-                "page.tsx",
-                "types.ts"
-            ],
-            "components": {
-                "_files": [
-                    "AdvancedDynamicLayout.tsx",
-                    "AdvancedDynamicLayoutNew.tsx",
-                    "AdvancedLayout.tsx",
-                    "ConfigDialog.tsx",
-                    "DynamicLayout.tsx",
-                    "EnhancedDynamicLayout.tsx",
-                    "EnhancedDynamicLayoutNew.tsx",
-                    "SectionInfoModal.tsx"
-                ]
-            },
-            "layout-choices": {
-                "_files": [
-                    "page.tsx"
-                ]
-            },
-            "single-option": {
-                "_files": [
-                    "page.tsx"
-                ],
-                "layout-choices": {
-                    "_files": [
-                        "page.tsx"
-                    ]
-                },
-                "sample-nested": {
-                    "_files": [
-                        "page.tsx"
-                    ],
-                    "sample-nested-again": {
-                        "_files": [
-                            "page.tsx"
-                        ]
-                    }
-                }
-            }
-        },
         "applet-tests": {
             "_files": [
                 "config.ts",
@@ -990,11 +943,6 @@
                 ]
             }
         },
-        "full-screen-demo": {
-            "_files": [
-                "page.tsx"
-            ]
-        },
         "google-apis": {
             "_files": [
                 "layout.tsx",
@@ -1080,13 +1028,6 @@
                     "types.ts"
                 ]
             }
-        },
-        "links": {
-            "_files": [
-                "config.ts",
-                "layout.tsx",
-                "page.tsx"
-            ]
         },
         "markdown-tests": {
             "_files": [

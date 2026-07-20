@@ -5,7 +5,7 @@ export default async function IntegrationsPage() {
     return (
         <RouteIndexPage
             directory={join(process.cwd(), "app", "(dev)", "demos", "tests", "integrations")}
-            basePath="/legacy/tests/integrations"
+basePath="/demos/tests/integrations"
             title="Integrations"
         />
     );

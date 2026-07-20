@@ -25,6 +25,7 @@ interface MinimizedWindowContentProps {
   /** Unique runtime id for the local screenshot cache. */
   snapshotKey: string;
   overlayInstanceId?: string;
+  previewData?: Record<string, unknown>;
   /** Window title; falls back to the registry label when not a plain string. */
   title?: string;
   /** Restore (un-minimize) the window. Wired to a click on the whole body. */
@@ -35,6 +36,7 @@ export function MinimizedWindowContent({
   registryKey,
   snapshotKey,
   overlayInstanceId,
+  previewData,
   title,
   onRestore,
 }: MinimizedWindowContentProps) {
@@ -51,6 +53,7 @@ export function MinimizedWindowContent({
         registryKey={registryKey}
         snapshotKey={snapshotKey}
         overlayInstanceId={overlayInstanceId}
+        previewData={previewData}
         title={label}
       />
     </button>

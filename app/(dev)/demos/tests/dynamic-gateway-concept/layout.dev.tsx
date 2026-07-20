@@ -2,7 +2,7 @@ import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Dynamic Gateway",
   title: "Tests",
   description: "Dynamic gateway routing concept tests",
@@ -20,7 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "tests",
         "dynamic-gateway-concept",
       )}
-      moduleHome="/legacy/tests/dynamic-gateway-concept"
+moduleHome="/demos/tests/dynamic-gateway-concept"
       moduleName="Dynamic Gateway Concept"
     >
       {children}

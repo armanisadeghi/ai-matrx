@@ -6,7 +6,7 @@ export default async function TestsPage() {
   return (
     <RouteIndexPage
       directory={join(process.cwd(), "app", "(dev)", "demos", "tests")}
-      basePath="/tests"
+basePath="/demos/tests"
       title="Tests"
       icon={FlaskConical}
     />

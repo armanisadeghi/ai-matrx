@@ -68,7 +68,7 @@ export interface WindowSessionRow {
 
 /** Context passed to `renderTrayPreview` so windows can render their own state. */
 export interface TrayPreviewContext {
-  /** The window's persisted `data` object from `window_sessions.data`. */
+  /** The window's allowlisted semantic data from the local workspace cache. */
   data: Record<string, unknown>;
   /** Stable overlay id (matches `WindowEntry.id` for overlay-managed windows). */
   overlayId: string;
@@ -86,7 +86,7 @@ export interface TrayPreviewContext {
  * captureTraySnapshot. Safe to import without pulling in any component code.
  */
 export interface WindowStaticMetadata {
-  /** Stable slug stored in window_sessions.window_type. Use kebab-case. */
+  /** Stable kebab-case slug used for URLs, diagnostics, and migration. */
   slug: string;
   /** Key used in overlaySlice (openOverlay / closeOverlay). */
   overlayId: string;
@@ -101,8 +101,8 @@ export interface WindowStaticMetadata {
    */
   defaultData: Record<string, unknown>;
   /**
-   * When true, the overlay is NOT persisted to the DB. Use for ephemeral
-   * tool overlays where restoring state adds no value.
+   * When true, the overlay is excluded from local refresh preservation. Use
+   * for tool overlays where restoring state adds no value.
    */
   ephemeral?: boolean;
   /**

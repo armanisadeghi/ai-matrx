@@ -1,7 +1,7 @@
 import AppletTestsLayoutClient from "./AppletTestsLayoutClient";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tests", {
+export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Applets",
   title: "Tests",
   description: "Applet and entity analyzer test harness",

@@ -51,7 +51,10 @@ import type { AssetPreset } from "@/features/files/types";
 import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
-import type { ResourceType } from "@/utils/permissions";
+import {
+  getShareableResource,
+  type ResourceType,
+} from "@/utils/permissions";
 import type {
   CodeEditorAgentConfig,
   CodeFile as AgentCodeEditorCodeFile,
@@ -4937,20 +4940,30 @@ export default function OverlayController() {
         const data = dataById.shareModalWindow as
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
+        const resourceType =
+          typeof data?.resourceType === "string" &&
+          getShareableResource(data.resourceType)
+            ? (data.resourceType as ResourceType)
+            : null;
+        const resourceId =
+          typeof data?.resourceId === "string" ? data.resourceId : "";
+        if (!resourceType || !resourceId) {
+          console.error(
+            "[window-panels] Refused to render Share without a valid resource type and id.",
+          );
+          return null;
+        }
         return (
           <ShareModalWindow
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "shareModalWindow" }))
             }
-            resourceType={data?.resourceType as ResourceType}
-            resourceId={
-              typeof data?.resourceId === "string" ? data.resourceId : ""
-            }
+            resourceType={resourceType}
+            resourceId={resourceId}
             resourceName={
               typeof data?.resourceName === "string" ? data.resourceName : ""
             }
-            isOwner={typeof data?.isOwner === "boolean" ? data.isOwner : false}
           />
         );
       })()}

@@ -5,7 +5,7 @@ export default async function ModalsPage() {
     return (
         <RouteIndexPage
             directory={join(process.cwd(), "app", "(dev)", "demos", "tests", "modals")}
-            basePath="/legacy/tests/modals"
+basePath="/demos/tests/modals"
             title="Modals"
         />
     );

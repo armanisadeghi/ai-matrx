@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,6 @@ export interface ShareModalWindowProps {
   resourceType: ResourceType;
   resourceId: string;
   resourceName: string;
-  isOwner: boolean;
 }
 
 export default function ShareModalWindow({
@@ -36,7 +35,6 @@ export default function ShareModalWindow({
   resourceType,
   resourceId,
   resourceName,
-  isOwner,
 }: ShareModalWindowProps) {
   const [activeTab, setActiveTab] = useState<
     "users" | "organizations" | "public"
@@ -44,6 +42,14 @@ export default function ShareModalWindow({
   const [emailingLink, setEmailingLink] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
+  const { isOwner, loading: ownerLoading } = useIsOwner(
+    resourceType,
+    resourceId,
+  );
+  const collectData = useCallback(
+    () => ({ resourceType, resourceId, resourceName }),
+    [resourceId, resourceName, resourceType],
+  );
 
   const getShareUrl = () => {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
@@ -167,16 +173,10 @@ export default function ShareModalWindow({
       }
       width={650}
       height={500}
-      urlSyncKey="share_modal"
       onClose={onClose}
       overlayId="shareModalWindow"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-      onCollectData={() => ({
-        resourceType,
-        resourceId,
-        resourceName,
-        isOwner,
-      })}
+      onCollectData={collectData}
     >
       <div className="flex flex-col h-full bg-background overflow-hidden p-4">
         {/* Tabs Section */}
@@ -221,14 +221,14 @@ export default function ShareModalWindow({
                 <h3 className="text-sm font-medium mb-2">Current Access</h3>
                 <PermissionsList
                   permissions={userPermissions}
-                  isOwner={isOwner}
+                  isOwner={isOwner && !ownerLoading}
                   onUpdateLevel={updateLevel}
                   onRevoke={revokeAccess}
                   loading={loading}
                 />
               </div>
 
-              {isOwner && (
+              {isOwner && !ownerLoading && (
                 <ShareWithUserTab
                   onShare={shareWithUser}
                   onSuccess={refresh}
@@ -243,14 +243,14 @@ export default function ShareModalWindow({
                 <h3 className="text-sm font-medium mb-2">Current Access</h3>
                 <PermissionsList
                   permissions={orgPermissions}
-                  isOwner={isOwner}
+                  isOwner={isOwner && !ownerLoading}
                   onUpdateLevel={updateLevel}
                   onRevoke={revokeAccess}
                   loading={loading}
                 />
               </div>
 
-              {isOwner && (
+              {isOwner && !ownerLoading && (
                 <ShareWithOrgTab
                   onShare={shareWithOrg}
                   onSuccess={refresh}
@@ -266,7 +266,7 @@ export default function ShareModalWindow({
               <PublicAccessTab
                 isPublic={resourceIsPublic}
                 publicPermission={publicPermission}
-                isOwner={isOwner}
+                isOwner={isOwner && !ownerLoading}
                 onMakePublic={makePublic}
                 onRevokePublic={() => revokeAccess({ isPublic: true })}
                 resourceType={resourceType}
