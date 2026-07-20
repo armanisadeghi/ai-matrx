@@ -27832,37 +27832,22 @@ export type Database = {
         Args: never
         Returns: undefined
       }
-      assoc_add:
-        | {
-            Args: {
-              p_label?: string
-              p_metadata?: Json
-              p_org_id?: string
-              p_position?: number
-              p_role?: string
-              p_source_id: string
-              p_source_type: string
-              p_target_id: string
-              p_target_type: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_label?: string
-              p_metadata?: Json
-              p_org_id?: string
-              p_payload?: Json
-              p_payload_kind?: string
-              p_position?: number
-              p_role?: string
-              p_source_id: string
-              p_source_type: string
-              p_target_id: string
-              p_target_type: string
-            }
-            Returns: string
-          }
+      assoc_add: {
+        Args: {
+          p_label?: string
+          p_metadata?: Json
+          p_org_id?: string
+          p_payload?: Json
+          p_payload_kind?: string
+          p_position?: number
+          p_role?: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: string
+      }
       assoc_for_entity: {
         Args: { p_id: string; p_type: string }
         Returns: {
@@ -42873,6 +42858,220 @@ export type Database = {
           },
         ]
       }
+      brand: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          favicon_url: string | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          metadata: Json
+          name: string
+          notes: string | null
+          og_image_url: string | null
+          organization_id: string
+          settings: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          favicon_url?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          metadata?: Json
+          name: string
+          notes?: string | null
+          og_image_url?: string | null
+          organization_id: string
+          settings?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          favicon_url?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          og_image_url?: string | null
+          organization_id?: string
+          settings?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      brand_asset: {
+        Row: {
+          brand_id: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          file_id: string | null
+          id: string
+          is_primary: boolean
+          kind: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          sort_order: number
+          source: string
+          source_url: string | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          brand_id: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          file_id?: string | null
+          id?: string
+          is_primary?: boolean
+          kind: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          sort_order?: number
+          source?: string
+          source_url?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          brand_id?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          file_id?: string | null
+          id?: string
+          is_primary?: boolean
+          kind?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          sort_order?: number
+          source?: string
+          source_url?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_asset_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_fact: {
+        Row: {
+          brand_id: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          kind: string
+          label: string | null
+          metadata: Json
+          organization_id: string
+          source: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+          version: number
+        }
+        Insert: {
+          brand_id: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind: string
+          label?: string | null
+          metadata?: Json
+          organization_id: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+          version?: number
+        }
+        Update: {
+          brand_id?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          label?: string | null
+          metadata?: Json
+          organization_id?: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_fact_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crawl_event: {
         Row: {
           crawl_url_id: string | null
@@ -43251,6 +43450,123 @@ export type Database = {
           },
           {
             foreignKeyName: "crawl_url_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "snapshot"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discovered_item: {
+        Row: {
+          brand_id: string
+          category: string
+          confidence: number | null
+          context: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          guessed_kind: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          resolved_asset_id: string | null
+          resolved_fact_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          site_id: string | null
+          snapshot_id: string | null
+          source: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          url: string | null
+          value: Json
+          version: number
+        }
+        Insert: {
+          brand_id: string
+          category: string
+          confidence?: number | null
+          context?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          guessed_kind?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          resolved_asset_id?: string | null
+          resolved_fact_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          site_id?: string | null
+          snapshot_id?: string | null
+          source: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string | null
+          value?: Json
+          version?: number
+        }
+        Update: {
+          brand_id?: string
+          category?: string
+          confidence?: number | null
+          context?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          guessed_kind?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          resolved_asset_id?: string | null
+          resolved_fact_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          site_id?: string | null
+          snapshot_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string | null
+          value?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discovered_item_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discovered_item_resolved_asset_id_fkey"
+            columns: ["resolved_asset_id"]
+            isOneToOne: false
+            referencedRelation: "brand_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discovered_item_resolved_fact_id_fkey"
+            columns: ["resolved_fact_id"]
+            isOneToOne: false
+            referencedRelation: "business_fact"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discovered_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discovered_item_snapshot_id_fkey"
             columns: ["snapshot_id"]
             isOneToOne: false
             referencedRelation: "snapshot"
@@ -43654,6 +43970,84 @@ export type Database = {
           },
         ]
       }
+      property: {
+        Row: {
+          brand_id: string
+          connection: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string | null
+          handle: string | null
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          settings: Json
+          site_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          url: string | null
+          version: number
+        }
+        Insert: {
+          brand_id: string
+          connection?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string | null
+          handle?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          organization_id: string
+          settings?: Json
+          site_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string | null
+          version?: number
+        }
+        Update: {
+          brand_id?: string
+          connection?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string | null
+          handle?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          settings?: Json
+          site_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider: {
         Row: {
           config: Json
@@ -43792,15 +44186,22 @@ export type Database = {
       }
       site: {
         Row: {
+          brand_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          description: string | null
           domain: string
+          favicon_url: string | null
           homepage_screenshot_id: string | null
           id: string
+          initialization: Json
+          initialized_at: string | null
           integrations: Json
+          logo_url: string | null
           metadata: Json
           name: string
+          og_image_url: string | null
           organization_id: string
           root_url: string
           settings: Json
@@ -43811,15 +44212,22 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          brand_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          description?: string | null
           domain: string
+          favicon_url?: string | null
           homepage_screenshot_id?: string | null
           id?: string
+          initialization?: Json
+          initialized_at?: string | null
           integrations?: Json
+          logo_url?: string | null
           metadata?: Json
           name: string
+          og_image_url?: string | null
           organization_id: string
           root_url: string
           settings?: Json
@@ -43830,15 +44238,22 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          brand_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          description?: string | null
           domain?: string
+          favicon_url?: string | null
           homepage_screenshot_id?: string | null
           id?: string
+          initialization?: Json
+          initialized_at?: string | null
           integrations?: Json
+          logo_url?: string | null
           metadata?: Json
           name?: string
+          og_image_url?: string | null
           organization_id?: string
           root_url?: string
           settings?: Json
@@ -43849,6 +44264,13 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
+          {
+            foreignKeyName: "site_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "site_homepage_screenshot_fk"
             columns: ["homepage_screenshot_id"]
@@ -44332,15 +44754,22 @@ export type Database = {
           p_visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Returns: {
+          brand_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          description: string | null
           domain: string
+          favicon_url: string | null
           homepage_screenshot_id: string | null
           id: string
+          initialization: Json
+          initialized_at: string | null
           integrations: Json
+          logo_url: string | null
           metadata: Json
           name: string
+          og_image_url: string | null
           organization_id: string
           root_url: string
           settings: Json

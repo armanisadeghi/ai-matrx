@@ -15183,6 +15183,10 @@ export interface components {
             variables?: {
                 [key: string]: unknown;
             } | null;
+            /** Variable Resource Context */
+            variable_resource_context?: {
+                [key: string]: components["schemas"]["ResourceContextPolicy"];
+            } | null;
             config_overrides?: components["schemas"]["LLMParams"] | null;
             /**
              * Stream
@@ -18371,6 +18375,10 @@ export interface components {
             /** Variables */
             variables?: {
                 [key: string]: unknown;
+            } | null;
+            /** Variable Resource Context */
+            variable_resource_context?: {
+                [key: string]: components["schemas"]["ResourceContextPolicy"];
             } | null;
             /** Variable Definitions */
             variable_definitions?: {
@@ -25714,6 +25722,23 @@ export interface components {
             delegate: boolean;
         };
         /**
+         * ManifestValueEntry
+         * @description One declared surface value binding (``ui.ui_surface_value``).
+         *
+         *     ``auto_context=True`` → a surface-emitted value for this name is
+         *     automatically presented to the agent as context. ``False`` → bindable-only:
+         *     consumed exclusively through an explicit agent slot/variable mapping.
+         */
+        ManifestValueEntry: {
+            /** Name */
+            name: string;
+            /**
+             * Auto Context
+             * @default true
+             */
+            auto_context?: boolean;
+        };
+        /**
          * ManualResultProposal
          * @description User-supplied output for the failed node.
          */
@@ -25836,7 +25861,7 @@ export interface components {
             url?: string | null;
             /**
              * File Uri
-             * @description Native cloud URI: s3://bucket/key or gs://...
+             * @description Native cloud URI: s3://bucket/key, gs://..., azure://...
              */
             file_uri?: string | null;
             /**
@@ -29400,6 +29425,23 @@ export interface components {
             /** Field Id */
             field_id?: string | null;
         };
+        /** ResourceContextPolicy */
+        ResourceContextPolicy: {
+            /** Promote */
+            promote?: components["schemas"]["ResourcePromotion"][];
+            /** Exclude */
+            exclude?: string[];
+        };
+        /** ResourcePromotion */
+        ResourcePromotion: {
+            /** Representation */
+            representation: string;
+            /**
+             * Max Chars
+             * @default 5000
+             */
+            max_chars?: number;
+        };
         /** ResponseFormatJsonObject */
         ResponseFormatJsonObject: {
             /**
@@ -31845,6 +31887,13 @@ export interface components {
              * @default []
              */
             value_bindings?: string[];
+            /**
+             * Values
+             * @default []
+             */
+            values?: components["schemas"]["ManifestValueEntry"][];
+            /** Intro */
+            intro?: string | null;
         };
         /** SweepRequest */
         SweepRequest: {

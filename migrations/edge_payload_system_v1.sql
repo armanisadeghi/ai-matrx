@@ -112,6 +112,10 @@ create trigger trg_validate_edge_payload
   for each row execute function platform.validate_edge_payload();
 
 -- 5. assoc_add gains payload params (backward compatible) ------------------
+-- MUST drop the old 9-arg signature first: CREATE OR REPLACE with a different
+-- arg list creates a second overload, and since the new params default null,
+-- every existing call matches both -> PostgREST PGRST203 (300) on assoc_add.
+drop function if exists public.assoc_add(text, uuid, text, uuid, uuid, text, jsonb, text, integer);
 create or replace function public.assoc_add(
   p_source_type text, p_source_id uuid, p_target_type text, p_target_id uuid,
   p_org_id uuid default null, p_label text default null,
