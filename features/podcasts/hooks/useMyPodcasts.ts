@@ -74,7 +74,7 @@ function patchMyPodcastsCache(
 export interface UseMyPodcasts {
   episodes: PcEpisodeWithShow[];
   shows: PcShow[];
-  /** Shows the user has at least one episode in, newest first. */
+  /** Shows the user owns (created_by) or has at least one episode in. */
   myShows: PcShow[];
   loading: boolean;
   error: string | null;
@@ -160,11 +160,17 @@ export function useMyPodcasts(): UseMyPodcasts {
     [userId],
   );
 
-  // Shows that host at least one of the user's episodes, newest episode first.
+  // Shows the user owns (created_by, stamped by the DB) or that host at least
+  // one of their episodes — the episode fallback covers rows created before
+  // ownership stamping and shows they contribute to without owning.
   const showIdsWithMyEpisodes = new Set(
     episodes.map((e) => e.show_id).filter((id): id is string => Boolean(id)),
   );
-  const myShows = shows.filter((s) => showIdsWithMyEpisodes.has(s.id));
+  const myShows = shows.filter(
+    (s) =>
+      (userId != null && s.created_by === userId) ||
+      showIdsWithMyEpisodes.has(s.id),
+  );
 
   return {
     episodes,

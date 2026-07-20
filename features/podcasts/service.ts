@@ -29,9 +29,10 @@ export const podcastService = {
 
   async createShow(
     // rss_settings is nullable + defaultable in the DB, so callers may omit it.
+    // created_by is stamped by the DB's `_stamp_actor` trigger — never client-set.
     payload: Omit<
       PcShow,
-      "id" | "created_at" | "updated_at" | "rss_settings"
+      "id" | "created_at" | "updated_at" | "created_by" | "rss_settings"
     > & {
       rss_settings?: PcShow["rss_settings"];
     },
@@ -47,7 +48,9 @@ export const podcastService = {
 
   async updateShow(
     id: string,
-    payload: Partial<Omit<PcShow, "id" | "created_at" | "updated_at">>,
+    payload: Partial<
+      Omit<PcShow, "id" | "created_at" | "updated_at" | "created_by">
+    >,
   ): Promise<PcShow> {
     const { data, error } = await supabase
       .schema("podcast").from("pc_shows")

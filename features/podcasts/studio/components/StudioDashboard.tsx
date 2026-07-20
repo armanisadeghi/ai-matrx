@@ -189,8 +189,7 @@ export function StudioDashboard() {
           registerShow(show);
           void refreshPodcasts();
           // Take the owner straight to the manage page so a brand-new show
-          // (which has no episodes yet, so it won't appear under "Your
-          // podcasts") is immediately reachable and configurable.
+          // is immediately configurable.
           startTransition(() => router.push(`/podcast/studio/show/${show.id}`));
         }}
       />

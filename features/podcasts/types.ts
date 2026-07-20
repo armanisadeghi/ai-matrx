@@ -32,6 +32,9 @@ export type PcShow = {
   thumbnail_url: string | null;
   author: string | null;
   is_published: boolean;
+  /** Owner (stamped by the platform `_stamp_actor` trigger on insert).
+   *  Null only on partial embeds that don't select it. */
+  created_by: string | null;
   /**
    * RSS distribution settings. Nullable + may be absent until the
    * `pc_shows_rss_settings` migration is applied — always read with `?? {}`.
@@ -208,6 +211,7 @@ type PcShowDisplayRow = Pick<
   | "thumbnail_url"
   | "author"
   | "is_published"
+  | "created_by"
   | "rss_settings"
   | "created_at"
   | "updated_at"
@@ -224,6 +228,7 @@ export function mapPcShowRow(row: PcShowDisplayRow): PcShow {
     thumbnail_url: row.thumbnail_url,
     author: row.author,
     is_published: row.is_published,
+    created_by: row.created_by,
     rss_settings: parseRssSettings(row.rss_settings),
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -279,6 +284,7 @@ export function mapPcEpisodeWithShowRow(
             thumbnail_url: row.show.thumbnail_url ?? null,
             author: row.show.author ?? null,
             is_published: row.show.is_published ?? false,
+            created_by: row.show.created_by ?? null,
             rss_settings: row.show.rss_settings ?? null,
             created_at: row.show.created_at ?? "",
             updated_at: row.show.updated_at ?? "",
