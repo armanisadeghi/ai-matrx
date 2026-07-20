@@ -33,7 +33,7 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { chatConversationsActions } from "../_legacy-stubs";
 import { editMessage } from "../_legacy-stubs";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";

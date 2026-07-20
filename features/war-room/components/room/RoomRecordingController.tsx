@@ -31,7 +31,7 @@
 // controller (or the whole room) unmounts before finalize completes.
 
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   useGlobalRecording,
   type StartRecordingArgs,

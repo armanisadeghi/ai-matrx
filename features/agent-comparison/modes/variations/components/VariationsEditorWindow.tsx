@@ -20,7 +20,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pause, Pencil, Plus, Save, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { Button } from "@/components/ui/button";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";

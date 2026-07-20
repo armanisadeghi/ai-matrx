@@ -23,7 +23,7 @@ import {
   TTS_PLAYBACK_BUFFER_SEC,
   type VoicePurpose,
 } from '@/lib/cartesia/config';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import { usePlaybackSessionController } from '@/features/audio/session/usePlaybackSessionController';
 
 export type SpeakerPhase =

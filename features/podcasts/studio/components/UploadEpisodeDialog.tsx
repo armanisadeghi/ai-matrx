@@ -18,7 +18,7 @@
 //   video → "with_video", image (no video) → "with_metadata", else "audio_only".
 
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Loader2,
   AudioLines,

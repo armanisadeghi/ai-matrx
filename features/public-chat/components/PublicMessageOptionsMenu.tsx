@@ -30,7 +30,7 @@ import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { EmailInputDialog } from "@/components/dialogs/EmailInputDialog";
 import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";

@@ -10,7 +10,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";

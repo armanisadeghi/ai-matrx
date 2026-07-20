@@ -34,7 +34,7 @@
  */
 
 import { callApi } from "@/lib/api/call-api";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ThunkAction, ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";

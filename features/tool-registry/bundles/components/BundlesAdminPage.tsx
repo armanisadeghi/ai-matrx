@@ -33,7 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   listBundles,
   listBundleMembers,

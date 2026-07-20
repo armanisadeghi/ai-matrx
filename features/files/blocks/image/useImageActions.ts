@@ -31,7 +31,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { deriveViewerUrl } from "./helpers/derive-viewer-url";
 import { printImage } from "./utils/print-image";
 import {

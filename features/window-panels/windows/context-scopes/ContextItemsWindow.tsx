@@ -50,7 +50,7 @@ import { ReorderDialog } from "@/features/scope-system/components/ReorderDialog"
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { makeSelectScopeType } from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 

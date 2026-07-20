@@ -13,7 +13,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, CircleAlert, Copy, Eye, Loader2, Save } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";

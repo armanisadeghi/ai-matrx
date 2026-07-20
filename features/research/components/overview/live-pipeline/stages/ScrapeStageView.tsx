@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useResearchApi } from "../../../../hooks/useResearchApi";
 import type {
   PipelineState,

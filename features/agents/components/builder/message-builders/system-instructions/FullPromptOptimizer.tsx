@@ -33,7 +33,7 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import MarkdownStream from "@/components/MarkdownStream";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { extractJsonFromText } from "@/features/agents/utils/json-extraction";

@@ -48,7 +48,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/utils/cn";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { parseDateOnly, toDateOnly, formatDateOnly } from "@/utils/dateOnly";
 import { updateProject } from "../service";

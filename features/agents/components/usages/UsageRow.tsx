@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { updateUsageToActive } from "@/features/agents/redux/usages/usages.thunks";
 import { makeSelectRowMutation } from "@/features/agents/redux/usages/usages.selectors";
 import type { UsageScope } from "@/features/agents/redux/usages/usages.slice";

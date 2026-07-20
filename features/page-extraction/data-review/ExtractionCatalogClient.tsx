@@ -35,7 +35,7 @@ import {
   RefreshCwTapButton,
 } from "@/components/icons/tap-buttons";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {

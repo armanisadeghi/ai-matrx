@@ -44,7 +44,7 @@ import {
   Binary,
   GitCompareArrows,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { FileRightClickMenu } from "@/features/files";

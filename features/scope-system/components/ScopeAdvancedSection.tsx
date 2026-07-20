@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateScope } from "@/features/agent-context/redux/scope/scopesSlice";
 import type { Scope } from "@/features/agent-context/redux/scope/types";

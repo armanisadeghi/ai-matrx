@@ -21,7 +21,7 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";

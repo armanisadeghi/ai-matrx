@@ -39,7 +39,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";

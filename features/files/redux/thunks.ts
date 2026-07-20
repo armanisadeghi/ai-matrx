@@ -61,7 +61,7 @@ import {
   isLatestResourceOp,
   hasInFlight,
 } from "./request-ledger";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { buildTreeState } from "./tree-utils";
 import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";

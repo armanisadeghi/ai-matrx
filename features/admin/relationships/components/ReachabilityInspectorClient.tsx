@@ -8,7 +8,7 @@
 
 import { useMemo, useState } from "react";
 import { Layers, RefreshCw, Search } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";

@@ -21,7 +21,7 @@
  * Redux, and the DB stay one write path.
  */
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   materializeBlocks,

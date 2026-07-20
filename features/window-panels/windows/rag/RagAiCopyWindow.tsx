@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, Database, FileText, Layers3 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { Button } from "@/components/ui/button";

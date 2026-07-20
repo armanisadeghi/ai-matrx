@@ -26,7 +26,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { saveImageFile } from "../image/utils/save-image-file";
 import type { VideoBlock } from "../types";
 

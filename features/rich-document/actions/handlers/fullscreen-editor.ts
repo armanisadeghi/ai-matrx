@@ -5,7 +5,7 @@
 // the source adapter's edit capability.
 
 import { Maximize2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../registry";

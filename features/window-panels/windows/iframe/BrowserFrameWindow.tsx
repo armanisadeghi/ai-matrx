@@ -9,7 +9,7 @@ import {
 } from "@/features/window-panels/utils/embed-site-url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { LUCIDE_ICONS_GALLERY_URL } from "@/utils/icons/lucide-gallery-url";
 
 export interface BrowserFrameWindowProps {

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { BadgeCheck, ExternalLink, Layers, Loader2, ShieldOff } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";

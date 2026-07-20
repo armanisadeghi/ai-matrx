@@ -51,7 +51,7 @@ import {
   List,
   Rocket,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface HtmlPageListViewProps {
   pages: HtmlPageSummary[];

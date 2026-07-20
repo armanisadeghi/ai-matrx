@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { syncManifests } from "@/features/surfaces/services/surfaces.service";
 
 type SyncResult = Awaited<ReturnType<typeof syncManifests>>;

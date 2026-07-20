@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/popover";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
 import { useFileUpload } from "@/features/files";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { MessageInputAttachMenu } from "./MessageInputAttachMenu";
 import type { SendMessageOptions } from "../hooks/useWhatsAppChat";

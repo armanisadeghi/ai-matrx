@@ -15,7 +15,7 @@
 
 import { useMemo } from "react";
 import { ChevronDown, FolderKanban } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import {

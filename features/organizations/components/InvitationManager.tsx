@@ -9,7 +9,7 @@
  */
 
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useOrganizationInvitations, useInvitationOperations } from "../hooks";
 import type { OrgRole } from "../types";
 import { useUserConnections } from "@/features/messaging/hooks/useUserConnections";

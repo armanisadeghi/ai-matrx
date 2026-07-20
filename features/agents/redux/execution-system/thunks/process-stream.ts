@@ -137,7 +137,7 @@ import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from
 import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
 import type { ContentType } from "@/features/ai-models/capabilities/types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { isDirectiveApplyEvent } from "@/features/matrx-envelope/envelope";
 import { proposeDirective } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
 

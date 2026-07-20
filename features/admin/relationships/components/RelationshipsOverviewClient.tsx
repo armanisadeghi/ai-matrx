@@ -10,7 +10,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Lock, LockOpen, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";

@@ -21,7 +21,7 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
   Popover,

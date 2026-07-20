@@ -46,7 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   listServers,
   listServerConfigs,

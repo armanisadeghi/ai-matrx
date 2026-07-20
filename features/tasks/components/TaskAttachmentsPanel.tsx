@@ -29,7 +29,7 @@ import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPi
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { folderForTask } from "@/features/files/utils/folder-conventions";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 
 interface TaskAttachmentsPanelProps {

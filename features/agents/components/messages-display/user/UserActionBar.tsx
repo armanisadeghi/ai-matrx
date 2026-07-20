@@ -38,7 +38,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useOpenFullScreenMarkdownEditorBridge } from "@/features/overlays/openers/fullScreenEditor";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectShowUserMessageOptions } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { extractErrorMessage } from "@/utils/errors";
 import {

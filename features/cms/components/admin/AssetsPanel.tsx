@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import { fileHandler } from '@/features/files';
 import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
 import type { AssetComponentUsage, AssetPageUsage, ClientAsset, ClientSite } from '../../types';

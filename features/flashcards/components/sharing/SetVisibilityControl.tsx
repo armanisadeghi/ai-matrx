@@ -19,7 +19,7 @@
 
 import { useState } from "react";
 import { Globe2, Link2, Lock, Building2, Check, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

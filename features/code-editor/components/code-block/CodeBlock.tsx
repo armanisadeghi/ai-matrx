@@ -17,7 +17,7 @@ import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { Globe, Loader2 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { Prism as SyntaxHighlighterBase } from "react-syntax-highlighter";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { resolvePrismSyntaxStyle } from "@/features/code-editor/config/syntax-themes";
 import { codeLanguageToExtension } from "@/utils/file-operations/utils";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";

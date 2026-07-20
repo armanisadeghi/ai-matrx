@@ -11,7 +11,7 @@
 //   reportWarRoomError("attachFileToThread", err, { toast: "…" }); // custom toast
 //   reportWarRoomError("loadThreadAttachments", err, { toast: false }); // log only
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface ReportWarRoomErrorOptions {
   /**

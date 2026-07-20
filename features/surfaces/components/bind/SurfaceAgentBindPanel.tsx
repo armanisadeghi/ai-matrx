@@ -14,7 +14,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Loader2, Link2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

@@ -31,7 +31,7 @@ import {
   User,
   Wrench,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

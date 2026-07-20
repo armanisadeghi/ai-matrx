@@ -5,7 +5,7 @@
 // so it works on any source that supports editing.
 
 import { Eye, Globe, Mail } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";

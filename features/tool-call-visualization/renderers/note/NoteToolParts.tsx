@@ -9,7 +9,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import MarkdownStream from "@/components/MarkdownStream";
 import { NOTE_ACCENT, type NoteToolMode } from "./useNoteToolData";

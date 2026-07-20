@@ -16,7 +16,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, Search } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

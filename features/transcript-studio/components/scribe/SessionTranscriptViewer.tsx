@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlignLeft, Loader2, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   Drawer,

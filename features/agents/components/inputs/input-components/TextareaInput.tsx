@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface TextareaInputProps {
   value: string;

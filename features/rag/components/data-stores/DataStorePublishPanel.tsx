@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Globe, Building2, Layers, Loader2, X, Library } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useDataStoreGrants } from "@/features/rag/hooks/useDataStoreGrants";
 import { useIndustries } from "@/features/industries/hooks";
 

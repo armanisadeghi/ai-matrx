@@ -8,7 +8,7 @@
 
 import { Check, Library, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 
 export function LibraryCatalogPane() {

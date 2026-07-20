@@ -15,7 +15,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Pencil, Plus, Power, TriangleAlert } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
 import { ENTITY_TYPE_TOKENS } from "@/types/generated/entity-types.generated";

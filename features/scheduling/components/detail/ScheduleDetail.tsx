@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Eye, Pencil, Plus, PlayCircle, Power, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";

@@ -24,7 +24,7 @@
 
 import { useState } from "react";
 import { Check, ChevronDown, Loader2, Plus, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Popover,
   PopoverContent,

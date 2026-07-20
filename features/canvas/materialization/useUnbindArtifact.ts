@@ -18,7 +18,7 @@
  */
 
 import { useContext, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";

@@ -16,7 +16,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import type { PayloadKind } from "@/lib/persistence/payloadSafetyStore";
 import { useAppDispatch } from "@/lib/redux/hooks";

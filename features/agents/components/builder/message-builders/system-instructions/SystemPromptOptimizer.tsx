@@ -42,7 +42,7 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { usePathname } from "next/navigation";
 // TODO(prompt-to-agent-sweep): createUserPrompt writes to public.prompts which is graveyarded.
 // Replace with agent.definition upsert once the prompt-to-agent migration completes.

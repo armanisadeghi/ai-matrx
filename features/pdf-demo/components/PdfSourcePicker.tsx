@@ -29,7 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFileUpload } from "@/features/files";
 import { useFilePicker } from "@/features/files";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export interface PdfSourcePayload {
   /** Canonical MediaRef shape — `file_id` is the cld_files UUID. */

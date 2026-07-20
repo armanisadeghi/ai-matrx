@@ -35,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
 import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";

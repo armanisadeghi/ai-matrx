@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { ScopeColorPicker } from "./ScopeColorPicker";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {

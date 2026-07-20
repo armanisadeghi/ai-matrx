@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { ScopeColorPicker } from "@/features/scope-system/components/ScopeColorPicker";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {

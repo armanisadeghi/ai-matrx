@@ -5,7 +5,7 @@
 // blocks; notes / prompts / artifacts don't).
 
 import { Copy, FileText, FileType, Brain } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { registerAction } from "../registry";
 import { getErrorMessage } from "../utils";

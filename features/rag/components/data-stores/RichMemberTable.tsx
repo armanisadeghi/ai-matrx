@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { ExternalLink, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

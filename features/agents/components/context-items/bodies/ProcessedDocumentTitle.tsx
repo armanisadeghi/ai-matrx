@@ -13,7 +13,7 @@
  * same lexical search its own bar used to.
  */
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { renameFile } from "@/features/files/redux/thunks";
 import { useAttachedDocumentDisplayName } from "@/features/agents/components/inputs/resources/attached-documents";

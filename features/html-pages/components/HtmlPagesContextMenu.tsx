@@ -15,7 +15,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { HTML_PAGE_CONTEXT_MENU_PROPS } from "../agent-context/htmlPageContextMenuProps";
 import { buildHtmlPagesListContextData } from "../agent-context/buildHtmlPagesListContextData";

@@ -5,7 +5,7 @@
 // (owner RLS); delivery runs DB-side (files.webhook_* pipeline).
 
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Webhook as WebhookIcon,
   Plus,

@@ -4,7 +4,7 @@ import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTrans
 import { useEffect, useRef, useCallback, type MutableRefObject } from 'react';
 import { VoiceTroubleshootingModal } from '@/features/audio/components/VoiceTroubleshootingModal';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import type { TranscriptionResult } from '@/features/audio/types';
 
 // ============================================================================

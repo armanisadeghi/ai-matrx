@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, XCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";

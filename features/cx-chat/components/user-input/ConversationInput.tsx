@@ -68,7 +68,7 @@ import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste
 import { useFileUpload, composeUploadFolderPath } from "@/features/files";
 import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
 import { PlusAttachMenu } from "@/features/agents/components/inputs/smart-input/PlusAttachMenu";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type {
   ManagedResource,
   ResourceBlockType,

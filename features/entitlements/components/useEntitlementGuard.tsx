@@ -13,7 +13,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   useEntitlement,
   useEntitlementConsume,

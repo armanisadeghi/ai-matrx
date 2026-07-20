@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { useTextToSpeech } from "../hooks/useTextToSpeech";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { EnglishVoice } from "../types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export interface AudioPlayerButtonProps {
   text: string;

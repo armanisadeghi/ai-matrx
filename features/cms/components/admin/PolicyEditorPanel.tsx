@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, ShieldAlert, ShieldCheck, ShieldOff } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 const POLICY_META: Record<AgentWritePolicy, { label: string; icon: typeof ShieldOff; className: string }> = {
     blocked: { label: 'Blocked', icon: ShieldOff, className: 'text-muted-foreground border-border' },

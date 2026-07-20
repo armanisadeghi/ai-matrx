@@ -15,7 +15,7 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
 import { AUDIO_ASSISTANT_AGENT_ID } from "../../constants";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
   CLEANING_INTERVAL_DEFAULT_MS,

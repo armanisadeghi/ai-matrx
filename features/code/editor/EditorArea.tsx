@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { codeFilesActions } from "@/features/code-files/redux/slice";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { selectActiveTab, updateTabContent } from "../redux/tabsSlice";
 import { isPreviewTab } from "../types";
 import { AVATAR_RESERVE, EDITOR_BG } from "../styles/tokens";

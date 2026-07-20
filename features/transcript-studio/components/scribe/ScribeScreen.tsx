@@ -16,7 +16,7 @@ import {
   Trash2,
   Webhook,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Bookmark } from "lucide-react";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { buildSessionTranscriptReferenceFence } from "@/features/matrx-envelope/compoundReference";

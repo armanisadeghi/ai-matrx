@@ -30,7 +30,7 @@
 
 import * as React from "react";
 import { type SupabaseClient } from "@supabase/supabase-js";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Check,
   ChevronDown,

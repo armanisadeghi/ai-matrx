@@ -41,7 +41,7 @@ import {
   setMessageReaction,
   reactionFromMetadata,
 } from "@/features/agents/redux/execution-system/message-crud/set-message-reaction.thunk";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   selectMessageById,
   selectMessagePosition,

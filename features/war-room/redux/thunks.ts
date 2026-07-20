@@ -3,7 +3,7 @@
 // Async thunks bridging the warRoom slice and Supabase via service.ts.
 // Optimistic where it helps; loud (toast) on failure.
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";

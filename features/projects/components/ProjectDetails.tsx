@@ -15,7 +15,7 @@
 import React from "react";
 import { format } from "date-fns";
 import { Check, Copy, Fingerprint, CalendarDays } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 import type { Project } from "../types";
 

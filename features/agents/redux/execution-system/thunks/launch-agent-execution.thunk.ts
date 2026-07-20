@@ -25,7 +25,7 @@ import type {
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
 import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import {

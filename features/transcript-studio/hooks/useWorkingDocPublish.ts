@@ -21,7 +21,7 @@
 // doc (the draft is safe — nothing was lost).
 
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { create as createNote } from "@/features/notes/service/notesApi";
 import { upsertNoteFromServer } from "@/features/notes/redux/slice";

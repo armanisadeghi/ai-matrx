@@ -51,7 +51,7 @@ import {
   clearAllPopoutPending,
 } from "./popout/popoutPendingStorage";
 import { getPopoutOpener } from "./popout/usePopoutControl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 // ─── Popout recovery toast ────────────────────────────────────────────────────
 

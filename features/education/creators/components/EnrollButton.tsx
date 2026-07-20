@@ -13,7 +13,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { GraduationCap, CreditCard, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { startClassCheckout } from "@/features/education/classes/service";

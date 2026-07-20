@@ -17,7 +17,7 @@ import {
   Trash2,
   Edit2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import {
   FILE_CONTEXT_MENU_LABEL,

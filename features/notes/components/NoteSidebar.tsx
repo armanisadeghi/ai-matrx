@@ -104,7 +104,7 @@ import {
   assignHomelessNotesToPersonalOrg,
 } from "../service/notesService";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { getFolderIconAndColor, isDefaultFolder } from "../utils/folderUtils";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";

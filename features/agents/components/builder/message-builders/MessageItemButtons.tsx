@@ -1,5 +1,5 @@
 import { Maximize2, Braces, Copy, Eraser, X, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 
 // View-mode toggle has moved to MessageViewModeMenu next to the role

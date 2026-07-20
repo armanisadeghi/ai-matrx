@@ -18,7 +18,7 @@
 //      "queued" assets to failed — never claiming queued without a pulse.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { consumeStream } from "@/lib/api/stream-parser";
 import {

@@ -136,7 +136,7 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { resilientFetch } from "@/lib/net/resilient-fetch";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import { toNetError } from "@/lib/net/errors";

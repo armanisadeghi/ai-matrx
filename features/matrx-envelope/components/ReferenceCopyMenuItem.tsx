@@ -1,7 +1,7 @@
 "use client";
 
 import { Bookmark } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { buildFileReferenceFence } from "@/features/matrx-envelope/fileReference";

@@ -28,7 +28,7 @@ import { TranscriptionLoader } from "./TranscriptionLoader";
 import { VoiceTroubleshootingModal } from "./VoiceTroubleshootingModal";
 import { MicrophoneRecordingModal } from "./MicrophoneRecordingModal";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export type MicVariant = "icon-only" | "inline-expand" | "modal-controls";
 

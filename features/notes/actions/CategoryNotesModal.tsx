@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useNotesRedux } from '../hooks/useNotesRedux';
 import type { Note } from '../types';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import { getFolderIconAndColor } from '../utils/folderUtils';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 

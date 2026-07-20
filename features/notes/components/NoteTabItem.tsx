@@ -53,7 +53,7 @@ import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowl
 import { useNoteIngestStatus } from "../hooks/useNoteIngestStatus";
 import { useNoteDelete } from "../hooks/useNoteDelete";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import {
   DropdownMenu,

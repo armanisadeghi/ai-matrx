@@ -15,7 +15,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EyeOff, Eye, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { usePages, invalidatePages } from "@/features/file-analysis/hooks/usePages";
 import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
 import * as Api from "@/features/file-analysis/api/file-analysis";

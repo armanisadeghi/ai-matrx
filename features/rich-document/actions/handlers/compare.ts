@@ -15,7 +15,7 @@
 // (per-version "Compare" buttons), not a separate menu item.
 
 import { Clipboard, Pin, GitCompareArrows } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   setCompareBase,

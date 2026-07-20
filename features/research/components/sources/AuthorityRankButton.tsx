@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Award, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useResearchApi } from "../../hooks/useResearchApi";

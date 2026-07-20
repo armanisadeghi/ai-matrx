@@ -14,7 +14,7 @@
 import { useState } from "react";
 
 import { Check, Loader2, Sparkles, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { confirmDirective } from "@/features/action-catalog/service";
 import type { DirectiveConfirmRequest } from "@/features/action-catalog/types";

@@ -22,7 +22,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { Keyboard, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";

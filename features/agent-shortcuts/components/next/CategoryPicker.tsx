@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { CategorySelect } from "@/features/agent-shortcuts/components/CategorySelect";
 import { useAgentShortcutCrud } from "@/features/agent-shortcuts/hooks/useAgentShortcutCrud";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";

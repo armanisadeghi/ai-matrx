@@ -30,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { listMyBattleSets, loadBattleSet } from "../redux/thunks";
 import { deleteComparisonSet } from "../service/comparisonSetsService";
 import type { ComparisonSetRow } from "../types";

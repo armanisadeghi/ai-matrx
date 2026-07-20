@@ -15,7 +15,7 @@
 
 import { useRef, useState } from "react";
 import { Plus, LayoutGrid, ListChecks, FolderKanban } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   attachEntityToThread,

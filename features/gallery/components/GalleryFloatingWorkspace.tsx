@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useUnsplashSearch } from "@/hooks/images/useUnsplashSearch";
 import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { InlineMediaRef } from "@/features/files";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

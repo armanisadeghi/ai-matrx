@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Save, Trash2, CheckCircle2, CircleDashed } from "lucide-react";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import { createTasksScope } from "@/features/surfaces/manifests/tasks.manifest";

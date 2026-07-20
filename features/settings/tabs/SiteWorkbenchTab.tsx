@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BookMarked, Globe, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";

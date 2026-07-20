@@ -58,7 +58,7 @@ import {
   Blocks,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

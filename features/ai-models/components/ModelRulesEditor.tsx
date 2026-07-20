@@ -23,7 +23,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { FullJsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
 import { useAppDispatch } from "@/lib/redux/hooks";

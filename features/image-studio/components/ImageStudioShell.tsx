@@ -20,7 +20,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { PresetCatalog } from "./PresetCatalog";
 import dynamic from "next/dynamic";
 import { StudioDropZone } from "./StudioDropZone";

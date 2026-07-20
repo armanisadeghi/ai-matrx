@@ -44,7 +44,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";

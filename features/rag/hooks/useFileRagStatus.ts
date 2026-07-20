@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setRagStatusForFile } from "@/features/files/redux/slice";
 import { isSyntheticId } from "@/features/files/virtual-sources/path";

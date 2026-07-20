@@ -9,7 +9,7 @@
 // (unique (episode_id, kind)).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
 import { articleService } from "@/features/podcasts/articleService";
 import { assembleArticle } from "@/features/podcasts/generator/articleMarkdown";

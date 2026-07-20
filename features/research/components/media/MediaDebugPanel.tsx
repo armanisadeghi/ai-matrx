@@ -12,7 +12,7 @@ import {
   ICON_MAX_DIM,
   SQUARE_ASPECT_TOLERANCE,
 } from "./mediaCategorization";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface MediaDebugPanelProps {
   topicId: string;

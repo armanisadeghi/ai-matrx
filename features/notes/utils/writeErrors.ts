@@ -10,7 +10,7 @@
 // thing to the user: the write did NOT happen. These helpers translate that
 // into an unmissable message so edits are never silently thrown away.
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface WriteErrorLike {
   code?: string | null;

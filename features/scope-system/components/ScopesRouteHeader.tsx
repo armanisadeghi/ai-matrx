@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

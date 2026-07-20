@@ -15,7 +15,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import {

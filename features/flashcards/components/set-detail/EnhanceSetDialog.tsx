@@ -14,7 +14,7 @@
 
 import { useState } from "react";
 import { Lightbulb, GitBranch, Loader2, Check, X, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Dialog,
   DialogContent,

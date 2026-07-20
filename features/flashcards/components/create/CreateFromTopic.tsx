@@ -23,7 +23,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Layers, Sparkles, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -15,7 +15,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

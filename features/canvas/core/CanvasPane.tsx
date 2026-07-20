@@ -51,7 +51,7 @@ import {
   isPersistableCanvasType,
   type CanvasItem,
 } from "@/features/canvas/redux/canvasSlice";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { CanvasBody, getDefaultTitle, titleToString } from "./CanvasBody";
 import { CanvasNavigation } from "./CanvasNavigation";

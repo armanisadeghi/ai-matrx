@@ -5,7 +5,7 @@ const PrivacyPolicyPage = () => {
     <div className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
       <h1>Privacy Policy</h1>
       <p>
-        <strong>Last updated:</strong> May 8, 2026
+        <strong>Last updated:</strong> July 20, 2026
       </p>
       <p>
         AI Matrx (&quot;we&quot;, &quot;us&quot;) provides an AI-agent platform that
@@ -244,6 +244,23 @@ const PrivacyPolicyPage = () => {
         </li>
       </ul>
 
+      <h3>2.8 SMS and mobile information</h3>
+      <p>
+        If you choose to enroll in AI Matrx SMS notifications, we collect the
+        mobile number you provide, your consent status and timestamp, the
+        verification result, messaging preferences, and the messages needed to
+        operate and support the program. Message frequency varies and message
+        and data rates may apply. You can reply <strong>STOP</strong> to opt out
+        or <strong>HELP</strong> for help.
+      </p>
+      <p>
+        Mobile information and text-message opt-in data and consent are not
+        sold, rented, or shared with third parties or affiliates for marketing
+        or promotional purposes. We disclose this information only to service
+        providers that deliver and secure the SMS program, when you direct us
+        to, or when required by law.
+      </p>
+
       <h2>3. Where your data goes</h2>
 
       <h3>3.1 Sub-processors</h3>
@@ -299,6 +316,20 @@ const PrivacyPolicyPage = () => {
             target="_blank"
           >
             Cartesia privacy policy
+          </a>
+          )
+        </li>
+        <li>
+          <strong>Twilio</strong> &mdash; phone-number verification and SMS
+          delivery. Receives the mobile number and message data needed to verify
+          enrollment and deliver texts. Twilio may process delivery metadata and
+          opt-out keywords to operate the messaging service. (
+          <a
+            href="https://www.twilio.com/en-us/legal/privacy"
+            rel="external noopener"
+            target="_blank"
+          >
+            Twilio privacy notice
           </a>
           )
         </li>
@@ -395,6 +426,11 @@ const PrivacyPolicyPage = () => {
           <strong>Server logs:</strong> request-level operational logs (IP,
           timestamps, error codes) are retained for a limited period for
           security and debugging, then rotated out.
+        </li>
+        <li>
+          <strong>SMS consent and delivery records:</strong> retained as needed
+          to honor opt-outs, demonstrate consent, prevent abuse, and meet legal
+          or carrier requirements.
         </li>
         <li>
           <strong>Local extension data:</strong> stays on your device until you

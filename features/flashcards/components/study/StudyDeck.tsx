@@ -39,7 +39,7 @@ import {
   toFlashcardMobileCardsFromStudy,
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ItemMasteryRow } from "@/features/education/study/types";

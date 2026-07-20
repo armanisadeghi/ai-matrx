@@ -6,7 +6,7 @@ import {
   type UpdateCanvasItemInput,
   type CanvasItemFilters,
 } from '@/features/canvas/services/canvasItemsService';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 /**
  * useCanvasItems - Hook for managing canvas items with database persistence

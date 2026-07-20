@@ -11,7 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 // Lazy-load audio hook — only imported on first mic click
 const LazyVoiceEngine = dynamic(

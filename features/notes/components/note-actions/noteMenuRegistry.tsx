@@ -27,7 +27,7 @@ import {
   Database,
   Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {
   ContextMenuExtraItem,

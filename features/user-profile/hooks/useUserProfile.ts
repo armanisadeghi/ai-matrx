@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setUserMetadata } from "@/lib/redux/slices/userProfileSlice";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   EMPTY_ACCOUNT_DATA,
   type UserAccountData,

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   buildMultiRecordReferenceFence,
   buildGroupedRecordReferenceFences,

@@ -19,7 +19,7 @@
 
 import { useMemo, useState } from "react";
 import { Check, Copy, Loader2, Play, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";

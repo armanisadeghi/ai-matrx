@@ -10,7 +10,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, ClipboardPaste, Loader2, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";

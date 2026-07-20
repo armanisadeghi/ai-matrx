@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Volume2, Loader2, RefreshCw, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { usePodcastRun } from "@/features/podcasts/generator/usePodcastRun";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";

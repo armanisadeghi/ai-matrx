@@ -26,7 +26,7 @@ import type {
   AssembledAgentStartRequest,
   UserOverrides,
 } from "@/features/agents/types/request.types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";

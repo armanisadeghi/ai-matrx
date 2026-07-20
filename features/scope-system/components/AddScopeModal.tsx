@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { ScopeColorPicker } from "./ScopeColorPicker";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   createScopeType,

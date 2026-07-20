@@ -20,7 +20,7 @@ import {
   ProJsonTextarea,
   type ProJsonValidationState,
 } from "@/components/official/ProJsonTextarea";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";

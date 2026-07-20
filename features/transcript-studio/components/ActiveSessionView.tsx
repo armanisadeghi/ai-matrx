@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Settings2, Trash2 } from "lucide-react";
 import type { Layout } from "react-resizable-panels";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

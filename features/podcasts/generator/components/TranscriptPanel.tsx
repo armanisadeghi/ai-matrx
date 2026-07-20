@@ -6,7 +6,7 @@
 // stripped) so only the real speaker turns show. RTL-aware for Persian.
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { FileText, ChevronDown, Copy, Check, Clock } from "lucide-react";
 import {
   Collapsible,

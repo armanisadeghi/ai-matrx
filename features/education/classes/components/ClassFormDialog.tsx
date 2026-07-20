@@ -8,7 +8,7 @@
 
 import { useState } from "react";
 import { CalendarClock, Plus, Trash2, GraduationCap } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Dialog,
   DialogContent,

@@ -40,7 +40,7 @@ import { AttachedDocumentChips } from "../../inputs/resources/AttachedDocumentCh
 import { usePasteImageResource } from "../../inputs/resources/usePasteImageResource";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface CompactAssistantInputProps {
   conversationId: string;

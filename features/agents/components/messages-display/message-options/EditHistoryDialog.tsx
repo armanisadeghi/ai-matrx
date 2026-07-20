@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   selectMessageContentHistory,
   selectMessageContent,

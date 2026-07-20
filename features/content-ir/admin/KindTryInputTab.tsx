@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { Check, Copy, Info } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import KindInputForm from "@/features/content-ir/input/KindInputForm";
 
 interface KindTryInputTabProps {

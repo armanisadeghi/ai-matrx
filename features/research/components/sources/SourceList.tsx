@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   ExternalLink,
   MoreVertical,

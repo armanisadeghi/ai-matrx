@@ -22,7 +22,7 @@ import {
   Files,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { interpolateQuery } from "./utils/interpolate";
 import { ResultPreview } from "./ResultPreview";

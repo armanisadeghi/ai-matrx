@@ -8,7 +8,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Play, Trash2, XCircle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "../service/studyService";

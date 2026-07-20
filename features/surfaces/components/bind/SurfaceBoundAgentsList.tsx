@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Play, Plus, Settings, Unlink } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";

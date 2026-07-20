@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { buildFileReferenceFence } from "@/features/matrx-envelope/fileReference";
 
 /** Icon button — copies a `file` matrx reference fence (`{ file_id }`). */

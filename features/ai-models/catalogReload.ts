@@ -13,7 +13,7 @@
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { callApi } from "@/lib/api/call-api";
 import type { RootState } from "@/lib/redux/store";

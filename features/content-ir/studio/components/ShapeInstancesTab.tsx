@@ -31,7 +31,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import KindInputForm from "@/features/content-ir/input/KindInputForm";

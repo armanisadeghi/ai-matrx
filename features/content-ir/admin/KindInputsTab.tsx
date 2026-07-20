@@ -37,7 +37,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import {
   kindFieldsToVariableDefinitions,

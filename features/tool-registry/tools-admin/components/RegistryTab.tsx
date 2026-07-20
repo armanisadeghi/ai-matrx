@@ -34,7 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   listToolBindings,
   addToolBinding,

@@ -26,7 +26,7 @@ import type { ModeShellProps } from "../shared/types";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, RotateCw, Save, X, Zap, ZoomIn } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { detectFaces } from "../../api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "../../constants/backend-capabilities";
 import { cropFileToFile } from "../../utils/crop-file";

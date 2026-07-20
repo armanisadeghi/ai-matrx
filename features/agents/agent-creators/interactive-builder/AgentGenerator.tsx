@@ -49,7 +49,7 @@ import {
   Rocket,
   Bug
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import MarkdownStream from "@/components/MarkdownStream";
 import { AgentStreamingResponse } from "./AgentJsonDisplay";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";

@@ -51,7 +51,7 @@ import {
 import type { OverlayState } from "@/lib/redux/slices/overlaySlice";
 import { getStaticEntryByOverlayId } from "@/features/window-panels/registry/windowRegistryMetadata";
 import type { WindowRect } from "@/features/window-panels/window-panel.types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 // Action types emitted by overlaySlice (createSlice name: "overlays"). The
 // public `openOverlay` / `toggleOverlay` creators wrap the raw reducers, so we

@@ -14,7 +14,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Settings2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { useVoiceAgentInstance } from "../hooks/useVoiceAgentInstance";

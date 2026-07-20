@@ -5,7 +5,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { Transcript } from "@/features/transcripts/types";
 import {
   promoteTranscriptToStudio,

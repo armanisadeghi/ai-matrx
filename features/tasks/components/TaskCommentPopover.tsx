@@ -16,7 +16,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import * as taskService from "@/features/tasks/services/taskService";
 import type { Comment } from "@/features/comments/types";
 import { cn } from "@/lib/utils";

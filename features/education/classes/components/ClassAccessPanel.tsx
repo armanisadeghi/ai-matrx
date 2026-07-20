@@ -13,7 +13,7 @@
 
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Check, LogOut, Loader2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ACCESS_MODES } from "../constants";

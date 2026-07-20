@@ -37,7 +37,7 @@ import {
   Zap,
   EyeOff,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";

@@ -59,7 +59,7 @@ import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";

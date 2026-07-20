@@ -17,7 +17,7 @@
 
 import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
 import type { AppDispatch } from "@/lib/redux/store";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export const USER_EDIT_ACTIONS: EditorPrimaryAction[] = [
   { id: "save", label: "Save only", variant: "secondary" },

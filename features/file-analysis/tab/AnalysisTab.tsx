@@ -39,7 +39,7 @@ import {
   Table2,
   Tag
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";

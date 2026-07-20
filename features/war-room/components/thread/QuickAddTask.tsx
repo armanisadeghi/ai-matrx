@@ -21,7 +21,7 @@
 
 import { useRef, useState } from "react";
 import { Loader2, Check, ArrowRight, ListChecks, ListPlus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   createThread,

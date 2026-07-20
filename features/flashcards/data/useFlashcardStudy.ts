@@ -19,7 +19,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { FcSetRow, CardWithDetails } from "./types";

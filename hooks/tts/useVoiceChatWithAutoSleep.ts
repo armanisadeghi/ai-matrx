@@ -1,7 +1,7 @@
 'use client';
 
 import {useState, useEffect, useCallback, useRef} from "react";
-import {toast} from "sonner";
+import { toast } from "@/lib/toast";
 import {usePlayer} from "@/hooks/tts/usePlayer";
 import {useMicVAD, utils} from "@ricky0123/vad-react";
 import {nanoid} from 'nanoid';

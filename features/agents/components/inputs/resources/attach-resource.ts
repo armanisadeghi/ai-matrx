@@ -19,7 +19,7 @@
  */
 
 import type { Dispatch } from "@reduxjs/toolkit";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {

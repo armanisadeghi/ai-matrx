@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Hash, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchAgentVersionHistory,

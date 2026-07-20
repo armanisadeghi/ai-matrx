@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { usePlayerSafe } from "./usePlayerSafe";
 import { useMicVAD, utils } from "@ricky0123/vad-react";
 import { nanoid } from 'nanoid';

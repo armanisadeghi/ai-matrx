@@ -54,7 +54,7 @@ import {
   AlignLeft,
   type LucideIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
 import { RichDocument } from "@/features/rich-document/RichDocument";

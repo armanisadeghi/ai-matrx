@@ -26,7 +26,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { RootState, AppDispatch } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";

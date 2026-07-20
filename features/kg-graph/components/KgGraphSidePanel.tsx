@@ -16,7 +16,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Copy, ExternalLink, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";

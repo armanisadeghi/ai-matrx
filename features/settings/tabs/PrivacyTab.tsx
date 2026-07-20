@@ -1,7 +1,7 @@
 "use client";
 
 import { ShieldCheck, Eye, Lightbulb } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";

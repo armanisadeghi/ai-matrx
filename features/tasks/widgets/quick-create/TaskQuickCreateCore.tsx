@@ -55,7 +55,7 @@ import {
   selectAllScopeTypesFlat,
 } from "@/features/scopes/redux/selectors/tree";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ConversationHoverPreview } from "@/features/agents/components/previews/ConversationHoverPreview";
 import { MessageHoverPreview } from "@/features/agents/components/previews/MessageHoverPreview";
 

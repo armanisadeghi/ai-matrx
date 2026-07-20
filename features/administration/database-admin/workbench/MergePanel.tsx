@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { GitMerge, Rainbow, Info, AlertTriangle, Check } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ResultPreview } from "./ResultPreview";
 import {
   deriveEmbedKey,

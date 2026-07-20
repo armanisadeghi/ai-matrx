@@ -8,7 +8,7 @@
  */
 
 import { Copy, Info } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { Json } from "@/types/database.types";
 import type { StoredFieldElement } from "@/features/content-ir/registry/kind-storage-transform";
 

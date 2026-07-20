@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Settings, Network } from "lucide-react";
 import type { PlacementMode } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";

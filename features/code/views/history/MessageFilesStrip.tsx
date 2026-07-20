@@ -21,7 +21,7 @@ import { fileIdentityKey } from "../../utils/fileIdentity";
 import { openTab, setActiveTab } from "../../redux/tabsSlice";
 import { revertMessageThunk } from "../../redux/codeEditUndoRevert";
 import { languageFromFilename } from "../../styles/file-icon";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   buildHistoryTripleTabId,

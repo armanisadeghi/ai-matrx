@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
 import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
 

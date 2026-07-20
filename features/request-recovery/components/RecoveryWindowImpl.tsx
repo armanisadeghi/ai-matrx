@@ -46,7 +46,7 @@ import {
   formatPayloadJson,
 } from "../utils/formatRecoveryDisplay";
 import { formatVariablesForDisplay } from "@/features/agents/utils/variable-utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 function formatTimestamp(ts: number): string {
   return new Date(ts).toLocaleString(undefined, {

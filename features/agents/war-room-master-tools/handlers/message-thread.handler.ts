@@ -29,7 +29,7 @@
  * delegates a message into a thread, the thread answers as that same persona.
  */
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { WarRoomMasterToolHandler } from "./types";
 import type {
   WarRoomMessageThreadArgs,

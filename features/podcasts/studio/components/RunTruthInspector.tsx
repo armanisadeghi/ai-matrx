@@ -15,7 +15,7 @@
 // truth as one JSON object for pasting into a chat/issue.
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   AlertCircle,
   ChevronDown,

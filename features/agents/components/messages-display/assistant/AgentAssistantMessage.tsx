@@ -63,7 +63,7 @@ import { BreathingOrb } from "./BreathingOrb";
 import { AssistantActionBar } from "./AssistantActionBar";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
 import { ProviderRetryCard } from "./ProviderRetryCard";

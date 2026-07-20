@@ -6,7 +6,7 @@ import type { ContentException } from '../../types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, RefreshCw, Check, X, ShieldQuestion } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 export default function ApprovalsQueuePanel() {
     const [violations, setViolations] = useState<ContentException[]>([]);

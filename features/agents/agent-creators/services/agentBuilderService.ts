@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import type { Database } from "@/types/database.types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";

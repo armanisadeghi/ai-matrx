@@ -36,7 +36,7 @@ import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   addPendingToolCall,

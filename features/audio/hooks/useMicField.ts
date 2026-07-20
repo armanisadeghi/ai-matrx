@@ -18,7 +18,7 @@
 // recording survives route/tab changes.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   useVoiceCapture,
   type UseVoiceCaptureResult,

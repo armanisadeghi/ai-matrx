@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/popover";
 import { TapTargetButtonForGroup } from "@/components/icons/TapTargetButton";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cleanContent } from "@/lib/content-cleanup/clean";
 import { DEFAULT_ENABLED_OPERATIONS } from "@/lib/content-cleanup/operations";
 import type {

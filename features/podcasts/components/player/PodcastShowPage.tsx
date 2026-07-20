@@ -13,7 +13,7 @@ import {
   Check,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { PcShow, PcEpisode } from "../../types";
 import { useShare } from "../../hooks/useShare";
 import { InlineMediaRef } from "@/features/files";

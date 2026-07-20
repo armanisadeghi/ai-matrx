@@ -13,7 +13,7 @@
  */
 
 import React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { shareWithOrg } from "@/utils/permissions/service";
 import type { ResourceType } from "@/utils/permissions/registry";

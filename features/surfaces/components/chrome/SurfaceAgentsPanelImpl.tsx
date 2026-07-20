@@ -12,7 +12,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Braces, Loader2, ShieldCheck } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { surfaceFromPathname } from "@/features/surfaces/utils/route-to-surface";
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";

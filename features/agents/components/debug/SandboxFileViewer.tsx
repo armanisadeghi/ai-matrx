@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, RefreshCw, Copy, Check } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { SandboxFilesystemAdapter } from "@/features/code/adapters/SandboxFilesystemAdapter";
 
 interface SandboxFileViewerProps {

@@ -79,7 +79,7 @@ import { useFileUpload, composeUploadFolderPath } from "@/features/files";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { Resource } from "@/features/agents/resources/types";
 import type { ConversationResource } from "@/features/cx-chat/types/conversation";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";

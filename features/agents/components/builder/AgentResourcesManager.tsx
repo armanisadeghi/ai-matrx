@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FileText, Layers, Loader2, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Label } from "@/components/ui/label";
 import {
   Popover,

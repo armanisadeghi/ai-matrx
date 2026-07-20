@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { updateOrganization } from "../service";
 import { validateOrgName, type Organization, type OrgRole } from "../types";
 import { InlineMediaRef, useFileAsset } from "@/features/files";

@@ -10,7 +10,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { LogIn, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useApiAuth } from "@/hooks/useApiAuth";

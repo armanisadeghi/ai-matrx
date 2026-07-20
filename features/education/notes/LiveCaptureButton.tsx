@@ -13,7 +13,7 @@
 
 import { useCallback } from "react";
 import { Mic, Square, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";

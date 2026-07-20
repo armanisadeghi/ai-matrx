@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface AttachKind {
   key: "image" | "video" | "file" | "camera";

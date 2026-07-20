@@ -27,7 +27,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";

@@ -37,7 +37,7 @@ import { JsonInspector } from "@/components/official-candidate/json-inspector/Js
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   CheckCircle2,
   XCircle,

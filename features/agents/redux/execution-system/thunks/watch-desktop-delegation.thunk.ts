@@ -1,6 +1,6 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ThunkAction } from "redux-thunk";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { fetchConversationPendingCallsStrict } from "@/features/agents/api/fetch-pending-calls";
 import type { RootState } from "@/lib/redux/store";

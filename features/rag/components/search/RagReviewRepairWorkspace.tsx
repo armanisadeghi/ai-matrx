@@ -47,7 +47,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 type RepairKind = "table" | "text" | "missing_context" | "other";
 

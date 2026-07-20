@@ -22,7 +22,7 @@ import {
   AlertTriangle,
   ExternalLink,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

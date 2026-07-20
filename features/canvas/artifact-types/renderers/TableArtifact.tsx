@@ -2,7 +2,7 @@
 
 import React, { Suspense, lazy, useCallback, useMemo, useState } from "react";
 import { Undo2, ExternalLink, Maximize2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { Button } from "@/components/ui/button";
 import { type ArtifactRendererProps } from "../artifact-renderers";

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Loader2, MessageSquare, GraduationCap, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { forkSharedResource } from "@/utils/permissions/shareLinks";
 

@@ -12,7 +12,7 @@
 
 import { useProjectInvitations, useProjectInvitationOperations } from "../hooks";
 import type { ProjectRole } from "../types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   InvitationsPanel,
   type PanelInvitation,

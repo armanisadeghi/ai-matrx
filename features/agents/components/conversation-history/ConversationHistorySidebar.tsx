@@ -81,7 +81,7 @@ import {
 } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { ItemRow } from "@/components/official/item/ItemRow";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export interface ConversationHistorySidebarProps {
   /** Unique scope key (same across mounts that should share state). */

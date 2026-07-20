@@ -21,7 +21,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useDictionary } from "@/features/dictionary/hooks/useDictionary";
 import { useOpenDictionaryAssistant } from "@/features/dictionary/hooks/useOpenDictionaryAssistant";

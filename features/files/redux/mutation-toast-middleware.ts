@@ -25,7 +25,7 @@
  */
 
 import type { Middleware } from "@reduxjs/toolkit";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 /**
  * Mutation thunk names (the segment between `cloudFiles/` and `/rejected`).

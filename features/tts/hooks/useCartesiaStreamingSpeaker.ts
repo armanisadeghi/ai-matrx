@@ -42,7 +42,7 @@ import { CartesiaClient } from "@cartesia/cartesia-js";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { chunkTextForSpeech } from "../utils/chunk-text-for-speech";
 import {
   buildGenerationConfig,

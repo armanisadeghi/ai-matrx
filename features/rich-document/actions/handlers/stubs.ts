@@ -4,7 +4,7 @@
 // stay consistent across surfaces while we build the real implementations.
 
 import { Briefcase } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { registerAction } from "../registry";
 
 registerAction({

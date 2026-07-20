@@ -39,7 +39,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { cn } from "@/utils/cn";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   getProjectTasks,
   createTask,

@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Save, ShieldAlert, X, Zap } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { useImageSource } from "../shared/use-image-source";
 import { saveEditedImage } from "../shared/save-edited-image";

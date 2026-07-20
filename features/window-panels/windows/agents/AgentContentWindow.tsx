@@ -38,7 +38,7 @@ import {
 } from "@/features/agents/redux/agent-definition/thunks";
 import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { makeSelectFilteredAgents } from "@/features/agents/redux/agent-consumers/selectors";
 import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
 import { Messages } from "@/features/agents/components/builder/message-builders/Messages";

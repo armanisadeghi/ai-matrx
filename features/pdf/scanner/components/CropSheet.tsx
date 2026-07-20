@@ -27,7 +27,7 @@ import React, {
   useState,
 } from "react";
 import { Check, Loader2, Maximize2, RotateCw, ScanSearch } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import {

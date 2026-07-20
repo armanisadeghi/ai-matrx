@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { setConversationSandbox } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";

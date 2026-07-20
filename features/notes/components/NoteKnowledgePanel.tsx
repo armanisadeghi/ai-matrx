@@ -8,7 +8,7 @@
 // in a pop-out SidePanelSurface via the `noteKnowledgePanel` overlay.
 
 import { Database, ExternalLink, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";

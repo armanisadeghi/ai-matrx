@@ -7,7 +7,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ChunkCompleteInfo } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
 import {
   createSession,

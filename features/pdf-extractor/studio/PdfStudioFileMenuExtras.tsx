@@ -7,7 +7,7 @@
  */
 
 import { Link as LinkIcon, Archive } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import type { StudioDocSummary } from "./hooks/usePdfStudioDocs";

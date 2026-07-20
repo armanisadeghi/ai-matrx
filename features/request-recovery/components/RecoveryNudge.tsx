@@ -7,7 +7,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useRequestRecovery } from "../providers/RequestRecoveryProvider";
 
 export function RecoveryNudge() {

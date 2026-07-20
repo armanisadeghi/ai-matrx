@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createClient } from "@/utils/supabase/client";

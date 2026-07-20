@@ -29,7 +29,7 @@
  */
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   popOutWindow,
   dockWindow,

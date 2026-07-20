@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Wrench, ClipboardList, FileText, AlignLeft } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {

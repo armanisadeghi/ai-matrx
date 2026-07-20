@@ -13,7 +13,7 @@ import TaskChecklist from "@/components/mardown-display/blocks/tasks/TaskCheckli
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import TaskPreviewWindow from "@/features/tasks/components/TaskPreviewWindow";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { isMaterializedArtifactId } from "../artifactId";
 import { type ArtifactRendererProps } from "../artifact-renderers";
