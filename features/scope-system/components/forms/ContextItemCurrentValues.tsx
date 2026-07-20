@@ -133,11 +133,14 @@ function ScopeValuePreviewRow({
           <span className="text-xs text-muted-foreground">Empty</span>
         ) : (
           <ContextValueDisplay
+            valueType={row.value_type}
             value={{
               value_text: row.value_text,
               value_number: row.value_number,
               value_boolean: row.value_boolean,
               value_date: row.value_date,
+              value_timestamp: row.value_timestamp,
+              value_time: row.value_time,
               // RPC hands value_json back as `unknown`; it is Json by contract.
               value_json: (row.value_json ?? null) as Json | null,
               value_document_url: row.value_document_url,

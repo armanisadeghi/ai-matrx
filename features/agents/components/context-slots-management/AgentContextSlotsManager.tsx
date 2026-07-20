@@ -13,14 +13,19 @@
  */
 
 import { useState, useCallback, useMemo } from "react";
-import { Plus, X, ChevronDown, Layers } from "lucide-react";
+import { Plus, X, ChevronDown, Layers, Search, Link2, Pencil } from "lucide-react";
 import { useOpenScopeBatchImportWindow } from "@/features/overlays/openers/scopeBatchImportWindow";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ScrollFade } from "@/components/ui/scroll-fade";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ContextItemPicker } from "@/features/scope-system/components/ContextItemPicker";
 import { contextItemValueTypeToSlotType } from "@/features/agents/utils/context-item-slot-mapping";
@@ -674,6 +679,154 @@ function Field({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Context slot stack — a single "N context slots" chip that opens a popover
+// with the full, scrollable, searchable list. Agents can carry dozens of
+// slots (batch-import makes that the common case, not the exception), so the
+// row this lives in must stay one line regardless of count. This is purely a
+// design-time view of the agent's defined slots — it never reads a resolved
+// runtime value or active scope, so it renders identically whether or not
+// the agent has ever been run.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SEARCH_THRESHOLD = 6;
+
+function ContextSlotStackTrigger({
+  slots,
+  onEdit,
+  onDelete,
+}: {
+  slots: ContextSlot[];
+  onEdit: (idx: number) => void;
+  onDelete: (idx: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const indexed = slots.map((slot, i) => ({ slot, i }));
+    const q = search.trim().toLowerCase();
+    if (!q) return indexed;
+    return indexed.filter(({ slot }) => {
+      const key = getSlotKey(slot).toLowerCase();
+      const label = (slot.label ?? "").toLowerCase();
+      const description = (slot.description ?? "").toLowerCase();
+      return (
+        key.includes(q) || label.includes(q) || description.includes(q)
+      );
+    });
+  }, [slots, search]);
+
+  if (slots.length === 0) return null;
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSearch("");
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-muted text-foreground border border-border hover:bg-accent transition-colors shrink-0"
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>
+            {slots.length} context slot{slots.length === 1 ? "" : "s"}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="start">
+        {slots.length > SEARCH_THRESHOLD && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-border/50">
+            <Search className="w-3 h-3 text-muted-foreground shrink-0" />
+            <input
+              autoFocus
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter context slots…"
+              className="flex-1 min-w-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
+              style={{ fontSize: "16px" }}
+            />
+          </div>
+        )}
+        <div className="max-h-80 overflow-y-auto py-1">
+          {filtered.length === 0 ? (
+            <p className="text-center text-xs text-muted-foreground py-4">
+              No matches
+            </p>
+          ) : (
+            filtered.map(({ slot, i }) => {
+              const key = getSlotKey(slot);
+              const detail = slot.label?.trim()
+                ? slot.label
+                : slot.description?.trim()
+                  ? slot.description
+                  : "";
+              const isBound = slot.source?.kind === "ctx_item";
+              return (
+                <div
+                  key={`${key}-${i}`}
+                  className="group flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-accent/50 transition-colors"
+                >
+                  <button
+                    type="button"
+                    className="flex-1 min-w-0 text-left"
+                    onClick={() => {
+                      setOpen(false);
+                      onEdit(i);
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-xs font-mono font-medium truncate">
+                        {key}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1 py-0 font-normal shrink-0"
+                      >
+                        {slot.type}
+                      </Badge>
+                      {isBound && (
+                        <Link2
+                          className="w-3 h-3 text-primary/70 shrink-0"
+                          aria-label="Bound to a scope context item"
+                        />
+                      )}
+                      {slot.mutable && (
+                        <Pencil
+                          className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0"
+                          aria-label="Mutable"
+                        />
+                      )}
+                    </div>
+                    {detail && (
+                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                        {detail}
+                      </p>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(i)}
+                    title="Remove context slot"
+                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -799,43 +952,11 @@ export function AgentContextSlotsManager({
           Context
         </Label>
 
-        <ScrollFade
-          orientation="horizontal"
-          className="flex items-center gap-1.5 flex-nowrap min-w-0 flex-1 py-0.5"
-        >
-          {slots.map((slot, i) => {
-            const key = getSlotKey(slot);
-            const detail = slot.label?.trim()
-              ? slot.label
-              : slot.description?.trim()
-                ? slot.description
-                : "";
-            return (
-              <div
-                key={`${key}-${i}`}
-                className="inline-flex items-center gap-1.5 px-2.5 rounded-md text-xs font-medium bg-muted text-foreground border border-border group shrink-0"
-              >
-                <span
-                  className="cursor-pointer transition-colors hover:text-primary truncate max-w-[160px]"
-                  onClick={() => openEdit(i)}
-                  title={
-                    detail ? `${key} — ${detail}` : `${key} (click to edit)`
-                  }
-                >
-                  {key}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(i)}
-                  title="Remove context slot"
-                  className="hover:text-destructive transition-colors shrink-0"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            );
-          })}
-        </ScrollFade>
+        <ContextSlotStackTrigger
+          slots={slots}
+          onEdit={openEdit}
+          onDelete={handleDelete}
+        />
 
         <div className="flex items-center gap-1 shrink-0">
           <button
