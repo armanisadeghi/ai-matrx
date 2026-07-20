@@ -358,7 +358,7 @@ export function FileContextMenu({
   const handleBatchReprocess = useCallback(async () => {
     if (typeof window === "undefined") return;
     const ids = batchFileIds.length > 0 ? batchFileIds : [fileId];
-    const { toast } = await import("sonner");
+    const { toast } = await import("@/lib/toast");
     const tid = toast.loading(`Reprocessing ${ids.length} files for RAG…`, {
       description: "Running serially to avoid pool saturation.",
     });
@@ -405,14 +405,14 @@ export function FileContextMenu({
       if (data.found && data.document_id) {
         window.open(`/rag/viewer/${data.document_id}`, "_blank", "noopener");
       } else {
-        const { toast } = await import("sonner");
+        const { toast } = await import("@/lib/toast");
         toast.info("Not yet processed for RAG", {
           description:
             'Run "Reprocess for RAG" first — the 4-pane viewer needs the per-page extraction.',
         });
       }
     } catch (err) {
-      const { toast } = await import("sonner");
+      const { toast } = await import("@/lib/toast");
       toast.error("Could not look up document", {
         description: err instanceof Error ? err.message : String(err),
       });
@@ -433,14 +433,14 @@ export function FileContextMenu({
           "noopener",
         );
       } else {
-        const { toast } = await import("sonner");
+        const { toast } = await import("@/lib/toast");
         toast.info("Not yet processed for RAG", {
           description:
             'Run "Reprocess for RAG" first — knowledge assets build on the extraction.',
         });
       }
     } catch (err) {
-      const { toast } = await import("sonner");
+      const { toast } = await import("@/lib/toast");
       toast.error("Could not look up document", {
         description: err instanceof Error ? err.message : String(err),
       });

@@ -157,7 +157,7 @@ export function FullScreenMarkdownEditorBridge({
               newContent: mergeEditedText(existing, newContent),
             }),
           ).unwrap();
-          const { toast } = await import("sonner");
+          const { toast } = await import("@/lib/toast");
           toast.success("Message saved");
         } else if (typeof onSave === "function") {
           // 3. In-process callback (direct mount only).
@@ -166,7 +166,7 @@ export function FullScreenMarkdownEditorBridge({
           // 4. Loud recovery: the editor was opened with no way to save.
           //    A recovery firing here means a callsite wired the editor
           //    without a save target — surface it, never swallow.
-          const { toast } = await import("sonner");
+          const { toast } = await import("@/lib/toast");
           console.error(
             "[FullScreenMarkdownEditorBridge] save with no target — " +
               "no callbackGroupId, no conversationId/messageId, no onSave. " +
@@ -175,7 +175,7 @@ export function FullScreenMarkdownEditorBridge({
           toast.error("Couldn't save — this editor has no save target");
         }
       } catch (err) {
-        const { toast } = await import("sonner");
+        const { toast } = await import("@/lib/toast");
         const msg =
           err instanceof Error
             ? err.message

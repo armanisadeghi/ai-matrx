@@ -121,7 +121,20 @@ class ToastService {
     }
 
     public warning(message?: string, moduleKey?: string, options?: ToastOptions) {
-        return this.show("Warning", message ?? this.getDefaultMessage("warning", moduleKey), "ghost", options);
+        const resolved = message ?? this.getDefaultMessage("warning", moduleKey);
+        // Mirror error(): warnings are captured too (parity with lib/toast.ts).
+        try {
+            captureError({
+                source: "user-toast",
+                relation: moduleKey,
+                message: `[warning] ${resolved}`,
+                userMessage: resolved,
+                raw: { kind: "warning", message: resolved },
+            });
+        } catch {
+            /* capture must never break the toast */
+        }
+        return this.show("Warning", resolved, "ghost", options);
     }
 
     public notify(message?: string, moduleKey?: string, options?: ToastOptions) {

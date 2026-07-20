@@ -66,7 +66,7 @@ export function reportAudioBypassViolation(args: {
   );
 
   if (process.env.NODE_ENV !== "production") {
-    void import("sonner")
+    void import("@/lib/toast")
       .then(({ toast }) =>
         toast.error("Audio bypass detected", {
           description: `${args.direction} @ ${args.context} — see console.`,

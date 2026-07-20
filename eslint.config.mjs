@@ -821,6 +821,14 @@ export default [
                     message:
                         'Import { toast } from "@/lib/toast", not "sonner" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts.',
                 },
+                // …and the dynamic-import escape hatch (`await import("sonner")`),
+                // which the static import rules cannot see. 13 such call sites
+                // were swept 2026-07-20.
+                {
+                    selector: "ImportExpression[source.value='sonner']",
+                    message:
+                        'Dynamic import("sonner") bypasses Error Inspector capture — use import("@/lib/toast") instead. See lib/toast.ts.',
+                },
                 // Legacy Supabase API key env vars are hard-banned — no exceptions.
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,

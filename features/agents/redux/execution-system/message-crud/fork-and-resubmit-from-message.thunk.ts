@@ -121,7 +121,7 @@ export const forkAndResubmitFromMessage = createAsyncThunk<
         }),
       );
     } else {
-      const { toast } = await import("sonner");
+      const { toast } = await import("@/lib/toast");
       toast.success("Branch created — open it from the conversation sidebar");
     }
 

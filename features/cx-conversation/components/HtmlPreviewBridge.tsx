@@ -181,7 +181,7 @@ export function HtmlPreviewBridge({
           "[HtmlPreviewBridge] Save invoked with no save target: no callbackGroupId and no conversationId+messageId. " +
             "The opening call site must pass `onSave` via useOpenHtmlPreviewBridge (callback registry) or a chat target.",
         );
-        const { toast } = await import("sonner");
+        const { toast } = await import("@/lib/toast");
         toast.error("Save is not wired for this content — nothing was saved. This is a bug; please report it.");
         return;
       }
@@ -203,11 +203,11 @@ export function HtmlPreviewBridge({
             newContent: mergeEditedText(existing, markdownContent),
           }),
         ).unwrap();
-        const { toast } = await import("sonner");
+        const { toast } = await import("@/lib/toast");
         toast.success("Saved");
       } catch (err) {
         console.error("[HtmlPreviewBridge] markdown save failed", err);
-        const { toast } = await import("sonner");
+        const { toast } = await import("@/lib/toast");
         toast.error(
           err instanceof Error ? err.message : "Failed to save changes",
         );
