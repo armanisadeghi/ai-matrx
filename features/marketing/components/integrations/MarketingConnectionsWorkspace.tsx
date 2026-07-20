@@ -4,19 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BarChart3,
   Building2,
-  CheckCircle2,
   Gauge,
   Loader2,
-  LockKeyhole,
   RefreshCw,
   SearchCheck,
   Unplug,
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +25,7 @@ import {
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
+import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import {
   useConnectGoogle,
@@ -64,16 +61,22 @@ function MarketingConnectionsContent() {
   const effectiveSiteId =
     siteId || (sites.data?.length === 1 ? sites.data[0].id : "");
   const selectedSite = sites.data?.find((site) => site.id === effectiveSiteId);
+  const connectedGoogleAccounts = inventory.data?.connections.filter(
+    (connection) => connection.status === "connected",
+  );
+  const searchConsoleProperties = inventory.data?.resources.filter(
+    (resource) => resource.resource_type === "search_console_property",
+  );
+  const pageSpeedEnabledCount = (sites.data ?? []).filter(
+    (site) =>
+      parseSiteIntegrations(site.integrations).pageSpeedInsights.enabled,
+  ).length;
   const searchResourcesByConnection = new Map<string, number>();
-  const analyticsResourcesByConnection = new Map<string, number>();
   for (const resource of inventory.data?.resources ?? []) {
-    const target =
-      resource.resource_type === "search_console_property"
-        ? searchResourcesByConnection
-        : analyticsResourcesByConnection;
-    target.set(
+    if (resource.resource_type !== "search_console_property") continue;
+    searchResourcesByConnection.set(
       resource.connection_id,
-      (target.get(resource.connection_id) ?? 0) + 1,
+      (searchResourcesByConnection.get(resource.connection_id) ?? 0) + 1,
     );
   }
 
@@ -95,9 +98,8 @@ function MarketingConnectionsContent() {
       });
       toast.success("Search Console connected and properties discovered.");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Unable to connect Google.",
-      );
+      console.error("Unable to connect Google Search Console", error);
+      toast.error("Google could not be connected. Please try again.");
     } finally {
       setConnectingOwner(null);
     }
@@ -108,7 +110,7 @@ function MarketingConnectionsContent() {
       <RouteHeader
         left={
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-            Data Connections
+            Google Connection
           </h1>
         }
         center={<MarketingWorkspaceNav />}
@@ -117,119 +119,106 @@ function MarketingConnectionsContent() {
         <div className="space-y-3">
           <section className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-card p-3">
             <div>
-              <h2 className="text-sm font-semibold">
-                Connect once, use across sites
-              </h2>
-              <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
-                Keep credentials at the user or organization level, then bind
-                the relevant provider property to each managed site.
-              </p>
-            </div>
-            <Badge variant="outline" className="gap-1 text-[10px]">
-              <LockKeyhole className="h-3 w-3" /> Secrets stay server-side
-            </Badge>
-          </section>
-
-          <div className="grid gap-3 xl:grid-cols-3">
-            <ProviderCard
-              icon={SearchCheck}
-              title="Google Search Console"
-              status="Ready to connect"
-              description="Seed canonical URLs, search queries, indexing evidence, clicks, and impressions."
-            />
-            <ProviderCard
-              icon={BarChart3}
-              title="Google Analytics 4"
-              status="Optional"
-              description="Add this later when Analytics access and its Google API are configured. It does not affect Search Console."
-            />
-            <ProviderCard
-              icon={Gauge}
-              title="PageSpeed Insights"
-              status="No OAuth required"
-              description="Collect Lighthouse and field-performance evidence for canonical pages."
-            />
-          </div>
-
-          <section className="rounded-lg border border-border bg-card">
-            <div className="border-b border-border px-3 py-2">
-              <h2 className="text-sm font-semibold">
-                1. Choose where credentials belong
-              </h2>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                Connect Search Console personally or for the active
-                organization. Analytics can be added independently later.
-              </p>
-            </div>
-            <div className="grid gap-2 p-3 md:grid-cols-2">
-              <ConnectionScope
-                icon={UserRound}
-                title="Personal connection"
-                description="Authorize your Search Console properties. Offline access supports scheduled Search Console synchronization."
-                action="Connect personal Search Console"
-                busy={connectingOwner === "user"}
-                disabled={
-                  connectingOwner !== null ||
-                  google.isInitializing ||
-                  !google.isGoogleLoaded
-                }
-                onAction={() => startConnection("user")}
-              />
-              <ConnectionScope
-                icon={Building2}
-                title={
-                  organizations.activeOrgName
-                    ? `${organizations.activeOrgName} connection`
-                    : "Organization connection"
-                }
-                description="Create a shared Google connection for authorized organization members and managed sites."
-                action={
-                  organizations.activeOrgId
-                    ? "Connect organization Search Console"
-                    : "Choose an organization"
-                }
-                busy={connectingOwner === "organization"}
-                disabled={
-                  !organizations.activeOrgId ||
-                  connectingOwner !== null ||
-                  google.isInitializing ||
-                  !google.isGoogleLoaded
-                }
-                onAction={() => startConnection("organization")}
-              />
-            </div>
-            <div className="border-t border-border bg-muted/20 px-3 py-2 text-[10px] text-muted-foreground">
-              OAuth tokens are exchanged server-side, encrypted before storage,
-              and never returned to the browser. This page reads only safe
-              connection metadata and discovered properties directly from
-              Supabase.
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-border bg-card">
-            <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
-              <div>
-                <h2 className="text-sm font-semibold">
-                  Connected Google accounts
-                </h2>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
-                  Reconnect to refresh consent or property inventory.
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1.5 text-xs"
-                disabled={inventory.isFetching}
-                onClick={() => inventory.refetch()}
+              <Link
+                href="/marketing/connections"
+                className="text-[10px] font-medium text-primary hover:underline"
               >
-                {inventory.isFetching ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                Refresh
-              </Button>
+                Connections
+              </Link>
+              <h2 className="mt-0.5 text-sm font-semibold">Google</h2>
+              <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
+                Connect an account for Search Console, then configure Google
+                services for each managed site.
+              </p>
+            </div>
+          </section>
+
+          <section
+            id="google-connections"
+            className="rounded-lg border border-border bg-card"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <SearchCheck className="h-4 w-4" />
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-semibold">
+                      Google Search Console
+                    </h2>
+                    <Badge
+                      variant={
+                        connectedGoogleAccounts?.length
+                          ? "success"
+                          : "secondary"
+                      }
+                    >
+                      {connectedGoogleAccounts?.length
+                        ? `${connectedGoogleAccounts.length} account${connectedGoogleAccounts.length === 1 ? "" : "s"} · ${searchConsoleProperties?.length ?? 0} properties`
+                        : "Not connected"}
+                    </Badge>
+                  </div>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                    Connect a Google account, review its discovered properties,
+                    then assign the right property to each managed site.
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 text-xs"
+                  disabled={
+                    connectingOwner !== null ||
+                    google.isInitializing ||
+                    !google.isGoogleLoaded
+                  }
+                  onClick={() => startConnection("user")}
+                >
+                  {connectingOwner === "user" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <UserRound className="h-3.5 w-3.5" />
+                  )}
+                  Add personal account
+                </Button>
+                {organizations.activeOrgId ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                    disabled={
+                      connectingOwner !== null ||
+                      google.isInitializing ||
+                      !google.isGoogleLoaded
+                    }
+                    onClick={() => startConnection("organization")}
+                  >
+                    {connectingOwner === "organization" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Building2 className="h-3.5 w-3.5" />
+                    )}
+                    Add shared account
+                  </Button>
+                ) : null}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1.5 text-xs"
+                  disabled={inventory.isFetching}
+                  onClick={() => inventory.refetch()}
+                >
+                  {inventory.isFetching ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  Refresh
+                </Button>
+              </div>
             </div>
             {inventory.isLoading ? (
               <div className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
@@ -237,20 +226,26 @@ function MarketingConnectionsContent() {
                 connections…
               </div>
             ) : inventory.isError ? (
-              <p className="p-3 text-xs text-destructive">
-                {inventory.error.message}
-              </p>
-            ) : inventory.data?.connections.length ? (
+              <div className="flex items-center justify-between gap-3 p-3">
+                <p className="text-xs text-destructive">
+                  Google connections could not be loaded.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => inventory.refetch()}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : connectedGoogleAccounts?.length ? (
               <div className="divide-y divide-border">
-                {inventory.data.connections.map((connection) => (
+                {connectedGoogleAccounts.map((connection) => (
                   <ConnectionRow
                     key={connection.id}
                     connection={connection}
                     searchConsoleCount={
                       searchResourcesByConnection.get(connection.id) ?? 0
-                    }
-                    analyticsCount={
-                      analyticsResourcesByConnection.get(connection.id) ?? 0
                     }
                     busy={disconnect.isPending}
                     onDisconnect={async () => {
@@ -258,10 +253,9 @@ function MarketingConnectionsContent() {
                         await disconnect.mutateAsync(connection.id);
                         toast.success("Google account disconnected.");
                       } catch (error) {
+                        console.error("Unable to disconnect Google", error);
                         toast.error(
-                          error instanceof Error
-                            ? error.message
-                            : "Unable to disconnect Google.",
+                          "Google could not be disconnected. Please try again.",
                         );
                       }
                     }}
@@ -275,10 +269,13 @@ function MarketingConnectionsContent() {
             )}
           </section>
 
-          <section className="rounded-lg border border-border bg-card">
+          <section
+            id="site-bindings"
+            className="rounded-lg border border-border bg-card"
+          >
             <div className="border-b border-border px-3 py-2">
               <h2 className="text-sm font-semibold">
-                2. Choose the Search Console property for a site
+                Assign a Search Console property to a site
               </h2>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
                 Select a managed site, then choose its exact Search Console
@@ -328,108 +325,62 @@ function MarketingConnectionsContent() {
             </div>
           </section>
 
-          <Alert className="border-emerald-500/40 bg-emerald-500/5 py-2.5">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <AlertTitle className="text-xs">
-              Production OAuth authority enabled
-            </AlertTitle>
-            <AlertDescription className="text-[11px] leading-4 text-muted-foreground">
-              Search Console properties are discovered during connection.
-              PageSpeed uses the application quota key and does not require a
-              Google account. Analytics is optional and independent.
-            </AlertDescription>
-          </Alert>
+          <section className="rounded-lg border border-border bg-card p-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <Gauge className="h-4 w-4" />
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-semibold">
+                      PageSpeed Insights
+                    </h2>
+                    <Badge variant="secondary">
+                      {pageSpeedEnabledCount} of {sites.data?.length ?? 0} sites
+                      enabled
+                    </Badge>
+                  </div>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                    No Google account is required. Enable PageSpeed directly for
+                    each managed site.
+                  </p>
+                </div>
+              </div>
+              {selectedSite ? (
+                <Button asChild size="sm" variant="outline" className="h-8">
+                  <Link
+                    href={`/marketing/sites/${selectedSite.id}/integrations`}
+                  >
+                    Configure for {selectedSite.name}
+                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="outline" className="h-8">
+                  <Link href="#site-bindings">Choose a managed site</Link>
+                </Button>
+              )}
+            </div>
+          </section>
         </div>
       </main>
     </>
   );
 }
 
-function ProviderCard({
-  icon: Icon,
-  title,
-  status,
-  description,
-}: {
-  icon: typeof SearchCheck;
-  title: string;
-  status: string;
-  description: string;
-}) {
-  return (
-    <section className="rounded-lg border border-border bg-card p-3">
-      <div className="flex items-start justify-between gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
-        </span>
-        <Badge variant="secondary" className="text-[10px]">
-          {status}
-        </Badge>
-      </div>
-      <h3 className="mt-2 text-xs font-semibold">{title}</h3>
-      <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-        {description}
-      </p>
-    </section>
-  );
-}
-
-function ConnectionScope({
-  icon: Icon,
-  title,
-  description,
-  action,
-  busy,
-  disabled,
-  onAction,
-}: {
-  icon: typeof UserRound;
-  title: string;
-  description: string;
-  action: string;
-  busy: boolean;
-  disabled?: boolean;
-  onAction: () => void;
-}) {
-  return (
-    <div className="flex items-start gap-3 rounded-md border border-border p-3">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-      <div className="min-w-0 flex-1">
-        <h3 className="text-xs font-semibold">{title}</h3>
-        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-          {description}
-        </p>
-        <Button
-          size="sm"
-          variant="outline"
-          className="mt-2 h-7 gap-1 text-xs"
-          disabled={busy || disabled}
-          onClick={onAction}
-        >
-          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-          {action} <ArrowRight className="h-3 w-3" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function ConnectionRow({
   connection,
   searchConsoleCount,
-  analyticsCount,
   busy,
   onDisconnect,
 }: {
   connection: GoogleConnectionSummary;
   searchConsoleCount: number;
-  analyticsCount: number;
   busy: boolean;
   onDisconnect: () => void;
 }) {
-  const usable =
-    connection.status !== "revoked" &&
-    (searchConsoleCount > 0 || analyticsCount > 0);
+  const usable = connection.status === "connected";
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
       <div className="min-w-0">
@@ -440,7 +391,7 @@ function ConnectionRow({
               "Google account"}
           </span>
           <Badge variant={usable ? "success" : "warning"}>
-            {usable ? "Connected" : "Reconnect required"}
+            {usable ? "Connected" : "Needs attention"}
           </Badge>
           <Badge variant="outline">
             {connection.owner_type === "organization"
@@ -451,11 +402,13 @@ function ConnectionRow({
         <p className="mt-0.5 text-[10px] text-muted-foreground">
           Search Console: {searchConsoleCount} propert
           {searchConsoleCount === 1 ? "y" : "ies"}
-          {analyticsCount > 0
-            ? ` · Analytics: ${analyticsCount} ${analyticsCount === 1 ? "property" : "properties"}`
-            : " · Analytics not connected (optional)"}
         </p>
-        {!usable ? (
+        {usable && searchConsoleCount === 0 ? (
+          <p className="mt-1 max-w-3xl text-[10px] text-muted-foreground">
+            Connected, but this account has no Search Console properties
+            available.
+          </p>
+        ) : !usable ? (
           <p className="mt-1 max-w-3xl text-[10px] text-amber-700 dark:text-amber-400">
             Reconnect this Google account to refresh provider access.
           </p>

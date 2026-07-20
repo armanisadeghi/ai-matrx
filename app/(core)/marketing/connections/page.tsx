@@ -1,5 +1,5 @@
-import { MarketingConnectionsWorkspace } from "@/features/marketing/components/integrations/MarketingConnectionsWorkspace";
+import { MarketingConnectionsCatalog } from "@/features/marketing/components/integrations/MarketingConnectionsCatalog";
 
 export default function MarketingConnectionsPage() {
-  return <MarketingConnectionsWorkspace />;
+  return <MarketingConnectionsCatalog />;
 }
