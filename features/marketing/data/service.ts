@@ -21,6 +21,10 @@ import type {
   PageUpdate,
   PageWorkspaceData,
   PagedResult,
+  PageSitemapMembership,
+  SitemapCoverage,
+  SitemapPageRow,
+  SiteSitemap,
   SiteListRow,
   SiteOverviewMetrics,
   SiteScreenshot,
@@ -1145,4 +1149,172 @@ export async function listBusinessFacts(
     .order("created_at", { ascending: true })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error);
+}
+
+// ============================================================================
+// Sitemaps — first-class sitemap documents + page membership evidence
+// ============================================================================
+
+const SITEMAP_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, kind, parent_sitemap_id, status_code, url_count, child_count, is_active, first_seen, last_seen, last_fetched_at, fetch_error";
+
+/** All sitemap documents for a site (bounded; a site has dozens, not thousands). */
+export async function listSitemaps(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteSitemap[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("sitemap")
+    .select(SITEMAP_COLUMNS)
+    .eq("site_id", siteId)
+    .is("deleted_at", null)
+    .order("kind", { ascending: false })
+    .order("url", { ascending: true })
+    .limit(500)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+export async function getSitemap(
+  siteId: string,
+  sitemapId: string,
+  signal?: AbortSignal,
+): Promise<SiteSitemap> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("sitemap")
+    .select(SITEMAP_COLUMNS)
+    .eq("site_id", siteId)
+    .eq("id", sitemapId)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal)
+    .single();
+  return assertData(response.data, response.error);
+}
+
+export type SitemapPagesFilter = "all" | "never_crawled";
+
+/** Pages listed in one sitemap, joined with canonical-page state. */
+export async function listSitemapPages(
+  siteId: string,
+  sitemapId: string,
+  state: MatrxDataTableQueryState,
+  filter: SitemapPagesFilter,
+  signal?: AbortSignal,
+): Promise<PagedResult<SitemapPageRow>> {
+  const db = await authenticatedWebDb(supabase);
+  const { from, to } = rangeFor(state);
+  const abortSignal = signal ?? new AbortController().signal;
+
+  let query = db
+    .from("page_sitemap")
+    .select(
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, sitemap_id, lastmod, changefreq, priority, first_seen, last_seen, page:page_id!inner(id, url, path, status, provenance, http_status_last, latest_snapshot_id, last_seen)",
+      { count: "exact" },
+    )
+    .eq("site_id", siteId)
+    .eq("sitemap_id", sitemapId)
+    .is("deleted_at", null);
+  if (filter === "never_crawled") {
+    query = query.is("page.latest_snapshot_id", null);
+  }
+  const search = cleanSearch(state.search);
+  if (search) query = query.ilike("page.url", `%${search}%`);
+
+  const ascending = state.sort?.direction === "asc";
+  if (state.sort?.id === "lastmod") {
+    query = query.order("lastmod", { ascending, nullsFirst: false });
+  } else {
+    query = query.order("url", {
+      referencedTable: "page",
+      ascending: state.sort?.id === "page" ? ascending : true,
+    });
+  }
+  query = query.order("id", { ascending: true });
+
+  const response = await query.range(from, to).abortSignal(abortSignal);
+  const rows = assertData(response.data, response.error);
+  if (rows.length === 0) return { rows: [], total: response.count ?? 0 };
+
+  // Batched membership counts: 1 = only in this sitemap.
+  const countsResponse = await db
+    .from("page_sitemap")
+    .select("page_id")
+    .eq("site_id", siteId)
+    .is("deleted_at", null)
+    .in(
+      "page_id",
+      rows.map((row) => row.page_id),
+    )
+    .abortSignal(abortSignal);
+  const counts = assertData(countsResponse.data, countsResponse.error);
+  const byPage = new Map<string, number>();
+  for (const row of counts) {
+    byPage.set(row.page_id, (byPage.get(row.page_id) ?? 0) + 1);
+  }
+
+  return {
+    rows: rows.map((row) => ({
+      ...row,
+      membership_count: byPage.get(row.page_id) ?? 1,
+    })),
+    total: response.count ?? 0,
+  };
+}
+
+/** Site-level sitemap coverage stats for the sitemaps workspace header. */
+export async function getSitemapCoverage(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SitemapCoverage> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const [sitemaps, memberships, latest] = await Promise.all([
+    db
+      .from("sitemap")
+      .select("id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+    db
+      .from("page_sitemap")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+    db
+      .from("sitemap")
+      .select("last_fetched_at")
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .order("last_fetched_at", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .abortSignal(abortSignal)
+      .maybeSingle(),
+  ]);
+  if (sitemaps.error) throw sitemaps.error;
+  if (memberships.error) throw memberships.error;
+  if (latest.error) throw latest.error;
+
+  const neverCrawled = await db
+    .from("page_sitemap")
+    .select("id, page:page_id!inner(latest_snapshot_id)", {
+      count: "exact",
+      head: true,
+    })
+    .eq("site_id", siteId)
+    .is("deleted_at", null)
+    .is("page.latest_snapshot_id", null)
+    .abortSignal(abortSignal);
+  if (neverCrawled.error) throw neverCrawled.error;
+
+  return {
+    sitemaps: sitemaps.count ?? 0,
+    pagesInSitemaps: memberships.count ?? 0,
+    neverCrawled: neverCrawled.count ?? 0,
+    lastSyncedAt: latest.data?.last_fetched_at ?? null,
+  };
 }

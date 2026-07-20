@@ -43970,6 +43970,88 @@ export type Database = {
           },
         ]
       }
+      page_sitemap: {
+        Row: {
+          changefreq: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          first_seen: string
+          id: string
+          last_seen: string | null
+          lastmod: string | null
+          metadata: Json
+          organization_id: string
+          page_id: string
+          priority: number | null
+          site_id: string
+          sitemap_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          changefreq?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          first_seen?: string
+          id?: string
+          last_seen?: string | null
+          lastmod?: string | null
+          metadata?: Json
+          organization_id: string
+          page_id: string
+          priority?: number | null
+          site_id: string
+          sitemap_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          changefreq?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          first_seen?: string
+          id?: string
+          last_seen?: string | null
+          lastmod?: string | null
+          metadata?: Json
+          organization_id?: string
+          page_id?: string
+          priority?: number | null
+          site_id?: string
+          sitemap_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_sitemap_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_sitemap_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_sitemap_sitemap_id_fkey"
+            columns: ["sitemap_id"]
+            isOneToOne: false
+            referencedRelation: "sitemap"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property: {
         Row: {
           brand_id: string
@@ -44349,6 +44431,93 @@ export type Database = {
           },
           {
             foreignKeyName: "site_item_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sitemap: {
+        Row: {
+          child_count: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          fetch_error: string | null
+          first_seen: string
+          id: string
+          is_active: boolean
+          kind: string
+          last_fetched_at: string | null
+          last_seen: string | null
+          metadata: Json
+          organization_id: string
+          parent_sitemap_id: string | null
+          site_id: string
+          status_code: number | null
+          updated_at: string
+          updated_by: string | null
+          url: string
+          url_count: number | null
+          version: number
+        }
+        Insert: {
+          child_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fetch_error?: string | null
+          first_seen?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          last_fetched_at?: string | null
+          last_seen?: string | null
+          metadata?: Json
+          organization_id: string
+          parent_sitemap_id?: string | null
+          site_id: string
+          status_code?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+          url_count?: number | null
+          version?: number
+        }
+        Update: {
+          child_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fetch_error?: string | null
+          first_seen?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          last_fetched_at?: string | null
+          last_seen?: string | null
+          metadata?: Json
+          organization_id?: string
+          parent_sitemap_id?: string | null
+          site_id?: string
+          status_code?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+          url_count?: number | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sitemap_parent_sitemap_id_fkey"
+            columns: ["parent_sitemap_id"]
+            isOneToOne: false
+            referencedRelation: "sitemap"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sitemap_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "site"

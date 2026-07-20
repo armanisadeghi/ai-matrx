@@ -12,6 +12,7 @@ import {
   Images,
   Inbox,
   Link2,
+  Map,
   Plug,
   ScanSearch,
   Settings,
@@ -53,6 +54,7 @@ function sectionSuffix(pathname: string, brandId: string, siteId: string): strin
   );
   for (const section of [
     "discovery",
+    "sitemaps",
     "pages",
     "crawls",
     "analysis",
@@ -143,6 +145,11 @@ export function MarketingSiteLayoutClient({
             name: "Discovery",
             href: `${base}/discovery`,
             icon: Inbox,
+          },
+          {
+            name: "Sitemaps",
+            href: `${base}/sitemaps`,
+            icon: Map,
           },
           {
             name: "Pages",

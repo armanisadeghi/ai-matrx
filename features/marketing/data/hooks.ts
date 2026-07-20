@@ -15,6 +15,10 @@ import {
   listBrandProperties,
   listBrandSites,
   listBusinessFacts,
+  getSitemap,
+  getSitemapCoverage,
+  listSitemapPages,
+  listSitemaps,
   confirmDiscoveredFact,
   countPendingDiscovered,
   countSites,
@@ -39,6 +43,7 @@ import {
   updatePageIntent,
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
+import type { SitemapPagesFilter } from "@/features/marketing/data/service";
 import type { DiscoveredItemStatus } from "@/features/marketing/types";
 
 export const marketingKeys = {
@@ -366,5 +371,51 @@ export function useBusinessFacts(brandId: string) {
     queryKey: [...marketingKeys.root, "brand", brandId, "facts"] as const,
     queryFn: ({ signal }) => listBusinessFacts(brandId, signal),
     enabled: Boolean(brandId),
+  });
+}
+
+export function useSitemaps(siteId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.site(siteId), "sitemaps"] as const,
+    queryFn: ({ signal }) => listSitemaps(siteId, signal),
+    enabled: Boolean(siteId),
+  });
+}
+
+export function useSitemapCoverage(siteId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.site(siteId), "sitemap-coverage"] as const,
+    queryFn: ({ signal }) => getSitemapCoverage(siteId, signal),
+    enabled: Boolean(siteId),
+  });
+}
+
+export function useSitemap(siteId: string, sitemapId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.site(siteId), "sitemap", sitemapId] as const,
+    queryFn: ({ signal }) => getSitemap(siteId, sitemapId, signal),
+    enabled: Boolean(siteId && sitemapId),
+  });
+}
+
+export function useSitemapPages(
+  siteId: string,
+  sitemapId: string,
+  state: MatrxDataTableQueryState,
+  filter: SitemapPagesFilter,
+) {
+  return useQuery({
+    queryKey: [
+      ...marketingKeys.site(siteId),
+      "sitemap",
+      sitemapId,
+      "pages",
+      state,
+      filter,
+    ] as const,
+    queryFn: ({ signal }) =>
+      listSitemapPages(siteId, sitemapId, state, filter, signal),
+    enabled: Boolean(siteId && sitemapId),
+    placeholderData: keepPreviousData,
   });
 }

@@ -277,6 +277,14 @@ export function initializeSite(
   return streamCommand(`sites/${siteId}/initialize`, null, callbacks);
 }
 
+/** Standalone sitemap discovery + canonical-page ingestion for one site. */
+export function syncSitemaps(
+  siteId: string,
+  callbacks?: CrawlStreamCallbacks,
+): Promise<CrawlStreamResult> {
+  return streamCommand(`sites/${siteId}/sitemaps/sync`, null, callbacks);
+}
+
 export function bootstrapSite(
   siteId: string,
   callbacks?: CrawlStreamCallbacks,

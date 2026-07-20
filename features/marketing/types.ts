@@ -11,6 +11,32 @@ export type BrandAsset = WebTables["brand_asset"]["Row"];
 export type BusinessFact = WebTables["business_fact"]["Row"];
 export type DiscoveredItem = WebTables["discovered_item"]["Row"];
 export type SiteScreenshot = WebTables["screenshot"]["Row"];
+export type SiteSitemap = WebTables["sitemap"]["Row"];
+export type PageSitemapMembership = WebTables["page_sitemap"]["Row"];
+
+/** One sitemap-membership row joined with its canonical page, plus how many
+ *  sitemaps that page appears in (1 = only this one). */
+export interface SitemapPageRow extends PageSitemapMembership {
+  page: Pick<
+    MarketingPage,
+    | "id"
+    | "url"
+    | "path"
+    | "status"
+    | "provenance"
+    | "http_status_last"
+    | "latest_snapshot_id"
+    | "last_seen"
+  >;
+  membership_count: number;
+}
+
+export interface SitemapCoverage {
+  sitemaps: number;
+  pagesInSitemaps: number;
+  neverCrawled: number;
+  lastSyncedAt: string | null;
+}
 export type MarketingPage = WebTables["page"]["Row"];
 export type CrawlSession = WebTables["crawl_session"]["Row"];
 export type PageSnapshot = WebTables["snapshot"]["Row"];
