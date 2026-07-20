@@ -125,7 +125,7 @@ function MarketingConnectionsContent() {
             <div>
               <Link
                 href="/marketing/connections"
-                className="text-[10px] font-medium text-primary hover:underline"
+                className="text-[10px] font-medium text-primary"
               >
                 Connections
               </Link>

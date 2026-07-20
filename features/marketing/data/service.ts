@@ -9,6 +9,7 @@ import type {
   CrawlEvent,
   CrawlSession,
   CrawlUrl,
+  CreateBrandInput,
   CreateSiteInput,
   DiscoveredItem,
   DiscoveredItemStatus,
@@ -28,6 +29,7 @@ import type {
   SiteListRow,
   SiteOverviewMetrics,
   SiteScreenshot,
+  UpdateBrandInput,
   UpdatePageIntentInput,
   UpdateSiteIdentityInput,
 } from "@/features/marketing/types";
@@ -1019,7 +1021,7 @@ export async function listBrands(
 
   const brandIds = brands.map((brand) => brand.id);
   const abortSignal = signal ?? new AbortController().signal;
-  const [sitesResponse, pendingResponse] = await Promise.all([
+  const [sitesResponse, pendingResponse, propertiesResponse, assetsResponse, factsResponse] = await Promise.all([
     db
       .from("site")
       .select("id, brand_id, name, domain, favicon_url, logo_url, initialized_at")
@@ -1032,6 +1034,25 @@ export async function listBrands(
       .select("brand_id")
       .in("brand_id", brandIds)
       .eq("status", "pending")
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+    db
+      .from("property")
+      .select("brand_id, kind")
+      .in("brand_id", brandIds)
+      .neq("kind", "website")
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+    db
+      .from("brand_asset")
+      .select("brand_id")
+      .in("brand_id", brandIds)
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+    db
+      .from("business_fact")
+      .select("brand_id")
+      .in("brand_id", brandIds)
       .is("deleted_at", null)
       .abortSignal(abortSignal),
   ]);
@@ -1048,12 +1069,25 @@ export async function listBrands(
   for (const item of pending) {
     pendingByBrand.set(item.brand_id, (pendingByBrand.get(item.brand_id) ?? 0) + 1);
   }
+  const countBy = (rowsWithBrand: Array<{ brand_id: string }>) => {
+    const map = new Map<string, number>();
+    for (const row of rowsWithBrand) {
+      map.set(row.brand_id, (map.get(row.brand_id) ?? 0) + 1);
+    }
+    return map;
+  };
+  const socialsByBrand = countBy(assertData(propertiesResponse.data, propertiesResponse.error));
+  const assetsByBrand = countBy(assertData(assetsResponse.data, assetsResponse.error));
+  const factsByBrand = countBy(assertData(factsResponse.data, factsResponse.error));
 
   return {
     rows: brands.map((brand) => ({
       ...brand,
       sites: sitesByBrand.get(brand.id) ?? [],
       pending_discovered: pendingByBrand.get(brand.id) ?? 0,
+      social_count: socialsByBrand.get(brand.id) ?? 0,
+      asset_count: assetsByBrand.get(brand.id) ?? 0,
+      fact_count: factsByBrand.get(brand.id) ?? 0,
     })),
     total: response.count ?? 0,
   };
@@ -1317,4 +1351,86 @@ export async function getSitemapCoverage(
     neverCrawled: neverCrawled.count ?? 0,
     lastSyncedAt: latest.data?.last_fetched_at ?? null,
   };
+}
+
+// ============================================================================
+// Brand CRUD — full user control over everything user-editable
+// ============================================================================
+
+export async function createBrand(input: CreateBrandInput): Promise<MarketingBrand> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("brand")
+    .insert({
+      organization_id: input.organizationId,
+      name: input.name,
+      industry: input.industry,
+      description: input.description,
+      website_url: input.websiteUrl,
+      logo_url: input.logoUrl,
+      favicon_url: input.faviconUrl,
+      og_image_url: input.ogImageUrl,
+      notes: input.notes,
+      status: input.status,
+      visibility: input.visibility,
+    })
+    .select(BRAND_COLUMNS)
+    .single();
+  return assertData(response.data, response.error);
+}
+
+export async function updateBrand(input: UpdateBrandInput): Promise<MarketingBrand> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("brand")
+    .update(input.patch)
+    .eq("id", input.brandId)
+    .eq("version", input.expectedVersion)
+    .is("deleted_at", null)
+    .select(BRAND_COLUMNS)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) {
+    throw new Error("This brand changed in another session. Reload and try again.");
+  }
+  return response.data;
+}
+
+/**
+ * Soft-delete a brand. Refuses while live sites still point at it — deleting
+ * the anchor out from under its properties would orphan them silently.
+ */
+export async function deleteBrand(brandId: string): Promise<void> {
+  const db = await authenticatedWebDb(supabase);
+  const sites = await db
+    .from("site")
+    .select("id", { count: "exact", head: true })
+    .eq("brand_id", brandId)
+    .is("deleted_at", null);
+  if (sites.error) throw sites.error;
+  if (sites.count) {
+    throw new Error(
+      `This brand still owns ${sites.count} site${sites.count === 1 ? "" : "s"}. Delete or move its sites first.`,
+    );
+  }
+  const response = await db
+    .from("brand")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", brandId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+}
+
+/** Soft-delete a site (its crawl history stays; the row leaves every list). */
+export async function deleteSite(siteId: string): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("site")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", siteId)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
 }

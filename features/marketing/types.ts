@@ -65,6 +65,44 @@ export interface BrandListRow extends MarketingBrand {
     >
   >;
   pending_discovered: number;
+  social_count: number;
+  asset_count: number;
+  fact_count: number;
+}
+
+/** Every user-editable brand field. If it's editable, it's HERE and in the editor. */
+export interface CreateBrandInput {
+  organizationId: string;
+  name: string;
+  industry: string | null;
+  description: string | null;
+  websiteUrl: string | null;
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  ogImageUrl: string | null;
+  notes: string | null;
+  status: string;
+  visibility: MarketingBrand["visibility"];
+}
+
+export interface UpdateBrandInput {
+  brandId: string;
+  expectedVersion: number;
+  patch: Partial<
+    Pick<
+      MarketingBrand,
+      | "name"
+      | "industry"
+      | "description"
+      | "website_url"
+      | "logo_url"
+      | "favicon_url"
+      | "og_image_url"
+      | "notes"
+      | "status"
+      | "visibility"
+    >
+  >;
 }
 
 export interface SiteListRow extends MarketingSite {

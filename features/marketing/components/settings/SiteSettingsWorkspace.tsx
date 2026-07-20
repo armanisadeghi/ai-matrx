@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, Settings2 } from "lucide-react";
+import { Save, Settings2, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,6 +21,9 @@ import type { Json } from "@/types/database.types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { isJsonRecord } from "@/features/marketing/types";
 import { updateSiteSettings } from "@/features/marketing/data/settings-service";
+import { useDeleteSite } from "@/features/marketing/data/hooks";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { extractErrorMessage } from "@/utils/errors";
 
 interface CrawlDefaults {
   respectRobots: boolean;
@@ -55,6 +60,9 @@ function crawlDefaults(settings: Json): CrawlDefaults {
 
 export function SiteSettingsWorkspace() {
   const { site } = useMarketingSite();
+  const router = useRouter();
+  const deleteMutation = useDeleteSite();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const queryClient = useQueryClient();
   const [name, setName] = useState(site.name);
   const [status, setStatus] = useState(site.status);
@@ -257,7 +265,56 @@ export function SiteSettingsWorkspace() {
             </div>
           </div>
         </section>
+
+        <section className="overflow-hidden rounded-lg border border-destructive/40 bg-card">
+          <div className="flex h-10 items-center gap-2 border-b border-destructive/30 px-3">
+            <Trash2 className="h-4 w-4 text-destructive" />
+            <h1 className="text-sm font-semibold text-foreground">
+              Danger zone
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 p-3">
+            <p className="min-w-64 flex-1 text-xs text-muted-foreground">
+              Deleting this site moves it to trash and removes it from every
+              list. Its brand, crawl history, and snapshots remain in the
+              database.
+            </p>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-8 gap-1.5"
+              onClick={() => setConfirmingDelete(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete site
+            </Button>
+          </div>
+        </section>
       </div>
+      <ConfirmDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title={`Delete ${site.name}?`}
+        description="The site moves to trash and disappears from every list. This does not delete the brand."
+        variant="destructive"
+        confirmLabel="Delete site"
+        busy={deleteMutation.isPending}
+        onConfirm={async () => {
+          try {
+            await deleteMutation.mutateAsync(site.id);
+            toast.success(`Deleted ${site.name}`);
+            router.push(
+              site.brand_id
+                ? marketingRoutes.brand(site.brand_id)
+                : marketingRoutes.brands(),
+            );
+          } catch (error) {
+            toast.error("Could not delete site", {
+              description: extractErrorMessage(error),
+            });
+          }
+        }}
+      />
       <div className="sticky bottom-0 mt-3 flex justify-end border-t border-border/80 bg-background/95 py-2 backdrop-blur">
         <Button
           size="sm"

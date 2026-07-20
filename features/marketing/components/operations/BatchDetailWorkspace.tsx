@@ -263,7 +263,7 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
           <HeaderDatum label="Site">
             <Link
               href={`/marketing/sites/${job.site_id}`}
-              className="hover:text-primary hover:underline"
+              className="hover:text-primary"
             >
               {job.site?.name ?? job.site_id}
             </Link>

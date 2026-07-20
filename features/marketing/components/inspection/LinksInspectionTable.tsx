@@ -49,7 +49,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       cell: (row) => (
         <Link
           href={`${sitePath}/pages/${row.source_page_id}`}
-          className="block min-w-64 max-w-xl truncate font-mono text-xs text-primary hover:underline"
+          className="block min-w-64 max-w-xl truncate font-mono text-xs text-primary"
           title={sourceUrl(row)}
         >
           {sourceUrl(row)}

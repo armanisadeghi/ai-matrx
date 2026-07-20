@@ -42,7 +42,7 @@ export function CrawlSnapshotsInspectionTable({
       cell: (row) => (
         <Link
           href={`${sitePath}/pages/${row.page_id}`}
-          className="block min-w-72 max-w-2xl truncate font-mono text-xs text-primary hover:underline"
+          className="block min-w-72 max-w-2xl truncate font-mono text-xs text-primary"
           title={pageUrl(row)}
         >
           {pageUrl(row)}
@@ -119,7 +119,7 @@ export function CrawlSnapshotsInspectionTable({
         row.body_file_id ? (
           <Link
             href={`/files/f/${row.body_file_id}`}
-            className="block max-w-48 truncate font-mono text-[11px] text-primary hover:underline"
+            className="block max-w-48 truncate font-mono text-[11px] text-primary"
           >
             {row.body_file_id}
           </Link>

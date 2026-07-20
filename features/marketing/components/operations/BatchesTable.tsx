@@ -53,7 +53,7 @@ export function BatchesTable() {
           <Link
             href={`/marketing/batches/${row.id}`}
             onClick={(event) => event.stopPropagation()}
-            className="font-mono text-[10px] text-primary hover:underline"
+            className="font-mono text-[10px] text-primary"
           >
             {row.id.slice(0, 12)}
           </Link>

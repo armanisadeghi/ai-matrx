@@ -224,7 +224,7 @@ export function SectionCard({
         {action ? (
           <Link
             href={action.href}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary"
           >
             {action.label}
             <ArrowRight className="h-3 w-3" />

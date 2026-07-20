@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
 export default function MarketingPage() {
-  redirect("/marketing/sites");
+  // Brands are the anchor entity; a proper overview page replaces this later.
+  redirect("/marketing/brands");
 }

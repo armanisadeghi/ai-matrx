@@ -15,10 +15,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import {
-  PlusTapButton,
-  RefreshCwTapButton,
-} from "@/components/icons/tap-buttons";
+import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSiteCount, useSites } from "@/features/marketing/data/hooks";
 import type { SiteListRow } from "@/features/marketing/types";
@@ -68,13 +65,9 @@ export function SitesPortfolio() {
         <div className="flex min-w-56 items-center gap-2.5">
           <SiteIdentityMark site={row} size={30} />
           <div className="min-w-0">
-            <Link
-              href={marketingRoutes.site(row.brand_id, row.id)}
-              className="block truncate text-sm font-medium text-foreground hover:text-primary hover:underline"
-              onClick={(event) => event.stopPropagation()}
-            >
+            <p className="truncate text-sm font-medium text-foreground">
               {row.name}
-            </Link>
+            </p>
             <p className="truncate text-[11px] text-muted-foreground">
               {row.domain}
             </p>
@@ -150,7 +143,6 @@ export function SitesPortfolio() {
               disabled={sites.isFetching}
               className={sites.isFetching ? "animate-spin" : undefined}
             />
-            <PlusTapButton ariaLabel="Add site" href="/marketing/sites/new" />
           </>
         }
       />

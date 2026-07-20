@@ -81,7 +81,7 @@ function ScreenshotCard({
         {pageHref ? (
           <Link
             href={pageHref}
-            className="truncate font-mono text-[11px] text-primary hover:underline"
+            className="truncate font-mono text-[11px] text-primary"
             title={screenshot.page?.url ?? screenshot.page_id ?? undefined}
           >
             {screenshot.page?.url ?? screenshot.page_id}

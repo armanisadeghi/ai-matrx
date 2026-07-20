@@ -22,7 +22,10 @@ import {
   confirmDiscoveredFact,
   countPendingDiscovered,
   countSites,
+  createBrand,
   createSite,
+  deleteBrand,
+  deleteSite,
   dismissDiscoveredItem,
   getCrawl,
   getHomepageObservedMeta,
@@ -40,6 +43,7 @@ import {
   listSites,
   listSiteScreenshots,
   listSnapshots,
+  updateBrand,
   updatePageIntent,
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
@@ -417,5 +421,54 @@ export function useSitemapPages(
       listSitemapPages(siteId, sitemapId, state, filter, signal),
     enabled: Boolean(siteId && sitemapId),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useCreateBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createBrand,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brands"],
+      });
+    },
+  });
+}
+
+export function useUpdateBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateBrand,
+    onSuccess: (brand) => {
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brands"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brand", brand.id],
+      });
+    },
+  });
+}
+
+export function useDeleteBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteBrand,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brands"],
+      });
+    },
+  });
+}
+
+export function useDeleteSite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteSite,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
+    },
   });
 }

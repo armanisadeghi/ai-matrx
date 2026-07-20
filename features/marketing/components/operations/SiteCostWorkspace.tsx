@@ -58,7 +58,7 @@ export function SiteCostWorkspace() {
           return (
             <Link
               href={`${sitePath}/pages/${row.page_id}`}
-              className="block min-w-72 max-w-3xl truncate font-mono text-xs text-primary hover:underline"
+              className="block min-w-72 max-w-3xl truncate font-mono text-xs text-primary"
               title={row.label}
             >
               {row.label}
@@ -69,7 +69,7 @@ export function SiteCostWorkspace() {
           return (
             <Link
               href={`/marketing/batches/${row.batch_id}`}
-              className="block min-w-72 max-w-3xl truncate font-mono text-xs text-primary hover:underline"
+              className="block min-w-72 max-w-3xl truncate font-mono text-xs text-primary"
               title={row.label}
             >
               {row.label}

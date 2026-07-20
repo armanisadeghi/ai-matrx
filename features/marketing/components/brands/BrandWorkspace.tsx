@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AtSign,
   ExternalLink,
@@ -8,10 +10,14 @@ import {
   Images,
   Inbox,
   MapPin,
-  Plus,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { BrandEditorDialog } from "@/features/marketing/components/brands/BrandEditorDialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import {
@@ -20,6 +26,7 @@ import {
   useBrandProperties,
   useBrandSites,
   useBusinessFacts,
+  useDeleteBrand,
   usePendingDiscoveredCount,
 } from "@/features/marketing/data/hooks";
 import {
@@ -35,6 +42,7 @@ import {
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isJsonRecord } from "@/features/marketing/types";
 import type { BrandAsset, BusinessFact } from "@/features/marketing/types";
+import { extractErrorMessage } from "@/utils/errors";
 
 function factValueText(fact: BusinessFact): string {
   if (isJsonRecord(fact.value)) {
@@ -53,7 +61,11 @@ function assetPreviewUrl(asset: BrandAsset): string | null {
 }
 
 export function BrandWorkspace({ brandId }: { brandId: string }) {
+  const router = useRouter();
   const brand = useBrand(brandId);
+  const deleteMutation = useDeleteBrand();
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const sites = useBrandSites(brandId);
   const properties = useBrandProperties(brandId);
   const assets = useBrandAssets(brandId);
@@ -149,19 +161,39 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 </p>
               ) : null}
             </div>
-            {pending.data ? (
+            <div className="flex shrink-0 items-center gap-1.5">
+              {pending.data ? (
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5"
+                >
+                  <Link href={primarySiteDiscovery ?? marketingRoutes.brands()}>
+                    <Inbox className="h-3.5 w-3.5" />
+                    {pending.data.toLocaleString()} to review
+                  </Link>
+                </Button>
+              ) : null}
               <Button
-                asChild
                 size="sm"
                 variant="outline"
                 className="h-8 gap-1.5"
+                onClick={() => setEditorOpen(true)}
               >
-                <Link href={primarySiteDiscovery ?? marketingRoutes.brands()}>
-                  <Inbox className="h-3.5 w-3.5" />
-                  {pending.data.toLocaleString()} to review
-                </Link>
+                <Pencil className="h-3.5 w-3.5" />
+                Edit brand
               </Button>
-            ) : null}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1.5 text-muted-foreground hover:text-destructive"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </Button>
+            </div>
           </section>
 
           <SectionCard
@@ -177,31 +209,21 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 {websiteSites.map((site) => (
                   <li
                     key={site.id}
-                    className="flex flex-wrap items-center gap-3 px-3 py-2"
+                    className="flex cursor-pointer flex-wrap items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/30"
+                    onClick={() =>
+                      router.push(marketingRoutes.site(brandId, site.id))
+                    }
                   >
                     <SiteIdentityMark site={site} size={28} />
                     <div className="min-w-0 flex-1 basis-48">
-                      <Link
-                        href={marketingRoutes.site(brandId, site.id)}
-                        className="block truncate text-sm font-medium text-foreground hover:text-primary hover:underline"
-                      >
+                      <p className="truncate text-sm font-medium text-foreground">
                         {site.name}
-                      </Link>
+                      </p>
                       <p className="truncate text-[11px] text-muted-foreground">
                         {site.domain}
                       </p>
                     </div>
                     <SiteConnectionChips site={site} />
-                    <Button
-                      asChild
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs"
-                    >
-                      <Link href={marketingRoutes.site(brandId, site.id)}>
-                        Open
-                      </Link>
-                    </Button>
                   </li>
                 ))}
               </ul>
@@ -324,6 +346,32 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           </SectionCard>
         </div>
       </main>
+
+      <BrandEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        brand={current}
+      />
+      <ConfirmDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title={`Delete ${current.name}?`}
+        description="The brand moves to trash. Brands that still own sites can’t be deleted — delete or move their sites first."
+        variant="destructive"
+        confirmLabel="Delete brand"
+        busy={deleteMutation.isPending}
+        onConfirm={async () => {
+          try {
+            await deleteMutation.mutateAsync(current.id);
+            toast.success(`Deleted ${current.name}`);
+            router.push(marketingRoutes.brands());
+          } catch (error) {
+            toast.error("Could not delete brand", {
+              description: extractErrorMessage(error),
+            });
+          }
+        }}
+      />
     </>
   );
 }
