@@ -1,3 +1,4 @@
+import { SITE_COLUMNS } from "@/features/marketing/data/service";
 import type { Json } from "@/types/database.types";
 import type { MarketingSite } from "@/features/marketing/types";
 import { createClient } from "@/utils/supabase/client";
@@ -22,7 +23,7 @@ export async function updateSiteIntegrations(
     .eq("version", input.expectedVersion)
     .is("deleted_at", null)
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings",
+      SITE_COLUMNS,
     )
     .maybeSingle();
 

@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Agency-scale website operations built around stable site and page identity. The implemented verticals manage sites, canonical URLs, immutable snapshots, crawl sessions, run URL outcomes, durable run events, prioritized analysis, finding lifecycle evidence, screenshots, links, sharing, batch operations, and cost attribution.
+Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) — a company an organization manages (their own, or an agency client's). A website is ONE brand property; social accounts and other presences are peers (`web.property`). Machine discovery writes candidates to `web.discovered_item`; humans promote them to confirmed `web.brand_asset` / `web.business_fact` — machine writes never touch confirmed truth. Below the brand layer sit the site verticals: canonical URLs, immutable snapshots, crawl sessions, run URL outcomes, durable run events, prioritized analysis, finding lifecycle evidence, screenshots, links, sharing, batch operations, and cost attribution.
 
 ## Entry points
 
@@ -35,7 +35,11 @@ Agency-scale website operations built around stable site and page identity. The 
 
 ## Data model
 
-- `web.site` — managed website and sole access root.
+- `web.brand` — anchor entity and access root for the brand layer (`web_brand` token; canonical `iam.apply_rls`).
+- `web.property` — one presence of a brand (website / instagram / facebook / x / tiktok / youtube / linkedin / pinterest / google_business_profile); a website property points at its `web.site`.
+- `web.brand_asset` / `web.business_fact` — human-confirmed brand truth (logos, imagery, phones, addresses, socials); `brand_asset.file_id` → canonical `files.files`.
+- `web.discovered_item` — machine-written review inbox (`pending → confirmed | dismissed`), URL-deduped per brand for idempotent re-discovery; `resolved_asset_id` / `resolved_fact_id` record the promotion.
+- `web.site` — managed website (site-scoped access root). Carries `brand_id`, user-editable identity (`description`, `logo_url`, `favicon_url`, `og_image_url` — the brand's own public URLs, never our storage), and `initialized_at` + `initialization` jsonb written by the scraper initialize command.
 - `web.page` — canonical URL plus user-owned intent; never captured content.
 - `web.crawl_session` — one frozen crawl event.
 - `web.snapshot` — immutable page content observation from one session.
@@ -65,6 +69,9 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 
 ## Invariants & gotchas
 
+- **The five connection statuses (Init / GSC / GA4 / PSI / CMS) are derived ONLY through `features/marketing/lib/site-status.ts`** — the portfolio list and the site page must never compute them independently.
+- **Machine discovery writes ONLY `web.discovered_item`.** Confirmed identity (`brand_asset`, `business_fact`, site identity columns) is written by humans (or by explicit promotion code) — never directly by a scraper.
+- Site/brand identity URLs (logo, favicon, og image) are the brand's own public URLs. Scraper-produced media (screenshots) goes through the canonical AWS file pipeline and renders via `InlineMediaRef` + `file_id` — never a Supabase Storage URL.
 - Persisted data always flows browser ↔ Supabase under the caller's JWT and RLS. Never add a Python, AI Dream, or Next.js read proxy.
 - Crawler commands/live NDJSON go browser ↔ scraper directly. Durable rows written by the crawler are subsequently read from Supabase.
 - A canonical page is not a crawl URL. A page's current content is its latest accepted snapshot, not a page column.
@@ -115,3 +122,4 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 - 2026-07-19 — Codex: made Search Console the focused default connection flow, automatically persisted an exact domain match, added explicit provider-level completion actions, made PageSpeed one-click enablement, and stopped optional Analytics discovery failures or raw Google API errors from poisoning the user-visible Google connection.
 - 2026-07-19 — Codex: site overview hero now top-aligns site identity, reads observed homepage meta title/description from the bootstrap snapshot's `head_tags`, and refreshes that metadata after homepage capture retries.
 - 2026-07-19 — Codex: crawl new/summary workspaces now fill the available viewport height; live feed scrolls in-panel, and session scope/stats/metadata render as condensed field grids instead of raw JSON.
+- 2026-07-20 — Claude: shipped the Brand layer (`web.brand` / `property` / `brand_asset` / `business_fact` / `discovered_item`, migration `web_brand_layer.sql`, canonical RLS, entity registry, one-brand-per-site backfill; test crawl data wiped). Sites portfolio now leads with identity (favicon/logo mark) plus the five connection chips derived solely from `lib/site-status.ts`; site overview rebuilt around pre/post-initialization states with an Initialize command, connections board, edit-in-place identity, and hero screenshot via `InlineMediaRef`; new `/discovery` review inbox promotes discovered candidates to confirmed assets/facts (verified end-to-end). CMS provider slot added to the integrations schema. Scraper `sites/{id}/initialize` command is being built in aidream.

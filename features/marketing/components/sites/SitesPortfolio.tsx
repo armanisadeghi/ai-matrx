@@ -22,11 +22,14 @@ import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSiteCount, useSites } from "@/features/marketing/data/hooks";
 import type { SiteListRow } from "@/features/marketing/types";
 import {
-  displayScore,
   formatCompactDate,
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  SiteConnectionChips,
+  SiteIdentityMark,
+} from "@/features/marketing/components/shared/SiteConnectionChips";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 
 const STATUS_OPTIONS = [
@@ -61,27 +64,42 @@ export function SitesPortfolio() {
       filter: "text",
       cellKind: "text",
       cell: (row) => (
-        <div className="min-w-48">
-          <Link
-            href={`/marketing/sites/${row.id}`}
-            className="truncate text-sm font-medium text-foreground hover:text-primary hover:underline"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {row.name}
-          </Link>
-          <p className="truncate text-[11px] text-muted-foreground">
-            {row.domain}
-          </p>
+        <div className="flex min-w-56 items-center gap-2.5">
+          <SiteIdentityMark site={row} size={30} />
+          <div className="min-w-0">
+            <Link
+              href={`/marketing/sites/${row.id}`}
+              className="block truncate text-sm font-medium text-foreground hover:text-primary hover:underline"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {row.name}
+            </Link>
+            <p className="truncate text-[11px] text-muted-foreground">
+              {row.domain}
+            </p>
+          </div>
         </div>
       ),
     },
     {
-      id: "domain",
-      accessorKey: "domain",
-      header: "Domain",
-      filter: "text",
-      cellKind: "text",
-      cell: (row) => <span className="font-mono text-xs">{row.domain}</span>,
+      id: "connections",
+      accessorKey: "id",
+      header: "Connections",
+      filter: false,
+      sortable: false,
+      cell: (row) => <SiteConnectionChips site={row} />,
+    },
+    {
+      id: "description",
+      accessorKey: "description",
+      header: "Description",
+      filter: false,
+      sortable: false,
+      cell: (row) => (
+        <span className="block max-w-72 truncate text-xs text-muted-foreground">
+          {row.description || "—"}
+        </span>
+      ),
     },
     {
       id: "status",
@@ -99,22 +117,6 @@ export function SitesPortfolio() {
       filterOptions: VISIBILITY_OPTIONS,
       cell: (row) => (
         <span className="text-xs capitalize">{row.visibility}</span>
-      ),
-    },
-    {
-      id: "health_score",
-      accessorKey: "health_score",
-      header: "Health",
-      filter: false,
-      sortable: false,
-      align: "right",
-      cell: (row) => (
-        <div className="text-right tabular-nums">
-          <span className="text-sm font-semibold">
-            {displayScore(row.health_score)}
-          </span>
-          <span className="ml-1 text-[10px] text-muted-foreground">/ 100</span>
-        </div>
       ),
     },
     {

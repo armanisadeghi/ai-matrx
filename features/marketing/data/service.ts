@@ -1,9 +1,13 @@
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import type {
+  ConfirmAssetInput,
+  ConfirmFactInput,
   CrawlEvent,
   CrawlSession,
   CrawlUrl,
   CreateSiteInput,
+  DiscoveredItem,
+  DiscoveredItemStatus,
   HomepageObservedMeta,
   MarketingPage,
   MarketingSite,
@@ -14,8 +18,11 @@ import type {
   PagedResult,
   SiteListRow,
   SiteOverviewMetrics,
+  SiteScreenshot,
   UpdatePageIntentInput,
+  UpdateSiteIdentityInput,
 } from "@/features/marketing/types";
+import { isJsonRecord } from "@/features/marketing/types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
@@ -73,6 +80,10 @@ function assertData<T>(data: T | null, error: unknown): T {
   return data;
 }
 
+/** Every `web.site` column — ONE list so selects can never drift per call site. */
+export const SITE_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization";
+
 export async function listSites(
   state: MatrxDataTableQueryState,
   signal?: AbortSignal,
@@ -95,7 +106,7 @@ export async function listSites(
   let query = db
     .from("site")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings",
+      SITE_COLUMNS,
       { count: "exact" },
     )
     .is("deleted_at", null);
@@ -158,7 +169,7 @@ export async function listSiteOptions(
     const response = await db
       .from("site")
       .select(
-        "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings",
+        SITE_COLUMNS,
       )
       .is("deleted_at", null)
       .order("name", { ascending: true })
@@ -193,7 +204,7 @@ export async function getSite(
   )
     .from("site")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings",
+      SITE_COLUMNS,
     )
     .eq("id", siteId)
     .is("deleted_at", null)
@@ -748,4 +759,211 @@ export async function listCrawlEvents(
     rows: assertData(response.data, response.error),
     total: response.count ?? 0,
   };
+}
+
+// ============================================================================
+// Brand layer — identity, screenshots, and the discovery inbox
+// ============================================================================
+
+/** Version-checked direct update of user-editable site identity fields. */
+export async function updateSiteIdentity(
+  input: UpdateSiteIdentityInput,
+): Promise<MarketingSite> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("site")
+    .update(input.patch)
+    .eq("id", input.siteId)
+    .eq("version", input.expectedVersion)
+    .is("deleted_at", null)
+    .select(SITE_COLUMNS)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) {
+    throw new Error(
+      "This site changed in another session. Reload and try again.",
+    );
+  }
+  return response.data;
+}
+
+const SCREENSHOT_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, snapshot_id, kind, width, height, captured_at, file_id";
+
+/**
+ * Latest display screenshot for the site hero. Prefers the above-the-fold
+ * desktop capture; falls back to any capture so pre-initialization sites
+ * with older data still render something real.
+ */
+export async function getSiteHeroScreenshot(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteScreenshot | null> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const preferred = await db
+    .from("screenshot")
+    .select(SCREENSHOT_COLUMNS)
+    .eq("site_id", siteId)
+    .in("kind", ["desktop_fold", "homepage", "viewport"])
+    .is("deleted_at", null)
+    .order("captured_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (preferred.error) throw preferred.error;
+  if (preferred.data) return preferred.data;
+
+  const any = await db
+    .from("screenshot")
+    .select(SCREENSHOT_COLUMNS)
+    .eq("site_id", siteId)
+    .is("deleted_at", null)
+    .order("captured_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (any.error) throw any.error;
+  return any.data;
+}
+
+/** All screenshots for a site's gallery, newest first, bounded. */
+export async function listSiteScreenshots(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteScreenshot[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("screenshot")
+    .select(SCREENSHOT_COLUMNS)
+    .eq("site_id", siteId)
+    .is("deleted_at", null)
+    .order("captured_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(200)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+const DISCOVERED_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, context, confidence, status, resolved_asset_id, resolved_fact_id, reviewed_by, reviewed_at";
+
+/** Discovery inbox for a brand, optionally narrowed by status. Bounded. */
+export async function listDiscoveredItems(
+  brandId: string,
+  status: DiscoveredItemStatus | null,
+  signal?: AbortSignal,
+): Promise<DiscoveredItem[]> {
+  const db = await authenticatedWebDb(supabase);
+  let query = db
+    .from("discovered_item")
+    .select(DISCOVERED_COLUMNS)
+    .eq("brand_id", brandId)
+    .is("deleted_at", null);
+  if (status) query = query.eq("status", status);
+  const response = await query
+    .order("category", { ascending: true })
+    .order("confidence", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: true })
+    .limit(500)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+export async function countPendingDiscovered(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<number> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("discovered_item")
+    .select("id", { count: "exact", head: true })
+    .eq("brand_id", brandId)
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal);
+  if (response.error) throw response.error;
+  return response.count ?? 0;
+}
+
+/** Promote a discovered item to a confirmed brand asset. */
+export async function confirmDiscoveredAsset(
+  input: ConfirmAssetInput,
+): Promise<void> {
+  const db = await authenticatedWebDb(supabase);
+  const asset = await db
+    .from("brand_asset")
+    .insert({
+      organization_id: input.item.organization_id,
+      brand_id: input.item.brand_id,
+      kind: input.assetKind,
+      source_url: input.item.url,
+      title: input.title,
+      source: "discovered",
+      confirmed_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  const created = assertData(asset.data, asset.error);
+  const update = await db
+    .from("discovered_item")
+    .update({
+      status: "confirmed",
+      resolved_asset_id: created.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", input.item.id)
+    .eq("status", "pending");
+  if (update.error) throw update.error;
+}
+
+/** Promote a discovered item to a confirmed business fact. */
+export async function confirmDiscoveredFact(
+  input: ConfirmFactInput,
+): Promise<void> {
+  const db = await authenticatedWebDb(supabase);
+  const fact = await db
+    .from("business_fact")
+    .insert({
+      organization_id: input.item.organization_id,
+      brand_id: input.item.brand_id,
+      kind: input.factKind,
+      label: input.label,
+      value: input.item.url ? { url: input.item.url, ...asRecord(input.item.value) } : input.item.value,
+      source: "discovered",
+      confirmed_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  const created = assertData(fact.data, fact.error);
+  const update = await db
+    .from("discovered_item")
+    .update({
+      status: "confirmed",
+      resolved_fact_id: created.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", input.item.id)
+    .eq("status", "pending");
+  if (update.error) throw update.error;
+}
+
+function asRecord(value: DiscoveredItem["value"]): { [key: string]: unknown } {
+  return isJsonRecord(value) ? value : {};
+}
+
+export async function dismissDiscoveredItem(itemId: string): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("discovered_item")
+    .update({ status: "dismissed", reviewed_at: new Date().toISOString() })
+    .eq("id", itemId)
+    .eq("status", "pending");
+  if (response.error) throw response.error;
 }

@@ -10,6 +10,7 @@ import {
   FileText,
   Gauge,
   Images,
+  Inbox,
   Link2,
   Plug,
   ScanSearch,
@@ -46,6 +47,7 @@ export function useMarketingSite() {
 function sectionSuffix(pathname: string, siteId: string): string {
   const rest = pathname.slice(`/marketing/sites/${siteId}`.length);
   for (const section of [
+    "discovery",
     "pages",
     "crawls",
     "analysis",
@@ -117,6 +119,11 @@ export function MarketingSiteLayoutClient({
         }))}
         modes={[
           { name: "Overview", href: `/marketing/sites/${siteId}`, icon: Gauge },
+          {
+            name: "Discovery",
+            href: `/marketing/sites/${siteId}/discovery`,
+            icon: Inbox,
+          },
           {
             name: "Pages",
             href: `/marketing/sites/${siteId}/pages`,

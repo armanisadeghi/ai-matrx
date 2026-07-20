@@ -221,6 +221,18 @@ async function streamCommand(
   return { sessionId, siteId, lastSequence };
 }
 
+/**
+ * One-call site initialization: homepage snapshot, sitemap discovery,
+ * favicon/logo/social/contact candidates into web.discovered_item, and the
+ * 4 display screenshots. Idempotent server-side; safe to re-run.
+ */
+export function initializeSite(
+  siteId: string,
+  callbacks?: CrawlStreamCallbacks,
+): Promise<CrawlStreamResult> {
+  return streamCommand(`sites/${siteId}/initialize`, null, callbacks);
+}
+
 export function bootstrapSite(
   siteId: string,
   callbacks?: CrawlStreamCallbacks,

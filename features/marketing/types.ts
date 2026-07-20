@@ -5,6 +5,12 @@ type WebTables = Database["web"]["Tables"];
 type WebViews = Database["web"]["Views"];
 
 export type MarketingSite = WebTables["site"]["Row"];
+export type MarketingBrand = WebTables["brand"]["Row"];
+export type BrandProperty = WebTables["property"]["Row"];
+export type BrandAsset = WebTables["brand_asset"]["Row"];
+export type BusinessFact = WebTables["business_fact"]["Row"];
+export type DiscoveredItem = WebTables["discovered_item"]["Row"];
+export type SiteScreenshot = WebTables["screenshot"]["Row"];
 export type MarketingPage = WebTables["page"]["Row"];
 export type CrawlSession = WebTables["crawl_session"]["Row"];
 export type PageSnapshot = WebTables["snapshot"]["Row"];
@@ -58,6 +64,33 @@ export interface CreateSiteInput {
   name: string;
   rootUrl: string;
   domain: string;
+}
+
+export interface UpdateSiteIdentityInput {
+  siteId: string;
+  expectedVersion: number;
+  patch: Partial<
+    Pick<
+      MarketingSite,
+      "name" | "description" | "logo_url" | "favicon_url" | "og_image_url"
+    >
+  >;
+}
+
+export type DiscoveredItemStatus = "pending" | "confirmed" | "dismissed";
+
+/** Confirm a discovered item as a brand asset. */
+export interface ConfirmAssetInput {
+  item: DiscoveredItem;
+  assetKind: BrandAsset["kind"];
+  title: string | null;
+}
+
+/** Confirm a discovered item as a business fact. */
+export interface ConfirmFactInput {
+  item: DiscoveredItem;
+  factKind: BusinessFact["kind"];
+  label: string | null;
 }
 
 export interface UpdatePageIntentInput {

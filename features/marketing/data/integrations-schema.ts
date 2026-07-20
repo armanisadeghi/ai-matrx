@@ -21,10 +21,25 @@ export interface CustomProviderIntegrationDraft extends ProviderIntegrationDraft
   label: string;
 }
 
+export const cmsKinds = [
+  "wordpress",
+  "shopify",
+  "matrx_cms",
+  "webflow",
+  "other",
+] as const;
+
+export type CmsKind = (typeof cmsKinds)[number];
+
+export interface CmsIntegrationDraft extends ProviderIntegrationDraft {
+  kind: CmsKind | "";
+}
+
 export interface SiteIntegrationsDraft {
   googleSearchConsole: ProviderIntegrationDraft;
   googleAnalytics4: ProviderIntegrationDraft;
   pageSpeedInsights: ProviderIntegrationDraft;
+  cms: CmsIntegrationDraft;
   customProviders: CustomProviderIntegrationDraft[];
 }
 
@@ -87,6 +102,20 @@ function parseProvider(value: unknown): ProviderIntegrationDraft {
   };
 }
 
+export const emptyCmsIntegration = (): CmsIntegrationDraft => ({
+  ...emptyProviderIntegration(),
+  kind: "",
+});
+
+function parseCms(value: unknown): CmsIntegrationDraft {
+  const base = parseProvider(value);
+  const kind = isRecord(value) ? stringValue(value.kind) : "";
+  return {
+    ...base,
+    kind: cmsKinds.includes(kind as CmsKind) ? (kind as CmsKind) : "",
+  };
+}
+
 export function parseSiteIntegrations(value: Json): SiteIntegrationsDraft {
   const root = isRecord(value) ? value : {};
   const marketing = isRecord(root.marketing) ? root.marketing : {};
@@ -99,6 +128,7 @@ export function parseSiteIntegrations(value: Json): SiteIntegrationsDraft {
     googleSearchConsole: parseProvider(providers.google_search_console),
     googleAnalytics4: parseProvider(providers.google_analytics_4),
     pageSpeedInsights: parseProvider(providers.pagespeed_insights),
+    cms: parseCms(providers.cms),
     customProviders: custom.flatMap((value, index) => {
       if (!isRecord(value)) return [];
       return [
@@ -168,6 +198,10 @@ export function buildSiteIntegrations(
         google_search_console: providerDocument(draft.googleSearchConsole),
         google_analytics_4: providerDocument(draft.googleAnalytics4),
         pagespeed_insights: providerDocument(draft.pageSpeedInsights),
+        cms: {
+          ...providerDocument(draft.cms),
+          kind: draft.cms.kind || null,
+        },
       },
       custom_providers: draft.customProviders.map((provider) => ({
         ...providerDocument(provider),
@@ -314,6 +348,34 @@ export function validateSiteIntegrations(
     "optional",
     issues,
   );
+
+  if (draft.cms.enabled && !draft.cms.kind) {
+    issues.push({
+      field: "cms.kind",
+      message: "CMS connection needs a platform kind (WordPress, Shopify, …).",
+    });
+  }
+  const cmsResource = draft.cms.resourceRef.trim();
+  if (draft.cms.enabled && !cmsResource) {
+    issues.push({
+      field: "cms.resourceRef",
+      message: "CMS connection needs a site reference (URL or identifier).",
+    });
+  } else if (cmsResource && !isSafeGenericResource(cmsResource)) {
+    issues.push({
+      field: "cms.resourceRef",
+      message:
+        "CMS reference must be a URL, domain, numeric ID, or namespaced reference.",
+    });
+  }
+  if (draft.cms.credentialRef.trim()) {
+    validateCredential(
+      { ...draft.cms, enabled: false },
+      "cms",
+      "CMS connection",
+      issues,
+    );
+  }
 
   const keys = new Set<string>();
   for (const [index, provider] of draft.customProviders.entries()) {

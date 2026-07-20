@@ -1,0 +1,149 @@
+import type { MarketingSite } from "@/features/marketing/types";
+import { isJsonRecord } from "@/features/marketing/types";
+import {
+  parseSiteIntegrations,
+  providerReferenceStatus,
+} from "@/features/marketing/data/integrations-schema";
+
+/**
+ * The five big-picture connection statuses for a site. This module is the ONE
+ * place they are derived so the portfolio list and the site page can never
+ * disagree (same law as features/admin/applications/version.ts).
+ */
+export type SiteConnectionState = "connected" | "attention" | "off";
+
+export interface SiteConnectionStatus {
+  key: "initialized" | "search_console" | "analytics" | "pagespeed" | "cms";
+  /** Short chip label. */
+  label: string;
+  /** Full name for the site page status board. */
+  name: string;
+  state: SiteConnectionState;
+  detail: string;
+}
+
+export interface ParsedInitialization {
+  homepageOk: boolean;
+  sitemapsFound: number | null;
+  screenshotsCaptured: number | null;
+  discoveredTotal: number | null;
+  errors: string[];
+}
+
+function numberOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** Normalize the scraper-written `web.site.initialization` summary. */
+export function parseInitialization(
+  site: Pick<MarketingSite, "initialization">,
+): ParsedInitialization {
+  const root = isJsonRecord(site.initialization) ? site.initialization : {};
+  const sitemaps = isJsonRecord(root.sitemaps) ? root.sitemaps : {};
+  const screenshots = isJsonRecord(root.screenshots) ? root.screenshots : {};
+  const discovered = isJsonRecord(root.discovered) ? root.discovered : {};
+  const discoveredCounts = Object.values(discovered).flatMap((value) =>
+    typeof value === "number" && Number.isFinite(value) ? [value] : [],
+  );
+  return {
+    homepageOk: root.homepage === "ok",
+    sitemapsFound: numberOrNull(sitemaps.found),
+    screenshotsCaptured: numberOrNull(screenshots.captured),
+    discoveredTotal: discoveredCounts.length
+      ? discoveredCounts.reduce((sum, count) => sum + count, 0)
+      : null,
+    errors: Array.isArray(root.errors)
+      ? root.errors.flatMap((entry) =>
+          typeof entry === "string" ? [entry] : [],
+        )
+      : [],
+  };
+}
+
+/** Derive the five connection statuses from a site row. Pure; no fetching. */
+export function siteConnectionStatuses(
+  site: Pick<MarketingSite, "initialized_at" | "initialization" | "integrations">,
+): SiteConnectionStatus[] {
+  const init = parseInitialization(site);
+  const integrations = parseSiteIntegrations(site.integrations);
+
+  const initialized: SiteConnectionStatus = site.initialized_at
+    ? init.errors.length
+      ? {
+          key: "initialized",
+          label: "Init",
+          name: "Site initialized",
+          state: "attention",
+          detail: `Initialized with ${init.errors.length} failed step${init.errors.length === 1 ? "" : "s"}`,
+        }
+      : {
+          key: "initialized",
+          label: "Init",
+          name: "Site initialized",
+          state: "connected",
+          detail: "Homepage, sitemaps, and basics captured",
+        }
+    : {
+        key: "initialized",
+        label: "Init",
+        name: "Site initialized",
+        state: "off",
+        detail: "Never initialized — run the first capture",
+      };
+
+  const providerStatus = (
+    key: SiteConnectionStatus["key"],
+    label: string,
+    name: string,
+    status: ReturnType<typeof providerReferenceStatus>,
+    offDetail: string,
+  ): SiteConnectionStatus => ({
+    key,
+    label,
+    name,
+    state:
+      status === "reference_configured"
+        ? "connected"
+        : status === "needs_reference"
+          ? "attention"
+          : "off",
+    detail:
+      status === "reference_configured"
+        ? "Connected"
+        : status === "needs_reference"
+          ? "Enabled but missing a reference"
+          : offDetail,
+  });
+
+  return [
+    initialized,
+    providerStatus(
+      "search_console",
+      "GSC",
+      "Google Search Console",
+      providerReferenceStatus(integrations.googleSearchConsole, true),
+      "Not connected",
+    ),
+    providerStatus(
+      "analytics",
+      "GA4",
+      "Google Analytics 4",
+      providerReferenceStatus(integrations.googleAnalytics4, true),
+      "Not connected",
+    ),
+    providerStatus(
+      "pagespeed",
+      "PSI",
+      "PageSpeed Insights",
+      providerReferenceStatus(integrations.pageSpeedInsights, false, false),
+      "Not enabled",
+    ),
+    providerStatus(
+      "cms",
+      "CMS",
+      "CMS connection",
+      providerReferenceStatus(integrations.cms, true, false),
+      integrations.cms.kind ? "Configured kind, not connected" : "Not configured",
+    ),
+  ];
+}

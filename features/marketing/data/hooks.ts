@@ -8,23 +8,32 @@ import {
 } from "@tanstack/react-query";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
+  confirmDiscoveredAsset,
+  confirmDiscoveredFact,
+  countPendingDiscovered,
   countSites,
   createSite,
+  dismissDiscoveredItem,
   getCrawl,
   getHomepageObservedMeta,
   getPageWorkspace,
   getSite,
+  getSiteHeroScreenshot,
   getSiteOverview,
   getSnapshot,
   listCrawlEvents,
   listCrawls,
   listCrawlUrls,
+  listDiscoveredItems,
   listPages,
   listSiteOptions,
   listSites,
+  listSiteScreenshots,
   listSnapshots,
   updatePageIntent,
+  updateSiteIdentity,
 } from "@/features/marketing/data/service";
+import type { DiscoveredItemStatus } from "@/features/marketing/types";
 
 export const marketingKeys = {
   root: ["marketing"] as const,
@@ -36,6 +45,14 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "overview"] as const,
   homepageMeta: (siteId: string) =>
     [...marketingKeys.site(siteId), "homepage-meta"] as const,
+  heroScreenshot: (siteId: string) =>
+    [...marketingKeys.site(siteId), "hero-screenshot"] as const,
+  siteScreenshots: (siteId: string) =>
+    [...marketingKeys.site(siteId), "screenshots"] as const,
+  discovered: (brandId: string, status: DiscoveredItemStatus | null) =>
+    [...marketingKeys.root, "brand", brandId, "discovered", status] as const,
+  discoveredCount: (brandId: string) =>
+    [...marketingKeys.root, "brand", brandId, "discovered-count"] as const,
   pages: (siteId: string, state: MatrxDataTableQueryState) =>
     [...marketingKeys.site(siteId), "pages", state] as const,
   page: (siteId: string, pageId: string) =>
@@ -219,4 +236,81 @@ export function useCrawlEvents(
     enabled: Boolean(siteId && crawlId),
     placeholderData: keepPreviousData,
   });
+}
+
+export function useSiteHeroScreenshot(siteId: string) {
+  return useQuery({
+    queryKey: marketingKeys.heroScreenshot(siteId),
+    queryFn: ({ signal }) => getSiteHeroScreenshot(siteId, signal),
+    enabled: Boolean(siteId),
+  });
+}
+
+export function useSiteScreenshots(siteId: string) {
+  return useQuery({
+    queryKey: marketingKeys.siteScreenshots(siteId),
+    queryFn: ({ signal }) => listSiteScreenshots(siteId, signal),
+    enabled: Boolean(siteId),
+  });
+}
+
+export function useUpdateSiteIdentity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateSiteIdentity,
+    onSuccess: (site) => {
+      void queryClient.invalidateQueries({
+        queryKey: marketingKeys.site(site.id),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "sites"],
+      });
+    },
+  });
+}
+
+export function useDiscoveredItems(
+  brandId: string | null,
+  status: DiscoveredItemStatus | null,
+) {
+  return useQuery({
+    queryKey: marketingKeys.discovered(brandId ?? "none", status),
+    queryFn: ({ signal }) => listDiscoveredItems(brandId ?? "", status, signal),
+    enabled: Boolean(brandId),
+  });
+}
+
+export function usePendingDiscoveredCount(brandId: string | null) {
+  return useQuery({
+    queryKey: marketingKeys.discoveredCount(brandId ?? "none"),
+    queryFn: ({ signal }) => countPendingDiscovered(brandId ?? "", signal),
+    enabled: Boolean(brandId),
+    staleTime: 15_000,
+  });
+}
+
+function useDiscoveryMutation<TInput>(
+  mutationFn: (input: TInput) => Promise<void>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brand"],
+      });
+    },
+  });
+}
+
+export function useConfirmDiscoveredAsset() {
+  return useDiscoveryMutation(confirmDiscoveredAsset);
+}
+
+export function useConfirmDiscoveredFact() {
+  return useDiscoveryMutation(confirmDiscoveredFact);
+}
+
+export function useDismissDiscoveredItem() {
+  return useDiscoveryMutation(dismissDiscoveredItem);
 }
