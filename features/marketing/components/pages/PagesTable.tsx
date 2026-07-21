@@ -424,7 +424,9 @@ export function PagesTable() {
             setAdding(false);
             // First capture kicks off immediately — non-blocking so the
             // dialog closes; failures surface via toast + Error Inspector.
-            void fetchPageNow(site.id, value)
+            // Normalize first: the dialog accepts scheme-less input, but the
+            // scraper's seed validation needs a full URL.
+            void fetchPageNow(site.id, normalisePageUrl(value))
               .then(() => {
                 void pages.refetch();
                 toast.success("Page captured");

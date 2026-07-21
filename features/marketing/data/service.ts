@@ -124,6 +124,26 @@ export function assertFound<T>(
   return data;
 }
 
+/**
+ * Loud-mutation guard: an UPDATE whose RLS filter matched 0 rows returns
+ * SUCCESS from PostgREST — for a universally-viewable row that a non-editor
+ * tries to delete, that silent no-op would toast "deleted" while nothing
+ * happened. Every write mutation whose target can be visible-but-not-editable
+ * runs through this: `.select("id")` the update and assert a row came back.
+ */
+export function assertMutated(
+  rows: Array<{ id: string }> | null,
+  error: unknown,
+  what: string,
+): void {
+  if (error) throw error;
+  if (!rows || rows.length === 0) {
+    throw new Error(
+      `You don't have permission to ${what}, or it was already deleted. Viewing is open to everyone; changing it needs editor access.`,
+    );
+  }
+}
+
 /** Every `web.site` column — ONE list so selects can never drift per call site. */
 export const SITE_COLUMNS =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync";
@@ -1240,19 +1260,37 @@ export async function getSiteHeroScreenshot(
   screenshotId: string | null,
   signal?: AbortSignal,
 ): Promise<SiteScreenshot | null> {
-  if (!screenshotId) return null;
   const db = await authenticatedWebDb(supabase);
-  const response = await db
+  const abort = signal ?? new AbortController().signal;
+  if (screenshotId) {
+    const response = await db
+      .from("screenshot")
+      .select(SCREENSHOT_COLUMNS)
+      .eq("id", screenshotId)
+      .eq("site_id", siteId)
+      .eq("kind", "homepage")
+      .is("deleted_at", null)
+      .abortSignal(abort)
+      .maybeSingle();
+    if (response.error) throw response.error;
+    if (response.data) return response.data;
+    // Pointer dangles (capture deleted, or pre-pointer bootstrap) — fall
+    // through to the newest live homepage-family capture instead of an
+    // empty hero forever.
+  }
+  const fallback = await db
     .from("screenshot")
     .select(SCREENSHOT_COLUMNS)
-    .eq("id", screenshotId)
     .eq("site_id", siteId)
-    .eq("kind", "homepage")
+    .in("kind", ["homepage", "viewport"])
     .is("deleted_at", null)
-    .abortSignal(signal ?? new AbortController().signal)
+    .order("captured_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(1)
+    .abortSignal(abort)
     .maybeSingle();
-  if (response.error) throw response.error;
-  return response.data;
+  if (fallback.error) throw fallback.error;
+  return fallback.data;
 }
 
 const DISCOVERED_COLUMNS =
@@ -1872,8 +1910,9 @@ export async function deleteBrand(brandId: string): Promise<void> {
     .from("brand")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", brandId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this brand");
 }
 
 /** Soft-delete a site (its crawl history stays; the row leaves every list). */
@@ -1884,8 +1923,9 @@ export async function deleteSite(siteId: string): Promise<void> {
     .from("site")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", siteId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this site");
 }
 
 // ============================================================================
@@ -1952,8 +1992,9 @@ export async function deletePage(
     .update({ deleted_at: new Date().toISOString() })
     .eq("site_id", siteId)
     .eq("id", pageId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this page");
 }
 
 // ============================================================================
@@ -1974,8 +2015,9 @@ export async function setSitemapActive(
     .update({ is_active: isActive })
     .eq("site_id", siteId)
     .eq("id", sitemapId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "change this sitemap");
 }
 
 /**
@@ -2001,8 +2043,9 @@ export async function deleteSitemap(
     .update({ deleted_at: now })
     .eq("site_id", siteId)
     .eq("id", sitemapId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this sitemap");
 }
 
 // ============================================================================
@@ -2017,8 +2060,9 @@ export async function deleteDiscoveredItem(itemId: string): Promise<void> {
     .from("discovered_item")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", itemId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this discovered item");
 }
 
 /** Return a dismissed candidate to the pending queue. */
@@ -2029,8 +2073,9 @@ export async function undismissDiscoveredItem(itemId: string): Promise<void> {
     .from("discovered_item")
     .update({ status: "pending", reviewed_at: null, reviewed_by: null })
     .eq("id", itemId)
-    .eq("status", "dismissed");
-  if (response.error) throw response.error;
+    .eq("status", "dismissed")
+    .select("id");
+  assertMutated(response.data, response.error, "restore this discovered item");
 }
 
 // ============================================================================
@@ -2087,8 +2132,9 @@ export async function deleteProperty(propertyId: string): Promise<void> {
     .from("property")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", propertyId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this property");
 }
 
 // ============================================================================
@@ -2147,8 +2193,9 @@ export async function deleteBrandAsset(assetId: string): Promise<void> {
     .from("brand_asset")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", assetId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this asset");
 }
 
 // ============================================================================
@@ -2215,8 +2262,9 @@ export async function deleteBusinessFact(factId: string): Promise<void> {
     .from("business_fact")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", factId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this fact");
 }
 
 // ============================================================================
@@ -2235,8 +2283,9 @@ export async function deleteScreenshot(
     .update({ deleted_at: new Date().toISOString() })
     .eq("site_id", siteId)
     .eq("id", screenshotId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this capture");
 }
 
 /** Soft-delete a crawl session (its URL ledger and events stay attached). */
@@ -2251,6 +2300,7 @@ export async function deleteCrawlSession(
     .update({ deleted_at: new Date().toISOString() })
     .eq("site_id", siteId)
     .eq("id", crawlId)
-    .is("deleted_at", null);
-  if (response.error) throw response.error;
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this crawl session");
 }

@@ -2,7 +2,10 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CopyButtons, type CopyButtonsProps } from "@/components/agent-copy/CopyButtons";
+import {
+  CopyButtons,
+  type CopyButtonsProps,
+} from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
@@ -136,20 +139,50 @@ export function MetricCell({
   value,
   detail,
   tone = "default",
+  icon,
+  variant = "strip",
 }: {
   label: string;
   value: string | number;
   detail?: string;
   tone?: "default" | "good" | "warning" | "bad";
+  icon?: React.ReactNode;
+  variant?: "strip" | "card";
 }) {
   return (
-    <div className="min-w-0 border-r border-border/70 px-3 py-2 last:border-r-0">
-      <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
+    <div
+      className={cn(
+        "min-w-0",
+        variant === "strip"
+          ? "border-r border-border/70 px-3 py-2 last:border-r-0"
+          : "rounded-xl border border-border/70 bg-gradient-to-br from-card to-muted/40 p-3 shadow-sm",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {icon ? (
+          <span
+            className={cn(
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary",
+              tone === "good" &&
+                "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+              tone === "warning" &&
+                "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+              tone === "bad" && "bg-destructive/10 text-destructive",
+            )}
+          >
+            {icon}
+          </span>
+        ) : null}
+        <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+      </div>
       <p
         className={cn(
-          "mt-0.5 truncate text-xl font-semibold tabular-nums text-foreground",
+          "truncate font-semibold tabular-nums text-foreground",
+          variant === "card"
+            ? "mt-2 text-2xl tracking-tight"
+            : "mt-0.5 text-xl",
           tone === "good" && "text-emerald-600 dark:text-emerald-400",
           tone === "warning" && "text-amber-600 dark:text-amber-400",
           tone === "bad" && "text-destructive",
@@ -158,7 +191,14 @@ export function MetricCell({
         {value}
       </p>
       {detail ? (
-        <p className="truncate text-[11px] text-muted-foreground">{detail}</p>
+        <p
+          className={cn(
+            "truncate text-[11px] text-muted-foreground",
+            variant === "card" && "mt-0.5",
+          )}
+        >
+          {detail}
+        </p>
       ) : null}
     </div>
   );
@@ -211,8 +251,7 @@ export function SectionCard({
   title: string;
   /** Link action (`href`) or in-place action (`onClick`). */
   action?:
-    | { label: string; href: string }
-    | { label: string; onClick: () => void };
+    { label: string; href: string } | { label: string; onClick: () => void };
   /** Free-form right-side header content (icon buttons, toggles). Renders before `action`. */
   headerExtra?: React.ReactNode;
   /**

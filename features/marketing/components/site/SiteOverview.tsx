@@ -4,8 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Activity,
+  Camera,
+  CircleAlert,
   ExternalLink,
   FileText,
+  Gauge,
   Globe2,
   Inbox,
   Loader2,
@@ -60,7 +64,10 @@ import {
   siteConnectionStatuses,
   type SiteConnectionState,
 } from "@/features/marketing/lib/site-status";
-import type { MarketingSite } from "@/features/marketing/types";
+import type {
+  MarketingSite,
+  SiteOverviewMetrics,
+} from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 
@@ -80,9 +87,8 @@ export function SiteOverview() {
   const queryClient = useQueryClient();
   const [initPhase, setInitPhase] = useState<InitPhase>("idle");
   const [initError, setInitError] = useState<string | null>(null);
-  const [initSteps, setInitSteps] = useState<InitializeStepsState>(
-    emptyInitializeSteps,
-  );
+  const [initSteps, setInitSteps] =
+    useState<InitializeStepsState>(emptyInitializeSteps);
   // false until the stream proves it speaks the granular initialize_step
   // contract; deployed scrapers that predate it keep the strip indeterminate.
   const [stepEventsSeen, setStepEventsSeen] = useState(false);
@@ -220,9 +226,10 @@ export function SiteOverview() {
         "Initialized",
         site.initialized_at ? formatDate(site.initialized_at) : "never",
       ],
-      ...statuses.map(
-        (status): [string, string] => [status.name, `${status.state} — ${status.detail}`],
-      ),
+      ...statuses.map((status): [string, string] => [
+        status.name,
+        `${status.state} — ${status.detail}`,
+      ]),
       ["Canonical pages", metrics.canonicalPages],
       [
         "Last crawl",
@@ -232,7 +239,11 @@ export function SiteOverview() {
       ],
       ["Pending discovery review", pendingDiscovered.data ?? 0],
     ],
-    attributes: { site_id: site.id, brand_id: site.brand_id, domain: site.domain },
+    attributes: {
+      site_id: site.id,
+      brand_id: site.brand_id,
+      domain: site.domain,
+    },
   });
 
   const connectionsCopy = webCopy({
@@ -250,9 +261,10 @@ export function SiteOverview() {
     },
     lines: [
       ["Site", site.domain],
-      ...statuses.map(
-        (status): [string, string] => [status.name, `${status.state} — ${status.detail}`],
-      ),
+      ...statuses.map((status): [string, string] => [
+        status.name,
+        `${status.state} — ${status.detail}`,
+      ]),
     ],
     attributes: { site_id: site.id },
   });
@@ -272,18 +284,16 @@ export function SiteOverview() {
     lines: [
       ["Site", site.domain],
       ["Failed steps", init.stepErrors.length],
-      ...init.stepErrors.map(
-        (stepError): [string, string] => [
-          stepError.step,
-          `${stepError.errorType ? `${stepError.errorType}: ` : ""}${stepError.message}`,
-        ],
-      ),
+      ...init.stepErrors.map((stepError): [string, string] => [
+        stepError.step,
+        `${stepError.errorType ? `${stepError.errorType}: ` : ""}${stepError.message}`,
+      ]),
     ],
     attributes: { site_id: site.id, failed_steps: init.stepErrors.length },
   });
 
   return (
-    <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
+    <main className="h-full overflow-y-auto bg-textured px-3 pb-24 pt-3 sm:px-4 sm:pb-32 sm:pt-4">
       <div className="grid w-full gap-3">
         <SiteHero
           site={site}
@@ -292,6 +302,8 @@ export function SiteOverview() {
           onRecapture={() => void runInitialize()}
           recaptureBusy={initBusy}
           copy={<CopyButtons size="icon" {...siteCopy} />}
+          metrics={metrics}
+          pendingDiscovered={pendingDiscovered.data ?? 0}
         />
 
         {!site.initialized_at ? (
@@ -381,7 +393,10 @@ export function SiteOverview() {
           </header>
           <ul className="divide-y divide-border">
             {statuses.map((status) => (
-              <li key={status.key} className="flex items-center gap-3 px-3 py-2">
+              <li
+                key={status.key}
+                className="flex items-center gap-3 px-3 py-2"
+              >
                 <span
                   className={cn(
                     "h-2 w-2 shrink-0 rounded-full",
@@ -419,38 +434,6 @@ export function SiteOverview() {
           </ul>
         </section>
 
-        {site.initialized_at ? (
-          <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4">
-            <MetricCell
-              label="Sitemaps found"
-              value={init.sitemapsFound?.toLocaleString() ?? "—"}
-              detail="From robots.txt and common paths"
-            />
-            <MetricCell
-              label="Screenshots"
-              value={init.screenshotsCaptured?.toLocaleString() ?? "—"}
-              detail="Desktop and mobile captures"
-            />
-            <MetricCell
-              label="Canonical pages"
-              value={metrics.canonicalPages.toLocaleString()}
-              detail="Stable URL registry"
-            />
-            <MetricCell
-              label="Last crawl"
-              value={metrics.latestCrawl ? metrics.latestCrawl.status : "Never"}
-              detail={
-                metrics.latestCrawl
-                  ? formatDate(
-                      metrics.latestCrawl.finished_at ??
-                        metrics.latestCrawl.started_at,
-                    )
-                  : "No crawl sessions"
-              }
-            />
-          </section>
-        ) : null}
-
         <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard title="Discovery inbox">
             <div className="flex flex-wrap items-center gap-3 p-3">
@@ -469,9 +452,7 @@ export function SiteOverview() {
                 </p>
               </div>
               <Button asChild size="sm" variant="outline" className="h-8">
-                <Link href={`${sitePath}/discovery`}>
-                  Review
-                </Link>
+                <Link href={`${sitePath}/discovery`}>Review</Link>
               </Button>
             </div>
           </SectionCard>
@@ -523,6 +504,8 @@ function SiteHero({
   onRecapture,
   recaptureBusy,
   copy,
+  metrics,
+  pendingDiscovered,
 }: {
   site: MarketingSite;
   heroFileId: string | null;
@@ -531,6 +514,8 @@ function SiteHero({
   recaptureBusy: boolean;
   /** Whole-site Copy / Copy-for-AI pair rendered beside the identity edit control. */
   copy?: React.ReactNode;
+  metrics: SiteOverviewMetrics;
+  pendingDiscovered: number;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -583,7 +568,7 @@ function SiteHero({
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col py-3 pl-4 sm:py-4 sm:pl-8">
+        <div className="flex min-w-0 flex-1 flex-col py-3 pl-4 pr-1 sm:py-4 sm:pl-8 sm:pr-0">
           {editing ? (
             <IdentityEditor site={site} onDone={() => setEditing(false)} />
           ) : (
@@ -634,6 +619,76 @@ function SiteHero({
                   homepage, or add one with the pencil.
                 </p>
               )}
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <MetricCell
+                  variant="card"
+                  icon={<Gauge className="h-4 w-4" />}
+                  label="Site score"
+                  value={
+                    metrics.siteScore === null
+                      ? "—"
+                      : Math.round(metrics.siteScore)
+                  }
+                  detail={
+                    metrics.siteScore === null
+                      ? "Awaiting analysis"
+                      : `${metrics.scoredPages.toLocaleString()} pages scored`
+                  }
+                  tone={
+                    metrics.siteScore === null
+                      ? "default"
+                      : metrics.siteScore >= 80
+                        ? "good"
+                        : metrics.siteScore >= 60
+                          ? "warning"
+                          : "bad"
+                  }
+                />
+                <MetricCell
+                  variant="card"
+                  icon={<FileText className="h-4 w-4" />}
+                  label="Canonical pages"
+                  value={metrics.canonicalPages.toLocaleString()}
+                  detail={`${metrics.snapshots.toLocaleString()} saved captures`}
+                />
+                <MetricCell
+                  variant="card"
+                  icon={<CircleAlert className="h-4 w-4" />}
+                  label="Open findings"
+                  value={metrics.openFindings.toLocaleString()}
+                  detail={
+                    metrics.openFindings ? "Needs attention" : "No open issues"
+                  }
+                  tone={metrics.openFindings ? "warning" : "good"}
+                />
+                <MetricCell
+                  variant="card"
+                  icon={<Camera className="h-4 w-4" />}
+                  label="Discovery review"
+                  value={pendingDiscovered.toLocaleString()}
+                  detail={
+                    pendingDiscovered ? "Candidates waiting" : "Inbox is clear"
+                  }
+                  tone={pendingDiscovered ? "warning" : "good"}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                <Activity className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium text-foreground">Last crawl</span>
+                <span className="capitalize">
+                  {metrics.latestCrawl?.status ?? "never"}
+                </span>
+                <span className="ml-auto tabular-nums">
+                  {metrics.latestCrawl
+                    ? formatDate(
+                        metrics.latestCrawl.finished_at ??
+                          metrics.latestCrawl.started_at,
+                      )
+                    : "No sessions yet"}
+                </span>
+              </div>
             </div>
           )}
         </div>
