@@ -188,14 +188,6 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/marketing/sites/[siteId]/screenshots",
-      label: "Screenshot gallery",
-      description:
-        "Site and page visual evidence from canonical private files.",
-      filePath: "app/(core)/marketing/sites/[siteId]/screenshots/page.tsx",
-      status: "Live",
-    },
-    {
       url: "/marketing/sites/[siteId]/integrations",
       label: "Site integrations",
       description:

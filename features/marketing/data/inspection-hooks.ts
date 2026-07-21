@@ -8,7 +8,6 @@ import {
   listCrawlLinks,
   listCrawlSnapshots,
   listSiteLinks,
-  listSiteScreenshots,
 } from "@/features/marketing/data/inspection-queries";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 
@@ -21,8 +20,6 @@ const inspectionKeys = {
     ] as const,
   siteLinks: (siteId: string, state: MatrxDataTableQueryState) =>
     [...marketingKeys.site(siteId), "inspection-links", state] as const,
-  siteScreenshots: (siteId: string, state: MatrxDataTableQueryState) =>
-    [...marketingKeys.site(siteId), "inspection-screenshots", state] as const,
   snapshotScreenshots: (siteId: string, snapshotId: string) =>
     [
       ...marketingKeys.site(siteId),
@@ -91,17 +88,6 @@ export function useSiteLinks(
 }
 
 /** Direct browser-to-Supabase query for a site's screenshot gallery. */
-export function useSiteScreenshots(
-  siteId: string,
-  state: MatrxDataTableQueryState,
-) {
-  return useQuery({
-    queryKey: inspectionKeys.siteScreenshots(siteId, state),
-    queryFn: ({ signal }) => listSiteScreenshots(siteId, state, signal),
-    enabled: Boolean(siteId),
-    placeholderData: keepPreviousData,
-  });
-}
 
 /** Direct browser-to-Supabase query for one crawl's page captures. */
 export function useCrawlSnapshots(

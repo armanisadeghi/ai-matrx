@@ -14,6 +14,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { useCrawlSnapshots } from "@/features/marketing/data/inspection-hooks";
 import type { InspectionSnapshotRow } from "@/features/marketing/data/inspection-types";
 import { useCrawl } from "@/features/marketing/data/hooks";
+import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 
 function pageUrl(row: InspectionSnapshotRow): string {
@@ -31,6 +32,7 @@ export function CrawlSnapshotsInspectionTable({
     defaultPageSize: 50,
   });
   const crawl = useCrawl(site.id, crawlId);
+  const openFilePreview = useOpenFilePreviewWindow();
   const snapshots = useCrawlSnapshots(site.id, crawlId, table.queryState);
   const columns: MatrxColumnDef<InspectionSnapshotRow>[] = [
     {
@@ -117,12 +119,16 @@ export function CrawlSnapshotsInspectionTable({
       cellKind: "text",
       cell: (row) =>
         row.body_file_id ? (
-          <Link
-            href={`/files/f/${row.body_file_id}`}
-            className="block max-w-48 truncate font-mono text-[11px] text-primary"
+          <button
+            type="button"
+            onClick={() =>
+              openFilePreview({ fileId: row.body_file_id })
+            }
+            className="block max-w-48 truncate text-left font-mono text-[11px] text-primary hover:underline"
+            title="Open captured HTML in the file viewer"
           >
             {row.body_file_id}
-          </Link>
+          </button>
         ) : (
           "—"
         ),

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  ExternalLink,
   FileCode2,
   FileQuestion,
   FileText,
@@ -11,16 +10,20 @@ import {
   ImageOff,
   Loader2,
   Save,
+  Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { InlineMediaRef, fileIdToMediaRef } from "@/features/files";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
+import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import {
+  useDeleteScreenshot,
   usePageScreenshots,
   usePageSitemapMemberships,
   usePageWorkspace,
@@ -29,6 +32,7 @@ import {
 import type {
   MarketingPage,
   PageSnapshot,
+  SiteScreenshot,
 } from "@/features/marketing/types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import {
@@ -438,6 +442,7 @@ function HeadingsOutline({ snapshot }: { snapshot: PageSnapshot }) {
 }
 
 function ContentStats({ snapshot }: { snapshot: PageSnapshot }) {
+  const openFilePreview = useOpenFilePreviewWindow();
   const extracted = parseSnapshotExtracted(snapshot.extracted);
   const links = parseSnapshotLinksSummary(snapshot.links_summary);
   const images = parseSnapshotImages(snapshot.images);
@@ -485,21 +490,27 @@ function ContentStats({ snapshot }: { snapshot: PageSnapshot }) {
       />
       <div className="mt-3 flex flex-wrap gap-2">
         {snapshot.body_file_id ? (
-          <Button asChild variant="outline" size="sm" className="h-7">
-            <Link href={`/files/f/${snapshot.body_file_id}`}>
-              <FileCode2 className="mr-1.5 h-3.5 w-3.5" />
-              Captured HTML
-              <ExternalLink className="ml-1.5 h-3 w-3" />
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7"
+            onClick={() => openFilePreview({ fileId: snapshot.body_file_id })}
+          >
+            <FileCode2 className="mr-1.5 h-3.5 w-3.5" />
+            Captured HTML
           </Button>
         ) : null}
         {snapshot.markdown_file_id ? (
-          <Button asChild variant="outline" size="sm" className="h-7">
-            <Link href={`/files/f/${snapshot.markdown_file_id}`}>
-              <FileText className="mr-1.5 h-3.5 w-3.5" />
-              Extracted Markdown
-              <ExternalLink className="ml-1.5 h-3 w-3" />
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7"
+            onClick={() =>
+              openFilePreview({ fileId: snapshot.markdown_file_id })
+            }
+          >
+            <FileText className="mr-1.5 h-3.5 w-3.5" />
+            Extracted Markdown
           </Button>
         ) : null}
       </div>
@@ -558,9 +569,14 @@ function SitemapMemberships({ pageId }: { pageId: string }) {
   );
 }
 
-function PageScreenshots({ pageId }: { pageId: string }) {
-  const { site } = useMarketingSite();
+/** Current capture per kind + per-page capture history, canonical file viewer on click. */
+function PageCaptures({ pageId }: { pageId: string }) {
+  const { site, sitePath } = useMarketingSite();
   const screenshots = usePageScreenshots(site.id, pageId);
+  const deleteMutation = useDeleteScreenshot(site.id);
+  const openFilePreview = useOpenFilePreviewWindow();
+  const [deleting, setDeleting] = useState<SiteScreenshot | null>(null);
+
   if (screenshots.isLoading) {
     return (
       <div className="m-3 h-40 animate-pulse rounded-lg border border-border bg-muted/40" />
@@ -575,47 +591,113 @@ function PageScreenshots({ pageId }: { pageId: string }) {
     );
   }
   const rows = (screenshots.data ?? []).filter(
-    (screenshot) => screenshot.file_id,
+    (screenshot): screenshot is SiteScreenshot & { file_id: string } =>
+      Boolean(screenshot.file_id),
   );
   if (rows.length === 0) {
     return (
       <p className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
         <ImageOff className="h-4 w-4" />
-        No screenshots have been captured for this page.
+        No captures exist for this page yet — they are stored by site
+        initialization and screenshot-enabled crawls.
       </p>
     );
   }
+
+  // Rows arrive newest-first; the first row per kind is the current capture.
+  const byKind = new Map<string, (SiteScreenshot & { file_id: string })[]>();
+  for (const row of rows) {
+    const list = byKind.get(row.kind) ?? [];
+    list.push(row);
+    byKind.set(row.kind, list);
+  }
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteMutation.mutateAsync(deleting.id);
+      toast.success("Capture deleted");
+      setDeleting(null);
+    } catch (error) {
+      toast.error("Could not delete capture", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
   return (
-    <div className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
-      {rows.map((screenshot) => (
-        <Link
-          key={screenshot.id}
-          href={`/files/f/${screenshot.file_id}`}
-          className="overflow-hidden rounded-lg border border-border bg-background"
-        >
-          <div className="relative aspect-[16/10] bg-muted/40">
-            <InlineMediaRef
-              ref={
-                screenshot.file_id
-                  ? fileIdToMediaRef(screenshot.file_id, "image/png")
-                  : null
-              }
-              size="fill"
-              fit="contain"
-              rounded="none"
-              fallback="icon"
-              errorFallback="icon"
-              alt={`${screenshot.kind} screenshot`}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-1.5 text-[11px]">
-            <span className="font-medium">{screenshot.kind}</span>
-            <span className="text-muted-foreground">
-              {formatDate(screenshot.captured_at)}
-            </span>
-          </div>
-        </Link>
-      ))}
+    <div className="grid gap-4 p-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {[...byKind.entries()].map(([kind, captures]) => {
+          const current = captures[0];
+          return (
+            <div key={kind} className="min-w-0">
+              <CaptureThumb
+                fileId={current.file_id}
+                alt={`${kind} capture as of ${formatDate(current.captured_at)}`}
+                footer={
+                  <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-1.5 text-[11px]">
+                    <span className="font-medium capitalize">{kind}</span>
+                    <span className="text-muted-foreground">
+                      as of {formatDate(current.captured_at)}
+                    </span>
+                  </div>
+                }
+              />
+              {captures.length > 1 ? (
+                <ul className="mt-1.5 grid gap-1">
+                  {captures.slice(1).map((capture) => (
+                    <li
+                      key={capture.id}
+                      className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-[11px]"
+                    >
+                      <button
+                        type="button"
+                        className="truncate text-left text-foreground hover:text-primary"
+                        onClick={() => openFilePreview({ fileId: capture.file_id })}
+                        title="Open in file viewer"
+                      >
+                        as of {formatDate(capture.captured_at)}
+                        {capture.width && capture.height
+                          ? ` · ${capture.width}×${capture.height}`
+                          : ""}
+                      </button>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {capture.snapshot_id ? (
+                          <Link
+                            href={`${sitePath}/pages/${pageId}/snapshots/${capture.snapshot_id}`}
+                            className="text-muted-foreground hover:text-primary"
+                          >
+                            Snapshot
+                          </Link>
+                        ) : null}
+                        <button
+                          type="button"
+                          title="Delete capture"
+                          onClick={() => setDeleting(capture)}
+                          className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Delete capture?"
+        description="The capture record moves to trash. The stored file itself is not destroyed."
+        variant="destructive"
+        confirmLabel="Delete capture"
+        busy={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   );
 }
@@ -734,8 +816,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           <SitemapMemberships pageId={page.id} />
         </SectionCard>
 
-        <SectionCard title="Screenshots">
-          <PageScreenshots pageId={page.id} />
+        <SectionCard title="Captures">
+          <PageCaptures pageId={page.id} />
         </SectionCard>
       </div>
     </main>

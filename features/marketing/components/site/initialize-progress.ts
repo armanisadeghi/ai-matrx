@@ -80,7 +80,7 @@ export interface InitializeInvalidation {
  *
  * - identity → the site row itself (exact: the site key is also the prefix of
  *   the whole per-site subtree; identity must not refetch everything).
- * - screenshots → hero screenshot + screenshot gallery.
+ * - screenshots → hero screenshot + every page's capture set (page subtree).
  * - sitemaps → sitemap list, sitemap coverage stats, coverage matrix.
  * - discovered → brand discovery inbox lists + pending count.
  */
@@ -95,7 +95,10 @@ export function queryKeysForInitializeStep(
     case "screenshots":
       return [
         { queryKey: marketingKeys.heroScreenshot(siteId), exact: false },
-        { queryKey: marketingKeys.siteScreenshots(siteId), exact: false },
+        {
+          queryKey: [...marketingKeys.site(siteId), "page"] as const,
+          exact: false,
+        },
       ];
     case "sitemaps":
       return [

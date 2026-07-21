@@ -10,7 +10,6 @@ import {
   FileText,
   Gauge,
   Grid3x3,
-  Images,
   Inbox,
   Link2,
   Map,
@@ -62,7 +61,6 @@ function sectionSuffix(pathname: string, brandId: string, siteId: string): strin
     "analysis",
     "findings",
     "links",
-    "screenshots",
     "integrations",
     "cost",
     "access",
@@ -182,11 +180,6 @@ export function MarketingSiteLayoutClient({
             name: "Links",
             href: `${base}/links`,
             icon: Link2,
-          },
-          {
-            name: "Screenshots",
-            href: `${base}/screenshots`,
-            icon: Images,
           },
           {
             name: "Integrations",

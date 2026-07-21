@@ -57,7 +57,6 @@ import {
   listSiteOptions,
   listSites,
   listBrandOptions,
-  listSiteScreenshots,
   listSnapshots,
   moveSiteBrand,
   setSitemapActive,
@@ -87,8 +86,6 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "homepage-meta"] as const,
   heroScreenshot: (siteId: string) =>
     [...marketingKeys.site(siteId), "hero-screenshot"] as const,
-  siteScreenshots: (siteId: string) =>
-    [...marketingKeys.site(siteId), "screenshots"] as const,
   discovered: (brandId: string, status: DiscoveredItemStatus | null) =>
     [...marketingKeys.root, "brand", brandId, "discovered", status] as const,
   discoveredCount: (brandId: string) =>
@@ -311,14 +308,6 @@ export function useSiteHeroScreenshot(siteId: string) {
   return useQuery({
     queryKey: marketingKeys.heroScreenshot(siteId),
     queryFn: ({ signal }) => getSiteHeroScreenshot(siteId, signal),
-    enabled: Boolean(siteId),
-  });
-}
-
-export function useSiteScreenshots(siteId: string) {
-  return useQuery({
-    queryKey: marketingKeys.siteScreenshots(siteId),
-    queryFn: ({ signal }) => listSiteScreenshots(siteId, signal),
     enabled: Boolean(siteId),
   });
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import Link from "next/link";
 import {
@@ -8,10 +9,15 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
+  Radar,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { presentLiveCrawlEvent } from "@/features/marketing/components/crawls/live-crawl-event-presenter";
+import {
+  presentLiveCrawlEvent,
+  summarizeLiveCrawlEvents,
+  type PresentedCrawlEvent,
+} from "@/features/marketing/components/crawls/live-crawl-event-presenter";
 import type { CrawlLiveEvent } from "@/features/marketing/crawler/direct-client";
 import { cn } from "@/lib/utils";
 
@@ -24,10 +30,15 @@ type LiveStatus =
   | "partial"
   | "failed";
 
-function numeric(event: CrawlLiveEvent | undefined, key: string): number {
-  const value = event?.[key];
-  return typeof value === "number" ? value : 0;
-}
+/** A 3,000-page crawl must not degrade the tab: render only the newest rows. */
+const MAX_RENDERED_ROWS = 200;
+
+const TONE_CLASSES: Record<PresentedCrawlEvent["tone"], string> = {
+  default: "text-foreground",
+  success: "text-foreground",
+  warning: "text-amber-600 dark:text-amber-500",
+  destructive: "text-destructive",
+};
 
 export function LiveCrawlFeed({
   events,
@@ -43,15 +54,29 @@ export function LiveCrawlFeed({
   className?: string;
 }) {
   const { sitePath } = useMarketingSite();
-  const progress = [...events]
-    .reverse()
-    .find((event) =>
-      ["crawl_progress", "crawl_completed"].includes(event.event_type),
-    );
-  const fetched = numeric(progress, "pages_fetched");
-  const failed = numeric(progress, "pages_failed");
-  const discovered = numeric(progress, "pages_discovered");
+  const counters = useMemo(() => summarizeLiveCrawlEvents(events), [events]);
   const isActive = ["connecting", "running", "canceling"].includes(status);
+
+  const rows = useMemo(() => {
+    const presented: {
+      key: string;
+      sequence: number | null;
+      event: PresentedCrawlEvent;
+    }[] = [];
+    // Newest first; per-URL bookkeeping presents as null and never renders.
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+      const event = events[index];
+      const display = presentLiveCrawlEvent(event);
+      if (!display) continue;
+      presented.push({
+        key: `${event.sequence ?? "stream"}-${event.event_type}-${index}`,
+        sequence: typeof event.sequence === "number" ? event.sequence : null,
+        event: display,
+      });
+      if (presented.length >= MAX_RENDERED_ROWS) break;
+    }
+    return presented;
+  }, [events]);
 
   return (
     <section
@@ -83,12 +108,20 @@ export function LiveCrawlFeed({
         ) : null}
       </div>
 
-      <div className="grid shrink-0 grid-cols-3 border-b border-border bg-muted/25">
-        {[
-          ["Discovered", discovered],
-          ["Fetched", fetched],
-          ["Failed", failed],
-        ].map(([label, value]) => (
+      <div className="grid shrink-0 grid-cols-5 border-b border-border bg-muted/25">
+        {(
+          [
+            ["Discovered", counters.discovered, null],
+            ["Queued", counters.queued, null],
+            ["Fetched", counters.fetched, null],
+            [
+              "Failed",
+              counters.failed,
+              counters.failed ? "text-destructive" : null,
+            ],
+            ["Skipped", counters.skipped, null],
+          ] as const
+        ).map(([label, value, tone]) => (
           <div
             key={label}
             className="border-r border-border px-3 py-2 last:border-r-0"
@@ -96,39 +129,59 @@ export function LiveCrawlFeed({
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
               {label}
             </p>
-            <p className="text-sm font-semibold tabular-nums">{value}</p>
+            <p className={cn("text-sm font-semibold tabular-nums", tone)}>
+              {value.toLocaleString()}
+            </p>
           </div>
         ))}
       </div>
 
+      {isActive && counters.lastDiscoveredUrl ? (
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 bg-muted/10 px-3 py-1 text-[11px] text-muted-foreground">
+          <Radar className="h-3 w-3 shrink-0 animate-pulse" />
+          <span className="shrink-0">Discovering:</span>
+          <span className="truncate font-mono">
+            {counters.lastDiscoveredUrl}
+          </span>
+        </div>
+      ) : null}
+
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-        {events.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="px-3 py-8 text-center text-xs text-muted-foreground">
-            Events from the scraper will appear here as the crawl runs.
+            {events.length === 0
+              ? "Events from the scraper will appear here as the crawl runs."
+              : "Discovering pages — fetches, failures, and milestones will appear here."}
           </p>
         ) : (
-          events
-            .slice()
-            .reverse()
-            .map((event, index) => {
-              const presented = presentLiveCrawlEvent(event);
-              return (
-                <div
-                  key={`${event.sequence ?? "stream"}-${event.event_type}-${index}`}
-                  className="grid grid-cols-[3rem_7.5rem_minmax(0,1fr)] gap-2 border-b border-border/60 px-3 py-2 text-[11px] odd:bg-muted/15"
-                >
-                  <span className="tabular-nums text-muted-foreground">
-                    #{event.sequence ?? "—"}
-                  </span>
-                  <span className="truncate font-medium text-foreground">
-                    {presented.label}
-                  </span>
-                  <span className="truncate text-muted-foreground">
-                    {presented.message}
-                  </span>
-                </div>
-              );
-            })
+          rows.map((row) => (
+            <div
+              key={row.key}
+              className="grid grid-cols-[3rem_7.5rem_minmax(0,1fr)] gap-2 border-b border-border/60 px-3 py-2 text-[11px] odd:bg-muted/15"
+            >
+              <span className="tabular-nums text-muted-foreground">
+                #{row.sequence ?? "—"}
+              </span>
+              <span
+                className={cn(
+                  "truncate font-medium",
+                  TONE_CLASSES[row.event.tone],
+                )}
+              >
+                {row.event.label}
+              </span>
+              <span
+                className={cn(
+                  "truncate",
+                  row.event.tone === "destructive"
+                    ? "text-destructive"
+                    : "text-muted-foreground",
+                )}
+              >
+                {row.event.message}
+              </span>
+            </div>
+          ))
         )}
       </div>
 

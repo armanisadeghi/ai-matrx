@@ -1,10 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { ExternalLink, FileCode2, FileText, ImageOff } from "lucide-react";
-import { InlineMediaRef, fileIdToMediaRef } from "@/features/files";
+import { FileCode2, FileText, ImageOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
+import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useSnapshotScreenshots } from "@/features/marketing/data/inspection-hooks";
 import type { PageSnapshot } from "@/features/marketing/types";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -35,26 +35,33 @@ export function SnapshotArtifacts({
   showMarkdown?: boolean;
 }) {
   const screenshots = useSnapshotScreenshots(siteId, snapshot.id);
+  const openFilePreview = useOpenFilePreviewWindow();
 
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap gap-2">
         {snapshot.body_file_id ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/files/f/${snapshot.body_file_id}`}>
-              <FileCode2 className="mr-1.5 h-3.5 w-3.5" />
-              Open captured HTML
-              <ExternalLink className="ml-1.5 h-3 w-3" />
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              openFilePreview({ fileId: snapshot.body_file_id })
+            }
+          >
+            <FileCode2 className="mr-1.5 h-3.5 w-3.5" />
+            Open captured HTML
           </Button>
         ) : null}
         {snapshot.markdown_file_id ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/files/f/${snapshot.markdown_file_id}`}>
-              <FileText className="mr-1.5 h-3.5 w-3.5" />
-              Open extracted Markdown
-              <ExternalLink className="ml-1.5 h-3 w-3" />
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              openFilePreview({ fileId: snapshot.markdown_file_id })
+            }
+          >
+            <FileText className="mr-1.5 h-3.5 w-3.5" />
+            Open extracted Markdown
           </Button>
         ) : null}
       </div>
@@ -68,35 +75,21 @@ export function SnapshotArtifacts({
         <div className="grid gap-3 sm:grid-cols-2">
           {screenshots.data.map((screenshot) =>
             screenshot.file_id ? (
-              <Link
+              <CaptureThumb
                 key={screenshot.id}
-                href={`/files/f/${screenshot.file_id}`}
-                className="group overflow-hidden rounded-lg border border-border bg-card"
-              >
-                <div className="relative aspect-[16/10] bg-muted/40">
-                  <InlineMediaRef
-                    ref={
-                      screenshot.file_id
-                        ? fileIdToMediaRef(screenshot.file_id, "image/png")
-                        : null
-                    }
-                    size="fill"
-                    fit="contain"
-                    rounded="none"
-                    fallback="icon"
-                    errorFallback="icon"
-                    alt={`${captureKind(screenshot.metadata, screenshot.kind)} screenshot`}
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-2 text-[11px]">
-                  <span className="font-medium">
-                    {captureKind(screenshot.metadata, screenshot.kind)}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {screenshot.width ?? "—"} × {screenshot.height ?? "—"}
-                  </span>
-                </div>
-              </Link>
+                fileId={screenshot.file_id}
+                alt={`${captureKind(screenshot.metadata, screenshot.kind)} screenshot`}
+                footer={
+                  <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-2 text-[11px]">
+                    <span className="font-medium">
+                      {captureKind(screenshot.metadata, screenshot.kind)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {screenshot.width ?? "—"} × {screenshot.height ?? "—"}
+                    </span>
+                  </div>
+                }
+              />
             ) : null,
           )}
         </div>

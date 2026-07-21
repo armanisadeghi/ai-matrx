@@ -1255,25 +1255,6 @@ export async function getSiteHeroScreenshot(
   return any.data;
 }
 
-/** All screenshots for a site's gallery, newest first, bounded. */
-export async function listSiteScreenshots(
-  siteId: string,
-  signal?: AbortSignal,
-): Promise<SiteScreenshot[]> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("screenshot")
-    .select(SCREENSHOT_COLUMNS)
-    .eq("site_id", siteId)
-    .is("deleted_at", null)
-    .order("captured_at", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(200)
-    .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error);
-}
-
 const DISCOVERED_COLUMNS =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, value_hash, context, confidence, status, resolved_asset_id, resolved_fact_id, reviewed_by, reviewed_at";
 
@@ -1879,6 +1860,23 @@ export async function createManualPage(
     .select(PAGE_COLUMNS)
     .single();
   if (response.error?.code === "23505") {
+    // `(site_id, url_hash)` is a plain unique (the scraper's ON CONFLICT
+    // arbiter), so it also collides with soft-deleted rows the user cannot
+    // see. Re-adding a previously deleted URL restores that row instead of
+    // dead-ending on "already exists" (the site-domain soft-delete-squatting
+    // bug class).
+    const restore = await (
+      await authenticatedWebDb(supabase)
+    )
+      .from("page")
+      .update({ deleted_at: null, status: "active" })
+      .eq("site_id", input.siteId)
+      .eq("url_hash", digest)
+      .not("deleted_at", "is", null)
+      .select(PAGE_COLUMNS)
+      .maybeSingle();
+    if (restore.error) throw restore.error;
+    if (restore.data) return restore.data;
     throw new Error(`${normalized} is already in this site's page registry.`);
   }
   return assertData(response.data, response.error);

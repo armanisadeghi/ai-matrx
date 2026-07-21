@@ -125,7 +125,10 @@ describe("queryKeysForInitializeStep — the event→invalidation map", () => {
   it("screenshots invalidate hero + gallery", () => {
     expect(queryKeysForInitializeStep("screenshots", siteId, brandId)).toEqual([
       { queryKey: marketingKeys.heroScreenshot(siteId), exact: false },
-      { queryKey: marketingKeys.siteScreenshots(siteId), exact: false },
+      {
+        queryKey: [...marketingKeys.site(siteId), "page"] as const,
+        exact: false,
+      },
     ]);
   });
 

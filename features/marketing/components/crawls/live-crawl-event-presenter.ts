@@ -3,6 +3,25 @@ import type { CrawlLiveEvent } from "@/features/marketing/crawler/direct-client"
 export interface PresentedCrawlEvent {
   label: string;
   message: string;
+  /** Failures and warnings render loud; milestones render default. */
+  tone: "default" | "success" | "warning" | "destructive";
+}
+
+/**
+ * Live counters derived from per-URL bookkeeping events. Discovery and
+ * scope-classification events NEVER become feed rows (a real crawl discovers
+ * URLs ~50x faster than it fetches them, and per-URL bookkeeping rows drown
+ * the feed) — they only move these numbers.
+ */
+export interface LiveCrawlCounters {
+  discovered: number;
+  queued: number;
+  fetched: number;
+  failed: number;
+  /** URLs classified out of crawl scope. */
+  skipped: number;
+  /** Most recently discovered URL — for an update-in-place ticker, never rows. */
+  lastDiscoveredUrl: string | null;
 }
 
 function numberValue(event: CrawlLiveEvent, key: string): number {
@@ -52,71 +71,171 @@ function pageSubject(event: CrawlLiveEvent): string {
   return eventUrl(event) ?? "A page";
 }
 
+/** True when a url_classified event marks the URL out of crawl scope. */
+function isOutOfScope(event: CrawlLiveEvent): boolean {
+  for (const key of ["in_scope", "is_in_scope", "accepted", "allowed"]) {
+    const value = event[key];
+    if (typeof value === "boolean") return !value;
+  }
+  for (const key of ["decision", "classification", "action", "result"]) {
+    const value = event[key];
+    if (typeof value === "string") {
+      const normalized = value.toLowerCase();
+      if (
+        normalized.includes("skip") ||
+        normalized.includes("exclude") ||
+        normalized.includes("out_of_scope") ||
+        normalized.includes("rejected")
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Rolls per-URL bookkeeping events into the header counters. Prefers the
+ * scraper's own progress totals when present and falls back to counting the
+ * per-URL events themselves, so the numbers stay live between checkpoints.
+ */
+export function summarizeLiveCrawlEvents(
+  events: CrawlLiveEvent[],
+): LiveCrawlCounters {
+  let discoveredEvents = 0;
+  let fetchedEvents = 0;
+  let failedEvents = 0;
+  let skipped = 0;
+  let lastDiscoveredUrl: string | null = null;
+  let reportedDiscovered = 0;
+  let reportedFetched = 0;
+  let reportedFailed = 0;
+  let queued = 0;
+  let sawProgress = false;
+
+  for (const event of events) {
+    switch (event.event_type) {
+      case "page_discovered": {
+        discoveredEvents += 1;
+        lastDiscoveredUrl = eventUrl(event) ?? lastDiscoveredUrl;
+        break;
+      }
+      case "url_classified": {
+        if (isOutOfScope(event)) skipped += 1;
+        break;
+      }
+      case "page_fetched": {
+        fetchedEvents += 1;
+        break;
+      }
+      case "page_failed": {
+        if (event.will_retry !== true) failedEvents += 1;
+        break;
+      }
+      case "crawl_progress":
+      case "crawl_completed": {
+        sawProgress = true;
+        reportedDiscovered = Math.max(
+          reportedDiscovered,
+          numberValue(event, "pages_discovered"),
+        );
+        reportedFetched = Math.max(
+          reportedFetched,
+          numberValue(event, "pages_fetched"),
+        );
+        reportedFailed = Math.max(
+          reportedFailed,
+          numberValue(event, "pages_failed"),
+        );
+        queued = numberValue(event, "queue_depth");
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  const discovered = Math.max(discoveredEvents, reportedDiscovered);
+  const fetched = Math.max(fetchedEvents, reportedFetched);
+  const failed = Math.max(failedEvents, reportedFailed);
+  if (!sawProgress) {
+    queued = Math.max(discovered - fetched - failed - skipped, 0);
+  }
+  return { discovered, queued, fetched, failed, skipped, lastDiscoveredUrl };
+}
+
 /**
  * Converts the scraper wire event into a deliberately small display contract.
- * Error messages, exception classes, stacks, ORM queries/args, and warning
- * context are never copied into the primary user feed.
+ *
+ * Returns `null` for per-URL bookkeeping (discovery, scope classification,
+ * parse confirmations) — those events feed `summarizeLiveCrawlEvents` counters
+ * only and MUST NOT produce feed rows. Rows are reserved for events a human
+ * monitoring a crawl acts on: fetches, failures, warnings, and phase
+ * milestones. Error messages, exception classes, stacks, ORM queries/args,
+ * and warning context are never copied into the primary user feed.
  */
 export function presentLiveCrawlEvent(
   event: CrawlLiveEvent,
-): PresentedCrawlEvent {
+): PresentedCrawlEvent | null {
   switch (event.event_type) {
+    case "page_discovered":
+    case "url_classified":
+    case "page_parsed":
+      return null;
     case "crawl_session_created":
       return {
         label: "Session ready",
         message: "The crawler session is ready.",
+        tone: "default",
       };
     case "crawl_started": {
       const url = eventUrl(event);
       return {
         label: "Crawl started",
         message: url ? `Starting with ${url}.` : "The crawl has started.",
+        tone: "default",
       };
     }
-    case "page_discovered":
-      return {
-        label: "Page discovered",
-        message: `${pageSubject(event)} was added to the crawl queue.`,
-      };
-    case "url_classified":
-      return {
-        label: "URL reviewed",
-        message: `${pageSubject(event)} was reviewed for crawl scope.`,
-      };
     case "page_fetched": {
       const status = numberValue(event, "http_status");
+      const ms =
+        numberValue(event, "fetch_ms") || numberValue(event, "duration_ms");
+      const parts = [
+        status ? `HTTP ${status}` : "fetched",
+        ms ? `${ms.toLocaleString()} ms` : null,
+      ].filter(Boolean);
       return {
         label: "Page fetched",
-        message: `${pageSubject(event)}${status ? ` returned HTTP ${status}` : " was fetched"}.`,
+        message: `${pageSubject(event)} · ${parts.join(" · ")}`,
+        tone: "success",
       };
     }
-    case "page_parsed":
-      return {
-        label: "Page analyzed",
-        message: `${pageSubject(event)} was analyzed.`,
-      };
     case "page_failed":
       return {
-        label: event.will_retry === true ? "Page retrying" : "Page not fetched",
+        label: event.will_retry === true ? "Page retrying" : "Page failed",
         message:
           event.will_retry === true
             ? `${pageSubject(event)} could not be fetched and will be retried.`
             : `${pageSubject(event)} could not be fetched.`,
+        tone: event.will_retry === true ? "warning" : "destructive",
       };
     case "crawl_progress":
       return {
-        label: "Crawl progress",
-        message: `${numberValue(event, "pages_fetched")} fetched · ${numberValue(event, "queue_depth")} queued · ${numberValue(event, "pages_failed")} not fetched`,
+        label: "Checkpoint",
+        message: `${numberValue(event, "pages_fetched")} fetched · ${numberValue(event, "queue_depth")} queued · ${numberValue(event, "pages_failed")} failed`,
+        tone: "default",
       };
     case "issue_detected":
       return {
         label: "Page issue found",
         message: `${pageSubject(event)} needs review.`,
+        tone: "warning",
       };
     case "crawl_warning":
       return {
         label: "Crawl notice",
         message: "The crawler encountered a recoverable issue and continued.",
+        tone: "warning",
       };
     case "crawl_completed": {
       const status = event.status;
@@ -128,7 +247,8 @@ export function presentLiveCrawlEvent(
             : "Crawl completed";
       return {
         label,
-        message: `${numberValue(event, "pages_fetched")} fetched · ${numberValue(event, "pages_failed")} not fetched · ${numberValue(event, "issues_count")} issues`,
+        message: `${numberValue(event, "pages_fetched")} fetched · ${numberValue(event, "pages_failed")} failed · ${numberValue(event, "issues_count")} issues`,
+        tone: status === "failed" ? "destructive" : "default",
       };
     }
     case "initialize_step": {
@@ -142,6 +262,7 @@ export function presentLiveCrawlEvent(
             : status === "failed"
               ? `The ${step} step failed.`
               : `The ${step} step started.`,
+        tone: status === "failed" ? "destructive" : "default",
       };
     }
   }
