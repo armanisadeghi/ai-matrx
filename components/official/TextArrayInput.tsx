@@ -14,6 +14,8 @@ interface TextArrayInputProps {
   uniqueFilter?: boolean;
   showCopyIcon?: boolean;
   shouldCleanUrl?: boolean;
+  /** Override sequential focus for copy/remove controls in dense composite fields. */
+  auxiliaryControlsTabIndex?: number;
 }
 
 const TextArrayInput = ({
@@ -25,6 +27,7 @@ const TextArrayInput = ({
   uniqueFilter = true,
   showCopyIcon = true,
   shouldCleanUrl = false,
+  auxiliaryControlsTabIndex,
 }: TextArrayInputProps) => {
   const [internalValue, setInternalValue] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -94,6 +97,7 @@ const TextArrayInput = ({
         />
         {showCopyIcon && value.length > 0 && (
           <button
+            tabIndex={auxiliaryControlsTabIndex}
             type="button"
             onClick={handleCopy}
             className="absolute right-2 top-1/2 -translate-y-1/2 
@@ -132,6 +136,7 @@ const TextArrayInput = ({
             >
               {item}
               <button
+                tabIndex={auxiliaryControlsTabIndex}
                 onClick={(e) => {
                   e.stopPropagation();
                   removeItem(index);

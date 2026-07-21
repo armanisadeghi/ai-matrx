@@ -3,76 +3,61 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Braces, ChevronRight, FolderTree, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
-  adminCategoriesData,
-  getAdminCategoryLandingPath,
-  type AdminCategory,
-} from "@/features/admin/constants/admin-categories";
+  adminDomainHref,
+  adminNavigationRegistry,
+  findAdminNavigationLocationByRoutePattern,
+  type AdminNavigationDomain,
+  type AdminNavigationSection,
+} from "@/features/admin/constants/admin-navigation";
 import { buildRouteSearchRows } from "@/utils/route-discovery/filter-routes";
 
 interface AdminRoutesDirectoryProps {
   routes: string[];
 }
 
-interface CategorizedRoutes {
-  category: AdminCategory;
-  routes: ReturnType<typeof buildRouteSearchRows>;
+type RouteRows = ReturnType<typeof buildRouteSearchRows>;
+
+interface SectionRouteGroup {
+  domain: AdminNavigationDomain;
+  section: AdminNavigationSection;
+  routes: RouteRows;
 }
 
-function normalizeAdminLink(link: string): string | null {
-  if (!link.startsWith("/administration/")) return null;
-  return (link.split("?")[0] ?? link).replace("/administration/", "");
-}
-
-function categorizeRoutes(routes: string[]): {
-  categorized: CategorizedRoutes[];
-  uncategorized: ReturnType<typeof buildRouteSearchRows>;
+function groupRoutes(routes: string[]): {
+  groups: SectionRouteGroup[];
+  uncategorized: RouteRows;
 } {
   const rows = buildRouteSearchRows(routes, "/administration");
-  const featurePrefixes = adminCategoriesData
-    .flatMap((category) =>
-      category.features.flatMap((feature) => {
-        const route = normalizeAdminLink(feature.link);
-        return route ? [{ category, route }] : [];
-      }),
-    )
-    .sort((a, b) => b.route.length - a.route.length);
-
-  const grouped = new Map<string, ReturnType<typeof buildRouteSearchRows>>();
-  const uncategorized: ReturnType<typeof buildRouteSearchRows> = [];
+  const grouped = new Map<string, RouteRows>();
+  const uncategorized: RouteRows = [];
 
   for (const row of rows) {
-    const match = featurePrefixes.find(
-      (candidate) =>
-        row.route === candidate.route ||
-        row.route.startsWith(`${candidate.route}/`),
-    );
-    if (!match) {
+    const location = findAdminNavigationLocationByRoutePattern(row.route);
+    if (!location) {
       uncategorized.push(row);
       continue;
     }
-    const existing = grouped.get(match.category.name) ?? [];
-    existing.push(row);
-    grouped.set(match.category.name, existing);
+    const key = `${location.domain.name}\u0000${location.section.name}`;
+    const bucket = grouped.get(key) ?? [];
+    bucket.push(row);
+    grouped.set(key, bucket);
   }
 
-  const categorized = adminCategoriesData
-    .flatMap((category) => {
-      const categoryRoutes = grouped.get(category.name);
-      return categoryRoutes ? [{ category, routes: categoryRoutes }] : [];
-    })
-    .sort((a, b) => a.category.name.localeCompare(b.category.name));
+  const groups = adminNavigationRegistry.flatMap((domain) =>
+    domain.sections.flatMap((section) => {
+      const key = `${domain.name}\u0000${section.name}`;
+      const sectionRoutes = grouped.get(key);
+      return sectionRoutes ? [{ domain, section, routes: sectionRoutes }] : [];
+    }),
+  );
 
-  return { categorized, uncategorized };
+  return { groups, uncategorized };
 }
 
-function RouteRow({
-  row,
-}: {
-  row: ReturnType<typeof buildRouteSearchRows>[number];
-}) {
+function RouteRow({ row }: { row: RouteRows[number] }) {
   const dynamic = row.route.includes("[");
   const content = (
     <>
@@ -117,14 +102,14 @@ function RouteRow({
 export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
-  const { categorized, uncategorized } = categorizeRoutes(routes);
+  const { groups, uncategorized } = groupRoutes(routes);
 
-  const visibleCategories = categorized.flatMap((group) => {
+  const visibleGroups = groups.flatMap((group) => {
     if (!normalizedQuery) return [group];
-    const categoryMatches = group.category.name
-      .toLowerCase()
-      .includes(normalizedQuery);
-    const matchingRoutes = categoryMatches
+    const hierarchyMatches =
+      group.domain.name.toLowerCase().includes(normalizedQuery) ||
+      group.section.name.toLowerCase().includes(normalizedQuery);
+    const matchingRoutes = hierarchyMatches
       ? group.routes
       : group.routes.filter(
           (row) =>
@@ -144,8 +129,15 @@ export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
       )
     : uncategorized;
   const visibleRouteCount =
-    visibleCategories.reduce((sum, group) => sum + group.routes.length, 0) +
+    visibleGroups.reduce((sum, group) => sum + group.routes.length, 0) +
     visibleUncategorized.length;
+
+  const domains = adminNavigationRegistry.flatMap((domain) => {
+    const domainGroups = visibleGroups.filter(
+      (group) => group.domain.name === domain.name,
+    );
+    return domainGroups.length > 0 ? [{ domain, groups: domainGroups }] : [];
+  });
 
   return (
     <div className="space-y-5">
@@ -156,8 +148,8 @@ export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
               Administration Route Directory
             </h1>
             <p className="text-sm text-muted-foreground">
-              {visibleRouteCount} of {routes.length} routes grouped by their
-              management area.
+              {visibleRouteCount} of {routes.length} explicitly registered
+              routes.
             </p>
           </div>
           <div className="relative w-full sm:max-w-md">
@@ -165,53 +157,56 @@ export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search routes or management areas…"
+              placeholder="Search domains, sections, or routes…"
               className="pl-9 text-base sm:text-sm"
             />
           </div>
         </div>
       </div>
 
-      {visibleCategories.map(({ category, routes: categoryRoutes }) => (
-        <section
-          key={category.name}
-          className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
-        >
+      {domains.map(({ domain, groups: domainGroups }) => (
+        <section key={domain.name} className="space-y-3">
           <Link
-            href={getAdminCategoryLandingPath(category)}
-            className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-4 py-3 transition-colors hover:bg-accent"
+            href={adminDomainHref(domain.name)}
+            className="inline-flex items-center gap-2 text-base font-semibold text-foreground hover:text-primary"
           >
-            <span>
-              <span className="block text-sm font-semibold text-foreground">
-                {category.name}
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                {categoryRoutes.length} route
-                {categoryRoutes.length === 1 ? "" : "s"}
-              </span>
-            </span>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-              Open hub
-              <ChevronRight className="h-3.5 w-3.5" />
-            </span>
+            {domain.name}
+            <ChevronRight className="h-4 w-4" />
           </Link>
-          <div className="grid divide-y divide-border/60 md:grid-cols-2 md:[&>*:nth-child(odd)]:border-r">
-            {categoryRoutes.map((row) => (
-              <RouteRow key={row.route} row={row} />
+          <div className="grid gap-4 xl:grid-cols-2">
+            {domainGroups.map(({ section, routes: sectionRoutes }) => (
+              <div
+                key={section.name}
+                className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+              >
+                <div className="border-b border-border bg-muted/40 px-4 py-3">
+                  <h2 className="text-sm font-semibold text-foreground">
+                    {section.name}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {sectionRoutes.length} route
+                    {sectionRoutes.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <div className="divide-y divide-border/60">
+                  {sectionRoutes.map((row) => (
+                    <RouteRow key={row.route} row={row} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </section>
       ))}
 
       {visibleUncategorized.length > 0 ? (
-        <section className="overflow-hidden rounded-xl border border-dashed border-amber-500/50 bg-card">
-          <div className="border-b border-border px-4 py-3">
-            <h2 className="text-sm font-semibold text-foreground">
-              Internal and uncategorized routes
+        <section className="overflow-hidden rounded-xl border-2 border-dashed border-red-500 bg-card">
+          <div className="border-b border-red-500/40 bg-red-500/10 px-4 py-3">
+            <h2 className="text-sm font-semibold text-red-700 dark:text-red-300">
+              Unregistered administration routes
             </h2>
             <p className="text-xs text-muted-foreground">
-              These pages need a catalog parent before they can graduate into a
-              management area.
+              These routes must be declared in admin-navigation.ts.
             </p>
           </div>
           <div className="divide-y divide-border/60">

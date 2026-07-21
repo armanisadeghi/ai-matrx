@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * AdminMobileMenu — admin catalog for the mobile side sheet.
+ * AdminMobileMenu — Administration hierarchy for the mobile side sheet.
  *
- * Mobile gets a stacked accordion (no nested flyouts): each category is a
- * <details> that expands its tools inline. Lives in a lazy chunk loaded by
+ * Mobile gets a stacked accordion (no nested flyouts): each domain is a
+ * <details> that expands its sections and destinations inline. Lives in a lazy chunk loaded by
  * AdminMobileMenuItem only for admins. Icons resolve by name via IconResolver.
  */
 
 import Link from "next/link";
 import IconResolver from "@/components/official/icons/IconResolver";
-import { adminCategoriesData } from "@/features/admin/constants/admin-categories";
+import { adminNavigationRegistry } from "@/features/admin/constants/admin-navigation";
 import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toggleOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -69,15 +69,18 @@ export default function AdminMobileMenu() {
         />
       </a>
 
-      {adminCategoriesData.map((category) => (
-        <details key={category.name} className="shell-mobile-nav-group">
+      {adminNavigationRegistry.map((domain) => (
+        <details key={domain.name} className="shell-mobile-nav-group">
           <summary className="shell-mobile-nav-item list-none [&::-webkit-details-marker]:hidden">
             <span className="shell-nav-icon">
-              <IconResolver iconName={category.iconName} className="h-5 w-5" />
+              <IconResolver iconName={domain.iconName} className="h-5 w-5" />
             </span>
-            <span className="flex-1">{category.name}</span>
+            <span className="flex-1">{domain.name}</span>
             <span className="text-xs text-muted-foreground">
-              {category.features.length}
+              {domain.sections.reduce(
+                (count, section) => count + section.destinations.length,
+                0,
+              )}
             </span>
             <IconResolver
               iconName="ChevronDown"
@@ -85,22 +88,30 @@ export default function AdminMobileMenu() {
             />
           </summary>
           <div className="shell-mobile-nav-children">
-            {category.features.map((feature) => (
-              <Link
-                key={feature.link}
-                href={feature.link}
-                data-nav-href={feature.link}
-                className="shell-mobile-nav-item shell-mobile-nav-child"
-                onClick={closeShellMobileMenu}
-              >
-                <span className="shell-nav-icon">
-                  <IconResolver
-                    iconName={feature.iconName}
-                    className="h-[18px] w-[18px]"
-                  />
-                </span>
-                <span>{feature.title}</span>
-              </Link>
+            {domain.sections.map((section) => (
+              <div key={section.name}>
+                <div className="flex items-center gap-2 px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <IconResolver iconName={section.iconName} className="h-3 w-3" />
+                  <span>{section.name}</span>
+                </div>
+                {section.destinations.map((item) => (
+                  <Link
+                    key={item.link}
+                    href={item.link}
+                    data-nav-href={item.link}
+                    className="shell-mobile-nav-item shell-mobile-nav-child"
+                    onClick={closeShellMobileMenu}
+                  >
+                    <span className="shell-nav-icon">
+                      <IconResolver
+                        iconName={item.iconName}
+                        className="h-[18px] w-[18px]"
+                      />
+                    </span>
+                    <span>{item.title}</span>
+                  </Link>
+                ))}
+              </div>
             ))}
           </div>
         </details>

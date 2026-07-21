@@ -2,8 +2,8 @@
 /**
  * check-admin-catalog.ts
  *
- * Ensures every page under app/(admin)/administration appears in the admin
- * dashboard catalog (features/admin/constants/admin-categories.ts).
+ * Ensures every page under app/(admin)/administration is declared EXACTLY in
+ * the canonical hierarchy (features/admin/constants/admin-navigation.ts).
  *
  *   pnpm check:admin-catalog           warn (yellow), exit 0
  *   pnpm check:admin-catalog --strict  fail on any gap, exit 1
@@ -28,12 +28,15 @@ function parseArgs(): { strict: boolean } {
   return { strict: process.argv.includes("--strict") };
 }
 
-function warnBlock(title: string, items: string[]) {
+function alarmBlock(title: string, items: string[]) {
   if (items.length === 0) return;
   console.log("");
-  console.log(`${YELLOW}${BOLD}⚠ ${title} (${items.length})${RESET}`);
+  console.log(`${RED}${BOLD}╔══════════════════════════════════════════════════════════════╗${RESET}`);
+  console.log(`${RED}${BOLD}║ ADMIN ROUTE REGISTRY GAP — RELEASE IS CONTINUING            ║${RESET}`);
+  console.log(`${RED}${BOLD}╚══════════════════════════════════════════════════════════════╝${RESET}`);
+  console.log(`${RED}${BOLD}✗ ${title} (${items.length})${RESET}`);
   for (const item of items) {
-    console.log(`${YELLOW}  • /administration/${item}${RESET}`);
+    console.log(`${RED}  • /administration/${item}${RESET}`);
   }
 }
 
@@ -42,8 +45,7 @@ function main() {
   const result = checkAdminRouteCatalog();
 
   const issueCount =
-    result.missingStatic.length +
-    result.missingDynamicParents.length +
+    result.missingRoutes.length +
     result.staleCatalogLinks.length +
     result.scannerDrift.length;
 
@@ -53,23 +55,18 @@ function main() {
     `${DIM}  ${result.discoveredRoutes.length} routes discovered · ${result.catalogPaths.length} catalog entries${RESET}`,
   );
 
-  warnBlock(
-    "Static routes missing from admin dashboard — add to admin-categories.ts",
-    result.missingStatic,
-  );
-
-  warnBlock(
-    "Dynamic routes whose list parent is not cataloged — add the parent route",
-    result.missingDynamicParents,
+  alarmBlock(
+    "Routes missing an exact admin-navigation.ts declaration",
+    result.missingRoutes,
   );
 
   if (result.staleCatalogLinks.length > 0) {
     console.log("");
     console.log(
-      `${YELLOW}${BOLD}⚠ Stale catalog links (no page file) (${result.staleCatalogLinks.length})${RESET}`,
+      `${RED}${BOLD}✗ Stale registry routes (no page file) (${result.staleCatalogLinks.length})${RESET}`,
     );
     for (const link of result.staleCatalogLinks) {
-      console.log(`${YELLOW}  • /administration/${link}${RESET}`);
+      console.log(`${RED}  • /administration/${link}${RESET}`);
     }
   }
 
@@ -96,17 +93,20 @@ function main() {
       `${RED}${BOLD}✗ Admin catalog check failed (${issueCount} issue${issueCount === 1 ? "" : "s"}).${RESET}`,
     );
     console.log(
-      `${DIM}  Fix admin-categories.ts, then re-run: pnpm check:admin-catalog${RESET}`,
+      `${DIM}  Fix admin-navigation.ts, then re-run: pnpm check:admin-catalog${RESET}`,
     );
     console.log("");
     process.exit(1);
   }
 
   console.log(
-    `${YELLOW}${BOLD}⚠ Admin catalog has ${issueCount} gap${issueCount === 1 ? "" : "s"} — listed above.${RESET}`,
+    `${RED}${BOLD}✗ Admin registry has ${issueCount} gap${issueCount === 1 ? "" : "s"} — listed above.${RESET}`,
   );
   console.log(
-    `${DIM}  Non-blocking for release. Use --strict to fail CI.${RESET}`,
+    `${YELLOW}${BOLD}  NON-BLOCKING: release continues, but the registry must be repaired.${RESET}`,
+  );
+  console.log(
+    `${DIM}  Use --strict only for an intentional manual/CI hard-fail.${RESET}`,
   );
   console.log("");
   process.exit(0);

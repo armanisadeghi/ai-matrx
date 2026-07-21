@@ -1,27 +1,27 @@
 /**
- * categories.tsx — DASHBOARD VIEW-LAYER over the admin catalog.
+ * categories.tsx — React view-layer over the canonical admin hierarchy.
  *
- * The catalog data (titles, descriptions, links, icon NAMES) is the single
- * source of truth in `@/features/admin/constants/admin-categories`. This file
- * decorates each entry with a rendered <IconResolver> element so the existing
- * dashboard grid, nav tree, and module header keep consuming `.icon` JSX
- * exactly as before. Do NOT add catalog entries here — edit the pure-data file.
+ * Do not add or organize entries here. Edit `admin-navigation.ts`; this file
+ * only decorates its icon names with rendered <IconResolver> elements.
  */
 
 import React from "react";
 import IconResolver from "@/components/official/icons/IconResolver";
-import { adminCategoriesData } from "@/features/admin/constants/admin-categories";
+import { adminNavigationRegistry } from "@/features/admin/constants/admin-navigation";
 
-export const adminCategories = adminCategoriesData.map((category) => ({
-  name: category.name,
-  landingPath: category.landingPath,
-  iconColor: category.iconColor,
-  icon: <IconResolver iconName={category.iconName} className="w-6 h-6" />,
-  features: category.features.map((feature) => ({
-    title: feature.title,
-    description: feature.description,
-    link: feature.link,
-    isNew: feature.isNew,
-    icon: <IconResolver iconName={feature.iconName} />,
+export const adminNavigation = adminNavigationRegistry.map((domain) => ({
+  name: domain.name,
+  iconColor: domain.iconColor,
+  icon: <IconResolver iconName={domain.iconName} className="w-6 h-6" />,
+  sections: domain.sections.map((section) => ({
+    name: section.name,
+    icon: <IconResolver iconName={section.iconName} className="w-5 h-5" />,
+    destinations: section.destinations.map((item) => ({
+      title: item.title,
+      description: item.description,
+      link: item.link,
+      isNew: item.isNew,
+      icon: <IconResolver iconName={item.iconName} />,
+    })),
   })),
 }));

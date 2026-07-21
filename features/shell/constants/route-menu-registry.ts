@@ -35,6 +35,13 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
       import("@/features/agents/components/shell/AgentRunSidebarMenu"),
   },
   {
+    pathPattern: /^\/administration(?:\/|$)/,
+    iconName: "ShieldCheck",
+    label: "Administration",
+    importFn: () =>
+      import("@/features/admin/components/AdminRouteSidebarMenu"),
+  },
+  {
     pathPattern: /^\/chat(?:\/|$)/,
     iconName: "MessageCircle",
     label: "Chats",

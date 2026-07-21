@@ -44,7 +44,7 @@ if $STRICT; then
         "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts --strict"
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts --strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
-        "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
+        "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -135,7 +135,7 @@ run_gate() {
 
     # Heuristic: non-strict checkers still print SCHEMA TRUTH-CHECK / FAIL boxes
     # while exiting 0. Treat that as a loud advisory failure for the summary.
-    if $has_output && grep -qE 'SCHEMA TRUTH-CHECK|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|SCHEMA TRUTH-CHECK|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"

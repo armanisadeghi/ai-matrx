@@ -2017,6 +2017,8 @@ export default function ResearchInitForm() {
                   placeholder="e.g., EV Battery Technology Trends"
                   className="h-14 text-base text-foreground px-4"
                   wrapperClassName="w-full"
+                  auxiliaryControlsTabIndex={-1}
+                  auxiliaryControlsLabel="topic name"
                   autoFocus
                 />
               </div>
@@ -2032,6 +2034,7 @@ export default function ResearchInitForm() {
                   value={selectedKeywords}
                   onChange={setSelectedKeywords}
                   placeholder="Type a keyword and press Enter…"
+                  auxiliaryControlsTabIndex={-1}
                 />
               </div>
 
@@ -2049,6 +2052,8 @@ export default function ResearchInitForm() {
                   maxHeight={160}
                   className="text-base text-foreground"
                   wrapperClassName="w-full"
+                  auxiliaryControlsTabIndex={-1}
+                  auxiliaryControlsLabel="description"
                 />
               </div>
             </div>

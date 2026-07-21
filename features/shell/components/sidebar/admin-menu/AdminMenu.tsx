@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * AdminMenu — desktop 3-layer admin cascade for the sidebar.
+ * AdminMenu — Administration entry cascade for the main sidebar menu.
  *
  *   Layer 1: the "Administration" nav item (this trigger)
- *   Layer 2: flyout listing every admin category
- *   Layer 3: per-category submenu of tools
+ *   Layer 2: flyout listing every admin domain
+ *   Layer 3: per-domain sections and destinations
  *
  * Lives in a lazy chunk (loaded by AdminSidebarSection only for admins), so the
- * catalog data and IconResolver never touch the main bundle. Icons resolve by
+ * navigation data and IconResolver never touch the main bundle. Icons resolve by
  * name via IconResolver. Styling uses the shared shadcn dropdown (popover
  * tokens) so it matches the rest of the menu.
  */
@@ -29,7 +29,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import IconResolver from "@/components/official/icons/IconResolver";
-import { adminCategoriesData } from "@/features/admin/constants/admin-categories";
+import {
+  adminNavigationRegistry,
+  destinationOwnsPathname,
+} from "@/features/admin/constants/admin-navigation";
 import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
 
 const iconSlot =
@@ -37,6 +40,10 @@ const iconSlot =
 
 export default function AdminMenu() {
   const pathname = usePathname() ?? "";
+
+  // Administration routes already replace the main nav through RouteMenuSlot.
+  // Keep the footer controls, but do not render a duplicate admin-menu trigger.
+  if (pathname.startsWith("/administration")) return null;
 
   return (
     <DropdownMenu>
@@ -94,41 +101,55 @@ export default function AdminMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
 
-        {adminCategoriesData.map((category) => (
-          <DropdownMenuSub key={category.name}>
+        {adminNavigationRegistry.map((domain) => (
+          <DropdownMenuSub key={domain.name}>
             <DropdownMenuSubTrigger className="gap-2">
               <span className={iconSlot}>
-                <IconResolver iconName={category.iconName} />
+                <IconResolver iconName={domain.iconName} />
               </span>
-              <span className="flex-1 truncate">{category.name}</span>
+              <span className="flex-1 truncate">{domain.name}</span>
               <span className="text-xs text-muted-foreground">
-                {category.features.length}
+                {domain.sections.reduce(
+                  (count, section) => count + section.destinations.length,
+                  0,
+                )}
               </span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className="max-h-[80vh] w-72 overflow-y-auto">
-                {category.features.map((feature) => {
-                  const active = pathname === feature.link;
-                  return (
-                    <DropdownMenuItem
-                      key={feature.link}
-                      asChild
-                      className={cn("gap-2", active && "bg-accent/60")}
-                    >
-                      <Link href={feature.link}>
-                        <span className={iconSlot}>
-                          <IconResolver iconName={feature.iconName} />
-                        </span>
-                        <span className="flex-1 truncate">{feature.title}</span>
-                        {feature.isNew && (
-                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                            New
-                          </span>
-                        )}
-                      </Link>
-                    </DropdownMenuItem>
-                  );
-                })}
+                {domain.sections.map((section, sectionIndex) => (
+                  <div key={section.name}>
+                    {sectionIndex > 0 && <DropdownMenuSeparator />}
+                    <DropdownMenuLabel className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <span className={iconSlot}>
+                        <IconResolver iconName={section.iconName} />
+                      </span>
+                      {section.name}
+                    </DropdownMenuLabel>
+                    {section.destinations.map((item) => {
+                      const active = destinationOwnsPathname(item, pathname);
+                      return (
+                        <DropdownMenuItem
+                          key={item.link}
+                          asChild
+                          className={cn("gap-2", active && "bg-accent/60")}
+                        >
+                          <Link href={item.link}>
+                            <span className={iconSlot}>
+                              <IconResolver iconName={item.iconName} />
+                            </span>
+                            <span className="flex-1 truncate">{item.title}</span>
+                            {item.isNew && (
+                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                                New
+                              </span>
+                            )}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                ))}
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>

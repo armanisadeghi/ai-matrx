@@ -66,6 +66,18 @@ export interface AgentDriftActionPayload {
   usage_label?: string;
 }
 
+/**
+ * Payload for `kind: "open_link"` — the generic "one in-app deep-link chip"
+ * envelope for system DMs that just need to point the user at a page
+ * (e.g. "Re-save your GITHUB_PAT" → /settings/secrets). In-app paths only.
+ */
+export interface OpenLinkActionPayload {
+  /** In-app path starting with "/" (never an external URL). */
+  href: string;
+  /** Chip label, e.g. "Open Secrets settings". */
+  label: string;
+}
+
 /** Payload for `kind: "resource_shared"` — "X shared a Note with you". */
 export interface ResourceSharedActionPayload {
   /** Registry entity token (e.g. "note", "agent"). */

@@ -1,36 +1,34 @@
 // config.ts
-// This file extracts navigation data from categories.tsx for use in the ModuleHeader
+// ModuleHeader compatibility projection of the canonical admin hierarchy.
 
 import { ModulePage } from "@/components/matrx/navigation/types";
-import { adminCategories } from "./categories";
+import { adminNavigation } from "./categories";
 
 /**
  * Transforms admin categories into ModulePage format for navigation
  * Extracts all features with 'link' property and converts them to pages
  */
-function extractPagesFromCategories(): ModulePage[] {
-  const pages: ModulePage[] = [];
-
-  adminCategories.forEach((category) => {
-    category.features.forEach((feature) => {
-      // Only include features that have a link (actual pages)
-      if (feature.link) {
-        pages.push({
-          title: feature.title,
-          path: feature.link.replace("/administration/", ""), // Make path relative
-          relative: true,
-          description: feature.description,
-          icon: feature.icon,
-        });
-      }
-    });
-  });
-
-  return pages;
+function extractPagesFromNavigation(): ModulePage[] {
+  return adminNavigation.flatMap((domain) =>
+    domain.sections.flatMap((section) =>
+      section.destinations.map((item) => {
+        const isAdministrationRoute = item.link.startsWith("/administration/");
+        return {
+          title: item.title,
+          path: isAdministrationRoute
+            ? item.link.replace("/administration/", "")
+            : item.link,
+          relative: isAdministrationRoute,
+          description: item.description,
+          icon: item.icon,
+        };
+      }),
+    ),
+  );
 }
 
 // Export the extracted pages
-export const pages = extractPagesFromCategories();
+export const pages = extractPagesFromNavigation();
 
 // Filter out any invalid pages (legacy support), then sort A–Z for the header dropdown
 export const filteredPages = pages

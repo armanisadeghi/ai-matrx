@@ -138,6 +138,10 @@ export interface ProInputProps extends React.InputHTMLAttributes<HTMLInputElemen
    * for the Enter key, so the two are not meant to be combined.
    */
   onEnterKey?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  /** Override sequential focus for mic/menu controls in dense composite fields. */
+  auxiliaryControlsTabIndex?: number;
+  /** Suffix used to distinguish repeated auxiliary controls in dense forms. */
+  auxiliaryControlsLabel?: string;
   /** Optional leading icon/node — auto-applies left padding. */
   startIcon?: React.ReactNode;
   /** When true, shows a clear (×) control while the field has content. */
@@ -191,6 +195,8 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       submitOnCmdEnter,
       submitOnEnter = false,
       onEnterKey,
+      auxiliaryControlsTabIndex,
+      auxiliaryControlsLabel,
       startIcon,
       clearable = false,
       onClear,
@@ -439,11 +445,26 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
           >
             {showMic && (
               <MicWithDeviceMenu
+                tabIndex={auxiliaryControlsTabIndex}
+                deviceMenuAriaLabel={
+                  auxiliaryControlsLabel
+                    ? `Choose microphone for ${auxiliaryControlsLabel}`
+                    : undefined
+                }
                 onMicClick={handleVoiceClick}
                 disabled={isVoiceDisabled}
                 isRecording={isRecording}
                 isTranscribing={isTranscribing}
                 audioLevel={audioLevel}
+                micAriaLabel={
+                  isRecording
+                    ? auxiliaryControlsLabel
+                      ? `Stop recording for ${auxiliaryControlsLabel}`
+                      : "Stop recording"
+                    : auxiliaryControlsLabel
+                      ? `Start voice input for ${auxiliaryControlsLabel}`
+                      : "Start voice input"
+                }
               />
             )}
 
@@ -452,15 +473,25 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                 <PopoverTrigger asChild>
                   {hasCopied ? (
                     <CheckTapButton
+                      tabIndex={auxiliaryControlsTabIndex}
                       variant="transparent"
-                      ariaLabel="Copied"
+                      ariaLabel={
+                        auxiliaryControlsLabel
+                          ? `Copied ${auxiliaryControlsLabel}`
+                          : "Copied"
+                      }
                       tooltip="Copied"
                       className="text-green-500"
                     />
                   ) : (
                     <MoreHorizontalTapButton
+                      tabIndex={auxiliaryControlsTabIndex}
                       variant="transparent"
-                      ariaLabel="More options"
+                      ariaLabel={
+                        auxiliaryControlsLabel
+                          ? `More options for ${auxiliaryControlsLabel}`
+                          : "More options"
+                      }
                       tooltip="More"
                       className="text-muted-foreground"
                     />

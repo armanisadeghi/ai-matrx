@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ListTree, Search } from "lucide-react";
@@ -8,15 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
@@ -26,52 +26,34 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { matchesSearch } from "@/utils/search-scoring";
-import { adminCategories } from "../categories";
+import { adminNavigation } from "../categories";
+import { findAdminNavigationLocation } from "@/features/admin/constants/admin-navigation";
 
-type AdminCategory = (typeof adminCategories)[number];
-type AdminFeature = AdminCategory["features"][number];
-
-function sortByName<T extends { name: string }>(items: readonly T[]): T[] {
-  return [...items].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-  );
-}
-
-function sortByTitle<T extends { title: string }>(items: readonly T[]): T[] {
-  return [...items].sort((a, b) =>
-    a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
-  );
-}
-
-const sortedCategories: AdminCategory[] = sortByName(adminCategories).map(
-  (category) => ({
-    ...category,
-    features: sortByTitle(category.features),
-  }),
+const flatDestinations = adminNavigation.flatMap((domain) =>
+  domain.sections.flatMap((section) =>
+    section.destinations.map((item) => ({
+      ...item,
+      domainName: domain.name,
+      sectionName: section.name,
+    })),
+  ),
 );
 
-const flatFeatures = sortedCategories.flatMap((category) =>
-  category.features.map((feature) => ({
-    ...feature,
-    categoryName: category.name,
-  })),
-);
-
-const featureSearchFields = [
+const searchFields = [
   {
-    get: (f: (typeof flatFeatures)[number]) => f.title,
+    get: (item: (typeof flatDestinations)[number]) => item.title,
     weight: "title" as const,
   },
   {
-    get: (f: (typeof flatFeatures)[number]) => f.description,
+    get: (item: (typeof flatDestinations)[number]) => item.description,
     weight: "body" as const,
   },
   {
-    get: (f: (typeof flatFeatures)[number]) => f.link,
+    get: (item: (typeof flatDestinations)[number]) => item.domainName,
     weight: "body" as const,
   },
   {
-    get: (f: (typeof flatFeatures)[number]) => f.categoryName,
+    get: (item: (typeof flatDestinations)[number]) => item.sectionName,
     weight: "body" as const,
   },
 ];
@@ -82,14 +64,15 @@ const iconSlot =
 export default function AdminNavTreeMenu() {
   const pathname = usePathname() ?? "";
   const [searchQuery, setSearchQuery] = useState("");
+  const activeLocation = findAdminNavigationLocation(pathname);
 
-  const searchResults = useMemo(() => {
-    const q = searchQuery.trim();
-    if (!q) return [];
-    return flatFeatures.filter((feature) =>
-      matchesSearch(feature, q, featureSearchFields),
+  const searchResults = (() => {
+    const query = searchQuery.trim();
+    if (!query) return [];
+    return flatDestinations.filter((item) =>
+      matchesSearch(item, query, searchFields),
     );
-  }, [searchQuery]);
+  })();
 
   const showSearchResults = searchQuery.trim().length > 0;
 
@@ -103,29 +86,29 @@ export default function AdminNavTreeMenu() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-gray-800 hover:bg-accent dark:text-gray-300"
-                aria-label="Browse all admin tools"
+                aria-label="Browse administration"
               >
                 <ListTree className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>Browse all tools</TooltipContent>
+          <TooltipContent>Browse administration</TooltipContent>
         </Tooltip>
       </TooltipProvider>
 
       <DropdownMenuContent
         align="start"
-        className="max-h-[80vh] w-72 overflow-y-auto"
+        className="max-h-[80vh] w-80 overflow-y-auto"
       >
         <div className="p-2 pb-1">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tools…"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search administration…"
               className="h-8 pl-7 text-xs"
-              onKeyDown={(e) => e.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
             />
           </div>
         </div>
@@ -138,69 +121,81 @@ export default function AdminNavTreeMenu() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {searchResults.length === 0 ? (
-              <div className="px-3 py-4 text-xs text-muted-foreground text-center">
-                No tools match &ldquo;{searchQuery}&rdquo;
+              <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                No destinations match &ldquo;{searchQuery}&rdquo;
               </div>
             ) : (
-              searchResults.map((feature) => {
-                const active = pathname === feature.link;
-                return (
-                  <DropdownMenuItem
-                    key={feature.link}
-                    asChild
-                    className={cn("gap-2", active && "bg-accent/60")}
-                  >
-                    <Link href={feature.link}>
-                      <span className={cn(iconSlot, "text-muted-foreground")}>
-                        {feature.icon}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate">
-                        {feature.title}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[5rem]">
-                        {feature.categoryName}
-                      </span>
-                    </Link>
-                  </DropdownMenuItem>
-                );
-              })
+              searchResults.map((item) => (
+                <DropdownMenuItem
+                  key={item.link}
+                  asChild
+                  className={cn(
+                    "gap-2",
+                    activeLocation?.destination.link === item.link &&
+                      "bg-accent/60",
+                  )}
+                >
+                  <Link href={item.link}>
+                    <span className={cn(iconSlot, "text-muted-foreground")}>
+                      {item.icon}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {item.title}
+                    </span>
+                    <span className="max-w-24 truncate text-[10px] text-muted-foreground">
+                      {item.domainName} → {item.sectionName}
+                    </span>
+                  </Link>
+                </DropdownMenuItem>
+              ))
             )}
           </>
         ) : (
-          sortedCategories.map((category) => (
-            <DropdownMenuSub key={category.name}>
+          adminNavigation.map((domain) => (
+            <DropdownMenuSub key={domain.name}>
               <DropdownMenuSubTrigger className="gap-2">
                 <span className={cn(iconSlot, "text-muted-foreground")}>
-                  {category.icon}
+                  {domain.icon}
                 </span>
-                <span className="truncate">
-                  {category.name}{" "}
-                  <span className="text-muted-foreground">
-                    ({category.features.length})
-                  </span>
+                <span className="min-w-0 flex-1 truncate">{domain.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {domain.sections.reduce(
+                    (count, section) => count + section.destinations.length,
+                    0,
+                  )}
                 </span>
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-                <DropdownMenuSubContent className="max-h-[80vh] w-72 overflow-y-auto">
-                  {category.features.map((feature: AdminFeature) => {
-                    const active = pathname === feature.link;
-                    return (
-                      <DropdownMenuItem
-                        key={feature.link}
-                        asChild
-                        className={cn("gap-2", active && "bg-accent/60")}
-                      >
-                        <Link href={feature.link}>
-                          <span
-                            className={cn(iconSlot, "text-muted-foreground")}
-                          >
-                            {feature.icon}
-                          </span>
-                          <span className="truncate">{feature.title}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    );
-                  })}
+                <DropdownMenuSubContent className="max-h-[80vh] w-80 overflow-y-auto">
+                  {domain.sections.map((section, sectionIndex) => (
+                    <div key={section.name}>
+                      {sectionIndex > 0 && <DropdownMenuSeparator />}
+                      <DropdownMenuLabel className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <span className={iconSlot}>{section.icon}</span>
+                        {section.name}
+                      </DropdownMenuLabel>
+                      {section.destinations.map((item) => (
+                        <DropdownMenuItem
+                          key={item.link}
+                          asChild
+                          className={cn(
+                            "gap-2",
+                            activeLocation?.destination.link === item.link &&
+                              "bg-accent/60",
+                          )}
+                        >
+                          <Link href={item.link}>
+                            <span
+                              className={cn(iconSlot, "text-muted-foreground")}
+                            >
+                              {item.icon}
+                            </span>
+                            <span className="truncate">{item.title}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  ))}
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>

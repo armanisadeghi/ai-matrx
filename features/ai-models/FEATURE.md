@@ -28,7 +28,10 @@ The catalog and configuration surface for every LLM available to the product —
 - `app/(admin)/administration/ai-models/settings/page.tsx` — `SettingsContainer`, full CRUD on `ai.setting` (the canonical settings vocabulary)
 - `app/(admin)/administration/ai-models/aliases/page.tsx` — `AliasesContainer`, full CRUD on `ai.model_alias` (alias, kind, target model, notes)
 
-All four routes are registered in `features/admin/constants/admin-categories.ts` under the "AI Models" category alongside Registry/Audit/Deprecated/Provider Sync.
+All routes have display metadata in
+`features/admin/constants/admin-categories.ts` and are placed under AI → Models
+in `features/admin/constants/admin-navigation.ts`; the latter also owns exact
+release-audit coverage.
 
 **API endpoints**
 

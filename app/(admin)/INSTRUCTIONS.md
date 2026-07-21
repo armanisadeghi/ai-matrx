@@ -121,11 +121,15 @@
 - All administration features are now implemented as routes (migration complete)
 - When creating new administration features:
   1. Always implement them as proper Next.js routes (create page.tsx files)
-  2. Update the corresponding entry in `app/(authenticated)/(admin-auth)/administration/categories.tsx`
-  3. Use the `link` property (not `component`) to reference the route
-  4. All features now use the route-based approach
-- When adding a new feature to a category, always use the route-based approach with the `link` property
-- If creating a new category, ensure all features within use the route-based approach
+  2. Add its title/description/icon metadata to `features/admin/constants/admin-categories.ts`
+  3. Place it under exactly one domain and section in `features/admin/constants/admin-navigation.ts`
+  4. Declare every detail/dynamic page in that destination's `ownedRoutes`
+  5. Run `pnpm check:admin-catalog` and confirm discovered routes equal declared routes
+- The canonical hierarchy is `domain → section → destination`. Do not add a
+  parallel navigation list in a page, sidebar, or header.
+- `release.sh` runs the exact-route audit advisorially. Missing declarations
+  scream in red but never block release; fix every finding before considering
+  the navigation work complete.
 
 ## Visual Indicators for Features
 
@@ -134,22 +138,33 @@
   2. Features use a blue gradient highlight effect on hover
   3. New features display a "New" badge in amber/orange color
 - To mark a feature as new:
-  1. Add `isNew: true` to the feature entry in `administration/categories.tsx`
+  1. Add `isNew: true` to its metadata entry in `features/admin/constants/admin-categories.ts`
   2. This will automatically display the "New" badge on both the card and in the dashboard preview
   3. Remove the `isNew` flag once the feature is no longer considered new
 
-## Category Structure and Styling
+## Administration Hierarchy and Styling
 
-- Each category in `administration/categories.tsx` has the following structure:
+- The hierarchy in `features/admin/constants/admin-navigation.ts` has this
+  structure:
   ```typescript
   {
-    name: "Category Name",
-    icon: <IconComponent className="w-6 h-6" />,
-    iconColor: "text-color-600", // e.g., "text-blue-600", "text-violet-600"
-    features: [...]
+    name: "Domain Name",
+    iconName: "IconName",
+    iconColor: "text-color-600",
+    sections: [
+      {
+        name: "Focused Section",
+        iconName: "IconName",
+        destinations: [
+          destination("/administration/route", [
+            "/administration/route/[id]",
+          ]),
+        ],
+      },
+    ],
   }
   ```
-- Category icons use unique colors to help distinguish between different administrative areas:
+- Domain icons use unique colors to distinguish administrative areas:
   - The `iconColor` property defines the icon's text color
   - The system automatically generates matching light backgrounds (e.g., `bg-blue-100 dark:bg-blue-900/20`)
   - Supported colors include: amber, blue, indigo, purple, green, cyan, pink, orange, red, teal, violet

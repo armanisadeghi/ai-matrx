@@ -21,6 +21,7 @@ export interface TapButtonProps {
   htmlFor?: string;
   ariaLabel?: string;
   disabled?: boolean;
+  tabIndex?: number;
   className?: string;
   strokeWidth?: number;
   // Solid-variant color overrides — only used when variant="solid"

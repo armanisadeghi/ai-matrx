@@ -12,7 +12,6 @@ import {
 import {
   CATALOG_EXEMPT_ROUTES,
   getAdminCatalogPaths,
-  isDynamicRoute,
   isRouteCataloged,
   type AdminCatalogCheckResult,
 } from "@/features/admin/utils/admin-route-catalog";
@@ -40,35 +39,25 @@ export function checkAdminRouteCatalog(): AdminCatalogCheckResult {
     ...discoveredRoutes.filter((r) => !pageFileRoutes.includes(r)),
   ].sort();
 
-  const missingStatic: string[] = [];
-  const missingDynamicParents: string[] = [];
+  const missingRoutes: string[] = [];
 
   for (const route of discoveredRoutes) {
     if (CATALOG_EXEMPT_ROUTES.has(route)) continue;
     if (isRouteCataloged(route, catalogSet)) continue;
 
-    if (isDynamicRoute(route)) {
-      missingDynamicParents.push(route);
-    } else {
-      missingStatic.push(route);
-    }
+    missingRoutes.push(route);
   }
 
   const staleCatalogLinks = catalogPaths.filter((path) => {
     if (!path) return false;
     if (discoveredSet.has(path)) return false;
-    // Allow catalog entries that are parents of discovered routes (e.g. hubs).
-    for (const route of discoveredRoutes) {
-      if (route.startsWith(`${path}/`)) return false;
-    }
     return true;
   });
 
   return {
     discoveredRoutes,
     catalogPaths,
-    missingStatic,
-    missingDynamicParents,
+    missingRoutes,
     staleCatalogLinks,
     scannerDrift,
   };

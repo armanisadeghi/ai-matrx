@@ -1,7 +1,7 @@
 /**
  * features/admin/constants/admin-categories.ts
  *
- * SINGLE SOURCE OF TRUTH for the admin tool catalog (~80 tools).
+ * Metadata catalog for administration destinations.
  *
  * Pure data — NO React, NO JSX, NO icon-component imports. Icons are stored as
  * string names and rendered lazily via `IconResolver`
@@ -9,13 +9,9 @@
  * icon by name. This keeps the catalog importable from the shell sidebar
  * without pulling ~40 icon components into the main bundle.
  *
- * Consumers:
- *  - app/(admin)/administration/categories.tsx  → decorates each entry with a
- *    rendered <IconResolver> for the dashboard grid / nav tree / module header.
- *  - features/shell/components/sidebar/admin-menu/*  → lazy, admin-gated
- *    3-layer flyout (Administration → category → tool) in the sidebar footer.
- *  - scripts/check-admin-catalog.ts  → release gate; warns when a filesystem
- *    route under /administration is missing from this catalog.
+ * Hierarchy and exact route ownership live in `admin-navigation.ts`, which is
+ * the only file navigation consumers may use. This file supplies the title,
+ * description, icon, and newness metadata resolved by that hierarchy.
  *
  * Icon names are lucide-react export names. When changing one, verify it exists
  * in lucide-react (an unknown name falls back to the Zap glyph).
@@ -636,14 +632,6 @@ export const adminCategoriesData: AdminCategory[] = [
           "Index of dot-directories (.cursor, .claude, etc.) with synced docs.",
         iconName: "Folder",
         link: "/administration/feature-docs/dotdirs",
-        isNew: true,
-      },
-      {
-        title: "Applications",
-        description:
-          "Shipped client applications — desktop, extension, mobile. Overview (per-application health with below-min-version alerts), Configuration (public.app_config server URLs, flags, min versions, operator notices), Catalogs (public.catalog_entries local LLMs, LoRAs, image/video/TTS models, presets, prompts with dual-gate activation and link resolver), Installations (the installed fleet with version standing), and History (unified audit timeline with diffs).",
-        iconName: "MonitorCog",
-        link: "/administration/applications",
         isNew: true,
       },
       {

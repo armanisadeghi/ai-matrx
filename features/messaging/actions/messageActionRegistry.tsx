@@ -18,6 +18,7 @@ import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentF
 import type {
   AgentDriftActionPayload,
   MessageActionData,
+  OpenLinkActionPayload,
   ResourceSharedActionPayload,
 } from "@/features/messaging/types";
 import { getResourceSharePath } from "@/utils/permissions/registry";
@@ -88,8 +89,24 @@ function ResourceSharedCard({ data }: { data: MessageActionData }) {
   );
 }
 
+/**
+ * `open_link` — the generic single deep-link chip for system DMs that point
+ * the user at an in-app page (external URLs are refused).
+ */
+function OpenLinkChip({ data, isOwn }: { data: MessageActionData; isOwn: boolean }) {
+  const p = data.payload as OpenLinkActionPayload;
+  if (!p?.href || !p?.label || !p.href.startsWith("/")) return null;
+  return (
+    <Link href={p.href} className={chipClass(isOwn)}>
+      <ExternalLink className="h-3 w-3" aria-hidden />
+      {p.label}
+    </Link>
+  );
+}
+
 const RENDERERS: Record<string, ChipRenderer> = {
   agent_drift: (data, ctx) => <AgentDriftChips data={data} isOwn={ctx.isOwn} />,
+  open_link: (data, ctx) => <OpenLinkChip data={data} isOwn={ctx.isOwn} />,
   resource_shared: (data) => <ResourceSharedCard data={data} />,
 };
 

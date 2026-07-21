@@ -35,8 +35,10 @@ DB — the UI just `router.refresh()`es.
   `PROBLEM_TITLES`, `problemHuman`, `buildOrbitGraph`, `tokensInRules`): `utils.ts`.
 - **Types:** `types.ts` — every shape derived from the generated `Database` types;
   never hand-mirrored.
-- **Admin catalog:** `features/admin/constants/admin-categories.ts` — the hub entry
-  plus one entry per tab route (check:admin-catalog requires each static route).
+- **Admin navigation:** destination metadata lives in
+  `features/admin/constants/admin-categories.ts`; placement and exact hub/tab
+  route ownership live in `features/admin/constants/admin-navigation.ts`
+  (`check:admin-catalog --strict` requires every page pattern).
 
 | Tab | Page (server fetch) | Client |
 |---|---|---|

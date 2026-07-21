@@ -1,12 +1,12 @@
 "use client";
 
-import React, { Suspense, useMemo, useState } from "react";
+import React, { Suspense, useState } from "react";
 import { IconChevronRight, IconList, IconSearch } from "@tabler/icons-react";
-import FeatureSectionLinkComponent from "@/components/animated/my-custom-demos/feature-section-link-component";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { adminCategories } from "@/app/(admin)/administration/categories";
+import FeatureSectionLinkComponent from "@/components/animated/my-custom-demos/feature-section-link-component";
 import { Input } from "@/components/ui/input";
+import { adminNavigation } from "@/app/(admin)/administration/categories";
 import { matchesSearch } from "@/utils/search-scoring";
 import {
   buildRouteSearchRows,
@@ -17,59 +17,78 @@ import {
   isRouteCataloged,
   normalizeCatalogLink,
 } from "@/features/admin/utils/admin-route-catalog";
-import { getAdminCategoryLandingPath } from "@/features/admin/constants/admin-categories";
+import { adminDomainHref } from "@/features/admin/constants/admin-navigation";
 
-type AdminFeature = (typeof adminCategories)[number]["features"][number];
-type AdminCategory = (typeof adminCategories)[number];
+type AdminDomain = (typeof adminNavigation)[number];
+type AdminSection = AdminDomain["sections"][number];
+type AdminDestination = AdminSection["destinations"][number];
 
-function sortByTitle<T extends { title: string }>(items: readonly T[]): T[] {
-  return [...items].sort((a, b) =>
-    a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
-  );
+interface SearchDestination extends AdminDestination {
+  domainName: string;
+  sectionName: string;
 }
 
-function sortCategories(categories: typeof adminCategories): AdminCategory[] {
-  return [...categories]
-    .sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-    )
-    .map((category) => ({
-      ...category,
-      features: sortByTitle(category.features),
-    }));
-}
-
-const sortedAdminCategories = sortCategories(adminCategories);
-
-const featureSearchFields = [
-  { get: (feature: AdminFeature) => feature.title, weight: "title" as const },
-  {
-    get: (feature: AdminFeature) => feature.description,
-    weight: "body" as const,
-  },
-  {
-    get: (feature: AdminFeature) => feature.link,
-    weight: "body" as const,
-  },
-];
-
-const categorySearchFields = [
-  { get: (category: AdminCategory) => category.name, weight: "title" as const },
-];
-
-function filterFeaturesBySearch(
-  features: readonly AdminFeature[],
-  query: string,
-): AdminFeature[] {
-  return sortByTitle(
-    features.filter((feature) =>
-      matchesSearch(feature, query, featureSearchFields),
+const flatDestinations: SearchDestination[] = adminNavigation.flatMap(
+  (domain) =>
+    domain.sections.flatMap((section) =>
+      section.destinations.map((item) => ({
+        ...item,
+        domainName: domain.name,
+        sectionName: section.name,
+      })),
     ),
+);
+
+const catalogPathSet = new Set(getAdminCatalogPaths());
+const visibleCatalogLinkSet = new Set(
+  flatDestinations
+    .filter((item) => item.link.startsWith("/administration"))
+    .map((item) => normalizeCatalogLink(item.link)),
+);
+
+const destinationSearchFields = [
+  { get: (item: SearchDestination) => item.title, weight: "title" as const },
+  {
+    get: (item: SearchDestination) => item.description,
+    weight: "body" as const,
+  },
+  { get: (item: SearchDestination) => item.link, weight: "body" as const },
+  {
+    get: (item: SearchDestination) => item.domainName,
+    weight: "body" as const,
+  },
+  {
+    get: (item: SearchDestination) => item.sectionName,
+    weight: "body" as const,
+  },
+];
+
+function domainDestinationCount(domain: AdminDomain): number {
+  return domain.sections.reduce(
+    (count, section) => count + section.destinations.length,
+    0,
   );
 }
 
-function categoryHref(category: AdminCategory) {
-  return getAdminCategoryLandingPath(category);
+function getDomainBgClass(iconColor?: string) {
+  const colorMap: Record<string, string> = {
+    "text-amber-600": "bg-amber-500 dark:bg-amber-600",
+    "text-blue-600": "bg-blue-500 dark:bg-blue-600",
+    "text-indigo-600": "bg-indigo-500 dark:bg-indigo-600",
+    "text-purple-600": "bg-purple-500 dark:bg-purple-600",
+    "text-green-600": "bg-green-500 dark:bg-green-600",
+    "text-cyan-600": "bg-cyan-500 dark:bg-cyan-600",
+    "text-pink-600": "bg-pink-500 dark:bg-pink-600",
+    "text-orange-600": "bg-orange-500 dark:bg-orange-600",
+    "text-red-600": "bg-red-500 dark:bg-red-600",
+    "text-teal-600": "bg-teal-500 dark:bg-teal-600",
+    "text-violet-600": "bg-violet-500 dark:bg-violet-600",
+    "text-rose-600": "bg-rose-500 dark:bg-rose-600",
+    "text-sky-600": "bg-sky-500 dark:bg-sky-600",
+    "text-emerald-600": "bg-emerald-500 dark:bg-emerald-600",
+    "text-lime-600": "bg-lime-500 dark:bg-lime-600",
+  };
+  return colorMap[iconColor ?? "text-blue-600"] ?? "bg-blue-500 dark:bg-blue-600";
 }
 
 interface AdminDashboardClientProps {
@@ -77,340 +96,247 @@ interface AdminDashboardClientProps {
   filesystemRoutes: string[];
 }
 
-function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
-  const searchParams = useSearchParams();
-  const selectedCategory = searchParams.get("category");
-  const [searchQuery, setSearchQuery] = useState("");
+function DomainView({ domain }: { domain: AdminDomain }) {
+  return (
+    <div className="h-full w-full overflow-y-auto bg-textured">
+      <div className="w-full px-4 py-5">
+        <Link
+          href="/administration"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-primary"
+        >
+          <IconChevronRight className="h-4 w-4 rotate-180" />
+          All domains
+        </Link>
 
-  const catalogPathSet = useMemo(() => new Set(getAdminCatalogPaths()), []);
-
-  const getPreviewFeatures = (features: AdminFeature[]) => {
-    if (features.length <= 8) return features;
-    return features.slice(0, 8);
-  };
-
-  const getCategoryBgClass = (iconColor?: string) => {
-    const colorMap: Record<string, string> = {
-      "text-amber-600": "bg-amber-500 dark:bg-amber-600",
-      "text-blue-600": "bg-blue-500 dark:bg-blue-600",
-      "text-indigo-600": "bg-indigo-500 dark:bg-indigo-600",
-      "text-purple-600": "bg-purple-500 dark:bg-purple-600",
-      "text-green-600": "bg-green-500 dark:bg-green-600",
-      "text-cyan-600": "bg-cyan-500 dark:bg-cyan-600",
-      "text-pink-600": "bg-pink-500 dark:bg-pink-600",
-      "text-orange-600": "bg-orange-500 dark:bg-orange-600",
-      "text-red-600": "bg-red-500 dark:bg-red-600",
-      "text-teal-600": "bg-teal-500 dark:bg-teal-600",
-      "text-violet-600": "bg-violet-500 dark:bg-violet-600",
-      "text-fuchsia-600": "bg-fuchsia-500 dark:bg-fuchsia-600",
-    };
-    return (
-      colorMap[iconColor || "text-blue-600"] || "bg-blue-500 dark:bg-blue-600"
-    );
-  };
-
-  const normalizedQuery = searchQuery.toLowerCase().trim();
-
-  const filteredCategories = React.useMemo(() => {
-    if (!normalizedQuery) return sortedAdminCategories;
-
-    return sortedAdminCategories
-      .map((category) => {
-        const filteredFeatures = filterFeaturesBySearch(
-          category.features,
-          searchQuery,
-        );
-
-        if (filteredFeatures.length > 0) {
-          return {
-            ...category,
-            features: filteredFeatures,
-          };
-        }
-
-        if (matchesSearch(category, searchQuery, categorySearchFields)) {
-          return category;
-        }
-
-        return null;
-      })
-      .filter(Boolean) as AdminCategory[];
-  }, [normalizedQuery, searchQuery]);
-
-  const searchResults = React.useMemo(() => {
-    if (!normalizedQuery) return [];
-    return filteredCategories
-      .flatMap((category) =>
-        category.features.map((feature) => ({
-          ...feature,
-          categoryName: category.name,
-        })),
-      )
-      .sort((a, b) =>
-        a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
-      );
-  }, [filteredCategories, normalizedQuery]);
-
-  const catalogLinkSet = useMemo(() => {
-    const links = new Set<string>();
-    for (const category of adminCategories) {
-      for (const feature of category.features) {
-        if (feature.link.startsWith("/administration")) {
-          links.add(normalizeCatalogLink(feature.link));
-        }
-      }
-    }
-    return links;
-  }, []);
-
-  const filesystemSearchResults = useMemo(() => {
-    if (!normalizedQuery) return [];
-
-    const rows = buildRouteSearchRows(filesystemRoutes, "/administration");
-    const filtered = filterRouteSearchRows(rows, searchQuery);
-
-    return filtered.filter((row) => {
-      if (catalogLinkSet.has(row.route)) return false;
-      const cataloged = isRouteCataloged(row.route, catalogPathSet);
-      if (cataloged) {
-        const inSearchResults = searchResults.some(
-          (r) => normalizeCatalogLink(r.link) === row.route,
-        );
-        return !inSearchResults;
-      }
-      return true;
-    });
-  }, [
-    catalogLinkSet,
-    catalogPathSet,
-    filesystemRoutes,
-    normalizedQuery,
-    searchQuery,
-    searchResults,
-  ]);
-
-  const searchResultCount = searchResults.length;
-
-  if (selectedCategory) {
-    const category = sortedAdminCategories.find(
-      (c) => c.name === selectedCategory,
-    );
-    return (
-      <div className="h-full w-full overflow-y-auto bg-textured">
-        <div className="w-full px-4 py-5">
-          <div className="mx-auto max-w-6xl">
-            <Link
-              href="/administration"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4"
-            >
-              <IconChevronRight className="w-4 h-4 rotate-180" />
-              All categories
-            </Link>
-            {category ? (
-              <div className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-                <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${getCategoryBgClass(category.iconColor)}`}
-                >
-                  {category.icon}
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-xl font-semibold text-foreground">
-                    {category.name}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    {category.features.length} administration
-                    {category.features.length === 1 ? " utility" : " utilities"}
-                    {category.landingPath
-                      ? " with a dedicated management hub."
-                      : " grouped in one management hub."}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {category?.features.map((feature, index) => (
-                <FeatureSectionLinkComponent
-                  key={feature.title}
-                  title={feature.title}
-                  description={feature.description}
-                  icon={feature.icon}
-                  index={index}
-                  link={feature.link}
-                  isNew={feature.isNew}
-                />
-              ))}
-            </div>
+        <div className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+          <div
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${getDomainBgClass(domain.iconColor)}`}
+          >
+            {domain.icon}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold text-foreground">
+              {domain.name}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {domain.sections.length} section
+              {domain.sections.length === 1 ? "" : "s"} ·{" "}
+              {domainDestinationCount(domain)} destinations
+            </p>
           </div>
         </div>
+
+        <div className="space-y-6">
+          {domain.sections.map((section) => (
+            <section key={section.name}>
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+                <span className="flex h-6 w-6 items-center justify-center text-muted-foreground [&>svg]:h-4 [&>svg]:w-4">
+                  {section.icon}
+                </span>
+                <h2>{section.name}</h2>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {section.destinations.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {section.destinations.map((item, index) => (
+                  <FeatureSectionLinkComponent
+                    key={item.link}
+                    title={item.title}
+                    description={item.description}
+                    icon={item.icon}
+                    index={index}
+                    link={item.link}
+                    isNew={item.isNew}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
+  const searchParams = useSearchParams();
+  const selectedDomainName = searchParams.get("domain");
+  const [searchQuery, setSearchQuery] = useState("");
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const selectedDomain = selectedDomainName
+    ? adminNavigation.find((domain) => domain.name === selectedDomainName)
+    : undefined;
+
+  const searchResults = (() => {
+    if (!normalizedQuery) return [];
+    return flatDestinations
+      .filter((item) =>
+        matchesSearch(item, searchQuery, destinationSearchFields),
+      )
+      .sort((a, b) => a.title.localeCompare(b.title));
+  })();
+
+  const filesystemSearchResults = (() => {
+    if (!normalizedQuery) return [];
+    const rows = filterRouteSearchRows(
+      buildRouteSearchRows(filesystemRoutes, "/administration"),
+      searchQuery,
     );
-  }
+    return rows.filter((row) => {
+      if (visibleCatalogLinkSet.has(row.route)) return false;
+      if (!isRouteCataloged(row.route, catalogPathSet)) return true;
+      return !searchResults.some(
+        (item) => normalizeCatalogLink(item.link) === row.route,
+      );
+    });
+  })();
+
+  if (selectedDomain) return <DomainView domain={selectedDomain} />;
 
   return (
     <div className="h-full w-full overflow-y-auto">
-      <div className="py-4 bg-neutral-100 dark:bg-neutral-900 w-full">
-        <div className="w-full px-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-            <h1 className="text-xl font-bold whitespace-nowrap">
-              Admin Dashboard Home
-            </h1>
+      <div className="w-full bg-neutral-100 px-4 py-4 dark:bg-neutral-900">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <h1 className="whitespace-nowrap text-xl font-bold">
+            Administration
+          </h1>
 
-            <div className="flex-1 max-w-2xl w-full mx-0 sm:mx-4 relative">
-              <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search admin routes, tools, and categories…"
-                  className="w-full pl-9 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 shadow-sm focus-visible:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <Link
-              href="/administration/all-routes"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors whitespace-nowrap shrink-0"
-            >
-              <IconList className="w-4 h-4" />
-              <span>All Routes</span>
-            </Link>
+          <div className="relative mx-0 w-full max-w-2xl flex-1 sm:mx-4">
+            <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search domains, sections, routes, and tools…"
+              className="w-full border-neutral-200 bg-white pl-9 shadow-sm focus-visible:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-800"
+            />
           </div>
 
-          {normalizedQuery ? (
-            <>
-              {searchResults.length > 0 && (
-                <div className="mb-6">
-                  <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Dashboard catalog ({searchResultCount})
-                  </p>
-
-                  <div className="divide-y divide-border/60 rounded-md border border-border bg-card">
-                    {searchResults.map((feature) => (
-                      <Link
-                        key={feature.link}
-                        href={feature.link}
-                        className="flex items-baseline gap-3 px-3 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                      >
-                        <span className="min-w-0 shrink-0 text-sm font-medium text-foreground">
-                          {feature.title}
-                          {feature.isNew && (
-                            <span className="ml-1.5 text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                              New
-                            </span>
-                          )}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                          {feature.description}
-                        </span>
-                        <span className="shrink-0 text-xs text-muted-foreground/70">
-                          {feature.categoryName}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {filesystemSearchResults.length > 0 && (
-                <div className="mb-6">
-                  <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    All administration routes ({filesystemSearchResults.length})
-                  </p>
-                  <p className="mb-2 text-xs text-muted-foreground">
-                    Filesystem index — includes detail routes and pages not yet
-                    on the dashboard.
-                  </p>
-
-                  <div className="divide-y divide-border/60 rounded-md border border-dashed border-amber-500/40 bg-card">
-                    {filesystemSearchResults.map((row) => (
-                      <Link
-                        key={row.href}
-                        href={row.href}
-                        className="flex items-baseline gap-3 px-3 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                      >
-                        <span className="min-w-0 shrink-0 text-sm font-medium text-foreground">
-                          {row.label}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-xs font-mono text-muted-foreground">
-                          {row.route}
-                        </span>
-                        <span className="shrink-0 text-xs text-muted-foreground/70">
-                          {row.category}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {searchResults.length === 0 &&
-                filesystemSearchResults.length === 0 && (
-                  <div className="py-12 text-center text-sm text-muted-foreground">
-                    No results found for &ldquo;{searchQuery}&rdquo;
-                  </div>
-                )}
-            </>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {filteredCategories.map((category) => (
-                <div
-                  key={category.name}
-                  className="bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-4 transform transition-all duration-200 hover:scale-105 hover:shadow-xl relative group"
-                >
-                  <Link
-                    href={categoryHref(category)}
-                    aria-label={`Open ${category.name} administration hub`}
-                    className="absolute inset-0 z-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                  <div className="pointer-events-none relative z-10 mb-4 flex items-center space-x-4">
-                    <div
-                      className={`p-3 rounded-lg text-white ${getCategoryBgClass(category.iconColor)}`}
-                    >
-                      {category.icon}
-                    </div>
-                    <h3 className="text-xl font-semibold group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
-                      {category.name}
-                    </h3>
-                  </div>
-                  <div className="h-auto flex flex-col justify-between">
-                    <div
-                      className={`grid gap-x-3 gap-y-1 ${getPreviewFeatures(category.features).length >= 5 ? "grid-cols-2" : "grid-cols-1"}`}
-                    >
-                      {getPreviewFeatures(category.features).map((feature) => (
-                        <Link
-                          key={feature.title}
-                          href={feature.link}
-                          className={`relative z-10 flex items-center h-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${feature.isNew ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-gray-600 dark:text-gray-300"} hover:text-blue-700 dark:hover:text-blue-500 transition-colors duration-200`}
-                        >
-                          <div className="shrink-0 w-3.5 h-3.5 mr-1.5 [&>svg]:w-3.5 [&>svg]:h-3.5 [&>svg]:max-w-none opacity-80">
-                            {feature.icon}
-                          </div>
-                          <span className="text-sm font-medium truncate">
-                            {feature.title}
-                            {feature.isNew && (
-                              <span className="ml-2 text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-600 dark:text-amber-400">
-                                New
-                              </span>
-                            )}
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                    {category.features.length > 8 && (
-                      <Link
-                        href={`/administration?category=${encodeURIComponent(category.name)}`}
-                        className="relative z-10 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200 mt-2 pl-7 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <span>See all {category.features.length} features</span>
-                        <IconChevronRight className="w-4 h-4 ml-1" />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <Link
+            href="/administration/all-routes"
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-primary"
+          >
+            <IconList className="h-4 w-4" />
+            <span>All Routes</span>
+          </Link>
         </div>
+
+        {normalizedQuery ? (
+          <div className="space-y-6">
+            {searchResults.length > 0 && (
+              <section>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Navigation registry ({searchResults.length})
+                </p>
+                <div className="divide-y divide-border/60 rounded-md border border-border bg-card">
+                  {searchResults.map((item) => (
+                    <Link
+                      key={item.link}
+                      href={item.link}
+                      className="flex items-baseline gap-3 px-3 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                    >
+                      <span className="min-w-0 shrink-0 text-sm font-medium text-foreground">
+                        {item.title}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                        {item.description}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground/70">
+                        {item.domainName} → {item.sectionName}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {filesystemSearchResults.length > 0 && (
+              <section>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Detail routes ({filesystemSearchResults.length})
+                </p>
+                <div className="divide-y divide-border/60 rounded-md border border-dashed border-amber-500/40 bg-card">
+                  {filesystemSearchResults.map((row) => (
+                    <Link
+                      key={row.href}
+                      href={row.href}
+                      className="flex items-baseline gap-3 px-3 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                    >
+                      <span className="min-w-0 shrink-0 text-sm font-medium text-foreground">
+                        {row.label}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
+                        {row.route}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground/70">
+                        {row.category}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {searchResults.length === 0 &&
+              filesystemSearchResults.length === 0 && (
+                <div className="py-12 text-center text-sm text-muted-foreground">
+                  No results found for &ldquo;{searchQuery}&rdquo;
+                </div>
+              )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {adminNavigation.map((domain) => (
+              <div
+                key={domain.name}
+                className="group relative rounded-lg bg-white p-4 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl dark:bg-neutral-800"
+              >
+                <Link
+                  href={adminDomainHref(domain.name)}
+                  aria-label={`Open ${domain.name} administration`}
+                  className="absolute inset-0 z-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <div className="pointer-events-none relative z-10 mb-3 flex items-center gap-3">
+                  <div
+                    className={`rounded-lg p-3 text-white ${getDomainBgClass(domain.iconColor)}`}
+                  >
+                    {domain.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-400">
+                      {domain.name}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      {domain.sections.length} section
+                      {domain.sections.length === 1 ? "" : "s"} ·{" "}
+                      {domainDestinationCount(domain)} destinations
+                    </p>
+                  </div>
+                </div>
+                <div className="relative z-10 space-y-1">
+                  {domain.sections.slice(0, 6).map((section) => (
+                    <Link
+                      key={section.name}
+                      href={adminDomainHref(domain.name)}
+                      className="flex h-6 items-center gap-2 rounded-sm text-sm text-gray-600 transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-gray-300 dark:hover:text-blue-400"
+                    >
+                      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center opacity-80 [&>svg]:h-3.5 [&>svg]:w-3.5">
+                        {section.icon}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {section.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {section.destinations.length}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -422,7 +348,7 @@ export default function AdminDashboardClient({
   return (
     <Suspense
       fallback={
-        <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
+        <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
           Loading administration…
         </div>
       }
