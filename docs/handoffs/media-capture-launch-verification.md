@@ -13,6 +13,14 @@ One platform-grade capture system for **photos, video, and audio** that:
 5. Has its own home like transcription: `/camera` (studio + management library), `/camera/admin` (map + live diagnostics), `/demos/media-capture` (harness), with full manage actions (rename/move/share/download/delete/retry/recover) reusing the files feature.
 6. All three artifact types are first-class end to end: photo → image file; video (±mic) → ONE video file; audio → audio file; standalone audio from video only as the explicit server `audio_extracted` derivative with lineage; transcription by `file_id` via `POST /audio/transcribe-file`.
 
+## Release state (2026-07-21, all run and verified by the building session)
+
+- **Frontend v0.4.0** — released via `scripts/release.sh --minor` (all 9 release gates passed), Vercel production deployment `cdbcceab8` state READY → **live on aimatrx.com**.
+- **aidream 0.1.580** — released via `scripts/release.sh --patch`, Coolify deploy verified, all health endpoints 200 (`/health` `/live` `/ready` `/detailed`).
+- **matrx-files 0.2.0 + 0.2.1** — published to PyPI (CI green both times); **0.2.1 is the one that matters**: it fixes a fail-open standalone boot gate (`assert_route_auth_coverage` was blind under FastAPI ≥0.139 — routes were still authed, but the safety net was disabled in 0.2.0). "Build & Deploy to EC2" workflow succeeded on both pushes.
+- **aidream `db/generate.py`** — re-run clean (the earlier statement-timeout was transient); no model changes (CHECK constraint only). The regenerate deleted a parallel session's in-flight `models_seo.py`; restored untouched.
+- **CI note:** the aidream "Tests" workflow still shows red on main from OTHER sessions' work — `matrx-graph` postgres integration failures and a 24-violation API-type-audit baseline drift in untouched routers (`token_broker`, `rag`, `podcast_generator`, `prompts_execution`). Media-capture files audit clean; the matrx-files independence gate is green as of `fa88ca9e2`+. Those two red checks belong to the sessions that introduced them.
+
 ## What is DONE (released)
 
 - Frontend: commits through `e05a2965f`, pushed to main → Vercel (aimatrx.com). All gates green at push: type-check, 143 media/audio/files/prefs tests, check:doctrine, check:page-headers, check:reuse-index. Preference backfill migration applied live (drift report = 0). Legacy `components/matrx/camera/` deleted.
