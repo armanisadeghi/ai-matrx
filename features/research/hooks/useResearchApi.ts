@@ -4,8 +4,6 @@ import { useMemo } from "react";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { RESEARCH_ENDPOINTS } from "../service/research-endpoints";
 import type {
-  TopicCreate,
-  KeywordCreate,
   ContentEditRequest,
   ContentPasteRequest,
   AnalyzeRequest,
@@ -45,10 +43,6 @@ export function useResearchApi() {
       // --- Suggest (top-level, no topic needed) ---
       suggest: (body: SuggestRequest) =>
         api.post(RESEARCH_ENDPOINTS.suggest, body),
-
-      // --- Topic CRUD (project-scoped) ---
-      createTopic: (projectId: string, body: TopicCreate) =>
-        api.post(RESEARCH_ENDPOINTS.projects.createTopic(projectId), body),
 
       // --- Topic State (computed progress from Python) ---
       getTopicState: (topicId: string, signal?: AbortSignal) =>
@@ -115,11 +109,7 @@ export function useResearchApi() {
         body?: GenerateTagsRequest,
         signal?: AbortSignal,
       ) =>
-        api.post(
-          endpoints(topicId).generateTagSuggestions,
-          body ?? {},
-          signal,
-        ),
+        api.post(endpoints(topicId).generateTagSuggestions, body ?? {}, signal),
 
       /**
        * Create real `rs_tag` rows from the suggestions the user picked, and
@@ -144,16 +134,9 @@ export function useResearchApi() {
         topicId: string,
         signal?: AbortSignal,
       ): Promise<TagInputExportResponse> => {
-        const res = await api.get(
-          endpoints(topicId).tagInputExport,
-          signal,
-        );
+        const res = await api.get(endpoints(topicId).tagInputExport, signal);
         return (await res.json()) as TagInputExportResponse;
       },
-
-      // --- Keywords (Python for validation + project_id resolution) ---
-      addKeywords: (topicId: string, body: KeywordCreate) =>
-        api.post(endpoints(topicId).keywords.add, body),
 
       // --- Source Actions ---
 

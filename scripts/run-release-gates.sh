@@ -42,6 +42,7 @@ if $STRICT; then
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts --strict"
         "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts --strict"
+        "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts --strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
     )
@@ -54,6 +55,7 @@ else
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"
         "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts"
+        "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
     )

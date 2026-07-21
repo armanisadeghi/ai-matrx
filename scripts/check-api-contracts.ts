@@ -36,6 +36,7 @@ const SCAN_DIRS = ["features", "app", "lib", "components", "hooks"];
 const ALLOWED = [
   "lib/api/", // the typed client itself
   "lib/python-client.ts", // the raw client module
+  "hooks/useBackendApi.ts", // legacy adapter; consumers are gated by check-backend-boundaries
 ];
 
 // A value-import of `@/lib/python-client`. We only care about REQUEST VERBS

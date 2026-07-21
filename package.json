@@ -72,6 +72,8 @@
     "check:api-contracts": "tsx scripts/check-api-contracts.ts",
     "check:api-contracts:strict": "tsx scripts/check-api-contracts.ts --strict",
     "check:api-contracts:accept": "tsx scripts/check-api-contracts.ts --accept",
+    "check:backend-boundaries": "tsx scripts/check-backend-boundaries.ts",
+    "check:backend-boundaries:strict": "tsx scripts/check-backend-boundaries.ts --strict",
     "gen:entity-types": "tsx scripts/generate-entity-types.ts",
     "check:entity-types": "tsx scripts/generate-entity-types.ts --check",
     "check:release-gates": "bash scripts/run-release-gates.sh",

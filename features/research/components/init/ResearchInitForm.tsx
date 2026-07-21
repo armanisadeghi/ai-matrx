@@ -61,6 +61,8 @@ import { keywordTemplatesFromJson, parseSuggestApplied } from "../../types";
 import {
   getKeywords,
   getTopic,
+  createTopic,
+  addKeywords,
   deleteKeyword as deleteKeywordService,
   updateKeywordText,
   updateTopicMeta,
@@ -603,15 +605,15 @@ async function persistUnsavedKeywordsWithinQuota(
   topicId: string,
   rows: KeywordRow[],
   maxKeywords: number,
-  addKeywords: (
+  persistKeywords: (
     topicId: string,
     body: { keywords: string[] },
-  ) => Promise<Response>,
+  ) => Promise<ResearchKeyword[]>,
 ): Promise<KeywordRow[]> {
   const withinQuota = rows.slice(0, maxKeywords).filter((r) => !r.dbId);
   if (withinQuota.length === 0) return rows;
 
-  await addKeywords(topicId, {
+  await persistKeywords(topicId, {
     keywords: withinQuota.map((r) => r.value),
   });
   const persisted = await getKeywords(topicId);
@@ -1273,9 +1275,7 @@ export default function ResearchInitForm() {
         : "";
     return buildApplicationScopeFromMenuContext({
       selectedText,
-      selectionRange: el
-        ? { type: "editable", element: el, start, end }
-        : null,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
       contextData: subjectContextData,
     });
   };
@@ -1283,6 +1283,9 @@ export default function ResearchInitForm() {
   // ── Hierarchy data ────────────────────────────────────────────────────────
   const { orgs, flatProjects, isLoading: projectsLoading } = useNavTree();
   const projectsByOrg = groupProjectsByOrgDisplay(orgs, flatProjects);
+  const selectedProject = flatProjects.find(
+    (project) => project.id === selectedProjectId,
+  );
   const orgsForCreate = [...orgs]
     .sort((a, b) => {
       if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
@@ -1349,6 +1352,10 @@ export default function ResearchInitForm() {
       setError("Please select a project.");
       return;
     }
+    if (!selectedProject?.org_id) {
+      setError("The selected project does not have an organization.");
+      return;
+    }
     if (currentMode === "manual" && selectedKeywords.length < 1) {
       setError("Add at least one keyword to continue.");
       return;
@@ -1359,16 +1366,19 @@ export default function ResearchInitForm() {
 
     startTransition(async () => {
       try {
-        const response = await api.createTopic(selectedProjectId, {
-          name,
-          description: description.trim() || null,
-          autonomy_level: autonomyLevel,
-          template_id: selectedTemplate?.id ?? null,
-        });
-        const topic: { id: string } = await response.json();
+        const topic = await createTopic(
+          selectedProjectId,
+          selectedProject.org_id,
+          {
+            name,
+            description: description.trim() || null,
+            autonomy_level: autonomyLevel,
+            template_id: selectedTemplate?.id ?? null,
+          },
+        );
 
         if (selectedKeywords.length > 0) {
-          await api.addKeywords(topic.id, { keywords: selectedKeywords });
+          await addKeywords(topic.id, { keywords: selectedKeywords });
         }
 
         // Seed the template's default tags. Each insert is isolated so a
@@ -1403,6 +1413,10 @@ export default function ResearchInitForm() {
       setError("Please select a project.");
       return;
     }
+    if (!selectedProject?.org_id) {
+      setError("The selected project does not have an organization.");
+      return;
+    }
     if (!subjectDescription.trim()) {
       setError("Please describe your research subject.");
       return;
@@ -1413,16 +1427,15 @@ export default function ResearchInitForm() {
 
     try {
       // Step 1: Create placeholder topic with the raw user input as name
-      const createRes = await api.createTopic(selectedProjectId, {
-        name: subjectDescription.trim(),
-        autonomy_level: "auto",
-        template_id: null,
-      });
-      if (!createRes.ok) {
-        const body = await createRes.text();
-        throw new Error(`Failed to create topic: ${body}`);
-      }
-      const topic: { id: string } = await createRes.json();
+      const topic = await createTopic(
+        selectedProjectId,
+        selectedProject.org_id,
+        {
+          name: subjectDescription.trim(),
+          autonomy_level: "auto",
+          template_id: null,
+        },
+      );
       const topicId = topic.id;
 
       setAiPhase({
@@ -1608,7 +1621,7 @@ export default function ResearchInitForm() {
         topicId,
         keywordRows,
         quotas.max_keywords,
-        api.addKeywords,
+        addKeywords,
       );
       setAiPhase((prev) =>
         prev.status === "reviewing" && prev.topicId === topicId
@@ -1640,7 +1653,7 @@ export default function ResearchInitForm() {
         topicId,
         keywordRows,
         next.max_keywords,
-        api.addKeywords,
+        addKeywords,
       );
       setAiPhase((prev) =>
         prev.status === "reviewing" && prev.topicId === topicId
@@ -1665,7 +1678,8 @@ export default function ResearchInitForm() {
   // Keywords the backend dropped due to max_keywords stay visible (red styling)
   // until the user raises the cap or removes them — we do not silently backfill.
   useEffect(() => {
-    if (aiPhase.status !== "reviewing" || aiPhase.keywordRows !== null) return undefined;
+    if (aiPhase.status !== "reviewing" || aiPhase.keywordRows !== null)
+      return undefined;
     let cancelled = false;
     const topicId = aiPhase.topicId;
     const aiOrder = aiPhase.suggestedKeywords;
@@ -1763,7 +1777,7 @@ export default function ResearchInitForm() {
 
     (async () => {
       try {
-        await api.addKeywords(topicId, { keywords: [value] });
+        await addKeywords(topicId, { keywords: [value] });
         const persisted = await getKeywords(topicId);
         const lookup = new Map(persisted.map((k) => [k.keyword, k.id]));
         setKeywordRows((prev) =>

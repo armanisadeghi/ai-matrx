@@ -1,5 +1,4 @@
 import { supabase } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import type {
@@ -16,7 +15,9 @@ import type {
   ResearchMedia,
   ResearchTemplate,
   SourceFilters,
+  TopicCreate,
   TopicUpdate,
+  KeywordCreate,
   TagCreate,
   TagUpdate,
   SourceUpdate,
@@ -133,6 +134,54 @@ export async function getAllTopics(): Promise<ResearchTopic[]> {
   return (data ?? []) as ResearchTopic[];
 }
 
+/**
+ * Create a research topic directly in Supabase. Topic creation is plain
+ * user-owned CRUD; Python is reserved for the compute pipeline that runs
+ * after the topic exists.
+ */
+export async function createTopic(
+  projectId: string,
+  organizationId: string,
+  input: TopicCreate,
+): Promise<ResearchTopic> {
+  const name = input.name.trim();
+  if (!name) throw new Error("Topic name cannot be empty");
+  if (!projectId) throw new Error("Project is required");
+  if (!organizationId) throw new Error("Organization is required");
+
+  const insert: Database["research"]["Tables"]["rs_topic"]["Insert"] = {
+    project_id: projectId,
+    organization_id: organizationId,
+    name,
+    description: input.description?.trim() || null,
+    autonomy_level: input.autonomy_level ?? "semi",
+    template_id: input.template_id ?? null,
+  };
+
+  // The legacy Python creator copied the template's agent overrides onto the
+  // topic. Preserve that behavior while keeping the operation DB-direct.
+  if (input.template_id) {
+    const { data: template, error: templateError } = await supabase
+      .schema("research")
+      .from("rs_template")
+      .select("agent_config")
+      .eq("id", input.template_id)
+      .single();
+    if (templateError) throw templateError;
+    if (template.agent_config != null)
+      insert.agent_config = template.agent_config;
+  }
+
+  const { data, error } = await supabase
+    .schema("research")
+    .from("rs_topic")
+    .insert(insert)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ResearchTopic;
+}
+
 export async function getTopic(topicId: string): Promise<ResearchTopic | null> {
   const { data, error } = await supabase
     .schema("research")
@@ -187,7 +236,9 @@ export async function appendTopicOutput(
   });
   if (error) throw error;
   if (!isJsonObject(data)) {
-    throw new Error("rs_topic_append_output returned a non-object outputs value");
+    throw new Error(
+      "rs_topic_append_output returned a non-object outputs value",
+    );
   }
   return data;
 }
@@ -210,6 +261,54 @@ export async function getKeywords(topicId: string): Promise<ResearchKeyword[]> {
     .order("created_at", { ascending: true });
   if (error) throw error;
   return data ?? [];
+}
+
+/**
+ * Add keywords directly under their topic. Inserts are intentionally
+ * sequential: the existing BEFORE INSERT trigger assigns the next unique
+ * per-topic position, and parallel inserts could race on MAX(position) + 1.
+ */
+export async function addKeywords(
+  topicId: string,
+  input: KeywordCreate,
+): Promise<ResearchKeyword[]> {
+  const keywords = Array.from(
+    new Map(
+      input.keywords
+        .map((keyword) => keyword.trim())
+        .filter(Boolean)
+        .map((keyword) => [keyword.toLocaleLowerCase(), keyword]),
+    ).values(),
+  );
+  if (keywords.length === 0) return [];
+
+  const { data: topic, error: topicError } = await supabase
+    .schema("research")
+    .from("rs_topic")
+    .select("organization_id, default_search_provider, default_search_params")
+    .eq("id", topicId)
+    .single();
+  if (topicError) throw topicError;
+
+  const created: ResearchKeyword[] = [];
+  for (const keyword of keywords) {
+    const insert: Database["research"]["Tables"]["rs_keyword"]["Insert"] = {
+      topic_id: topicId,
+      organization_id: topic.organization_id,
+      keyword,
+      search_provider: input.search_provider ?? topic.default_search_provider,
+      search_params: topic.default_search_params,
+    };
+    const { data, error } = await supabase
+      .schema("research")
+      .from("rs_keyword")
+      .insert(insert)
+      .select()
+      .single();
+    if (error) throw error;
+    created.push(data);
+  }
+  return created;
 }
 
 /**
@@ -607,13 +706,21 @@ export async function createTag(
   topicId: string,
   tag: TagCreate,
 ): Promise<ResearchTag> {
+  const { data: topic, error: topicError } = await supabase
+    .schema("research")
+    .from("rs_topic")
+    .select("organization_id")
+    .eq("id", topicId)
+    .single();
+  if (topicError) throw topicError;
+
   const { data, error } = await supabase
     .schema("research")
     .from("rs_tag")
     .insert({
       ...tag,
       topic_id: topicId,
-      organization_id: await ensureOrgId(undefined),
+      organization_id: topic.organization_id,
     })
     .select()
     .single();

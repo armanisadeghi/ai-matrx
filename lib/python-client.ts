@@ -303,6 +303,11 @@ export interface RequestOptions {
   cloudFilesBypass?: string;
 }
 
+export interface RawResponseOptions extends RequestOptions {
+  /** Return a non-2xx response after capturing it instead of throwing. */
+  allowHttpError?: boolean;
+}
+
 export interface ResponseMeta {
   /** Echo of `X-Request-Id`. Same as the one sent, or the one auto-generated. */
   requestId: string;
@@ -370,6 +375,51 @@ function failClient(
 // ---------------------------------------------------------------------------
 // Core methods
 // ---------------------------------------------------------------------------
+
+/**
+ * Authenticated raw-Response transport for streaming and response-aware
+ * callers. It remains inside the canonical client boundary: URL selection,
+ * request ids, structured errors, and Error Inspector capture all happen here.
+ */
+export async function requestRaw(
+  path: string,
+  init: RequestInit = {},
+  opts: RawResponseOptions = {},
+): Promise<Response> {
+  const method = init.method ?? "GET";
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "requestRaw",
+    method,
+  );
+  try {
+    const { headers: authHeaders } = await buildHeaders(opts, false);
+    const response = await fetch(url, {
+      ...init,
+      headers: {
+        ...authHeaders,
+        ...init.headers,
+      },
+      signal: opts.signal ?? init.signal,
+    });
+    if (!response.ok) {
+      const error = await parseHttpError(response.clone());
+      if (opts.allowHttpError) {
+        capturePythonClientError(error, {
+          url,
+          method,
+          path: relationPathFromUrl(path),
+        });
+        return response;
+      }
+      throw error;
+    }
+    return response;
+  } catch (err) {
+    failClient(err, method, path, url);
+  }
+}
 
 /** GET JSON. */
 export async function getJson<T>(
@@ -1020,4 +1070,3 @@ function statusToCloudFilesCode(status: number): string {
       return status >= 500 ? "internal" : "invalid_request";
   }
 }
-

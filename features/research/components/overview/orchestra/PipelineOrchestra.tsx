@@ -73,6 +73,7 @@ import { LastRunSummary } from "./LastRunSummary";
 
 import "./orchestra.css";
 import type { ResearchProgress, ResearchTopic } from "../../../types";
+import { addKeywords } from "../../../service";
 
 // ─── Status derivation ────────────────────────────────────────────────────────
 
@@ -328,7 +329,7 @@ export function PipelineOrchestra() {
     if (!newKeyword.trim()) return;
     setAddingKeyword(true);
     try {
-      await api.addKeywords(topicId, { keywords: [newKeyword.trim()] });
+      await addKeywords(topicId, { keywords: [newKeyword.trim()] });
       setNewKeyword("");
       setKeywordModalOpen(false);
       refresh();
@@ -338,7 +339,7 @@ export function PipelineOrchestra() {
     } finally {
       setAddingKeyword(false);
     }
-  }, [api, topicId, newKeyword, refresh]);
+  }, [topicId, newKeyword, refresh]);
 
   // ── Loading + empty topic ───────────────────────────────────────────────
 

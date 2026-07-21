@@ -70,7 +70,9 @@ the safety net, not the main event.
     Inspector is the one surface. Never reinstate the dev wrap.
 - **Python backend** — `lib/diagnostics/captureApiError.ts`, called from the error
   chokepoints in `lib/api/call-api.ts` **and** `lib/python-client.ts` (via
-  `capturePythonClientError.ts`). Every non-2xx / network failure; extracts the
+  `capturePythonClientError.ts`). The legacy `useBackendApi` adapter now delegates
+  to that client too, while its remaining consumers are migrated. Every non-2xx /
+  network failure; extracts the
   backend's structured `error_type`/`code`/`user_message`/`request_id`
   instead of flattening `serverDetail`. Before 2026-07-05 only `call-api` was
   wired — RAG, cloud-files, PDF, and other `getJson` surfaces were a blind spot.
@@ -205,6 +207,13 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-21 — **Caught-fetch blind spot closed.** `useBackendApi` previously
+  issued raw `fetch` calls and returned failures to feature-level `catch` blocks,
+  so no global `error`, `unhandledrejection`, or `console.error` signal existed.
+  It now delegates to `python-client.requestRaw`, which captures network and HTTP
+  failures before callers handle them. The backend ASGI app is also wrapped by
+  outermost CORS so emergency 500 responses are no longer browser-masked as
+  generic `TypeError("Failed to fetch")` errors.
 - 2026-07-20 — **Repo-wide sonner sweep + ESLint chokepoint.** Migrated every
   `import { toast } from "sonner"` under app/components/features/hooks/lib
   (608 files) to the captured `@/lib/toast` wrapper, so all toast.error/warning

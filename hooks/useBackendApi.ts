@@ -5,8 +5,11 @@
  * Supports all server environments: production, development, staging,
  * localhost, gpu, and custom.
  *
- * Prefer dispatching callApi() thunks directly for most cases — this hook
- * is for components in public routes that make direct fetch calls.
+ * Legacy response-shaped adapter. Calls are transported by
+ * lib/python-client::requestRaw so auth, request IDs, structured errors, and
+ * Error Inspector capture remain centralized. New feature code uses the
+ * contract-bound typed client or callApi; the boundary audit tracks every
+ * remaining consumer of this hook.
  *
  * Usage:
  * ```typescript
@@ -23,6 +26,7 @@ import {
   selectResolvedBaseUrl,
 } from "@/lib/redux/slices/apiConfigSlice";
 import { applyAiApiVersion } from "@/lib/api/ai-api-version";
+import { requestRaw } from "@/lib/python-client";
 
 export function useBackendApi() {
   const { getHeaders, waitForAuth } = useApiAuth();
@@ -55,89 +59,58 @@ export function useBackendApi() {
 
   const post = useCallback(
     async (endpoint: string, body: unknown, signal?: AbortSignal) => {
-      await waitForAuth();
-      const url = `${backendUrl}${resolvePath(endpoint)}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: getApiHeaders(),
-        body: JSON.stringify(body),
-        signal,
-      });
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ detail: "Unknown error" }));
-        throw new Error(
-          `HTTP ${response.status}: ${errorData.detail || errorData.message || "Unknown error"}`,
-        );
-      }
-
-      return response;
+      return requestRaw(
+        resolvePath(endpoint),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal,
+        },
+        { baseUrlOverride: backendUrl, signal },
+      );
     },
-    [backendUrl, resolvePath, getApiHeaders, waitForAuth],
+    [backendUrl, resolvePath],
   );
 
   const get = useCallback(
     async (endpoint: string, signal?: AbortSignal) => {
-      await waitForAuth();
-      const url = `${backendUrl}${resolvePath(endpoint)}`;
-      const response = await fetch(url, {
-        method: "GET",
-        headers: getApiHeaders(),
-        signal,
-      });
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ detail: "Unknown error" }));
-        throw new Error(
-          `HTTP ${response.status}: ${errorData.detail || errorData.message || "Unknown error"}`,
-        );
-      }
-
-      return response;
+      return requestRaw(
+        resolvePath(endpoint),
+        {
+          method: "GET",
+          signal,
+        },
+        { baseUrlOverride: backendUrl, signal },
+      );
     },
-    [backendUrl, resolvePath, getApiHeaders, waitForAuth],
+    [backendUrl, resolvePath],
   );
 
   const upload = useCallback(
     async (endpoint: string, formData: FormData, signal?: AbortSignal) => {
-      await waitForAuth();
-      const response = await fetch(`${backendUrl}${resolvePath(endpoint)}`, {
-        method: "POST",
-        headers: getApiHeaders(false),
-        body: formData,
-        signal,
-      });
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ detail: "Unknown error" }));
-        throw new Error(
-          `HTTP ${response.status}: ${errorData.detail || errorData.message || "Unknown error"}`,
-        );
-      }
-
-      return response;
+      return requestRaw(
+        resolvePath(endpoint),
+        {
+          method: "POST",
+          body: formData,
+          signal,
+        },
+        { baseUrlOverride: backendUrl, signal },
+      );
     },
-    [backendUrl, resolvePath, getApiHeaders, waitForAuth],
+    [backendUrl, resolvePath],
   );
 
   const customFetch = useCallback(
     async (endpoint: string, options: RequestInit = {}) => {
-      await waitForAuth();
-      return fetch(`${backendUrl}${resolvePath(endpoint)}`, {
-        ...options,
-        headers: {
-          ...getApiHeaders(),
-          ...options.headers,
-        },
+      return requestRaw(resolvePath(endpoint), options, {
+        baseUrlOverride: backendUrl,
+        signal: options.signal ?? undefined,
+        allowHttpError: true,
       });
     },
-    [backendUrl, resolvePath, getApiHeaders, waitForAuth],
+    [backendUrl, resolvePath],
   );
 
   return useMemo(

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-07-15`
+**Last updated:** `2026-07-21`
 
 ---
 
@@ -24,11 +24,12 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 **Hooks** (`features/research/hooks/`)
 - `useResearchStream()` — NDJSON/SSE stream consumer (chunk/data/info/end callbacks).
 - `usePipelineProgress({ topic })` — reduces stream events into the per-stage `PipelineState` the orchestra renders. Owns the terminal sweep (see Invariants).
-- `useResearchApi()` — Python backend calls (run/search/scrape/analyzeAll/synthesize/generateDocument/consolidateTag/**rankSourceAuthority**/…).
+- `useResearchApi()` — compute-only Python backend calls (run/search/scrape/analyzeAll/synthesize/generateDocument/consolidateTag/**rankSourceAuthority**/…).
 - `useResearchState.ts` — Supabase read hooks (`useResearchSources`, `useAnalysesForTopic`, `useResearchSynthesis`, `useResearchDocument`, `useResearchTags`, `useSourceTags`, …).
 
 **Services**
-- `service.ts` — client Supabase reads/writes (lists, tags, source⇄tag links).
+- `service.ts` — client Supabase reads/writes, including topic/keyword CRUD,
+  lists, tags, and source⇄tag links.
 - `service/server.ts` — SSR fetch for the topic layout (pre-populates the store).
 - `service/research-endpoints.ts` — Python endpoint map.
 
@@ -52,6 +53,11 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Key flows
 
+- **Create topic / add keywords** — `ResearchInitForm`, `KeywordManager`, and
+  `PipelineOrchestra` call `service.ts` directly against Supabase. These are
+  ordinary RLS-owned database writes and never route through Python. Topic
+  creation copies the selected project's `organization_id`; keyword/tag rows
+  copy their owning topic's organization. Python remains the compute boundary.
 - **Run pipeline** — overview `Run pipeline` → `api.runPipeline` (empty body) → `useResearchStream.startStream` → events `dispatch`ed into `usePipelineProgress`. `onEnd` calls `pipeline.finalize()` + `refresh()`. Document is NOT produced here.
 - **Live render** — `PipelineOrchestra` (graph) + `LivePipelineActivity`: finished stages → `StageStatSquare` rail (click to expand inline detail; external-link opens results route), active stage(s) → large card, writing streams via `StreamingTextPanel` (MarkdownStream). Completed keywords / scrape+analyze item batches / source feed auto-fold via `FoldableSection`; when the run finishes the whole drawer (metrics + stages + activity log) collapses together — user can reopen.
 - **Live cost** — each `analysis_complete` / `synthesis_complete` event carries the backend's catalog-priced `cost_usd`; `usePipelineProgress` sums only those authoritative values. If any completed AI operation has unknown pricing, the live metric shows unknown instead of guessing from provider/model names. The persisted `cost_summary` replaces the live total after completion.
@@ -100,6 +106,11 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
+- `2026-07-21` — **Topic initialization moved to canonical DB-direct CRUD.**
+  Topic creation and keyword insertion now use the Supabase research service,
+  copy the owning organization explicitly, and reserve Python for compute. The
+  legacy Python creator was also hardened to reject nonexistent projects and
+  preserve organization scope for non-browser consumers.
 - `2026-07-15` — **Authoritative live research cost.** Backend completion events now carry catalog-derived `cost_usd`; `usePipelineProgress` deleted its Claude/GPT/Gemini substring price table and sums only server values. Unknown pricing renders as unknown, while the terminal persisted `cost_summary` remains authoritative.
 - `2026-06-28` — **Moved to the `research` schema (clean cut).** All 12 `rs_*` tables + the `rs_source_keywords` view moved `public` → `research` (`research_canon_05`); registry `schema_name` updated; 8 functions repointed (4 hardcoded + 4 bare-ref incl. `get_topic_overview`/`get_user_hierarchy`). FE repointed to `.schema('research')` (55 calls + 3 type refs across 4 files); `research` added to `db-types`; types regenerated; dead-relations + `platform.deprecated_relations` registered. Verified: PostgREST serves `research.rs_topic` (200), `public.rs_topic` 404s (clean cut), counts preserved, `get_topic_overview` runs. aidream already modeled on `research` (one raw-SQL repoint in matrx-rag).
 - `2026-06-28` — **DB canonicalization (platform standard).** All 13 `rs_*` relations brought onto the canonical model: `rs_topic`/`rs_template` as entities (tokens `research_topic`/`research_template`), the other 10 tables as components of `research_topic`. Non-canonical project-cascade RLS replaced by `iam.apply_rls`; legacy `set_updated_at` triggers dropped; all 12 tables verify zero FAIL / zero WARN; owner-impersonation confirmed no data hidden. Existing topics set to `visibility='internal'`; system templates `public`.

@@ -171,7 +171,7 @@ delete yours and extend ours.
 | If you need to… | Use | Located at |
 | --- | --- | --- |
 | Detect mobile (Drawer vs Dialog, stack vs tabs) | `useIsMobile` | `hooks/use-mobile.tsx` |
-| Call Python backend from client (auth + URL) | `useBackendApi` | `hooks/useBackendApi.ts` |
+| Call Python backend from client (typed auth + URL + capture) | `apiGet` / `apiPost` / `apiMultipart`; Redux/streaming surfaces use `callApi` | `lib/api/typed-client.ts`; `lib/api/call-api.ts` |
 | Auth headers for Next.js `/api/*` routes | `useApiAuth` | `hooks/useApiAuth.ts` |
 | Resolve durable media `src` from `file_id` | `useFileSrc` | `features/files/handler/hooks/useFileSrc.ts` |
 | Read / write a catalogue preference | `useSetting` | `features/settings/hooks/useSetting.ts` |

@@ -2,10 +2,13 @@
 
 **Status:** Active · **Owner:** platform · **Entry point:** [`lib/api/typed-client.ts`](./typed-client.ts)
 
-The single sanctioned way for feature code to call the Python backend
+The primary sanctioned way for feature code to call the Python backend
 (`https://server.app.matrxserver.com`). It binds every callsite to the
 server's OpenAPI contract so a wrong shape is a **compile error**, not a
-runtime 400.
+runtime 400. Redux-owned and stream-reducer flows may use the older canonical
+`callApi` transport; both paths centralize URL selection, auth, and Error
+Inspector capture. Feature-owned raw `fetch`, `useBackendApi`, and raw
+`lib/python-client` verbs are bypasses.
 
 > This exists because a wrong shape shipped to production. The FE hand-wrote
 > `PreviewVariantSpec` with a `key` field; the backend had renamed it to
@@ -62,6 +65,15 @@ object you `JSON.stringify` against its generated `components["schemas"][…]` t
 endpoint (`/assets/preview`) when raw file bytes aren't required; it's fully
 typed end-to-end.
 
+## Raw response / streaming transport
+
+`lib/python-client.ts::requestRaw` is the single low-level `Response` escape
+hatch underneath the canonical clients. It exists for NDJSON, multipart, and
+other consumers that must inspect or stream the response body. It still owns
+active-server URL resolution, auth, request IDs, structured HTTP parsing, and
+Error Inspector capture. Feature code does not import it directly; add a
+contract-bound wrapper in `typed-client.ts` or use `callApi`.
+
 ## Proof / guardrail
 
 [`typed-client.contract-test.ts`](./typed-client.contract-test.ts) is a
@@ -69,6 +81,16 @@ type-checked (never executed) file of `@ts-expect-error` assertions. If
 `pnpm type-check` reports an *unused* `@ts-expect-error` there, the guarantee
 regressed — the client stopped catching a wrong shape. Do not delete assertions
 to make it pass.
+
+`scripts/check-backend-boundaries.ts` performs the complementary site-wide
+transport audit. It detects legacy `useBackendApi` consumers, raw
+`python-client` verbs, direct backend/third-party fetches and WebSockets, and
+Next.js→Python proxy routes (including JavaScript route files, not only TS).
+Its approval registry (`scripts/backend-boundary-approvals.json`) starts empty;
+each exception requires an exact finding id, approver, and reason. Direct-call
+IDs include line and column so one approval cannot bless a second call in the
+same file. The check is part of the release gates and strict mode fails on every
+unapproved finding or stale approval.
 
 ## What the typed client does NOT cover yet (why some calls stay on raw helpers)
 
@@ -102,6 +124,12 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-07-21 — Added the site-wide backend-boundary approval gate. Existing
+  bypasses are now a live, failing inventory rather than an implicit backlog;
+  no exception is approved by default. Added `requestRaw` as the centralized
+  response-aware transport and moved the legacy `useBackendApi` implementation
+  onto it, eliminating its independent fetch/error path while its untyped
+  callsites migrate.
 - 2026-07-15 — Converted 4 files off the raw client (baseline 22 → 18):
   `features/files/api/pdf-pages.ts` (types now DERIVED from the contract —
   `FileRef` / `PdfPageSelectionRequest` / `PdfPageSelectionResult` — via `apiPost`

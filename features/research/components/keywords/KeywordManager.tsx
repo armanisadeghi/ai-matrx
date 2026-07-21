@@ -24,7 +24,10 @@ import {
   useCurationData,
 } from "../../hooks/useResearchState";
 import { useResearchApi } from "../../hooks/useResearchApi";
-import { deleteKeyword as deleteKeywordService } from "../../service";
+import {
+  addKeywords,
+  deleteKeyword as deleteKeywordService,
+} from "../../service";
 import { fmtCount } from "../../format";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
@@ -128,7 +131,7 @@ export default function KeywordManager() {
     if (!kw) return;
     setAdding(true);
     try {
-      await api.addKeywords(topicId, { keywords: [kw] });
+      await addKeywords(topicId, { keywords: [kw] });
       setNewKeyword("");
       refresh();
     } catch {
