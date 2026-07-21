@@ -186,8 +186,12 @@ export function pctOf(value: number, limit: number): number {
 // is a co-writer of the identical shape.
 // ---------------------------------------------------------------------------
 
-/** One field's persisted metrics — identical whether written by TS or Python. */
-export interface StoredMetaFieldMetrics {
+/**
+ * One field's persisted metrics — identical whether written by TS or Python.
+ * `type` (not `interface`) so it stays assignable to `Record<string, unknown>`
+ * and jsonb columns without casts.
+ */
+export type StoredMetaFieldMetrics = {
   pixel_width: number;
   character_count: number;
   desktop_ok: boolean;
@@ -196,9 +200,9 @@ export interface StoredMetaFieldMetrics {
   too_short: boolean;
   ok: boolean;
   issues: string[];
-}
+};
 
-export interface StoredSeoMetrics {
+export type StoredSeoMetrics = {
   /** Payload contract version. Bump when the shape changes. */
   v: 1;
   /** Who computed it: "client" (browser recalc) or "scraper" (crawl time). */
@@ -207,7 +211,7 @@ export interface StoredSeoMetrics {
   title: StoredMetaFieldMetrics;
   description: StoredMetaFieldMetrics;
   overall_ok: boolean;
-}
+};
 
 function toStoredField(evaluation: MetaEvaluation): StoredMetaFieldMetrics {
   return {
