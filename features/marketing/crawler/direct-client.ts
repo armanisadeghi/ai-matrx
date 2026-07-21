@@ -59,13 +59,86 @@ export interface CrawlLiveEvent {
     | "crawl_progress"
     | "issue_detected"
     | "crawl_completed"
-    | "crawl_warning";
+    | "crawl_warning"
+    | "initialize_step";
   run_id: string;
   session_id?: string | null;
   site_id?: string | null;
   sequence?: number | null;
   ts?: string;
   [key: string]: unknown;
+}
+
+/** The four concurrent initialize steps, in display order. */
+export const INITIALIZE_STEP_NAMES = [
+  "identity",
+  "screenshots",
+  "sitemaps",
+  "discovered",
+] as const;
+
+export type InitializeStepName = (typeof INITIALIZE_STEP_NAMES)[number];
+
+export type InitializeStepStatus = "started" | "complete" | "failed";
+
+export interface InitializeStepEvent {
+  step: InitializeStepName;
+  status: InitializeStepStatus;
+  /** Item count reported by the step's completion payload, when present. */
+  count: number | null;
+  /** Human-readable failure message, when status === "failed". */
+  message: string | null;
+  errorType: string | null;
+}
+
+function isInitializeStepName(value: unknown): value is InitializeStepName {
+  return (
+    typeof value === "string" &&
+    (INITIALIZE_STEP_NAMES as readonly string[]).includes(value)
+  );
+}
+
+function firstNumber(...values: unknown[]): number | null {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function firstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return null;
+}
+
+/**
+ * Narrow a live crawl event to the granular initialize-step contract
+ * (`{event_type: "initialize_step", step, status, ...}`). Returns null for
+ * every other event — including streams from scraper deploys that predate
+ * the contract, which is the graceful-degradation signal consumers key on.
+ */
+export function initializeStepFromEvent(
+  event: CrawlLiveEvent | null,
+): InitializeStepEvent | null {
+  if (!event || event.event_type !== "initialize_step") return null;
+  const { step, status } = event as { step?: unknown; status?: unknown };
+  if (!isInitializeStepName(step)) return null;
+  if (status !== "started" && status !== "complete" && status !== "failed") {
+    return null;
+  }
+  return {
+    step,
+    status,
+    count: firstNumber(
+      event.count,
+      event.found,
+      event.captured,
+      event.discovered,
+    ),
+    message: firstString(event.user_message, event.message, event.error),
+    errorType: firstString(event.error_type),
+  };
 }
 
 export interface CrawlStreamCallbacks {

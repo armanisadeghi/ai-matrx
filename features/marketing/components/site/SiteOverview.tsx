@@ -40,7 +40,17 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SiteIdentityMark } from "@/features/marketing/components/shared/SiteConnectionChips";
-import { initializeSite } from "@/features/marketing/crawler/direct-client";
+import {
+  initializeSite,
+  initializeStepFromEvent,
+} from "@/features/marketing/crawler/direct-client";
+import {
+  applyInitializeStepEvent,
+  emptyInitializeSteps,
+  queryKeysForInitializeStep,
+  type InitializeStepsState,
+} from "@/features/marketing/components/site/initialize-progress";
+import { InitializeProgress } from "@/features/marketing/components/site/InitializeProgress";
 import { getSite } from "@/features/marketing/data/service";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
@@ -68,14 +78,48 @@ export function SiteOverview() {
   const queryClient = useQueryClient();
   const [initPhase, setInitPhase] = useState<InitPhase>("idle");
   const [initError, setInitError] = useState<string | null>(null);
+  const [initSteps, setInitSteps] = useState<InitializeStepsState>(
+    emptyInitializeSteps,
+  );
+  // false until the stream proves it speaks the granular initialize_step
+  // contract; deployed scrapers that predate it keep the strip indeterminate.
+  const [stepEventsSeen, setStepEventsSeen] = useState(false);
+  const stepEventsSeenRef = useRef(false);
+  const [showProgress, setShowProgress] = useState(false);
   const autoInitStarted = useRef(false);
+  const brandId = site.brand_id;
 
   const runInitialize = useCallback(async () => {
     setInitPhase("connecting");
     setInitError(null);
+    setInitSteps(emptyInitializeSteps());
+    setStepEventsSeen(false);
+    stepEventsSeenRef.current = false;
+    setShowProgress(true);
     try {
       await initializeSite(site.id, {
         onConnected: () => setInitPhase("running"),
+        onEvent: (_event, crawlEvent) => {
+          const stepEvent = initializeStepFromEvent(crawlEvent);
+          if (!stepEvent) return;
+          stepEventsSeenRef.current = true;
+          setStepEventsSeen(true);
+          setInitSteps((prior) => applyInitializeStepEvent(prior, stepEvent));
+          if (stepEvent.status === "complete") {
+            // Progressive hydration: refetch ONLY what this step persisted —
+            // identity lands on screen seconds in, while later steps run.
+            for (const invalidation of queryKeysForInitializeStep(
+              stepEvent.step,
+              site.id,
+              brandId,
+            )) {
+              void queryClient.invalidateQueries({
+                queryKey: invalidation.queryKey,
+                exact: invalidation.exact,
+              });
+            }
+          }
+        },
       });
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(site.id),
@@ -119,8 +163,12 @@ export function SiteOverview() {
       setInitPhase("failed");
       setInitError(message);
       toast.error("Site initialization failed", { description: message });
+    } finally {
+      // Keep the finished strip as a summary only when it carried real
+      // per-step states; an indeterminate run has nothing to summarize.
+      setShowProgress((visible) => visible && stepEventsSeenRef.current);
     }
-  }, [queryClient, site.id]);
+  }, [brandId, queryClient, site.id]);
 
   useEffect(() => {
     const requested =
@@ -163,7 +211,18 @@ export function SiteOverview() {
             phase={initPhase}
             error={initError}
             onInitialize={() => void runInitialize()}
+            steps={initSteps}
+            stepEventsSeen={stepEventsSeen}
+            showProgress={showProgress}
           />
+        ) : showProgress ? (
+          <section className="rounded-lg border border-border bg-card px-3 py-2.5">
+            <InitializeProgress
+              steps={initSteps}
+              running={initBusy}
+              indeterminate={!stepEventsSeen}
+            />
+          </section>
         ) : null}
 
         {init.stepErrors.length ? (
@@ -592,10 +651,16 @@ function InitializeCard({
   phase,
   error,
   onInitialize,
+  steps,
+  stepEventsSeen,
+  showProgress,
 }: {
   phase: InitPhase;
   error: string | null;
   onInitialize: () => void;
+  steps: InitializeStepsState;
+  stepEventsSeen: boolean;
+  showProgress: boolean;
 }) {
   const busy = phase === "connecting" || phase === "running";
   return (
@@ -614,6 +679,15 @@ function InitializeCard({
             logo, favicon, social profile, and contact candidates for your
             review. Nothing is published — you confirm what everything is.
           </p>
+          {busy || showProgress ? (
+            <div className="mt-2.5">
+              <InitializeProgress
+                steps={steps}
+                running={busy}
+                indeterminate={!stepEventsSeen}
+              />
+            </div>
+          ) : null}
           {error ? (
             <p className="mt-2 text-xs text-destructive">{error}</p>
           ) : null}

@@ -131,5 +131,18 @@ export function presentLiveCrawlEvent(
         message: `${numberValue(event, "pages_fetched")} fetched · ${numberValue(event, "pages_failed")} not fetched · ${numberValue(event, "issues_count")} issues`,
       };
     }
+    case "initialize_step": {
+      const step = typeof event.step === "string" ? event.step : "step";
+      const status = typeof event.status === "string" ? event.status : "";
+      return {
+        label: "Initialize step",
+        message:
+          status === "complete"
+            ? `The ${step} step completed.`
+            : status === "failed"
+              ? `The ${step} step failed.`
+              : `The ${step} step started.`,
+      };
+    }
   }
 }
