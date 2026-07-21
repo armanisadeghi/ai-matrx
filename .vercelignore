@@ -11,8 +11,10 @@ node_modules/.cache
 # Source maps (generated during build)
 **/*.map
 
-# Test coverage
-coverage
+# Test coverage — MUST stay root-anchored: a bare "coverage" matches every
+# directory named coverage at ANY depth, which silently stripped the
+# app/.../sites/[siteId]/coverage route from prod uploads (prod-only 404).
+/coverage
 
 # Development files
 .vscode
