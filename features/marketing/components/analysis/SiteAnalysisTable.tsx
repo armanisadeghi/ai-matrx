@@ -179,6 +179,41 @@ export function SiteAnalysisTable() {
             </div>
           ),
         }}
+        copy={{
+          label: "Priority item",
+          listLabel: "Priority queue",
+          location: webLocation(`Analysis priority queue — ${site.root_url}`),
+          rowKind: "web-priority-queue-row",
+          listKind: "web-priority-queue",
+          rowDescription:
+            "One open, non-suppressed finding projection ranked by weight × severity × confidence.",
+          listDescription:
+            "The currently loaded priority queue rows (respecting search, filters, sort, and pagination).",
+          humanRow: (row) =>
+            humanLines([
+              [
+                "Priority",
+                row.priority === null ? null : Number(row.priority).toFixed(2),
+              ],
+              ["Severity", row.severity],
+              ["Item", row.item_key],
+              ["Category", row.category],
+              ["Subcategory", row.subcategory],
+              ["Page", row.page_path ?? (row.page_id ? row.page_id : "site-level")],
+              ["Page URL", row.page_url],
+            ]),
+          rowAttributes: (row) => ({
+            site_id: site.id,
+            item_id: row.item_id,
+            item_key: row.item_key,
+            page_id: row.page_id,
+            severity: row.severity,
+          }),
+          listAttributes: () => ({
+            site_id: site.id,
+            total_matching: priority.data?.total ?? 0,
+          }),
+        }}
         detail={{ enabled: false }}
         onRowOpen={(row) => navigate(filteredFindingsHref(sitePath, row))}
         emptyState={{

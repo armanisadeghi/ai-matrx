@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
+import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   useCreateManualPage,
@@ -361,17 +363,25 @@ export function PagesTable() {
           detail={{ enabled: false }}
           onRowOpen={(row) => router.push(`${sitePath}/pages/${row.id}`)}
           rowActions={(row) => (
-            <button
-              type="button"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              title="Delete page"
-              onClick={(event) => {
-                event.stopPropagation();
-                setDeleting(row);
-              }}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            <>
+              <FetchPageButton
+                siteId={site.id}
+                url={row.url}
+                pageId={row.id}
+                size="icon"
+              />
+              <button
+                type="button"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                title="Delete page"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDeleting(row);
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </>
           )}
           emptyState={{
             icon: <FileQuestion className="h-8 w-8 text-muted-foreground" />,
@@ -408,8 +418,22 @@ export function PagesTable() {
               organizationId: site.organization_id,
               url: value,
             });
-            toast.success("Page added");
+            toast.success("Page added", {
+              description: "Fetching its first capture now…",
+            });
             setAdding(false);
+            // First capture kicks off immediately — non-blocking so the
+            // dialog closes; failures surface via toast + Error Inspector.
+            void fetchPageNow(site.id, value)
+              .then(() => {
+                void pages.refetch();
+                toast.success("Page captured");
+              })
+              .catch((error: unknown) => {
+                toast.error("Could not capture the new page", {
+                  description: extractErrorMessage(error),
+                });
+              });
           } catch (error) {
             toast.error("Could not add page", {
               description: extractErrorMessage(error),

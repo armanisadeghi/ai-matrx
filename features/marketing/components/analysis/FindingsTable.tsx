@@ -22,6 +22,10 @@ import {
 import { useSiteFindings } from "@/features/marketing/data/analysis-hooks";
 import type { FindingListRow } from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 export function FindingsTable() {
   const router = useRouter();
@@ -185,6 +189,41 @@ export function FindingsTable() {
               </Button>
             </div>
           ),
+        }}
+        copy={{
+          label: "Finding",
+          listLabel: "All findings",
+          location: webLocation(`Findings register — ${site.root_url}`),
+          rowKind: "web-finding",
+          listKind: "web-findings-list",
+          rowDescription:
+            "One durable finding lifecycle record from this site's register.",
+          listDescription:
+            "The currently loaded finding rows (respecting search, filters, sort, and pagination).",
+          humanRow: (row) =>
+            humanLines([
+              ["Finding", row.id],
+              ["Item", row.item_key],
+              ["Category", `${row.category} / ${row.subcategory}`],
+              ["Severity", row.severity],
+              ["Lifecycle", row.status],
+              ["Subject", row.subject_type],
+              ["Page", row.page_path ?? (row.page_id ? row.page_id : "site-level")],
+              ["Page URL", row.page_url],
+              ["Suppressed", row.suppressed ? "yes" : "no"],
+              ["Last detected", formatCompactDate(row.last_detected_at)],
+            ]),
+          rowAttributes: (row) => ({
+            finding_id: row.id,
+            site_id: site.id,
+            item_key: row.item_key,
+            severity: row.severity,
+            status: row.status,
+          }),
+          listAttributes: () => ({
+            site_id: site.id,
+            total_matching: findings.data?.total ?? 0,
+          }),
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>

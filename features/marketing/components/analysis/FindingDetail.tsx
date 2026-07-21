@@ -13,6 +13,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   FindingStatusBadge,
   RESULT_STATUS_OPTIONS,
@@ -31,6 +32,11 @@ import {
 import { useFindingResults } from "@/features/marketing/data/analysis-hooks";
 import type { MarketingAnalysisResult } from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  humanLines,
+  webCopy,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 function compactId(value: string | null) {
   return value ? value.slice(0, 12) : "—";
@@ -235,6 +241,39 @@ export function FindingDetail({ findingId }: { findingId: string }) {
     startNavigation(() => router.push(href));
   };
   const itemLabel = data.item?.label || finding.item_key;
+  const findingCopy = webCopy({
+    kind: "web-finding",
+    label: itemLabel,
+    description:
+      "One durable finding: lifecycle state, catalog item context, affected page, and the latest result evidence.",
+    surface: `Finding detail — ${finding.item_key}`,
+    data,
+    lines: [
+      ["Finding", finding.id],
+      ["Item", finding.item_key],
+      ["Label", itemLabel],
+      ["Category", `${finding.category} / ${finding.subcategory}`],
+      ["Lifecycle", finding.status],
+      ["Severity", finding.severity],
+      ["Subject", `${finding.subject_type} ${finding.subject_id}`],
+      ["Page", data.page?.url],
+      ["First detected", formatDate(finding.first_detected_at)],
+      ["Last detected", formatDate(finding.last_detected_at)],
+      ["Resolved", formatDate(finding.resolved_at)],
+      ["Suppressed", finding.suppressed ? "yes" : "no"],
+      ["Suppression reason", finding.suppressed_reason],
+      ["Latest result", latest?.status ?? null],
+      ["Latest score", latest?.score ?? null],
+      ["Confidence", confidenceLabel(latest?.confidence ?? null)],
+    ],
+    attributes: {
+      finding_id: finding.id,
+      site_id: site.id,
+      item_key: finding.item_key,
+      status: finding.status,
+      severity: finding.severity,
+    },
+  });
 
   return (
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
@@ -274,19 +313,22 @@ export function FindingDetail({ findingId }: { findingId: string }) {
               </p>
             ) : null}
           </div>
-          {data.page ? (
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-8 shrink-0"
-            >
-              <a href={data.page.url} target="_blank" rel="noreferrer">
-                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                {data.page.path || "/"}
-              </a>
-            </Button>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-1.5">
+            <CopyButtons size="icon" {...findingCopy} />
+            {data.page ? (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0"
+              >
+                <a href={data.page.url} target="_blank" rel="noreferrer">
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                  {data.page.path || "/"}
+                </a>
+              </Button>
+            ) : null}
+          </div>
         </div>
         <dl className="grid grid-cols-2 border-t border-border divide-x divide-y divide-border sm:grid-cols-4 xl:grid-cols-8">
           <LifecycleDatum
@@ -380,6 +422,42 @@ export function FindingDetail({ findingId }: { findingId: string }) {
                   Refresh
                 </Button>
               ),
+            }}
+            copy={{
+              label: "Analysis result",
+              listLabel: "All result evidence",
+              location: webLocation(
+                `Finding detail — ${finding.item_key} — result history`,
+              ),
+              rowKind: "web-analysis-result",
+              listKind: "web-analysis-results-list",
+              rowDescription:
+                "One immutable normalized analysis result for this finding's subject and item.",
+              listDescription:
+                "The currently loaded immutable result evidence rows for this finding (respecting search, filters, sort, and pagination).",
+              humanRow: (row) =>
+                humanLines([
+                  ["Result", row.id],
+                  ["Computed", formatCompactDate(row.computed_at)],
+                  ["Status", row.status],
+                  ["Severity", row.severity],
+                  ["Score", row.score],
+                  ["Issues", row.issue_count],
+                  ["Confidence", confidenceLabel(row.confidence)],
+                  ["Provider version", row.provider_version],
+                  ["Run", row.run_id],
+                ]),
+              rowAttributes: (row) => ({
+                result_id: row.id,
+                finding_id: finding.id,
+                site_id: site.id,
+                status: row.status,
+              }),
+              listAttributes: () => ({
+                finding_id: finding.id,
+                site_id: site.id,
+                total_matching: results.data?.total ?? 0,
+              }),
             }}
             detail={{
               title: (row) => `${row.item_key} · ${row.status}`,

@@ -81,6 +81,48 @@ export function SiteAccessWorkspace() {
     onError: (error) => toast.error(error.message),
   });
 
+  const grantSummary = (row: SitePermissionGrant): string =>
+    `${row.grantee_type} ${row.grantee_id} · ${row.permission_level}${row.expires_at ? ` · expires ${formatCompactDate(row.expires_at)}` : ""}`;
+
+  const grantRowCopy = (row: SitePermissionGrant) =>
+    webCopy({
+      kind: "web-site-access-grant",
+      label: `Access grant (${row.grantee_type})`,
+      description: "One delegated access grant on this managed site's root.",
+      surface: `Site access — ${site.name}`,
+      data: row,
+      lines: [
+        ["Site", site.name],
+        ["Target", row.grantee_type],
+        ["Grantee ID", row.grantee_id],
+        ["Access", row.permission_level],
+        ["Expires", row.expires_at ? formatCompactDate(row.expires_at) : "never"],
+      ],
+      attributes: {
+        site_id: site.id,
+        grantee_type: row.grantee_type,
+        grantee_id: row.grantee_id,
+      },
+    });
+
+  const grantRows = permissions.data ?? [];
+  const accessCopy = webCopy({
+    kind: "web-site-access",
+    label: "Site access",
+    description:
+      "Every delegated access grant on this managed site's root (one grant conveys the whole subtree).",
+    surface: `Site access — ${site.name}`,
+    data: grantRows,
+    lines: [
+      ["Site", site.name],
+      ["Grants", grantRows.length],
+      ...grantRows.map(
+        (row): [string, string] => ["Grant", grantSummary(row)],
+      ),
+    ],
+    attributes: { site_id: site.id, count: grantRows.length },
+  });
+
   const columns: MatrxColumnDef<SitePermissionGrant>[] = [
     {
       id: "grantee_type",
@@ -131,17 +173,20 @@ export function SiteAccessWorkspace() {
       filter: false,
       align: "right",
       cell: (row) => (
-        <Button
-          size="icon"
-          variant="ghost"
-          aria-label="Revoke access"
-          onClick={(event) => {
-            event.stopPropagation();
-            setRevokeTarget(row);
-          }}
+        <span
+          className="inline-flex items-center gap-0.5"
+          onClick={(event) => event.stopPropagation()}
         >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+          <CopyButtons size="icon" {...grantRowCopy(row)} />
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Revoke access"
+            onClick={() => setRevokeTarget(row)}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </span>
       ),
     },
   ];
@@ -160,6 +205,9 @@ export function SiteAccessWorkspace() {
               finding, and artifact beneath it.
             </p>
           </div>
+          <span className="ml-auto">
+            <CopyButtons size="icon" {...accessCopy} />
+          </span>
         </div>
         <div className="grid gap-2 xl:grid-cols-[14rem_9rem_minmax(18rem,1fr)_9rem_13rem_auto]">
           <Select
