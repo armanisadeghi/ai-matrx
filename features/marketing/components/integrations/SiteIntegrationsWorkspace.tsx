@@ -44,7 +44,10 @@ import {
   type ProviderIntegrationDraft,
   type SiteIntegrationsDraft,
 } from "@/features/marketing/data/integrations-schema";
-import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
+import {
+  updateBuiltInProviderIntegration,
+  updateSiteIntegrations,
+} from "@/features/marketing/data/integrations-service";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { syncGsc } from "@/features/marketing/crawler/direct-client";
 import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
@@ -176,21 +179,21 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
       ),
     }));
 
-  const persistDraft = async (
-    nextDraft: SiteIntegrationsDraft,
+  const persistBuiltInProvider = async (
+    provider: BuiltInProviderKey,
+    next: ProviderIntegrationDraft,
     successTitle: string,
     successDescription?: string,
   ) => {
-    const nextIssues = validateSiteIntegrations(nextDraft);
-    if (nextIssues.length) {
-      throw new Error(nextIssues[0].message);
-    }
-    setDraft(nextDraft);
-    await update.mutateAsync({
+    const updatedSite = await updateBuiltInProviderIntegration({
       siteId: site.id,
-      expectedVersion: site.version,
-      integrations: buildSiteIntegrations(site.integrations, nextDraft),
+      provider,
+      expected: initial[provider],
+      next,
     });
+    queryClient.setQueryData(marketingKeys.site(site.id), updatedSite);
+    setDraft(parseSiteIntegrations(updatedSite.integrations));
+    void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
     toast.success(successTitle, { description: successDescription });
   };
 
@@ -231,27 +234,24 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             return false;
           }
         }) ?? (searchResources.length === 1 ? searchResources[0] : null);
-      const nextDraft: SiteIntegrationsDraft = {
-        ...draft,
-        googleSearchConsole: {
-          ...draft.googleSearchConsole,
-          enabled: Boolean(matchingSearch) || draft.googleSearchConsole.enabled,
-          credentialAuthority: "external_connection",
-          credentialRef: connectionId,
-          resourceRef:
-            matchingSearch?.resource_ref ??
-            draft.googleSearchConsole.resourceRef,
-        },
+      const nextGoogleSearchConsole: ProviderIntegrationDraft = {
+        ...draft.googleSearchConsole,
+        enabled: Boolean(matchingSearch) || draft.googleSearchConsole.enabled,
+        credentialAuthority: "external_connection",
+        credentialRef: connectionId,
+        resourceRef:
+          matchingSearch?.resource_ref ?? draft.googleSearchConsole.resourceRef,
       };
-      setDraft(nextDraft);
 
       if (matchingSearch) {
-        await persistDraft(
-          nextDraft,
+        await persistBuiltInProvider(
+          "googleSearchConsole",
+          nextGoogleSearchConsole,
           "Search Console connected",
           `${matchingSearch.display_name} is now connected to ${site.domain}.`,
         );
       } else {
+        setBuiltIn("googleSearchConsole", nextGoogleSearchConsole);
         toast.success("Google Search Console authorized", {
           description:
             searchResources.length > 0
@@ -382,12 +382,9 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               saving={update.isPending}
               onSave={save}
               onEnable={() => {
-                const nextDraft = {
-                  ...draft,
-                  [key]: { ...draft[key], enabled: true },
-                };
-                void persistDraft(
-                  nextDraft,
+                void persistBuiltInProvider(
+                  key,
+                  { ...draft[key], enabled: true },
                   `${provider.label} enabled`,
                   `${provider.label} is now enabled for ${site.domain}.`,
                 ).catch((error) =>

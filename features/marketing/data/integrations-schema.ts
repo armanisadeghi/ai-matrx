@@ -51,6 +51,15 @@ export interface IntegrationValidationIssue {
   message: string;
 }
 
+export class IntegrationProviderConflictError extends Error {
+  constructor() {
+    super(
+      "This provider changed while you were connecting it. Reload and review the latest settings before trying again.",
+    );
+    this.name = "IntegrationProviderConflictError";
+  }
+}
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PROVIDER_KEY_PATTERN = /^[a-z][a-z0-9._-]{1,63}$/;
@@ -211,6 +220,24 @@ export function buildSiteIntegrations(
       })),
     },
   };
+}
+
+/**
+ * Rebase one provider onto the latest site document without overwriting sibling
+ * providers. The expected value keeps a retry from masking a real same-provider
+ * edit made in another tab.
+ */
+export function buildSiteIntegrationsWithProviderChange(
+  existing: Json,
+  provider: BuiltInProviderKey,
+  expected: ProviderIntegrationDraft,
+  next: ProviderIntegrationDraft,
+): Json {
+  const current = parseSiteIntegrations(existing);
+  if (JSON.stringify(current[provider]) !== JSON.stringify(expected)) {
+    throw new IntegrationProviderConflictError();
+  }
+  return buildSiteIntegrations(existing, { ...current, [provider]: next });
 }
 
 function looksLikeSecret(value: string): boolean {

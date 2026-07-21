@@ -1,6 +1,8 @@
 import type { Json } from "@/types/database.types";
 import {
   buildSiteIntegrations,
+  buildSiteIntegrationsWithProviderChange,
+  IntegrationProviderConflictError,
   parseSiteIntegrations,
   providerReferenceStatus,
   validateSiteIntegrations,
@@ -95,5 +97,57 @@ describe("marketing site integration JSON", () => {
         draft,
       ),
     ).toThrow("contains a secret field");
+  });
+
+  it("rebases one provider without overwriting a concurrent sibling change", () => {
+    const expected = parseSiteIntegrations({}).googleSearchConsole;
+    const concurrent = parseSiteIntegrations({});
+    concurrent.googleAnalytics4 = {
+      enabled: true,
+      credentialAuthority: "external_connection",
+      credentialRef,
+      resourceRef: "properties/123456789",
+    };
+    const existing = buildSiteIntegrations({}, concurrent);
+    const result = buildSiteIntegrationsWithProviderChange(
+      existing,
+      "googleSearchConsole",
+      expected,
+      {
+        enabled: true,
+        credentialAuthority: "external_connection",
+        credentialRef,
+        resourceRef: "sc-domain:example.com",
+      },
+    );
+    const parsed = parseSiteIntegrations(result);
+    expect(parsed.googleSearchConsole.resourceRef).toBe(
+      "sc-domain:example.com",
+    );
+    expect(parsed.googleAnalytics4.resourceRef).toBe("properties/123456789");
+  });
+
+  it("rejects a rebase when the same provider changed concurrently", () => {
+    const expected = parseSiteIntegrations({}).googleSearchConsole;
+    const concurrent = parseSiteIntegrations({});
+    concurrent.googleSearchConsole = {
+      enabled: true,
+      credentialAuthority: "external_connection",
+      credentialRef,
+      resourceRef: "sc-domain:other.example",
+    };
+    expect(() =>
+      buildSiteIntegrationsWithProviderChange(
+        buildSiteIntegrations({}, concurrent),
+        "googleSearchConsole",
+        expected,
+        {
+          enabled: true,
+          credentialAuthority: "external_connection",
+          credentialRef,
+          resourceRef: "sc-domain:example.com",
+        },
+      ),
+    ).toThrow(IntegrationProviderConflictError);
   });
 });
