@@ -110,7 +110,7 @@ export function ThreadResourcesTab({
       const result = await requestUpload({
         files,
         folderPath: folderForWarRoomThread(threadId),
-        visibility: "private",
+        visibility: "personal",
       });
       console.info("[war-room upload] pipeline result", {
         uploaded: result.uploaded.length,

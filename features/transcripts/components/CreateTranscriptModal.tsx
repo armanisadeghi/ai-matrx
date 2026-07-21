@@ -433,7 +433,7 @@ export function CreateTranscriptModal({
 
               <FileUploadWithStorage
                 path="Transcripts/Uploads"
-                saveTo="private"
+                saveTo="personal"
                 onUploadComplete={handleUploadComplete}
                 multiple={false}
                 useMiniUploader={false}

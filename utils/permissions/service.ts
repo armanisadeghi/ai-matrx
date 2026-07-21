@@ -17,13 +17,13 @@
  *
  * Canonical-visibility resources (any registry row with `isPublicColumn = null`,
  * detected by `usesVisibilityEnum()`): the row carries the `platform.visibility`
- * enum (`private < internal < link < public`) read by RLS via `iam.has_access`,
+ * enum (`personal < internal < link < public`) read by RLS via `iam.has_access`,
  * and the legacy `is_public` column is deprecated/ignored. For these, public
  * toggle read/write goes DIRECTLY to the `visibility` column (owner-only via the
  * owner-UPDATE RLS policy), NOT the `make_resource_*` RPCs.
  *
  * Visibility model (two tiers only):
- *   - Private: accessible only to owner + explicit user/org grants + hierarchy members
+ *   - Personal: accessible only to owner + explicit user/org grants + hierarchy members
  *   - Public:  is_public = true on the resource row — readable by anyone including unauthenticated
  *   - is_public lives on the resource row, NOT the permissions table.
  *     Always read it via getResourceVisibility() — never from the permissions table.
@@ -136,7 +136,7 @@ export interface ResourceVisibility {
 
 /**
  * True when a resource's public state is driven by the canonical
- * `platform.visibility` enum (`private < internal < link < public`) rather than
+ * `platform.visibility` enum (`personal < internal < link < public`) rather than
  * a legacy boolean column. Derived from the registry — a canonical table has
  * `isPublicColumn = null` (no boolean flag; RLS reads `visibility` via
  * `iam.has_access`). The owner-UPDATE RLS policy lets the owner write
@@ -157,7 +157,7 @@ function usesVisibilityEnum(resourceType: ResourceType): boolean {
 async function setVisibilityColumn(
   resourceType: ResourceType,
   resourceId: string,
-  visibility: "private" | "internal" | "link" | "public",
+  visibility: "personal" | "internal" | "link" | "public",
 ): Promise<ShareActionResult> {
   const entry = getShareableResource(resourceType);
   const tableName = entry?.tableName ?? resourceType;
@@ -406,14 +406,14 @@ export async function makePrivate(
   resourceId: string,
 ): Promise<ShareActionResult> {
   try {
-    // Canonical `visibility`-enum resources write `visibility = 'private'`
+    // Canonical `visibility`-enum resources write `visibility = 'personal'`
     // directly (owner-only via RLS); the RPC only touches deprecated `is_public`.
     if (usesVisibilityEnum(resourceType)) {
-      const res = await setVisibilityColumn(resourceType, resourceId, "private");
+      const res = await setVisibilityColumn(resourceType, resourceId, "personal");
       if (!res.success) {
-        return { success: false, error: res.error || "Failed to make private" };
+        return { success: false, error: res.error || "Failed to make personal" };
       }
-      return { success: true, message: "Resource is now private" };
+      return { success: true, message: "Resource is now personal" };
     }
 
     const { data, error } = await supabase.rpc("make_resource_private", {

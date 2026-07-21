@@ -129,7 +129,7 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
             download_url: "https://server.app.matrxserver.com/files/b7f3c2a1/download",
             cdn_url: "https://cdn.example.com/files/quarterly-report.docx",
             mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            visibility: "private",
+            visibility: "personal",
             file_name: "Quarterly Report.docx",
             byte_size: 48213,
             office_kind: "docx",

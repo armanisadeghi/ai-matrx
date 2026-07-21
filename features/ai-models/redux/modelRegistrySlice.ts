@@ -422,7 +422,7 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     organization_id: "",
     created_by: null,
     deleted_at: null,
-    visibility: "private",
+    visibility: "personal",
     // Canonical base columns (2026-07-02 AI-catalog reshape)
     is_system: false,
     created_at: "",

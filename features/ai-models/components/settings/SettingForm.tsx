@@ -32,7 +32,7 @@ const VISIBILITY_OPTIONS: Array<{
   value: AiSettingFormData["visibility"];
   label: string;
 }> = [
-  { value: "private", label: "Private" },
+  { value: "personal", label: "Personal" },
   { value: "internal", label: "Internal" },
   { value: "link", label: "Link" },
   { value: "public", label: "Public" },

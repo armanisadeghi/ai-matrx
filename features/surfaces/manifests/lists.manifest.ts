@@ -60,7 +60,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "list_visibility",
     label: "List visibility",
     description:
-      '"private", "shared", or "public" — visibility of the active list. Empty when none is open.',
+      '"personal", "shared", or "public" — visibility of the active list. Empty when none is open.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,

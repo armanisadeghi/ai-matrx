@@ -110,7 +110,7 @@ export function ThreadNewFileDialog({
       const result = await requestUpload({
         files: [file],
         folderPath: folderForWarRoomThread(threadId),
-        visibility: "private",
+        visibility: "personal",
       });
       if (result.cancelled) return;
       // The dedup dialog may alias to an existing identical file — attach that.

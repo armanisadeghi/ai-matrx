@@ -357,7 +357,7 @@ export const createNewNote = createAsyncThunk<
       position: 0,
       // Private by default — the `notes.visibility` enum DB default is
       // 'internal' (org-visible), so set it explicitly on create.
-      visibility: input.visibility ?? "private",
+      visibility: input.visibility ?? "personal",
       // folder_id can be null here, so the org-inherit trigger may have no
       // parent to read — resolve the org explicitly (never insert a null org).
       organization_id: await ensureOrgId(input.organization_id),
@@ -479,7 +479,7 @@ export const copyNote = createAsyncThunk<Note, string>(
         position: 0,
         // A duplicate is private by default — don't inherit a shared
         // visibility, and don't fall through to the DB 'internal' default.
-        visibility: "private",
+        visibility: "personal",
         // Keep the copy in the original's org — EXCEPT when duplicating a
         // note someone shared with us: the sharee may not be a member of the
         // owner's org and std_insert would 42501. Home their copy in their
@@ -750,7 +750,7 @@ export const fetchSharedNotesList = createAsyncThunk<void, void>(
             organization_id: row.organization_id,
             project_id: row.project_id,
             task_id: row.task_id,
-            visibility: (row.visibility ?? "private") as Note["visibility"],
+            visibility: (row.visibility ?? "personal") as Note["visibility"],
             version: row.version,
             created_by: row.created_by,
           },

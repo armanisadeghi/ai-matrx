@@ -57,9 +57,9 @@ function metaNumber(
 
 function metaVisibility(
   metadata: Record<string, unknown> | null | undefined,
-): "public" | "private" | "shared" {
+): "public" | "personal" | "shared" {
   const value = metaString(metadata, "visibility");
-  if (value === "public" || value === "private" || value === "shared")
+  if (value === "public" || value === "personal" || value === "shared")
     return value;
   // Default assumption: AI-generated images are stored with `visibility: "public"`
   // in cld_files (see the example row in UNIFIED_IMAGE_BLOCK.md). When Python

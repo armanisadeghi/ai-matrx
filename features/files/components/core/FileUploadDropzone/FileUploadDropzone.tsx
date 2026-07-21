@@ -52,7 +52,7 @@ export interface FileUploadDropzoneProps {
 
 export function FileUploadDropzone({
   parentFolderId,
-  visibility = "private",
+  visibility = "personal",
   accept,
   maxSize,
   enablePaste = true,

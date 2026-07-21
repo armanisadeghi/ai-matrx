@@ -11,7 +11,7 @@ export default async function ScopesIndexPage() {
     <>
       <ScopesHubHeader />
       <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
-        <div className="max-w-6xl mx-auto p-6 md:p-8">
+        <div className="w-full p-4 md:p-6">
           <ScopesHub />
         </div>
       </div>

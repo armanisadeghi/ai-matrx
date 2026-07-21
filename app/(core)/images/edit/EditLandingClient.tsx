@@ -79,7 +79,7 @@ export default function EditLandingClient({ folder }: Props) {
               { kind: "file", file },
               {
                 folderPath: CloudFolders.IMAGES_EDITED_SOURCES,
-                visibility: "private",
+                visibility: "personal",
                 metadata: { kind: "edit-source", origin: "paste" },
               },
             );
@@ -117,7 +117,7 @@ export default function EditLandingClient({ folder }: Props) {
           onComplete={handleUploaderResult}
           preset="raw"
           folder={CloudFolders.IMAGES_EDITED_SOURCES}
-          visibility="private"
+          visibility="personal"
           label="Edit source"
           allowUrlPaste
           compact={false}

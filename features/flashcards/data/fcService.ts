@@ -139,7 +139,7 @@ export const fcService = {
     }
   },
 
-  /** Phase 1A — flip a set's share visibility (private/internal/link/public). */
+  /** Phase 1A — flip a set's share visibility (personal/internal/link/public). */
   async updateSetVisibility(
     setId: string,
     visibility: FcSetRow["visibility"],

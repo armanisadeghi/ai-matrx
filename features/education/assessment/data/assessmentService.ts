@@ -110,7 +110,7 @@ export const assessmentService = {
     }
   },
 
-  /** Flip visibility (private → link/public) for sharing. */
+  /** Flip visibility (personal → link/public) for sharing. */
   async updateVisibility(
     id: string,
     visibility: AssessmentRow["visibility"],

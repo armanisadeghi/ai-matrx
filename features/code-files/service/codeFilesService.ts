@@ -152,7 +152,7 @@ export async function createCodeFile(
       metadata: input.metadata ?? {},
       s3_key: input.s3_key ?? null,
       s3_bucket: input.s3_bucket ?? null,
-      visibility: input.visibility ?? "private",
+      visibility: input.visibility ?? "personal",
     })
     .select("*")
     .single();

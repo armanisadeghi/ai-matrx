@@ -182,7 +182,7 @@ export const appletConfigToDBFormat = async (
     app_id: config.appId || null,
     broker_map: config.brokerMap || null,
     metadata: {} as Json,
-    visibility: "private",
+    visibility: "personal",
     created_by: userId,
   };
 };

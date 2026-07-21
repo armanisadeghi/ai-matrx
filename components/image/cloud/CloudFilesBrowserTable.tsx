@@ -845,7 +845,7 @@ function BulkBar({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center">
-            <DropdownMenuItem onClick={() => onVisibility("private")}>
+            <DropdownMenuItem onClick={() => onVisibility("personal")}>
               <Lock className="mr-2 h-3.5 w-3.5" />
               Private
             </DropdownMenuItem>

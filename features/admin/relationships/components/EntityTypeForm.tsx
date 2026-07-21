@@ -59,7 +59,7 @@ export function isValidEntityToken(token: string): boolean {
 }
 
 const VISIBILITY_NONE = "__none__";
-const VISIBILITY_OPTIONS = ["private", "internal", "link", "public"];
+const VISIBILITY_OPTIONS = ["personal", "internal", "link", "public"];
 
 const CONTENT_ROLE_NONE = "__none__";
 /** Mirrors the DB check constraint on platform.entity_types.content_role. */

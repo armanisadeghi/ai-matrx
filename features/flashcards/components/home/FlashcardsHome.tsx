@@ -73,7 +73,7 @@ function matchesVisibility(
 ): boolean {
   switch (filter) {
     case "mine":
-      return visibility === "private" || visibility === "internal";
+      return visibility === "personal" || visibility === "internal";
     case "shared":
       return visibility === "link";
     case "public":
@@ -86,7 +86,7 @@ function matchesVisibility(
 
 /** Visibility → display chip. */
 const VISIBILITY_LABEL: Record<FcSetRow["visibility"], string> = {
-  private: "Private",
+  personal: "Personal",
   internal: "Org",
   link: "Link",
   public: "Public",
@@ -97,7 +97,7 @@ function VisibilityChip({
 }: {
   visibility: FcSetRow["visibility"];
 }) {
-  const label = VISIBILITY_LABEL[visibility] ?? "Private";
+  const label = VISIBILITY_LABEL[visibility] ?? "Personal";
   return (
     <span className="shrink-0 inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4 text-muted-foreground">
       {label}

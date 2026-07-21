@@ -212,7 +212,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
   const statusLabel =
     app.status.charAt(0).toUpperCase() + app.status.slice(1);
-  const visibilityLabel = app.is_public ? "Public" : "Private";
+  const visibilityLabel = app.is_public ? "Public" : "Personal";
 
   return (
     <div

@@ -65,7 +65,7 @@ platform.create_entity_table(
   p_label       text,       p_fields  text[],    -- raw column defs, placed right after id
   p_variant     text,       -- 'entity' | 'component' | 'ledger' | 'system'
   p_versioned   boolean,    p_soft_delete boolean,
-  p_visibility  text,       -- 'none' | a platform.visibility value (e.g. 'private','public','link')
+  p_visibility  text,       -- 'none' | a platform.visibility value (e.g. 'personal','public','link')
   p_category    boolean,    -- adds category_id → platform.categories(id)
   p_listed      boolean,    p_org_default boolean,
   p_gin_jsonb   boolean     -- auto-GIN each jsonb custom field
@@ -81,7 +81,7 @@ Example — the entire `flexible_data` table:
 ```sql
 SELECT platform.create_entity_table('public','flexible_data','flexible_data','Flexible Data',
   ARRAY['label text NOT NULL','data jsonb NOT NULL DEFAULT ''{}''::jsonb'],
-  'entity', true, true, 'private', true, false, true, true);
+  'entity', true, true, 'personal', true, false, true, true);
 ```
 
 Result column order: `id → label → data → organization_id → created_by → updated_by → created_at → updated_at → deleted_at → version → metadata → visibility → category_id`.

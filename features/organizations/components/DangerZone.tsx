@@ -107,7 +107,7 @@ export function DangerZone({ organization }: DangerZoneProps) {
 
         <ul className="text-xs text-muted-foreground space-y-0.5 border-t pt-3">
           <li>• All members lose access immediately</li>
-          <li>• Shared resources become private</li>
+          <li>• Shared resources become personal</li>
           <li>• Pending invitations are cancelled</li>
         </ul>
       </div>

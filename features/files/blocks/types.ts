@@ -35,7 +35,7 @@
 export type MediaKind = "image" | "video" | "audio" | "document" | "youtube";
 export type MediaOrigin = "matrx" | "external";
 export type MediaStatus = "complete" | "streaming" | "error";
-export type MediaVisibility = "public" | "private" | "shared";
+export type MediaVisibility = "public" | "personal" | "shared";
 
 // ─── Cross-cutting base (every block carries these) ─────────────────────────
 

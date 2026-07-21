@@ -104,7 +104,7 @@ export function ContentHeader({
   );
 
   const title = folder?.folderName ?? SECTION_TITLES[section];
-  const visibility: Visibility = folder?.visibility ?? "private";
+  const visibility: Visibility = folder?.visibility ?? "personal";
   const granteeIds = useMemo(
     () =>
       (permissions ?? EMPTY_CLOUD_FILE_PERMISSIONS)

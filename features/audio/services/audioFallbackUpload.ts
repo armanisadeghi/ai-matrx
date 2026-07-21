@@ -57,7 +57,7 @@ async function uploadWithRetry(
   try {
     await fileHandler.ensureFolderPath({
       folderPath: CloudFolders.TMP_TRANSCRIPTS,
-      visibility: "private",
+      visibility: "personal",
     });
     folderPath = CloudFolders.TMP_TRANSCRIPTS;
   } catch {
@@ -81,7 +81,7 @@ async function uploadWithRetry(
         { kind: "file", file },
         {
           folderPath: folderPath ?? undefined,
-          visibility: "private",
+          visibility: "personal",
           metadata: {
             origin: "audio-fallback",
             blob_type: contentType,

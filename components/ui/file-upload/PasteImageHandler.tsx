@@ -18,7 +18,7 @@ import { toast } from "@/lib/toast";
 import { useFileUpload, composeUploadFolderPath } from "@/features/files";
 import type { Visibility } from "@/features/files";
 
-type SaveToOption = "public" | "private";
+type SaveToOption = "public" | "personal";
 
 /**
  * Shape passed to `onImagePasted`. `url` is the embeddable direct-file
@@ -41,7 +41,7 @@ type PasteImageHandlerProps = {
   folderRoot?: string;
   /** Sub-folder under the top-level folder. */
   path?: string;
-  /** Override visibility. Default: "public" if `saveTo === 'public'`, else "private". */
+  /** Override visibility. Default: "public" if `saveTo === 'public'`, else "personal". */
   saveTo?: SaveToOption;
   onImagePasted?: (result: PasteImageUploadResult) => void;
   targetElement?: HTMLElement | null;
@@ -107,9 +107,9 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
       const visibility: Visibility =
         saveTo === "public"
           ? "public"
-          : saveTo === "private"
-            ? "private"
-            : "private";
+          : saveTo === "personal"
+            ? "personal"
+            : "personal";
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];

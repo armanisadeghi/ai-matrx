@@ -194,7 +194,7 @@ export async function createFlexibleData(
     label: input.label,
     slug: input.slug,
     data: toJsonObject(input.data),
-    visibility: input.visibility ?? "private",
+    visibility: input.visibility ?? "personal",
   };
 
   const { data, error } = await (await getSupabase())

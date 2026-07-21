@@ -546,7 +546,7 @@ export const createFolder = createAsyncThunk<
   }
   const body = {
     folder_path: folderPath,
-    visibility: arg.visibility ?? "private",
+    visibility: arg.visibility ?? "personal",
     metadata: arg.metadata ?? null,
   };
 
@@ -794,7 +794,7 @@ export const ensureFolderPath = createAsyncThunk<
       createFolder({
         folderName: segment,
         parentId,
-        visibility: arg.visibility ?? "private",
+        visibility: arg.visibility ?? "personal",
       }),
     ).unwrap();
   }
@@ -965,7 +965,7 @@ export const uploadFiles = createAsyncThunk<
           {
             file,
             filePath: `${prefix}${targetName}`,
-            visibility: arg.visibility ?? "private",
+            visibility: arg.visibility ?? "personal",
             shareWith: arg.shareWith,
             shareLevel: arg.shareLevel,
             changeSummary: arg.changeSummary,
@@ -1001,7 +1001,7 @@ export const uploadFiles = createAsyncThunk<
               // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
               size_bytes: data.size_bytes,
               checksum: data.checksum,
-              visibility: arg.visibility ?? "private",
+              visibility: arg.visibility ?? "personal",
               current_version: data.version_number,
               parent_folder_id: arg.parentFolderId ?? null,
               metadata: arg.metadata ?? {},

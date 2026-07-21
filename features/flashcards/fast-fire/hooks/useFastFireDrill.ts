@@ -357,7 +357,7 @@ export function useFastFireDrill(): UseFastFireDrillResult {
             },
             {
               folderPath: CloudFolders.SYSTEM_FASTFIRE_SESSIONS,
-              visibility: "private",
+              visibility: "personal",
               metadata: { origin: "fastfire", session_id: sessionId ?? null },
             },
           );

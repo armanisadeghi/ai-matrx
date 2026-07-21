@@ -232,7 +232,7 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   const handleSaveAll = useCallback(
     async (folder: string, makePublic: boolean) => {
       await studio.saveAll(folder, {
-        visibility: makePublic ? "public" : "private",
+        visibility: makePublic ? "public" : "personal",
       });
       if (!studio.error) {
         toast.success(

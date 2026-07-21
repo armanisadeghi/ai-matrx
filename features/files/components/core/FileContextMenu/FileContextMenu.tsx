@@ -696,7 +696,7 @@ export function FileContextMenu({
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     <DropdownMenuItem
-                      onClick={() => void handleVisibility("private")}
+                      onClick={() => void handleVisibility("personal")}
                     >
                       <Lock className="mr-2 h-4 w-4" />
                       Private

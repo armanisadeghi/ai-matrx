@@ -628,7 +628,7 @@ function FloatingUploadAction({ parentFolderId }: FloatingUploadActionProps) {
             void requestUpload({
               files,
               parentFolderId,
-              visibility: "private",
+              visibility: "personal",
             });
           });
           input.click();

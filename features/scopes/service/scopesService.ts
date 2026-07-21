@@ -424,6 +424,57 @@ export const scopesService = {
     }
   },
 
+  /** Batched variant for multi-type surfaces (the /scopes hub tables):
+   *  one round-trip for every type's active item catalog. */
+  async listContextItemsForTypes(
+    scopeTypeIds: string[],
+  ): Promise<ScopesRpcResult<{ items: ContextItemRow[] }>> {
+    try {
+      requireUserId();
+      if (scopeTypeIds.length === 0) return ok({ items: [] });
+      const { data, error } = await contextDb(supabase)
+        .from("context_items")
+        .select("*")
+        .in("scope_type_id", scopeTypeIds)
+        .eq("is_active", true);
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ items: data ?? [] });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** Batched variant for multi-scope surfaces (the /scopes hub tables):
+   *  one round-trip for the CURRENT cells of every listed scope. Rows carry
+   *  `scope_id` so callers can regroup. */
+  async listContextValuesForScopes(
+    scopeIds: string[],
+  ): Promise<
+    ScopesRpcResult<{ values: (ContextItemValue & { scope_id: string })[] }>
+  > {
+    try {
+      requireUserId();
+      if (scopeIds.length === 0) return ok({ values: [] });
+      const { data, error } = await contextDb(supabase)
+        .from("context_item_values")
+        .select(
+          `scope_id, context_item_id, id, version, is_current,
+           value_text, value_number, value_boolean, value_date, value_json,
+           value_document_url, value_document_size_bytes,
+           value_reference_id, value_reference_type,
+           source_type, authored_by, created_at`,
+        )
+        .in("scope_id", scopeIds)
+        .eq("is_current", true);
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({
+        values: (data ?? []) as (ContextItemValue & { scope_id: string })[],
+      });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   async listContextValues(
     scopeId: string,
   ): Promise<ScopesRpcResult<{ values: ContextItemValue[] }>> {

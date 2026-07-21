@@ -16441,7 +16441,7 @@ export interface components {
              * @default private
              * @enum {string}
              */
-            visibility?: "public" | "private" | "shared";
+            visibility?: "public" | "personal" | "shared";
             /** Folder */
             folder: string;
             /** Preset */
@@ -16489,7 +16489,7 @@ export interface components {
          */
         AssetPatchRequest: {
             /** Visibility */
-            visibility?: ("public" | "private" | "shared") | null;
+            visibility?: ("public" | "personal" | "shared") | null;
             /** Share With */
             share_with?: string[] | null;
             /**
@@ -17269,7 +17269,7 @@ export interface components {
              * @default public
              * @enum {string}
              */
-            visibility?: "public" | "private" | "shared";
+            visibility?: "public" | "personal" | "shared";
             /**
              * Share With
              * @description Comma-separated user IDs (legacy)
@@ -17318,7 +17318,7 @@ export interface components {
              * @default private
              * @enum {string}
              */
-            visibility?: "public" | "private" | "shared";
+            visibility?: "public" | "personal" | "shared";
             /**
              * Share With
              * @description Comma-separated user IDs
@@ -18985,7 +18985,7 @@ export interface components {
              * @default private
              * @enum {string}
              */
-            visibility?: "public" | "private" | "shared";
+            visibility?: "public" | "personal" | "shared";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -19665,7 +19665,7 @@ export interface components {
             /** Folder */
             folder?: string | null;
             /** Visibility */
-            visibility?: ("public" | "private" | "shared") | null;
+            visibility?: ("public" | "personal" | "shared") | null;
             /** Url */
             url?: string | null;
             /** Cdn Url */
@@ -19868,7 +19868,7 @@ export interface components {
              * @default private
              * @enum {string}
              */
-            visibility?: "public" | "private" | "shared";
+            visibility?: "public" | "personal" | "shared";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -22903,7 +22903,7 @@ export interface components {
          */
         FilePatchRequest: {
             /** Visibility */
-            visibility?: ("public" | "private" | "shared") | null;
+            visibility?: ("public" | "personal" | "shared") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -23093,7 +23093,7 @@ export interface components {
              * @default private
              * @enum {string}
              */
-            visibility?: "public" | "private" | "shared";
+            visibility?: "public" | "personal" | "shared";
             /** File Name */
             file_name?: string | null;
             /** Mime Type */
@@ -23855,7 +23855,7 @@ export interface components {
              * @default private
              * @enum {string}
              */
-            visibility?: "private" | "public" | "shared";
+            visibility?: "personal" | "public" | "shared";
             /** Folder */
             folder?: string | null;
             /**
@@ -27221,7 +27221,7 @@ export interface components {
              */
             folder_path?: string | null;
             /** Visibility */
-            visibility?: ("public" | "private" | "shared") | null;
+            visibility?: ("public" | "personal" | "shared") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -28036,7 +28036,7 @@ export interface components {
              * @default private
              * @enum {string}
              */
-            visibility?: "public" | "private" | "shared";
+            visibility?: "public" | "personal" | "shared";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;

@@ -22328,7 +22328,7 @@ export type Database = {
       }
     }
     Enums: {
-      visibility: "private" | "internal" | "link" | "public"
+      visibility: "personal" | "internal" | "link" | "public"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -47428,7 +47428,7 @@ export const Constants = {
   },
   platform: {
     Enums: {
-      visibility: ["private", "internal", "link", "public"],
+      visibility: ["personal", "internal", "link", "public"],
     },
   },
   podcast: {

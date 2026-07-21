@@ -181,7 +181,7 @@ export async function uploadResponseClip(
     const namePrefix = opts.cardId ? `fastfire-${opts.cardId}` : "answer";
     const uploaded = await fileHandler.upload(
       { kind: "blob", blob: clip, fileName: `${namePrefix}.${ext}`, mime },
-      { folderPath: opts.folderPath, visibility: "private", metadata: opts.metadata ?? {} },
+      { folderPath: opts.folderPath, visibility: "personal", metadata: opts.metadata ?? {} },
     );
     return uploaded.fileId ?? null;
   } catch (err) {

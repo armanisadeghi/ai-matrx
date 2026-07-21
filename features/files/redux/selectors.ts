@@ -86,7 +86,7 @@ export const selectFilePath = createSelector(
 
 export const selectFileVisibility = createSelector(
   [selectFileById],
-  (record) => record?.visibility ?? "private",
+  (record) => record?.visibility ?? "personal",
 );
 
 export const selectFileIsDirty = createSelector(

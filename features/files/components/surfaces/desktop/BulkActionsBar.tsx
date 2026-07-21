@@ -377,7 +377,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center" className="w-44">
-          <DropdownMenuItem onClick={() => void handleVisibility("private")}>
+          <DropdownMenuItem onClick={() => void handleVisibility("personal")}>
             <Lock className="mr-2 h-4 w-4" /> Private
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => void handleVisibility("shared")}>

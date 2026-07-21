@@ -1,6 +1,6 @@
 // Canvas Social System Types
 
-export type CanvasVisibility = "public" | "unlisted" | "private";
+export type CanvasVisibility = "public" | "unlisted" | "personal";
 
 export type CanvasType =
   | "quiz"

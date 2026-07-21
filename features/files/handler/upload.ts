@@ -101,7 +101,7 @@ export async function uploadInternal(
       ...(opts.filePath
         ? { filePath: opts.filePath.replace(/^\/+/, "") }
         : { folderPath: folderPath.replace(/^\/+|\/+$/g, "") }),
-      visibility: opts.visibility ?? "private",
+      visibility: opts.visibility ?? "personal",
       shareWith: opts.shareWith,
       shareLevel: opts.shareLevel,
       changeSummary: opts.changeSummary,

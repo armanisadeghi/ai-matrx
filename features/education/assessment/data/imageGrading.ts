@@ -59,7 +59,7 @@ export async function uploadWorkPhoto(
           } as const);
     const uploaded = await fileHandler.upload(source, {
       folderPath: CloudFolders.SYSTEM_IMAGE_GRADE_RESPONSES,
-      visibility: "private",
+      visibility: "personal",
       metadata: opts.metadata ?? {},
     });
     return uploaded.fileId ?? null;

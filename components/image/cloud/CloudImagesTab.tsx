@@ -545,7 +545,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-44">
               <DropdownMenuItem
-                onClick={() => void handleBulkVisibility("private")}
+                onClick={() => void handleBulkVisibility("personal")}
               >
                 <Lock className="mr-2 h-4 w-4" /> Private
               </DropdownMenuItem>

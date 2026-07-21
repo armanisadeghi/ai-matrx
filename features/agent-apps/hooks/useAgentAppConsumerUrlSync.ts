@@ -46,7 +46,7 @@ const VALID_SORTS: AgentAppSortOption[] = [
   "last-run-desc",
 ];
 const VALID_ARCH: AgentAppArchFilter[] = ["active", "archived", "both"];
-const VALID_VIS: AgentAppVisibilityFilter[] = ["all", "public", "private"];
+const VALID_VIS: AgentAppVisibilityFilter[] = ["all", "public", "personal"];
 
 function pickValidated<T extends string>(
   raw: string | null,

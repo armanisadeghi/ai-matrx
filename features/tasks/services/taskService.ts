@@ -276,7 +276,7 @@ export async function uploadTaskAttachment(
     try {
       await fileHandler.ensureFolderPath({
         folderPath,
-        visibility: "private",
+        visibility: "personal",
       });
     } catch (err) {
       console.error("Failed to ensure task attachments folder:", err);
@@ -288,7 +288,7 @@ export async function uploadTaskAttachment(
         { kind: "file", file },
         {
           folderPath,
-          visibility: "private",
+          visibility: "personal",
           metadata: {
             origin: "task-attachment",
             task_id: taskId,
@@ -773,7 +773,7 @@ export async function makeTaskPublic(taskId: string): Promise<TaskShareResult> {
 }
 
 /**
- * Make a task private (sets visibility = 'private' on the task row).
+ * Make a task private (sets visibility = 'personal' on the task row).
  */
 export async function makeTaskPrivate(
   taskId: string,

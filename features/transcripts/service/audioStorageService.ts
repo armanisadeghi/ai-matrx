@@ -151,7 +151,7 @@ export async function saveAudioToStorage(
               // No `origin` tag → the backend leaves it in place (anything not
               // in the origin→system-folder map is untouched).
               folderPath: "Transcripts/Imports",
-              visibility: "private",
+              visibility: "personal",
               metadata: { source: "transcript_import", imported_by: userId },
             }
           : {
@@ -159,7 +159,7 @@ export async function saveAudioToStorage(
               // "transcripts"` uploads to the hidden system root
               // `system-files/transcripts/...`.
               folderPath: "Transcripts/Recordings",
-              visibility: "private",
+              visibility: "personal",
               // `origin: "transcripts"` is the REQUIRED signal that triggers
               // server-side relocation + hiding. Drop it and the recording
               // lands in the user namespace and reappears in the file tree.

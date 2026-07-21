@@ -57,7 +57,7 @@ export async function saveEditedImage(args: {
     { kind: "file", file },
     {
       ...(filePath ? { filePath } : { folderPath: args.folderPath }),
-      visibility: "private",
+      visibility: "personal",
       metadata: args.metadata,
       changeSummary: args.changeSummary,
       createShareLink: true,

@@ -561,13 +561,13 @@ export function useCropStudioController(
                       // parent_folder_id, so passing the path keeps the
                       // wire surface identical.
                       folderPath,
-                      visibility: "private",
+                      visibility: "personal",
                       createShareLink: true,
                       shareLinkPermissionLevel: "viewer",
                     }
                   : {
                       folderPath,
-                      visibility: "private",
+                      visibility: "personal",
                       createShareLink: true,
                       shareLinkPermissionLevel: "viewer",
                     },

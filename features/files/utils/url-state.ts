@@ -130,7 +130,7 @@ const SIZE_VALUES = new Set<SizeFilter>([
 ]);
 const ACCESS_VALUES = new Set<AccessFilter>([
   "any",
-  "private",
+  "personal",
   "shared",
   "public",
 ]);

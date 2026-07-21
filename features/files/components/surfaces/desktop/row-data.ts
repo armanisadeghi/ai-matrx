@@ -392,7 +392,7 @@ export function memberCountForResource(
 
 export function isSharedResource(
   resourceId: string,
-  visibility: "public" | "private" | "shared",
+  visibility: "public" | "personal" | "shared",
   permissionsByResourceId: Record<string, CloudFilePermission[]>,
 ): boolean {
   if (visibility === "shared" || visibility === "public") return true;

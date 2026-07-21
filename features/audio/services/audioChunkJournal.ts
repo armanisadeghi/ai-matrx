@@ -82,7 +82,7 @@ async function uploadAndJournalOnce(
   try {
     await fileHandler.ensureFolderPath({
       folderPath: CloudFolders.TMP_TRANSCRIPTS,
-      visibility: "private",
+      visibility: "personal",
     });
     folderPath = CloudFolders.TMP_TRANSCRIPTS;
   } catch {
@@ -97,7 +97,7 @@ async function uploadAndJournalOnce(
     { kind: "file", file },
     {
       folderPath,
-      visibility: "private",
+      visibility: "personal",
       metadata: {
         origin: "audio-chunk-journal",
         ephemeral: true,

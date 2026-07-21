@@ -43,8 +43,8 @@ export type AgentAppTab = "mine" | "shared" | "all";
 /** Maps onto AgentApp.status. "active" = anything not archived/suspended. */
 export type AgentAppArchFilter = "active" | "archived" | "both";
 
-/** Public-vs-private visibility filter. Independent of status. */
-export type AgentAppVisibilityFilter = "all" | "public" | "private";
+/** Public-vs-personal visibility filter. Independent of status. */
+export type AgentAppVisibilityFilter = "all" | "public" | "personal";
 
 /** Sentinel meaning "include uncategorized / untagged" items. */
 export const AGENT_APP_NONE_SENTINEL = "__none__";

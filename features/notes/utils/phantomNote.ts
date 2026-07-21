@@ -28,7 +28,7 @@ export function createPhantomNote(folderName: string = "Draft"): Note {
     created_at: now,
     updated_at: now,
     deleted_at: null,
-    visibility: "private",
+    visibility: "personal",
     last_device_id: null,
     organization_id: "",
     project_id: null,

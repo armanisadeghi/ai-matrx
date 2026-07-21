@@ -67,7 +67,7 @@ export function MessageInputBar({
           { kind: "file", file },
           {
             folderPath: `messages/${conversationId}`,
-            visibility: "private",
+            visibility: "personal",
             metadata: {
               kind: "voice_message",
               duration_sec: recorder.duration,
@@ -156,7 +156,7 @@ export function MessageInputBar({
         { kind: "file", file },
         {
           folderPath: `messages/${conversationId}`,
-          visibility: "private",
+          visibility: "personal",
           metadata: { kind: `chat_${kind}` },
         },
       );

@@ -100,7 +100,7 @@ describe("uploadCapture", () => {
     ];
     expect(source).toEqual({ kind: "file", file });
     expect(opts.folderPath).toBe("Captures/Photos");
-    expect(opts.visibility).toBe("private");
+    expect(opts.visibility).toBe("personal");
     expect(opts.fileName).toBe("capture-x.jpg");
     expect(opts.metadata).toEqual({ capture });
   });

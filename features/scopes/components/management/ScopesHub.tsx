@@ -1,31 +1,44 @@
 // features/scopes/components/management/ScopesHub.tsx
 //
-// The /scopes landing page — scopes are the SUBJECT. One compact group per
-// scope type (masonry columns, so the page fills), each group a vertical
-// list of scope rows with the type's color as a thin connector accent —
-// the same visual language as the org-overview tree. Chrome (org names,
-// manage links) stays tiny and quiet. Reads exclusively through
-// `useScopeTree`; never writes global context (Surface A invariant —
-// rows navigate, they don't activate).
+// The /scopes landing page — one full-width TABLE per scope type. Rows are
+// the scopes; columns are the type's context items (capped at
+// MAX_ITEM_COLUMNS, sorted by sort_order) with each scope's current cell
+// value summarized via the canonical `summarizeContextCell`. Row click →
+// the scope's page; the type header links to the scope-type page. Data:
+// tree via `useScopeTree`, columns/cells batch-loaded via
+// `useScopeTypeTables` (two round-trips total). Never writes global
+// context (Surface A invariant — everything here navigates).
 
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Building,
+  ExternalLink,
   Plus,
   Search,
-  Settings2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
+import { useScopeTypeTables } from "@/features/scopes/hooks/useScopeTypeTables";
+import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { HeavyHitterSuggestionsInbox } from "@/features/kg-suggestions/components/HeavyHitterSuggestionsInbox";
 import { cn } from "@/utils/cn";
-import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import type {
+  ContextItemRow,
+  ContextItemValue,
+  OrgNode,
+  ScopeTypeNode,
+} from "@/features/scopes/types";
+
+/** Reasonable cap on context-item columns so wide catalogs don't explode
+ *  the table; overflow is announced in the header ("+N more"). */
+const MAX_ITEM_COLUMNS = 6;
 
 interface DimensionRow {
   org: OrgNode;
@@ -36,6 +49,24 @@ export function ScopesHub() {
   const { organizations, status, error, refresh } = useScopeTree();
   const active = useActiveContext();
   const [query, setQuery] = useState("");
+
+  // Active org first, then personal, then alphabetical; types by sort_order.
+  const orderedOrgs = [...organizations].sort((a, b) => {
+    if (a.id === active.organizationId) return -1;
+    if (b.id === active.organizationId) return 1;
+    if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  const dimensions: DimensionRow[] = orderedOrgs.flatMap((org) =>
+    [...org.scope_types]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((type) => ({ org, type })),
+  );
+
+  const tables = useScopeTypeTables(
+    dimensions.map((d) => d.type.id),
+    dimensions.flatMap((d) => d.type.scopes.map((s) => s.id)),
+  );
 
   if (status === "loading" && organizations.length === 0) {
     return <HubSkeleton />;
@@ -79,22 +110,7 @@ export function ScopesHub() {
     );
   }
 
-  // Active org's dimensions first, then personal, then alphabetical by org;
-  // within an org, the type's own sort_order.
-  const orderedOrgs = [...organizations].sort((a, b) => {
-    if (a.id === active.organizationId) return -1;
-    if (b.id === active.organizationId) return 1;
-    if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-
-  const dimensions: DimensionRow[] = orderedOrgs.flatMap((org) =>
-    [...org.scope_types]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((type) => ({ org, type })),
-  );
   const emptyOrgs = orderedOrgs.filter((o) => o.scope_types.length === 0);
-
   const q = query.trim().toLowerCase();
   const visible = q
     ? dimensions
@@ -115,7 +131,7 @@ export function ScopesHub() {
   const showOrg = organizations.length > 1;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <HeavyHitterSuggestionsInbox />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -125,7 +141,7 @@ export function ScopesHub() {
           <span className="text-foreground font-medium">
             {dimensions.length}
           </span>{" "}
-          dimension{dimensions.length === 1 ? "" : "s"}
+          scope type{dimensions.length === 1 ? "" : "s"}
         </div>
         <div className="relative ml-auto w-full sm:w-64">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -143,17 +159,18 @@ export function ScopesHub() {
           No scopes match &ldquo;{query}&rdquo;.
         </div>
       ) : (
-        <div className="columns-1 md:columns-2 xl:columns-3 gap-4 [column-fill:balance]">
-          {visible.map(({ org, type }) => (
-            <TypeGroup
-              key={type.id}
-              org={org}
-              type={type}
-              activeScopeIds={activeScopeIds}
-              showOrg={showOrg}
-            />
-          ))}
-        </div>
+        visible.map(({ org, type }) => (
+          <ScopeTypeTable
+            key={type.id}
+            org={org}
+            type={type}
+            items={tables.itemsByType[type.id] ?? []}
+            valuesByScope={tables.valuesByScope}
+            cellsStatus={tables.status}
+            activeScopeIds={activeScopeIds}
+            showOrg={showOrg}
+          />
+        ))
       )}
 
       {emptyOrgs.length > 0 && !q && (
@@ -183,104 +200,165 @@ export function ScopesHub() {
   );
 }
 
-function TypeGroup({
+function ScopeTypeTable({
   org,
   type,
+  items,
+  valuesByScope,
+  cellsStatus,
   activeScopeIds,
   showOrg,
 }: {
   org: OrgNode;
   type: ScopeTypeNode;
+  items: ContextItemRow[];
+  valuesByScope: Record<string, Record<string, ContextItemValue>>;
+  cellsStatus: "idle" | "loading" | "ready" | "error";
   activeScopeIds: Set<string>;
   showOrg: boolean;
 }) {
-  const manageHref = `/organizations/${org.slug ?? org.id}/scopes/${type.id}`;
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const typeHref = `/organizations/${org.slug ?? org.id}/scopes/${type.id}`;
+
+  const columns = items.slice(0, MAX_ITEM_COLUMNS);
+  const hiddenCount = items.length - columns.length;
+
   return (
-    <section className="break-inside-avoid mb-4 rounded-lg border border-border bg-card">
-      {/* Group header — small, identity only */}
-      <div className="flex items-center gap-2 px-3 pt-2.5 pb-1.5">
+    <section className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-2 px-3 sm:px-4 py-2 border-b border-border/60">
         <span style={{ color: type.color }}>
           <DynamicIcon name={type.icon} className="h-4 w-4" />
         </span>
-        <span className="text-[13px] font-semibold tracking-wide">
+        <Link
+          href={typeHref}
+          className="text-sm font-semibold hover:underline underline-offset-2"
+        >
           {type.label_plural}
-        </span>
+        </Link>
         <span className="text-[11px] text-muted-foreground tabular-nums">
           {type.scopes.length}
         </span>
         {showOrg && (
-          <span className="text-[10px] text-muted-foreground/70 truncate ml-1">
-            {org.name}
+          <span className="text-[11px] text-muted-foreground/70 truncate">
+            · {org.name}
           </span>
         )}
-        <span className="ml-auto flex items-center gap-0.5 shrink-0">
+        <span className="ml-auto flex items-center gap-1 shrink-0">
+          {hiddenCount > 0 && (
+            <span className="hidden sm:inline text-[10px] text-muted-foreground mr-1">
+              +{hiddenCount} more column{hiddenCount === 1 ? "" : "s"} on the
+              type page
+            </span>
+          )}
           <Link
-            href={manageHref}
-            title={`Manage ${type.label_plural}`}
-            className="p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-accent"
+            href={typeHref}
+            title={`Open ${type.label_plural} page`}
+            className="p-1 rounded text-muted-foreground/70 hover:text-foreground hover:bg-accent"
           >
-            <Settings2 className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </Link>
           <Link
-            href={manageHref}
+            href={typeHref}
             title={`New ${type.label_singular}`}
-            className="p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-accent"
+            className="p-1 rounded text-muted-foreground/70 hover:text-foreground hover:bg-accent"
           >
             <Plus className="h-3.5 w-3.5" />
           </Link>
         </span>
       </div>
 
-      {/* Scope rows — THE content. Vertical, prominent, connector-accented. */}
       {type.scopes.length === 0 ? (
-        <div className="px-3 pb-3 text-xs text-muted-foreground italic">
-          None yet.
+        <div className="px-4 py-3 text-xs text-muted-foreground italic">
+          No {type.label_plural.toLowerCase()} yet.
         </div>
       ) : (
-        <ul
-          className="pb-1.5 ml-[1.15rem] mr-1.5 border-l pl-0"
-          style={{
-            borderColor: `color-mix(in srgb, ${type.color} 45%, transparent)`,
-          }}
-        >
-          {type.scopes.map((scope) => {
-            const isActive = activeScopeIds.has(scope.id);
-            return (
-              <li key={scope.id}>
-                <Link
-                  href={`/scopes/${scope.id}`}
-                  className={cn(
-                    "group flex items-center gap-2 pl-3 pr-2 py-[7px] rounded-r-md hover:bg-accent/70 transition-colors",
-                    isActive && "bg-primary/5",
-                  )}
-                >
-                  <span
-                    className="h-[7px] w-[7px] rounded-full shrink-0"
-                    style={{
-                      backgroundColor: isActive ? type.color : undefined,
-                      border: isActive
-                        ? undefined
-                        : `1.5px solid color-mix(in srgb, ${type.color} 60%, transparent)`,
-                    }}
-                  />
-                  <span
+        <div className="overflow-x-auto">
+          <table
+            className={cn(
+              "w-full text-sm border-collapse",
+              isPending && "opacity-60 pointer-events-none",
+            )}
+          >
+            <thead>
+              <tr className="border-b border-border/50 text-left">
+                <th className="px-3 sm:px-4 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                  {type.label_singular}
+                </th>
+                {columns.map((item) => (
+                  <th
+                    key={item.id}
+                    className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap max-w-[16rem] truncate"
+                    title={item.description || item.display_name}
+                  >
+                    {item.display_name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {type.scopes.map((scope) => {
+                const isActive = activeScopeIds.has(scope.id);
+                const cells = valuesByScope[scope.id];
+                return (
+                  <tr
+                    key={scope.id}
+                    onClick={() =>
+                      startTransition(() => router.push(`/scopes/${scope.id}`))
+                    }
                     className={cn(
-                      "text-[15px] leading-tight truncate",
-                      isActive ? "font-semibold" : "font-medium",
+                      "border-b border-border/30 last:border-b-0 cursor-pointer transition-colors hover:bg-accent/60",
+                      isActive && "bg-primary/5",
                     )}
                   >
-                    {scope.name}
-                  </span>
-                  {isActive && (
-                    <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
-                      active
-                    </span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                    <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="h-[7px] w-[7px] rounded-full shrink-0"
+                          style={{
+                            backgroundColor: isActive ? type.color : undefined,
+                            border: isActive
+                              ? undefined
+                              : `1.5px solid color-mix(in srgb, ${type.color} 55%, transparent)`,
+                          }}
+                        />
+                        <span
+                          className={cn(
+                            "font-medium",
+                            isActive && "font-semibold",
+                          )}
+                        >
+                          {scope.name}
+                        </span>
+                      </span>
+                    </td>
+                    {columns.map((item) => {
+                      const cell = cells?.[item.id];
+                      const summary = cell ? summarizeContextCell(cell) : null;
+                      return (
+                        <td
+                          key={item.id}
+                          className="px-3 py-2 max-w-[18rem]"
+                          title={summary ?? undefined}
+                        >
+                          {summary ? (
+                            <span className="block truncate text-foreground/90">
+                              {summary}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/50">
+                              {cellsStatus === "loading" ? "…" : "—"}
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
@@ -288,18 +366,24 @@ function TypeGroup({
 
 function HubSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="h-8 w-64 bg-muted animate-pulse rounded" />
-      <div className="columns-1 md:columns-2 xl:columns-3 gap-4">
-        {[4, 6, 3, 5, 4, 3].map((rows, i) => (
-          <Card key={i} className="break-inside-avoid mb-4 p-3 space-y-2.5">
-            <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+      {[4, 3, 5].map((rows, i) => (
+        <Card key={i} className="p-0 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-border/50">
+            <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="divide-y divide-border/30">
             {Array.from({ length: rows }, (_, j) => (
-              <div key={j} className="h-4 w-4/5 bg-muted animate-pulse rounded ml-4" />
+              <div key={j} className="px-4 py-2.5 flex gap-6">
+                <div className="h-4 w-40 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              </div>
             ))}
-          </Card>
-        ))}
-      </div>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }

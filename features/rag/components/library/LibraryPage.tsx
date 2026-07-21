@@ -160,7 +160,7 @@ export function LibraryPage() {
     try {
       const normalized = await fileHandler.upload(
         { kind: "file", file },
-        { visibility: "private" },
+        { visibility: "personal" },
       );
       toast.dismiss(tid);
       if (!normalized.fileId) {

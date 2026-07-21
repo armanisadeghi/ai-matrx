@@ -566,21 +566,21 @@ const DEFAULT_VISIBILITY_RULES: ReadonlyArray<{
   // source files for the image studio, not public render targets.
   // Captures are the user's own camera/mic output — never public render
   // targets. Explicit rule (not just the fallback) so the intent is recorded.
-  { prefix: CloudFolders.CAPTURES, visibility: "private" },
-  { prefix: CloudFolders.IMAGES_EDITED_SOURCES, visibility: "private" },
-  { prefix: CloudFolders.IMAGES_GENERATED, visibility: "private" },
-  { prefix: CloudFolders.CHAT_ATTACHMENTS, visibility: "private" },
-  { prefix: CloudFolders.TASK_ATTACHMENTS, visibility: "private" },
-  { prefix: CloudFolders.WAR_ROOM, visibility: "private" },
-  { prefix: CloudFolders.SLACK_IMPORTS, visibility: "private" },
-  { prefix: CloudFolders.SCRAPED_CONTENT, visibility: "private" },
-  { prefix: "Private Assets", visibility: "private" },
-  { prefix: CloudFolders.TMP, visibility: "private" },
+  { prefix: CloudFolders.CAPTURES, visibility: "personal" },
+  { prefix: CloudFolders.IMAGES_EDITED_SOURCES, visibility: "personal" },
+  { prefix: CloudFolders.IMAGES_GENERATED, visibility: "personal" },
+  { prefix: CloudFolders.CHAT_ATTACHMENTS, visibility: "personal" },
+  { prefix: CloudFolders.TASK_ATTACHMENTS, visibility: "personal" },
+  { prefix: CloudFolders.WAR_ROOM, visibility: "personal" },
+  { prefix: CloudFolders.SLACK_IMPORTS, visibility: "personal" },
+  { prefix: CloudFolders.SCRAPED_CONTENT, visibility: "personal" },
+  { prefix: "Private Assets", visibility: "personal" },
+  { prefix: CloudFolders.TMP, visibility: "personal" },
 ];
 
 /**
  * Resolve the default visibility for a given folder path. Longest-prefix
- * match against `DEFAULT_VISIBILITY_RULES`; falls back to `"private"` for
+ * match against `DEFAULT_VISIBILITY_RULES`; falls back to `"personal"` for
  * any folder not in the table. Use at upload sites that don't have an
  * obvious context-driven choice.
  */
@@ -597,5 +597,5 @@ export function resolveDefaultVisibility(folderPath: string): Visibility {
       }
     }
   }
-  return best?.visibility ?? "private";
+  return best?.visibility ?? "personal";
 }

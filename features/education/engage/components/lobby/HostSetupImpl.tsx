@@ -147,7 +147,7 @@ export function HostSetupImpl() {
           <ul className="flex flex-col gap-1.5">
             {sets.map((s) => {
               const selected = source.kind === "set" && source.set.id === s.id;
-              const isPrivate = s.visibility === "private";
+              const isPrivate = s.visibility === "personal";
               return (
                 <li key={s.id}>
                   <button

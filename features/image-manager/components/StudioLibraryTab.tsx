@@ -33,7 +33,7 @@ export function StudioLibraryTab() {
     fileHandler
       .ensureFolderPath({
         folderPath: CloudFolders.IMAGES_GENERATED,
-        visibility: "private",
+        visibility: "personal",
       })
       .then((id) => {
         if (!cancelled) setFolderId(id);

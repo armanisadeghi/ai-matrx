@@ -153,7 +153,7 @@ export function FolderContextMenu({
   }, [folderId, onNewFolderInside]);
 
   const handleVisibility = useCallback(
-    async (visibility: "private" | "shared" | "public") => {
+    async (visibility: "personal" | "shared" | "public") => {
       try {
         await actions.setVisibility(visibility);
       } catch {
@@ -285,7 +285,7 @@ export function FolderContextMenu({
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 <DropdownMenuItem
-                  onClick={() => void handleVisibility("private")}
+                  onClick={() => void handleVisibility("personal")}
                 >
                   <Lock className="mr-2 h-4 w-4" />
                   Private

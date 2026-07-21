@@ -137,7 +137,7 @@ function pickVisibility(v?: MediaVisibility | null): MediaVisibility {
   // block arriving with a missing visibility doesn't get accidentally
   // promoted to public.
   if (v === "public" || v === "shared") return v;
-  return "private";
+  return "personal";
 }
 
 /**

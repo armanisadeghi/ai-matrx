@@ -104,7 +104,7 @@ function visibilityFilter(
   state: MatrxDataTableQueryState,
 ): MarketingSite["visibility"] | null {
   const value = selectFilter(state, "visibility");
-  return value === "private" ||
+  return value === "personal" ||
     value === "internal" ||
     value === "link" ||
     value === "public"

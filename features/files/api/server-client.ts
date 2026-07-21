@@ -24,7 +24,7 @@
  *     const { data } = await Server.uploadFile(ctx, {
  *       file: someFileLikeObject,
  *       filePath: "Agent Apps/abc/favicon.svg",
- *       visibility: "private",
+ *       visibility: "personal",
  *     });
  *     // …
  *   }

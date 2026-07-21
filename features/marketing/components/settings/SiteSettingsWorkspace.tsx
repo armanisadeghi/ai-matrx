@@ -197,7 +197,7 @@ export function SiteSettingsWorkspace() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="private">Private</SelectItem>
+                  <SelectItem value="personal">Personal</SelectItem>
                   <SelectItem value="internal">Organization</SelectItem>
                   <SelectItem value="link">Anyone with link</SelectItem>
                   <SelectItem value="public">Public</SelectItem>

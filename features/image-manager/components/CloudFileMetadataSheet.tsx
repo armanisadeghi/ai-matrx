@@ -88,7 +88,7 @@ function visibilityLabel(v: CloudFileRecord["visibility"]): string {
   switch (v) {
     case "public":
       return "Public";
-    case "private":
+    case "personal":
       return "Private";
     case "shared":
       return "Shared";

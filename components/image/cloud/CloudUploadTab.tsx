@@ -58,7 +58,7 @@ export interface CloudUploadTabProps {
    * skipped. Useful when callers already know the folder.
    */
   defaultUploadFolderId?: string | null;
-  /** Visibility for newly uploaded files. Default `"private"`. */
+  /** Visibility for newly uploaded files. Default `"personal"`. */
   visibility?: Visibility;
   /** Accepted MIME types (e.g. `["image/*"]`). Default `["image/*"]`. */
   accept?: string[];
@@ -71,7 +71,7 @@ const DEFAULT_PATH = "Images/Uploads";
 export function CloudUploadTab({
   defaultUploadFolderPath,
   defaultUploadFolderId,
-  visibility = "private",
+  visibility = "personal",
   accept = ["image/*"],
   hideFolderControls,
 }: CloudUploadTabProps) {

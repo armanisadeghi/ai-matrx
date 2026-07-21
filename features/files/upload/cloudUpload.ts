@@ -281,7 +281,7 @@ export async function cloudUploadRaw(
     const params = {
       file,
       filePath,
-      visibility: options.visibility ?? "private",
+      visibility: options.visibility ?? "personal",
       shareWith: options.shareWith,
       shareLevel: options.shareLevel,
       changeSummary: options.changeSummary,
@@ -440,7 +440,7 @@ export async function cloudUpload(
       const params = {
         file,
         filePath,
-        visibility: options.visibility ?? "private",
+        visibility: options.visibility ?? "personal",
         shareWith: options.shareWith,
         shareLevel: options.shareLevel,
         changeSummary: options.changeSummary,
@@ -485,7 +485,7 @@ export async function cloudUpload(
           // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
           size_bytes: uploadData.size_bytes,
           checksum: uploadData.checksum,
-          visibility: options.visibility ?? "private",
+          visibility: options.visibility ?? "personal",
           current_version: uploadData.version_number,
           parent_folder_id: options.parentFolderId ?? null,
           metadata: options.metadata ?? {},

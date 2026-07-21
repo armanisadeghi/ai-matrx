@@ -167,7 +167,7 @@ export default function ProviderForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="private">Private</SelectItem>
+              <SelectItem value="personal">Personal</SelectItem>
               <SelectItem value="internal">Internal</SelectItem>
               <SelectItem value="link">Link</SelectItem>
               <SelectItem value="public">Public</SelectItem>

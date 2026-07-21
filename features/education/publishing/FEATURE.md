@@ -11,7 +11,7 @@
 
 Canonical base entity (id, organization_id, created_by/at, updated_by/at, deleted_at, version, metadata) + `visibility` + publishing payload (`slug` unique, `title`, `summary`, `subject`, `letter`, `keywords[]`, `sections` jsonb, `related` jsonb, `content_updated_at`, `published_at`).
 
-**Publication = visibility.** `private` = draft (owner + super-admin only, via std RLS). `public` = published → anon `pub_read` returns it (search-indexable). Draft/published is derived, never a separate column.
+**Publication = visibility.** `personal` = draft (owner + super-admin only, via std RLS). `public` = published → anon `pub_read` returns it (search-indexable). Draft/published is derived, never a separate column.
 
 - Registered: `platform.entity_types` + `platform.shareable_resource_registry` (token `learn_doc`).
 - RLS: canonical `iam.apply_rls('education','learn_doc','learn_doc','entity')` — anon reads only `visibility='public'`. Table GRANTs added explicitly (`anon` SELECT, `authenticated` CRUD, `service_role` ALL).

@@ -14,7 +14,7 @@
  * Library selection reuses `FilesResourcePicker` — the same Cloud Files /
  * "Stored Files" UI as Smart Agent Input (search, type filter, sort,
  * list/grid, recents, folder tree). Upload + paste-URL lanes stay local;
- * uploads go through `useFileUpload` with `visibility: "private"` +
+ * uploads go through `useFileUpload` with `visibility: "personal"` +
  * `createShareLink: true` — same contract as `UploadResourcePicker`.
  *
  * The five wrappers (Image/Audio/Video/Document) parameterize this with
@@ -205,7 +205,7 @@ export function MediaVariableInput({
           { kind: "file", file },
           {
             folderPath: meta.folderPath,
-            visibility: "private",
+            visibility: "personal",
             createShareLink: true,
             shareLinkPermissionLevel: "viewer",
           },

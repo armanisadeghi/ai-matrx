@@ -126,7 +126,7 @@ export function EditAiToolbar({
         { kind: "file", file },
         {
           folderPath: "Images/Masks",
-          visibility: "private",
+          visibility: "personal",
           metadata: { kind: "mask", source_file_id: sourceFileId },
         },
       );

@@ -203,7 +203,7 @@ const matchesArchive: FilterPredicate = (app, { consumer }) => {
 const matchesVisibility: FilterPredicate = (app, { consumer }) => {
   if (consumer.visibilityFilter === "all") return true;
   if (consumer.visibilityFilter === "public") return app.is_public === true;
-  if (consumer.visibilityFilter === "private") return app.is_public === false;
+  if (consumer.visibilityFilter === "personal") return app.is_public === false;
   return true;
 };
 

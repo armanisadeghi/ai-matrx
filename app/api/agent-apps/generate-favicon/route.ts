@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       filePath: `${folderForAgentApp(appId)}/favicon.svg`,
       fileName: "favicon.svg",
       contentType: "image/svg+xml",
-      visibility: "private",
+      visibility: "personal",
       permissionLevel: "viewer",
       metadata: {
         origin: "agent-app-favicon",

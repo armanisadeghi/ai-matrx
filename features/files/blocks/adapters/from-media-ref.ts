@@ -16,7 +16,7 @@
  *
  * Mapping (consistent with the invariants in `../types.ts`):
  *   - `{ file_id }` ref → an `origin: "matrx"` block. `fileId` is set;
- *     `visibility` is "private" (unknown) and `cdnUrl` / `signedUrl` are
+ *     `visibility` is "personal" (unknown) and `cdnUrl` / `signedUrl` are
  *     null, so `useUnifiedImageUrl` / `useUnifiedVideoUrl` resolve a fresh
  *     URL via the file handler (durable — re-minted on every load).
  *   - `{ url }` ref → an `origin: "external"` block. `externalUrl` is set;
@@ -58,7 +58,7 @@ function matrxBase(fileId: string) {
   return {
     origin: "matrx" as const,
     fileId,
-    visibility: "private" as const,
+    visibility: "personal" as const,
     cdnUrl: null,
     signedUrl: null,
     downloadUrl: null,

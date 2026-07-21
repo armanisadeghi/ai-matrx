@@ -100,7 +100,7 @@ const VISIBILITY_OPTIONS: {
 }[] = [
   { value: "all", label: "All" },
   { value: "public", label: "Public only" },
-  { value: "private", label: "Private only" },
+  { value: "personal", label: "Personal only" },
 ];
 
 interface AgentAppsGridProps {

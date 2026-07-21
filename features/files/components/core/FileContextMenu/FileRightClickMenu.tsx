@@ -132,7 +132,7 @@ export function FileRightClickMenu({
               Visibility
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
-              <ContextMenuItem onClick={() => void a.setVisibility("private")}>
+              <ContextMenuItem onClick={() => void a.setVisibility("personal")}>
                 <Lock className="mr-2 h-4 w-4" />
                 Private
               </ContextMenuItem>

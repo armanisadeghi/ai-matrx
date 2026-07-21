@@ -25,7 +25,7 @@ import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
 // 1. Enums (backend contract — copied verbatim from cld_files_frontend.md §7)
 // ---------------------------------------------------------------------------
 
-export type Visibility = "public" | "private" | "shared";
+export type Visibility = "public" | "personal" | "shared";
 export type PermissionLevel = "read" | "write" | "admin";
 export type ResourceType = "file" | "folder";
 /**
@@ -506,7 +506,7 @@ export type ModifiedFilter = "any" | "today" | "week" | "month";
 /** Size preset filter — buckets familiar to users. */
 export type SizeFilter = "any" | "small" | "medium" | "large" | "huge";
 /** Access (visibility) filter. */
-export type AccessFilter = "any" | "private" | "shared" | "public";
+export type AccessFilter = "any" | "personal" | "shared" | "public";
 /**
  * Type filter — multi-select set of file categories (CODE, DOCUMENT, IMAGE,
  * VIDEO, …). Empty array = "any type". Modeled as `string[]` (not the

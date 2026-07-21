@@ -116,7 +116,7 @@ export interface UseImageStudioResult {
   generate: () => Promise<void>;
   /**
    * Save every generated variant to the user's cloud-files library.
-   * Visibility defaults to `"private"` — the user opts in to `"public"`
+   * Visibility defaults to `"personal"` — the user opts in to `"public"`
    * via the Save panel toggle when they want a CDN-served URL safe to
    * share publicly.
    */
@@ -261,7 +261,7 @@ export function useImageStudio(
         const parentFolderId = await dispatch(
           ensureFolderPath({
             folderPath: CloudFolders.IMAGES_EDITED_SOURCES,
-            visibility: "private",
+            visibility: "personal",
           }),
         ).unwrap();
 
@@ -273,7 +273,7 @@ export function useImageStudio(
           uploadFiles({
             files: [file],
             parentFolderId,
-            visibility: "private",
+            visibility: "personal",
             metadata: {
               source: "image-studio-source",
               studio_file_id: studioFileId,
@@ -684,7 +684,7 @@ export function useImageStudio(
           const folderPath = `${rootFolderPath}/${perFileSegment}`;
 
           const parentFolderId = await dispatch(
-            ensureFolderPath({ folderPath, visibility: "private" }),
+            ensureFolderPath({ folderPath, visibility: "personal" }),
           ).unwrap();
           lastFolderPath = folderPath;
           lastParentFolderId = parentFolderId;
@@ -908,7 +908,7 @@ export function useImageStudio(
         const parentFolderId = await dispatch(
           ensureFolderPath({
             folderPath: DESCRIBE_TEMP_FOLDER_PATH,
-            visibility: "private",
+            visibility: "personal",
           }),
         ).unwrap();
 
@@ -919,7 +919,7 @@ export function useImageStudio(
           uploadFiles({
             files: [preview],
             parentFolderId,
-            visibility: "private",
+            visibility: "personal",
             metadata: {
               source: "image-studio-describe",
               studio_file_id: fileId,

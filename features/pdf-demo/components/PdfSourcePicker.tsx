@@ -71,7 +71,7 @@ export function PdfSourcePicker({ value, onChange }: Props) {
         { kind: "file", file },
         {
           folderPath: "Inbox/PDF Demo",
-          visibility: "private",
+          visibility: "personal",
         },
       );
       if (!normalized.fileId) {

@@ -31,13 +31,13 @@ export interface FileMetaProps {
 }
 
 const VISIBILITY_ICONS: Record<Visibility, typeof Lock> = {
-  private: Lock,
+  personal: Lock,
   public: Globe,
   shared: Users,
 };
 
 const VISIBILITY_LABELS: Record<Visibility, string> = {
-  private: "Private",
+  personal: "Personal",
   public: "Public",
   shared: "Shared",
 };

@@ -28,7 +28,7 @@ const VISIBILITY_FILTERS: { id: VisibilityFilter; label: string }[] = [
 ];
 
 const VISIBILITY_LABEL: Record<string, string> = {
-  private: "Private",
+  personal: "Personal",
   internal: "Org",
   link: "Link",
   public: "Public",
@@ -37,7 +37,7 @@ const VISIBILITY_LABEL: Record<string, string> = {
 function matchesVisibility(filter: VisibilityFilter, v: string | null): boolean {
   switch (filter) {
     case "mine":
-      return v === "private" || v === "internal" || v == null;
+      return v === "personal" || v === "internal" || v == null;
     case "shared":
       return v === "link";
     case "public":
@@ -240,7 +240,7 @@ export function EduNotesHome() {
                       <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">
                         {n.label || "Untitled note"}
                       </h3>
-                      {n.visibility && n.visibility !== "private" && (
+                      {n.visibility && n.visibility !== "personal" && (
                         <span className="shrink-0 inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4 text-muted-foreground">
                           {VISIBILITY_LABEL[n.visibility] ?? n.visibility}
                         </span>

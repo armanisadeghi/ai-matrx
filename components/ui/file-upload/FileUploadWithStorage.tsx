@@ -18,7 +18,7 @@ import { UploadedFileResult } from "./types";
 
 export type { UploadedFileResult } from "./types";
 
-type SaveToOption = "public" | "private";
+type SaveToOption = "public" | "personal";
 
 type FileUploadWithStorageProps = {
   folderRoot?: string;
@@ -101,13 +101,13 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
 
   const folderPath = useMemo(() => {
     if (saveTo === "public") return "Shared Assets";
-    if (saveTo === "private") return "Private Assets";
+    if (saveTo === "personal") return "Private Assets";
     return composeUploadFolderPath(folderRoot, path);
   }, [saveTo, folderRoot, path]);
 
   const visibility: Visibility = useMemo(() => {
     if (saveTo) return saveTo;
-    return "private";
+    return "personal";
   }, [saveTo]);
 
   useEffect(() => {

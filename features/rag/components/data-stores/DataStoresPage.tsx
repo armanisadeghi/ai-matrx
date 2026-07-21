@@ -429,7 +429,7 @@ function StoreDetailPanel({
           const normalized = await fileHandler.upload(
             { kind: "file", file },
             {
-              visibility: "private",
+              visibility: "personal",
               metadata: { uploaded_via: "data-store-drop" },
             },
           );

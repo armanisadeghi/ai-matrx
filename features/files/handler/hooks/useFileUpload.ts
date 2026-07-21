@@ -132,7 +132,7 @@ export function useFileUpload(): UseFileUploadResult {
         files,
         parentFolderId: opts.parentFolderId ?? null,
         folderPath: opts.folderPath ?? null,
-        visibility: opts.visibility ?? "private",
+        visibility: opts.visibility ?? "personal",
         shareWith: opts.shareWith,
         shareLevel: opts.shareLevel,
         changeSummary: opts.changeSummary,

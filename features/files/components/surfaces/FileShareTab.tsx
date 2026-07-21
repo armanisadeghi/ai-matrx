@@ -179,10 +179,10 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
               icon={<Lock className="h-3.5 w-3.5" />}
               label="Private"
               description="Only you and explicit grantees"
-              active={file.visibility === "private"}
-              busy={busyVisibility === "private"}
+              active={file.visibility === "personal"}
+              busy={busyVisibility === "personal"}
               disabled={!isOwner || busyVisibility !== null}
-              onClick={() => void handleSetVisibility("private")}
+              onClick={() => void handleSetVisibility("personal")}
             />
             <VisibilityOption
               icon={<Users className="h-3.5 w-3.5" />}

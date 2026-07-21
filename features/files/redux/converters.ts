@@ -46,7 +46,7 @@ import type { ShareLink as CanonicalShareLink } from "@/utils/permissions/shareL
 function toVisibility(raw: string | null | undefined): Visibility {
   if (raw === "public") return "public";
   if (raw === "link" || raw === "shared") return "shared";
-  return "private";
+  return "personal";
 }
 
 function toPermissionLevel(raw: string | null | undefined): PermissionLevel {
@@ -403,7 +403,7 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
 
   const created = str(row, "created_at") ?? new Date().toISOString();
   const updated = str(row, "updated_at") ?? created;
-  const visibility = toVisibility(str(row, "visibility") ?? "private");
+  const visibility = toVisibility(str(row, "visibility") ?? "personal");
   const effPerm = str(row, "effective_permission");
 
   // ── Cross-shape readers ────────────────────────────────────────────────

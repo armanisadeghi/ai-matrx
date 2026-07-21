@@ -109,7 +109,7 @@ enforces it in code, not copy:
   `'link'`/share-granted) deck's cards, because `iam.has_access` is the canonical
   row-level authorization truth (honors visibility, grants, memberships, and
   reachability → the card's public parent set). A stranger with no grant on a
-  PRIVATE deck still loads 0 cards (verified negative). Same-org (team/class)
+  PERSONAL deck still loads 0 cards (verified negative). Same-org (team/class)
   rooms are unchanged — the org branch is a strict subset. The deck read is
   `fcService.getSetWithCards` → `associationsService.listForTargetsVisible`; do
   NOT reintroduce the org-only `assoc_for_targets` here (that was D37).
@@ -149,6 +149,8 @@ enforces it in code, not copy:
 
 ## Change Log
 
+- **2026-07-21** — Doc-only: `platform.visibility` enum value `private` renamed to
+  `personal` DB-wide; updated the PRIVATE-deck references above to PERSONAL.
 - **2026-07-10** — Fixed D37 (cross-account empty deck). The card-membership read
   was org-gated (`assoc_for_targets` → `iam.has_org_access`), so a guest from a
   different personal org loaded 0 cards for a `visibility='public'` deck. New
@@ -158,7 +160,7 @@ enforces it in code, not copy:
   `associationsService.listForTargetsVisible`; `fcService.getSetWithCards` routes
   through it, so every flashcard surface reads public/shared decks cross-account.
   Live-verified as a real guest (`test@test.com`, org membership removed → true
-  stranger): old rpc 0 → new rpc 52 edges → 52 playable cards; PRIVATE un-granted
+  stranger): old rpc 0 → new rpc 52 edges → 52 playable cards; PERSONAL un-granted
   deck stays 0 (no leak). `migrations/assoc_members_visible_rpc.sql` (ledgered).
 - **2026-07-10** — DoD-closing live run (P10). Drove a real solo round + a real
   two-user multiplayer round end-to-end through the authenticated service/RPC

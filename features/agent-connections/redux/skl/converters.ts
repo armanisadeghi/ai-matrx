@@ -63,7 +63,7 @@ export function sklRenderDefinitionToUpdate(
   if (patch.skillId !== undefined) u.skill_id = patch.skillId;
   if (patch.isActive !== undefined) u.is_active = patch.isActive;
   if (patch.isPublic !== undefined)
-    u.visibility = patch.isPublic ? "public" : "private";
+    u.visibility = patch.isPublic ? "public" : "personal";
   if (patch.sortOrder !== undefined) u.sort_order = patch.sortOrder;
   return u;
 }
@@ -81,7 +81,7 @@ export function sklRenderDefinitionToInsert(
     category_id: def.categoryId ?? null,
     skill_id: def.skillId ?? null,
     is_active: def.isActive ?? true,
-    visibility: def.isPublic ? "public" : "private",
+    visibility: def.isPublic ? "public" : "personal",
     sort_order: def.sortOrder ?? 0,
     created_by: def.userId ?? null,
     ...(def.organizationId != null

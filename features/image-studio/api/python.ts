@@ -26,7 +26,7 @@ import type { ImageEditCompleteData } from "@/types/python-generated/stream-even
 
 export interface EditOutput {
   /** "private" | "public" | "shared". Defaults to "private". */
-  visibility?: "private" | "public" | "shared";
+  visibility?: "personal" | "public" | "shared";
   /** Logical folder for the result. Defaults to `<source-folder>/edits`. */
   folder?: string;
   /** Output format. Defaults to "png". */

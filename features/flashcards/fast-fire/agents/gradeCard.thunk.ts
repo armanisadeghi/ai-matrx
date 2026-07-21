@@ -120,7 +120,7 @@ export function gradeCard(args: GradeCardArgs) {
           },
           {
             folderPath: CloudFolders.SYSTEM_FASTFIRE_RESPONSES,
-            visibility: "private",
+            visibility: "personal",
             metadata: {
               origin: "fastfire",
               session_id: sessionId ?? null,

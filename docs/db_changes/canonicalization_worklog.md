@@ -163,7 +163,7 @@ Example (`flexible_data`, entire thing):
 ```sql
 SELECT platform.create_entity_table('public','flexible_data','flexible_data','Flexible Data',
   ARRAY['label text NOT NULL','data jsonb NOT NULL DEFAULT ''{}''::jsonb'],
-  'entity', true, true, 'private', true, false, true, true);
+  'entity', true, true, 'personal', true, false, true, true);
 ```
 Self-tested: col order `id → <customs> → organization_id → … → visibility → category_id`; 5 triggers; 6 policies; certified=true.
 

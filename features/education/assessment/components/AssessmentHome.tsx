@@ -42,7 +42,7 @@ function matchesVisibility(
 ): boolean {
   switch (filter) {
     case "mine":
-      return v === "private" || v === "internal";
+      return v === "personal" || v === "internal";
     case "shared":
       return v === "link";
     case "public":
@@ -53,7 +53,7 @@ function matchesVisibility(
 }
 
 const VISIBILITY_LABEL: Record<AssessmentRow["visibility"], string> = {
-  private: "Private",
+  personal: "Personal",
   internal: "Org",
   link: "Link",
   public: "Public",
@@ -133,7 +133,7 @@ function AssessmentRowItem({
             {assessment.title}
           </h3>
           <span className="shrink-0 inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4 text-muted-foreground">
-            {VISIBILITY_LABEL[assessment.visibility] ?? "Private"}
+            {VISIBILITY_LABEL[assessment.visibility] ?? "Personal"}
           </span>
           {assessment.status !== "ready" && (
             <span className="shrink-0 inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">

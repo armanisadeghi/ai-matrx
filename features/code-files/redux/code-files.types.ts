@@ -12,7 +12,7 @@
 // ── DB row shapes ───────────────────────────────────────────────────────────
 
 /** Access driver — mirrors the `platform.visibility` enum. */
-export type CodeVisibility = "private" | "internal" | "link" | "public";
+export type CodeVisibility = "personal" | "internal" | "link" | "public";
 
 export interface CodeFile {
   id: string;

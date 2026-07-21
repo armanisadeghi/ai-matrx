@@ -269,7 +269,7 @@ export const createSkill = createAsyncThunk<
     parent_skill_id: wire.parent_skill_id ?? null,
     visibility: (wire.is_public
       ? "public"
-      : "private") as Database["platform"]["Enums"]["visibility"],
+      : "personal") as Database["platform"]["Enums"]["visibility"],
     created_by: userId,
     // Personal skill → the user's org (skill.definition org is NOT NULL with no
     // inherit trigger). Never insert a null org.
@@ -323,7 +323,7 @@ export const patchSkill = createAsyncThunk<
     ...rest,
   } as Database["skill"]["Tables"]["definition"]["Update"];
   if (is_public !== undefined)
-    dbPatch.visibility = is_public ? "public" : "private";
+    dbPatch.visibility = is_public ? "public" : "personal";
   if (version !== undefined) dbPatch.semver = version;
   const { data, error } = await supabase
     .schema("skill")

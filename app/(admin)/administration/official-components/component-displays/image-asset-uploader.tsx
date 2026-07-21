@@ -146,7 +146,7 @@ openUploader({
         <div className="rounded-lg border border-border bg-background/50 p-3 space-y-3">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <ControlGroup label="Visibility">
-              {(["public", "private"] as const).map((value) => (
+              {(["public", "personal"] as const).map((value) => (
                 <SegmentedOption
                   key={value}
                   active={visibility === value}

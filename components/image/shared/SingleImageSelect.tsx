@@ -75,7 +75,7 @@ export interface SingleImageSelectProps extends React.HTMLAttributes<HTMLDivElem
      * Where to save uploaded images: "public" or "private"
      * This is a convenience prop that will use the standard user asset buckets
      */
-    saveTo?: "public" | "private";
+    saveTo?: "public" | "personal";
 
     /**
      * Custom storage bucket to use for uploads

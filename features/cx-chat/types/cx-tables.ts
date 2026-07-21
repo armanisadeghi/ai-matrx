@@ -27,7 +27,7 @@ export type CxConversationStatus = "active" | "completed" | "archived";
  * enum that `cx_conversation.visibility` (and every other Base-retrofit table) uses.
  * RLS reads this column via `iam.has_access`. The old `is_public`/`user_id`
  * columns were dropped from `cx_conversation` (ownership is now `created_by`).
- * Ordering is `private < internal < link < public`.
+ * Ordering is `personal < internal < link < public`.
  *
  * Derived from the generated row of a table that already carries the enum literal,
  * so it tracks `types/database.types.ts` without a hand-rolled union. (The
@@ -40,7 +40,7 @@ export type ConversationVisibility =
 export function isConversationShared(
   visibility: ConversationVisibility,
 ): boolean {
-  return visibility !== "private";
+  return visibility !== "personal";
 }
 
 /** True when the conversation is fully public (anyone, including anonymous). */

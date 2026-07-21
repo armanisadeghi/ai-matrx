@@ -49,7 +49,7 @@ const STATUS_OPTIONS = [
 ];
 
 const VISIBILITY_OPTIONS = [
-  { value: "private", label: "Private" },
+  { value: "personal", label: "Personal" },
   { value: "internal", label: "Organization" },
   { value: "link", label: "Anyone with link" },
   { value: "public", label: "Public" },

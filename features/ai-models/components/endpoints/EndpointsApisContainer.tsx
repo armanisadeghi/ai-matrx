@@ -76,7 +76,7 @@ function FormField({
   );
 }
 
-const VISIBILITIES = ["private", "internal", "link", "public"] as const;
+const VISIBILITIES = ["personal", "internal", "link", "public"] as const;
 
 function VisibilitySelect({
   value,

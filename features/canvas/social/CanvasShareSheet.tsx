@@ -208,7 +208,7 @@ function ShareFormContent({
             >
               {visibility === "public" && <Globe className="w-3 h-3" />}
               {visibility === "unlisted" && <Link2 className="w-3 h-3" />}
-              {visibility === "private" && <Lock className="w-3 h-3" />}
+              {visibility === "personal" && <Lock className="w-3 h-3" />}
               {visibility}
             </Badge>
           </div>
@@ -315,7 +315,7 @@ function ShareFormContent({
                       <span>Unlisted</span>
                     </>
                   )}
-                  {visibility === "private" && (
+                  {visibility === "personal" && (
                     <>
                       <Lock className="w-4 h-4 shrink-0 text-muted-foreground" />
                       <span>Private</span>

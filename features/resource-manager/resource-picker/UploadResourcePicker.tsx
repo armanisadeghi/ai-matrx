@@ -203,7 +203,7 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
                     { kind: "file", file },
                     {
                         folderPath,
-                        visibility: "private",
+                        visibility: "personal",
                         createShareLink: true,
                         shareLinkPermissionLevel: "viewer",
                     },

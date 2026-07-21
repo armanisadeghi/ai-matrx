@@ -63,7 +63,7 @@ export function usePasteImageResource(
               uploadRoot ?? "attachments",
               uploadPath,
             ),
-            visibility: "private",
+            visibility: "personal",
             createShareLink: true,
             shareLinkPermissionLevel: "viewer",
           },

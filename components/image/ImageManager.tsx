@@ -53,7 +53,7 @@ export interface ImageManagerProps {
   visibleTabs?: string[];
 
   // ─── Legacy upload props (mapped onto defaultUploadFolderPath) ───
-  saveTo?: "public" | "private";
+  saveTo?: "public" | "personal";
   bucket?: string;
   path?: string;
 
@@ -64,7 +64,7 @@ export interface ImageManagerProps {
   defaultUploadFolderPath?: string;
   /** Pre-resolved upload-destination folder id. */
   defaultUploadFolderId?: string | null;
-  /** Visibility for new uploads. Default `"private"` (Image Studio uses public). */
+  /** Visibility for new uploads. Default `"personal"` (Image Studio uses public). */
   defaultVisibility?: Visibility;
   /** Show the Image Studio tab. Default `true`. */
   showImageStudioTab?: boolean;
@@ -99,7 +99,7 @@ function aliasTabId(id: string): string {
  * canonical Files folder routing in the upload layer.
  */
 function legacyPropsToFolderPath(
-  saveTo: "public" | "private" | undefined,
+  saveTo: "public" | "personal" | undefined,
   bucket: string | undefined,
   path: string | undefined,
   explicitPath: string | undefined,
@@ -107,7 +107,7 @@ function legacyPropsToFolderPath(
   if (explicitPath) return explicitPath;
   if (bucket) return path ? `${bucket}/${path}` : bucket;
   if (saveTo === "public") return "Images/Uploads/Public";
-  if (saveTo === "private") return "Images/Uploads/Private";
+  if (saveTo === "personal") return "Images/Uploads/Private";
   return undefined;
 }
 
@@ -128,7 +128,7 @@ export function ImageManager(props: ImageManagerProps) {
     allowFileTypes = ["image"],
     defaultUploadFolderPath,
     defaultUploadFolderId,
-    defaultVisibility = "private",
+    defaultVisibility = "personal",
     showImageStudioTab = true,
     showAIGenerateTab = true,
     imageStudioProps,
@@ -171,7 +171,7 @@ export function ImageManager(props: ImageManagerProps) {
   const effectiveDefaultVisibility = useMemo<Visibility>(() => {
     if (defaultVisibility) return defaultVisibility;
     if (saveTo === "public") return "public";
-    return "private";
+    return "personal";
   }, [defaultVisibility, saveTo]);
 
   const acceptMimes = useMemo(() => {

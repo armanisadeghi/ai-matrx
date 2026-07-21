@@ -40,9 +40,9 @@ const OPTIONS: {
   icon: typeof Lock;
 }[] = [
   {
-    value: "private",
-    label: "Private",
-    description: "Only you can open this set",
+    value: "personal",
+    label: "Personal",
+    description: "Only you — for an individual person's own things (like your chats)",
     icon: Lock,
   },
   {
@@ -135,7 +135,7 @@ export function SetVisibilityControl({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {visibility !== "private" ? (
+      {visibility !== "personal" ? (
         <Button
           variant="ghost"
           size="sm"
