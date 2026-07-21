@@ -13,8 +13,9 @@
 | Tier | File | Loads |
 |---|---|---|
 | **T0 — shell** | `ContextMenuV3.tsx` | every mount. Radix trigger, selection capture, floating-icon button, footer. **Imports nothing heavy.** |
-| **T1 — MenuContent** | `components/MenuContent.tsx` | first open only (`dynamic({ssr:false})`) on a desktop viewport. Data hooks, launchers, handlers, react-icons, the whole tree. Fires the single deduped fetch on its mount. |
-| **T1m — MobileMenuContent** | `components/MobileMenuContent.tsx` | first open on a **mobile** viewport (`dynamic`). T1's twin: a 70dvh bottom-sheet drill-down. Reuses the SAME data hooks + launch path. |
+| **T1 — MenuContent** | `components/MenuContent.tsx` | first open only (`dynamic({ssr:false})`) on a desktop viewport. Pure presentation over the shared engine; react-icons + the whole tree. |
+| **T1m — MobileMenuContent** | `components/MobileMenuContent.tsx` | first open on a **mobile** viewport (`dynamic`). T1's twin: a 70dvh bottom-sheet drill-down over the SAME engine. |
+| **T1e — engine** | `hooks/useContextMenuActions.ts` | with either renderer. ALL behavior, exactly once: the single deduped fetch, scope resolution, rich-document actions, every handler (clipboard / history / compare / launch / attach / share / admin). **Never add a handler to a renderer — add it here.** |
 | **OVL — overlays** | OverlayController | on click. Find/Replace, Attach To, Share, Inspect, Compare, Quick Actions — **dispatched, never rendered by the menu.** |
 
 **Invariant:** `MenuContent` / `MobileMenuContent` are reachable ONLY via the shell's `dynamic()` import. Static-importing either is an eslint error (`contextMenuV3StaticImportBan`). The shell carries zero data, zero submenus, zero modal code.
@@ -23,7 +24,13 @@
 
 On a mobile viewport (`useIsMobile()`) the shell renders a vaul `Drawer` instead of the Radix menus — a constant **70dvh** bottom sheet, one internal scroll area, iPhone-style **multi-tier drill-down** (tap a category → slide to its list with a Back button; the sheet height never changes). Triggered by **long-press** (480 ms, cancels on drag so text-selection/scroll still work) or the **floating selection icon**. `MobileMenuContent` reuses the EXACT same data hooks (`useUnifiedAgentContextMenu`, `useSurfaceBoundAgents`) and `useAgentLauncher`, resolving the SAME scope — so the agent menus (My / Org / System / Default) and the values that reach a launched agent are identical to desktop. Navigation is **path-based** (a list of submenu ids re-resolved against live `rootNodes` each render), so a page updates as agents finish loading or debug toggles, never a stale snapshot.
 
-**Known debt:** `MobileMenuContent`'s handlers are ported 1:1 from `MenuContent`. Both should consume ONE `useContextMenuActions` hook; until that extraction lands, a launch-path change must touch BOTH renderers.
+Both renderers consume ONE `useContextMenuActions` hook (extracted 2026-07-21) — desktop and mobile behavior cannot drift; a launch-path or handler change lands in the hook once.
+
+## Inline agent editing — the WidgetHandle wire
+
+Every **editable** surface gets streaming in-place agent edits with ZERO extra wiring. The shell (`ContextMenuV3.tsx`) derives a `WidgetHandle` from the SAME callbacks the surface already passes (`buildEditableWidgetHandle` in `utils/widget-handle.ts`: `onTextReplace` / `onTextInsertBefore|After` / `getTextarea`, reading current content from the field or `getApplicationScope().content`), registers it via `useOptionalWidgetHandle` (the null-tolerant variant of the canonical `useWidgetHandle`), and both launch handlers pass `runtime.widgetHandleId`. An agent launched from the menu can then stream `widget_text_replace / patch / insert_before|after / prepend / append` client-tool calls that edit the surface live (the same channel `SmartCodeEditor` uses — see `features/agents/types/widget-handle.types.ts` + `CLIENT_SIDE_TOOLS.md`).
+
+Rules: the handle registration lives in the SHELL, not MenuContent — MenuContent unmounts on close and the handle must outlive the menu for the whole stream. Only serviceable methods exist on the handle (`deriveClientToolsFromHandle` advertises exactly that subset per turn). Read-only surfaces register nothing. There is NO text-protocol (XML) edit path — the tool channel is the only one. Live proof: `/demos/context-menu/inline-edit`.
 
 ---
 
@@ -153,6 +160,19 @@ The hard-won pieces are carried over (and improved): the floating selection icon
 
 For wiring a surface, **invoke the `context-menu-v3` skill** — the per-surface recipe.
 
+## Consolidation backlog — bespoke right-click menus still alive (2026-07-21 inventory)
+
+v3 is the only UNIVERSAL menu, but these independent right-click implementations remain; each is a scoped fold-into-v3 (or explicit keep-with-reason) task. Work top-traffic first:
+
+1. **Files** — `features/files/components/core/RowContextMenu/` + `FileContextMenu/FileRightClickMenu.tsx` (rows, grids, PDF sidebar, preview pane). The biggest parallel system.
+2. **ItemMenu right-click mode** — `components/official/item/ItemMenu.tsx` (`ItemContextMenu`), ~35 consumers. Its kebab/dropdown modes are fine; the RIGHT-CLICK mode duplicates v3 (notes sidebar already showed the coexistence pattern: `disableContextMenu` on ItemRow + v3 wrap).
+3. **Notes legacy shell** — `NotesSidebar.tsx` / `NoteTabs.tsx` / `NoteTabItem.tsx` via `AdvancedMenu` (only `NotesLayout` + the notes-salvage dev page consume them; dies with the legacy shell).
+4. **rich-document** — `runtime/ContextMenuMount.tsx` + `variants/ContextMenu.tsx` (own cursor-anchored menu; overlaps v3's action set almost 1:1).
+5. **Code trees** — `features/code/views/explorer/FileTreeNode.tsx`, `views/library/SourceEntryNode.tsx`; **user-lists** `TreeNode.tsx`; **org** `OrgResourceDetail.tsx` local menu.
+6. **Coordinate menus** — `components/official/json-explorer/RawJsonExplorer.tsx`, `processor-extractor/ProcessorExtractor.tsx`.
+7. **Markdown block menus** — `AdvancedTranscriptViewer`, `TaskChecklist`, candidate-profile parts.
+8. **Dormant** — `PdfAnnotationLayer` region-menu plumbing (no consumer passes the handler; suppresses native menu and renders nothing — fix or delete).
+
 ---
 
 ## Doctrine
@@ -165,6 +185,7 @@ For wiring a surface, **invoke the `context-menu-v3` skill** — the per-surface
 
 ## Change Log
 
+- `2026-07-21` — **One engine + inline agent editing.** (1) Extracted `hooks/useContextMenuActions.ts` — desktop `MenuContent` and `MobileMenuContent` are now pure presentation over ONE shared engine (handlers, single deduped fetch, scope + rich-doc resolution all live once); the "keep the two handler sets in lockstep" debt is paid, and the mobile Find&Replace now suppresses selection-restore like desktop. (2) Inline agent editing: the shell builds a `WidgetHandle` from the surface's existing editable callbacks (`utils/widget-handle.ts`), registers it via the new `useOptionalWidgetHandle`, and both launch paths pass `runtime.widgetHandleId` — agents launched from the menu stream `widget_text_*` edits into the surface live. Demo: `/demos/context-menu/inline-edit`. (3) Swept the last dead v1/v2-era menu code (`GlobalContextMenu/version-two`, `providers/ContextMenuProvider`, unused ui/context-menu example variants). (4) Added the bespoke-menu consolidation backlog (section above).
 - `2026-07-19` — **context-menu-v2 annihilated.** Deleted `features/context-menu-v2/` (component, MenuBody, MarkdownContextMenuProvider, v2-only hooks/utils), the v2 static-import eslint ban (`canonicalMenuStaticImportBan` — v3's `contextMenuV3StaticImportBan` remains), and the reader-less `contextMenuCache`/`agentContextMenuCache` slices. Moved the shared modules into v3 (`hooks/useUnifiedAgentContextMenu`, `components/BoundAgentsMenuSection`, `utils/build-application-scope`, `utils/resolveMarkdownContext`); all type imports now come from `types.ts`. Demo lab + scenarios migrated to v3 wrappers; `canonical-v2` deleted. Skills/docs rewritten against v3 (surface-pro-rollout, surface-registration, context-menu-v3, agent-execution-redux, per-feature FEATURE.mds).
 - `2026-07-18` — **Managed Agents now default to WindowPanel.** The shared desktop and mobile v3 launchers consume one `MANAGED_CONTEXT_MENU_AGENT_CONFIG` with `displayMode: "flexible-panel"`, so Notes and every other managed context menu open surface-bound/default agents in `AgentFlexiblePanel` instead of `AgentFullModal`. Shortcut-owned display-mode definitions remain authoritative; managed launches still omit `autoRun`.
 - `2026-07-15` — **Selection tracking scoped to the wrapped subtree (browser-freeze fix).** The shell's `selectionchange` handler ran unguarded in EVERY mounted instance: each serialized the full selected text (`selection.toString()` — O(document) on a triple-click of a large paste), stored it in its own state, and rendered its own `FloatingSelectionIcon` at identical coordinates. On /notes (editor + every sidebar row + folder headers) that meant dozens of stacked translucent FABs compounding into a black-shadowed blob AND N× O(document) main-thread work per selection event — a tab freezer. Now each instance holds a `selectionOwnerRef` (the asChild trigger child on desktop, the display:contents wrapper on mobile) and the handler gates ALL work on ownership: the selection's anchor node — or, for textarea/input selections (whose DOM Range stays parked on the host), the focused element — must be inside the wrapped subtree; non-owners clear cheaply with no serialization (unchanged-state bailout ⇒ zero re-renders). **Invariant: never remove the ownership gate; a document-global listener in a many-instance component must scope its work.** (v2 twin still has the unscoped listener — v2 is frozen; migrate consumers instead of patching it.)

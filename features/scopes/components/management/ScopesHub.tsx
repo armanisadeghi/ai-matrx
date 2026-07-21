@@ -1,11 +1,12 @@
 // features/scopes/components/management/ScopesHub.tsx
 //
-// The /scopes landing page — scope-FIRST, not org-first. Renders one
-// "dimension band" per scope type (aggregated across every org the user
-// belongs to), each holding its scope tiles. Orgs appear only as quiet
-// metadata; orgs with no dimensions collapse into a footer row. Reads
-// exclusively through `useScopeTree`; never writes global context
-// (Surface A invariant — tiles navigate, they don't activate).
+// The /scopes landing page — scopes are the SUBJECT. One compact group per
+// scope type (masonry columns, so the page fills), each group a vertical
+// list of scope rows with the type's color as a thin connector accent —
+// the same visual language as the org-overview tree. Chrome (org names,
+// manage links) stays tiny and quiet. Reads exclusively through
+// `useScopeTree`; never writes global context (Surface A invariant —
+// rows navigate, they don't activate).
 
 "use client";
 
@@ -13,16 +14,12 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  ArrowUpRight,
   Building,
-  ChevronRight,
-  FolderKanban,
-  Layers,
   Plus,
   Search,
+  Settings2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
@@ -82,8 +79,8 @@ export function ScopesHub() {
     );
   }
 
-  // Flatten to dimensions, active org's dimensions first, then personal,
-  // then alphabetical by org; within an org, the type's own sort_order.
+  // Active org's dimensions first, then personal, then alphabetical by org;
+  // within an org, the type's own sort_order.
   const orderedOrgs = [...organizations].sort((a, b) => {
     if (a.id === active.organizationId) return -1;
     if (b.id === active.organizationId) return 1;
@@ -105,43 +102,30 @@ export function ScopesHub() {
           org,
           type: {
             ...type,
-            scopes: type.scopes.filter(
-              (s) =>
-                s.name.toLowerCase().includes(q) ||
-                s.description?.toLowerCase().includes(q) ||
-                type.label_plural.toLowerCase().includes(q),
-            ),
+            scopes: type.label_plural.toLowerCase().includes(q)
+              ? type.scopes
+              : type.scopes.filter((s) => s.name.toLowerCase().includes(q)),
           },
         }))
-        .filter(
-          ({ type }) =>
-            type.scopes.length > 0 || type.label_plural.toLowerCase().includes(q),
-        )
+        .filter(({ type }) => type.scopes.length > 0)
     : dimensions;
 
   const totalScopes = dimensions.reduce((n, d) => n + d.type.scopes.length, 0);
   const activeScopeIds = new Set(active.scopeIds);
+  const showOrg = organizations.length > 1;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <HeavyHitterSuggestionsInbox />
 
-      {/* Summary + search bar */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Layers className="h-4 w-4" />
-          <span>
-            <span className="text-foreground font-medium">
-              {dimensions.length}
-            </span>{" "}
-            dimension{dimensions.length === 1 ? "" : "s"} ·{" "}
-            <span className="text-foreground font-medium">{totalScopes}</span>{" "}
-            scope{totalScopes === 1 ? "" : "s"} across{" "}
-            <span className="text-foreground font-medium">
-              {organizations.length}
-            </span>{" "}
-            organization{organizations.length === 1 ? "" : "s"}
-          </span>
+        <div className="text-sm text-muted-foreground">
+          <span className="text-foreground font-medium">{totalScopes}</span>{" "}
+          scope{totalScopes === 1 ? "" : "s"} in{" "}
+          <span className="text-foreground font-medium">
+            {dimensions.length}
+          </span>{" "}
+          dimension{dimensions.length === 1 ? "" : "s"}
         </div>
         <div className="relative ml-auto w-full sm:w-64">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -155,19 +139,21 @@ export function ScopesHub() {
       </div>
 
       {visible.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
+        <div className="py-10 text-center text-sm text-muted-foreground">
           No scopes match &ldquo;{query}&rdquo;.
-        </Card>
+        </div>
       ) : (
-        visible.map(({ org, type }) => (
-          <DimensionBand
-            key={type.id}
-            org={org}
-            type={type}
-            activeScopeIds={activeScopeIds}
-            isActiveOrg={org.id === active.organizationId}
-          />
-        ))
+        <div className="columns-1 md:columns-2 xl:columns-3 gap-4 [column-fill:balance]">
+          {visible.map(({ org, type }) => (
+            <TypeGroup
+              key={type.id}
+              org={org}
+              type={type}
+              activeScopeIds={activeScopeIds}
+              showOrg={showOrg}
+            />
+          ))}
+        </div>
       )}
 
       {emptyOrgs.length > 0 && !q && (
@@ -180,7 +166,7 @@ export function ScopesHub() {
               <Building className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">
                 <span className="text-foreground/80">{org.name}</span> has no
-                dimensions yet
+                scopes yet
               </span>
               <Link
                 href={`/organizations/${org.slug ?? org.id}/scopes`}
@@ -197,160 +183,123 @@ export function ScopesHub() {
   );
 }
 
-function DimensionBand({
+function TypeGroup({
   org,
   type,
   activeScopeIds,
-  isActiveOrg,
+  showOrg,
 }: {
   org: OrgNode;
   type: ScopeTypeNode;
   activeScopeIds: Set<string>;
-  isActiveOrg: boolean;
+  showOrg: boolean;
 }) {
   const manageHref = `/organizations/${org.slug ?? org.id}/scopes/${type.id}`;
   return (
-    <section className="rounded-lg border border-border bg-card overflow-hidden">
-      {/* Band header — the dimension's identity */}
-      <div
-        className="flex items-center gap-2.5 px-3 sm:px-4 py-2.5 border-b border-border/50"
-        style={{
-          backgroundImage: `linear-gradient(to right, color-mix(in srgb, ${type.color} 8%, transparent), transparent 65%)`,
-        }}
-      >
-        <span
-          className="flex h-7 w-7 items-center justify-center rounded-md shrink-0"
-          style={{
-            backgroundColor: `color-mix(in srgb, ${type.color} 14%, transparent)`,
-            color: type.color,
-          }}
-        >
+    <section className="break-inside-avoid mb-4 rounded-lg border border-border bg-card">
+      {/* Group header — small, identity only */}
+      <div className="flex items-center gap-2 px-3 pt-2.5 pb-1.5">
+        <span style={{ color: type.color }}>
           <DynamicIcon name={type.icon} className="h-4 w-4" />
         </span>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm truncate">
-              {type.label_plural}
-            </span>
-            <Badge
-              variant="outline"
-              className="text-[10px] px-1.5 py-0 tabular-nums"
-              style={{ borderColor: type.color, color: type.color }}
-            >
-              {type.scopes.length}
-            </Badge>
-          </div>
-          <div className="text-[11px] text-muted-foreground flex items-center gap-1 truncate">
-            <Building className="h-2.5 w-2.5 shrink-0" />
-            <span className="truncate">{org.name}</span>
-            {isActiveOrg && (
-              <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">
-                Active org
-              </Badge>
-            )}
-          </div>
-        </div>
-        <div className="ml-auto flex items-center gap-2 shrink-0">
+        <span className="text-[13px] font-semibold tracking-wide">
+          {type.label_plural}
+        </span>
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {type.scopes.length}
+        </span>
+        {showOrg && (
+          <span className="text-[10px] text-muted-foreground/70 truncate ml-1">
+            {org.name}
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-0.5 shrink-0">
           <Link
             href={manageHref}
-            className="hidden sm:inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            title={`Manage ${type.label_plural}`}
+            className="p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-accent"
           >
-            <FolderKanban className="h-3 w-3" />
-            Manage
+            <Settings2 className="h-3.5 w-3.5" />
           </Link>
           <Link
             href={manageHref}
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            title={`New ${type.label_singular}`}
+            className="p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-accent"
           >
-            <Plus className="h-3 w-3" />
-            New
+            <Plus className="h-3.5 w-3.5" />
           </Link>
-        </div>
+        </span>
       </div>
 
-      {/* Scope tiles */}
+      {/* Scope rows — THE content. Vertical, prominent, connector-accented. */}
       {type.scopes.length === 0 ? (
-        <div className="px-4 py-4 text-xs text-muted-foreground italic">
-          No {type.label_plural.toLowerCase()} yet — add the first one.
+        <div className="px-3 pb-3 text-xs text-muted-foreground italic">
+          None yet.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border/40">
+        <ul
+          className="pb-1.5 ml-[1.15rem] mr-1.5 border-l pl-0"
+          style={{
+            borderColor: `color-mix(in srgb, ${type.color} 45%, transparent)`,
+          }}
+        >
           {type.scopes.map((scope) => {
             const isActive = activeScopeIds.has(scope.id);
             return (
-              <Link
-                key={scope.id}
-                href={`/scopes/${scope.id}`}
-                className={cn(
-                  "group relative bg-card px-3.5 py-2.5 min-h-[3.25rem] flex items-center gap-2.5 transition-colors hover:bg-accent/60",
-                  isActive && "bg-primary/5",
-                )}
-              >
-                <span
-                  className="h-6 w-1 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: isActive
-                      ? type.color
-                      : `color-mix(in srgb, ${type.color} 35%, transparent)`,
-                  }}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm truncate">{scope.name}</span>
-                    {isActive && (
-                      <span
-                        className="h-1.5 w-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: type.color }}
-                        title="In your active context"
-                      />
-                    )}
-                  </div>
-                  {scope.description && (
-                    <div className="text-[11px] text-muted-foreground truncate">
-                      {scope.description}
-                    </div>
+              <li key={scope.id}>
+                <Link
+                  href={`/scopes/${scope.id}`}
+                  className={cn(
+                    "group flex items-center gap-2 pl-3 pr-2 py-[7px] rounded-r-md hover:bg-accent/70 transition-colors",
+                    isActive && "bg-primary/5",
                   )}
-                </div>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
+                >
+                  <span
+                    className="h-[7px] w-[7px] rounded-full shrink-0"
+                    style={{
+                      backgroundColor: isActive ? type.color : undefined,
+                      border: isActive
+                        ? undefined
+                        : `1.5px solid color-mix(in srgb, ${type.color} 60%, transparent)`,
+                    }}
+                  />
+                  <span
+                    className={cn(
+                      "text-[15px] leading-tight truncate",
+                      isActive ? "font-semibold" : "font-medium",
+                    )}
+                  >
+                    {scope.name}
+                  </span>
+                  {isActive && (
+                    <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
+                      active
+                    </span>
+                  )}
+                </Link>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
-
-      {/* Band footer — org escape hatch, kept quiet */}
-      <div className="px-3 sm:px-4 py-1.5 border-t border-border/40 flex justify-end">
-        <Link
-          href={`/organizations/${org.slug ?? org.id}`}
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-        >
-          Org overview
-          <ArrowUpRight className="h-3 w-3" />
-        </Link>
-      </div>
     </section>
   );
 }
 
 function HubSkeleton() {
   return (
-    <div className="space-y-5">
-      <div className="h-8 w-72 bg-muted animate-pulse rounded" />
-      {[1, 2, 3].map((i) => (
-        <Card key={i} className="p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/50 flex items-center gap-2.5">
-            <div className="h-7 w-7 bg-muted animate-pulse rounded-md" />
-            <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border/40">
-            {[1, 2, 3].map((j) => (
-              <div key={j} className="bg-card px-3.5 py-3">
-                <div className="h-4 w-28 bg-muted animate-pulse rounded" />
-              </div>
+    <div className="space-y-4">
+      <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+      <div className="columns-1 md:columns-2 xl:columns-3 gap-4">
+        {[4, 6, 3, 5, 4, 3].map((rows, i) => (
+          <Card key={i} className="break-inside-avoid mb-4 p-3 space-y-2.5">
+            <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+            {Array.from({ length: rows }, (_, j) => (
+              <div key={j} className="h-4 w-4/5 bg-muted animate-pulse rounded ml-4" />
             ))}
-          </div>
-        </Card>
-      ))}
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

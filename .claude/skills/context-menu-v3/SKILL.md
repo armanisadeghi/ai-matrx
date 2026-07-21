@@ -18,7 +18,7 @@ The deep contract is **[`features/context-menu-v3/FEATURE.md`](../../../features
 
 ## Pick the wrapper
 
-- **`EditableContextMenu`** — a textarea / editor. Gives Cut / Paste / Insert / Save / Delete on top of everything else.
+- **`EditableContextMenu`** — a textarea / editor. Gives Cut / Paste / Insert / Save / Delete on top of everything else — and auto-registers a WidgetHandle from the same callbacks, so agents launched from the menu can stream `widget_text_*` edits into the surface in place (nothing extra to wire; proof at `/demos/context-menu/inline-edit`).
 - **`NonEditableContextMenu`** — a viewer / rendered display / read-only text. No text mutation; **Copy / AI / Export / Download / Convert still work** because the menu self-resolves content from the DOM.
 
 A surface with both modes (editor + preview) uses **both** — one per mode.

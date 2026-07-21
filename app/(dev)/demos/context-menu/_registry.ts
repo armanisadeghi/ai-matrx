@@ -52,12 +52,22 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     status: "wip",
   },
   {
+    slug: "inline-edit",
+    title: "Inline Agent Editing",
+    tagline:
+      "Agents edit the surface's content in place, streaming, via widget_text_* client tools.",
+    description:
+      "Live proof of the WidgetHandle wire: an EditableContextMenu surface auto-registers a widget handle from its existing callbacks, and every agent launched from the menu can stream widget_text_replace / patch / insert edits straight into the textarea. Applied edits are logged beside the field.",
+    icon: "flask-conical",
+    status: "stable",
+  },
+  {
     slug: "lab",
     title: "Diagnostic Lab",
     tagline:
       "Single trigger + every inspector. Surface picker loads production-target context JSON.",
     description:
-      "Exhaustive harness for debugging the v2 menu. Pick a surface (notes, code-editor, agent-builder) and the contextData editor auto-fills the canonical payload shape. Scope picker, placement toggles, API/Redux/hook inspectors, raw DB view query.",
+      "Exhaustive harness for debugging the v3 menu. Pick a surface (notes, code-editor, agent-builder) and the contextData editor auto-fills the canonical payload shape. Scope picker, placement toggles, API/Redux/hook inspectors, raw DB view query.",
     icon: "microscope",
     status: "stable",
   },

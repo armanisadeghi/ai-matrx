@@ -81,7 +81,6 @@ export function useWidgetHandle(handle: WidgetHandle): string {
         ] as (keyof WidgetHandle)[]
       ).filter((k) => typeof handle[k] === "function").length;
       if (methodCount === 0) {
-        // eslint-disable-next-line no-console
         console.warn(
           "[useWidgetHandle] Handle registered with no methods — widget advertises nothing.",
         );

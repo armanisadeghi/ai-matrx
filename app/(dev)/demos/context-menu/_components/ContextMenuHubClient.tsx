@@ -32,19 +32,86 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-primary" />
             <h1 className="text-xl font-semibold">
-              UnifiedAgentContextMenu — Testing Suite
+              Context Menu v3 — Testing Suite
             </h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-3xl">
-            One place to exercise every moving part of the v2 context menu. Each
-            card below is a focused page — pick the one that matches what
-            you&apos;re investigating. New pages register through{" "}
+            One place to exercise every moving part of the ONE universal
+            context menu (v3 — v2 was deleted 2026-07-19). Each card below is a
+            focused page. New pages register through{" "}
             <code className="text-[11px] bg-muted px-1 py-0.5 rounded">
               _registry.ts
             </code>{" "}
             and appear here automatically.
           </p>
         </header>
+
+        <section className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            What every surface gets free vs. what a surface adds
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[12px] text-muted-foreground">
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground">
+                Core — zero wiring (just wrap children)
+              </p>
+              <ul className="list-disc ml-5 space-y-0.5">
+                <li>
+                  Copy always works — content self-resolves from the DOM (no
+                  fake menus; dev guard screams if a menu opens inert)
+                </li>
+                <li>Select All · Find &amp; Replace · Chat · Quick Actions</li>
+                <li>Compare (clipboard / base) via the shared diff viewer</li>
+                <li>
+                  Default-contract agents (matrx-default/*) on EVERY surface —
+                  even bare ones
+                </li>
+                <li>Admin Tools (Context Values inspector, debug, Redux)</li>
+                <li>
+                  Editable wrapper adds: Cut / Paste / Insert / native
+                  Undo-Redo fallback — and auto-registers a WidgetHandle so
+                  launched agents can edit the content inline
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground">
+                Per-surface — each prop unlocks a tier
+              </p>
+              <ul className="list-disc ml-5 space-y-0.5">
+                <li>
+                  <Code>surfaceName</Code> → surface-bound agents + AI actions
+                  + value mappings (the registry contract)
+                </li>
+                <li>
+                  <Code>getApplicationScope</Code> / <Code>contextData</Code> →
+                  the values agents receive (5 baselines always floored)
+                </li>
+                <li>
+                  <Code>contentSource</Code> → Copy-as variants, Export,
+                  Download as Markdown, Convert (rich-document registry)
+                </li>
+                <li>
+                  <Code>entity</Code> → Attach To (scope tagging) + Share
+                </li>
+                <li>
+                  <Code>extraSections</Code> → the surface&apos;s own items at
+                  declared anchors (never a bespoke menu)
+                </li>
+                <li>
+                  <Code>onSave</Code> / <Code>onDelete</Code> / history props →
+                  Save, Delete, View History
+                </li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground/80">
+            Both renderers (desktop Radix menus, mobile 70dvh drill-down) are
+            pure presentation over ONE shared engine:{" "}
+            <Code>features/context-menu-v3/hooks/useContextMenuActions.ts</Code>
+            . A behavior change lands there once.
+          </p>
+        </section>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {pages.map((page) => {
