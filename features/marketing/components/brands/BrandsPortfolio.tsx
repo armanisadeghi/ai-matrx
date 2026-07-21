@@ -14,6 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +89,49 @@ export function BrandsPortfolio() {
       });
     }
   };
+
+  const brandRowCopy = (row: BrandListRow) =>
+    webCopy({
+      kind: "web-brand",
+      label: `Brand ${row.name}`,
+      description: "One brand row from the Marketing brand portfolio.",
+      surface: `Brands portfolio — ${row.name}`,
+      data: row,
+      lines: [
+        ["Brand", row.name],
+        ["Industry", row.industry],
+        ["Description", row.description],
+        ["Status", row.status],
+        ["Websites", row.sites.map((site) => site.domain).join(", ") || "none"],
+        ["Social profiles", row.social_count],
+        ["Brand assets", row.asset_count],
+        ["Business facts", row.fact_count],
+        ["Pending review", row.pending_discovered],
+        ["Updated", formatCompactDate(row.updated_at)],
+      ],
+      attributes: { brand_id: row.id, status: row.status },
+    });
+
+  const listRows = brands.data?.rows ?? [];
+  const listCopy = webCopy({
+    kind: "web-brands-list",
+    label: "Brand portfolio",
+    description:
+      "The brand portfolio list currently loaded at /marketing/brands (respects active search/filters/page).",
+    surface: "Brands portfolio",
+    data: listRows,
+    lines: [
+      ["Brands on this page", listRows.length],
+      ["Total matching", brands.data?.total ?? listRows.length],
+      ...listRows.map(
+        (row): [string, string] => [
+          row.name,
+          `${row.status} · ${row.sites.map((site) => site.domain).join(", ") || "no websites"} · ${row.asset_count} assets · ${row.fact_count} facts`,
+        ],
+      ),
+    ],
+    attributes: { count: listRows.length, total: brands.data?.total ?? null },
+  });
 
   const columns: MatrxColumnDef<BrandListRow>[] = [
     {
@@ -217,12 +262,17 @@ export function BrandsPortfolio() {
         }
         center={<MarketingWorkspaceNav />}
         right={
-          <RefreshCwTapButton
-            ariaLabel="Refresh brands"
-            onClick={() => void brands.refetch()}
-            disabled={brands.isFetching}
-            className={brands.isFetching ? "animate-spin" : undefined}
-          />
+          <div className="flex items-center gap-1">
+            {listRows.length > 0 ? (
+              <CopyButtons size="icon" {...listCopy} />
+            ) : null}
+            <RefreshCwTapButton
+              ariaLabel="Refresh brands"
+              onClick={() => void brands.refetch()}
+              disabled={brands.isFetching}
+              className={brands.isFetching ? "animate-spin" : undefined}
+            />
+          </div>
         }
       />
       <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
@@ -258,6 +308,9 @@ export function BrandsPortfolio() {
               onRowOpen={(row) => router.push(marketingRoutes.brand(row.id))}
               rowActions={(row) => (
                 <div className="flex items-center gap-0.5">
+                  <span onClick={(event) => event.stopPropagation()}>
+                    <CopyButtons size="icon" {...brandRowCopy(row)} />
+                  </span>
                   <button
                     type="button"
                     className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"

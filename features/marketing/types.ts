@@ -208,6 +208,10 @@ export const PROPERTY_KINDS = [
 ] as const;
 export type PropertyKind = (typeof PROPERTY_KINDS)[number];
 
+export function isPropertyKind(value: string): value is PropertyKind {
+  return PROPERTY_KINDS.some((kind) => kind === value);
+}
+
 export const PROPERTY_KIND_LABELS: Record<PropertyKind, string> = {
   website: "Website",
   instagram: "Instagram",

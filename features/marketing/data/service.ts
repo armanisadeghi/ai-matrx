@@ -7,6 +7,7 @@ import type {
   BusinessFact,
   ConfirmAssetInput,
   ConfirmFactInput,
+  ConfirmPropertyInput,
   CrawlEvent,
   CrawlSession,
   CrawlUrl,
@@ -1233,47 +1234,29 @@ export async function updateSiteIdentity(
 const SCREENSHOT_COLUMNS =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, snapshot_id, kind, width, height, captured_at, file_id";
 
-/**
- * Latest display screenshot for the site hero. Prefers the above-the-fold
- * desktop capture; falls back to any capture so pre-initialization sites
- * with older data still render something real.
- */
+/** Read the bootstrap-selected above-the-fold homepage capture. */
 export async function getSiteHeroScreenshot(
   siteId: string,
+  screenshotId: string | null,
   signal?: AbortSignal,
 ): Promise<SiteScreenshot | null> {
+  if (!screenshotId) return null;
   const db = await authenticatedWebDb(supabase);
-  const abortSignal = signal ?? new AbortController().signal;
-  const preferred = await db
+  const response = await db
     .from("screenshot")
     .select(SCREENSHOT_COLUMNS)
+    .eq("id", screenshotId)
     .eq("site_id", siteId)
-    .in("kind", ["desktop_fold", "homepage", "viewport"])
+    .eq("kind", "homepage")
     .is("deleted_at", null)
-    .order("captured_at", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(1)
-    .abortSignal(abortSignal)
+    .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  if (preferred.error) throw preferred.error;
-  if (preferred.data) return preferred.data;
-
-  const any = await db
-    .from("screenshot")
-    .select(SCREENSHOT_COLUMNS)
-    .eq("site_id", siteId)
-    .is("deleted_at", null)
-    .order("captured_at", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(1)
-    .abortSignal(abortSignal)
-    .maybeSingle();
-  if (any.error) throw any.error;
-  return any.data;
+  if (response.error) throw response.error;
+  return response.data;
 }
 
 const DISCOVERED_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, value_hash, context, confidence, status, resolved_asset_id, resolved_fact_id, reviewed_by, reviewed_at";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, value_hash, context, confidence, status, resolved_asset_id, resolved_fact_id, resolved_property_id, reviewed_by, reviewed_at";
 
 /** Discovery inbox for a brand, optionally narrowed by status. Bounded. */
 export async function listDiscoveredItems(
@@ -1333,11 +1316,69 @@ export async function confirmDiscoveredAsset(
     .select("id")
     .single();
   const created = assertData(asset.data, asset.error);
+  const identityPatch =
+    input.assetKind === "logo"
+      ? { logo_url: input.item.url }
+      : input.assetKind === "favicon"
+        ? { favicon_url: input.item.url }
+        : input.assetKind === "og_image" || input.assetKind === "twitter_image"
+          ? { og_image_url: input.item.url }
+          : null;
+  if (identityPatch && input.item.url) {
+    const brandUpdate = await db
+      .from("brand")
+      .update(identityPatch)
+      .eq("id", input.item.brand_id)
+      .is("deleted_at", null);
+    if (brandUpdate.error) throw brandUpdate.error;
+    if (input.item.site_id) {
+      const siteUpdate = await db
+        .from("site")
+        .update(identityPatch)
+        .eq("id", input.item.site_id)
+        .is("deleted_at", null);
+      if (siteUpdate.error) throw siteUpdate.error;
+    }
+  }
   const update = await db
     .from("discovered_item")
     .update({
       status: "confirmed",
       resolved_asset_id: created.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", input.item.id)
+    .eq("status", "pending");
+  if (update.error) throw update.error;
+}
+
+/** Promote a social discovery to the brand-property model it renders in. */
+export async function confirmDiscoveredProperty(
+  input: ConfirmPropertyInput,
+): Promise<void> {
+  if (!input.item.url) {
+    throw new Error("A social property discovery needs a URL.");
+  }
+  const db = await authenticatedWebDb(supabase);
+  const property = await db
+    .from("property")
+    .insert({
+      organization_id: input.item.organization_id,
+      brand_id: input.item.brand_id,
+      kind: input.propertyKind,
+      url: input.item.url,
+      display_name: input.displayName,
+      status: "active",
+      metadata: { source_discovery_id: input.item.id },
+    })
+    .select("id")
+    .single();
+  const created = assertData(property.data, property.error);
+  const update = await db
+    .from("discovered_item")
+    .update({
+      status: "confirmed",
+      resolved_property_id: created.id,
       reviewed_at: new Date().toISOString(),
     })
     .eq("id", input.item.id)

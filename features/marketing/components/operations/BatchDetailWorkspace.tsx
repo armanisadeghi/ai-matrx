@@ -9,6 +9,12 @@ import {
   RefreshCwTapButton,
 } from "@/components/icons/tap-buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  humanLines,
+  webCopy,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import {
   formatCompactDate,
   JsonPreview,
@@ -229,6 +235,27 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
   }
 
   const job = batch.data;
+  const jobCopy = webCopy({
+    kind: "web-batch-job",
+    label: `Batch ${job.id.slice(0, 12)}`,
+    description:
+      "One vision/LLM batch job: the full job record for this execution.",
+    surface: `Batch detail — ${job.id}`,
+    data: job,
+    lines: [
+      ["Batch", job.id],
+      ["Site", job.site?.name ?? job.site_id],
+      ["Status", job.status],
+      ["Kind", job.kind],
+      ["Provider", job.provider?.label ?? job.provider_id],
+      ["Created", formatCompactDate(job.created_at)],
+      ["Submitted", formatCompactDate(job.submitted_at)],
+      ["Completed", formatCompactDate(job.completed_at)],
+      ["Items", items.data?.total ?? null],
+      ["Error", job.error],
+    ],
+    attributes: { batch_id: job.id, site_id: job.site_id, status: job.status },
+  });
   return (
     <>
       <RouteHeader
@@ -245,17 +272,22 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
         }
         center={<StatusBadge value={job.status} />}
         right={
-          <RefreshCwTapButton
-            ariaLabel="Refresh batch"
+          <div className="flex items-center gap-1">
+            <CopyButtons size="icon" {...jobCopy} />
+            <RefreshCwTapButton
+              ariaLabel="Refresh batch"
             onClick={() => {
               void batch.refetch();
               void items.refetch();
             }}
-            disabled={batch.isFetching || items.isFetching}
-            className={
-              batch.isFetching || items.isFetching ? "animate-spin" : undefined
-            }
-          />
+              disabled={batch.isFetching || items.isFetching}
+              className={
+                batch.isFetching || items.isFetching
+                  ? "animate-spin"
+                  : undefined
+              }
+            />
+          </div>
         }
       />
       <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
@@ -313,6 +345,45 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
               }}
               toolbar={{
                 searchPlaceholder: "Search external reference or error…",
+              }}
+              copy={{
+                label: "Batch item",
+                listLabel: "All batch items",
+                location: webLocation(`Batch detail — ${job.id}`),
+                rowKind: "web-batch-item",
+                listKind: "web-batch-items-list",
+                rowDescription:
+                  "One execution unit of this batch job (analysis item × subject).",
+                listDescription:
+                  "The currently loaded batch item rows for this job (respecting search, filters, sort, and pagination).",
+                humanRow: (row) =>
+                  humanLines([
+                    ["Item", row.item?.label ?? row.item_id],
+                    [
+                      "Catalog key",
+                      row.item?.category && row.item?.subcategory
+                        ? `${row.item.category} / ${row.item.subcategory} / ${row.item.key}`
+                        : row.item?.key,
+                    ],
+                    ["Status", row.status],
+                    ["Subject", `${row.subject_type} ${row.subject_id}`],
+                    ["Provider", row.provider?.label ?? row.provider_id],
+                    ["Cost", formatRuntimeCost(row.cost)],
+                    ["External ref", row.external_ref],
+                    ["Created", formatCompactDate(row.created_at)],
+                    ["Error", row.error],
+                  ]),
+                rowAttributes: (row) => ({
+                  batch_item_id: row.id,
+                  batch_id: job.id,
+                  site_id: job.site_id,
+                  status: row.status,
+                }),
+                listAttributes: () => ({
+                  batch_id: job.id,
+                  site_id: job.site_id,
+                  total_matching: items.data?.total ?? 0,
+                }),
               }}
               detail={{
                 title: (row) => row.item?.label ?? row.item_id,

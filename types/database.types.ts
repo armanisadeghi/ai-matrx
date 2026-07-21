@@ -43476,6 +43476,7 @@ export type Database = {
           organization_id: string
           resolved_asset_id: string | null
           resolved_fact_id: string | null
+          resolved_property_id: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           site_id: string | null
@@ -43503,6 +43504,7 @@ export type Database = {
           organization_id: string
           resolved_asset_id?: string | null
           resolved_fact_id?: string | null
+          resolved_property_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           site_id?: string | null
@@ -43530,6 +43532,7 @@ export type Database = {
           organization_id?: string
           resolved_asset_id?: string | null
           resolved_fact_id?: string | null
+          resolved_property_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           site_id?: string | null
@@ -43563,6 +43566,13 @@ export type Database = {
             columns: ["resolved_fact_id"]
             isOneToOne: false
             referencedRelation: "business_fact"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discovered_item_resolved_property_id_fkey"
+            columns: ["resolved_property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
             referencedColumns: ["id"]
           },
           {

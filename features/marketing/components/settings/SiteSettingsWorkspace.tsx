@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save, Settings2, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -101,6 +103,37 @@ export function SiteSettingsWorkspace() {
     });
   };
 
+  const settingsCopy = webCopy({
+    kind: "web-site-settings",
+    label: "Site settings",
+    description:
+      "This managed site's settings: identity, lifecycle, visibility, and default crawl policy (current form state plus the stored settings JSON).",
+    surface: `Site settings — ${site.domain}`,
+    data: {
+      site_id: site.id,
+      name,
+      status,
+      visibility,
+      root_url: site.root_url,
+      crawl_defaults: crawl,
+      stored_settings: site.settings,
+    },
+    lines: [
+      ["Site", name],
+      ["Root URL", site.root_url],
+      ["Lifecycle", status],
+      ["Visibility", visibility],
+      ["Respect robots.txt", crawl.respectRobots ? "yes" : "no"],
+      ["Seed from sitemap", crawl.seedFromSitemap ? "yes" : "no"],
+      ["Follow subdomains", crawl.followSubdomains ? "yes" : "no"],
+      ["Capture screenshots", crawl.captureScreenshots ? "yes" : "no"],
+      ["Maximum pages", crawl.maxPages],
+      ["Concurrency", crawl.concurrency],
+      ["Render mode", crawl.renderMode],
+    ],
+    attributes: { site_id: site.id },
+  });
+
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid gap-3 xl:grid-cols-2">
@@ -108,6 +141,9 @@ export function SiteSettingsWorkspace() {
           <div className="flex h-10 items-center gap-2 border-b border-border px-3">
             <Settings2 className="h-4 w-4 text-primary" />
             <h1 className="text-sm font-semibold">Site identity</h1>
+            <span className="ml-auto">
+              <CopyButtons size="icon" {...settingsCopy} />
+            </span>
           </div>
           <div className="grid gap-3 p-3 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">

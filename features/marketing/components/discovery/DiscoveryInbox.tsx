@@ -16,6 +16,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -48,13 +50,14 @@ import {
   BUSINESS_FACT_KIND_LABELS,
   PROPERTY_KINDS,
   PROPERTY_KIND_LABELS,
+  isPropertyKind,
   isJsonRecord,
   type DiscoveredItem,
   type DiscoveredItemStatus,
-  type PropertyKind,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
+import { inferDiscoveredPropertyType } from "@/features/marketing/lib/discovery-promotion";
 
 const STATUS_TABS: Array<{ value: DiscoveredItemStatus; label: string }> = [
   { value: "pending", label: "Pending" },
@@ -96,32 +99,8 @@ function isSocialCategory(category: string): boolean {
   return category === "social";
 }
 
-function inferredPropertyType(item: DiscoveredItem): PropertyKind {
-  if (
-    item.guessed_kind &&
-    item.guessed_kind !== "website" &&
-    PROPERTY_KINDS.includes(item.guessed_kind as PropertyKind)
-  ) {
-    return item.guessed_kind as PropertyKind;
-  }
-  if (!item.url) return "other";
-  try {
-    const host = new URL(item.url).hostname.replace(/^www\./, "");
-    if (host === "instagram.com") return "instagram";
-    if (host === "facebook.com" || host === "fb.com") return "facebook";
-    if (host === "x.com" || host === "twitter.com") return "x";
-    if (host === "tiktok.com") return "tiktok";
-    if (host === "youtube.com" || host === "youtu.be") return "youtube";
-    if (host === "linkedin.com") return "linkedin";
-    if (host === "pinterest.com" || host === "pin.it") return "pinterest";
-  } catch {
-    // The review UI retains Other for malformed candidate URLs.
-  }
-  return "other";
-}
-
 function defaultKind(item: DiscoveredItem): string {
-  if (isSocialCategory(item.category)) return inferredPropertyType(item);
+  if (isSocialCategory(item.category)) return inferDiscoveredPropertyType(item);
   const guess = item.guessed_kind ?? "";
   const pool = isMediaCategory(item.category) ? ASSET_KINDS : FACT_KINDS;
   if (pool.some((option) => option.value === guess)) return guess;
@@ -182,6 +161,33 @@ export function DiscoveryInbox() {
     );
   }
 
+  const rows = items.data ?? [];
+  const inboxCopy = webCopy({
+    kind: "web-discovery-inbox",
+    label: `Discovery inbox (${status})`,
+    description:
+      "Machine-discovered brand candidates awaiting human review; confirming promotes an item to confirmed brand assets/facts/properties.",
+    surface: `Discovery inbox — ${site.name} (${status})`,
+    data: rows,
+    lines: [
+      ["Site", site.domain],
+      ["Status filter", status],
+      ["Items", rows.length],
+      ...grouped.map(
+        ([category, categoryItems]): [string, string] => [
+          (CATEGORY_META[category] ?? CATEGORY_META.other).label,
+          `${categoryItems.length} item${categoryItems.length === 1 ? "" : "s"}`,
+        ],
+      ),
+    ],
+    attributes: {
+      site_id: site.id,
+      brand_id: site.brand_id,
+      status,
+      count: rows.length,
+    },
+  });
+
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
@@ -196,6 +202,8 @@ export function DiscoveryInbox() {
               and facts.
             </p>
           </div>
+          <div className="flex items-center gap-1.5">
+          {rows.length > 0 ? <CopyButtons size="icon" {...inboxCopy} /> : null}
           <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
             {STATUS_TABS.map((tab) => (
               <button
@@ -212,6 +220,7 @@ export function DiscoveryInbox() {
                 {tab.label}
               </button>
             ))}
+          </div>
           </div>
         </header>
 
@@ -298,6 +307,28 @@ function DiscoveryRow({
     deleteMutation.isPending;
   const display = itemDisplayValue(item);
   const context = itemContextSnippet(item);
+  const itemCopy = webCopy({
+    kind: "web-discovered-item",
+    label: "Discovered item",
+    description:
+      "One machine-discovered brand candidate from the site discovery inbox.",
+    surface: `Discovery inbox — ${display}`,
+    data: item,
+    lines: [
+      ["Category", item.category],
+      ["Guessed kind", item.guessed_kind],
+      [
+        "Confidence",
+        typeof item.confidence === "number"
+          ? `${Math.round(item.confidence * 100)}%`
+          : null,
+      ],
+      ["Value", display],
+      ["Context", context],
+      ["Status", item.status],
+    ],
+    attributes: { item_id: item.id, category: item.category, status: item.status },
+  });
   const previewUrl =
     media && item.url && /\.(png|jpe?g|webp|gif|svg|ico)(\?|$)/i.test(item.url)
       ? item.url
@@ -317,9 +348,12 @@ function DiscoveryRow({
           title: trimmedLabel || null,
         });
       } else if (social) {
+        if (!isPropertyKind(kind)) {
+          throw new Error("Select a valid property type.");
+        }
         await confirmProperty.mutateAsync({
           item,
-          propertyKind: kind as PropertyKind,
+          propertyKind: kind,
           displayName: trimmedLabel || null,
         });
       } else {
@@ -416,6 +450,10 @@ function DiscoveryRow({
           </p>
         ) : null}
       </div>
+
+      <span className="shrink-0">
+        <CopyButtons size="icon" {...itemCopy} />
+      </span>
 
       {readOnly ? (
         <div className="flex shrink-0 items-center gap-1.5">

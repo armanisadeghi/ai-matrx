@@ -27,6 +27,7 @@ import {
 } from "@/features/marketing/data/hooks";
 import {
   PROPERTY_KINDS,
+  PROPERTY_KIND_LABELS,
   type BrandProperty,
   type PropertyKind,
 } from "@/features/marketing/types";
@@ -37,12 +38,6 @@ const STATUS_OPTIONS = [
   { value: "paused", label: "Paused" },
   { value: "archived", label: "Archived" },
 ];
-
-function kindLabel(kind: PropertyKind): string {
-  return kind === "x"
-    ? "X (Twitter)"
-    : kind.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
-}
 
 /**
  * The ONE property editor — create and edit expose EVERY user-editable
@@ -163,7 +158,7 @@ function PropertyEditorDialogBody({
         <div className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label className="text-xs">Kind</Label>
+              <Label className="text-xs">Type</Label>
               <Select
                 value={kind}
                 onValueChange={(value) => setKind(value as PropertyKind)}
@@ -175,7 +170,7 @@ function PropertyEditorDialogBody({
                 <SelectContent>
                   {kindOptions.map((value) => (
                     <SelectItem key={value} value={value}>
-                      {kindLabel(value)}
+                      {PROPERTY_KIND_LABELS[value]}
                     </SelectItem>
                   ))}
                 </SelectContent>

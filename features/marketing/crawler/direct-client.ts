@@ -376,6 +376,20 @@ export function bootstrapSite(
   return streamCommand(`sites/${siteId}/bootstrap`, null, callbacks);
 }
 
+/**
+ * On-demand capture of ONE page — "get the freshest version right now".
+ * Works for existing canonical pages AND never-captured URLs; the server
+ * validates the canonical-host boundary and reuses the bootstrap single-URL
+ * pipeline (snapshot + head_tags + seo_metrics + viewport screenshot).
+ */
+export function fetchPageNow(
+  siteId: string,
+  url: string,
+  callbacks?: CrawlStreamCallbacks,
+): Promise<CrawlStreamResult> {
+  return streamCommand(`sites/${siteId}/pages/fetch`, { url }, callbacks);
+}
+
 export function startSiteCrawl(
   siteId: string,
   options: CrawlStartOptions,

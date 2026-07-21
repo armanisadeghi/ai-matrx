@@ -9,6 +9,10 @@ import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useCrawl, useCrawlUrls } from "@/features/marketing/data/hooks";
 import type { CrawlUrl } from "@/features/marketing/types";
 import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
+import {
   formatCompactDate,
   LoadingSurface,
   QueryError,
@@ -177,6 +181,40 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
             toolbar={{
               searchPlaceholder:
                 "Search encountered, normalized, final URL, or reason…",
+            }}
+            copy={{
+              label: "Run URL",
+              listLabel: "All run URLs",
+              location: webLocation(`Crawl URL ledger — session ${crawlId}`),
+              rowKind: "web-crawl-url",
+              listKind: "web-crawl-urls-list",
+              rowDescription:
+                "One URL this crawl session encountered, with its classification and outcome.",
+              listDescription:
+                "The currently loaded run-URL rows for this crawl session (respecting search, filters, sort, and pagination).",
+              humanRow: (row) =>
+                humanLines([
+                  ["Seq", row.sequence],
+                  ["URL", row.raw_url],
+                  ["Outcome", row.outcome],
+                  ["Class", row.classification],
+                  ["Discovered by", row.discovery_source],
+                  ["Depth", row.depth],
+                  ["HTTP", row.http_status],
+                  ["Reason", row.reason],
+                  ["Completed", formatCompactDate(row.completed_at)],
+                ]),
+              rowAttributes: (row) => ({
+                crawl_url_id: row.id,
+                session_id: crawlId,
+                site_id: site.id,
+                outcome: row.outcome,
+              }),
+              listAttributes: () => ({
+                session_id: crawlId,
+                site_id: site.id,
+                total_matching: urls.data?.total ?? 0,
+              }),
             }}
             detail={{
               title: (row) => row.raw_url,

@@ -14,6 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -180,6 +182,113 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const primarySiteDiscovery = websiteSites[0]
     ? marketingRoutes.site(brandId, websiteSites[0].id, "/discovery")
     : null;
+  const factRows = facts.data ?? [];
+  const assetRows = assets.data ?? [];
+
+  const brandCopy = webCopy({
+    kind: "web-brand",
+    label: `Brand ${current.name}`,
+    description:
+      "The full brand cockpit: identity plus its websites, social properties, confirmed business facts, and brand assets.",
+    surface: `Brand cockpit — ${current.name}`,
+    data: {
+      brand: current,
+      sites: websiteSites,
+      properties: properties.data ?? [],
+      assets: assetRows,
+      facts: factRows,
+      pendingDiscovered: pending.data ?? 0,
+    },
+    lines: [
+      ["Brand", current.name],
+      ["Website", current.website_url],
+      ["Industry", current.industry],
+      ["Status", current.status],
+      ["Description", current.description],
+      ["Websites", websiteSites.map((site) => site.domain).join(", ") || "none"],
+      ["Social properties", socialProperties.length],
+      ["Business facts", factRows.length],
+      ["Brand assets", assetRows.length],
+      ["Pending review", pending.data ?? 0],
+    ],
+    attributes: { brand_id: current.id, status: current.status },
+  });
+
+  const websitesCopy = webCopy({
+    kind: "web-brand-websites",
+    label: "Brand websites",
+    description: "The website properties (managed sites) owned by this brand.",
+    surface: `Websites — ${current.name}`,
+    data: websiteSites,
+    lines: [
+      ["Brand", current.name],
+      ["Websites", websiteSites.length],
+      ...websiteSites.map(
+        (site): [string, string] => [site.name, `${site.domain} · ${site.status}`],
+      ),
+    ],
+    attributes: { brand_id: current.id, count: websiteSites.length },
+  });
+
+  const socialsCopy = webCopy({
+    kind: "web-brand-properties",
+    label: "Social profiles & other properties",
+    description:
+      "The brand's non-website properties (social profiles and other presences).",
+    surface: `Social profiles — ${current.name}`,
+    data: socialProperties,
+    lines: [
+      ["Brand", current.name],
+      ["Properties", socialProperties.length],
+      ...socialProperties.map(
+        (property): [string, string] => [
+          property.kind.replace(/_/g, " "),
+          property.url || property.handle || property.display_name || "—",
+        ],
+      ),
+    ],
+    attributes: { brand_id: current.id, count: socialProperties.length },
+  });
+
+  const factsCopy = webCopy({
+    kind: "web-business-facts",
+    label: "Business facts",
+    description:
+      "Human-confirmed business facts for this brand (phones, addresses, taglines, identity).",
+    surface: `Business facts — ${current.name}`,
+    data: factRows,
+    lines: [
+      ["Brand", current.name],
+      ["Facts", factRows.length],
+      ...factRows.map(
+        (fact): [string, string] => [
+          fact.label || fact.kind.replace(/_/g, " "),
+          factValueText(fact),
+        ],
+      ),
+    ],
+    attributes: { brand_id: current.id, count: factRows.length },
+  });
+
+  const assetsCopy = webCopy({
+    kind: "web-brand-assets",
+    label: "Brand assets",
+    description:
+      "Human-confirmed brand assets (logos, favicons, imagery) with their source URLs.",
+    surface: `Brand assets — ${current.name}`,
+    data: assetRows,
+    lines: [
+      ["Brand", current.name],
+      ["Assets", assetRows.length],
+      ...assetRows.map(
+        (asset): [string, string] => [
+          `${asset.kind.replace(/_/g, " ")}${asset.title ? ` · ${asset.title}` : ""}`,
+          asset.source_url ?? "no source URL",
+        ],
+      ),
+    ],
+    attributes: { brand_id: current.id, count: assetRows.length },
+  });
 
   return (
     <>
@@ -228,6 +337,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
+              <CopyButtons size="icon" {...brandCopy} />
               {pending.data ? (
                 <Button
                   asChild
@@ -264,6 +374,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
 
           <SectionCard
             title="Websites"
+            copy={websitesCopy}
             action={{ label: "Add site", href: marketingRoutes.newSite(brandId) }}
           >
             {websiteSites.length === 0 ? (
@@ -314,6 +425,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           <div className="grid gap-3 lg:grid-cols-2">
             <SectionCard
               title="Social profiles & other properties"
+              copy={socialsCopy}
               action={{
                 label: "Add property",
                 onClick: () =>
@@ -382,6 +494,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
 
             <SectionCard
               title="Business facts"
+              copy={factsCopy}
               action={{
                 label: "Add fact",
                 onClick: () => setFactEditor({ open: true, fact: null }),
@@ -433,6 +546,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
 
           <SectionCard
             title="Brand assets"
+            copy={assetsCopy}
             action={{
               label: "Add asset",
               onClick: () => setAssetEditor({ open: true, asset: null }),

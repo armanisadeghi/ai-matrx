@@ -7,11 +7,17 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSitemap, useSitemapPages } from "@/features/marketing/data/hooks";
 import type { SitemapPagesFilter } from "@/features/marketing/data/service";
 import type { SitemapPageRow } from "@/features/marketing/types";
+import {
+  humanLines,
+  webCopy,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import {
   formatCompactDate,
   LoadingSurface,
@@ -123,6 +129,24 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
     );
   }
 
+  const doc = sitemap.data;
+  const sitemapCopy = webCopy({
+    kind: "web-sitemap",
+    label: `Sitemap ${doc.url}`,
+    description: "One discovered sitemap document for this site.",
+    surface: `Sitemap — ${doc.url}`,
+    data: doc,
+    lines: [
+      ["URL", doc.url],
+      ["Kind", doc.kind],
+      ["URLs listed", doc.url_count],
+      ["HTTP", doc.status_code],
+      ["Active", doc.is_active ? "yes" : "no"],
+      ["Fetch error", doc.fetch_error],
+    ],
+    attributes: { sitemap_id: doc.id, site_id: site.id, kind: doc.kind },
+  });
+
   return (
     <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured p-3 sm:p-4">
       <header className="flex shrink-0 flex-wrap items-center gap-2">
@@ -163,6 +187,7 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
             </button>
           ))}
         </div>
+        <CopyButtons size="icon" {...sitemapCopy} />
         <a
           href={sitemap.data.url}
           target="_blank"
@@ -188,6 +213,39 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
             onStateChange: table.onStateChange,
           }}
           toolbar={{ searchPlaceholder: "Search listed URLs…" }}
+          copy={{
+            label: "Listed page",
+            listLabel: "All listed pages",
+            location: webLocation(`Sitemap pages — ${doc.url}`),
+            rowKind: "web-sitemap-page-row",
+            listKind: "web-sitemap-pages-list",
+            rowDescription:
+              "One canonical page's membership in this sitemap document.",
+            listDescription:
+              "The currently loaded page-membership rows for this sitemap (respecting the crawled filter, search, sort, and pagination).",
+            humanRow: (row) =>
+              humanLines([
+                ["URL", row.page.url],
+                ["State", row.page.status],
+                [
+                  "Captured",
+                  row.page.latest_snapshot_id ? "crawled" : "never crawled",
+                ],
+                ["Sitemap memberships", row.membership_count],
+                ["Last modified", row.lastmod ? formatCompactDate(row.lastmod) : null],
+              ]),
+            rowAttributes: (row) => ({
+              page_id: row.page_id,
+              sitemap_id: sitemapId,
+              site_id: site.id,
+            }),
+            listAttributes: () => ({
+              sitemap_id: sitemapId,
+              site_id: site.id,
+              listed_filter: filter,
+              total_matching: pages.data?.total ?? 0,
+            }),
+          }}
           detail={{ enabled: false }}
           onRowOpen={(row) => router.push(`${sitePath}/pages/${row.page_id}`)}
           emptyState={{

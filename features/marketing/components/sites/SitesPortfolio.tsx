@@ -14,6 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
@@ -80,6 +82,48 @@ export function SitesPortfolio() {
   const hasFilters =
     Boolean(table.state.search || table.state.anyOf) ||
     Object.values(table.state.columnFilters).some(Boolean);
+
+  const siteRowCopy = (row: SiteListRow) =>
+    webCopy({
+      kind: "web-site",
+      label: `Site ${row.domain}`,
+      description: "One managed website row from the Marketing sites list.",
+      surface: `Sites list — ${row.domain}`,
+      data: row,
+      lines: [
+        ["Site", row.name],
+        ["Domain", row.domain],
+        ["Root URL", row.root_url],
+        ["Description", row.description],
+        ["Status", row.status],
+        ["Visibility", row.visibility],
+        ["Initialized", row.initialized_at ? "yes" : "no"],
+        ["Updated", formatCompactDate(row.updated_at)],
+      ],
+      attributes: { site_id: row.id, brand_id: row.brand_id, status: row.status },
+    });
+
+  const listRows = sites.data?.rows ?? [];
+  const sitesListCopy = webCopy({
+    kind: "web-sites-list",
+    label: "Managed sites",
+    description:
+      "The flattened all-sites list currently loaded at /marketing/sites (respects active search/filters/page).",
+    surface: "Sites list",
+    data: listRows,
+    lines: [
+      ["Sites on this page", listRows.length],
+      ["Total matching", sites.data?.total ?? listRows.length],
+      ["Total managed", siteCount.data ?? null],
+      ...listRows.map(
+        (row): [string, string] => [
+          row.domain,
+          `${row.name} · ${row.status} · ${row.visibility}`,
+        ],
+      ),
+    ],
+    attributes: { count: listRows.length, total: sites.data?.total ?? null },
+  });
 
   const columns: MatrxColumnDef<SiteListRow>[] = [
     {
@@ -163,14 +207,17 @@ export function SitesPortfolio() {
         }
         center={<MarketingWorkspaceNav />}
         right={
-          <>
+          <div className="flex items-center gap-1">
+            {listRows.length > 0 ? (
+              <CopyButtons size="icon" {...sitesListCopy} />
+            ) : null}
             <RefreshCwTapButton
               ariaLabel="Refresh sites"
               onClick={() => void sites.refetch()}
               disabled={sites.isFetching}
               className={sites.isFetching ? "animate-spin" : undefined}
             />
-          </>
+          </div>
         }
       />
       <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
@@ -245,6 +292,9 @@ export function SitesPortfolio() {
               onRowOpen={(row) => router.push(marketingRoutes.site(row.brand_id, row.id))}
               rowActions={(row) => (
                 <div className="flex items-center gap-0.5">
+                  <span onClick={(event) => event.stopPropagation()}>
+                    <CopyButtons size="icon" {...siteRowCopy(row)} />
+                  </span>
                   <a
                     href={row.root_url}
                     target="_blank"

@@ -16,6 +16,7 @@ import {
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
@@ -33,6 +34,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { syncSitemaps } from "@/features/marketing/crawler/direct-client";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { SiteSitemap } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
@@ -108,6 +110,36 @@ export function SitemapsWorkspace() {
   const indexes = rows.filter((sitemap) => sitemap.kind === "sitemapindex");
   const urlsets = rows.filter((sitemap) => sitemap.kind !== "sitemapindex");
 
+  const listCopy = webCopy({
+    kind: "web-sitemaps-list",
+    label: "All sitemaps",
+    description:
+      "Every sitemap document recorded for this site plus the coverage rollup over the canonical page registry.",
+    surface: `Sitemaps — ${site.root_url}`,
+    data: { sitemaps: rows, coverage: coverage.data ?? null },
+    lines: [
+      ["Site", site.root_url],
+      ["Sitemaps", rows.length],
+      ["Indexes", indexes.length],
+      ["URL sets", urlsets.length],
+      ["Pages in sitemaps", coverage.data?.pagesInSitemaps ?? null],
+      ["Never crawled", coverage.data?.neverCrawled ?? null],
+      [
+        "Last synced",
+        coverage.data?.lastSyncedAt
+          ? formatDate(coverage.data.lastSyncedAt)
+          : "Never",
+      ],
+      ...rows.map(
+        (sitemap): [string, string] => [
+          sitemap.kind === "sitemapindex" ? "Index" : "URL set",
+          `${sitemap.url} (${sitemap.url_count?.toLocaleString() ?? "—"} URLs, HTTP ${sitemap.status_code ?? "—"}${sitemap.is_active ? "" : ", inactive"})`,
+        ],
+      ),
+    ],
+    attributes: { site_id: site.id, count: rows.length },
+  });
+
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
@@ -121,19 +153,22 @@ export function SitemapsWorkspace() {
               canonical page registry.
             </p>
           </div>
-          <Button
-            size="sm"
-            className="h-8 gap-1.5"
-            disabled={syncing}
-            onClick={() => void runSync()}
-          >
-            {syncing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            {syncing ? "Syncing…" : "Sync sitemaps"}
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <CopyButtons size="icon" {...listCopy} />
+            <Button
+              size="sm"
+              className="h-8 gap-1.5"
+              disabled={syncing}
+              onClick={() => void runSync()}
+            >
+              {syncing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              {syncing ? "Syncing…" : "Sync sitemaps"}
+            </Button>
+          </div>
         </header>
 
         <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4">
@@ -238,6 +273,31 @@ function SitemapRow({
   mutating: boolean;
 }) {
   const isIndex = sitemap.kind === "sitemapindex";
+  const rowCopy = webCopy({
+    kind: "web-sitemap",
+    label: `Sitemap ${sitemap.url}`,
+    description: "One discovered sitemap document for this site.",
+    surface: `Sitemaps — ${sitemap.url}`,
+    data: sitemap,
+    lines: [
+      ["URL", sitemap.url],
+      ["Kind", sitemap.kind],
+      ["URLs listed", sitemap.url_count],
+      ["Child sitemaps", sitemap.child_count],
+      ["HTTP", sitemap.status_code],
+      ["Active", sitemap.is_active ? "yes" : "no"],
+      ["Fetch error", sitemap.fetch_error],
+      [
+        "Last fetched",
+        sitemap.last_fetched_at ? formatDate(sitemap.last_fetched_at) : "never",
+      ],
+    ],
+    attributes: {
+      sitemap_id: sitemap.id,
+      site_id: sitemap.site_id,
+      kind: sitemap.kind,
+    },
+  });
   const healthy =
     sitemap.status_code !== null &&
     sitemap.status_code >= 200 &&
@@ -293,6 +353,9 @@ function SitemapRow({
         )}
       >
         {sitemap.status_code ?? "—"}
+      </span>
+      <span onClick={(event) => event.stopPropagation()}>
+        <CopyButtons size="icon" {...rowCopy} />
       </span>
       <a
         href={sitemap.url}

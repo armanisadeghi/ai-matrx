@@ -19,6 +19,10 @@ import {
 import type { InspectionLinkRow } from "@/features/marketing/data/inspection-types";
 import { useCrawl } from "@/features/marketing/data/hooks";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 function sourceUrl(row: InspectionLinkRow): string {
   return row.source_page?.url ?? row.source_page_id;
@@ -206,6 +210,46 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
             }}
             toolbar={{
               searchPlaceholder: "Search target URL, anchor text, or rel…",
+            }}
+            copy={{
+              label: "Link edge",
+              listLabel: "All link edges",
+              location: webLocation(
+                crawlId
+                  ? `Crawl link edges — session ${crawlId}`
+                  : `Site link graph — ${site.root_url}`,
+              ),
+              rowKind: "web-link-edge",
+              listKind: "web-link-edges",
+              rowDescription:
+                "One immutable link edge observed in a retained snapshot.",
+              listDescription:
+                "The currently loaded link-edge rows (respecting search, filters, sort, and pagination).",
+              humanRow: (row) =>
+                humanLines([
+                  ["Source", sourceUrl(row)],
+                  ["Target", row.target_url],
+                  ["Scope", row.is_internal ? "internal" : "external"],
+                  ["HTTP", row.http_status],
+                  ["Anchor", row.anchor_text],
+                  ["Rel", row.rel],
+                  ["Position", row.position],
+                  [
+                    "Recorded",
+                    formatCompactDate(row.snapshot?.captured_at ?? row.created_at),
+                  ],
+                ]),
+              rowAttributes: (row) => ({
+                link_edge_id: row.id,
+                source_page_id: row.source_page_id,
+                site_id: site.id,
+                session_id: crawlId,
+              }),
+              listAttributes: () => ({
+                site_id: site.id,
+                session_id: crawlId,
+                total_matching: links.data?.total ?? 0,
+              }),
             }}
             detail={{
               title: (row) => row.target_url,

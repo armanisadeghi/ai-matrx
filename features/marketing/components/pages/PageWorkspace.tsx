@@ -19,6 +19,7 @@ import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { PageContentCard } from "@/features/marketing/components/pages/PageContentCard";
+import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -894,6 +895,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <CopyButtons size="icon" {...pageCopy} />
+            <FetchPageButton siteId={site.id} url={page.url} pageId={page.id} />
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link href={`${sitePath}/pages/${page.id}/snapshots`}>
                 <History className="mr-1.5 h-3.5 w-3.5" />
@@ -1179,13 +1181,14 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             ) : null}
           </>
         ) : (
-          <section className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
+          <section className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
             <FileQuestion className="h-6 w-6 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">
-              This canonical URL exists independently, but no crawl has
-              produced an accepted snapshot yet — observed content sections
-              will appear after the first capture.
+              This canonical URL exists independently, but nothing has produced
+              an accepted snapshot yet — observed content sections appear after
+              the first capture.
             </p>
+            <FetchPageButton siteId={site.id} url={page.url} pageId={page.id} />
           </section>
         )}
 

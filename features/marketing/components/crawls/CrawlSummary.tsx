@@ -8,6 +8,7 @@ import {
   CrawlScopePanel,
 } from "@/features/marketing/components/crawls/crawl-session-panels";
 import { useCrawl } from "@/features/marketing/data/hooks";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import {
   formatDate,
   formatDuration,
@@ -32,6 +33,46 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
     );
   }
   const row = crawl.data;
+  const sessionLines: Array<[string, string | number | null]> = [
+    ["Session", row.id],
+    ["Status", row.status],
+    ["Trigger", row.trigger],
+    ["Started", formatDate(row.started_at)],
+    ["Finished", formatDate(row.finished_at)],
+    ["Duration", formatDuration(row.started_at, row.finished_at)],
+    ["Discovered", jsonNumber(row.stats, ["pages_discovered"])],
+    ["Captured", jsonNumber(row.stats, ["pages_fetched"])],
+    ["Failed", jsonNumber(row.stats, ["pages_failed"])],
+    ["Error", row.error],
+  ];
+  const sessionCopy = webCopy({
+    kind: "web-crawl-session",
+    label: `Crawl session ${row.id.slice(0, 8)}`,
+    description:
+      "One frozen crawl session: the full row including timing, scope, stats, and metadata.",
+    surface: `Crawl summary — session ${row.id}`,
+    data: row,
+    lines: sessionLines,
+    attributes: { session_id: row.id, site_id: site.id, status: row.status },
+  });
+  const sessionSection = (
+    kind: string,
+    label: string,
+    description: string,
+    data: unknown,
+  ) =>
+    webCopy({
+      kind,
+      label,
+      description,
+      surface: `Crawl summary — ${label} — session ${row.id}`,
+      data,
+      lines: [
+        ["Session", row.id],
+        ["Status", row.status],
+      ],
+      attributes: { session_id: row.id, site_id: site.id },
+    });
   return (
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <CrawlSubnav crawl={row} />
@@ -74,7 +115,7 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
         />
       </section>
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-2 lg:grid-rows-2 lg:[grid-template-rows:minmax(0,1fr)_minmax(0,1fr)] [&>section]:flex [&>section]:min-h-0 [&>section]:flex-col">
-        <SectionCard title="Session timing" className="min-h-0">
+        <SectionCard title="Session timing" className="min-h-0" copy={sessionCopy}>
           <div className="min-h-0 flex-1 overflow-y-auto">
             <dl className="grid grid-cols-2 gap-3 p-3 text-xs">
               <div>
@@ -109,17 +150,44 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
             ) : null}
           </div>
         </SectionCard>
-        <SectionCard title="Frozen crawl scope" className="min-h-0">
+        <SectionCard
+          title="Frozen crawl scope"
+          className="min-h-0"
+          copy={sessionSection(
+            "web-crawl-scope",
+            "Frozen crawl scope",
+            "The scope this crawl session was frozen with (seeds, limits, inclusion rules).",
+            row.scope,
+          )}
+        >
           <div className="min-h-0 flex-1 overflow-y-auto">
             <CrawlScopePanel scope={row.scope} />
           </div>
         </SectionCard>
-        <SectionCard title="Reconciliation and run stats" className="min-h-0">
+        <SectionCard
+          title="Reconciliation and run stats"
+          className="min-h-0"
+          copy={sessionSection(
+            "web-crawl-run-stats",
+            "Reconciliation and run stats",
+            "The run statistics and registry reconciliation counts recorded for this crawl session.",
+            row.stats,
+          )}
+        >
           <div className="min-h-0 flex-1 overflow-y-auto">
             <CrawlRunStatsPanel stats={row.stats} />
           </div>
         </SectionCard>
-        <SectionCard title="Session metadata" className="min-h-0">
+        <SectionCard
+          title="Session metadata"
+          className="min-h-0"
+          copy={sessionSection(
+            "web-crawl-metadata",
+            "Session metadata",
+            "The metadata recorded on this crawl session.",
+            row.metadata,
+          )}
+        >
           <div className="min-h-0 flex-1 overflow-y-auto">
             <CrawlMetadataPanel metadata={row.metadata} />
           </div>

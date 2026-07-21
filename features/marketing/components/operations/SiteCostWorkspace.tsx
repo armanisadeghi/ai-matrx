@@ -20,6 +20,10 @@ import {
   type SiteCostRow,
 } from "@/features/marketing/data/operations-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 const SITE_COST_MODES = [
   { value: "page", label: "By page" },
@@ -167,6 +171,38 @@ export function SiteCostWorkspace() {
                   onChange={changeMode}
                 />
               ),
+            }}
+            copy={{
+              label: "Cost rollup",
+              listLabel: "All site cost rollups",
+              location: webLocation(`Site cost — ${site.root_url}`),
+              rowKind: "web-cost-rollup",
+              listKind: "web-site-cost-rollups",
+              rowDescription:
+                "One runtime cost rollup row for this site (by page, run, or item).",
+              listDescription:
+                "The currently loaded site cost rollup rows (respecting the rollup mode, filters, sort, and pagination).",
+              humanRow: (row) =>
+                humanLines([
+                  ["Rollup", row.mode],
+                  ["Dimension", row.label],
+                  ["Run", row.run_id],
+                  ["Batch", row.batch_id],
+                  ["Cost (USD)", formatRuntimeCost(row.cost)],
+                ]),
+              rowAttributes: (row) => ({
+                site_id: site.id,
+                mode: row.mode,
+                page_id: row.page_id,
+                run_id: row.run_id,
+                batch_id: row.batch_id,
+              }),
+              listAttributes: () => ({
+                site_id: site.id,
+                rollup_mode: displayMode,
+                total_matching: costs.data?.total ?? 0,
+                site_total_cost: formatRuntimeCost(total.data),
+              }),
             }}
             detail={{
               title: (row) => row.label,

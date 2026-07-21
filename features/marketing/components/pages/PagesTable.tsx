@@ -16,6 +16,10 @@ import {
   useDeletePage,
   usePages,
 } from "@/features/marketing/data/hooks";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { normalisePageUrl } from "@/features/marketing/lib/page-url";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -318,6 +322,41 @@ export function PagesTable() {
                 </Button>
               </div>
             ),
+          }}
+          copy={{
+            label: "Page",
+            listLabel: "All pages",
+            location: webLocation(`Pages — ${site.root_url}`),
+            rowKind: "web-page-row",
+            listKind: "web-pages-list",
+            rowDescription:
+              "One canonical page from this site's page registry.",
+            listDescription:
+              "The currently loaded canonical page rows (respecting search, filters, coverage chip, sort, and pagination).",
+            humanRow: (row) =>
+              humanLines([
+                ["URL", row.url],
+                ["Title", row.observed_title],
+                ["Status", row.status],
+                ["Provenance", row.provenance],
+                ["Sitemaps", row.sitemap_count],
+                ["Words", row.word_count],
+                ["Last HTTP", row.http_status_last],
+                ["Clicks 28d", row.gsc_clicks_28d],
+                ["Impressions 28d", row.gsc_impressions_28d],
+                ["Position 28d", row.gsc_position_28d],
+                ["Last seen", formatCompactDate(row.last_seen)],
+              ]),
+            rowAttributes: (row) => ({
+              page_id: row.id,
+              site_id: site.id,
+              status: row.status,
+            }),
+            listAttributes: () => ({
+              site_id: site.id,
+              coverage_filter: coverage,
+              total_matching: pages.data?.total ?? 0,
+            }),
           }}
           detail={{ enabled: false }}
           onRowOpen={(row) => router.push(`${sitePath}/pages/${row.id}`)}

@@ -16,6 +16,10 @@ import type { InspectionSnapshotRow } from "@/features/marketing/data/inspection
 import { useCrawl } from "@/features/marketing/data/hooks";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 function pageUrl(row: InspectionSnapshotRow): string {
   return row.page?.url ?? row.final_url ?? row.page_id;
@@ -194,6 +198,38 @@ export function CrawlSnapshotsInspectionTable({
             }}
             toolbar={{
               searchPlaceholder: "Search final URL, hash, or body reference…",
+            }}
+            copy={{
+              label: "Snapshot",
+              listLabel: "All crawl snapshots",
+              location: webLocation(`Crawl snapshots — session ${crawlId}`),
+              rowKind: "web-snapshot",
+              listKind: "web-crawl-snapshots-list",
+              rowDescription:
+                "One immutable page content capture from this crawl session.",
+              listDescription:
+                "The currently loaded snapshot rows for this crawl session (respecting search, filters, sort, and pagination).",
+              humanRow: (row) =>
+                humanLines([
+                  ["Page", pageUrl(row)],
+                  ["Snapshot", row.id],
+                  ["Captured", formatCompactDate(row.captured_at)],
+                  ["Final URL", row.final_url],
+                  ["HTTP", row.http_status],
+                  ["Words", row.word_count],
+                  ["Content hash", row.content_hash],
+                ]),
+              rowAttributes: (row) => ({
+                snapshot_id: row.id,
+                page_id: row.page_id,
+                session_id: crawlId,
+                site_id: site.id,
+              }),
+              listAttributes: () => ({
+                session_id: crawlId,
+                site_id: site.id,
+                total_matching: snapshots.data?.total ?? 0,
+              }),
             }}
             detail={{
               title: pageUrl,

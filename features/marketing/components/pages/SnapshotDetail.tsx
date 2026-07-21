@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useSnapshot } from "@/features/marketing/data/hooks";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import type { Json } from "@/types/database.types";
 import {
   formatDate,
   JsonPreview,
@@ -34,6 +37,43 @@ export function SnapshotDetail({
     );
   }
   const row = snapshot.data;
+  const snapshotCopy = webCopy({
+    kind: "web-snapshot",
+    label: `Snapshot ${row.id.slice(0, 8)}`,
+    description:
+      "One immutable page content snapshot: full row with head tags, headings, extracted content, structured data, links, performance, and images.",
+    surface: `Snapshot detail — ${row.final_url ?? row.id}`,
+    data: row,
+    lines: [
+      ["Snapshot", row.id],
+      ["Final URL", row.final_url],
+      ["Captured", formatDate(row.captured_at)],
+      ["HTTP", row.http_status],
+      ["Words", row.word_count],
+      ["Content hash", row.content_hash],
+      ["Crawl session", row.session_id],
+    ],
+    attributes: { snapshot_id: row.id, page_id: pageId, site_id: site.id },
+  });
+  const sectionCopy = (
+    kind: string,
+    label: string,
+    description: string,
+    value: Json,
+  ) =>
+    webCopy({
+      kind,
+      label,
+      description,
+      surface: `Snapshot ${label} — ${row.final_url ?? row.id}`,
+      data: value,
+      lines: [
+        ["Snapshot", row.id],
+        ["Final URL", row.final_url],
+        ["Captured", formatDate(row.captured_at)],
+      ],
+      attributes: { snapshot_id: row.id, page_id: pageId, site_id: site.id },
+    });
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
@@ -50,6 +90,7 @@ export function SnapshotDetail({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            <CopyButtons size="icon" {...snapshotCopy} />
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link
                 href={`${sitePath}/pages/${pageId}/snapshots`}
@@ -91,25 +132,82 @@ export function SnapshotDetail({
         </section>
         <SnapshotArtifacts siteId={site.id} snapshot={row} showMarkdown />
         <div className="grid gap-3 lg:grid-cols-2">
-          <SectionCard title="Head tags">
+          <SectionCard
+            title="Head tags"
+            copy={sectionCopy(
+              "web-snapshot-head-tags",
+              "Head tags",
+              "The <head> tag inventory observed in this snapshot.",
+              row.head_tags,
+            )}
+          >
             <JsonPreview value={row.head_tags} />
           </SectionCard>
-          <SectionCard title="Headings">
+          <SectionCard
+            title="Headings"
+            copy={sectionCopy(
+              "web-snapshot-headings",
+              "Headings",
+              "The heading outline (h1–h6) observed in this snapshot.",
+              row.headings,
+            )}
+          >
             <JsonPreview value={row.headings} />
           </SectionCard>
-          <SectionCard title="Extracted content">
+          <SectionCard
+            title="Extracted content"
+            copy={sectionCopy(
+              "web-snapshot-extracted",
+              "Extracted content",
+              "Extracted content statistics recorded for this snapshot.",
+              row.extracted,
+            )}
+          >
             <JsonPreview value={row.extracted} />
           </SectionCard>
-          <SectionCard title="Structured data">
+          <SectionCard
+            title="Structured data"
+            copy={sectionCopy(
+              "web-snapshot-structured-data",
+              "Structured data",
+              "Structured data (Schema.org / JSON-LD) observed in this snapshot.",
+              row.structured_data,
+            )}
+          >
             <JsonPreview value={row.structured_data} />
           </SectionCard>
-          <SectionCard title="Link summary">
+          <SectionCard
+            title="Link summary"
+            copy={sectionCopy(
+              "web-snapshot-links-summary",
+              "Link summary",
+              "The link summary recorded for this snapshot.",
+              row.links_summary,
+            )}
+          >
             <JsonPreview value={row.links_summary} />
           </SectionCard>
-          <SectionCard title="Performance">
+          <SectionCard
+            title="Performance"
+            copy={sectionCopy(
+              "web-snapshot-performance",
+              "Performance",
+              "Performance measurements recorded for this snapshot.",
+              row.perf,
+            )}
+          >
             <JsonPreview value={row.perf} />
           </SectionCard>
-          <SectionCard title="Images" className="lg:col-span-2">
+          <SectionCard
+            title="Images"
+            className="lg:col-span-2"
+            copy={sectionCopy(
+              "web-snapshot-images",
+              "Images",
+              "The image inventory observed in this snapshot.",
+              row.images,
+            )}
+          >
             <JsonPreview value={row.images} />
           </SectionCard>
         </div>

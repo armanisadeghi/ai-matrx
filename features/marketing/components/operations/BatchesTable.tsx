@@ -17,6 +17,10 @@ import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/Ma
 import { useBatches } from "@/features/marketing/data/operations-hooks";
 import type { OperationsBatchRow } from "@/features/marketing/data/operations-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 const BATCH_STATUS_OPTIONS = [
   { value: "queued", label: "Queued" },
@@ -211,6 +215,40 @@ export function BatchesTable() {
                   {(batches.data?.total ?? 0).toLocaleString()} accessible jobs
                 </span>
               ),
+            }}
+            copy={{
+              label: "Batch job",
+              listLabel: "All batch jobs",
+              location: webLocation("Batch operations"),
+              rowKind: "web-batch-job",
+              listKind: "web-batch-jobs-list",
+              rowDescription:
+                "One cross-site vision/LLM batch job execution record.",
+              listDescription:
+                "The currently loaded batch job rows (respecting search, filters, sort, and pagination).",
+              humanRow: (row) =>
+                humanLines([
+                  ["Batch", row.id],
+                  ["Site", row.site?.name ?? row.site_id],
+                  ["Domain", row.site?.domain],
+                  ["Status", row.status],
+                  ["Kind", row.kind],
+                  ["Provider", row.provider?.label ?? row.provider_id],
+                  ["Created", formatCompactDate(row.created_at)],
+                  ["Submitted", formatCompactDate(row.submitted_at)],
+                  ["Completed", formatCompactDate(row.completed_at)],
+                  ["External ref", row.external_ref],
+                  ["Error", row.error],
+                ]),
+              rowAttributes: (row) => ({
+                batch_id: row.id,
+                site_id: row.site_id,
+                status: row.status,
+                kind: row.kind,
+              }),
+              listAttributes: () => ({
+                total_matching: batches.data?.total ?? 0,
+              }),
             }}
             detail={{ enabled: false }}
             onRowOpen={openBatch}

@@ -17,6 +17,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +75,7 @@ const stateDotClass: Record<SiteConnectionState, string> = {
 export function SiteOverview() {
   const { site, sitePath } = useMarketingSite();
   const overview = useSiteOverview(site.id);
-  const hero = useSiteHeroScreenshot(site.id);
+  const hero = useSiteHeroScreenshot(site.id, site.homepage_screenshot_id);
   const pendingDiscovered = usePendingDiscoveredCount(site.brand_id);
   const queryClient = useQueryClient();
   const [initPhase, setInitPhase] = useState<InitPhase>("idle");
@@ -195,6 +197,91 @@ export function SiteOverview() {
   const init = parseInitialization(site);
   const initBusy = initPhase === "connecting" || initPhase === "running";
 
+  const siteCopy = webCopy({
+    kind: "web-site",
+    label: `Site ${site.domain}`,
+    description:
+      "The full managed-site overview: identity, connection statuses, initialization record, and overview metrics.",
+    surface: `Site overview — ${site.domain}`,
+    data: {
+      site,
+      metrics,
+      connectionStatuses: statuses,
+      pendingDiscovered: pendingDiscovered.data ?? 0,
+    },
+    lines: [
+      ["Site", site.name],
+      ["Domain", site.domain],
+      ["Root URL", site.root_url],
+      ["Description", site.description],
+      ["Status", site.status],
+      ["Visibility", site.visibility],
+      [
+        "Initialized",
+        site.initialized_at ? formatDate(site.initialized_at) : "never",
+      ],
+      ...statuses.map(
+        (status): [string, string] => [status.name, `${status.state} — ${status.detail}`],
+      ),
+      ["Canonical pages", metrics.canonicalPages],
+      [
+        "Last crawl",
+        metrics.latestCrawl
+          ? `${metrics.latestCrawl.status} (${formatDate(metrics.latestCrawl.finished_at ?? metrics.latestCrawl.started_at)})`
+          : "never",
+      ],
+      ["Pending discovery review", pendingDiscovered.data ?? 0],
+    ],
+    attributes: { site_id: site.id, brand_id: site.brand_id, domain: site.domain },
+  });
+
+  const connectionsCopy = webCopy({
+    kind: "web-site-connections",
+    label: "Site connections",
+    description:
+      "The five connection statuses (Init / GSC / GA4 / PSI / CMS) for this managed site, derived from lib/site-status.ts.",
+    surface: `Connections — ${site.domain}`,
+    data: {
+      site_id: site.id,
+      statuses,
+      initialized_at: site.initialized_at,
+      gsc_synced_at: site.gsc_synced_at,
+      integrations: site.integrations,
+    },
+    lines: [
+      ["Site", site.domain],
+      ...statuses.map(
+        (status): [string, string] => [status.name, `${status.state} — ${status.detail}`],
+      ),
+    ],
+    attributes: { site_id: site.id },
+  });
+
+  const initIssuesCopy = webCopy({
+    kind: "web-site-initialization",
+    label: "Initialization issues",
+    description:
+      "Per-step failures recorded by the last site initialization run (site.initialization.errors).",
+    surface: `Initialization issues — ${site.domain}`,
+    data: {
+      site_id: site.id,
+      initialized_at: site.initialized_at,
+      initialization: site.initialization,
+      stepErrors: init.stepErrors,
+    },
+    lines: [
+      ["Site", site.domain],
+      ["Failed steps", init.stepErrors.length],
+      ...init.stepErrors.map(
+        (stepError): [string, string] => [
+          stepError.step,
+          `${stepError.errorType ? `${stepError.errorType}: ` : ""}${stepError.message}`,
+        ],
+      ),
+    ],
+    attributes: { site_id: site.id, failed_steps: init.stepErrors.length },
+  });
+
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
@@ -204,6 +291,7 @@ export function SiteOverview() {
           heroLoading={hero.isLoading || initBusy}
           onRecapture={() => void runInitialize()}
           recaptureBusy={initBusy}
+          copy={<CopyButtons size="icon" {...siteCopy} />}
         />
 
         {!site.initialized_at ? (
@@ -233,10 +321,13 @@ export function SiteOverview() {
                 Initialization issues — {init.stepErrors.length} step
                 {init.stepErrors.length === 1 ? "" : "s"} failed
               </h2>
+              <span className="ml-auto">
+                <CopyButtons size="icon" {...initIssuesCopy} />
+              </span>
               <Button
                 size="sm"
                 variant="outline"
-                className="ml-auto h-7 text-xs"
+                className="h-7 text-xs"
                 disabled={initBusy}
                 onClick={() => void runInitialize()}
               >
@@ -268,22 +359,25 @@ export function SiteOverview() {
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Connections
             </h2>
-            {site.initialized_at ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1.5 text-xs"
-                disabled={initBusy}
-                onClick={() => void runInitialize()}
-              >
-                {initBusy ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                Re-initialize
-              </Button>
-            ) : null}
+            <div className="flex items-center gap-1.5">
+              <CopyButtons size="icon" {...connectionsCopy} />
+              {site.initialized_at ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1.5 text-xs"
+                  disabled={initBusy}
+                  onClick={() => void runInitialize()}
+                >
+                  {initBusy ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  Re-initialize
+                </Button>
+              ) : null}
+            </div>
           </header>
           <ul className="divide-y divide-border">
             {statuses.map((status) => (
@@ -428,12 +522,15 @@ function SiteHero({
   heroLoading,
   onRecapture,
   recaptureBusy,
+  copy,
 }: {
   site: MarketingSite;
   heroFileId: string | null;
   heroLoading: boolean;
   onRecapture: () => void;
   recaptureBusy: boolean;
+  /** Whole-site Copy / Copy-for-AI pair rendered beside the identity edit control. */
+  copy?: React.ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -506,6 +603,7 @@ function SiteHero({
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
+                    {copy}
                   </div>
                   <a
                     href={site.root_url}

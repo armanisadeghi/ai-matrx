@@ -7,6 +7,10 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSnapshots } from "@/features/marketing/data/hooks";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import type { PageSnapshot } from "@/features/marketing/types";
 import {
   formatCompactDate,
@@ -113,6 +117,37 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
         }}
         toolbar={{
           searchPlaceholder: "Search final URL or content hash…",
+        }}
+        copy={{
+          label: "Snapshot",
+          listLabel: "All snapshots",
+          location: webLocation("Page snapshot history"),
+          rowKind: "web-snapshot",
+          listKind: "web-snapshots-list",
+          rowDescription:
+            "One immutable content snapshot of this canonical page.",
+          listDescription:
+            "The currently loaded snapshot rows for this page (respecting search, filters, sort, and pagination).",
+          humanRow: (row) =>
+            humanLines([
+              ["Snapshot", row.id],
+              ["Captured", formatCompactDate(row.captured_at)],
+              ["Final URL", row.final_url],
+              ["HTTP", row.http_status],
+              ["Words", row.word_count],
+              ["Content hash", row.content_hash],
+              ["Crawl session", row.session_id],
+            ]),
+          rowAttributes: (row) => ({
+            snapshot_id: row.id,
+            page_id: pageId,
+            site_id: site.id,
+          }),
+          listAttributes: () => ({
+            page_id: pageId,
+            site_id: site.id,
+            total_matching: snapshots.data?.total ?? 0,
+          }),
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>

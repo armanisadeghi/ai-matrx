@@ -15,6 +15,10 @@ import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useSitePriorityQueue } from "@/features/marketing/data/analysis-hooks";
 import type { PriorityQueueRow } from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 function filteredFindingsHref(basePath: string, row: PriorityQueueRow) {
   const params = new URLSearchParams();

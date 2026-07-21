@@ -17,6 +17,10 @@ import {
 import { extractErrorMessage } from "@/utils/errors";
 import type { CrawlSession } from "@/features/marketing/types";
 import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
+import {
   formatCompactDate,
   formatDuration,
   jsonNumber,
@@ -203,6 +207,37 @@ export function CrawlsTable() {
               </Button>
             </div>
           ),
+        }}
+        copy={{
+          label: "Crawl session",
+          listLabel: "All crawl sessions",
+          location: webLocation(`Crawls — ${site.root_url}`),
+          rowKind: "web-crawl-session",
+          listKind: "web-crawl-sessions-list",
+          rowDescription: "One frozen crawl session for this site.",
+          listDescription:
+            "The currently loaded crawl session rows (respecting search, filters, sort, and pagination).",
+          humanRow: (row) =>
+            humanLines([
+              ["Session", row.id],
+              ["Status", row.status],
+              ["Trigger", row.trigger],
+              ["Started", formatCompactDate(row.started_at ?? row.created_at)],
+              ["Finished", formatCompactDate(row.finished_at)],
+              ["Duration", formatDuration(row.started_at, row.finished_at)],
+              ["Discovered", jsonNumber(row.stats, ["pages_discovered"])],
+              ["Captured", jsonNumber(row.stats, ["pages_fetched"])],
+              ["Error", row.error],
+            ]),
+          rowAttributes: (row) => ({
+            session_id: row.id,
+            site_id: site.id,
+            status: row.status,
+          }),
+          listAttributes: () => ({
+            site_id: site.id,
+            total_matching: crawls.data?.total ?? 0,
+          }),
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>

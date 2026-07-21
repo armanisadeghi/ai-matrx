@@ -9,6 +9,7 @@ import {
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
   confirmDiscoveredAsset,
+  confirmDiscoveredProperty,
   getBrand,
   listBrands,
   listBrandAssets,
@@ -304,11 +305,18 @@ export function useCrawlEvents(
   });
 }
 
-export function useSiteHeroScreenshot(siteId: string) {
+export function useSiteHeroScreenshot(
+  siteId: string,
+  screenshotId: string | null,
+) {
   return useQuery({
-    queryKey: marketingKeys.heroScreenshot(siteId),
-    queryFn: ({ signal }) => getSiteHeroScreenshot(siteId, signal),
-    enabled: Boolean(siteId),
+    queryKey: [
+      ...marketingKeys.heroScreenshot(siteId),
+      screenshotId ?? "unselected",
+    ],
+    queryFn: ({ signal }) =>
+      getSiteHeroScreenshot(siteId, screenshotId, signal),
+    enabled: Boolean(siteId && screenshotId),
   });
 }
 
@@ -363,6 +371,10 @@ function useDiscoveryMutation<TInput>(
 
 export function useConfirmDiscoveredAsset() {
   return useDiscoveryMutation(confirmDiscoveredAsset);
+}
+
+export function useConfirmDiscoveredProperty() {
+  return useDiscoveryMutation(confirmDiscoveredProperty);
 }
 
 export function useConfirmDiscoveredFact() {

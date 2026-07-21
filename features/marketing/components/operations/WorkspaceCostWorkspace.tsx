@@ -19,6 +19,10 @@ import {
   type WorkspaceCostRow,
 } from "@/features/marketing/data/operations-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 const WORKSPACE_COST_MODES = [
   { value: "site", label: "By site" },
@@ -154,6 +158,35 @@ export function WorkspaceCostWorkspace() {
                   </span>
                 </div>
               ),
+            }}
+            copy={{
+              label: "Cost rollup",
+              listLabel: "All workspace cost rollups",
+              location: webLocation("Workspace cost"),
+              rowKind: "web-cost-rollup",
+              listKind: "web-workspace-cost-rollups",
+              rowDescription:
+                "One workspace runtime cost rollup row (by site or client organization).",
+              listDescription:
+                "The currently loaded workspace cost rollup rows (respecting the rollup mode, filters, sort, and pagination).",
+              humanRow: (row) =>
+                humanLines([
+                  ["Rollup", row.mode],
+                  ["Label", row.label],
+                  ["Detail", row.detail],
+                  ["Site", row.site_id],
+                  ["Client organization", row.client_org_id],
+                  ["Cost (USD)", formatRuntimeCost(row.cost)],
+                ]),
+              rowAttributes: (row) => ({
+                mode: row.mode,
+                site_id: row.site_id,
+                client_org_id: row.client_org_id,
+              }),
+              listAttributes: () => ({
+                rollup_mode: displayMode,
+                total_matching: costs.data?.total ?? 0,
+              }),
             }}
             detail={{
               title: (row) => row.label,

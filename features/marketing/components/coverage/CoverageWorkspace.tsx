@@ -10,6 +10,8 @@ import type {
 } from "@/features/marketing/data/service";
 import { PAGE_PROVENANCES } from "@/features/marketing/data/service";
 import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   formatCompactDate,
   LoadingSurface,
@@ -95,18 +97,64 @@ export function CoverageWorkspace() {
       ? `${sitePath}/pages?coverage=${coverage}`
       : `${sitePath}/pages`;
 
+  const matrixCopy = webCopy({
+    kind: "web-coverage-matrix",
+    label: "Coverage matrix",
+    description:
+      "The full source-disagreement coverage matrix over this site's canonical page registry: sitemap/crawl agreement, first-source provenance counts, and Google Search coverage.",
+    surface: `Coverage — ${site.root_url}`,
+    data: {
+      matrix: data,
+      gscSyncedAt: site.gsc_synced_at,
+    },
+    lines: [
+      ["Site", site.root_url],
+      ["Canonical pages", data?.totalPages ?? null],
+      [COVERAGE_FILTER_COPY.in_sitemap.label, data?.inSitemaps ?? null],
+      [COVERAGE_FILTER_COPY.crawled.label, data?.crawled ?? null],
+      [COVERAGE_FILTER_COPY.never_crawled.label, data?.neverCrawled ?? null],
+      [
+        COVERAGE_FILTER_COPY.sitemap_not_crawled.label,
+        data?.sitemapNotCrawled ?? null,
+      ],
+      [
+        COVERAGE_FILTER_COPY.crawled_no_sitemap.label,
+        data?.crawledNoSitemap ?? null,
+      ],
+      ...PAGE_PROVENANCES.map(
+        (provenance): [string, number | null] => [
+          `First source: ${PROVENANCE_COPY[provenance].label}`,
+          data?.byProvenance[provenance] ?? null,
+        ],
+      ),
+      [
+        "GSC last synced",
+        site.gsc_synced_at
+          ? formatCompactDate(site.gsc_synced_at)
+          : "never",
+      ],
+      [COVERAGE_FILTER_COPY.in_gsc.label, data?.inGsc ?? null],
+      [COVERAGE_FILTER_COPY.gsc_no_sitemap.label, data?.gscNoSitemap ?? null],
+      [COVERAGE_FILTER_COPY.sitemap_no_gsc.label, data?.sitemapNoGsc ?? null],
+    ],
+    attributes: { site_id: site.id },
+  });
+
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
-        <header>
-          <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <Grid3x3 className="h-4 w-4 text-muted-foreground" />
-            Coverage
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Where the evidence sources agree — and disagree — about the
-            canonical page registry. Every tile opens the filtered page list.
-          </p>
+        <header className="flex items-start justify-between gap-2">
+          <div>
+            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Grid3x3 className="h-4 w-4 text-muted-foreground" />
+              Coverage
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Where the evidence sources agree — and disagree — about the
+              canonical page registry. Every tile opens the filtered page list.
+            </p>
+          </div>
+          <CopyButtons size="icon" {...matrixCopy} />
         </header>
 
         <section className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">

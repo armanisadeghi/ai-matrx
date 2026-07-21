@@ -14,6 +14,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,6 +85,27 @@ function MarketingConnectionsContent() {
       (searchResourcesByConnection.get(resource.connection_id) ?? 0) + 1,
     );
   }
+
+  const connectionsCopy = webCopy({
+    kind: "web-google-connections",
+    label: "Google connections",
+    description:
+      "The Google connection inventory: connected accounts and their discovered Search Console/GA4 resources (metadata only — never credentials).",
+    surface: "Google connections",
+    data: inventory.data ?? { connections: [], resources: [] },
+    lines: [
+      ["Connected accounts", connectedGoogleAccounts?.length ?? 0],
+      ["Search Console properties", searchConsoleProperties?.length ?? 0],
+      ["PageSpeed-enabled sites", pageSpeedEnabledCount],
+      ...(availableGoogleAccounts ?? []).map(
+        (connection): [string, string] => [
+          connection.account_name || connection.account_email || "Google account",
+          `${connection.status} · ${connection.owner_type} · ${searchResourcesByConnection.get(connection.id) ?? 0} Search Console propert${(searchResourcesByConnection.get(connection.id) ?? 0) === 1 ? "y" : "ies"}`,
+        ],
+      ),
+    ],
+    attributes: { count: availableGoogleAccounts?.length ?? 0 },
+  });
 
   const startConnection = async (owner: "user" | "organization") => {
     setConnectingOwner(owner);
@@ -178,6 +201,7 @@ function MarketingConnectionsContent() {
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                <CopyButtons size="icon" {...connectionsCopy} />
                 <Button
                   size="sm"
                   variant="outline"

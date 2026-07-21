@@ -17,6 +17,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -289,6 +291,78 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     }
   };
 
+  const providerStatusLabel = (key: BuiltInProviderKey): string =>
+    providerReferenceStatus(
+      draft[key],
+      key !== "pageSpeedInsights",
+      key !== "pageSpeedInsights",
+    ).replace(/_/g, " ");
+
+  const providerCopy = (
+    key: BuiltInProviderKey,
+    label: string,
+  ): ReturnType<typeof webCopy> =>
+    webCopy({
+      kind: "web-site-integration-provider",
+      label,
+      description:
+        "One provider integration binding for this managed site (credential/resource references only — never secrets).",
+      surface: `Integrations — ${label} — ${site.domain}`,
+      data: {
+        site_id: site.id,
+        provider: key,
+        saved: initial[key],
+        draft: draft[key],
+      },
+      lines: [
+        ["Site", site.domain],
+        ["Provider", label],
+        ["Enabled", draft[key].enabled ? "yes" : "no"],
+        ["Status", providerStatusLabel(key)],
+        ["Credential authority", draft[key].credentialAuthority],
+        ["Credential reference", draft[key].credentialRef],
+        ["Resource reference", draft[key].resourceRef],
+        ...(key === "googleSearchConsole"
+          ? ([
+              [
+                "Last GSC sync",
+                site.gsc_synced_at
+                  ? formatCompactDate(site.gsc_synced_at)
+                  : "never",
+              ],
+            ] as Array<[string, string]>)
+          : []),
+      ],
+      attributes: { site_id: site.id, provider: key },
+    });
+
+  const integrationsCopy = webCopy({
+    kind: "web-site-integrations",
+    label: "Site integrations",
+    description:
+      "Every provider integration binding for this managed site: built-in Google providers plus custom provider references (no secrets).",
+    surface: `Integrations — ${site.domain}`,
+    data: {
+      site_id: site.id,
+      saved: site.integrations,
+      draft,
+      dirty,
+      issues,
+    },
+    lines: [
+      ["Site", site.domain],
+      ...builtIns.map(
+        ({ key, label }): [string, string] => [
+          label,
+          `${draft[key].enabled ? "enabled" : "disabled"} · ${providerStatusLabel(key)}`,
+        ],
+      ),
+      ["Custom providers", draft.customProviders.length],
+      ["Unsaved changes", dirty ? "yes" : "no"],
+    ],
+    attributes: { site_id: site.id, dirty },
+  });
+
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="space-y-3">
@@ -300,9 +374,12 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               that belongs to this website.
             </p>
           </div>
-          <Badge variant="outline" className="gap-1 text-[10px] font-medium">
-            <KeyRound className="h-3 w-3" /> Credentials protected
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <CopyButtons size="icon" {...integrationsCopy} />
+            <Badge variant="outline" className="gap-1 text-[10px] font-medium">
+              <KeyRound className="h-3 w-3" /> Credentials protected
+            </Badge>
+          </div>
         </div>
 
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
@@ -362,6 +439,12 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               key={key}
               providerKey={key}
               {...provider}
+              copy={
+                <CopyButtons
+                  size="icon"
+                  {...providerCopy(key, provider.label)}
+                />
+              }
               footer={
                 key === "googleSearchConsole" ? (
                   <GscSyncRow
@@ -565,6 +648,7 @@ function BuiltInProviderCard({
   dirty,
   saving,
   footer,
+  copy,
   onSave,
   onEnable,
   onChange,
@@ -581,6 +665,8 @@ function BuiltInProviderCard({
   dirty: boolean;
   saving: boolean;
   footer?: React.ReactNode;
+  /** Copy / Copy-for-AI pair for this provider card (agent-copy doctrine). */
+  copy?: React.ReactNode;
   onSave: () => void;
   onEnable: () => void;
   onChange: (next: ProviderIntegrationDraft) => void;
@@ -620,11 +706,14 @@ function BuiltInProviderCard({
             </p>
           </div>
         </div>
-        <Switch
-          aria-label={`Enable ${label}`}
-          checked={value.enabled}
-          onCheckedChange={(enabled) => onChange({ ...value, enabled })}
-        />
+        <div className="flex shrink-0 items-center gap-1.5">
+          {copy}
+          <Switch
+            aria-label={`Enable ${label}`}
+            checked={value.enabled}
+            onCheckedChange={(enabled) => onChange({ ...value, enabled })}
+          />
+        </div>
       </div>
       <div className="space-y-3 p-3">
         <StatusBadge status={status} />

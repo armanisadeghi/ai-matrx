@@ -9,6 +9,10 @@ import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useCrawl, useCrawlEvents } from "@/features/marketing/data/hooks";
 import type { CrawlEvent } from "@/features/marketing/types";
 import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
+import {
   formatCompactDate,
   LoadingSurface,
   QueryError,
@@ -128,6 +132,37 @@ export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
             }}
             toolbar={{
               searchPlaceholder: "Search event type, phase, level, or message…",
+            }}
+            copy={{
+              label: "Crawl event",
+              listLabel: "All crawl events",
+              location: webLocation(`Crawl event log — session ${crawlId}`),
+              rowKind: "web-crawl-event",
+              listKind: "web-crawl-events",
+              rowDescription:
+                "One durable event from this crawl session's ordered history.",
+              listDescription:
+                "The currently loaded durable crawl-event rows for this session (respecting search, filters, sort, and pagination).",
+              humanRow: (row) =>
+                humanLines([
+                  ["Seq", row.sequence],
+                  ["Time", formatCompactDate(row.occurred_at)],
+                  ["Level", row.level],
+                  ["Phase", row.phase],
+                  ["Event", row.event_type],
+                  ["Message", row.message],
+                ]),
+              rowAttributes: (row) => ({
+                event_id: row.id,
+                session_id: crawlId,
+                site_id: site.id,
+                level: row.level,
+              }),
+              listAttributes: () => ({
+                session_id: crawlId,
+                site_id: site.id,
+                total_matching: events.data?.total ?? 0,
+              }),
             }}
             detail={{
               title: (row) => `${row.sequence} · ${row.event_type}`,

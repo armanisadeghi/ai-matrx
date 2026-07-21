@@ -33,6 +33,15 @@ export interface WebCopyInput {
   context?: AgentPayloadInput["context"];
 }
 
+/**
+ * Location line for MatrxDataTable `copy` configs — the table primitive builds
+ * its own agent envelope, so it only needs the marketing-flavored location
+ * string `webCopy` would otherwise stamp.
+ */
+export function webLocation(surface: string): string {
+  return `AI Matrx — Marketing — ${surface}`;
+}
+
 /** `label: value` lines, skipping empty values — the human copy flavor. */
 export function humanLines(
   lines: Array<[string, string | number | null | undefined]>,
