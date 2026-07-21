@@ -630,6 +630,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  serpAnalyzerWindow: {
+    label: "Search Appearance",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   setContextValueWindow: {
     label: "Set Context Value Window",
     instanceMode: "singleton",
