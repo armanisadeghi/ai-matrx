@@ -14,10 +14,12 @@ import {
 } from "./social";
 import { evaluateHeadingStructure, headingInputsFromRaw } from "./headings";
 import { evaluateIndexability } from "./indexability";
+import { evaluateUrlQuality } from "./url-quality";
 import {
   socialToStored,
   headingsToStored,
   indexabilityToStored,
+  urlQualityToStored,
   socialInputFromRawTags,
 } from "./stored";
 import parity from "./__fixtures__/audit-parity.json";
@@ -41,10 +43,16 @@ interface IndexabilityCase {
   output: Record<string, unknown>;
 }
 
+interface UrlQualityCase {
+  input: string;
+  output: Record<string, unknown>;
+}
+
 const fixture = parity as {
   social: SocialCase[];
   headings: HeadingsCase[];
   indexability: IndexabilityCase[];
+  url_quality: UrlQualityCase[];
 };
 
 describe("page-audit TS ↔ Python parity", () => {
@@ -72,6 +80,14 @@ describe("page-audit TS ↔ Python parity", () => {
       const ts = headingsToStored(
         evaluateHeadingStructure(headingInputsFromRaw(testCase.input)),
       );
+      expect(ts).toEqual(testCase.output);
+    },
+  );
+
+  it.each(fixture.url_quality.map((c, i) => [i, c] as const))(
+    "url quality case %d matches Python",
+    (_i, testCase) => {
+      const ts = urlQualityToStored(evaluateUrlQuality(testCase.input));
       expect(ts).toEqual(testCase.output);
     },
   );

@@ -4,6 +4,7 @@ import {
   parseStoredSeoMetrics,
 } from "@/features/seo/serp/metrics";
 import { parseStoredAuditMetrics } from "@/features/seo/audit/stored";
+import type { AuditSourceRow } from "@/features/marketing/lib/audit-rollup";
 import type {
   BrandAsset,
   BrandListRow,
@@ -2348,4 +2349,80 @@ export async function deleteCrawlSession(
     .is("deleted_at", null)
     .select("id");
   assertMutated(response.data, response.error, "delete this crawl session");
+}
+
+// ---------------------------------------------------------------------------
+// Site audit rollup — bounded fetch of every canonical page + its latest
+// snapshot's stored deterministic metrics. Aggregation is pure
+// (lib/audit-rollup.ts); this only pages the rows out of Supabase.
+// ---------------------------------------------------------------------------
+
+const AUDIT_PAGE_CAP = 5000;
+const AUDIT_PAGE_SIZE = 1000;
+
+export async function fetchSiteAuditRows(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<AuditSourceRow[]> {
+  const db = await authenticatedWebDb(supabase);
+  const pages: {
+    id: string;
+    url: string;
+    path: string | null;
+    latest_snapshot_id: string | null;
+  }[] = [];
+  for (let offset = 0; ; offset += AUDIT_PAGE_SIZE) {
+    if (offset >= AUDIT_PAGE_CAP) {
+      throw new Error(
+        `Site audit exceeded its ${AUDIT_PAGE_CAP}-page bound — refusing to return a silently truncated rollup.`,
+      );
+    }
+    const response = await db
+      .from("page")
+      .select("id, url, path, latest_snapshot_id")
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .order("id", { ascending: true })
+      .range(offset, offset + AUDIT_PAGE_SIZE - 1)
+      .abortSignal(signal ?? new AbortController().signal);
+    const batch = assertData(response.data, response.error);
+    pages.push(...batch);
+    if (batch.length < AUDIT_PAGE_SIZE) break;
+  }
+
+  const snapshotIds = pages.flatMap((page) =>
+    page.latest_snapshot_id ? [page.latest_snapshot_id] : [],
+  );
+  const metricsBySnapshot = new Map<
+    string,
+    { seo_metrics: unknown; audit_metrics: unknown }
+  >();
+  for (let start = 0; start < snapshotIds.length; start += AUDIT_PAGE_SIZE) {
+    const chunk = snapshotIds.slice(start, start + AUDIT_PAGE_SIZE);
+    const response = await db
+      .from("snapshot")
+      .select("id, seo_metrics, audit_metrics")
+      .eq("site_id", siteId)
+      .in("id", chunk)
+      .abortSignal(signal ?? new AbortController().signal);
+    for (const snapshot of assertData(response.data, response.error)) {
+      metricsBySnapshot.set(snapshot.id, {
+        seo_metrics: snapshot.seo_metrics,
+        audit_metrics: snapshot.audit_metrics,
+      });
+    }
+  }
+
+  return pages.map((page) => {
+    const metrics = page.latest_snapshot_id
+      ? metricsBySnapshot.get(page.latest_snapshot_id)
+      : undefined;
+    return {
+      id: page.id,
+      url: page.url,
+      path: page.path,
+      seo_metrics: metrics?.seo_metrics ?? null,
+      audit_metrics: metrics?.audit_metrics ?? null,
+    };
+  });
 }

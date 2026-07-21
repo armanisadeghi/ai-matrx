@@ -45016,6 +45016,22 @@ export type Database = {
         Args: { p_batch_item_id: string; p_site_id: string }
         Returns: number
       }
+      count_link_edges: {
+        Args: {
+          p_anchor_text?: string
+          p_http_status_max?: number
+          p_http_status_min?: number
+          p_is_internal?: boolean
+          p_position_max?: number
+          p_position_min?: number
+          p_rel?: string
+          p_search?: string
+          p_session_id?: string
+          p_site_id: string
+          p_target_url?: string
+        }
+        Returns: number
+      }
       create_site: {
         Args: {
           p_brand_id?: string

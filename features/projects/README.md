@@ -136,7 +136,7 @@ Every project write path dispatches `invalidateAndRefetchFullContext()` from `fe
 
 | Write path | Where | Notes |
 |------------|-------|-------|
-| Create (canonical) | `features/projects/service.ts createProject` | Always writes `ctx_projects` row + `ctx_project_members` owner row (no `is_personal` — personal-ness is org-derived) |
+| Create (canonical) | `features/projects/service.ts createProject` | Writes the project row; its database trigger atomically writes the canonical `iam.memberships` owner row (no `is_personal` — personal-ness is org-derived) |
 | Create modal (compat) | `CreateProjectModal` | Now a thin wrapper over `ProjectFormSheet` — every consumer (ResearchInitForm, ProjectList) gets the Manual + Use AI experience. Preserves the old `isOpen` / `onClose` / `onSuccess(CreatedProjectInfo)` / `redirectOnSuccess` contract (`redirectOnSuccess=false` → `skipRedirect`) |
 | AI create | `ProjectCreatePanel` "Use AI" tab → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`) | The agent writes the project **directly to the DB server-side**. On the run's `running/streaming → complete` edge, `AgentRunWrapper.onRunComplete` fires; the panel dispatches `invalidateAndRefetchFullContext()` (refreshes every nav-tree-derived consumer) and calls `onAiComplete()` for self-fetching surfaces (`ProjectsHub` → its local `refresh()` via the window's `ai-created` event) |
 | Create core | `ProjectFormCore` | Canonical chrome-less form. Every surface (sheet, window, route) wraps this — never fork it |

@@ -65,10 +65,15 @@ import {
   updateBrand,
   updateBrandAsset,
   updateBusinessFact,
+  fetchSiteAuditRows,
   updatePageIntent,
   updateProperty,
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
+import {
+  buildSiteAuditRollup,
+  type SiteAuditRollup,
+} from "@/features/marketing/lib/audit-rollup";
 import type {
   PageCoverageFilter,
   SitemapPagesFilter,
@@ -83,6 +88,8 @@ export const marketingKeys = {
   site: (siteId: string) => [...marketingKeys.root, "site", siteId] as const,
   overview: (siteId: string) =>
     [...marketingKeys.site(siteId), "overview"] as const,
+  auditRollup: (siteId: string) =>
+    [...marketingKeys.site(siteId), "audit-rollup"] as const,
   homepageMeta: (siteId: string) =>
     [...marketingKeys.site(siteId), "homepage-meta"] as const,
   heroScreenshot: (siteId: string) =>
@@ -702,4 +709,17 @@ export function useUpdateBusinessFact() {
 
 export function useDeleteBusinessFact() {
   return useBrandScopedMutation(deleteBusinessFact);
+}
+
+/**
+ * Site-wide audit rollup over stored deterministic metrics. Fetch is bounded
+ * and paged (service); aggregation is pure (lib/audit-rollup.ts).
+ */
+export function useSiteAuditRollup(siteId: string) {
+  return useQuery<SiteAuditRollup>({
+    queryKey: marketingKeys.auditRollup(siteId),
+    queryFn: async ({ signal }) =>
+      buildSiteAuditRollup(await fetchSiteAuditRows(siteId, signal)),
+    staleTime: 60_000,
+  });
 }

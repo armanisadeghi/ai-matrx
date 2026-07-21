@@ -24,6 +24,10 @@ import {
   type IndexabilityEvaluation,
   type IndexabilityInput,
 } from "./indexability";
+import {
+  evaluateUrlQuality,
+  type UrlQualityEvaluation,
+} from "./url-quality";
 import type { AuditIssue } from "./types";
 
 export type StoredAuditIssue = AuditIssue;
@@ -70,6 +74,19 @@ export type StoredIndexabilityMetrics = {
   issues: StoredAuditIssue[];
 };
 
+export type StoredUrlQualityMetrics = {
+  ok: boolean;
+  length: number;
+  depth: number;
+  has_uppercase: boolean;
+  has_underscore: boolean;
+  has_query: boolean;
+  has_fragment: boolean;
+  has_encoded_chars: boolean;
+  has_double_slash: boolean;
+  issues: StoredAuditIssue[];
+};
+
 export type StoredAuditMetrics = {
   /** Payload contract version. Bump when the shape changes. */
   v: 1;
@@ -78,6 +95,12 @@ export type StoredAuditMetrics = {
   social: StoredSocialMetrics;
   headings: StoredHeadingMetrics;
   indexability: StoredIndexabilityMetrics;
+  /**
+   * Optional additive section (warnings-only, excluded from overall_ok).
+   * Absent on payloads written before 2026-07-21 — consumers can always
+   * recompute live from the page URL (`evaluateUrlQuality`).
+   */
+  url?: StoredUrlQualityMetrics;
   overall_ok: boolean;
 };
 
@@ -133,19 +156,38 @@ export function indexabilityToStored(
   };
 }
 
+export function urlQualityToStored(
+  e: UrlQualityEvaluation,
+): StoredUrlQualityMetrics {
+  return {
+    ok: e.ok,
+    length: e.length,
+    depth: e.depth,
+    has_uppercase: e.hasUppercase,
+    has_underscore: e.hasUnderscore,
+    has_query: e.hasQuery,
+    has_fragment: e.hasFragment,
+    has_encoded_chars: e.hasEncodedChars,
+    has_double_slash: e.hasDoubleSlash,
+    issues: e.issues,
+  };
+}
+
 /** Build the full persisted payload from evaluator inputs. */
 export function buildStoredAuditMetrics(
   input: {
     social: SocialCardInput;
     headings: HeadingEntryInput[];
     indexability: IndexabilityInput;
+    /** Canonical page URL — adds the warnings-only url section when present. */
+    url?: string;
   },
   source: StoredAuditMetrics["source"] = "client",
 ): StoredAuditMetrics {
   const social = evaluateSocialCard(input.social);
   const headings = evaluateHeadingStructure(input.headings);
   const indexability = evaluateIndexability(input.indexability);
-  return {
+  const payload: StoredAuditMetrics = {
     v: 1,
     source,
     computed_at: new Date().toISOString(),
@@ -154,6 +196,10 @@ export function buildStoredAuditMetrics(
     indexability: indexabilityToStored(indexability),
     overall_ok: social.ok && headings.ok && indexability.ok,
   };
+  if (input.url) {
+    payload.url = urlQualityToStored(evaluateUrlQuality(input.url));
+  }
+  return payload;
 }
 
 /** Narrow an unknown jsonb value to StoredAuditMetrics. */

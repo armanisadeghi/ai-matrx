@@ -6,6 +6,7 @@ import {
   Activity,
   AlertTriangle,
   CircleDollarSign,
+  ClipboardCheck,
   ExternalLink,
   FileText,
   Gauge,
@@ -56,6 +57,7 @@ function sectionSuffix(pathname: string, brandId: string, siteId: string): strin
     "discovery",
     "sitemaps",
     "coverage",
+    "audit",
     "pages",
     "crawls",
     "analysis",
@@ -155,6 +157,11 @@ export function MarketingSiteLayoutClient({
             name: "Coverage",
             href: `${base}/coverage`,
             icon: Grid3x3,
+          },
+          {
+            name: "Audit",
+            href: `${base}/audit`,
+            icon: ClipboardCheck,
           },
           {
             name: "Pages",

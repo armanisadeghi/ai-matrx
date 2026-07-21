@@ -256,6 +256,15 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/audit",
+      label: "Site audit",
+      description:
+        "Deterministic site-wide rollup over stored per-snapshot metrics: verdicts, pass rates, top issues, worst pages.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/audit/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/admin",
       label: "Feature admin map",
       description:

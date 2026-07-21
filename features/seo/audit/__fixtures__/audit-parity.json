@@ -650,5 +650,168 @@
         ]
       }
     }
+  ],
+  "url_quality": [
+    {
+      "input": "https://example.com/",
+      "output": {
+        "ok": true,
+        "length": 20,
+        "depth": 0,
+        "has_uppercase": false,
+        "has_underscore": false,
+        "has_query": false,
+        "has_fragment": false,
+        "has_encoded_chars": false,
+        "has_double_slash": false,
+        "issues": []
+      }
+    },
+    {
+      "input": "https://example.com/blog/my-post",
+      "output": {
+        "ok": true,
+        "length": 32,
+        "depth": 2,
+        "has_uppercase": false,
+        "has_underscore": false,
+        "has_query": false,
+        "has_fragment": false,
+        "has_encoded_chars": false,
+        "has_double_slash": false,
+        "issues": []
+      }
+    },
+    {
+      "input": "https://EXAMPLE.com/Blog/My_Post?utm_source=x#section",
+      "output": {
+        "ok": false,
+        "length": 53,
+        "depth": 2,
+        "has_uppercase": true,
+        "has_underscore": true,
+        "has_query": true,
+        "has_fragment": true,
+        "has_encoded_chars": false,
+        "has_double_slash": false,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "URL path contains uppercase letters — mixed case creates duplicate-URL risk"
+          },
+          {
+            "severity": "warning",
+            "message": "URL path contains underscores — Google treats hyphens as word separators, underscores as joiners"
+          },
+          {
+            "severity": "warning",
+            "message": "URL carries query parameters — parameterized URLs fragment crawl equity and analytics"
+          },
+          {
+            "severity": "warning",
+            "message": "URL carries a #fragment — fragments are ignored by crawlers"
+          }
+        ]
+      }
+    },
+    {
+      "input": "https://example.com/a/b/c/d/e/f/deep-page",
+      "output": {
+        "ok": false,
+        "length": 41,
+        "depth": 7,
+        "has_uppercase": false,
+        "has_underscore": false,
+        "has_query": false,
+        "has_fragment": false,
+        "has_encoded_chars": false,
+        "has_double_slash": false,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "URL is 7 levels deep — content buried past 4 levels reads as less important"
+          }
+        ]
+      }
+    },
+    {
+      "input": "https://example.com/caf%C3%A9/menu",
+      "output": {
+        "ok": false,
+        "length": 34,
+        "depth": 2,
+        "has_uppercase": true,
+        "has_underscore": false,
+        "has_query": false,
+        "has_fragment": false,
+        "has_encoded_chars": true,
+        "has_double_slash": false,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "URL path contains uppercase letters — mixed case creates duplicate-URL risk"
+          },
+          {
+            "severity": "warning",
+            "message": "URL path contains percent-encoded characters — prefer plain lowercase ASCII slugs"
+          }
+        ]
+      }
+    },
+    {
+      "input": "https://example.com//double//slash",
+      "output": {
+        "ok": false,
+        "length": 34,
+        "depth": 2,
+        "has_uppercase": false,
+        "has_underscore": false,
+        "has_query": false,
+        "has_fragment": false,
+        "has_encoded_chars": false,
+        "has_double_slash": true,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "URL path contains a double slash — usually a link-building bug"
+          }
+        ]
+      }
+    },
+    {
+      "input": "https://example.com/very-long-segment-very-long-segment-very-long-segment-very-long-segment-very-long-segment-very-long-segment-very-long-segment-very-long-segment-end",
+      "output": {
+        "ok": false,
+        "length": 167,
+        "depth": 1,
+        "has_uppercase": false,
+        "has_underscore": false,
+        "has_query": false,
+        "has_fragment": false,
+        "has_encoded_chars": false,
+        "has_double_slash": false,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "URL is long (167 chars) — keep URLs under 100 characters"
+          }
+        ]
+      }
+    },
+    {
+      "input": "not a url at all",
+      "output": {
+        "ok": true,
+        "length": 16,
+        "depth": 1,
+        "has_uppercase": false,
+        "has_underscore": false,
+        "has_query": false,
+        "has_fragment": false,
+        "has_encoded_chars": false,
+        "has_double_slash": false,
+        "issues": []
+      }
+    }
   ]
 }

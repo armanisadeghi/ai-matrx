@@ -128,9 +128,12 @@ async function listLinks(
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "created_at";
   const ascending = state.sort?.direction === "asc";
   const db = await authenticatedWebDb(supabase);
+  // No count on the row query: RLS runs iam.has_access per ROW, so an exact
+  // count over a 100k-edge site is 100k access checks → statement timeout
+  // (prod 57014). web.count_link_edges checks access ONCE, then counts.
   let query = db
     .from("link_edge")
-    .select(CRAWL_LINK_SELECT, { count: "exact" })
+    .select(CRAWL_LINK_SELECT)
     .eq("site_id", siteId)
     .is("deleted_at", null);
   if (crawlId) query = query.eq("snapshot.session_id", crawlId);
@@ -158,12 +161,28 @@ async function listLinks(
   if (position?.max !== undefined) query = query.lte("position", position.max);
   query = query.order(sortColumn, { ascending, nullsFirst: false });
   query = query.order("id", { ascending });
-  const response = await query
-    .range(from, to)
-    .abortSignal(signal ?? new AbortController().signal);
+  const abortSignal = signal ?? new AbortController().signal;
+  const [response, countResponse] = await Promise.all([
+    query.range(from, to).abortSignal(abortSignal),
+    db
+      .rpc("count_link_edges", {
+        p_site_id: siteId,
+        p_session_id: crawlId ?? undefined,
+        p_search: search || undefined,
+        p_target_url: targetUrl ?? undefined,
+        p_anchor_text: anchorText ?? undefined,
+        p_rel: rel ?? undefined,
+        p_is_internal: internal ?? undefined,
+        p_http_status_min: httpStatus?.min,
+        p_http_status_max: httpStatus?.max,
+        p_position_min: position?.min,
+        p_position_max: position?.max,
+      })
+      .abortSignal(abortSignal),
+  ]);
   return {
     rows: assertData(response.data, response.error),
-    total: response.count ?? 0,
+    total: assertData(countResponse.data, countResponse.error),
   };
 }
 
@@ -212,13 +231,21 @@ export async function listLinkGraphEdges(
   const db = await authenticatedWebDb(supabase);
   const abortSignal = signal ?? new AbortController().signal;
   const rows: LinkGraphEdgeResult["rows"] = [];
-  let total = 0;
+  // NEVER count via PostgREST here: RLS runs iam.has_access per ROW, so an
+  // exact count over a 100k-edge site is 100k access checks → statement
+  // timeout (prod 57014). web.count_link_edges checks access once.
+  const countPromise = db
+    .rpc("count_link_edges", {
+      p_site_id: siteId,
+      p_session_id: crawlId ?? undefined,
+    })
+    .abortSignal(abortSignal);
   for (let from = 0; from < LINK_GRAPH_ROW_CAP; from += LINK_GRAPH_PAGE_SIZE) {
     const to = Math.min(from + LINK_GRAPH_PAGE_SIZE, LINK_GRAPH_ROW_CAP) - 1;
     const response = crawlId
       ? await db
           .from("link_edge")
-          .select(LINK_GRAPH_CRAWL_SELECT, { count: "exact" })
+          .select(LINK_GRAPH_CRAWL_SELECT)
           .eq("site_id", siteId)
           .is("deleted_at", null)
           .eq("snapshot.session_id", crawlId)
@@ -228,7 +255,7 @@ export async function listLinkGraphEdges(
           .abortSignal(abortSignal)
       : await db
           .from("link_edge")
-          .select(LINK_GRAPH_SELECT, { count: "exact" })
+          .select(LINK_GRAPH_SELECT)
           .eq("site_id", siteId)
           .is("deleted_at", null)
           .order("created_at", { ascending: false })
@@ -237,9 +264,10 @@ export async function listLinkGraphEdges(
           .abortSignal(abortSignal);
     const page = assertData(response.data, response.error);
     rows.push(...page);
-    total = response.count ?? rows.length;
-    if (rows.length >= total || page.length === 0) break;
+    if (page.length < LINK_GRAPH_PAGE_SIZE) break;
   }
+  const countResponse = await countPromise;
+  const total = assertData(countResponse.data, countResponse.error);
   return { rows, total, truncated: total > rows.length };
 }
 

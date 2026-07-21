@@ -115,25 +115,8 @@ export async function createProject(
       return { success: false, error: "Project created but no data returned" };
     }
 
-    // Canonical creator-membership write. The legacy DB trigger still inserts
-    // into the old project-member junction table, but that table NO LONGER
-    // mirrors to `iam.memberships` — so we must explicitly land the owner
-    // membership in the canonical store. `mbr_add` is idempotent (reactivates a
-    // soft-deleted row), so this is safe even though the trigger also fires.
-    const memberResult = await membershipsService.add({
-      containerType: "project",
-      containerId: project.id,
-      userId: currentUserId,
-      role: "owner",
-      organizationId: organizationId,
-    });
-    if (isScopesRpcErr(memberResult)) {
-      console.error(
-        "Project created but owner membership failed:",
-        memberResult.error,
-      );
-    }
-
+    // The AFTER INSERT trigger atomically bootstraps the creator's canonical
+    // owner membership. `mbr_add(owner)` is deliberately forbidden afterward.
     return {
       success: true,
       message: "Project created successfully",
@@ -417,10 +400,15 @@ export async function isProjectSlugAvailable(
       .is("deleted_at", null)
       .eq("slug", slug);
     query = query.eq("organization_id", orgId);
-    const { data } = await query.single();
+    const { data, error } = await query.limit(1).maybeSingle();
+    if (error) {
+      console.error("Error checking project slug availability:", error.message);
+      return false;
+    }
     return !data;
-  } catch {
-    return true;
+  } catch (error) {
+    console.error("Error checking project slug availability:", error);
+    return false;
   }
 }
 

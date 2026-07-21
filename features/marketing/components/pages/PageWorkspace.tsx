@@ -64,6 +64,7 @@ import {
   evaluateIndexability,
   type IndexabilityEvaluation,
 } from "@/features/seo/audit/indexability";
+import { evaluateUrlQuality } from "@/features/seo/audit/url-quality";
 import { socialInputFromRawTags } from "@/features/seo/audit/stored";
 import { AuditIssueList } from "@/features/seo/audit/AuditIssueList";
 import {
@@ -492,10 +493,13 @@ function IndexabilitySection({
   });
   const noindex = evaluation.noindex;
   const canonicalMismatch = evaluation.canonicalMatches === false;
+  // URL quality needs no crawl data — always computed live from the URL.
+  const urlQuality = evaluateUrlQuality(page.url);
   return (
     <div className="grid gap-3 p-3">
       <IndexabilityVerdictBanner evaluation={evaluation} />
       <AuditIssueList issues={evaluation.issues} compact />
+      <AuditIssueList issues={urlQuality.issues} compact />
       <CondensedFieldGrid
         fields={[
           {

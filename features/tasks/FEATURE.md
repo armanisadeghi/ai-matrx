@@ -2,7 +2,7 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-07-19`
+**Last updated:** `2026-07-21`
 
 > Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
@@ -69,7 +69,8 @@ Org-scoped project management. Projects group work within an organization; tasks
 ### Flow 1 — Create a project in an org
 
 1. User (with org permission) creates a project → row inserted with `organization_id`.
-2. Owner role granted; further members added via project invitations.
+2. The project insert trigger atomically grants the creator the canonical `iam.memberships` owner role; the client must not follow the insert with `mbr_add(owner)` because owner establishment is bootstrap-only.
+3. Further members are added via project invitations.
 
 ### Flow 2 — Create a task
 
@@ -92,8 +93,8 @@ Org-scoped project management. Projects group work within an organization; tasks
 ### Flow 5 — Invite a user to a project
 
 1. Project owner / admin sends an invitation to an email.
-2. Row in `project_invitations`; email sent via `features/email/`.
-3. Acceptance adds `project_members` row.
+2. The canonical invitation service writes `iam.invitations`; email is sent via `features/email/`.
+3. Acceptance atomically adds the canonical `iam.memberships` row.
 
 ---
 
@@ -112,6 +113,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Change log
 
+- `2026-07-21` — **Project creation follows the database-owned membership bootstrap contract.** Removed the stale post-insert `mbr_add(owner)` call from canonical `createProject`; the project insert trigger already creates the creator's `iam.memberships` owner row atomically, and the hardened RPC correctly rejects a second owner-establishment attempt. Slug availability now uses zero-or-one-row `maybeSingle()` semantics with loud, conservative error handling instead of producing `PGRST116` for an available slug.
 - `2026-07-19` — **Project invitation mutations no longer mount a hidden second list query.** `useProjectInvitationOperations` is mutation-only; `Project InvitationManager` owns the visible query and performs one refresh after a successful invite/cancel/resend. This mirrors the organization fix and removes duplicate manager-only `inv_list` traffic.
 - `2026-07-10` — **Header Surface Agents chrome: live scope.** `TaskEditorBody` mounts `SurfaceRuntimeProvider` (`matrx-user/tasks`) so the shell Agents button Runs with the same description-selection scope as the context menu.
 

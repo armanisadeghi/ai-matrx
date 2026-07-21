@@ -79,6 +79,12 @@ const SITE_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     description: "Review cost attribution for this site.",
     letter: "Sc",
   },
+  audit: {
+    titlePrefix: "Site Audit",
+    description:
+      "Deterministic site-wide audit rollup: indexability, SERP metadata, social cards, headings, and URL quality.",
+    letter: "Au",
+  },
   coverage: {
     titlePrefix: "Coverage",
     description: "Compare sitemap, crawl, and search coverage for this site.",
