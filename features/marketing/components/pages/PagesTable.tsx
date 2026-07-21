@@ -2,7 +2,16 @@
 
 import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FileQuestion, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import {
+  FileQuestion,
+  Plus,
+  RefreshCw,
+  Search,
+  Share2,
+  ShieldCheck,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -51,6 +60,73 @@ const PROVENANCE_OPTIONS = [
 ];
 
 /** Coverage chips: URL-owned (`?coverage=`) so matrix tiles deep-link here. */
+/**
+ * Three deterministic verdict glyphs per page — SERP metadata, social card,
+ * indexability — read from the stored snapshot metrics. Muted dot = the
+ * latest snapshot predates metric stamping (re-crawl or backfill fills it).
+ */
+function PageHealthChips({ row }: { row: PageListRow }) {
+  const chip = (
+    Icon: typeof Search,
+    label: string,
+    state: "pass" | "warn" | "fail" | "none",
+  ) => (
+    <span
+      title={label}
+      aria-label={label}
+      className={cn(
+        "inline-flex h-4 w-4 items-center justify-center",
+        state === "pass" && "text-success",
+        state === "warn" && "text-warning",
+        state === "fail" && "text-destructive",
+        state === "none" && "text-muted-foreground/40",
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </span>
+  );
+  const verdict = row.indexability_verdict;
+  return (
+    <span className="inline-flex items-center gap-1">
+      {chip(
+        Search,
+        row.serp_ok === null
+          ? "SERP metadata: not computed yet"
+          : row.serp_ok
+            ? "SERP metadata: passes pixel + character limits"
+            : "SERP metadata: outside limits",
+        row.serp_ok === null ? "none" : row.serp_ok ? "pass" : "warn",
+      )}
+      {chip(
+        Share2,
+        row.social_ok === null
+          ? "Social card: not computed yet"
+          : row.social_ok
+            ? "Social card: complete"
+            : "Social card: missing title or image",
+        row.social_ok === null ? "none" : row.social_ok ? "pass" : "warn",
+      )}
+      {chip(
+        ShieldCheck,
+        verdict === null
+          ? "Indexability: not computed yet"
+          : verdict === "indexable"
+            ? "Indexability: indexable"
+            : verdict === "check"
+              ? "Indexability: needs review"
+              : "Indexability: blocked from Google",
+        verdict === null
+          ? "none"
+          : verdict === "indexable"
+            ? "pass"
+            : verdict === "check"
+              ? "warn"
+              : "fail",
+      )}
+    </span>
+  );
+}
+
 function CoverageChips() {
   const router = useRouter();
   const pathname = usePathname();
@@ -213,6 +289,17 @@ export function PagesTable() {
           {row.http_status_last ?? "—"}
         </span>
       ),
+    },
+    {
+      // Deterministic per-capture verdicts stamped in web.snapshot
+      // (seo_metrics + audit_metrics) — SERP metadata, social card,
+      // indexability. "·" = no stored metrics for the latest snapshot yet.
+      id: "health",
+      accessorKey: "serp_ok",
+      header: "Health",
+      filter: false,
+      sortable: false,
+      cell: (row) => <PageHealthChips row={row} />,
     },
     {
       id: "gsc_clicks_28d",

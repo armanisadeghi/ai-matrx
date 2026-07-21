@@ -57,6 +57,8 @@ Small, delegatable, not worth stopping the main line. Move to "In motion" when y
 
 <!-- Add new findings below this line: one bullet, file/route, one-sentence symptom, one-sentence suggested fix. -->
 
+- **Snapshot with invalid artifact reference:** `web.snapshot` 7ab64ab8-b32e-4572-85f1-6a10cdbfb408 fails `snapshot_validate_artifact_files` on ANY update ("invalid canonical crawl artifact file 663f64c1-4ec4-4b74-bc84-9228254edd54") — its body_file_id no longer validates; decide whether to repair the files row or soft-delete the snapshot (it was the one row the metrics backfill could not stamp).
+
 - **Public-by-default creation is broken:** the normal site flow hardcodes `p_visibility: "private"`, the latest `web.create_site` RPC still defaults private, and the brand editor defaults new brands private, so records created after the public-view backfill become locked again; make every creation authority public by default and add a cross-user creation regression test.
 - **Crawler scope escape:** `crawler.py::_registrable_domain()` treats the last two labels as the registrable domain, so `follow_subdomains=true` considers unrelated hosts such as `evil.co.uk` and `example.co.uk` the same site; use the package's existing `tldextract` dependency and add public-suffix tests.
 - **No per-site active-run/monotonic-current guard:** `WebCrawlRepository.create_session()` permits overlapping writers, while page current pointers and negative reconciliation update unconditionally; atomically claim one active full crawl per site and make current-pointer writes timestamp-monotonic.

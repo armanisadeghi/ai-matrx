@@ -119,6 +119,12 @@ export interface PageListRow extends MarketingPage {
   word_count: number | null;
   /** Whether Google reports this page in search results (any GSC stat row). */
   in_gsc: boolean;
+  /** Stored SERP metadata verdict (`seo_metrics.overall_ok`); null = not computed. */
+  serp_ok: boolean | null;
+  /** Stored social-card verdict (`audit_metrics.social.ok`); null = not computed. */
+  social_ok: boolean | null;
+  /** Stored indexability verdict; null = not computed. */
+  indexability_verdict: "indexable" | "check" | "blocked" | null;
   /** 28-day GSC click sum; null when Google has no data for the page. */
   gsc_clicks_28d: number | null;
   /** 28-day GSC impression sum; null when Google has no data for the page. */

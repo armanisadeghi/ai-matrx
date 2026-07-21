@@ -1,5 +1,9 @@
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
-import { buildStoredSeoMetrics } from "@/features/seo/serp/metrics";
+import {
+  buildStoredSeoMetrics,
+  parseStoredSeoMetrics,
+} from "@/features/seo/serp/metrics";
+import { parseStoredAuditMetrics } from "@/features/seo/audit/stored";
 import type {
   BrandAsset,
   BrandListRow,
@@ -568,20 +572,31 @@ export async function listPages(
   );
   const bySnapshot = new Map<
     string,
-    { title: string | null; wordCount: number | null }
+    {
+      title: string | null;
+      wordCount: number | null;
+      serpOk: boolean | null;
+      socialOk: boolean | null;
+      indexabilityVerdict: "indexable" | "check" | "blocked" | null;
+    }
   >();
   if (snapshotIds.length > 0) {
     const snapshotResponse = await db
       .from("snapshot")
-      .select("id, head_tags, word_count")
+      .select("id, head_tags, word_count, seo_metrics, audit_metrics")
       .eq("site_id", siteId)
       .in("id", snapshotIds)
       .abortSignal(signal ?? new AbortController().signal);
     const snapshots = assertData(snapshotResponse.data, snapshotResponse.error);
     for (const snapshot of snapshots) {
+      const seo = parseStoredSeoMetrics(snapshot.seo_metrics);
+      const audit = parseStoredAuditMetrics(snapshot.audit_metrics);
       bySnapshot.set(snapshot.id, {
         title: parseSnapshotHeadTags(snapshot.head_tags).title,
         wordCount: snapshot.word_count,
+        serpOk: seo ? seo.overall_ok : null,
+        socialOk: audit ? audit.social.ok : null,
+        indexabilityVerdict: audit ? audit.indexability.verdict : null,
       });
     }
   }
@@ -651,6 +666,9 @@ export async function listPages(
         in_gsc: gsc_page_stat.length > 0,
         observed_title: observed?.title ?? null,
         word_count: observed?.wordCount ?? null,
+        serp_ok: observed?.serpOk ?? null,
+        social_ok: observed?.socialOk ?? null,
+        indexability_verdict: observed?.indexabilityVerdict ?? null,
         gsc_clicks_28d: gsc ? gsc.clicks : null,
         gsc_impressions_28d: gsc ? gsc.impressions : null,
         gsc_position_28d:
