@@ -543,6 +543,13 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "serpAnalyzerWindow",
   },
   {
+    id: "tile.social-cards",
+    label: "Social Cards",
+    icon: Share2,
+    category: "files-web",
+    overlayId: "socialCardAnalyzerWindow",
+  },
+  {
     id: "tile.site-workbench",
     label: "Site Workbench",
     icon: BookMarked,

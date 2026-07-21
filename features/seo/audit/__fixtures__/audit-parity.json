@@ -1,0 +1,654 @@
+{
+  "social": [
+    {
+      "input": {
+        "og": {},
+        "twitter": {}
+      },
+      "output": {
+        "ok": false,
+        "title": null,
+        "title_source": null,
+        "title_length": 0,
+        "description": null,
+        "description_source": null,
+        "description_length": 0,
+        "image": null,
+        "image_source": null,
+        "site_name": null,
+        "url": null,
+        "og_type": null,
+        "card_type": null,
+        "has_image": false,
+        "issues": [
+          {
+            "severity": "error",
+            "message": "No social title — add og:title (or twitter:title) so shares don't render as a bare link"
+          },
+          {
+            "severity": "error",
+            "message": "No share image — add og:image (or twitter:image); image posts get dramatically higher engagement"
+          },
+          {
+            "severity": "warning",
+            "message": "No social description — add og:description (or twitter:description)"
+          },
+          {
+            "severity": "warning",
+            "message": "No twitter:card tag — X falls back to a small summary card"
+          },
+          {
+            "severity": "warning",
+            "message": "No og:url — platforms may mis-attribute the canonical link"
+          },
+          {
+            "severity": "warning",
+            "message": "No og:type — defaults to \"website\" on most platforms"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "og": {
+          "og:title": "AI Matrx - Enterprise AI Platform",
+          "og:description": "Build AI apps without code.",
+          "og:image": "https://aimatrx.com/og.png",
+          "og:site_name": "AI Matrx",
+          "og:url": "https://aimatrx.com/",
+          "og:type": "website"
+        },
+        "twitter": {
+          "twitter:card": "summary_large_image",
+          "twitter:title": "AI Matrx",
+          "twitter:description": "x desc",
+          "twitter:image": "https://aimatrx.com/tw.png"
+        }
+      },
+      "output": {
+        "ok": true,
+        "title": "AI Matrx - Enterprise AI Platform",
+        "title_source": "og",
+        "title_length": 33,
+        "description": "Build AI apps without code.",
+        "description_source": "og",
+        "description_length": 27,
+        "image": "https://aimatrx.com/og.png",
+        "image_source": "og",
+        "site_name": "AI Matrx",
+        "url": "https://aimatrx.com/",
+        "og_type": "website",
+        "card_type": "summary_large_image",
+        "has_image": true,
+        "issues": []
+      }
+    },
+    {
+      "input": {
+        "og": {
+          "og:title": "  Trimmed  ",
+          "og:image": "http://insecure.com/img.jpg"
+        },
+        "twitter": {
+          "twitter:card": "gallery"
+        }
+      },
+      "output": {
+        "ok": true,
+        "title": "Trimmed",
+        "title_source": "og",
+        "title_length": 7,
+        "description": null,
+        "description_source": null,
+        "description_length": 0,
+        "image": "http://insecure.com/img.jpg",
+        "image_source": "og",
+        "site_name": null,
+        "url": null,
+        "og_type": null,
+        "card_type": "gallery",
+        "has_image": true,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "No social description — add og:description (or twitter:description)"
+          },
+          {
+            "severity": "warning",
+            "message": "Unknown twitter:card value \"gallery\" — expected summary, summary_large_image, app, or player"
+          },
+          {
+            "severity": "warning",
+            "message": "No og:url — platforms may mis-attribute the canonical link"
+          },
+          {
+            "severity": "warning",
+            "message": "No og:type — defaults to \"website\" on most platforms"
+          },
+          {
+            "severity": "warning",
+            "message": "Share image is not HTTPS — many platforms refuse mixed-content images"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "og": {
+          "og:description": "Only a description here"
+        },
+        "twitter": {
+          "twitter:title": "Twitter-only title",
+          "twitter:image": "https://x.com/i.png"
+        }
+      },
+      "output": {
+        "ok": true,
+        "title": "Twitter-only title",
+        "title_source": "twitter",
+        "title_length": 18,
+        "description": "Only a description here",
+        "description_source": "og",
+        "description_length": 23,
+        "image": "https://x.com/i.png",
+        "image_source": "twitter",
+        "site_name": null,
+        "url": null,
+        "og_type": null,
+        "card_type": null,
+        "has_image": true,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "No twitter:card tag — X falls back to a small summary card"
+          },
+          {
+            "severity": "warning",
+            "message": "No og:url — platforms may mis-attribute the canonical link"
+          },
+          {
+            "severity": "warning",
+            "message": "No og:type — defaults to \"website\" on most platforms"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "og": {
+          "og:title": "This is an extremely long social sharing title that goes well past the seventy character truncation threshold used by platforms",
+          "og:type": "article",
+          "og:url": "https://ex.com/a",
+          "og:image": "https://ex.com/i.jpg",
+          "og:description": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "twitter": {
+          "twitter:card": "summary"
+        }
+      },
+      "output": {
+        "ok": true,
+        "title": "This is an extremely long social sharing title that goes well past the seventy character truncation threshold used by platforms",
+        "title_source": "og",
+        "title_length": 127,
+        "description": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "description_source": "og",
+        "description_length": 250,
+        "image": "https://ex.com/i.jpg",
+        "image_source": "og",
+        "site_name": null,
+        "url": "https://ex.com/a",
+        "og_type": "article",
+        "card_type": "summary",
+        "has_image": true,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "Social title is long (127 chars) — platforms truncate around 70"
+          },
+          {
+            "severity": "warning",
+            "message": "Social description is long (250 chars) — platforms truncate around 200"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "og": {
+          "og:title": 42,
+          "og:image": null
+        },
+        "twitter": {
+          "twitter:card": "   "
+        }
+      },
+      "output": {
+        "ok": false,
+        "title": null,
+        "title_source": null,
+        "title_length": 0,
+        "description": null,
+        "description_source": null,
+        "description_length": 0,
+        "image": null,
+        "image_source": null,
+        "site_name": null,
+        "url": null,
+        "og_type": null,
+        "card_type": null,
+        "has_image": false,
+        "issues": [
+          {
+            "severity": "error",
+            "message": "No social title — add og:title (or twitter:title) so shares don't render as a bare link"
+          },
+          {
+            "severity": "error",
+            "message": "No share image — add og:image (or twitter:image); image posts get dramatically higher engagement"
+          },
+          {
+            "severity": "warning",
+            "message": "No social description — add og:description (or twitter:description)"
+          },
+          {
+            "severity": "warning",
+            "message": "No twitter:card tag — X falls back to a small summary card"
+          },
+          {
+            "severity": "warning",
+            "message": "No og:url — platforms may mis-attribute the canonical link"
+          },
+          {
+            "severity": "warning",
+            "message": "No og:type — defaults to \"website\" on most platforms"
+          }
+        ]
+      }
+    }
+  ],
+  "headings": [
+    {
+      "input": [],
+      "output": {
+        "ok": false,
+        "total": 0,
+        "h1_count": 0,
+        "first_level": null,
+        "skipped_levels": 0,
+        "empty_count": 0,
+        "long_count": 0,
+        "issues": [
+          {
+            "severity": "error",
+            "message": "No headings at all — the page has no structural outline"
+          }
+        ]
+      }
+    },
+    {
+      "input": [
+        {
+          "text": "Welcome",
+          "level": 1
+        },
+        {
+          "text": "About",
+          "level": 2
+        },
+        {
+          "text": "Team",
+          "level": 3
+        }
+      ],
+      "output": {
+        "ok": true,
+        "total": 3,
+        "h1_count": 1,
+        "first_level": 1,
+        "skipped_levels": 0,
+        "empty_count": 0,
+        "long_count": 0,
+        "issues": []
+      }
+    },
+    {
+      "input": [
+        {
+          "text": "Intro",
+          "level": 2
+        },
+        {
+          "text": "Deep",
+          "level": 5
+        }
+      ],
+      "output": {
+        "ok": false,
+        "total": 2,
+        "h1_count": 0,
+        "first_level": 2,
+        "skipped_levels": 1,
+        "empty_count": 0,
+        "long_count": 0,
+        "issues": [
+          {
+            "severity": "error",
+            "message": "No H1 heading — every page needs exactly one H1"
+          },
+          {
+            "severity": "warning",
+            "message": "First heading is an H2 — pages should open with the H1"
+          },
+          {
+            "severity": "warning",
+            "message": "1 skipped heading level(s) (e.g. an H2 followed by an H4)"
+          }
+        ]
+      }
+    },
+    {
+      "input": [
+        {
+          "text": "One",
+          "level": 1
+        },
+        {
+          "text": "Two",
+          "level": 1
+        },
+        {
+          "text": "",
+          "level": 2
+        },
+        {
+          "text": "  ",
+          "level": 3
+        }
+      ],
+      "output": {
+        "ok": true,
+        "total": 4,
+        "h1_count": 2,
+        "first_level": 1,
+        "skipped_levels": 0,
+        "empty_count": 2,
+        "long_count": 0,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "2 H1 headings — expected exactly 1"
+          },
+          {
+            "severity": "warning",
+            "message": "2 empty heading(s) — remove or fill them"
+          }
+        ]
+      }
+    },
+    {
+      "input": [
+        {
+          "text": "A really long heading that keeps going and going far past the seventy character threshold for headings",
+          "level": 1
+        },
+        {
+          "text": "ok",
+          "level": 2
+        },
+        {
+          "text": "skip",
+          "level": 4
+        }
+      ],
+      "output": {
+        "ok": true,
+        "total": 3,
+        "h1_count": 1,
+        "first_level": 1,
+        "skipped_levels": 1,
+        "empty_count": 0,
+        "long_count": 1,
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "1 skipped heading level(s) (e.g. an H2 followed by an H4)"
+          },
+          {
+            "severity": "warning",
+            "message": "1 heading(s) longer than 70 characters"
+          }
+        ]
+      }
+    },
+    {
+      "input": [
+        {
+          "text": "bad level",
+          "level": 9
+        },
+        {
+          "text": "no level"
+        },
+        "not a dict",
+        {
+          "text": "Real",
+          "level": 1
+        }
+      ],
+      "output": {
+        "ok": true,
+        "total": 1,
+        "h1_count": 1,
+        "first_level": 1,
+        "skipped_levels": 0,
+        "empty_count": 0,
+        "long_count": 0,
+        "issues": []
+      }
+    }
+  ],
+  "indexability": [
+    {
+      "input": {
+        "http_status": 200,
+        "meta_robots": null,
+        "canonical_url": null,
+        "redirect_chain": [],
+        "final_url": "https://ex.com/page"
+      },
+      "output": {
+        "ok": true,
+        "verdict": "indexable",
+        "http_status": 200,
+        "noindex": false,
+        "nofollow": false,
+        "canonical_url": null,
+        "canonical_matches": null,
+        "redirect_hops": 0,
+        "final_url": "https://ex.com/page",
+        "issues": []
+      }
+    },
+    {
+      "input": {
+        "http_status": 200,
+        "meta_robots": "index, follow",
+        "canonical_url": "https://ex.com/page/",
+        "redirect_chain": [],
+        "final_url": "https://ex.com/page"
+      },
+      "output": {
+        "ok": true,
+        "verdict": "indexable",
+        "http_status": 200,
+        "noindex": false,
+        "nofollow": false,
+        "canonical_url": "https://ex.com/page/",
+        "canonical_matches": true,
+        "redirect_hops": 0,
+        "final_url": "https://ex.com/page",
+        "issues": []
+      }
+    },
+    {
+      "input": {
+        "http_status": 200,
+        "meta_robots": "NOINDEX, nofollow",
+        "canonical_url": "https://ex.com/other",
+        "redirect_chain": [
+          {
+            "url": "http://ex.com/page",
+            "status": 301
+          },
+          {
+            "url": "https://ex.com/page",
+            "status": 200
+          }
+        ],
+        "final_url": "https://ex.com/page"
+      },
+      "output": {
+        "ok": false,
+        "verdict": "blocked",
+        "http_status": 200,
+        "noindex": true,
+        "nofollow": true,
+        "canonical_url": "https://ex.com/other",
+        "canonical_matches": false,
+        "redirect_hops": 1,
+        "final_url": "https://ex.com/page",
+        "issues": [
+          {
+            "severity": "error",
+            "message": "Meta robots contains noindex — Google is told not to index this page"
+          },
+          {
+            "severity": "warning",
+            "message": "Meta robots contains nofollow — links on this page pass no equity"
+          },
+          {
+            "severity": "warning",
+            "message": "Canonical points elsewhere (https://ex.com/other) — Google may index that URL instead"
+          },
+          {
+            "severity": "warning",
+            "message": "URL redirects through 1 hop(s) before resolving"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "http_status": 404,
+        "meta_robots": null,
+        "canonical_url": null,
+        "redirect_chain": [],
+        "final_url": "https://ex.com/missing"
+      },
+      "output": {
+        "ok": false,
+        "verdict": "blocked",
+        "http_status": 404,
+        "noindex": false,
+        "nofollow": false,
+        "canonical_url": null,
+        "canonical_matches": null,
+        "redirect_hops": 0,
+        "final_url": "https://ex.com/missing",
+        "issues": [
+          {
+            "severity": "error",
+            "message": "Page returns HTTP 404"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "http_status": null,
+        "meta_robots": "none",
+        "canonical_url": "HTTPS://EX.COM:443/Page",
+        "redirect_chain": [
+          {
+            "url": "a",
+            "status": null
+          }
+        ],
+        "final_url": "https://ex.com/Page"
+      },
+      "output": {
+        "ok": false,
+        "verdict": "blocked",
+        "http_status": null,
+        "noindex": true,
+        "nofollow": true,
+        "canonical_url": "HTTPS://EX.COM:443/Page",
+        "canonical_matches": true,
+        "redirect_hops": 0,
+        "final_url": "https://ex.com/Page",
+        "issues": [
+          {
+            "severity": "error",
+            "message": "Meta robots contains noindex — Google is told not to index this page"
+          },
+          {
+            "severity": "warning",
+            "message": "Meta robots contains nofollow — links on this page pass no equity"
+          },
+          {
+            "severity": "warning",
+            "message": "HTTP status was not captured"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "http_status": 200,
+        "meta_robots": " index ,  NOFOLLOW ",
+        "canonical_url": "not a url",
+        "redirect_chain": [
+          {
+            "url": "1",
+            "status": 301
+          },
+          {
+            "url": "2",
+            "status": 302
+          },
+          {
+            "url": "3",
+            "status": 200
+          }
+        ],
+        "final_url": "https://ex.com/x?b=2"
+      },
+      "output": {
+        "ok": false,
+        "verdict": "check",
+        "http_status": 200,
+        "noindex": false,
+        "nofollow": true,
+        "canonical_url": "not a url",
+        "canonical_matches": false,
+        "redirect_hops": 2,
+        "final_url": "https://ex.com/x?b=2",
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "Meta robots contains nofollow — links on this page pass no equity"
+          },
+          {
+            "severity": "warning",
+            "message": "Canonical points elsewhere (not a url) — Google may index that URL instead"
+          },
+          {
+            "severity": "warning",
+            "message": "URL redirects through 2 hop(s) before resolving"
+          }
+        ]
+      }
+    }
+  ]
+}

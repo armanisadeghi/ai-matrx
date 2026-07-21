@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   AppWindow,
+  CheckCircle,
   FileCode2,
   FileQuestion,
   FileText,
@@ -11,6 +13,7 @@ import {
   ImageOff,
   Loader2,
   Monitor,
+  OctagonAlert,
   Save,
   Smartphone,
   Trash2,
@@ -51,6 +54,24 @@ import {
   type MetaEvaluation,
 } from "@/features/seo/serp/metrics";
 import { useOpenSerpAnalyzerWindow } from "@/features/overlays/openers/serpAnalyzerWindow";
+import { useOpenSocialCardWindow } from "@/features/overlays/openers/socialCardAnalyzerWindow";
+import { evaluateSocialCard } from "@/features/seo/audit/social";
+import {
+  evaluateHeadingStructure,
+  headingInputsFromRaw,
+} from "@/features/seo/audit/headings";
+import {
+  evaluateIndexability,
+  type IndexabilityEvaluation,
+} from "@/features/seo/audit/indexability";
+import { socialInputFromRawTags } from "@/features/seo/audit/stored";
+import { AuditIssueList } from "@/features/seo/audit/AuditIssueList";
+import {
+  SocialCard,
+  parseSocialDomain,
+  type SocialPlatform,
+} from "@/features/seo/social/SocialCard";
+import { isJsonRecord } from "@/features/marketing/types";
 import {
   parseSnapshotExtracted,
   parseSnapshotHeadings,
@@ -348,56 +369,105 @@ function SerpPreview({
   );
 }
 
-function SocialCardPreview({ snapshot }: { snapshot: PageSnapshot }) {
-  const { og, twitter } = parseSnapshotHeadTags(snapshot.head_tags);
-  const title = og.title ?? twitter.title;
-  const description = og.description ?? twitter.description;
-  const image = og.image ?? twitter.image;
-  const [imageBroken, setImageBroken] = useState(false);
+/** Raw og/twitter tag records from `head_tags` — the evaluator's wire shape. */
+function rawSocialTags(snapshot: PageSnapshot): {
+  og: Record<string, unknown>;
+  twitter: Record<string, unknown>;
+} {
+  const headTags = isJsonRecord(snapshot.head_tags) ? snapshot.head_tags : {};
+  return {
+    og: isJsonRecord(headTags.og) ? headTags.og : {},
+    twitter: isJsonRecord(headTags.twitter) ? headTags.twitter : {},
+  };
+}
 
-  if (!title && !description && !image) {
-    return (
-      <p className="p-4 text-xs text-muted-foreground">
-        No Open Graph or Twitter card tags were observed — shares of this URL
-        will render as a bare link.
-      </p>
-    );
-  }
+/**
+ * Social share preview — canonical platform-faithful cards (features/seo/
+ * social) for the OBSERVED share tags, with a platform toggle and the
+ * deterministic checks (features/seo/audit, exact parity with the scraper's
+ * crawl-time `audit_metrics.social`).
+ */
+function SocialCardPreview({
+  snapshot,
+  page,
+  platform,
+}: {
+  snapshot: PageSnapshot;
+  page: MarketingPage;
+  platform: SocialPlatform;
+}) {
+  const raw = rawSocialTags(snapshot);
+  const evaluation = evaluateSocialCard(
+    socialInputFromRawTags(raw.og, raw.twitter),
+  );
+
   return (
-    <div className="p-3">
-      <div className="max-w-md overflow-hidden rounded-lg border border-border bg-background">
-        {/* og:image is the brand's own public URL (never our storage) — a raw
-            img with a loud broken state is correct here. */}
-        {image && !imageBroken ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={image}
-            alt={title ?? "Social share image"}
-            className="aspect-[1.91/1] w-full bg-muted/40 object-cover"
-            onError={() => setImageBroken(true)}
-          />
-        ) : (
-          <div className="flex aspect-[1.91/1] w-full items-center justify-center gap-2 bg-muted/40 text-xs text-muted-foreground">
-            <ImageOff className="h-4 w-4" />
-            {image ? "Share image failed to load" : "No share image"}
-          </div>
-        )}
-        <div className="border-t border-border px-3 py-2">
-          <p className="truncate text-[10px] uppercase text-muted-foreground">
-            {og.siteName ?? og.url ?? ""}
-          </p>
-          <p className="line-clamp-1 text-xs font-semibold text-foreground">
-            {title ?? "No social title"}
-          </p>
-          <p className="line-clamp-2 text-[11px] text-muted-foreground">
-            {description ?? "No social description"}
-          </p>
-        </div>
-      </div>
-      <p className="mt-2 text-[10px] text-muted-foreground">
-        {twitter.card ? `Twitter card: ${twitter.card}` : "No Twitter card tag"}
-        {og.type ? ` · og:type ${og.type}` : ""}
+    <div className="grid gap-3 p-3">
+      <SocialCard
+        platform={platform}
+        title={evaluation.title}
+        description={evaluation.description}
+        image={evaluation.image}
+        domain={parseSocialDomain(evaluation.url ?? page.url)}
+        cardType={evaluation.cardType ?? "summary"}
+        className="max-w-md"
+      />
+      <p className="text-[10px] text-muted-foreground">
+        {evaluation.cardType
+          ? `Twitter card: ${evaluation.cardType}`
+          : "No Twitter card tag"}
+        {evaluation.ogType ? ` · og:type ${evaluation.ogType}` : ""}
+        {evaluation.titleSource === "twitter"
+          ? " · title from twitter:title"
+          : ""}
       </p>
+      <AuditIssueList
+        issues={evaluation.issues}
+        successText="Share tags look great — title, image, description, card type, and canonical link are all present."
+        compact
+      />
+    </div>
+  );
+}
+
+/** One deterministic verdict pill: Indexable / Needs review / Blocked. */
+function IndexabilityVerdictBanner({
+  evaluation,
+}: {
+  evaluation: IndexabilityEvaluation;
+}) {
+  const tone =
+    evaluation.verdict === "indexable"
+      ? "border-success/40 bg-success/10 text-success"
+      : evaluation.verdict === "check"
+        ? "border-warning/40 bg-warning/10 text-warning"
+        : "border-destructive/40 bg-destructive/10 text-destructive";
+  const Icon =
+    evaluation.verdict === "indexable"
+      ? CheckCircle
+      : evaluation.verdict === "check"
+        ? AlertTriangle
+        : OctagonAlert;
+  const label =
+    evaluation.verdict === "indexable"
+      ? "Indexable"
+      : evaluation.verdict === "check"
+        ? "Needs review"
+        : "Blocked from Google";
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-lg border px-3 py-2",
+        tone,
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="text-xs font-semibold">{label}</span>
+      <span className="ml-auto text-[10px] opacity-80">
+        {evaluation.issues.length
+          ? `${evaluation.issues.length} signal${evaluation.issues.length === 1 ? "" : "s"}`
+          : "All signals clean"}
+      </span>
     </div>
   );
 }
@@ -411,12 +481,21 @@ function IndexabilitySection({
 }) {
   const head = parseSnapshotHeadTags(snapshot.head_tags);
   const extracted = parseSnapshotExtracted(snapshot.extracted);
-  const noindex = head.metaRobots?.toLowerCase().includes("noindex") ?? false;
-  const canonicalMismatch = Boolean(
-    head.canonicalUrl && head.canonicalUrl !== page.url,
-  );
+  // Deterministic verdict — identical to the scraper's crawl-time
+  // `audit_metrics.indexability` by construction.
+  const evaluation = evaluateIndexability({
+    httpStatus: snapshot.http_status,
+    metaRobots: head.metaRobots,
+    canonicalUrl: head.canonicalUrl,
+    redirectChain: extracted.redirectChain,
+    finalUrl: snapshot.final_url ?? page.url,
+  });
+  const noindex = evaluation.noindex;
+  const canonicalMismatch = evaluation.canonicalMatches === false;
   return (
-    <div className="p-3">
+    <div className="grid gap-3 p-3">
+      <IndexabilityVerdictBanner evaluation={evaluation} />
+      <AuditIssueList issues={evaluation.issues} compact />
       <CondensedFieldGrid
         fields={[
           {
@@ -471,25 +550,34 @@ function IndexabilitySection({
 }
 
 function HeadingsOutline({ snapshot }: { snapshot: PageSnapshot }) {
-  const headings = parseSnapshotHeadings(snapshot.headings);
-  if (headings.all.length === 0) {
+  // Evaluate the RAW headings JSON (keeps empty-text entries the display
+  // parser drops) — identical to the scraper's `audit_metrics.headings`.
+  const rawHeadings = isJsonRecord(snapshot.headings)
+    ? headingInputsFromRaw(snapshot.headings.all)
+    : [];
+  const evaluation = evaluateHeadingStructure(rawHeadings);
+  if (rawHeadings.length === 0) {
     return (
-      <p className="p-4 text-xs text-muted-foreground">
-        No headings were observed on this page.
-      </p>
+      <div className="grid gap-2 p-4">
+        <AuditIssueList issues={evaluation.issues} compact />
+      </div>
     );
   }
+  // Mark outline rows involved in a skipped-level transition so the warning
+  // is visible in place, not just in the issue list.
+  const skipsAfter = new Set<number>();
+  for (let i = 1; i < rawHeadings.length; i += 1) {
+    if (rawHeadings[i].level > rawHeadings[i - 1].level + 1) skipsAfter.add(i);
+  }
   return (
-    <div className="p-3">
-      {headings.h1Count !== 1 ? (
-        <Badge variant="warning" className="mb-2 text-[10px]">
-          {headings.h1Count === 0
-            ? "No H1 on this page"
-            : `${headings.h1Count} H1 headings — expected exactly 1`}
-        </Badge>
-      ) : null}
+    <div className="grid gap-2.5 p-3">
+      <AuditIssueList
+        issues={evaluation.issues}
+        successText={`Clean outline — ${evaluation.total} headings, exactly one H1, no skipped levels.`}
+        compact
+      />
       <ol className="grid max-h-80 gap-1 overflow-y-auto">
-        {headings.all.map((heading, index) => (
+        {rawHeadings.map((heading, index) => (
           <li
             key={`${heading.level}:${index}`}
             className="flex min-w-0 items-baseline gap-2 text-xs"
@@ -508,13 +596,20 @@ function HeadingsOutline({ snapshot }: { snapshot: PageSnapshot }) {
             <span
               className={cn(
                 "truncate",
-                heading.level === 1
-                  ? "font-medium text-foreground"
-                  : "text-foreground/90",
+                !heading.text.trim()
+                  ? "italic text-muted-foreground"
+                  : heading.level === 1
+                    ? "font-medium text-foreground"
+                    : "text-foreground/90",
               )}
             >
-              {heading.text}
+              {heading.text.trim() || "(empty heading)"}
             </span>
+            {skipsAfter.has(index) ? (
+              <Badge variant="warning" className="shrink-0 text-[9px]">
+                skipped level
+              </Badge>
+            ) : null}
           </li>
         ))}
       </ol>
@@ -837,7 +932,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const { site, sitePath } = useMarketingSite();
   const workspace = usePageWorkspace(site.id, pageId);
   const openSerpAnalyzer = useOpenSerpAnalyzerWindow();
+  const openSocialCards = useOpenSocialCardWindow();
   const [serpDevice, setSerpDevice] = useState<SerpDevice>("desktop");
+  const [socialPlatform, setSocialPlatform] = useState<SocialPlatform>("x");
   if (workspace.isLoading)
     return <LoadingSurface label="Loading canonical page…" />;
   if (workspace.isError || !workspace.data) {
@@ -1058,6 +1155,60 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             <div className="grid gap-3 lg:grid-cols-2">
               <SectionCard
                 title="Social share preview"
+                headerExtra={
+                  <div className="flex items-center gap-1">
+                    <div className="flex items-center rounded-md border border-border">
+                      {(
+                        [
+                          ["x", "X"],
+                          ["facebook", "FB"],
+                          ["linkedin", "LI"],
+                        ] as const
+                      ).map(([value, label], index) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setSocialPlatform(value)}
+                          aria-label={`${label} preview`}
+                          title={`${label} preview`}
+                          className={cn(
+                            "flex h-6 w-7 items-center justify-center text-[10px] font-semibold transition-colors",
+                            index === 0 && "rounded-l-[5px]",
+                            index === 2 && "rounded-r-[5px]",
+                            socialPlatform === value
+                              ? "bg-muted text-foreground"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const raw = rawSocialTags(snapshot);
+                        const observed = evaluateSocialCard(
+                          socialInputFromRawTags(raw.og, raw.twitter),
+                        );
+                        openSocialCards({
+                          url: observed.url ?? page.url,
+                          title: observed.title ?? "",
+                          description: observed.description ?? "",
+                          image: observed.image ?? "",
+                          siteName: observed.siteName ?? "",
+                          ogType: observed.ogType ?? "",
+                          cardType: observed.cardType ?? "",
+                        });
+                      }}
+                      aria-label="Open in Social Cards analyzer"
+                      title="Open in Social Cards analyzer"
+                      className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <AppWindow className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                }
                 copy={webCopy({
                   kind: "web-page-social-card",
                   label: "Social share preview",
@@ -1079,7 +1230,11 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                   attributes: { page_id: page.id },
                 })}
               >
-                <SocialCardPreview snapshot={snapshot} />
+                <SocialCardPreview
+                  snapshot={snapshot}
+                  page={page}
+                  platform={socialPlatform}
+                />
               </SectionCard>
               <SectionCard
                 title="Indexability"

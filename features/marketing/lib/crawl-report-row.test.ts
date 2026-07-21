@@ -74,6 +74,7 @@ const SNAPSHOT: InspectionSnapshotRow = {
       issues: [],
     },
   },
+  audit_metrics: null,
   page: { url: "https://example.com/about/" },
 };
 

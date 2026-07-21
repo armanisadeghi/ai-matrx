@@ -144,6 +144,7 @@ export const OVERLAY_IDS = [
   "shareModalWindow",
   "singleMessageWindow",
   "smartCodeEditorWindow",
+  "socialCardAnalyzerWindow",
   "sourceInspectorWindow",
   "systemInstructionWindow",
   "promptPreviewWindow",

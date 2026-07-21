@@ -635,6 +635,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  socialCardAnalyzerWindow: {
+    label: "Social Cards",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   setContextValueWindow: {
     label: "Set Context Value Window",
     instanceMode: "singleton",

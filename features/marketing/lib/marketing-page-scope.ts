@@ -20,6 +20,7 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { createMarketingPageScope } from "@/features/surfaces/manifests/marketing-page.manifest";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { parseStoredSeoMetrics } from "@/features/seo/serp/metrics";
+import { parseStoredAuditMetrics } from "@/features/seo/audit/stored";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 
 export const MARKETING_PAGE_SURFACE_NAME = "matrx-user/marketing-page" as const;
@@ -47,6 +48,9 @@ export function buildMarketingPageScope(input: {
     observed_title: head?.title ?? undefined,
     observed_description: head?.metaDescription ?? undefined,
     observed_seo_metrics: observedMetrics ?? undefined,
+    observed_audit_metrics: snapshot
+      ? (parseStoredAuditMetrics(snapshot.audit_metrics) ?? undefined)
+      : undefined,
     snapshot_captured_at: snapshot?.captured_at ?? undefined,
     word_count: snapshot?.word_count ?? undefined,
     desired_title: page.meta_title_desired ?? undefined,

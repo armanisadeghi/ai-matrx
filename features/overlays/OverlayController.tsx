@@ -536,6 +536,10 @@ const SerpAnalyzerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/SerpAnalyzerWindow"),
   { ssr: false },
 );
+const SocialCardWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/seo/SocialCardWindow"),
+  { ssr: false },
+);
 const ImageUploaderWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/image/ImageUploaderWindow"),
   { ssr: false },
@@ -1127,6 +1131,9 @@ export default function OverlayController() {
     serpAnalyzerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "serpAnalyzerWindow"),
     ),
+    socialCardAnalyzerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "socialCardAnalyzerWindow"),
+    ),
     quickChatWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickChatWindow"),
     ),
@@ -1448,6 +1455,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     serpAnalyzerWindow: useAppSelector((s) =>
       selectOverlayData(s, "serpAnalyzerWindow"),
+    ) as Record<string, unknown> | null,
+    socialCardAnalyzerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "socialCardAnalyzerWindow"),
     ) as Record<string, unknown> | null,
     setContextValueWindow: useAppSelector((s) =>
       selectOverlayData(s, "setContextValueWindow"),
@@ -3775,6 +3785,31 @@ export default function OverlayController() {
                 ? data.description
                 : undefined
             }
+          />
+        );
+      })()}
+
+      {/* socialCardAnalyzerWindow */}
+      {(() => {
+        const isOpen = isOpenById.socialCardAnalyzerWindow;
+        const data = dataById.socialCardAnalyzerWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | undefined =>
+          typeof data?.[key] === "string" ? (data[key] as string) : undefined;
+        return (
+          <SocialCardWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "socialCardAnalyzerWindow" }))
+            }
+            initialUrl={str("url")}
+            initialTitle={str("title")}
+            initialDescription={str("description")}
+            initialImage={str("image")}
+            initialSiteName={str("siteName")}
+            initialOgType={str("ogType")}
+            initialCardType={str("cardType")}
           />
         );
       })()}

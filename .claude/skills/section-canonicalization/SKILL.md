@@ -10,11 +10,19 @@ preview, a readability panel, a cost calculator…) is done only when its pieces
 serve EVERY consumer: the page it started on, a floating window, other
 features' pages, the database, the Python server, agents, and the public.
 
-**Worked reference (mirror it):** the SEO metadata system —
-`features/seo/serp/` + `features/window-panels/windows/seo/SerpAnalyzerWindow.tsx`
-+ marketing `PageWorkspace` SERP section + aidream
-`packages/matrx-scraper/matrx_scraper/meta_metrics.py`. Read
-[`features/seo/serp/README.md`](../../../features/seo/serp/README.md) first.
+**Worked references (mirror them):**
+1. The SEO metadata system — `features/seo/serp/` +
+   `windows/seo/SerpAnalyzerWindow.tsx` + marketing `PageWorkspace` SERP
+   section + aidream `matrx_scraper/meta_metrics.py`. Read
+   [`features/seo/serp/README.md`](../../../features/seo/serp/README.md) first.
+2. The page-audit system (second application, proves the recipe generalizes) —
+   `features/seo/audit/` (three evaluators, ONE stored contract
+   `audit_metrics`) + `features/seo/social/` (platform-faithful share cards) +
+   `windows/seo/SocialCardWindow.tsx` + `/seo/social-preview` + aidream
+   `matrx_scraper/audit_metrics.py`. Shows how MULTIPLE related evaluators
+   share one versioned jsonb contract instead of one column each, and how a
+   verdict enum (`indexable | check | blocked`) + severity-tagged issues
+   (`AuditIssueList`) make richer visuals than bare booleans.
 
 ## The eight deliverables
 

@@ -119,6 +119,16 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 420,
   },
   {
+    name: "observed_audit_metrics",
+    label: "Observed audit metrics",
+    description:
+      "Deterministic page-audit for the latest snapshot (contract v1: social share card, heading structure, and indexability verdict — each with ok, facts, and issues[{severity,message}]). Stamped by the scraper at capture time (`web.snapshot.audit_metrics`). Empty when uncrawled.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 1400,
+    sortOrder: 425,
+  },
+  {
     name: "snapshot_captured_at",
     label: "Snapshot captured at",
     description:
@@ -266,6 +276,7 @@ export function createMarketingPageScope(values: {
   observed_title?: string;
   observed_description?: string;
   observed_seo_metrics?: Record<string, unknown>;
+  observed_audit_metrics?: Record<string, unknown>;
   snapshot_captured_at?: string;
   word_count?: number;
   desired_title?: string;

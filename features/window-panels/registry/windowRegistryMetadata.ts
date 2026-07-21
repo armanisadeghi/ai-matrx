@@ -1158,6 +1158,29 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "serp_analyzer" },
   },
 
+  // ── Social Cards (OG/Twitter share analyzer) ──────────────────────────────
+  // The canonical SocialCardAnalyzer (features/seo/social) in a floating
+  // window: editable share tags, deterministic checks (features/seo/audit),
+  // platform-faithful X / Facebook / LinkedIn previews. Open with page data
+  // via `useOpenSocialCardWindow({ url, title, description, image, ... })`.
+  {
+    slug: "social-card-window",
+    overlayId: "socialCardAnalyzerWindow",
+    kind: "window",
+    label: "Social Cards",
+    defaultData: {
+      url: "",
+      title: "",
+      description: "",
+      image: "",
+      siteName: "",
+      ogType: "",
+      cardType: "",
+    },
+    mobilePresentation: "fullscreen",
+    urlSync: { key: "social_cards" },
+  },
+
   // ── Resource Picker ───────────────────────────────────────────────────────
   {
     slug: "resource-picker-window",

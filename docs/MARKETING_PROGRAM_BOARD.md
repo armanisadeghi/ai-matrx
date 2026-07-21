@@ -30,7 +30,7 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 ## In motion
 
 - **Claude (main session):** between waves. Coverage prod-404 root-caused (.vercelignore bare `coverage` pattern) and verified fixed in v0.3.696. GSC envs confirmed correct — waiting ONLY on Arman's Google reconnect at /marketing/connections.
-- **Claude (section-canonicalization session):** extending the SERP-canonicalization recipe to the next deterministic audit systems — social share cards (OG/Twitter canonical components + validator + panel + public tool), heading-structure evaluator, indexability verdict; one shared crawl-stamped `audit_metrics` contract (TS↔Python parity like `seo_metrics`).
+- **Claude (section-canonicalization session):** page-audit wave shipped (see handoff Done) — hunting the next canonicalization target in this loop. NOTE for next release: aidream local commit adds `audit_metrics` stamping to the scraper (ships via release.sh).
 - **Arman:** GSC unblock — confirm `AIDREAM_URL` + `AIDREAM_SERVICE_TOKEN` env on the scraper service, reconnect Google at `/marketing/connections`, hit Sync. Then the full E2E on All Green Recycling.
 
 ## Up next (in order)

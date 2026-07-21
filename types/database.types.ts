@@ -44625,6 +44625,7 @@ export type Database = {
       }
       snapshot: {
         Row: {
+          audit_metrics: Json | null
           body_file_id: string
           captured_at: string
           content_hash: string | null
@@ -44654,6 +44655,7 @@ export type Database = {
           word_count: number | null
         }
         Insert: {
+          audit_metrics?: Json | null
           body_file_id: string
           captured_at?: string
           content_hash?: string | null
@@ -44683,6 +44685,7 @@ export type Database = {
           word_count?: number | null
         }
         Update: {
+          audit_metrics?: Json | null
           body_file_id?: string
           captured_at?: string
           content_hash?: string | null

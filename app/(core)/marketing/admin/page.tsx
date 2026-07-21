@@ -272,6 +272,20 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
+      name: "SocialCardAnalyzer (features/seo/social)",
+      filePath: "features/seo/social/SocialCardAnalyzer.tsx",
+      description:
+        "Canonical social share analyzer: platform-faithful X/Facebook/LinkedIn cards + deterministic OG/Twitter checks (features/seo/audit, TS↔Python parity). Consumed by the page-workspace social section, the Social Cards window panel (overlayId socialCardAnalyzerWindow), and the public /seo/social-preview page.",
+      tier: "official",
+    },
+    {
+      name: "Page-audit evaluators (features/seo/audit)",
+      filePath: "features/seo/audit/README.md",
+      description:
+        "Deterministic social/headings/indexability evaluators stamped into web.snapshot.audit_metrics by the scraper on every capture.",
+      tier: "official",
+    },
+    {
       name: "MetadataAnalyzer (features/seo/serp)",
       filePath: "features/seo/serp/MetadataAnalyzer.tsx",
       description:
