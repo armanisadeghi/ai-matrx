@@ -29,7 +29,7 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 ## In motion
 
-- **Claude (main session):** adversarial review of today's copy-rollout + page-fetch + public-visibility work is running; fixes then a dual-repo release (`release.sh`), which also ships the scraper's new `pages/fetch` command to prod.
+- **Claude (main session):** adversarial review done — 4 confirmed findings fixed (anon read channel closed, silent no-op deletes now loud, post-create fetch URL normalization, hero screenshot fallback). Releasing both repos now; then live-verifying Fetch-now against the prod scraper.
 - **Arman:** GSC unblock — confirm `AIDREAM_URL` + `AIDREAM_SERVICE_TOKEN` env on the scraper service, reconnect Google at `/marketing/connections`, hit Sync. Then the full E2E on All Green Recycling.
 
 ## Up next (in order)
