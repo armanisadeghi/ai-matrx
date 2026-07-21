@@ -44,7 +44,7 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
 
 - `web.brand` — anchor entity and access root for the brand layer (`web_brand` token; canonical `iam.apply_rls`).
 - `web.property` — one presence of a brand (website / instagram / facebook / x / tiktok / youtube / linkedin / pinterest / google_business_profile); a website property points at its `web.site`.
-- `web.brand_asset` / `web.business_fact` — human-confirmed brand truth (logos, imagery, phones, addresses, socials); `brand_asset.file_id` → canonical `files.files`.
+- `web.brand_asset` / `web.business_fact` — human-confirmed brand truth (logos, social-card imagery, phones, faxes, addresses, homepage identity, socials); `brand_asset.file_id` → canonical `files.files`. Allowed kinds and their UI labels live only in `features/marketing/types.ts` (`BRAND_ASSET_KINDS` / `BUSINESS_FACT_KINDS` plus label maps); discovery and manual editors consume those registries rather than maintaining partial lists.
 - `web.discovered_item` — machine-written review inbox (`pending → confirmed | dismissed`), URL-deduped per brand for idempotent re-discovery; `resolved_asset_id` / `resolved_fact_id` record the promotion.
 - `web.site` — managed website (site-scoped access root). Carries `brand_id`, user-editable identity (`description`, `logo_url`, `favicon_url`, `og_image_url` — the brand's own public URLs, never our storage), and `initialized_at` + `initialization` jsonb written by the scraper initialize command.
 - `web.page` — canonical URL plus user-owned intent; never captured content. **The anchor registry: every source (sitemap, GSC, crawl, links, manual) upserts rows here and stamps evidence; source coverage disagreements are the intelligence layer.**
@@ -110,6 +110,7 @@ Grants: `migrations/web_marketing_crud_grants.sql` added the missing authenticat
 - **The live crawl feed never renders per-URL bookkeeping rows.** `page_discovered` / `url_classified` / `page_parsed` present as `null` and feed only the Discovered/Queued/Fetched/Failed/Skipped counters (`summarizeLiveCrawlEvents`); feed rows are reserved for fetches, failures, warnings, and phase milestones, and rendering is capped at the newest 200 rows. Encoded in `live-crawl-event-presenter.test.ts`.
 - **Every scraper-boundary failure feeds `captureError`** via the chokepoints in `features/marketing/crawler/direct-client.ts`. Marketing components import `toast` from `@/lib/toast` (the captured sonner wrapper), never from `"sonner"` — bare sonner toasts are invisible to the admin Error Inspector.
 - **Machine discovery writes ONLY `web.discovered_item`.** Confirmed identity (`brand_asset`, `business_fact`, site identity columns) is written by humans (or by explicit promotion code) — never directly by a scraper.
+- **A specific discovery guess must stay specific through promotion.** Fax, homepage title/description/site name, Open Graph image, and Twitter card image are first-class confirmed kinds; the review inbox must never demote a recognized `guessed_kind` to `other` because of a partial local options list.
 - Site/brand identity URLs (logo, favicon, og image) are the brand's own public URLs. Scraper-produced media (screenshots) goes through the canonical AWS file pipeline and renders via `InlineMediaRef` + `file_id` — never a Supabase Storage URL.
 - Persisted data always flows browser ↔ Supabase under the caller's JWT and RLS. Never add a Python, AI Dream, or Next.js read proxy.
 - Crawler commands/live NDJSON go browser ↔ scraper directly. Durable rows written by the crawler are subsequently read from Supabase.
@@ -147,6 +148,7 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 
 ## Change log
 
+- 2026-07-20 — Codex: made discovery promotion consume the canonical asset/fact kind registries; added first-class fax, homepage identity, Open Graph image, and Twitter card image kinds; fixed the Add Fact selector being clipped by its dialog scroll container; and extended the scraper to recognize Schema.org and labeled-text fax numbers without duplicating them as phones.
 - 2026-07-20 — Codex: registered the Marketing favicon family and added route-aware metadata for every current Marketing leaf, including unique tab badges and client-only legacy redirects.
 - 2026-07-20 — Codex: made automatic integration binds provider-scoped CAS rebases so unrelated site version bumps no longer strand a successful Google connection while same-provider races still fail loudly.
 - 2026-07-20 — Codex: cut Marketing artifacts over to canonical Files UUIDs, added complete per-snapshot body/markdown/screenshot rendering, and removed all parallel file-backend URL construction and legacy crawler reference fields.

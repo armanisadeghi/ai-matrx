@@ -208,6 +208,19 @@ export const PROPERTY_KINDS = [
 ] as const;
 export type PropertyKind = (typeof PROPERTY_KINDS)[number];
 
+export const PROPERTY_KIND_LABELS: Record<PropertyKind, string> = {
+  website: "Website",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  x: "X (Twitter)",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  linkedin: "LinkedIn",
+  pinterest: "Pinterest",
+  google_business_profile: "Google Business Profile",
+  other: "Other property",
+};
+
 export interface CreatePropertyInput {
   organizationId: string;
   brandId: string;
@@ -226,13 +239,15 @@ export interface UpdatePropertyInput {
   >;
 }
 
-/** Asset kinds accepted by web.brand_asset's CHECK constraint. */
+/** Domain asset types accepted by web.brand_asset's `kind` CHECK constraint. Not Content-IR Shape kinds. */
 export const BRAND_ASSET_KINDS = [
   "logo",
   "logo_dark",
   "favicon",
   "wordmark",
   "hero_image",
+  "og_image",
+  "twitter_image",
   "image",
   "video",
   "color",
@@ -241,6 +256,22 @@ export const BRAND_ASSET_KINDS = [
   "other",
 ] as const;
 export type BrandAssetKind = (typeof BRAND_ASSET_KINDS)[number];
+
+export const BRAND_ASSET_KIND_LABELS: Record<BrandAssetKind, string> = {
+  logo: "Logo",
+  logo_dark: "Logo (dark)",
+  favicon: "Favicon",
+  wordmark: "Wordmark",
+  hero_image: "Hero image",
+  og_image: "Open Graph image",
+  twitter_image: "Twitter card image",
+  image: "Image",
+  video: "Video",
+  color: "Color",
+  font: "Font",
+  document: "Document",
+  other: "Other asset",
+};
 
 export interface CreateBrandAssetInput {
   organizationId: string;
@@ -263,20 +294,41 @@ export interface UpdateBrandAssetInput {
   >;
 }
 
-/** Fact kinds accepted by web.business_fact's CHECK constraint. */
+/** Domain fact types accepted by web.business_fact's `kind` CHECK constraint. Not Content-IR Shape kinds. */
 export const BUSINESS_FACT_KINDS = [
   "phone",
+  "fax",
   "email",
   "address",
   "hours",
   "tagline",
   "legal_name",
+  "title",
+  "description",
+  "site_name",
   "social_profile",
   "service_area",
   "registration",
   "other",
 ] as const;
 export type BusinessFactKind = (typeof BUSINESS_FACT_KINDS)[number];
+
+export const BUSINESS_FACT_KIND_LABELS: Record<BusinessFactKind, string> = {
+  phone: "Phone",
+  fax: "Fax",
+  email: "Email",
+  address: "Address",
+  hours: "Hours",
+  tagline: "Tagline",
+  legal_name: "Legal name",
+  title: "Homepage title",
+  description: "Homepage description",
+  site_name: "Site name",
+  social_profile: "Social profile",
+  service_area: "Service area",
+  registration: "Registration",
+  other: "Other fact",
+};
 
 export interface CreateBusinessFactInput {
   organizationId: string;
@@ -302,6 +354,13 @@ export interface ConfirmAssetInput {
   item: DiscoveredItem;
   assetKind: BrandAsset["kind"];
   title: string | null;
+}
+
+/** Confirm a social discovery as a first-class brand property. */
+export interface ConfirmPropertyInput {
+  item: DiscoveredItem;
+  propertyKind: PropertyKind;
+  displayName: string | null;
 }
 
 /** Confirm a discovered item as a business fact. */

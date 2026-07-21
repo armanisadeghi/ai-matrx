@@ -26,16 +26,13 @@ import {
   useUpdateBusinessFact,
 } from "@/features/marketing/data/hooks";
 import {
+  BUSINESS_FACT_KIND_LABELS,
   BUSINESS_FACT_KINDS,
   isJsonRecord,
   type BusinessFact,
   type BusinessFactKind,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
-
-function kindLabel(kind: BusinessFactKind): string {
-  return kind.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
-}
 
 function factValueString(fact: BusinessFact | null): string {
   if (!fact) return "";
@@ -106,6 +103,10 @@ function BusinessFactEditorDialogBody({
       toast.error("A fact needs a value.");
       return;
     }
+    if (kind === "other" && !label.trim()) {
+      toast.error("Other facts need a custom label.");
+      return;
+    }
     try {
       if (fact) {
         await updateMutation.mutateAsync({
@@ -136,18 +137,19 @@ function BusinessFactEditorDialogBody({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{fact ? "Edit fact" : "Add fact"}</DialogTitle>
           <DialogDescription>
-            Confirmed business truth — phones, emails, addresses, taglines.
+            Confirmed business truth — phones, faxes, emails, addresses, and
+            brand copy.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label className="text-xs">Kind</Label>
+              <Label className="text-xs">Type</Label>
               <Select
                 value={kind}
                 onValueChange={(next) => setKind(next as BusinessFactKind)}
@@ -158,7 +160,7 @@ function BusinessFactEditorDialogBody({
                 <SelectContent>
                   {BUSINESS_FACT_KINDS.map((option) => (
                     <SelectItem key={option} value={option}>
-                      {kindLabel(option)}
+                      {BUSINESS_FACT_KIND_LABELS[option]}
                     </SelectItem>
                   ))}
                 </SelectContent>

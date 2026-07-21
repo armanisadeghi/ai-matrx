@@ -28,15 +28,12 @@ import {
   useUpdateBrandAsset,
 } from "@/features/marketing/data/hooks";
 import {
+  BRAND_ASSET_KIND_LABELS,
   BRAND_ASSET_KINDS,
   type BrandAsset,
   type BrandAssetKind,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
-
-function kindLabel(kind: BrandAssetKind): string {
-  return kind.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
-}
 
 /** Kinds that don't reference a file/URL (value lives in notes/data). */
 const URL_OPTIONAL_KINDS: readonly BrandAssetKind[] = ["color", "font"];
@@ -103,6 +100,10 @@ function BrandAssetEditorDialogBody({
       toast.error("This asset kind needs a source URL.");
       return;
     }
+    if (kind === "other" && !title.trim()) {
+      toast.error("Other assets need a custom title.");
+      return;
+    }
     try {
       if (asset) {
         await updateMutation.mutateAsync({
@@ -150,7 +151,7 @@ function BrandAssetEditorDialogBody({
         <div className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label className="text-xs">Kind</Label>
+              <Label className="text-xs">Type</Label>
               <Select
                 value={kind}
                 onValueChange={(value) => setKind(value as BrandAssetKind)}
@@ -161,7 +162,7 @@ function BrandAssetEditorDialogBody({
                 <SelectContent>
                   {BRAND_ASSET_KINDS.map((value) => (
                     <SelectItem key={value} value={value}>
-                      {kindLabel(value)}
+                      {BRAND_ASSET_KIND_LABELS[value]}
                     </SelectItem>
                   ))}
                 </SelectContent>

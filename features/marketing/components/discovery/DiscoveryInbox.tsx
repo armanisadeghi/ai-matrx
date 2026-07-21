@@ -19,6 +19,7 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -30,6 +31,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import {
   useConfirmDiscoveredAsset,
   useConfirmDiscoveredFact,
+  useConfirmDiscoveredProperty,
   useDeleteDiscoveredItem,
   useDiscoveredItems,
   useDismissDiscoveredItem,
@@ -39,10 +41,17 @@ import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { isJsonRecord } from "@/features/marketing/types";
-import type {
-  DiscoveredItem,
-  DiscoveredItemStatus,
+import {
+  BRAND_ASSET_KINDS,
+  BRAND_ASSET_KIND_LABELS,
+  BUSINESS_FACT_KINDS,
+  BUSINESS_FACT_KIND_LABELS,
+  PROPERTY_KINDS,
+  PROPERTY_KIND_LABELS,
+  isJsonRecord,
+  type DiscoveredItem,
+  type DiscoveredItemStatus,
+  type PropertyKind,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
@@ -65,39 +74,57 @@ const CATEGORY_META: Record<
   other: { label: "Other", icon: FileQuestion },
 };
 
-const ASSET_KINDS = [
-  { value: "logo", label: "Logo" },
-  { value: "logo_dark", label: "Logo (dark)" },
-  { value: "favicon", label: "Favicon" },
-  { value: "wordmark", label: "Wordmark" },
-  { value: "hero_image", label: "Hero image" },
-  { value: "image", label: "Image" },
-  { value: "video", label: "Video" },
-  { value: "document", label: "Document" },
-  { value: "other", label: "Other asset" },
-];
+const ASSET_KINDS = BRAND_ASSET_KINDS.map((value) => ({
+  value,
+  label: BRAND_ASSET_KIND_LABELS[value],
+}));
 
-const FACT_KINDS = [
-  { value: "phone", label: "Phone" },
-  { value: "email", label: "Email" },
-  { value: "address", label: "Address" },
-  { value: "hours", label: "Hours" },
-  { value: "tagline", label: "Tagline" },
-  { value: "legal_name", label: "Legal name" },
-  { value: "social_profile", label: "Social profile" },
-  { value: "service_area", label: "Service area" },
-  { value: "other", label: "Other fact" },
-];
+const FACT_KINDS = BUSINESS_FACT_KINDS.map((value) => ({
+  value,
+  label: BUSINESS_FACT_KIND_LABELS[value],
+}));
+
+const PROPERTY_TYPE_OPTIONS = PROPERTY_KINDS.filter(
+  (value) => value !== "website",
+).map((value) => ({ value, label: PROPERTY_KIND_LABELS[value] }));
 
 function isMediaCategory(category: string): boolean {
   return category === "media";
 }
 
+function isSocialCategory(category: string): boolean {
+  return category === "social";
+}
+
+function inferredPropertyType(item: DiscoveredItem): PropertyKind {
+  if (
+    item.guessed_kind &&
+    item.guessed_kind !== "website" &&
+    PROPERTY_KINDS.includes(item.guessed_kind as PropertyKind)
+  ) {
+    return item.guessed_kind as PropertyKind;
+  }
+  if (!item.url) return "other";
+  try {
+    const host = new URL(item.url).hostname.replace(/^www\./, "");
+    if (host === "instagram.com") return "instagram";
+    if (host === "facebook.com" || host === "fb.com") return "facebook";
+    if (host === "x.com" || host === "twitter.com") return "x";
+    if (host === "tiktok.com") return "tiktok";
+    if (host === "youtube.com" || host === "youtu.be") return "youtube";
+    if (host === "linkedin.com") return "linkedin";
+    if (host === "pinterest.com" || host === "pin.it") return "pinterest";
+  } catch {
+    // The review UI retains Other for malformed candidate URLs.
+  }
+  return "other";
+}
+
 function defaultKind(item: DiscoveredItem): string {
+  if (isSocialCategory(item.category)) return inferredPropertyType(item);
   const guess = item.guessed_kind ?? "";
   const pool = isMediaCategory(item.category) ? ASSET_KINDS : FACT_KINDS;
   if (pool.some((option) => option.value === guess)) return guess;
-  if (item.category === "social") return "social_profile";
   return pool[pool.length - 1].value;
 }
 
@@ -247,16 +274,25 @@ function DiscoveryRow({
 }) {
   const confirmAsset = useConfirmDiscoveredAsset();
   const confirmFact = useConfirmDiscoveredFact();
+  const confirmProperty = useConfirmDiscoveredProperty();
   const dismiss = useDismissDiscoveredItem();
   const undismiss = useUndismissDiscoveredItem();
   const deleteMutation = useDeleteDiscoveredItem();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [kind, setKind] = useState(() => defaultKind(item));
+  const [customLabel, setCustomLabel] = useState("");
   const media = isMediaCategory(item.category);
-  const kindOptions = media ? ASSET_KINDS : FACT_KINDS;
+  const social = isSocialCategory(item.category);
+  const kindOptions = media
+    ? ASSET_KINDS
+    : social
+      ? PROPERTY_TYPE_OPTIONS
+      : FACT_KINDS;
+  const customLabelRequired = kind === "other";
   const busy =
     confirmAsset.isPending ||
     confirmFact.isPending ||
+    confirmProperty.isPending ||
     dismiss.isPending ||
     undismiss.isPending ||
     deleteMutation.isPending;
@@ -268,11 +304,30 @@ function DiscoveryRow({
       : null;
 
   const confirm = async () => {
+    const trimmedLabel = customLabel.trim();
+    if (customLabelRequired && !trimmedLabel) {
+      toast.error("Add a custom label for an Other item.");
+      return;
+    }
     try {
       if (media) {
-        await confirmAsset.mutateAsync({ item, assetKind: kind, title: null });
+        await confirmAsset.mutateAsync({
+          item,
+          assetKind: kind,
+          title: trimmedLabel || null,
+        });
+      } else if (social) {
+        await confirmProperty.mutateAsync({
+          item,
+          propertyKind: kind as PropertyKind,
+          displayName: trimmedLabel || null,
+        });
       } else {
-        await confirmFact.mutateAsync({ item, factKind: kind, label: null });
+        await confirmFact.mutateAsync({
+          item,
+          factKind: kind,
+          label: trimmedLabel || null,
+        });
       }
       toast.success("Confirmed");
     } catch (error) {
@@ -320,7 +375,6 @@ function DiscoveryRow({
       {previewUrl ? (
         <span className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded border border-border/60 bg-muted/30">
           {/* Discovered candidates are external public URLs, not our media. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
             alt=""
@@ -397,7 +451,7 @@ function DiscoveryRow({
           ) : null}
         </div>
       ) : (
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
           <Select value={kind} onValueChange={setKind}>
             <SelectTrigger className="h-8 w-40 text-xs">
               <SelectValue />
@@ -410,10 +464,21 @@ function DiscoveryRow({
               ))}
             </SelectContent>
           </Select>
+          <Input
+            value={customLabel}
+            onChange={(event) => setCustomLabel(event.target.value)}
+            className="h-8 w-40 text-xs"
+            placeholder={
+              customLabelRequired ? "Custom label (required)" : "Label (optional)"
+            }
+            aria-label={
+              media ? "Asset label" : social ? "Property label" : "Fact label"
+            }
+          />
           <Button
             size="sm"
             className="h-8 gap-1"
-            disabled={busy}
+            disabled={busy || (customLabelRequired && !customLabel.trim())}
             onClick={() => void confirm()}
           >
             <Check className="h-3.5 w-3.5" />
