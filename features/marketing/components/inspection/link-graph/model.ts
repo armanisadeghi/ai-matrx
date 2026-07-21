@@ -576,3 +576,265 @@ export function buildLinkGraph(
     capped,
   };
 }
+
+// ── Section (directory) aggregation ─────────────────────────────────────────
+//
+// A page-per-node graph is unreadable past ~50 pages: 200 nodes is a hairball,
+// 3,000 is noise, and full-URL labels cover the canvas. Every serious site-
+// structure tool (Sitebulb's directory tree, Ahrefs' site-structure report,
+// Semrush's site audit crawl map) solves this the same way — aggregate by URL
+// PATH SEGMENT and let the user drill down one level at a time.
+//
+// At focus path P the view shows: P's own index page, plus ONE node per direct
+// child segment. A child holding many pages is a single FOLDER node sized by
+// page count. Links wholly inside a child never become edges — they become
+// that node's `internalLinks` stat — so only the between-section structure is
+// drawn. That is the signal; the rest was always noise.
+
+export type SectionKind = "index" | "page" | "folder" | "external";
+
+export interface SectionGraphNode {
+  /** Path prefix identity ("/", "/blogs", "/blogs/2024") or "ext:<domain>". */
+  id: string;
+  /** Segment label only — never a full URL ("blogs", "/" for the root index). */
+  label: string;
+  kind: SectionKind;
+  path: string;
+  /** Internal pages represented by this node (1 for a page/index node). */
+  pageCount: number;
+  /** Inbound links from OUTSIDE this section. */
+  inlinks: number;
+  /** Outbound links leaving this section. */
+  outlinks: number;
+  /** Links wholly inside this section — drawn as a stat, never as edges. */
+  internalLinks: number;
+  brokenPages: number;
+  orphanPages: number;
+  /** Shallowest click depth reached inside this section. */
+  depth: number | null;
+  /** Representative full URL (the index page when there is one). */
+  representativeUrl: string;
+  /** Page id when this node is exactly one page. */
+  pageId: string | null;
+  /** True when clicking should drill INTO this node. */
+  drillable: boolean;
+}
+
+export interface SectionCrumb {
+  path: string;
+  label: string;
+}
+
+export interface SectionGraphModel {
+  nodes: SectionGraphNode[];
+  edges: LinkGraphEdge[];
+  focusPath: string;
+  breadcrumb: SectionCrumb[];
+  /** Internal pages inside the current focus. */
+  pagesInFocus: number;
+  /** True when the focus holds few enough pages that page-level reads well. */
+  pageLevelViable: boolean;
+}
+
+const PAGE_LEVEL_VIABLE_MAX = 60;
+
+function pathOf(node: LinkGraphNode): string {
+  try {
+    return new URL(node.fullUrl).pathname.replace(/\/+$/, "") || "/";
+  } catch {
+    return "/";
+  }
+}
+
+function childPath(focusPath: string, segment: string): string {
+  return focusPath === "/" ? `/${segment}` : `${focusPath}/${segment}`;
+}
+
+/** Breadcrumb trail for a focus path ("/" → [/]; "/a/b" → [/, a, b]). */
+export function sectionBreadcrumb(focusPath: string): SectionCrumb[] {
+  const crumbs: SectionCrumb[] = [{ path: "/", label: "/" }];
+  if (focusPath === "/") return crumbs;
+  let current = "";
+  for (const segment of focusPath.split("/").filter(Boolean)) {
+    current = `${current}/${segment}`;
+    crumbs.push({ path: current, label: segment });
+  }
+  return crumbs;
+}
+
+/**
+ * Aggregate a page-level model into the directory view at `focusPath`.
+ * External targets (when included) collapse to ONE node per domain.
+ */
+export function buildSectionGraph(
+  model: LinkGraphModel,
+  focusPath: string,
+): SectionGraphModel {
+  const prefix = focusPath === "/" ? "/" : `${focusPath}/`;
+
+  interface Acc {
+    id: string;
+    label: string;
+    kind: SectionKind;
+    path: string;
+    pages: LinkGraphNode[];
+    indexNode: LinkGraphNode | null;
+  }
+  const buckets = new Map<string, Acc>();
+  // Which bucket a page-level node id belongs to (edge remapping).
+  const bucketOfNode = new Map<string, string>();
+
+  for (const node of model.nodes) {
+    if (node.external) {
+      let domain = "";
+      try {
+        domain = new URL(node.fullUrl).host.toLowerCase().replace(/^www\./, "");
+      } catch {
+        continue;
+      }
+      const id = `ext:${domain}`;
+      let bucket = buckets.get(id);
+      if (!bucket) {
+        bucket = {
+          id,
+          label: domain,
+          kind: "external",
+          path: id,
+          pages: [],
+          indexNode: null,
+        };
+        buckets.set(id, bucket);
+      }
+      bucket.pages.push(node);
+      bucketOfNode.set(node.id, id);
+      continue;
+    }
+    const path = pathOf(node);
+    const inFocus = focusPath === "/" || path === focusPath || path.startsWith(prefix);
+    if (!inFocus) continue;
+
+    if (path === focusPath) {
+      const id = focusPath;
+      let bucket = buckets.get(id);
+      if (!bucket) {
+        bucket = {
+          id,
+          label: focusPath === "/" ? "/" : `${focusPath.split("/").pop()} (index)`,
+          kind: "index",
+          path: focusPath,
+          pages: [],
+          indexNode: node,
+        };
+        buckets.set(id, bucket);
+      }
+      bucket.indexNode = node;
+      bucket.pages.push(node);
+      bucketOfNode.set(node.id, id);
+      continue;
+    }
+
+    const rest = path.slice(prefix.length);
+    const segment = rest.split("/")[0];
+    if (!segment) continue;
+    const id = childPath(focusPath, segment);
+    let bucket = buckets.get(id);
+    if (!bucket) {
+      bucket = {
+        id,
+        label: segment,
+        kind: "page",
+        path: id,
+        pages: [],
+        indexNode: null,
+      };
+      buckets.set(id, bucket);
+    }
+    bucket.pages.push(node);
+    if (path === id) bucket.indexNode = node;
+    bucketOfNode.set(node.id, id);
+  }
+
+  // A bucket is a FOLDER when it holds more than its own index page.
+  for (const bucket of buckets.values()) {
+    if (bucket.kind === "page" && bucket.pages.length > 1) bucket.kind = "folder";
+  }
+
+  // Aggregate edges between buckets; same-bucket links become a node stat.
+  const internalLinks = new Map<string, number>();
+  const inlinks = new Map<string, number>();
+  const outlinks = new Map<string, number>();
+  const aggregated = new Map<string, LinkGraphEdge>();
+  for (const edge of model.edges) {
+    const source = bucketOfNode.get(edge.source);
+    const target = bucketOfNode.get(edge.target);
+    if (!source || !target) continue;
+    if (source === target) {
+      internalLinks.set(source, (internalLinks.get(source) ?? 0) + edge.weight);
+      continue;
+    }
+    outlinks.set(source, (outlinks.get(source) ?? 0) + edge.weight);
+    inlinks.set(target, (inlinks.get(target) ?? 0) + edge.weight);
+    const id = `${source}→${target}`;
+    const existing = aggregated.get(id);
+    if (existing) {
+      existing.weight += edge.weight;
+      existing.broken = existing.broken || edge.broken;
+      existing.nofollow = existing.nofollow && edge.nofollow;
+    } else {
+      aggregated.set(id, {
+        id,
+        source,
+        target,
+        weight: edge.weight,
+        anchors: edge.anchors.slice(0, 3),
+        nofollow: edge.nofollow,
+        broken: edge.broken,
+      });
+    }
+  }
+
+  const nodes: SectionGraphNode[] = [];
+  let pagesInFocus = 0;
+  for (const bucket of buckets.values()) {
+    const pageCount = bucket.pages.length;
+    if (bucket.kind !== "external") pagesInFocus += pageCount;
+    const depths = bucket.pages
+      .map((page) => page.depth)
+      .filter((depth): depth is number => depth !== null);
+    const representative = bucket.indexNode ?? bucket.pages[0];
+    nodes.push({
+      id: bucket.id,
+      label:
+        bucket.kind === "folder"
+          ? `${bucket.label}\n${pageCount} pages`
+          : bucket.label,
+      kind: bucket.kind,
+      path: bucket.path,
+      pageCount,
+      inlinks: inlinks.get(bucket.id) ?? 0,
+      outlinks: outlinks.get(bucket.id) ?? 0,
+      internalLinks: internalLinks.get(bucket.id) ?? 0,
+      brokenPages: bucket.pages.filter((page) => page.status === "broken").length,
+      orphanPages: bucket.pages.filter(
+        (page) => !page.external && page.depth === null,
+      ).length,
+      depth: depths.length > 0 ? Math.min(...depths) : null,
+      representativeUrl: representative?.fullUrl ?? bucket.path,
+      pageId:
+        bucket.kind === "page" || bucket.kind === "index"
+          ? (representative?.pageId ?? null)
+          : null,
+      drillable: bucket.kind === "folder",
+    });
+  }
+  nodes.sort((a, b) => b.pageCount - a.pageCount || b.inlinks - a.inlinks);
+
+  return {
+    nodes,
+    edges: Array.from(aggregated.values()),
+    focusPath,
+    breadcrumb: sectionBreadcrumb(focusPath),
+    pagesInFocus,
+    pageLevelViable: pagesInFocus <= PAGE_LEVEL_VIABLE_MAX,
+  };
+}

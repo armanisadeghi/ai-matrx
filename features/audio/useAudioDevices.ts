@@ -1,6 +1,7 @@
 // features/audio/useAudioDevices.ts
 //
-// React surface for the canonical audio-device manager (`audioDevices.ts`).
+// React surface for the canonical media-device manager
+// (`features/media-devices/deviceManager.ts`).
 // One hook every picker/caret consumes. It:
 //   • subscribes to the framework-free manager (permission + live device lists)
 //     via `useSyncExternalStore`,
@@ -24,29 +25,31 @@ import {
   selectAudioOutputDeviceLabel,
 } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
-  type AudioDeviceInfo,
-  type AudioDevicesSnapshot,
-  type AudioPermissionState,
+  type MediaDeviceDescriptor,
+  type MediaDevicesSnapshot,
+  type MediaPermissionState,
   applyInputDevice,
   applyOutputDevice,
   ensurePermission,
-  getAudioDevicesSnapshot,
+  getMediaDevicesSnapshot,
   listDevices,
   resolveDeviceId,
-  subscribeAudioDevices,
-} from "@/features/audio/audioDevices";
+  subscribeMediaDevices,
+} from "@/features/media-devices/deviceManager";
 import { outputSelectionSupported } from "@/features/audio/audioOutputSink";
 
-const EMPTY_SNAPSHOT: AudioDevicesSnapshot = {
+const EMPTY_SNAPSHOT: MediaDevicesSnapshot = {
   permissionState: "unknown",
+  cameraPermissionState: "unknown",
   inputs: [],
   outputs: [],
+  cameras: [],
 };
 
 export interface UseAudioDevicesResult {
-  permissionState: AudioPermissionState;
-  inputs: AudioDeviceInfo[];
-  outputs: AudioDeviceInfo[];
+  permissionState: MediaPermissionState;
+  inputs: MediaDeviceDescriptor[];
+  outputs: MediaDeviceDescriptor[];
   /** Resolved live deviceId for the persisted input choice ("" = default). */
   selectedInputId: string;
   /** Resolved live deviceId for the persisted output choice ("" = default). */
@@ -60,7 +63,7 @@ export interface UseAudioDevicesResult {
   /** Choose an output device. "" = system default. Persists + applies live. */
   setOutput: (deviceId: string, label: string) => void;
   /** Prompt for mic permission only if needed; refreshes labels on grant. */
-  requestPermission: () => Promise<AudioPermissionState>;
+  requestPermission: () => Promise<MediaPermissionState>;
   /** Re-enumerate devices now. */
   refresh: () => Promise<void>;
   /** False on Safari (no `setSinkId`) — the speaker picker is disabled there. */
@@ -71,8 +74,8 @@ export function useAudioDevices(): UseAudioDevicesResult {
   const dispatch = useAppDispatch();
 
   const snapshot = useSyncExternalStore(
-    subscribeAudioDevices,
-    getAudioDevicesSnapshot,
+    subscribeMediaDevices,
+    getMediaDevicesSnapshot,
     () => EMPTY_SNAPSHOT, // SSR
   );
 

@@ -25,17 +25,19 @@ import {
 import {
   applyInputDevice,
   applyOutputDevice,
-  getAudioDevicesSnapshot,
+  getMediaDevicesSnapshot,
   resolveDeviceId,
   startDeviceListeners,
-  subscribeAudioDevices,
-  type AudioDevicesSnapshot,
-} from "@/features/audio/audioDevices";
+  subscribeMediaDevices,
+  type MediaDevicesSnapshot,
+} from "@/features/media-devices/deviceManager";
 
-const EMPTY_SNAPSHOT: AudioDevicesSnapshot = {
+const EMPTY_SNAPSHOT: MediaDevicesSnapshot = {
   permissionState: "unknown",
+  cameraPermissionState: "unknown",
   inputs: [],
   outputs: [],
+  cameras: [],
 };
 
 export default function AudioDeviceProviderImpl(): null {
@@ -45,8 +47,8 @@ export default function AudioDeviceProviderImpl(): null {
   const outputLabel = useAppSelector(selectAudioOutputDeviceLabel);
 
   const snapshot = useSyncExternalStore(
-    subscribeAudioDevices,
-    getAudioDevicesSnapshot,
+    subscribeMediaDevices,
+    getMediaDevicesSnapshot,
     () => EMPTY_SNAPSHOT,
   );
 

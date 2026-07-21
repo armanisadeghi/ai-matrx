@@ -10,8 +10,15 @@ import { assertFound } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
+// The crawl variant MUST join snapshot (that is how a session is filtered).
+// The site variant MUST NOT: PostgREST's embedded join over a 100k-edge site
+// times out (57014) even though the same SQL runs in 15ms — and the Recorded
+// column already falls back to created_at when no snapshot is embedded.
 const CRAWL_LINK_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, snapshot_id, source_page_id, target_url, target_page_id, is_internal, rel, anchor_text, http_status, position, source_page:page!link_edge_source_page_id_fkey(url), target_page:page!link_edge_target_page_id_fkey(url), snapshot:snapshot!inner(captured_at, session_id)";
+
+const SITE_LINK_SELECT =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, snapshot_id, source_page_id, target_url, target_page_id, is_internal, rel, anchor_text, http_status, position, source_page:page!link_edge_source_page_id_fkey(url), target_page:page!link_edge_target_page_id_fkey(url)";
 
 const SNAPSHOT_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted, seo_metrics, audit_metrics, page:page(url)";
@@ -131,12 +138,18 @@ async function listLinks(
   // No count on the row query: RLS runs iam.has_access per ROW, so an exact
   // count over a 100k-edge site is 100k access checks → statement timeout
   // (prod 57014). web.count_link_edges checks access ONCE, then counts.
-  let query = db
-    .from("link_edge")
-    .select(CRAWL_LINK_SELECT)
-    .eq("site_id", siteId)
-    .is("deleted_at", null);
-  if (crawlId) query = query.eq("snapshot.session_id", crawlId);
+  let query = crawlId
+    ? db
+        .from("link_edge")
+        .select(CRAWL_LINK_SELECT)
+        .eq("site_id", siteId)
+        .is("deleted_at", null)
+        .eq("snapshot.session_id", crawlId)
+    : db
+        .from("link_edge")
+        .select(SITE_LINK_SELECT)
+        .eq("site_id", siteId)
+        .is("deleted_at", null);
   const search = cleanSearch(state.search);
   if (search) {
     query = query.or(

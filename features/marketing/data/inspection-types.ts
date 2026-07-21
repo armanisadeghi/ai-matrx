@@ -13,11 +13,18 @@ export type InspectionSnapshotReference = Pick<
   "captured_at" | "session_id"
 >;
 
-/** Link row projected with the canonical source/target URL references. */
+/**
+ * Link row projected with the canonical source/target URL references.
+ *
+ * `snapshot` is embedded ONLY by the crawl-scoped read (it is how a session is
+ * filtered). The site-scoped read deliberately omits the join — PostgREST's
+ * embedded join over a 100k-edge site hits a statement timeout — so consumers
+ * must fall back to `created_at` when it is absent.
+ */
 export type InspectionLinkRow = InspectionLinkEdge & {
   source_page: InspectionPageReference | null;
   target_page: InspectionPageReference | null;
-  snapshot: InspectionSnapshotReference | null;
+  snapshot?: InspectionSnapshotReference | null;
 };
 
 /** Minimal link-edge projection fetched for the link-graph visualization. */

@@ -76,9 +76,30 @@ export function nodeSize(inlinks: number, maxInlinks: number): number {
   return NODE_MIN_SIZE + t * (NODE_MAX_SIZE - NODE_MIN_SIZE);
 }
 
+const SECTION_MIN_SIZE = 28;
+const SECTION_MAX_SIZE = 96;
+
+/** Section node size by page count — the section view's primary quantity. */
+export function sectionSize(pageCount: number, maxPageCount: number): number {
+  if (maxPageCount <= 1) return SECTION_MIN_SIZE;
+  const t = Math.sqrt(pageCount) / Math.sqrt(maxPageCount);
+  return SECTION_MIN_SIZE + t * (SECTION_MAX_SIZE - SECTION_MIN_SIZE);
+}
+
+/**
+ * Truncate a label for the canvas. Labels are the #1 cause of an unreadable
+ * graph — a full URL on every node covers the canvas at any real page count.
+ * Node labels are ALWAYS a single path segment; this is the hard backstop.
+ */
+export function truncateLabel(label: string, max = 18): string {
+  return label.length <= max ? label : `${label.slice(0, max - 1)}…`;
+}
+
 /** Directed stylesheet: kg-graph base + link-graph edge/node overrides. */
 export function buildLinkGraphStylesheet(
   mode: ThemeMode,
+  /** Hide labels on nodes below this size (page-level view at scale). */
+  labelMinSize = 0,
 ): cytoscape.StylesheetJsonBlock[] {
   const chrome = kgChrome(mode);
 
@@ -104,6 +125,35 @@ export function buildLinkGraphStylesheet(
 
   return [
     ...buildStylesheet(chrome),
+    // Label discipline — the difference between a map and a wall of text:
+    // wrapped, width-bounded, ellipsized, and centered under the node.
+    {
+      selector: "node",
+      style: {
+        "text-wrap": "wrap",
+        "text-max-width": "96px",
+        "text-valign": "bottom",
+        "text-margin-y": 3,
+        "font-size": 10,
+      } satisfies cytoscape.Css.Node,
+    },
+    // At scale only the hubs keep a label; everything else reveals its label
+    // on hover/selection (the kg engine's highlight classes).
+    ...(labelMinSize > 0
+      ? [
+          {
+            selector: `node[size < ${labelMinSize}]`,
+            style: { label: "" } satisfies cytoscape.Css.Node,
+          },
+          {
+            selector: `node[size < ${labelMinSize}].${KG_CLASS.highlight}, node[size < ${labelMinSize}]:selected`,
+            style: {
+              label: "data(label)",
+              "z-index": 30,
+            } satisfies cytoscape.Css.Node,
+          },
+        ]
+      : []),
     { selector: "edge", style: edge },
     {
       selector: "edge[?nofollow]",
@@ -124,6 +174,20 @@ export function buildLinkGraphStylesheet(
     {
       selector: "node[?external]",
       style: { shape: "diamond" } satisfies cytoscape.Css.Node,
+    },
+    // Folders (aggregated sections) read as containers, not pages, and always
+    // keep their label — they are the map's legend.
+    {
+      selector: "node[?isFolder]",
+      style: {
+        shape: "round-rectangle",
+        "border-width": 2,
+        "border-color": chrome.selectedRing,
+        "border-opacity": 0.35,
+        "font-weight": 600,
+        "text-max-width": "120px",
+        label: "data(label)",
+      } satisfies cytoscape.Css.Node,
     },
     {
       selector: "node[?isRoot]",

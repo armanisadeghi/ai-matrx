@@ -3070,6 +3070,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-integrations/exchange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange */
+        post: operations["exchange_google_integrations_exchange_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect */
+        post: operations["disconnect_google_integrations_disconnect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/internal/credential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Internal Credential
+         * @description Resolve a Google connection's refresh token + OAuth client for a
+         *     trusted server-side consumer (the standalone scraper's GSC sync).
+         */
+        get: operations["internal_credential_google_integrations_internal_credential_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/utilities/block-processing/process": {
         parameters: {
             query?: never;
@@ -23573,6 +23628,38 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** GoogleConnectionCredentialResponse */
+        GoogleConnectionCredentialResponse: {
+            /** Refresh Token */
+            refresh_token: string;
+            /** Client Id */
+            client_id: string;
+            /** Client Secret */
+            client_secret: string;
+        };
+        /** GoogleDisconnectRequest */
+        GoogleDisconnectRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
+        /** GoogleExchangeRequest */
+        GoogleExchangeRequest: {
+            /** Code */
+            code: string;
+            /** Redirect Uri */
+            redirect_uri: string;
+            /** Client Id */
+            client_id: string;
+            /** Owner Type */
+            owner_type: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** GoogleExchangeResponse */
+        GoogleExchangeResponse: {
+            /** Connection Id */
+            connection_id: string;
+        };
         /** GrantPermissionRequest */
         GrantPermissionRequest: {
             /** Grantee Id */
@@ -40160,6 +40247,102 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrganizationSecretSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_google_integrations_exchange_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleExchangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleExchangeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_google_integrations_disconnect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleDisconnectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_credential_google_integrations_internal_credential_get: {
+        parameters: {
+            query: {
+                connection_id: string;
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleConnectionCredentialResponse"];
                 };
             };
             /** @description Validation Error */

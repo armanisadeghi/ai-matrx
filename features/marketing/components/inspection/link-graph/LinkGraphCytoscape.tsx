@@ -25,18 +25,32 @@ import {
   zoomByFactor,
 } from "@/features/kg-graph/cytoscape/ops";
 
-import type { LinkGraphEdge, LinkGraphNode } from "./model";
-import { buildLinkGraphStylesheet, nodeColor, nodeSize, type LinkColorMode } from "./style";
+import type { LinkGraphEdge } from "./model";
+import { buildLinkGraphStylesheet, truncateLabel } from "./style";
 import { buildLinkLayout, type LinkLayoutId } from "./layouts";
 
+/** One canvas element, already reduced to what the renderer needs. */
+export interface LinkGraphElement {
+  id: string;
+  label: string;
+  color: string;
+  size: number;
+  external: boolean;
+  isRoot: boolean;
+  isFolder: boolean;
+  /** 0-1 rank for the concentric layout (kg engine contract). */
+  importance: number;
+}
+
 export interface LinkGraphCytoscapeProps {
-  nodes: LinkGraphNode[];
+  elements: LinkGraphElement[];
   edges: LinkGraphEdge[];
   rootId: string | null;
-  colorMode: LinkColorMode;
   layoutId: LinkLayoutId;
   selectedId: string | null;
   searchQuery: string;
+  /** Hide labels below this node size (0 = label everything). */
+  labelMinSize: number;
   onNodeClick: (id: string) => void;
   onBackgroundClick: () => void;
 }
@@ -70,22 +84,24 @@ function runLayoutAndFit(
 }
 
 function buildElements(
-  nodes: LinkGraphNode[],
+  elements: LinkGraphElement[],
   edges: LinkGraphEdge[],
-  colorMode: LinkColorMode,
 ): cytoscape.ElementDefinition[] {
-  const maxInlinks = nodes.reduce((max, n) => Math.max(max, n.inlinks), 0);
-  const nodeElements = nodes.map((node) => ({
+  const nodeElements = elements.map((node) => ({
     group: "nodes" as const,
     data: {
       id: node.id,
-      label: node.label,
-      color: nodeColor(node, colorMode),
-      size: nodeSize(node.inlinks, maxInlinks),
+      // Labels are truncated HERE so no canvas path can leak a full URL.
+      label: node.label
+        .split("\n")
+        .map((line) => truncateLabel(line))
+        .join("\n"),
+      color: node.color,
+      size: node.size,
       external: node.external,
       isRoot: node.isRoot,
-      // concentric layout ranks by `importance` (kg engine contract).
-      importance: maxInlinks > 0 ? node.inlinks / maxInlinks : 0,
+      isFolder: node.isFolder,
+      importance: node.importance,
     },
   }));
   const edgeElements = edges.map((edge) => ({
@@ -103,13 +119,13 @@ function buildElements(
 }
 
 export default function LinkGraphCytoscape({
-  nodes,
+  elements,
   edges,
   rootId,
-  colorMode,
   layoutId,
   selectedId,
   searchQuery,
+  labelMinSize,
   onNodeClick,
   onBackgroundClick,
 }: LinkGraphCytoscapeProps) {
@@ -119,14 +135,14 @@ export default function LinkGraphCytoscape({
   const minimapId = `link-mm-${useId().replace(/:/g, "")}`;
 
   // Latest layout/root for the data effect (written in an effect per hooks rules).
-  const cfg = useRef({ layoutId, rootId, colorMode });
+  const cfg = useRef({ layoutId, rootId });
   useEffect(() => {
-    cfg.current = { layoutId, rootId, colorMode };
+    cfg.current = { layoutId, rootId };
   });
 
   const { containerRef, getCy } = useKgCytoscape({
     minimapSelector: `#${minimapId}`,
-    initialStyle: buildLinkGraphStylesheet(mode),
+    initialStyle: buildLinkGraphStylesheet(mode, labelMinSize),
     selectedId,
     onNodeTap: onNodeClick,
     onBackgroundTap: onBackgroundClick,
@@ -141,37 +157,25 @@ export default function LinkGraphCytoscape({
     cy.stop(true);
     cy.batch(() => {
       cy.elements().remove();
-      cy.add(buildElements(nodes, edges, cfg.current.colorMode));
+      cy.add(buildElements(elements, edges));
     });
     runLayoutAndFit(
       cy,
       buildLinkLayout(
         cfg.current.layoutId,
         false,
-        nodes.length,
+        elements.length,
         cfg.current.rootId,
       ),
     );
-  }, [nodes, edges]);
+  }, [elements, edges]);
 
   // THEME → swap stylesheet in place (no re-layout).
   useEffect(() => {
     const cy = getCy();
-    if (cy) cy.style().fromJson(buildLinkGraphStylesheet(mode)).update();
-  }, [mode]);
-
-  // COLOR MODE → repoint node colors without re-layout.
-  useEffect(() => {
-    const cy = getCy();
-    if (!cy) return;
-    const byId = new Map(nodes.map((n) => [n.id, n]));
-    cy.batch(() => {
-      cy.nodes().forEach((el) => {
-        const node = byId.get(el.id());
-        if (node) el.data("color", nodeColor(node, colorMode));
-      });
-    });
-  }, [colorMode]);
+    if (cy)
+      cy.style().fromJson(buildLinkGraphStylesheet(mode, labelMinSize)).update();
+  }, [mode, labelMinSize]);
 
   // LAYOUT → re-run on switch (mount run handled by the data effect). The
   // skip-first-run ref MUST reset on unmount: it survives a StrictMode

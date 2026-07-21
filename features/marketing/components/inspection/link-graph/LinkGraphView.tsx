@@ -11,7 +11,9 @@ import { type CSSProperties, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
+  ChevronRight,
   ExternalLink,
+  FolderTree,
   Globe,
   Link2Off,
   Network,
@@ -45,9 +47,11 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 
 import {
   buildLinkGraph,
+  buildSectionGraph,
   displayUrl,
   type LinkGraphModel,
   type LinkGraphNode,
+  type SectionGraphNode,
 } from "./model";
 import {
   depthColor,
@@ -56,6 +60,9 @@ import {
   LINK_STATUS_COLORS,
   LINK_STATUS_LABELS,
   LINK_UNREACHED_COLOR,
+  nodeColor,
+  nodeSize,
+  sectionSize,
   type LinkColorMode,
 } from "./style";
 import { LINK_LAYOUTS, type LinkLayoutId } from "./layouts";
@@ -326,6 +333,101 @@ function NodePanel({
   );
 }
 
+/** Drill-down panel for one aggregated section. */
+function SectionPanel({
+  node,
+  sitePath,
+  onDrillIn,
+  onClose,
+}: {
+  node: SectionGraphNode;
+  sitePath: string;
+  onDrillIn: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <aside className="flex w-72 shrink-0 flex-col border-l border-border bg-card">
+      <div className="flex items-start justify-between gap-2 border-b border-border px-3 py-2.5">
+        <div className="min-w-0">
+          <p className="truncate font-mono text-xs font-semibold text-foreground">
+            {node.path}
+          </p>
+          <p className="text-[11px] capitalize text-muted-foreground">
+            {node.kind === "external" ? "External domain" : node.kind}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="shrink-0 text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 text-[11px]">
+        <dl className="grid grid-cols-2 gap-2">
+          {[
+            ["Pages", node.pageCount],
+            ["Inbound links", node.inlinks],
+            ["Outbound links", node.outlinks],
+            ["Links within", node.internalLinks],
+            ["Broken", node.brokenPages],
+            ["Orphans", node.orphanPages],
+          ].map(([label, value]) => (
+            <div key={label as string}>
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="font-semibold tabular-nums text-foreground">
+                {(value as number).toLocaleString()}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        {node.depth !== null ? (
+          <p className="text-muted-foreground">
+            Shallowest page is{" "}
+            <span className="font-semibold text-foreground">
+              {node.depth === 0 ? "the homepage" : `${node.depth} click(s) from home`}
+            </span>
+            .
+          </p>
+        ) : (
+          <p className="text-amber-600 dark:text-amber-400">
+            No page in this section is reachable from the homepage.
+          </p>
+        )}
+        {node.drillable ? (
+          <button
+            type="button"
+            onClick={onDrillIn}
+            className="w-full rounded-md border border-border px-2 py-1.5 font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            Open this section
+          </button>
+        ) : null}
+        {node.pageId ? (
+          <Link
+            href={`${sitePath}/pages/${node.pageId}`}
+            className="block truncate text-primary"
+          >
+            Open page record
+          </Link>
+        ) : null}
+        {node.kind === "external" ? (
+          <a
+            href={node.representativeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block truncate text-primary"
+          >
+            {node.representativeUrl}
+          </a>
+        ) : null}
+      </div>
+    </aside>
+  );
+}
+
 export function LinkGraphView({
   crawlId,
   onShowExternal,
@@ -344,6 +446,11 @@ export function LinkGraphView({
   const [splitQueryVariants, setSplitQueryVariants] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Directory drill-down: which path the map shows. "/" = the whole site.
+  const [focusPath, setFocusPath] = useState("/");
+  // Sections (aggregated by URL folder) is the only readable default at scale;
+  // page level is opt-in and only offered when the focus is small enough.
+  const [pageLevel, setPageLevel] = useState(false);
 
   const nodeCap =
     NODE_CAPS.find((c) => c.id === nodeCapId)?.cap ?? NODE_CAPS[1].cap;
@@ -360,10 +467,112 @@ export function LinkGraphView({
     [query.data, site.root_url, showExternal, splitQueryVariants, nodeCap],
   );
 
+  // Aggregate to the directory view at the current focus. This is what makes
+  // the map readable: ~5-40 section nodes instead of 200-3,000 page nodes.
+  const sectionModel = useMemo(
+    () => (model ? buildSectionGraph(model, focusPath) : null),
+    [model, focusPath],
+  );
+
+  // Page level is only honoured while the focus really is small.
+  const showPages = pageLevel && Boolean(sectionModel?.pageLevelViable);
+
+  // Page-level nodes are scoped to the focused folder, so drilling in and
+  // switching to pages shows THAT folder's pages, not the whole site.
+  const focusedPageNodes = useMemo(() => {
+    if (!model) return [];
+    if (focusPath === "/") return model.nodes;
+    const prefix = `${focusPath}/`;
+    return model.nodes.filter((node) => {
+      if (node.external) return false;
+      try {
+        const path = new URL(node.fullUrl).pathname.replace(/\/+$/, "") || "/";
+        return path === focusPath || path.startsWith(prefix);
+      } catch {
+        return false;
+      }
+    });
+  }, [model, focusPath]);
+
+  const focusedPageEdges = useMemo(() => {
+    if (!model) return [];
+    const ids = new Set(focusedPageNodes.map((node) => node.id));
+    return model.edges.filter(
+      (edge) => ids.has(edge.source) && ids.has(edge.target),
+    );
+  }, [model, focusedPageNodes]);
+
+  // ONE canvas contract for both modes — colors/sizes/labels precomputed here.
+  const canvas = useMemo(() => {
+    if (showPages) {
+      const maxInlinks = focusedPageNodes.reduce(
+        (max, node) => Math.max(max, node.inlinks),
+        0,
+      );
+      return {
+        elements: focusedPageNodes.map((node) => ({
+          id: node.id,
+          label: node.label,
+          color: nodeColor(node, colorMode),
+          size: nodeSize(node.inlinks, maxInlinks),
+          external: node.external,
+          isRoot: node.isRoot,
+          isFolder: false,
+          importance: maxInlinks > 0 ? node.inlinks / maxInlinks : 0,
+        })),
+        edges: focusedPageEdges,
+      };
+    }
+    const sections = sectionModel?.nodes ?? [];
+    const maxPages = sections.reduce(
+      (max, node) => Math.max(max, node.pageCount),
+      0,
+    );
+    return {
+      elements: sections.map((node) => ({
+        id: node.id,
+        label: node.label,
+        color:
+          node.kind === "external"
+            ? LINK_EXTERNAL_COLOR
+            : colorMode === "status" && node.brokenPages > 0
+              ? LINK_STATUS_COLORS.broken
+              : depthColor(node.depth),
+        size: sectionSize(node.pageCount, maxPages),
+        external: node.kind === "external",
+        isRoot: node.kind === "index" && node.path === "/",
+        isFolder: node.kind === "folder",
+        importance: maxPages > 0 ? node.pageCount / maxPages : 0,
+      })),
+      edges: sectionModel?.edges ?? [],
+    };
+  }, [showPages, focusedPageNodes, focusedPageEdges, sectionModel, colorMode]);
+
+  // At page level with many nodes, only hubs keep a standing label.
+  const labelMinSize = showPages && canvas.elements.length > 25 ? 26 : 0;
+
+  const selectedSection =
+    sectionModel && selectedId && !showPages
+      ? (sectionModel.nodes.find((node) => node.id === selectedId) ?? null)
+      : null;
+
   const selected =
-    model && selectedId
+    model && selectedId && showPages
       ? (model.nodes.find((n) => n.id === selectedId) ?? null)
       : null;
+
+  /** Click a folder → drill in. Click anything else → select it. */
+  const handleNodeClick = (id: string) => {
+    if (!showPages) {
+      const node = sectionModel?.nodes.find((candidate) => candidate.id === id);
+      if (node?.drillable) {
+        setFocusPath(node.path);
+        setSelectedId(null);
+        return;
+      }
+    }
+    setSelectedId(id);
+  };
 
   const copy = model
     ? webCopy({
@@ -506,14 +715,79 @@ export function LinkGraphView({
         />
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <span className="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
-            {model.nodes.length.toLocaleString()} pages ·{" "}
-            {model.edges.length.toLocaleString()} links
+            {showPages
+              ? `${canvas.elements.length.toLocaleString()} pages`
+              : `${canvas.elements.length.toLocaleString()} sections · ${(sectionModel?.pagesInFocus ?? 0).toLocaleString()} pages`}{" "}
+            · {canvas.edges.length.toLocaleString()} links
             {model.capped ? " · top pages shown" : ""}
             {query.data.truncated
               ? ` · newest ${query.data.rows.length.toLocaleString()} of ${query.data.total.toLocaleString()} rows`
               : ""}
           </span>
           {copy ? <CopyButtons size="icon" {...copy} /> : null}
+        </div>
+      </div>
+
+      {/* Drill-down breadcrumb + aggregation level */}
+      <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-1.5 text-[11px]">
+        <FolderTree className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        {sectionModel?.breadcrumb.map((crumb, index) => (
+          <span key={crumb.path} className="flex shrink-0 items-center gap-1.5">
+            {index > 0 ? (
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setFocusPath(crumb.path);
+                setSelectedId(null);
+              }}
+              disabled={crumb.path === focusPath}
+              className={cn(
+                "rounded px-1 py-0.5 font-mono",
+                crumb.path === focusPath
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              {crumb.label}
+            </button>
+          </span>
+        ))}
+        <div className="ml-auto flex shrink-0 items-center rounded-md border border-border p-0.5">
+          <button
+            type="button"
+            aria-pressed={!showPages}
+            onClick={() => setPageLevel(false)}
+            className={cn(
+              "rounded px-2 py-0.5 font-medium transition-colors",
+              !showPages
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Sections
+          </button>
+          <button
+            type="button"
+            aria-pressed={showPages}
+            disabled={!sectionModel?.pageLevelViable}
+            onClick={() => setPageLevel(true)}
+            title={
+              sectionModel?.pageLevelViable
+                ? "Show every page in this section"
+                : `Too many pages here to draw individually (${(sectionModel?.pagesInFocus ?? 0).toLocaleString()}) — drill into a section first`
+            }
+            className={cn(
+              "rounded px-2 py-0.5 font-medium transition-colors",
+              showPages
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+              !sectionModel?.pageLevelViable && "cursor-not-allowed opacity-40",
+            )}
+          >
+            Pages
+          </button>
         </div>
       </div>
 
@@ -583,14 +857,14 @@ export function LinkGraphView({
       <div className="relative flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1">
           <LinkGraphCytoscape
-            nodes={model.nodes}
-            edges={model.edges}
-            rootId={model.rootId}
-            colorMode={colorMode}
+            elements={canvas.elements}
+            edges={canvas.edges}
+            rootId={showPages ? model.rootId : focusPath}
             layoutId={layoutId}
             selectedId={selectedId}
             searchQuery={search}
-            onNodeClick={setSelectedId}
+            labelMinSize={labelMinSize}
+            onNodeClick={handleNodeClick}
             onBackgroundClick={() => setSelectedId(null)}
           />
           <GraphLegend colorMode={colorMode} showExternal={showExternal} />
@@ -601,6 +875,16 @@ export function LinkGraphView({
             model={model}
             rootUrl={site.root_url}
             sitePath={sitePath}
+            onClose={() => setSelectedId(null)}
+          />
+        ) : selectedSection ? (
+          <SectionPanel
+            node={selectedSection}
+            sitePath={sitePath}
+            onDrillIn={() => {
+              setFocusPath(selectedSection.path);
+              setSelectedId(null);
+            }}
             onClose={() => setSelectedId(null)}
           />
         ) : null}

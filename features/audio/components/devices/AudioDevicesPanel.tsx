@@ -47,12 +47,15 @@ import {
   audioContextSinkSupported,
   getPreferredOutputDeviceId,
 } from "@/features/audio/audioOutputSink";
-import type { AudioDeviceInfo } from "@/features/audio/audioDevices";
+import type { MediaDeviceDescriptor } from "@/features/media-devices/deviceManager";
 
 const SYSTEM_DEFAULT = "__system_default__";
 
 /** Friendly fallback label for a device whose label is blank (pre-grant). */
-function deviceLabel(d: AudioDeviceInfo, kind: "input" | "output"): string {
+function deviceLabel(
+  d: MediaDeviceDescriptor,
+  kind: "input" | "output",
+): string {
   if (d.label) return d.label;
   const short = d.deviceId ? d.deviceId.slice(0, 6) : "unknown";
   return kind === "input" ? `Microphone (${short})` : `Speaker (${short})`;
