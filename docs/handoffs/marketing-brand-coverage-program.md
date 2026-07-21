@@ -58,4 +58,6 @@ vision: []
 
 ## Decisions needed
 
+- **Org-wide site visibility.** Situation: a site is visible only to its creator and explicit shares; plain org membership conveys nothing, so teammates see neither sites nor their captures (file access faithfully mirrors site access via `iam.has_access_for_base`). Decide: org members automatically get viewer on all their org's `web.site` rows (agency-team model), or keep creator-plus-explicit-shares with the per-site Access page. Wire the choice through the canonical access architecture only.
+
 *(none — deploy in item 2 is an action, not a decision)*
