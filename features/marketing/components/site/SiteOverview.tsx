@@ -409,9 +409,9 @@ export function SiteOverview() {
                 variant="outline"
                 className="h-9 justify-start gap-2"
               >
-                <Link href={`${sitePath}/screenshots`}>
+                <Link href={`${sitePath}/coverage`}>
                   <ScanSearch className="h-4 w-4" />
-                  Screenshot gallery
+                  Coverage matrix
                 </Link>
               </Button>
             </div>
