@@ -109,6 +109,8 @@ export async function uploadInternal(
       onProgress: opts.onProgress
         ? (event) => opts.onProgress!(event.loaded, event.total)
         : undefined,
+      signal: opts.signal,
+      transport: opts.transport,
       createShareLink: opts.createShareLink,
       shareLinkPermissionLevel: opts.shareLinkPermissionLevel,
       shareLinkExpiresAt: opts.shareLinkExpiresAt,

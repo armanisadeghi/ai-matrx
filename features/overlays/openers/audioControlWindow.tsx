@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Opener for the `audioControlWindow` overlay — the compact "Audio" mini panel
- * (live recording indicator + global playback queue & transport).
+ * Opener for the `audioControlWindow` overlay — the compact "Media" panel
+ * (playback queue & transport, live recording indicator, camera/capture
+ * diagnostics, device pickers).
  *
  * - `useOpenAudioControlWindow()` — imperative hook. Call to open; returns a
  *   handle with a `close()` method.

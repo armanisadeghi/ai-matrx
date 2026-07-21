@@ -133,6 +133,60 @@ export function buildPhotoCaptureMetadata(
   };
 }
 
+export interface BuildVideoCaptureMetadataArgs {
+  source: CaptureSource;
+  sourceFeature: string;
+  sourceSettings: VisualSourceSettings;
+  framing: FramingMode;
+  mirroredOutput: boolean;
+  hasAudio: boolean;
+  /** The ACTUAL emitted/final Blob MIME (authoritative) — never the requested one. */
+  recorderMimeType: string;
+  /** ISO timestamp; defaults to now. */
+  capturedAt?: string;
+}
+
+/** Build the persisted `metadata.capture` payload for a recorded video. */
+export function buildVideoCaptureMetadata(
+  args: BuildVideoCaptureMetadataArgs,
+): VideoCaptureMetadata {
+  return {
+    version: 1,
+    captured_at: args.capturedAt ?? new Date().toISOString(),
+    source: args.source,
+    source_feature: args.sourceFeature,
+    artifact_kind: "video",
+    source_settings: args.sourceSettings,
+    framing: args.framing,
+    mirrored_output: args.mirroredOutput,
+    has_audio: args.hasAudio,
+    recorder_mime_type: args.recorderMimeType,
+  };
+}
+
+export interface BuildAudioCaptureMetadataArgs {
+  source: CaptureSource;
+  sourceFeature: string;
+  /** The ACTUAL emitted/final Blob MIME (authoritative) — never the requested one. */
+  recorderMimeType: string;
+  /** ISO timestamp; defaults to now. */
+  capturedAt?: string;
+}
+
+/** Build the persisted `metadata.capture` payload for a recorded audio clip. */
+export function buildAudioCaptureMetadata(
+  args: BuildAudioCaptureMetadataArgs,
+): AudioCaptureMetadata {
+  return {
+    version: 1,
+    captured_at: args.capturedAt ?? new Date().toISOString(),
+    source: args.source,
+    source_feature: args.sourceFeature,
+    artifact_kind: "audio",
+    recorder_mime_type: args.recorderMimeType,
+  };
+}
+
 // ─── Runtime validator ───────────────────────────────────────────────────────
 
 /**

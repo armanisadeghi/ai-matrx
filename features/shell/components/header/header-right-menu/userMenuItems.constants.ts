@@ -121,8 +121,8 @@ export const SETTINGS_ITEMS: OverlayMenuItemConfig[] = [
   },
   {
     overlayId: "audioControlWindow",
-    icon: "AudioLines",
-    label: "Audio",
+    icon: "MonitorSpeaker",
+    label: "Media",
     requiresAuth: false,
   },
 ];

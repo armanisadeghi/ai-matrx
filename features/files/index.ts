@@ -35,7 +35,12 @@
 //   useFile           — metadata + URLs + capabilities (Asset envelope)
 //   useFileSrc        — string URL for <img>/<video>/<audio> src
 //   useFileBlob       — bytes (with 3-tier cache: memory LRU → IDB → network)
-//   useFileUpload     — single upload primitive (auto buffered/presigned/TUS)
+//   useFileUpload     — single upload primitive. Transports that exist TODAY:
+//                       buffered multipart (default) and resumable TUS
+//                       (auto for files ≥ TUS_TRANSPORT_THRESHOLD_BYTES, or
+//                       UploadOpts.transport override). There is NO presigned
+//                       transport. TUS live E2E pending server deploy — see
+//                       features/files/handler/FEATURE.md § Transport policy.
 //   useFileMutation   — rename/move/delete/restore/share/permissions/metadata
 
 // Today's closest matches, re-exported from the existing locations:
@@ -244,6 +249,18 @@ export {
   setActiveFolderId,
 } from "@/features/files/redux/slice";
 export { selectTreeStatus } from "@/features/files/redux/selectors";
+
+// Upload/transport observability — the tracked-upload projection (progress
+// chips, capture diagnostics) and the folder map needed to scope it. Read-
+// only; mutation stays behind the thunks.
+export {
+  selectAllFoldersArray,
+  selectVisibleUploads,
+} from "@/features/files/redux/selectors";
+export {
+  listStoredTusUploads,
+  type StoredTusUploadSummary,
+} from "@/features/files/upload/tusUpload";
 
 // Imperative upload entry — opens the dedup-guard dialog when needed and
 // dispatches the upload thunk. Most callers should prefer `useFileUpload`;

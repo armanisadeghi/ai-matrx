@@ -382,6 +382,14 @@ export interface UploadOpts {
   inheritActiveScope?: boolean;
   /** Per-byte progress callback. */
   onProgress?: (loaded: number, total: number) => void;
+  /** Abort the upload (buffered XHR abort / TUS abort). */
+  signal?: AbortSignal;
+  /**
+   * Transport override. Default policy: files ≥
+   * `TUS_TRANSPORT_THRESHOLD_BYTES` (features/files/upload/cloudUpload.ts)
+   * go resumable TUS; smaller files use the buffered multipart POST.
+   */
+  transport?: "buffered" | "tus";
 
   /**
    * If true, the handler also creates a permanent share link after upload.

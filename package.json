@@ -314,6 +314,7 @@
     "tailwind-scrollbar-hide": "latest",
     "three": "latest",
     "ts-node": "latest",
+    "tus-js-client": "^4.3.1",
     "twilio": "^5.12.2",
     "unsplash-js": "latest",
     "uuid": "latest",

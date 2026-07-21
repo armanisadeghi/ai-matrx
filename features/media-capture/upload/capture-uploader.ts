@@ -12,16 +12,17 @@
  * throws loudly here rather than persisting a contract violation.
  */
 
-import { fileHandler } from "@/features/files/handler/handler";
-import type { NormalizedFile } from "@/features/files/handler/types";
 import {
+  fileHandler,
   CloudFolders,
   resolveDefaultVisibility,
-} from "@/features/files/utils/folder-conventions";
+  type NormalizedFile,
+} from "@/features/files";
 import {
   isCaptureMetadata,
   type CaptureMetadata,
 } from "@/features/media-capture/core/capture-types";
+import { recordCaptureFailure } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
 
 /** Canonical folder for each captured artifact kind. */
 export function captureFolderFor(
@@ -61,22 +62,37 @@ export async function uploadCapture(
   }
 
   const folderPath = captureFolderFor(args.capture.artifact_kind);
-  const uploaded = await fileHandler.upload(
-    { kind: "file", file: args.file },
-    {
-      folderPath,
-      visibility: resolveDefaultVisibility(folderPath),
-      fileName: args.file.name,
-      metadata: { capture: args.capture },
-      ...(args.onProgress ? { onProgress: args.onProgress } : {}),
-    },
-  );
-
-  if (!uploaded.fileId) {
-    throw new Error(
-      "[capture-uploader] upload resolved without a fileId — the capture is " +
-        "not durably addressable. Treat as an upload failure.",
+  try {
+    const uploaded = await fileHandler.upload(
+      { kind: "file", file: args.file },
+      {
+        folderPath,
+        visibility: resolveDefaultVisibility(folderPath),
+        fileName: args.file.name,
+        metadata: { capture: args.capture },
+        ...(args.onProgress ? { onProgress: args.onProgress } : {}),
+      },
     );
+
+    if (!uploaded.fileId) {
+      throw new Error(
+        "[capture-uploader] upload resolved without a fileId — the capture is " +
+          "not durably addressable. Treat as an upload failure.",
+      );
+    }
+    return uploaded;
+  } catch (err) {
+    // Terminal upload failure → diagnostics ring, WITH the retry payload so
+    // /camera and the Media window can re-invoke this uploader. The error
+    // still propagates — recording it never swallows it.
+    recordCaptureFailure({
+      scope: "upload",
+      message:
+        err instanceof Error
+          ? err.message
+          : `Upload of "${args.file.name}" failed.`,
+      retry: { file: args.file, capture: args.capture },
+    });
+    throw err;
   }
-  return uploaded;
 }

@@ -1,21 +1,30 @@
 "use client";
 
 /**
- * AudioControlWindow — the app-wide "Audio" panel.
+ * AudioControlWindow — the app-wide "Media" panel.
  *
- * The single, live view of EVERY audio activity in the session — playback and
- * recording, in progress and in history — backed by the unified
- * `audioSessionRegistry` (features/audio/session). Three synced tabs:
+ * (The overlayId stays `audioControlWindow` and the component/window ids are
+ * unchanged — only the user-facing title moved from "Audio" to "Media" when
+ * the Camera tab landed in Phase 8 of the media-capture plan. Zero opener
+ * breakage by design.)
+ *
+ * The single, live view of EVERY audio + capture activity in the session —
+ * playback and recording, in progress and in history — backed by the unified
+ * `audioSessionRegistry` (features/audio/session) and the framework-free
+ * `mediaCaptureDiagnostics` registry. Four synced tabs:
  *
  *   1. Playback — now-playing transport (works for the chat read-aloud, the
  *      streaming auto-voice, the playback queue, and — later — podcasts / the
  *      voice agent), up-next, and replayable history.
  *   2. Recording — the live mic indicator + level (from `state.recordings`,
  *      the GlobalRecordingProvider mirror) and recording history.
- *   3. Devices — mic/speaker pickers, permission, test tones.
+ *   3. Camera — read-only media-capture diagnostics: active camera leases,
+ *      pin/recording-lock owners, live capture sessions, transport state,
+ *      recoverable journals (links to /camera). Never acquires a camera.
+ *   4. Devices — mic/speaker/camera pickers, permission, test tones.
  *
- * All three read live Redux selectors, so switching tabs never loses state and
- * incoming audio appends in real time regardless of the active tab.
+ * All tabs read live external stores, so switching tabs never loses state and
+ * incoming activity appends in real time regardless of the active tab.
  *
  * This file is a leaf, loaded ONLY behind the lazy overlay boundary
  * (`lazyOverlay` in OverlayController). It imports NO TTS SDK — only SDK-free
@@ -25,6 +34,7 @@
 import { useState, useTransition, type ReactNode } from "react";
 import {
   AudioLines,
+  Camera,
   History,
   ChevronDown,
   ChevronRight,
@@ -47,6 +57,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useGlobalRecordingOptional } from "@/providers/GlobalRecordingProvider";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
+import { CameraControlTab } from "@/features/media-capture/components/CameraControlTab";
 import { AudioLevelIndicator } from "@/features/audio/components/AudioLevelIndicator";
 import { useAudioPlayback } from "@/features/audio/playback/useAudioPlayback";
 import { useAudioSessions } from "@/features/audio/session/useAudioSessions";
@@ -62,7 +73,7 @@ interface AudioControlWindowProps {
 
 const SPEED_OPTIONS = [0.5, 1, 1.5, 2] as const;
 
-type AudioTab = "playback" | "recording" | "devices";
+type AudioTab = "playback" | "recording" | "camera" | "devices";
 
 export default function AudioControlWindow({
   isOpen,
@@ -71,7 +82,7 @@ export default function AudioControlWindow({
   if (!isOpen) return null;
   return (
     <WindowPanel
-      title="Audio"
+      title="Media"
       id="audio-control-default"
       overlayId="audioControlWindow"
       onClose={onClose}
@@ -103,11 +114,11 @@ function AudioControlBody() {
     ? `${requestedTab.tab}:${requestedTab.nonce ?? ""}`
     : null;
   const [tab, setTab] = useState<AudioTab>(
-    requestedTab?.tab === "devices"
-      ? "devices"
-      : requestedTab?.tab === "recording"
-        ? "recording"
-        : "playback",
+    requestedTab?.tab === "devices" ||
+      requestedTab?.tab === "recording" ||
+      requestedTab?.tab === "camera"
+      ? requestedTab.tab
+      : "playback",
   );
   // Sync to an externally-requested tab (the Devices opener) by adjusting state
   // during render — the React-blessed alternative to a setState-in-effect — so a
@@ -130,6 +141,11 @@ function AudioControlBody() {
         <section className="space-y-1.5">
           <SectionLabel>Recording</SectionLabel>
           <RecordingSurface />
+        </section>
+        <div className="h-px bg-border" />
+        <section className="space-y-1.5">
+          <SectionLabel>Camera</SectionLabel>
+          <CameraControlTab />
         </section>
         <div className="h-px bg-border" />
         <section className="space-y-1.5">
@@ -156,6 +172,12 @@ function AudioControlBody() {
           label="Recording"
         />
         <TabButton
+          active={tab === "camera"}
+          onClick={() => setTab("camera")}
+          icon={<Camera />}
+          label="Camera"
+        />
+        <TabButton
           active={tab === "devices"}
           onClick={() => setTab("devices")}
           icon={<Settings2 />}
@@ -165,6 +187,7 @@ function AudioControlBody() {
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2.5 text-foreground">
         {tab === "playback" && <PlaybackSurface />}
         {tab === "recording" && <RecordingSurface />}
+        {tab === "camera" && <CameraControlTab />}
         {tab === "devices" && <MediaDevicesPanel />}
       </div>
     </div>

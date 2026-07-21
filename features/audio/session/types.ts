@@ -52,6 +52,7 @@ export type AudioSessionSource =
   | "podcast" // podcast episode player
   | "voice-agent" // xAI realtime voice agent
   | "recording" // mic capture (transcription, voice message, etc.)
+  | "media-capture" // Capture Studio video/audio recording (features/media-capture)
   | "other";
 
 /** One audio activity — serializable; mirrored into Redux. */

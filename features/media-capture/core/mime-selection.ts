@@ -57,6 +57,22 @@ export function selectRecordingMime(
   return null;
 }
 
+/**
+ * The FULL ordered candidate list for constructor-confirmed fallthrough:
+ * every ladder entry the injected `isTypeSupported` accepts, then `null`
+ * (browser-default construction) as the last rung. The recorder controller
+ * walks this list constructing + starting a MediaRecorder per rung; only when
+ * EVERY rung fails is the environment truly unable to record (typed
+ * `unsupported-codec` terminal error there).
+ */
+export function recordingMimeCandidates(
+  kind: RecordingKind,
+  isTypeSupported: (type: string) => boolean,
+): Array<string | null> {
+  const ladder = kind === "video" ? VIDEO_MIME_LADDER : AUDIO_MIME_LADDER;
+  return [...ladder.filter((c) => isTypeSupported(c)), null];
+}
+
 /** Container (parameter-free, lowercased) MIME → file extension, for the
  * video/image containers this pipeline emits. Audio is delegated to
  * `features/audio/utils/audio-mime.ts`. */

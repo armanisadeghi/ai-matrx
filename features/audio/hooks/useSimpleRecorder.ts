@@ -1,8 +1,18 @@
 /**
  * Simple Audio Recorder Hook
- * 
- * Lightweight hook for recording audio without IndexedDB storage
- * Optimized for quick transcription use cases
+ *
+ * Lightweight hook for recording audio without IndexedDB storage —
+ * optimized for quick transcription use cases (voice messages, quick
+ * transcripts). The raw MediaRecorder mechanics (MIME ladder confirmation,
+ * lifecycle, pause-aware elapsed time, chunk emission) live in the ONE
+ * canonical controller — `features/media-capture/recording/
+ * media-recorder-controller.ts` — this hook only composes the audio-system
+ * discipline around it: captureLock claim/release, the shared mic singleton,
+ * the audio session registry row, and the analyser level meter.
+ *
+ * Public API is unchanged: { isRecording, isPaused, duration, audioBlob,
+ * audioLevel, startRecording, stopRecording, pauseRecording,
+ * resumeRecording, reset }.
  */
 
 'use client';
@@ -17,6 +27,10 @@ import {
 import { claimCapture, releaseCapture } from '@/features/audio/captureLock';
 import { beginRecordingSession } from '@/features/audio/session/audioSessionRegistry';
 import type { PlaybackSessionHandle } from '@/features/audio/session/types';
+import {
+  createMediaRecorderController,
+  type MediaRecorderController,
+} from '@/features/media-capture/recording/media-recorder-controller';
 
 export interface UseSimpleRecorderProps {
   onRecordingComplete?: (blob: Blob) => void;
@@ -38,19 +52,17 @@ export function useSimpleRecorder({
 
   // Stable id for the app-wide capture lock (one live capture, anywhere).
   const captureId = useId();
-  // Set when another recorder takes over via the lock — the imminent
-  // MediaRecorder.onstop must DISCARD (never auto-deliver a half-recorded blob).
+  // Set when another recorder takes over via the lock — the controller's
+  // terminal must DISCARD (never auto-deliver a half-recorded blob).
   const takenOverRef = useRef(false);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const controllerRef = useRef<MediaRecorderController | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   // Whether we hold a ref on the shared mic stream — keeps acquire/release
   // balanced exactly once across the cleanup / stop / unmount paths.
   const micHeldRef = useRef(false);
   const chunksRef = useRef<Blob[]>([]);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const pausedTimeRef = useRef<number>(0);
   // The shared AudioContext is never closed (only resumed); we only own the
   // analyser + the source node we connect into it, and disconnect those.
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -100,11 +112,11 @@ export function useSimpleRecorder({
       micHeldRef.current = false;
     }
 
-    if (mediaRecorderRef.current) {
-      if (mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
+    if (controllerRef.current) {
+      if (controllerRef.current.getState() !== 'ended') {
+        controllerRef.current.cancel();
       }
-      mediaRecorderRef.current = null;
+      controllerRef.current = null;
     }
 
     chunksRef.current = [];
@@ -138,12 +150,7 @@ export function useSimpleRecorder({
         label: 'Audio recorder',
         stop: () => {
           takenOverRef.current = true;
-          if (
-            mediaRecorderRef.current &&
-            mediaRecorderRef.current.state !== 'inactive'
-          ) {
-            mediaRecorderRef.current.stop();
-          }
+          controllerRef.current?.stop();
           setIsRecording(false);
           setIsPaused(false);
         },
@@ -181,75 +188,70 @@ export function useSimpleRecorder({
 
         const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
         analyserRef.current.getByteFrequencyData(dataArray);
-        
+
         // Calculate average audio level (0-100)
         const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
         const normalizedLevel = Math.min(100, (average / 255) * 150); // Scale up for better visibility
-        
+
         setAudioLevel(normalizedLevel);
         animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
       };
       updateAudioLevel();
 
-      // Determine best MIME type
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
-
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
-
-      // Handle data available
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
-        }
-      };
-
-      // Handle recording stop
-      mediaRecorder.onstop = () => {
-        // Keep state in sync no matter how the stop was triggered (the panel's
-        // session control stops the MediaRecorder directly, not via stopRecording).
-        setIsRecording(false);
-        setIsPaused(false);
-        // Discard on takeover — don't deliver a half-recorded blob the user
-        // abandoned by starting another capture.
-        if (takenOverRef.current) {
-          takenOverRef.current = false;
+      // The canonical controller owns the MIME ladder (constructor-confirmed
+      // fallthrough), the lifecycle, and pause-aware elapsed time.
+      const controller = createMediaRecorderController({
+        stream,
+        kind: 'audio',
+        timesliceMs: 100, // Collect data every 100ms (unchanged cadence)
+        onChunk: (chunk) => {
+          chunksRef.current.push(chunk);
+        },
+        onTerminal: (terminal) => {
+          // Keep state in sync no matter how the stop was triggered (the
+          // panel's session control stops the controller directly).
+          setIsRecording(false);
+          setIsPaused(false);
+          // Discard on takeover — don't deliver a half-recorded blob the user
+          // abandoned by starting another capture.
+          if (takenOverRef.current || terminal.reason === 'cancelled') {
+            takenOverRef.current = false;
+            cleanup();
+            return;
+          }
+          if (terminal.reason === 'unsupported-codec' || terminal.reason === 'recorder-error') {
+            const errorSolution = getErrorSolution(terminal.error);
+            onError?.(errorSolution.message, errorSolution.code);
+            cleanup();
+            return;
+          }
+          // The emitted/controller MIME is authoritative for the final blob.
+          const mime = terminal.mime ?? chunksRef.current[0]?.type ?? 'audio/webm';
+          const blob = new Blob(chunksRef.current, { type: mime });
+          setAudioBlob(blob);
+          onRecordingComplete?.(blob);
           cleanup();
-          return;
-        }
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        setAudioBlob(blob);
-        onRecordingComplete?.(blob);
-        cleanup();
-      };
-
-      // Start recording
-      mediaRecorder.start(100); // Collect data every 100ms
+        },
+      });
+      controllerRef.current = controller;
+      await controller.start();
       setIsRecording(true);
       setIsPaused(false);
       // Surface in the unified Audio panel; stop control ends this recorder
-      // (the MediaRecorder's onstop drives state + cleanup).
+      // (the controller's terminal drives state + cleanup).
       recordingSessionRef.current = beginRecordingSession({
         label,
         controls: {
-          stop: () => {
-            const mr = mediaRecorderRef.current;
-            if (mr && mr.state !== 'inactive') mr.stop();
-          },
+          stop: () => controllerRef.current?.stop(),
         },
       });
-      startTimeRef.current = Date.now();
-      pausedTimeRef.current = 0;
 
-      // Start duration counter
+      // Duration counter — the controller's pause-aware monotonic clock is
+      // the single source of truth.
       durationIntervalRef.current = setInterval(() => {
-        const elapsed = (Date.now() - startTimeRef.current - pausedTimeRef.current) / 1000;
-        setDuration(Math.floor(elapsed));
+        const c = controllerRef.current;
+        if (c) setDuration(Math.floor(c.getElapsedMs() / 1000));
       }, 100);
-
     } catch (err) {
       const errorSolution = getErrorSolution(err);
       console.error('Recording error:', err, errorSolution);
@@ -259,11 +261,12 @@ export function useSimpleRecorder({
   }, [cleanup, onRecordingComplete, onError, captureId, label]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+    const c = controllerRef.current;
+    if (c && c.getState() !== 'ended') {
+      c.stop();
       setIsRecording(false);
       setIsPaused(false);
-      
+
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
         durationIntervalRef.current = null;
@@ -272,10 +275,11 @@ export function useSimpleRecorder({
   }, []);
 
   const pauseRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.pause();
+    const c = controllerRef.current;
+    if (c && c.getState() === 'recording') {
+      c.pause();
       setIsPaused(true);
-      
+
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
         durationIntervalRef.current = null;
@@ -284,16 +288,14 @@ export function useSimpleRecorder({
   }, []);
 
   const resumeRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
-      mediaRecorderRef.current.resume();
+    const c = controllerRef.current;
+    if (c && c.getState() === 'paused') {
+      c.resume();
       setIsPaused(false);
-      
-      const pauseDuration = Date.now() - startTimeRef.current - pausedTimeRef.current;
-      pausedTimeRef.current += pauseDuration;
-      
+
       durationIntervalRef.current = setInterval(() => {
-        const elapsed = (Date.now() - startTimeRef.current - pausedTimeRef.current) / 1000;
-        setDuration(Math.floor(elapsed));
+        const ctrl = controllerRef.current;
+        if (ctrl) setDuration(Math.floor(ctrl.getElapsedMs() / 1000));
       }, 100);
     }
   }, []);
@@ -319,4 +321,3 @@ export function useSimpleRecorder({
     reset,
   };
 }
-

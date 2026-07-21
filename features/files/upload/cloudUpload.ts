@@ -64,8 +64,34 @@ import {
   upsertFile,
 } from "@/features/files/redux/slice";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
+// eslint-disable-next-line no-restricted-imports -- transport sibling INSIDE the ring-fenced upload internals; cloudUpload is the ONE transport-policy chokepoint
+import {
+  buildUploadMetadataEnvelope,
+  tusUploadRaw,
+} from "@/features/files/upload/tusUpload";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { PermissionLevel, Visibility } from "@/features/files/types";
+
+// ─── Transport policy ────────────────────────────────────────────────────
+
+/**
+ * Files at or above this size route through the resumable TUS transport
+ * (`tusUpload.ts`); smaller files use the buffered multipart POST. Starting
+ * value 80 MB — tune only on evidence. Callers can force either transport
+ * via `CloudUploadOptions.transport`.
+ */
+export const TUS_TRANSPORT_THRESHOLD_BYTES = 80 * 1024 * 1024;
+
+export type UploadTransport = "buffered" | "tus";
+
+/** The ONE place the buffered-vs-TUS decision is made. */
+export function resolveUploadTransport(
+  fileSizeBytes: number,
+  override?: UploadTransport,
+): UploadTransport {
+  if (override) return override;
+  return fileSizeBytes >= TUS_TRANSPORT_THRESHOLD_BYTES ? "tus" : "buffered";
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -98,6 +124,11 @@ export interface CloudUploadOptions {
   /** Progress callback (XHR upload progress). */
   onProgress?: (event: UploadProgressEvent) => void;
   signal?: AbortSignal;
+  /**
+   * Transport override. Default: `resolveUploadTransport` picks TUS for
+   * files ≥ `TUS_TRANSPORT_THRESHOLD_BYTES`, buffered otherwise.
+   */
+  transport?: UploadTransport;
   /**
    * If true, also creates a permanent share link after upload. Returns
    * the `shareUrl` (`/s/:token`) and the raw `shareToken`.
@@ -229,6 +260,23 @@ export async function cloudUploadRaw(
   const filePath = resolveFilePath(file, options);
   const requestId = newRequestId();
 
+  // Transport policy: large files (or an explicit override) go resumable.
+  if (resolveUploadTransport(file.size, options.transport) === "tus") {
+    const tusResult = await tusUploadRaw(file, filePath, options, requestId);
+    if (!tusResult.ok || !options.createShareLink) return tusResult;
+    try {
+      const link = await mintUploadShareLink(tusResult.fileId, options);
+      return { ...tusResult, ...link };
+    } catch (linkErr) {
+      return {
+        ok: false,
+        error: `File uploaded but share link couldn't be created: ${extractErrorMessage(linkErr)}`,
+        errorCode: "share_link_failed",
+        fileName: file.name,
+      };
+    }
+  }
+
   try {
     const params = {
       file,
@@ -237,11 +285,9 @@ export async function cloudUploadRaw(
       shareWith: options.shareWith,
       shareLevel: options.shareLevel,
       changeSummary: options.changeSummary,
-      metadata: {
-        // Origin tag aids backend log triage when something goes wrong.
-        origin: "cloudUpload",
-        ...(options.metadata ?? {}),
-      },
+      // Shared envelope builder — the SAME object the TUS transport encodes
+      // into Upload-Metadata's `metadata_json` (parity is unit-tested).
+      metadata: buildUploadMetadataEnvelope(options.metadata),
     };
 
     const upload = options.onProgress
@@ -347,48 +393,100 @@ export async function cloudUpload(
   });
 
   try {
-    const params = {
-      file,
-      filePath,
-      visibility: options.visibility ?? "private",
-      shareWith: options.shareWith,
-      shareLevel: options.shareLevel,
-      changeSummary: options.changeSummary,
-      metadata: {
-        origin: "cloudUpload",
-        ...(options.metadata ?? {}),
-      },
+    let uploadData: {
+      file_id: string;
+      file_path: string;
+      size_bytes: number | null;
+      checksum: string | null;
+      version_number: number;
+      url: string | null;
     };
 
-    const upload = await Files_uploadFileWithProgress(
-      params,
-      (ev) => {
+    if (resolveUploadTransport(file.size, options.transport) === "tus") {
+      // Resumable transport — same Redux progress/tracking as buffered.
+      const tusResult = await tusUploadRaw(
+        file,
+        filePath,
+        {
+          ...options,
+          onProgress: (ev) => {
+            dispatch(
+              updateUploadProgress({ requestId, bytesUploaded: ev.loaded }),
+            );
+            options.onProgress?.(ev);
+          },
+        },
+        requestId,
+      );
+      if (!tusResult.ok) {
         dispatch(
-          updateUploadProgress({
+          updateUploadStatus({
             requestId,
-            bytesUploaded: ev.loaded,
+            status: "error",
+            error: tusResult.error,
           }),
         );
-        options.onProgress?.(ev);
-      },
-      { requestId, signal: options.signal, idempotencyKey: requestId },
-    );
+        return tusResult;
+      }
+      uploadData = {
+        file_id: tusResult.fileId,
+        file_path: tusResult.filePath,
+        size_bytes: tusResult.fileSize,
+        checksum: null,
+        version_number: tusResult.versionNumber,
+        url: tusResult.url,
+      };
+    } else {
+      const params = {
+        file,
+        filePath,
+        visibility: options.visibility ?? "private",
+        shareWith: options.shareWith,
+        shareLevel: options.shareLevel,
+        changeSummary: options.changeSummary,
+        // Shared envelope builder — identical object to the TUS transport's
+        // `metadata_json` (parity is unit-tested).
+        metadata: buildUploadMetadataEnvelope(options.metadata),
+      };
+
+      const upload = await Files_uploadFileWithProgress(
+        params,
+        (ev) => {
+          dispatch(
+            updateUploadProgress({
+              requestId,
+              bytesUploaded: ev.loaded,
+            }),
+          );
+          options.onProgress?.(ev);
+        },
+        { requestId, signal: options.signal, idempotencyKey: requestId },
+      );
+      uploadData = {
+        file_id: upload.data.file_id,
+        file_path: upload.data.file_path,
+        size_bytes: upload.data.size_bytes,
+        checksum: upload.data.checksum ?? null,
+        version_number: upload.data.version_number,
+        url: upload.data.url ?? null,
+      };
+    }
 
     // 2. Slice upsert — file is now visible in the tree without
     //    waiting for the realtime echo or a refetch.
     dispatch(
       upsertFile(
         apiFileRecordToCloudFile({
-          id: upload.data.file_id,
+          id: uploadData.file_id,
           owner_id: "",
-          file_path: upload.data.file_path,
-          file_name: upload.data.file_path.split("/").pop() ?? file.name,
+          file_path: uploadData.file_path,
+          file_name: uploadData.file_path.split("/").pop() ?? file.name,
           mime_type: file.type || null,
           // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
-          size_bytes: upload.data.size_bytes,
-          checksum: upload.data.checksum,
+          size_bytes: uploadData.size_bytes,
+          checksum: uploadData.checksum,
           visibility: options.visibility ?? "private",
-          current_version: upload.data.version_number,
+          current_version: uploadData.version_number,
           parent_folder_id: options.parentFolderId ?? null,
           metadata: options.metadata ?? {},
           created_at: null,
@@ -402,7 +500,7 @@ export async function cloudUpload(
         attachChildToFolder({
           parentFolderId: options.parentFolderId,
           kind: "file",
-          id: upload.data.file_id,
+          id: uploadData.file_id,
         }),
       );
     }
@@ -410,7 +508,7 @@ export async function cloudUpload(
       updateUploadStatus({
         requestId,
         status: "success",
-        fileId: upload.data.file_id,
+        fileId: uploadData.file_id,
       }),
     );
 
@@ -424,7 +522,7 @@ export async function cloudUpload(
         // Consumers default to `directUrl` for img/video/audio/iframe
         // src; `shareUrl` is for "click here to view file metadata".
         ({ shareToken, shareUrl, directUrl } = await mintUploadShareLink(
-          upload.data.file_id,
+          uploadData.file_id,
           options,
         ));
       } catch (linkErr) {
@@ -439,12 +537,12 @@ export async function cloudUpload(
 
     return {
       ok: true,
-      fileId: upload.data.file_id,
-      filePath: upload.data.file_path,
+      fileId: uploadData.file_id,
+      filePath: uploadData.file_path,
       // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
-      fileSize: upload.data.size_bytes,
-      versionNumber: upload.data.version_number,
-      url: upload.data.url ?? null,
+      fileSize: uploadData.size_bytes,
+      versionNumber: uploadData.version_number,
+      url: uploadData.url,
       shareToken,
       shareUrl,
       directUrl,

@@ -36,7 +36,7 @@ export const OVERLAY_CATALOGUE = {
     isWindow: true,
   },
   audioControlWindow: {
-    label: "Audio",
+    label: "Media",
     instanceMode: "singleton",
     isWindow: true,
   },

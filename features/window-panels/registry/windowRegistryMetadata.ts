@@ -354,12 +354,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobileSidebarAs: "drawer",
   },
 
-  // ── Audio control (recording indicator + playback queue) ─────────────────
+  // ── Media control (playback + recording + camera diagnostics + devices) ──
   {
     slug: "audio-control-window",
     overlayId: "audioControlWindow",
     kind: "window",
-    label: "Audio",
+    label: "Media",
     defaultData: {},
     // Ephemeral: surfaces live runtime state (recording + playback queue);
     // nothing to restore on reload.

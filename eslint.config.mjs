@@ -714,6 +714,15 @@ const cameraGetUserMediaChokepointBan = [
         message:
             'getUserMedia({video}) is banned outside the camera stream manager — acquire the camera via acquireCameraLease() from features/media-capture/runtime/camera-stream-manager.ts (the ONE legal call site: leases, compatibility policy, recording pin, last-release shutdown). If this IS the manager (or a legacy file slated for Phase 5 deletion), add `// eslint-disable-next-line no-restricted-syntax` with a one-line justification. See features/media-capture/FEATURE.md.',
     },
+    {
+        // Same ban for destructured/aliased calls: `const { getUserMedia } =
+        // navigator.mediaDevices; getUserMedia({ video })` would dodge the
+        // member-expression selector above.
+        selector:
+            "CallExpression[callee.name='getUserMedia'] > ObjectExpression > Property[key.name='video']",
+        message:
+            'getUserMedia({video}) is banned outside the camera stream manager (destructured form) — acquire the camera via acquireCameraLease() from features/media-capture/runtime/camera-stream-manager.ts. See features/media-capture/FEATURE.md.',
+    },
 ];
 
 export default [

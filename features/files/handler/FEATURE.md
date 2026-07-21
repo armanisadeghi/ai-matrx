@@ -131,6 +131,14 @@ When uploading, `inheritActiveScope: true` (default) reads `selectOrganizationId
 
 The previous "expiry wheel" — a global timer that preemptively re-minted every URL ~30s before expiry — has been removed. It caused a runaway loop the moment a refresher failed to update its `expiresAt` (see Change Log, 2026-05-17). The lazy model is what AWS, Drive, Dropbox, and Slack do in production: it's simpler, cheaper, and structurally cannot loop.
 
+### Transport policy (buffered vs TUS)
+
+`cloudUpload` is the ONE transport-policy chokepoint (`resolveUploadTransport` in `features/files/upload/cloudUpload.ts`): files ≥ **`TUS_TRANSPORT_THRESHOLD_BYTES` (80 MB)** upload resumably via TUS (`features/files/upload/tusUpload.ts` → `${PYTHON_BACKEND}/files/upload/tus`, tus-js-client, 16 MiB chunks); smaller files use the buffered multipart POST. `UploadOpts` exposes `transport?: "buffered" | "tus"` (override) and `signal?: AbortSignal` (buffered XHR abort / TUS abort). There is NO presigned transport.
+
+TUS client contract (system of record: `common-docs/media-capture/FEATURE.md` § TUS): FRESH Authorization per request (`onBeforeRequest`); `X-Idempotency-Key` on the creation POST only; `Upload-Metadata` carries `filename`, `filepath`, and ONE `metadata_json` key — the SAME JSON object the buffered path sends, built by the shared `buildUploadMetadataEnvelope` (parity unit-tested); final `X-Cld-File-Id` captured from response headers (incl. completed-session recovery — a lost final response resolves the file instead of re-uploading); resume URLs in the dedicated IndexedDB `mtx-tus-urls` (NEVER the recorder chunk journal); progress feeds the same `cloudFiles` upload tracking as buffered.
+
+**Status: live browser E2E is PENDING.** The server-side wire (CORS allow/expose headers, metadata parity, completed-HEAD recovery) exists in aidream locally but is NOT deployed — the client is verified by unit tests against an injected HttpStack (`features/files/upload/__tests__/transport-policy.test.ts`) only. Do not claim live TUS verification until a real browser upload (preflight, resume, lost-final-response, token refresh) passes against the deployed server.
+
 ### CORS-aware transport
 
 S3 signed URLs are CORS-blocked for `fetch()`. `NormalizedFile.capabilities.transportSafeForFetch` is `false` for those; `preferFetchableUrl()` falls back to Python's authenticated download endpoint (`{BACKEND_URL}/files/{id}/download`) — never to a Next.js proxy. The browser talks to Python (or the CDN) directly.
@@ -178,6 +186,7 @@ The previous parallel object-store path is fully removed. Compatibility readers,
 
 ## Change log
 
+- **2026-07-21 — TUS transport landed (media-capture Phase 7).** `tusUpload.ts` + the 80 MB transport policy in `cloudUpload` (`resolveUploadTransport`); `UploadOpts` gained `signal` + `transport`; shared `buildUploadMetadataEnvelope` guarantees buffered↔TUS `metadata_json` parity. Live E2E pending aidream deploy (see § Transport policy).
 - **2026-07-20 — Ephemeral object URLs promoted to a shared browser primitive.** The bounded create/revoke registry moved from handler internals to `lib/media/object-url-registry.ts` so the file normalizer and local-only UI thumbnails share one leak-resistant object-URL lifecycle without importing private handler paths.
 - **2026-07-18 — Contextual files cannot leak into nested-folder discovery.**
   `loadFolderContents` no longer enumerates raw file/folder tables; nested and
