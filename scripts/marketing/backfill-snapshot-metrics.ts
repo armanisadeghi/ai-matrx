@@ -85,7 +85,7 @@ async function main() {
           )
         : [];
 
-      const patch: Record<string, unknown> = {};
+      const patch: { seo_metrics?: unknown; audit_metrics?: unknown } = {};
       if (row.seo_metrics === null) {
         patch.seo_metrics = buildStoredSeoMetrics(
           str(headTags.title) ?? "",
