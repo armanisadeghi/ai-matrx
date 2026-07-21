@@ -1,23 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  FileText,
-  Search,
-  Link2,
-  BarChart3,
-  Globe,
-  Zap,
-  Brain,
-  PenTool,
-  TrendingUp,
-  ShieldCheck,
-  Eye,
-  Code2,
-  Layers,
-  Clock,
-  Star,
   ArrowRight,
+  BarChart3,
+  Brain,
+  Clock,
+  Code2,
+  Eye,
+  FileText,
+  Globe,
+  Layers,
+  Link2,
   PartyPopper,
+  PenTool,
+  Search,
+  Share2,
+  ShieldCheck,
+  Star,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -108,6 +109,15 @@ const categories: Category[] = [
           "Calculate pixel widths and character counts for titles and descriptions with a live Google SERP preview.",
         icon: FileText,
         href: "/seo/metadata",
+        status: "live",
+      },
+      {
+        id: "social-preview",
+        title: "Social Card Preview",
+        description:
+          "Preview exactly how your link renders on X, Facebook, and LinkedIn — with instant checks on your Open Graph and Twitter card tags.",
+        icon: Share2,
+        href: "/seo/social-preview",
         status: "live",
       },
       {
