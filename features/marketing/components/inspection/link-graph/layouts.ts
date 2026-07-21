@@ -82,5 +82,7 @@ export function buildLinkLayout(
 ): cytoscape.LayoutOptions {
   if (id === "radial") return breadthfirst(true, animate, rootId);
   if (id === "tree") return breadthfirst(false, animate, rootId);
+  // kg's fcose builder already sets `nodeDimensionsIncludeLabels` (labels are
+  // part of a node's footprint), which is what keeps section labels apart.
   return buildKgLayout(id as KgLayoutId, animate, nodeCount);
 }

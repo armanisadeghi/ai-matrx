@@ -538,10 +538,15 @@ export function LinkGraphView({
             : colorMode === "status" && node.brokenPages > 0
               ? LINK_STATUS_COLORS.broken
               : depthColor(node.depth),
-        size: sectionSize(node.pageCount, maxPages),
+        // The index/home node anchors the map — never let it render as the
+        // smallest dot just because a section holds one page.
+        size:
+          node.kind === "index"
+            ? Math.max(sectionSize(node.pageCount, maxPages), 44)
+            : sectionSize(node.pageCount, maxPages),
         external: node.kind === "external",
         isRoot: node.kind === "index" && node.path === "/",
-        isFolder: node.kind === "folder",
+        isFolder: node.kind === "folder" || node.kind === "collapsed",
         importance: maxPages > 0 ? node.pageCount / maxPages : 0,
       })),
       edges: sectionModel?.edges ?? [],

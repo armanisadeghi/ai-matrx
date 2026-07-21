@@ -591,7 +591,13 @@ export function buildLinkGraph(
 // that node's `internalLinks` stat — so only the between-section structure is
 // drawn. That is the signal; the rest was always noise.
 
-export type SectionKind = "index" | "page" | "folder" | "external";
+export type SectionKind =
+  | "index"
+  | "page"
+  | "folder"
+  | "external"
+  /** The collapsed long tail of individual pages at one level. */
+  | "collapsed";
 
 export interface SectionGraphNode {
   /** Path prefix identity ("/", "/blogs", "/blogs/2024") or "ext:<domain>". */
@@ -637,6 +643,8 @@ export interface SectionGraphModel {
 }
 
 const PAGE_LEVEL_VIABLE_MAX = 60;
+/** Individual pages drawn at one level before the tail collapses into one node. */
+const MAX_LEAF_PAGES_PER_LEVEL = 12;
 
 function pathOf(node: LinkGraphNode): string {
   try {
@@ -757,6 +765,52 @@ export function buildSectionGraph(
   // A bucket is a FOLDER when it holds more than its own index page.
   for (const bucket of buckets.values()) {
     if (bucket.kind === "page" && bucket.pages.length > 1) bucket.kind = "folder";
+  }
+
+  // FLAT SITES: aggregating by folder does nothing when 200 pages sit at the
+  // root — you get 200 "sections" and the same hairball. So the level also
+  // caps how many INDIVIDUAL pages it draws: the most-linked ones stay, the
+  // long tail collapses into one "N more pages" node. Folders are never
+  // collapsed (they are the structure) and neither is the index.
+  const rawInbound = new Map<string, number>();
+  for (const edge of model.edges) {
+    const source = bucketOfNode.get(edge.source);
+    const target = bucketOfNode.get(edge.target);
+    if (!source || !target || source === target) continue;
+    rawInbound.set(target, (rawInbound.get(target) ?? 0) + edge.weight);
+  }
+  const leafBuckets = Array.from(buckets.values()).filter(
+    (bucket) => bucket.kind === "page",
+  );
+  const collapsedIds = new Set<string>();
+  const otherId = `${focusPath === "/" ? "" : focusPath}/#other`;
+  if (leafBuckets.length > MAX_LEAF_PAGES_PER_LEVEL) {
+    const ranked = [...leafBuckets].sort(
+      (a, b) => (rawInbound.get(b.id) ?? 0) - (rawInbound.get(a.id) ?? 0),
+    );
+    for (const bucket of ranked.slice(MAX_LEAF_PAGES_PER_LEVEL)) {
+      collapsedIds.add(bucket.id);
+    }
+  }
+  const collapsedPages: LinkGraphNode[] = [];
+  if (collapsedIds.size > 0) {
+    for (const id of collapsedIds) {
+      const bucket = buckets.get(id);
+      if (!bucket) continue;
+      collapsedPages.push(...bucket.pages);
+      buckets.delete(id);
+    }
+    buckets.set(otherId, {
+      id: otherId,
+      label: `${collapsedPages.length} more pages`,
+      kind: "collapsed",
+      path: focusPath,
+      pages: collapsedPages,
+      indexNode: null,
+    });
+    for (const [nodeId, bucketId] of bucketOfNode) {
+      if (collapsedIds.has(bucketId)) bucketOfNode.set(nodeId, otherId);
+    }
   }
 
   // Aggregate edges between buckets; same-bucket links become a node stat.
