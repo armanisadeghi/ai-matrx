@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, Link2Off, Network, Table2 } from "lucide-react";
+import { ExternalLink, Globe, Link2Off, Network, Table2 } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
@@ -24,6 +24,7 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { ExternalLinksView } from "@/features/marketing/components/inspection/link-graph/ExternalLinksView";
 import { LinkGraphView } from "@/features/marketing/components/inspection/link-graph/LinkGraphView";
 import { displayUrl } from "@/features/marketing/components/inspection/link-graph/model";
 import { cn } from "@/lib/utils";
@@ -32,7 +33,7 @@ function sourceUrl(row: InspectionLinkRow): string {
   return row.source_page?.url ?? row.source_page_id;
 }
 
-type LinksViewMode = "graph" | "table";
+type LinksViewMode = "graph" | "external" | "table";
 
 export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
   const { site, sitePath } = useMarketingSite();
@@ -40,11 +41,12 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   // Graph is the default view — the URL only records the exception.
+  const viewParam = searchParams.get("view");
   const view: LinksViewMode =
-    searchParams.get("view") === "table" ? "table" : "graph";
+    viewParam === "table" || viewParam === "external" ? viewParam : "graph";
   const setView = (next: LinksViewMode) => {
     const params = new URLSearchParams(searchParams.toString());
-    next === "table" ? params.set("view", "table") : params.delete("view");
+    next === "graph" ? params.delete("view") : params.set("view", next);
     const encoded = params.toString();
     router.replace(encoded ? `${pathname}?${encoded}` : pathname, {
       scroll: false,
@@ -225,6 +227,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
             {(
               [
                 { id: "graph", label: "Graph", icon: Network },
+                { id: "external", label: "External", icon: Globe },
                 { id: "table", label: "Table", icon: Table2 },
               ] as const
             ).map((option) => (
@@ -249,7 +252,12 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       </section>
       <div className="min-h-0 flex-1">
         {view === "graph" ? (
-          <LinkGraphView crawlId={crawlId} />
+          <LinkGraphView
+            crawlId={crawlId}
+            onShowExternal={() => setView("external")}
+          />
+        ) : view === "external" ? (
+          <ExternalLinksView crawlId={crawlId} />
         ) : links.isError ? (
           <QueryError error={links.error} onRetry={() => void links.refetch()} />
         ) : (

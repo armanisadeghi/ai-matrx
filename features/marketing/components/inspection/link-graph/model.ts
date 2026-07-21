@@ -169,6 +169,171 @@ function nodeStatus(httpStatus: number | null): LinkNodeStatus {
   return "ok";
 }
 
+// ── Outbound / external link report ─────────────────────────────────────────
+// Domain-grouped rollup of every external link the site sends out (Screaming
+// Frog's External tab / Ahrefs' Linked Domains). Unlike graph identity, an
+// external target keeps its FULL query string (tracking params included) —
+// the exact outbound URL is the datum; only fragments are dropped.
+
+export interface ExternalTargetRollup {
+  /** Normalized outbound URL (fragment stripped, host lowercased). */
+  url: string;
+  /** Raw link occurrences across retained snapshots. */
+  links: number;
+  /** Distinct internal pages linking here. */
+  sourcePages: number;
+  /** Representative source page ids/urls (first observed, up to 3). */
+  sourceSamples: Array<{ pageId: string; url: string }>;
+  /** Distinct anchor texts with occurrence counts, most-used first (top 5). */
+  anchors: Array<[string, number]>;
+  /** True when EVERY occurrence carries rel=nofollow. */
+  nofollow: boolean;
+  /** Worst observed HTTP status for this target (null = never checked). */
+  httpStatus: number | null;
+}
+
+export interface ExternalDomainRollup {
+  domain: string;
+  links: number;
+  sourcePages: number;
+  nofollowLinks: number;
+  targets: ExternalTargetRollup[];
+}
+
+export interface ExternalLinkReport {
+  /** Domains sorted by link count desc; targets within sorted the same. */
+  domains: ExternalDomainRollup[];
+  totalLinks: number;
+  totalTargets: number;
+  nofollowLinks: number;
+  /** Distinct internal pages that link out at all. */
+  linkingPages: number;
+  /** True when no external edge has ever had its HTTP status checked. */
+  statusUnchecked: boolean;
+}
+
+/** Normalize an outbound target: drop fragment, lowercase host, keep query. */
+function normalizeExternalUrl(raw: string): { url: string; domain: string } | null {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  const host = url.host.toLowerCase();
+  return {
+    url: `${url.protocol}//${host}${url.pathname}${url.search}`,
+    domain: host.replace(/^www\./, ""),
+  };
+}
+
+/** Build the outbound-links report from raw edge rows (external edges only). */
+export function buildExternalLinkReport(
+  rows: LinkGraphEdgeRow[],
+): ExternalLinkReport {
+  interface TargetAcc {
+    url: string;
+    links: number;
+    pages: Set<string>;
+    samples: Map<string, string>;
+    anchors: Map<string, number>;
+    nofollow: boolean;
+    httpStatus: number | null;
+  }
+  const domains = new Map<string, Map<string, TargetAcc>>();
+  const linkingPages = new Set<string>();
+  let totalLinks = 0;
+  let anyStatus = false;
+
+  for (const row of rows) {
+    if (row.is_internal) continue;
+    const normalized = normalizeExternalUrl(row.target_url);
+    if (!normalized) continue;
+    let targets = domains.get(normalized.domain);
+    if (!targets) {
+      targets = new Map();
+      domains.set(normalized.domain, targets);
+    }
+    let target = targets.get(normalized.url);
+    if (!target) {
+      target = {
+        url: normalized.url,
+        links: 0,
+        pages: new Set(),
+        samples: new Map(),
+        anchors: new Map(),
+        nofollow: true,
+        httpStatus: null,
+      };
+      targets.set(normalized.url, target);
+    }
+    target.links += 1;
+    totalLinks += 1;
+    target.pages.add(row.source_page_id);
+    linkingPages.add(row.source_page_id);
+    if (row.source_page?.url && target.samples.size < 3)
+      target.samples.set(row.source_page_id, row.source_page.url);
+    const anchor = row.anchor_text?.trim();
+    if (anchor) target.anchors.set(anchor, (target.anchors.get(anchor) ?? 0) + 1);
+    if (!/\bnofollow\b/i.test(row.rel ?? "")) target.nofollow = false;
+    if (row.http_status !== null) {
+      anyStatus = true;
+      if (target.httpStatus === null || row.http_status > target.httpStatus)
+        target.httpStatus = row.http_status;
+    }
+  }
+
+  const outDomains: ExternalDomainRollup[] = [];
+  let totalTargets = 0;
+  let nofollowLinks = 0;
+  for (const [domain, targets] of domains) {
+    const outTargets: ExternalTargetRollup[] = [];
+    const domainPages = new Set<string>();
+    let domainLinks = 0;
+    let domainNofollow = 0;
+    for (const target of targets.values()) {
+      domainLinks += target.links;
+      if (target.nofollow) domainNofollow += target.links;
+      for (const page of target.pages) domainPages.add(page);
+      outTargets.push({
+        url: target.url,
+        links: target.links,
+        sourcePages: target.pages.size,
+        sourceSamples: Array.from(target.samples, ([pageId, url]) => ({
+          pageId,
+          url,
+        })),
+        anchors: Array.from(target.anchors.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5),
+        nofollow: target.nofollow,
+        httpStatus: target.httpStatus,
+      });
+    }
+    outTargets.sort((a, b) => b.links - a.links);
+    totalTargets += outTargets.length;
+    nofollowLinks += domainNofollow;
+    outDomains.push({
+      domain,
+      links: domainLinks,
+      sourcePages: domainPages.size,
+      nofollowLinks: domainNofollow,
+      targets: outTargets,
+    });
+  }
+  outDomains.sort((a, b) => b.links - a.links);
+
+  return {
+    domains: outDomains,
+    totalLinks,
+    totalTargets,
+    nofollowLinks,
+    linkingPages: linkingPages.size,
+    statusUnchecked: totalLinks > 0 && !anyStatus,
+  };
+}
+
 interface NodeAccumulator {
   id: string;
   fullUrl: string;

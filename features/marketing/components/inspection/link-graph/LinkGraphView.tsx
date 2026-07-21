@@ -326,7 +326,14 @@ function NodePanel({
   );
 }
 
-export function LinkGraphView({ crawlId }: { crawlId?: string }) {
+export function LinkGraphView({
+  crawlId,
+  onShowExternal,
+}: {
+  crawlId?: string;
+  /** Jump to the outbound-links view (the External tab on the links page). */
+  onShowExternal?: () => void;
+}) {
   const { site, sitePath } = useMarketingSite();
   const query = useLinkGraphEdges(site.id, crawlId ?? null);
 
@@ -518,12 +525,26 @@ export function LinkGraphView({ crawlId }: { crawlId?: string }) {
           </span>{" "}
           internal pages
         </span>
-        <span className="tabular-nums">
-          <span className="font-semibold text-foreground">
-            {model.stats.externalTargets.toLocaleString()}
-          </span>{" "}
-          external targets
-        </span>
+        {onShowExternal ? (
+          <button
+            type="button"
+            onClick={onShowExternal}
+            className="tabular-nums underline-offset-2 hover:text-foreground hover:underline"
+            title="Open the outbound-links report"
+          >
+            <span className="font-semibold text-foreground">
+              {model.stats.externalTargets.toLocaleString()}
+            </span>{" "}
+            external targets
+          </button>
+        ) : (
+          <span className="tabular-nums">
+            <span className="font-semibold text-foreground">
+              {model.stats.externalTargets.toLocaleString()}
+            </span>{" "}
+            external targets
+          </span>
+        )}
         <span className="tabular-nums">
           <span
             className={cn(

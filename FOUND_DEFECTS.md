@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D74 — `web.link_edge.http_status` is NEVER populated: no broken-link detection exists (2026-07-20)
+
+Verified live: every one of the 10,676 `web.link_edge` rows (internal AND external) has `http_status = null` — the scraper records link edges from snapshots but never checks their targets, so broken internal links and broken outbound links cannot be flagged anywhere. The FE is ready: the link graph colors/flags broken targets (`features/marketing/components/inspection/link-graph/`), the External view shows an honest "status not checked" notice, and the table has an HTTP column — all waiting on data. Fix lives in the scraper (matrx-scraper/aidream): a post-crawl link-check pass (HEAD/GET with caps + per-domain rate limits, internal targets resolvable from crawled snapshots without any fetch) writing `http_status` back to `web.link_edge`. Backend owner decides scheduling; relay prompt handed to Arman 2026-07-20.
+
 ### D73 — Folder picking needs a canonical story; feedback MCP rejects agent submissions (2026-07-20)
 
 The one-file-picker consolidation is DONE (see `features/files/FEATURE.md` 2026-07-20): `FilesResourcePicker` + `FilePickerWindow` everywhere; thin `FilePicker`/`useFilePicker`, `AssociationPickerSheet`, and rag `CldFilePicker` deleted. Two remainders: (1) `FolderPicker`/`SaveAsDialog` (folder selection, not file pick) still use the old `PickerShell` dialog — needs a decision on a canonical folder-select mode (extend `FilesResourcePicker` or keep a dedicated folder surface, then retire `PickerShell`); safe meanwhile (DB listing gate protects all tree consumers). (2) matrx-feedback MCP `submit_feedback` fails with FK violation `user_feedback_user_id_fkey` for agent submissions — backend bug in the feedback service.
