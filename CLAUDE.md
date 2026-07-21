@@ -63,6 +63,14 @@ Always use the latest stable release of every package — no deprecated APIs.
 - **Clients:** `@/utils/supabase/client` (browser), `@/utils/supabase/server` (SSR). `createAdminClient()` is restricted — see Protected Resources.
 - **Canonical standards:** [docs/official/db-rules.md](docs/official/db-rules.md). Many tables moved from `public` into domain schemas — on any DB error, check the table's live schema first. **Spot a stale table reference or a non-canonical table while working? You own it:** report it and migrate the table + every consumer, client AND server — for code in other repos, write the exact prompt and hand it to the user to relay to that repo's agent.
 
+### Forbidden relationship shortcuts — fix on sight
+
+These are active platform defects, not tolerated legacy patterns:
+
+- **`platform._mirror_fk_to_assoc` is forbidden.** No trigger, function, migration, or application path may call, create, preserve, copy, or “repair” it. A physical FK mirror can pass a table name where the association system requires a canonical entity token, and it creates two competing relationship authorities. Write canonical `platform.associations` edges through the registered association path instead. Any runtime firing or discovered dependency is a **critical alarm**, never a recoverable warning.
+- **A feature/domain table may not depend on a project FK.** Do not add or preserve `project_id REFERENCES ...` as feature ownership, lifecycle, authorization, or required persistence. Project membership is an optional `platform.associations` edge between canonical entity tokens; the feature must create, load, run, update, and delete correctly with no project at all. This specifically includes every research table and applies to new tables everywhere.
+- **Focused fix-on-sight ownership:** when the table or feature currently being worked on contains either violation, the agent owns removing it end-to-end in that focused change—live constraint/trigger, migrations, generated types/models, frontend and server readers/writers, tests, and data backfill. Do not turn an unrelated task into a blind repo-wide rewrite, but do not leave either violation in the area being changed. Before creating or altering a table, explicitly inspect its triggers and FKs for both patterns. Until automated guards exist, discovery itself must be reported loudly and remain in [FOUND_DEFECTS.md](FOUND_DEFECTS.md).
+
 ### Database migrations — the DB is the source of truth, NOT the files
 
 > A `.sql` file in `migrations/` changes **nothing** until applied to Supabase — writing one and reporting "done" is the single most damaging mistake here. A migration is done only when **applied AND verified live AND `pnpm db-types` regenerated.**
