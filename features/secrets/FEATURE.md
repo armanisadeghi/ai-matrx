@@ -70,5 +70,6 @@ Database migrations:
 
 ## Change Log
 
+- **2026-07-20** — New consumer: Marketing Google integration connections. aidream's `/api/google-integrations/*` stores each connection's Google OAuth refresh token in the canonical vault (personal → user vault, organization → org vault) under `GOOGLE_OAUTH_REFRESH_TOKEN_<connection-id-hex>`, referenced by `users.integration_connections.vault_secret_key`; the scraper resolves it via a service-token internal endpoint. This replaced (annihilated) the bespoke AES-256-GCM Google-credential pathway.
 - **2026-07-19** — Added the organization vault, all-member/restricted use permissions, private Supabase Vault storage, member contributions with version-based drift/manual sync, Org Manage UI, AI/sandbox resolution, generated API/DB contracts, audit metadata, GSC vault fallback, and grant cleanup on soft delete.
 - **2026-05-28** — Initial personal vault implementation: user DB table, Fernet service, REST endpoints, sandbox injection, agent tool, and settings UI.

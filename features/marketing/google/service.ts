@@ -104,48 +104,79 @@ export async function listGoogleConnectionInventory(
   };
 }
 
-async function responseError(
-  response: Response,
+// The Google credential control plane lives on aidream ("the brain"): it
+// exchanges the one-time code, stores the refresh token in the CANONICAL
+// secrets vault (user vault / organization vault), and keeps only safe
+// metadata + a vault reference in users.integration_connections. The browser
+// calls aidream directly with the caller's Supabase JWT — no Next.js hop and
+// no client-side secret handling.
+
+function backendBase(): string {
+  return (
+    process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com"
+  );
+}
+
+async function aidreamPost(
+  path: string,
+  body: Record<string, unknown>,
   fallback: string,
-): Promise<Error> {
-  const body = (await response.json().catch(() => ({}))) as { error?: unknown };
-  return new Error(typeof body.error === "string" ? body.error : fallback);
+): Promise<Response> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Sign in to manage Google.");
+  const response = await fetch(`${backendBase()}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as {
+      detail?: unknown;
+    };
+    throw new Error(
+      typeof payload.detail === "string" ? payload.detail : fallback,
+    );
+  }
+  return response;
 }
 
 export async function connectGoogle(
   code: string,
   owner: GoogleConnectionOwner,
 ): Promise<GoogleConnectionResult> {
-  const response = await fetch("/api/marketing/google/oauth/exchange", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Requested-With": "XmlHttpRequest",
-    },
-    body: JSON.stringify({
-      code,
-      ownerType: owner.type,
-      organizationId:
-        owner.type === "organization" ? owner.organizationId : null,
-      redirectUri: window.location.origin,
-    }),
-  });
-  if (!response.ok) {
-    throw await responseError(response, "Unable to connect Google.");
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    throw new Error("Google OAuth is not configured on this deployment.");
   }
-  const body = (await response.json()) as { connectionId?: unknown };
-  if (typeof body.connectionId !== "string") {
+  const response = await aidreamPost(
+    "/api/google-integrations/exchange",
+    {
+      code,
+      client_id: clientId,
+      owner_type: owner.type,
+      organization_id:
+        owner.type === "organization" ? owner.organizationId : null,
+      redirect_uri: window.location.origin,
+    },
+    "Unable to connect Google.",
+  );
+  const body = (await response.json()) as { connection_id?: unknown };
+  if (typeof body.connection_id !== "string") {
     throw new Error("Google connected without returning a connection ID.");
   }
-  return { connectionId: body.connectionId };
+  return { connectionId: body.connection_id };
 }
 
 export async function disconnectGoogle(connectionId: string): Promise<void> {
-  const response = await fetch("/api/marketing/google/oauth/disconnect", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ connectionId }),
-  });
-  if (!response.ok)
-    throw await responseError(response, "Unable to disconnect Google.");
+  await aidreamPost(
+    "/api/google-integrations/disconnect",
+    { connection_id: connectionId },
+    "Unable to disconnect Google.",
+  );
 }

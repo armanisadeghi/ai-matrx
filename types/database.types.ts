@@ -41173,9 +41173,6 @@ export type Database = {
           account_email: string | null
           account_name: string | null
           created_at: string
-          credential_ciphertext: string
-          credential_iv: string
-          credential_tag: string
           deleted_at: string | null
           id: string
           last_error: string | null
@@ -41189,14 +41186,12 @@ export type Database = {
           scopes: string[]
           status: string
           updated_at: string
+          vault_secret_key: string | null
         }
         Insert: {
           account_email?: string | null
           account_name?: string | null
           created_at?: string
-          credential_ciphertext: string
-          credential_iv: string
-          credential_tag: string
           deleted_at?: string | null
           id?: string
           last_error?: string | null
@@ -41210,14 +41205,12 @@ export type Database = {
           scopes?: string[]
           status?: string
           updated_at?: string
+          vault_secret_key?: string | null
         }
         Update: {
           account_email?: string | null
           account_name?: string | null
           created_at?: string
-          credential_ciphertext?: string
-          credential_iv?: string
-          credential_tag?: string
           deleted_at?: string | null
           id?: string
           last_error?: string | null
@@ -41231,6 +41224,7 @@ export type Database = {
           scopes?: string[]
           status?: string
           updated_at?: string
+          vault_secret_key?: string | null
         }
         Relationships: []
       }
