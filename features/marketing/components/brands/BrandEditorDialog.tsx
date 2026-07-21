@@ -36,15 +36,13 @@ const STATUS_OPTIONS = [
   { value: "archived", label: "Archived" },
 ];
 
+// web.* holds scraped PUBLIC data — every brand/site is public, enforced by a
+// DB trigger that coerces any other value (Arman ruling 2026-07-21). Offering
+// Private here would be a lie the database silently corrects.
 const VISIBILITY_OPTIONS: Array<{
   value: MarketingBrand["visibility"];
   label: string;
-}> = [
-  { value: "private", label: "Private" },
-  { value: "internal", label: "Organization" },
-  { value: "link", label: "Anyone with link" },
-  { value: "public", label: "Public" },
-];
+}> = [{ value: "public", label: "Public (all marketing data is public)" }];
 
 interface BrandDraft {
   name: string;
@@ -70,7 +68,7 @@ function draftFrom(brand: MarketingBrand | null): BrandDraft {
     ogImageUrl: brand?.og_image_url ?? "",
     notes: brand?.notes ?? "",
     status: brand?.status ?? "active",
-    visibility: brand?.visibility ?? "private",
+    visibility: "public",
   };
 }
 

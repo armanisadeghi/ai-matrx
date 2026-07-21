@@ -395,7 +395,9 @@ export async function createSite(
     p_domain: input.domain,
     p_settings: {},
     p_integrations: {},
-    p_visibility: "private",
+    // web.* is scraped public data — everything is public (Arman ruling
+    // 2026-07-21); a DB trigger coerces any other value anyway.
+    p_visibility: "public",
     // An explicit brand ALWAYS wins; name-match-or-create only when absent.
     ...(input.brandId ? { p_brand_id: input.brandId } : {}),
   });
