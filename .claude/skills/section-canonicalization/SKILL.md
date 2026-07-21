@@ -24,6 +24,23 @@ features' pages, the database, the Python server, agents, and the public.
    verdict enum (`indexable | check | blocked`) + severity-tagged issues
    (`AuditIssueList`) make richer visuals than bare booleans.
 
+**Deliverable 9 — the rollup view.** Once a metric is stored per row, the
+list and the parent entity both want it. That's two more cheap surfaces:
+per-row glyphs in the existing table (marketing pages "Health" column) and a
+dedicated rollup dashboard over the whole set (`.../audit`:
+`lib/audit-rollup.ts` pure aggregation + bounded paged fetch + verdict tiles
+/ pass-rate bars / top-issues-with-drill-down / worst-rows). **The rollup
+ONLY aggregates — it never re-derives a metric**, so it can never disagree
+with the detail view or the server. Aggregation lives in a pure, unit-tested
+module (never inside the component), and the fetch is bounded with a LOUD
+throw rather than a silent truncation.
+
+**Adding a section to an existing stored contract** (the url-quality case):
+make it **additive and optional** on the payload type, exclude it from the
+existing `overall_ok` when its severity model differs (warnings-only), and
+prefer the stored copy with a live-computed fallback — old rows then keep
+working untouched and no backfill is required to ship.
+
 ## The eight deliverables
 
 Work through them in order — each builds on the previous. Skipping one is a

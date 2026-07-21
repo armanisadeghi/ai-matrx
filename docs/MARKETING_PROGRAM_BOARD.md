@@ -30,7 +30,7 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 ## In motion
 
 - **Claude (main session):** ACCESS fixed live at the DB (web.* public-by-default: backfill + coercion triggers + create_site default — nothing can be born private from any repo). GSC crash root-caused past the reconnect: CardinalityViolation from GSC URL variants; merge fix + regression test committed (aidream beb5d8c03), auto-releases when the aidream tree comes clean (another session's link_check WIP is holding the gate). After scraper redeploy: ONE Sync click verifies.
-- **Claude (section-canonicalization session):** Arman-approved wave: URL-quality evaluator (4th `audit_metrics` section, TS↔Python) + new site-level `.../audit` rollup dashboard over the stored per-snapshot metrics. NOTE for next release: aidream local commits add `audit_metrics` stamping to the scraper (ships via release.sh).
+- **Claude (section-canonicalization session):** done for now — page-audit system + URL quality + site `.../audit` dashboard all shipped (handoff Done). NOTE for next release: aidream local commits add `audit_metrics` (incl. url section) stamping to the scraper; after deploy, re-run `scripts/marketing/backfill-snapshot-metrics.ts` to fill gap-window snapshots.
 - **Arman:** GSC unblock — confirm `AIDREAM_URL` + `AIDREAM_SERVICE_TOKEN` env on the scraper service, reconnect Google at `/marketing/connections`, hit Sync. Then the full E2E on All Green Recycling.
 
 ## Up next (in order)

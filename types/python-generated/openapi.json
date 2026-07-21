@@ -7696,6 +7696,141 @@
         }
       }
     },
+    "/google-integrations/exchange": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Exchange",
+        "operationId": "exchange_google_integrations_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleExchangeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/disconnect": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Disconnect",
+        "operationId": "disconnect_google_integrations_disconnect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleDisconnectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/internal/credential": {
+      "get": {
+        "tags": [
+          "Google Integrations (internal)"
+        ],
+        "summary": "Internal Credential",
+        "description": "Resolve a Google connection's refresh token + OAuth client for a\ntrusted server-side consumer (the standalone scraper's GSC sync).",
+        "operationId": "internal_credential_google_integrations_internal_credential_get",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Connection Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleConnectionCredentialResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/utilities/block-processing/process": {
       "post": {
         "tags": [
@@ -65253,6 +65388,99 @@
           "related"
         ],
         "title": "GetToolResponse"
+      },
+      "GoogleConnectionCredentialResponse": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "type": "string",
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token",
+          "client_id",
+          "client_secret"
+        ],
+        "title": "GoogleConnectionCredentialResponse"
+      },
+      "GoogleDisconnectRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "GoogleDisconnectRequest"
+      },
+      "GoogleExchangeRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Code"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Redirect Uri"
+          },
+          "client_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Client Id"
+          },
+          "owner_type": {
+            "type": "string",
+            "pattern": "^(user|organization)$",
+            "title": "Owner Type"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "redirect_uri",
+          "client_id",
+          "owner_type"
+        ],
+        "title": "GoogleExchangeRequest"
+      },
+      "GoogleExchangeResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "GoogleExchangeResponse"
       },
       "GrantPermissionRequest": {
         "properties": {
