@@ -29,12 +29,12 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 ## In motion
 
-- **Claude (main session):** adversarial review done — 4 confirmed findings fixed (anon read channel closed, silent no-op deletes now loud, post-create fetch URL normalization, hero screenshot fallback). Releasing both repos now; then live-verifying Fetch-now against the prod scraper.
+- **Claude (main session):** between waves. Shipped + live-verified: frontend v0.3.695, aidream v0.1.577, Fetch-now proven against prod (page_fetch session + fresh snapshot/screenshot in DB). Next: social routes or the server-side soft-delete upsert sweep.
 - **Arman:** GSC unblock — confirm `AIDREAM_URL` + `AIDREAM_SERVICE_TOKEN` env on the scraper service, reconnect Google at `/marketing/connections`, hit Sync. Then the full E2E on All Green Recycling.
 
 ## Up next (in order)
 
-1. Post-release live verify: Fetch-now button against prod scraper; fresh initialize on All Green (should clear the stale error panel).
+1. Fresh initialize on All Green (should clear the stale error panel — needs Arman or editor access).
 2. GSC E2E once Arman reconnects (gsc_page_stat rows + pages Clicks/Impr/Pos + coverage Google cells).
 3. Social routes (`brands/[id]/socials/...`) — property rows already created by discovery promotion.
 4. Soft-delete restore-on-upsert sweep server-side (handoff item; the class rule is written there).
