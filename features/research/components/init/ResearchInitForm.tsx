@@ -1283,7 +1283,7 @@ export default function ResearchInitForm() {
   // ── Hierarchy data ────────────────────────────────────────────────────────
   const { orgs, flatProjects, isLoading: projectsLoading } = useNavTree();
   const projectsByOrg = groupProjectsByOrgDisplay(orgs, flatProjects);
-  const orgsForCreate = orgs
+  const orgsForCreate = [...orgs]
     .sort((a, b) => {
       if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
       return formatOrgDisplayName(a).localeCompare(formatOrgDisplayName(b));
