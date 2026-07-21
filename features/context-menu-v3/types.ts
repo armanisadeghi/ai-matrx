@@ -321,6 +321,14 @@ export interface MenuContentProps {
   onViewHistory?: () => void;
   hasHistory: boolean;
 
+  /**
+   * Inline agent editing: the shell-registered WidgetHandle id for this
+   * surface (null on read-only surfaces / surfaces with no write path).
+   * Launch handlers pass it as `runtime.widgetHandleId` so agents launched
+   * from the menu can stream `widget_text_*` edits into the surface.
+   */
+  widgetHandleId: string | null;
+
   // shell coordination — let MenuContent tell the shell to skip selection
   // restore (e.g. when an action opens an overlay that takes focus).
   suppressSelectionRestore: () => void;

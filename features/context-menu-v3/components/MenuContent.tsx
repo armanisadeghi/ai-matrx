@@ -2,13 +2,14 @@
 
 // features/context-menu-v3/components/MenuContent.tsx
 //
-// The HEAVY layer (T1) — loaded by the shell via next/dynamic({ssr:false}) on
-// the first open only. Everything expensive lives here so the shell stays
-// inert: the unified-menu + bound-agent data hooks (which fire the single,
-// deduped fetch on THIS component's mount), the launchers, the clipboard /
-// launch / compare handlers, the react-icons resolver, and the full menu tree.
+// The DESKTOP renderer (T1) — loaded by the shell via next/dynamic({ssr:false})
+// on the first open only. Pure PRESENTATION: every piece of behavior (the
+// single deduped fetch, scope resolution, rich-document actions, launch /
+// clipboard / compare / overlay handlers) lives in `useContextMenuActions`,
+// shared 1:1 with the mobile renderer. Do NOT add a handler here — add it to
+// the hook so both renderers inherit it.
 //
-// Two failure classes are killed structurally here:
+// Two failure classes are killed structurally in the hook:
 //   1. "Fake menu" — Copy is source-gated on `resolveActionText`, which falls
 //      back to the DOM-captured content, so right-clicking read-only content
 //      always copies. `reportMenuDiagnostics` SCREAMS in dev if a menu opens
@@ -17,10 +18,9 @@
 //      passes every surface-declared value through; the audit screams on gaps.
 //
 // Modals/windows are dispatched through the OverlayController (no modal code
-// here). Reuses v2's data hook + bound-agents renderer (pure logic, not the
-// bloat source); these relocate into v3 when v2 is deleted.
+// here).
 
-import React, { useEffect } from "react";
+import React from "react";
 import {
   ContextMenuItem,
   ContextMenuSeparator,
@@ -43,11 +43,7 @@ import {
   MessageSquare,
   Database,
   FolderOpen,
-  Rocket,
-  FileText,
   Zap,
-  Building,
-  User,
   Scissors,
   Copy,
   Clipboard,
@@ -71,142 +67,25 @@ import {
   Link2,
   Bug,
 } from "lucide-react";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
+import type { RichDocumentAction } from "@/features/rich-document/types";
+import type { AgentMenuCategoryGroup } from "../hooks/useUnifiedAgentContextMenu";
+import { BoundAgentsMenuSection } from "./BoundAgentsMenuSection";
 import {
-  selectIsDebugMode,
-  toggleDebugMode,
-} from "@/lib/redux/preferences/adminDebugSlice";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import {
-  selectIsOverlayOpen,
-  toggleOverlay,
-} from "@/lib/redux/slices/overlaySlice";
-import {
-  setCompareBase,
-  openCompareWithBase,
-  selectHasCompareBase,
-} from "@/lib/redux/slices/diffCompareSlice";
-import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import { useOpenFindReplace } from "@/features/overlays/openers/findReplace";
-import { useOpenContextAssignment } from "@/features/overlays/openers/contextAssignment";
-import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
-import { useOpenStateViewerOverlay } from "@/features/overlays/openers/adminStateAnalyzer";
-import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
-import { toast } from "@/components/ui/use-toast";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { insertTextAtCursor } from "@/utils/editor-text-insertion";
-import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { resolveActions } from "@/features/rich-document/actions/registry";
-import { getSourceAdapter } from "@/features/rich-document/actions/sources";
-// Side-effect import: the copy/save/export/convert handlers self-register into
-// the rich-document action registry on load, so resolveActions resolves them.
-import "@/features/rich-document/actions/handlers";
-import type {
-  ContentSource,
-  RichDocumentAction,
-  RichDocumentActionContext,
-} from "@/features/rich-document/types";
-import {
-  PLACEMENT_TYPES,
-  PLACEMENT_TYPE_META,
-} from "@/features/agent-shortcuts/constants";
-import type { ResultDisplayMode } from "@/features/agents/types/instance.types";
-// Reused from v2 (frozen): the unified-menu data hook + bound-agents renderer
-// are pure logic/render, NOT the build-bloat source (that was the static
-// MenuBody import). They relocate into v3 when v2 is removed.
-import {
-  useUnifiedAgentContextMenu,
-  type AgentMenuEntry,
-  type AgentMenuCategoryGroup,
-} from "@/features/context-menu-v3/hooks/useUnifiedAgentContextMenu";
-import { BoundAgentsMenuSection } from "@/features/context-menu-v3/components/BoundAgentsMenuSection";
-import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
-import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
-import {
-  resolveApplicationScope,
-  resolveActionText,
-  reportMenuDiagnostics,
-} from "../value-resolution";
-import { spliceInputValue } from "../utils/selection-tracking";
+  useContextMenuActions,
+  getPlacementIcon,
+  getPlacementLabel,
+  resolveIcon,
+  hasItemsRecursive,
+  resolveRichActionView,
+  PLACEMENT_COLOR,
+} from "../hooks/useContextMenuActions";
 import type {
   MenuContentProps,
   PlacementKey,
-  PlacementVisibility,
   ExtraSectionAnchor,
   ContextMenuExtraItem,
 } from "../types";
-import { MANAGED_CONTEXT_MENU_AGENT_CONFIG } from "../managed-agent-launch";
-
-const DEFAULT_PLACEMENT_MODE: Record<PlacementKey, PlacementVisibility> = {
-  "ai-action": "show",
-  "bound-agent": "show",
-  "content-block": "show",
-  "organization-tool": "show",
-  "user-tool": "show",
-  "quick-action": "show",
-};
-
-const ALL_DB_PLACEMENTS: PlacementKey[] = [
-  "ai-action",
-  "content-block",
-  "organization-tool",
-  "user-tool",
-];
-
-/** User-facing relabels matching the v3 taxonomy (My Items / Org Items). */
-const PLACEMENT_LABEL_OVERRIDE: Partial<Record<string, string>> = {
-  [PLACEMENT_TYPES.USER_TOOL]: "My Items",
-  [PLACEMENT_TYPES.ORGANIZATION_TOOL]: "Org Items",
-};
-
-const PLACEMENT_COLOR: Record<string, string> = {
-  [PLACEMENT_TYPES.AI_ACTION]: "#0ea5e9",
-  [PLACEMENT_TYPES.CONTENT_BLOCK]: "#8b5cf6",
-  [PLACEMENT_TYPES.ORGANIZATION_TOOL]: "#f59e0b",
-  [PLACEMENT_TYPES.USER_TOOL]: "#10b981",
-};
-
-function getPlacementIcon(placementType: string) {
-  switch (placementType) {
-    case PLACEMENT_TYPES.AI_ACTION:
-      return Rocket;
-    case PLACEMENT_TYPES.CONTENT_BLOCK:
-      return FileText;
-    case PLACEMENT_TYPES.ORGANIZATION_TOOL:
-      return Building;
-    case PLACEMENT_TYPES.USER_TOOL:
-      return User;
-    default:
-      return FileText;
-  }
-}
-
-function resolveIcon(
-  iconName: string | null | undefined,
-  fallback = "FileText",
-) {
-  return getIconComponent(iconName ?? fallback, fallback);
-}
-
-function groupsByPlacement(
-  groups: AgentMenuCategoryGroup[],
-): Record<string, AgentMenuCategoryGroup[]> {
-  const map: Record<string, AgentMenuCategoryGroup[]> = {};
-  for (const g of groups) {
-    const pt = g.category.placementType;
-    (map[pt] ??= []).push(g);
-  }
-  return map;
-}
-
-function hasItemsRecursive(group: AgentMenuCategoryGroup): boolean {
-  if (group.items.length > 0) return true;
-  return group.children.some(hasItemsRecursive);
-}
 
 function truncatePreview(text: string): string {
   const t = text.trim();
@@ -217,26 +96,9 @@ function truncatePreview(text: string): string {
 export default function MenuContent(props: MenuContentProps) {
   const {
     variant,
-    sourceFeature,
-    surfaceName,
-    getApplicationScope,
-    contextData,
-    selectedText,
-    selectionRange,
-    fallbackContent,
-    addedContexts,
-    excludedContexts,
-    placementMode,
-    scope: shortcutScope,
-    scopeId,
+    surfaceName: _surfaceName,
     extraSections,
     isEditable,
-    editorId,
-    getTextarea,
-    onContentInserted,
-    onTextReplace,
-    onTextInsertBefore: _onTextInsertBefore,
-    onTextInsertAfter: _onTextInsertAfter,
     onSave,
     onDelete,
     onUndo,
@@ -247,122 +109,28 @@ export default function MenuContent(props: MenuContentProps) {
     redoHint,
     onViewHistory,
     hasHistory,
-    // suppressSelectionRestore — used by overlay-opening actions, wired in the
-    // overlay pass; read via `props` there to avoid an unused binding now.
   } = props;
 
-  const dispatch = useAppDispatch();
-
-  const resolvedPlacementMode: Record<PlacementKey, PlacementVisibility> = {
-    ...DEFAULT_PLACEMENT_MODE,
-    ...(placementMode ?? {}),
-  };
-  const dbPlacementTypes = ALL_DB_PLACEMENTS.filter(
-    (p) => resolvedPlacementMode[p] !== "hide",
-  );
-
-  const { categoryGroups, loading, refresh } = useUnifiedAgentContextMenu({
-    placementTypes: dbPlacementTypes,
-    addedContexts,
-    excludedContexts,
-    surfaceName,
-    enabled: dbPlacementTypes.length > 0,
-    scope: shortcutScope,
-    scopeId,
-  });
-
+  const m = useContextMenuActions(props);
   const {
-    sections: boundAgentSections,
-    loading: boundAgentsLoading,
-    refresh: refreshBoundAgents,
-  } = useSurfaceBoundAgents(surfaceName, { isEditable });
-
-  const { launchShortcut, launchAgent } = useAgentLauncher();
-  const {
-    openQuickNotes,
-    openQuickTasks,
-    openQuickChat,
-    openChatWindow,
-    openQuickData,
-    openQuickFiles,
-    openVoicePad,
-  } = useQuickActions();
-  const openDiffWindow = useOpenDiffViewerWindow();
-  const openFindReplace = useOpenFindReplace();
-  const openContextAssignment = useOpenContextAssignment();
-  const openShareModalWindow = useOpenShareModalWindow();
-  const openStateViewer = useOpenStateViewerOverlay();
-  const openSurfaceInspector = useOpenSurfaceContextInspector();
-  const entity = props.entity;
-
-  const hasCompareBase = useAppSelector(selectHasCompareBase);
-  const currentUserId = useAppSelector(selectUserId);
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const isDebugMode = useAppSelector(selectIsDebugMode);
-  const isAdminIndicatorOpen = useAppSelector((state) =>
-    selectIsOverlayOpen(state, "adminIndicator"),
-  );
-
-  // The single, deduped fetch — fires on THIS component's mount (= on open).
-  // Both the unified-menu thunk and the bound-agents service dedupe, so reopen
-  // never refetches. A double fetch is structurally impossible.
-  useEffect(() => {
-    void refresh();
-    // Default-contract agents (matrx-default/*) apply even with no surfaceName,
-    // so always fetch — a bare/undeclared surface still gets its default agents.
-    void refreshBoundAgents();
-  }, []);
-
-  // Assemble the scope the menu acts on. Stable for this open (the shell
-  // captured selection before mount), so computing it in render is cheap.
-  const scope = resolveApplicationScope({
-    getApplicationScope,
-    contextData,
-    selectedText,
-    selectionRange,
-    fallbackContent,
-  });
-  const actionText = resolveActionText(scope);
-
-  // Rich-document action context — reuses the canonical copy / export / convert
-  // handlers (NOT a fork). Built from the menu's resolved content + the
-  // surface's content source (defaults to raw). Only populated when there is
-  // content to act on, so the submenus self-hide on an inert menu.
-  const richDocSource: ContentSource = props.contentSource ?? { type: "raw" };
-  const richDocAdapter = getSourceAdapter(richDocSource.type);
-  const richDocCtx: RichDocumentActionContext = {
-    content: actionText.text,
-    source: richDocSource,
-    metadata: null,
-    dispatch,
-    isAuthenticated: Boolean(currentUserId),
+    actionText,
+    resolvedPlacementMode,
+    grouped,
+    loading,
+    boundAgentSections,
+    boundAgentsLoading,
+    richDocCtx,
+    copyVariantActions,
+    exportActions,
+    convertActions,
+    hasCompareBase,
     isAdmin,
-    isCreator: false,
-    surfaceKey: surfaceName ?? null,
-    onClose: () => {},
-    instanceKey: (prefix) =>
-      `${richDocAdapter.instanceKeyPrefix(richDocSource)}-${prefix}`,
-    sourceAdapter: richDocAdapter,
-  };
-  const richActions =
-    actionText.source !== "none" ? resolveActions(richDocCtx) : [];
-  const copyVariantActions = richActions.filter((a) => a.category === "copy");
-  const exportActions = richActions.filter(
-    (a) => a.category === "export" || a.id === "save-as-file",
-  );
-  const convertActions = richActions.filter(
-    (a) => a.category === "save" && a.id !== "save-as-file",
-  );
-
-  // Loud guards — dev-only scream for inert menus + value-mapping gaps.
-  useEffect(() => {
-    reportMenuDiagnostics({
-      surfaceName,
-      scope,
-      isEditable,
-      hasExtraSections: Boolean(extraSections && extraSections.length > 0),
-    });
-  }, []);
+    isDebugMode,
+    isAdminIndicatorOpen,
+    canNativeUndo,
+    quickActions,
+  } = m;
+  const entity = props.entity;
 
   // ── Variant-aware menu primitives ────────────────────────────────────────
   const Item = variant === "context" ? ContextMenuItem : DropdownMenuItem;
@@ -374,317 +142,6 @@ export default function MenuContent(props: MenuContentProps) {
   const SubContent =
     variant === "context" ? ContextMenuSubContent : DropdownMenuSubContent;
   const Label = variant === "context" ? ContextMenuLabel : DropdownMenuLabel;
-
-  // ── Handlers ─────────────────────────────────────────────────────────────
-  const handleCopy = async () => {
-    if (!actionText.text) return;
-    try {
-      await navigator.clipboard.writeText(actionText.text);
-    } catch (err) {
-      console.error("[ContextMenuV3] copy failed", err);
-    }
-  };
-
-  const handleCut = async () => {
-    if (!selectionRange || selectionRange.type !== "editable") return;
-    const element = selectionRange.element;
-    if (
-      !(element instanceof HTMLTextAreaElement) &&
-      !(element instanceof HTMLInputElement)
-    )
-      return;
-    const { start, end } = selectionRange;
-    const cutText = element.value.substring(start, end);
-    try {
-      await navigator.clipboard.writeText(cutText);
-      if (onTextReplace) {
-        onTextReplace(
-          element.value.substring(0, start) + element.value.substring(end),
-        );
-      } else {
-        spliceInputValue(element, start, end, "");
-      }
-    } catch (err) {
-      console.error("[ContextMenuV3] cut failed", err);
-    }
-  };
-
-  const handlePaste = async () => {
-    if (!isEditable || !selectionRange || selectionRange.type !== "editable")
-      return;
-    const element = selectionRange.element;
-    if (
-      !(element instanceof HTMLTextAreaElement) &&
-      !(element instanceof HTMLInputElement)
-    )
-      return;
-    try {
-      const text = await navigator.clipboard.readText();
-      const { start, end } = selectionRange;
-      if (onTextReplace) {
-        onTextReplace(
-          element.value.substring(0, start) +
-            text +
-            element.value.substring(end),
-        );
-      } else {
-        spliceInputValue(element, start, end, text);
-      }
-    } catch (err) {
-      console.error("[ContextMenuV3] paste failed", err);
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (!selectionRange) return;
-    if (selectionRange.type === "editable") {
-      const element = selectionRange.element;
-      if (
-        element instanceof HTMLTextAreaElement ||
-        element instanceof HTMLInputElement
-      ) {
-        requestAnimationFrame(() => {
-          element.focus();
-          element.select();
-        });
-      }
-    } else {
-      const container = selectionRange.containerElement;
-      if (!container) return;
-      requestAnimationFrame(() => {
-        try {
-          const range = document.createRange();
-          range.selectNodeContents(container);
-          const selection = window.getSelection();
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        } catch {
-          // best-effort
-        }
-      });
-    }
-  };
-
-  // Native per-field Undo/Redo. When the surface provides no richer history
-  // (`onUndo`/`onRedo`), an editable field still gets the browser's built-in
-  // undo stack — "offer undo" without standing up a history system. There is no
-  // non-deprecated API to trigger a textarea's native undo, so `execCommand` is
-  // the intentional (and only) mechanism here.
-  const editableElement: HTMLTextAreaElement | HTMLInputElement | null =
-    (() => {
-      const fromRange =
-        selectionRange?.type === "editable" ? selectionRange.element : null;
-      const el = fromRange ?? getTextarea?.() ?? null;
-      return el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
-        ? el
-        : null;
-    })();
-  const canNativeUndo = Boolean(isEditable && editableElement);
-  const runNativeEdit = (command: "undo" | "redo") => {
-    if (!editableElement) return;
-    editableElement.focus();
-    try {
-      document.execCommand(command);
-    } catch (err) {
-      console.error(`[ContextMenuV3] native ${command} failed`, err);
-    }
-  };
-  const handleUndo = () => (onUndo ? onUndo() : runNativeEdit("undo"));
-  const handleRedo = () => (onRedo ? onRedo() : runNativeEdit("redo"));
-
-  // Compare — reuses the existing diff-viewer window + compare-base slice.
-  const compareContent = (): { content: string; label: string } => {
-    if (actionText.source === "selection")
-      return { content: actionText.text, label: "Selection" };
-    return { content: actionText.text, label: "Current" };
-  };
-
-  const handleCompareClipboard = async () => {
-    const { content, label } = compareContent();
-    let clip = "";
-    try {
-      clip = await navigator.clipboard.readText();
-    } catch {
-      toast({ title: "Couldn't read the clipboard", variant: "destructive" });
-      return;
-    }
-    if (!clip) {
-      toast({ title: "Clipboard is empty" });
-      return;
-    }
-    // Current content is the baseline (old); the clipboard is the incoming
-    // version the user is about to paste (new). Clipboard-only text => addition.
-    openDiffWindow({
-      original: content,
-      modified: clip,
-      originalLabel: label,
-      modifiedLabel: "Clipboard",
-      title: "Compare with clipboard",
-      engine: "light",
-    });
-  };
-
-  const handleSetCompareBase = () => {
-    const { content, label } = compareContent();
-    dispatch(setCompareBase({ content, label, language: null }));
-    toast({
-      title: "Set as compare base",
-      description: "Open another item and choose “Compare with base”.",
-    });
-  };
-
-  const handleCompareWithBase = async () => {
-    const { content, label } = compareContent();
-    const opened = await dispatch(
-      openCompareWithBase({ current: content, currentLabel: label }),
-    ).unwrap();
-    if (!opened) {
-      toast({
-        title: "No compare base set",
-        description: "Choose “Set as compare base” on another item first.",
-      });
-    }
-  };
-
-  // AI Actions + content blocks.
-  const handleShortcutExecute = async (
-    entry: Extract<AgentMenuEntry, { entryType: "agent_shortcut" }>,
-  ) => {
-    if (!entry.agentId) {
-      toast({
-        title: "Agent Not Connected",
-        description: `"${entry.label}" has no connected agent. Configure it in the admin panel.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    const resultDisplay = (entry.displayMode ??
-      "modal-full") as ResultDisplayMode;
-    try {
-      await launchShortcut(entry.id, scope, {
-        surfaceKey: `${sourceFeature}:${entry.id}`,
-        sourceFeature,
-        config: { displayMode: resultDisplay },
-        runtime: { originalText: actionText.text, surfaceName },
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "An unknown error occurred";
-      toast({
-        title: "Execution Failed",
-        description: `${entry.label}: ${message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleBoundAgentExecute = async (entry: SurfaceBoundAgentEntry) => {
-    try {
-      await launchAgent(entry.agentId, {
-        surfaceKey: `${sourceFeature}:bound-agent:${entry.agentId}`,
-        sourceFeature,
-        // Managed entries share the WindowPanel default. autoRun is deliberately
-        // absent so the safe open-and-wait default remains authoritative.
-        config: MANAGED_CONTEXT_MENU_AGENT_CONFIG,
-        runtime: {
-          applicationScope: scope,
-          originalText: actionText.text,
-          surfaceName,
-        },
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "An unknown error occurred";
-      toast({
-        title: "Execution Failed",
-        description: `${entry.name}: ${message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleContentBlockInsert = (
-    entry: Extract<AgentMenuEntry, { entryType: "content_block" }>,
-  ) => {
-    const template = entry.template;
-    if (editorId) {
-      if (insertTextAtCursor(editorId, template)) onContentInserted?.();
-      return;
-    }
-    if (getTextarea) {
-      const textarea = getTextarea();
-      if (textarea && insertTextAtTextareaCursor(textarea, template))
-        onContentInserted?.();
-    }
-  };
-
-  const handleEntrySelect = (entry: AgentMenuEntry) => {
-    if (entry.entryType === "agent_shortcut") void handleShortcutExecute(entry);
-    else handleContentBlockInsert(entry);
-  };
-
-  // Editable Save / Delete — surface-provided; Delete via ConfirmDialog.
-  const handleDelete = async () => {
-    if (!onDelete) return;
-    const ok = await confirm({
-      title: "Delete this item?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
-      variant: "destructive",
-    });
-    if (ok) onDelete();
-  };
-
-  // Find & Replace → the findReplace overlay. Carries the live target element
-  // + onReplace through the callback registry (never Redux). Suppress the
-  // shell's selection-restore so the modal keeps focus after the menu closes.
-  const handleFind = () => {
-    props.suppressSelectionRestore();
-    openFindReplace({
-      getTargetElement: () =>
-        selectionRange?.type === "editable" ? selectionRange.element : null,
-      onReplace: onTextReplace,
-    });
-  };
-
-  // Attach To → the contextAssignment overlay (writes ctx_scope_assignments).
-  const handleAttach = () => {
-    if (!entity) return;
-    openContextAssignment({
-      subject: {
-        entityType: entity.type,
-        entityId: entity.id,
-        title: entity.title,
-      },
-    });
-  };
-
-  // Share → the shareModalWindow overlay.
-  const handleShare = () => {
-    if (!entity?.resourceType) return;
-    openShareModalWindow({
-      resourceType: entity.resourceType,
-      resourceId: entity.id,
-      resourceName: entity.title,
-    });
-  };
-
-  // Inspect the live surface value contract (admin) — the surface's declared
-  // SurfaceValues laid against the resolved scope, with Always/Sometimes flags
-  // and loud contract-violation highlighting. This is the surface-debugging
-  // tool; the raw Redux state analyzer below is a separate thing.
-  const handleInspectValues = () => {
-    openSurfaceInspector({
-      surfaceName: surfaceName ?? null,
-      scope,
-      isEditable: Boolean(isEditable),
-    });
-  };
-  const handleInspectState = () => {
-    openStateViewer();
-  };
 
   // ── Render helpers ────────────────────────────────────────────────────────
   const renderExtraItem = (item: ContextMenuExtraItem): React.ReactElement => {
@@ -792,7 +249,7 @@ export default function MenuContent(props: MenuContentProps) {
             return (
               <Item
                 key={entry.id}
-                onSelect={() => handleEntrySelect(entry)}
+                onSelect={() => m.handleEntrySelect(entry)}
                 disabled={isDisabled}
                 title={
                   isLegacy
@@ -834,27 +291,19 @@ export default function MenuContent(props: MenuContentProps) {
   };
 
   const renderRichAction = (action: RichDocumentAction): React.ReactElement => {
-    const label =
-      typeof action.label === "function"
-        ? action.label(richDocCtx)
-        : action.label;
+    const { label, disabled } = resolveRichActionView(action, richDocCtx);
     const ActionIcon = action.icon;
-    const disabledResult = action.disabled?.(richDocCtx);
-    const isDisabled =
-      typeof disabledResult === "object" ? true : Boolean(disabledResult);
     return (
       <Item
         key={action.id}
         onSelect={() => void action.run(richDocCtx)}
-        disabled={isDisabled}
+        disabled={disabled}
       >
         <ActionIcon className={`h-4 w-4 mr-2 ${action.iconColor ?? ""}`} />
         {label}
       </Item>
     );
   };
-
-  const grouped = groupsByPlacement(categoryGroups);
 
   const renderPlacementSubmenu = (placementType: string) => {
     const mode = resolvedPlacementMode[placementType as PlacementKey];
@@ -864,11 +313,7 @@ export default function MenuContent(props: MenuContentProps) {
     const isDisabled = mode === "disable" || !hasItems || loading;
     const PlacementIcon = getPlacementIcon(placementType);
     const color = PLACEMENT_COLOR[placementType];
-    const label =
-      PLACEMENT_LABEL_OVERRIDE[placementType] ??
-      PLACEMENT_TYPE_META[placementType as keyof typeof PLACEMENT_TYPE_META]
-        ?.label ??
-      placementType;
+    const label = getPlacementLabel(placementType);
     return (
       <Sub key={placementType}>
         <SubTrigger
@@ -922,7 +367,10 @@ export default function MenuContent(props: MenuContentProps) {
       )}
 
       {/* Clipboard */}
-      <Item onSelect={handleCopy} disabled={actionText.source === "none"}>
+      <Item
+        onSelect={() => void m.handleCopy()}
+        disabled={actionText.source === "none"}
+      >
         <Copy className="h-4 w-4 mr-2 text-emerald-500" />
         Copy
       </Item>
@@ -937,20 +385,23 @@ export default function MenuContent(props: MenuContentProps) {
           </SubContent>
         </Sub>
       )}
-      <Item onSelect={handleCut} disabled={!isEditable || !selectedText}>
+      <Item
+        onSelect={() => void m.handleCut()}
+        disabled={!isEditable || !props.selectedText}
+      >
         <Scissors className="h-4 w-4 mr-2 text-emerald-500" />
         Cut
       </Item>
-      <Item onSelect={handlePaste} disabled={!isEditable}>
+      <Item onSelect={() => void m.handlePaste()} disabled={!isEditable}>
         <Clipboard className="h-4 w-4 mr-2 text-emerald-500" />
         Paste
       </Item>
-      <Item onSelect={handleSelectAll}>
+      <Item onSelect={m.handleSelectAll}>
         <Type className="h-4 w-4 mr-2 text-muted-foreground" />
         Select All
       </Item>
 
-      <Item onSelect={handleFind}>
+      <Item onSelect={m.handleFind}>
         <Search className="h-4 w-4 mr-2 text-muted-foreground" />
         Find &amp; Replace
       </Item>
@@ -960,7 +411,7 @@ export default function MenuContent(props: MenuContentProps) {
       <Separator />
 
       {/* Core platform panels */}
-      <Item onSelect={() => openChatWindow()}>
+      <Item onSelect={() => quickActions.openChatWindow()}>
         <MessageSquare className="h-4 w-4 mr-2 text-primary" />
         Chat
       </Item>
@@ -968,7 +419,10 @@ export default function MenuContent(props: MenuContentProps) {
       <Separator />
 
       {/* History (Undo / Redo / View History / Compare) */}
-      <Item onSelect={handleUndo} disabled={onUndo ? !canUndo : !canNativeUndo}>
+      <Item
+        onSelect={m.handleUndo}
+        disabled={onUndo ? !canUndo : !canNativeUndo}
+      >
         <Undo2 className="h-4 w-4 mr-2 text-sky-500" />
         Undo
         {undoHint && (
@@ -977,7 +431,10 @@ export default function MenuContent(props: MenuContentProps) {
           </span>
         )}
       </Item>
-      <Item onSelect={handleRedo} disabled={onRedo ? !canRedo : !canNativeUndo}>
+      <Item
+        onSelect={m.handleRedo}
+        disabled={onRedo ? !canRedo : !canNativeUndo}
+      >
         <Redo2 className="h-4 w-4 mr-2 text-sky-500" />
         Redo
         {redoHint && (
@@ -999,11 +456,11 @@ export default function MenuContent(props: MenuContentProps) {
           Compare
         </SubTrigger>
         <SubContent className="w-60">
-          <Item onSelect={handleCompareClipboard}>
+          <Item onSelect={() => void m.handleCompareClipboard()}>
             <ClipboardIcon className="h-4 w-4 mr-2" />
             Compare with clipboard
           </Item>
-          <Item onSelect={handleSetCompareBase}>
+          <Item onSelect={m.handleSetCompareBase}>
             <Pin className="h-4 w-4 mr-2" />
             <div className="flex flex-col">
               <span>Set as compare base</span>
@@ -1014,7 +471,10 @@ export default function MenuContent(props: MenuContentProps) {
               </span>
             </div>
           </Item>
-          <Item onSelect={handleCompareWithBase} disabled={!hasCompareBase}>
+          <Item
+            onSelect={() => void m.handleCompareWithBase()}
+            disabled={!hasCompareBase}
+          >
             <GitCompareArrows className="h-4 w-4 mr-2" />
             <div className="flex flex-col">
               <span>Compare with base</span>
@@ -1052,13 +512,13 @@ export default function MenuContent(props: MenuContentProps) {
       )}
 
       {entity && (
-        <Item onSelect={handleAttach}>
+        <Item onSelect={m.handleAttach}>
           <Link2 className="h-4 w-4 mr-2 text-sky-500" />
           Attach To
         </Item>
       )}
       {entity?.resourceType && (
-        <Item onSelect={handleShare}>
+        <Item onSelect={m.handleShare}>
           <Share2 className="h-4 w-4 mr-2 text-emerald-500" />
           Share
         </Item>
@@ -1075,7 +535,7 @@ export default function MenuContent(props: MenuContentProps) {
           variant={variant}
           loading={boundAgentsLoading}
           sections={boundAgentSections}
-          onSelect={(entry) => void handleBoundAgentExecute(entry)}
+          onSelect={(entry) => void m.handleBoundAgentExecute(entry)}
           disabled={resolvedPlacementMode["bound-agent"] === "disable"}
         />
       )}
@@ -1100,27 +560,27 @@ export default function MenuContent(props: MenuContentProps) {
             Quick Actions
           </SubTrigger>
           <SubContent className="w-56">
-            <Item onSelect={() => openQuickNotes()}>
+            <Item onSelect={() => quickActions.openQuickNotes()}>
               <StickyNote className="h-4 w-4 mr-2" />
               Notes
             </Item>
-            <Item onSelect={() => openQuickTasks()}>
+            <Item onSelect={() => quickActions.openQuickTasks()}>
               <CheckSquare className="h-4 w-4 mr-2" />
               Tasks
             </Item>
-            <Item onSelect={() => openQuickChat()}>
+            <Item onSelect={() => quickActions.openQuickChat()}>
               <MessageSquare className="h-4 w-4 mr-2" />
               Chat
             </Item>
-            <Item onSelect={() => openQuickData()}>
+            <Item onSelect={() => quickActions.openQuickData()}>
               <Database className="h-4 w-4 mr-2" />
               Data
             </Item>
-            <Item onSelect={() => openQuickFiles()}>
+            <Item onSelect={() => quickActions.openQuickFiles()}>
               <FolderOpen className="h-4 w-4 mr-2" />
               Files
             </Item>
-            <Item onSelect={() => openVoicePad()}>
+            <Item onSelect={() => quickActions.openVoicePad()}>
               <Mic className="h-4 w-4 mr-2" />
               Voice Input
             </Item>
@@ -1140,7 +600,7 @@ export default function MenuContent(props: MenuContentProps) {
           )}
           {onDelete && (
             <Item
-              onSelect={() => void handleDelete()}
+              onSelect={() => void m.handleDelete()}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
@@ -1160,7 +620,7 @@ export default function MenuContent(props: MenuContentProps) {
               Admin Tools
             </SubTrigger>
             <SubContent className="w-56">
-              <Item onSelect={() => dispatch(toggleDebugMode())}>
+              <Item onSelect={m.handleToggleDebugMode}>
                 {isDebugMode ? (
                   <EyeOff className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
                 ) : (
@@ -1169,7 +629,7 @@ export default function MenuContent(props: MenuContentProps) {
                 {isDebugMode ? "Disable" : "Enable"} Debug Mode
               </Item>
               <Item
-                onSelect={handleInspectValues}
+                onSelect={m.handleInspectValues}
                 className="text-amber-600 dark:text-amber-400"
               >
                 <Bug className="h-4 w-4 mr-2" />
@@ -1177,7 +637,7 @@ export default function MenuContent(props: MenuContentProps) {
               </Item>
               {isDebugMode && (
                 <Item
-                  onSelect={handleInspectState}
+                  onSelect={m.handleInspectState}
                   className="text-amber-600 dark:text-amber-400"
                 >
                   <Database className="h-4 w-4 mr-2" />
@@ -1185,11 +645,7 @@ export default function MenuContent(props: MenuContentProps) {
                 </Item>
               )}
               <Separator />
-              <Item
-                onSelect={() =>
-                  dispatch(toggleOverlay({ overlayId: "adminIndicator" }))
-                }
-              >
+              <Item onSelect={m.handleToggleAdminIndicator}>
                 {isAdminIndicatorOpen ? (
                   <Eye className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
                 ) : (

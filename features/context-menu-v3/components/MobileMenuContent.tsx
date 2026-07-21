@@ -6,20 +6,15 @@
 // open, inside a 70dvh bottom-sheet Drawer. Same engagement-gated cost model as
 // the desktop MenuContent.
 //
-// Presentation differs from desktop, the DATA + LAUNCH path does NOT: this
-// reuses the exact same hooks (useUnifiedAgentContextMenu, useSurfaceBoundAgents,
-// useAgentLauncher, useQuickActions, the rich-document action registry, the
-// overlay openers) and resolves the SAME ApplicationScope, so the agent menus
-// (My / Org / System / Default) and the values that flow to a launched agent are
-// identical to desktop. It renders an iPhone-style multi-tier DRILL-DOWN (tap a
-// category → slide to its list with a back button) at a constant 70% height with
-// one internal scroll area.
-//
-// KNOWN DEBT (tracked): the handlers below are ported 1:1 from `MenuContent.tsx`.
-// The desktop + mobile renderers should both consume ONE `useContextMenuActions`
-// hook; until that extraction lands, keep the two handler sets in lockstep.
+// Pure PRESENTATION: every piece of behavior lives in `useContextMenuActions`
+// (shared 1:1 with desktop), so the agent menus (My / Org / System / Default)
+// and the values that flow to a launched agent are identical to desktop by
+// construction — the old "handlers ported 1:1, keep in lockstep" debt is paid.
+// This file only builds and renders the iPhone-style multi-tier DRILL-DOWN
+// (tap a category → slide to its list with a back button) at a constant 70%
+// height with one internal scroll area.
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   StickyNote,
   CheckSquare,
@@ -29,8 +24,6 @@ import {
   Rocket,
   FileText,
   Zap,
-  Building,
-  User,
   Scissors,
   Copy,
   Clipboard,
@@ -57,74 +50,26 @@ import {
   X,
   Replace,
 } from "lucide-react";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
+import type { RichDocumentAction } from "@/features/rich-document/types";
+import type { AgentMenuCategoryGroup } from "../hooks/useUnifiedAgentContextMenu";
 import {
-  selectIsDebugMode,
-  toggleDebugMode,
-} from "@/lib/redux/preferences/adminDebugSlice";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import {
-  selectIsOverlayOpen,
-  toggleOverlay,
-} from "@/lib/redux/slices/overlaySlice";
-import {
-  setCompareBase,
-  openCompareWithBase,
-  selectHasCompareBase,
-} from "@/lib/redux/slices/diffCompareSlice";
-import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import { useOpenFindReplace } from "@/features/overlays/openers/findReplace";
-import { useOpenContextAssignment } from "@/features/overlays/openers/contextAssignment";
-import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
-import { useOpenStateViewerOverlay } from "@/features/overlays/openers/adminStateAnalyzer";
-import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
-import { toast } from "@/components/ui/use-toast";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { insertTextAtCursor } from "@/utils/editor-text-insertion";
-import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { resolveActions } from "@/features/rich-document/actions/registry";
-import { getSourceAdapter } from "@/features/rich-document/actions/sources";
-import "@/features/rich-document/actions/handlers";
-import type {
-  ContentSource,
-  RichDocumentAction,
-  RichDocumentActionContext,
-} from "@/features/rich-document/types";
-import {
-  PLACEMENT_TYPES,
-  PLACEMENT_TYPE_META,
-} from "@/features/agent-shortcuts/constants";
-import type { ResultDisplayMode } from "@/features/agents/types/instance.types";
-import {
-  useUnifiedAgentContextMenu,
-  type AgentMenuEntry,
-  type AgentMenuCategoryGroup,
-} from "@/features/context-menu-v3/hooks/useUnifiedAgentContextMenu";
-import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
-import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
-import {
-  resolveApplicationScope,
-  resolveActionText,
-  reportMenuDiagnostics,
-} from "../value-resolution";
-import { spliceInputValue } from "../utils/selection-tracking";
+  useContextMenuActions,
+  getPlacementIcon,
+  getPlacementLabel,
+  resolveIcon,
+  hasItemsRecursive,
+  resolveRichActionView,
+} from "../hooks/useContextMenuActions";
 import type {
   MenuContentProps,
   PlacementKey,
-  PlacementVisibility,
   ExtraSectionAnchor,
   ContextMenuExtraItem,
 } from "../types";
-import { MANAGED_CONTEXT_MENU_AGENT_CONFIG } from "../managed-agent-launch";
 
-export interface MobileMenuContentProps extends Omit<
-  MenuContentProps,
-  "variant"
-> {
+export interface MobileMenuContentProps
+  extends Omit<MenuContentProps, "variant"> {
   /** Close the bottom sheet (run after any terminal action). */
   onClose: () => void;
 }
@@ -159,57 +104,6 @@ type MobileNode =
   | { kind: "section"; id: string; label: string }
   | { kind: "separator"; id: string };
 
-const DEFAULT_PLACEMENT_MODE: Record<PlacementKey, PlacementVisibility> = {
-  "ai-action": "show",
-  "bound-agent": "show",
-  "content-block": "show",
-  "organization-tool": "show",
-  "user-tool": "show",
-  "quick-action": "show",
-};
-const ALL_DB_PLACEMENTS: PlacementKey[] = [
-  "ai-action",
-  "content-block",
-  "organization-tool",
-  "user-tool",
-];
-const PLACEMENT_LABEL_OVERRIDE: Partial<Record<string, string>> = {
-  [PLACEMENT_TYPES.USER_TOOL]: "My Items",
-  [PLACEMENT_TYPES.ORGANIZATION_TOOL]: "Org Items",
-};
-function getPlacementIcon(placementType: string): Icon {
-  switch (placementType) {
-    case PLACEMENT_TYPES.AI_ACTION:
-      return Rocket;
-    case PLACEMENT_TYPES.CONTENT_BLOCK:
-      return FileText;
-    case PLACEMENT_TYPES.ORGANIZATION_TOOL:
-      return Building;
-    case PLACEMENT_TYPES.USER_TOOL:
-      return User;
-    default:
-      return FileText;
-  }
-}
-function resolveIcon(
-  iconName: string | null | undefined,
-  fallback = "FileText",
-) {
-  return getIconComponent(iconName ?? fallback, fallback) as Icon;
-}
-function groupsByPlacement(
-  groups: AgentMenuCategoryGroup[],
-): Record<string, AgentMenuCategoryGroup[]> {
-  const map: Record<string, AgentMenuCategoryGroup[]> = {};
-  for (const g of groups) {
-    (map[g.category.placementType] ??= []).push(g);
-  }
-  return map;
-}
-function hasItemsRecursive(group: AgentMenuCategoryGroup): boolean {
-  if (group.items.length > 0) return true;
-  return group.children.some(hasItemsRecursive);
-}
 function truncatePreview(text: string): string {
   const t = text.trim();
   if (t.length <= 60) return t;
@@ -219,24 +113,9 @@ function truncatePreview(text: string): string {
 export default function MobileMenuContent(props: MobileMenuContentProps) {
   const {
     onClose,
-    sourceFeature,
     surfaceName,
-    getApplicationScope,
-    contextData,
-    selectedText,
-    selectionRange,
-    fallbackContent,
-    addedContexts,
-    excludedContexts,
-    placementMode,
-    scope: shortcutScope,
-    scopeId,
     extraSections,
     isEditable,
-    editorId,
-    getTextarea,
-    onContentInserted,
-    onTextReplace,
     onSave,
     onDelete,
     onUndo,
@@ -247,381 +126,26 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     hasHistory,
   } = props;
 
-  const dispatch = useAppDispatch();
-  const entity = props.entity;
-
-  const resolvedPlacementMode: Record<PlacementKey, PlacementVisibility> = {
-    ...DEFAULT_PLACEMENT_MODE,
-    ...(placementMode ?? {}),
-  };
-  const dbPlacementTypes = ALL_DB_PLACEMENTS.filter(
-    (p) => resolvedPlacementMode[p] !== "hide",
-  );
-
-  const { categoryGroups, loading, refresh } = useUnifiedAgentContextMenu({
-    placementTypes: dbPlacementTypes,
-    addedContexts,
-    excludedContexts,
-    surfaceName,
-    enabled: dbPlacementTypes.length > 0,
-    scope: shortcutScope,
-    scopeId,
-  });
+  const m = useContextMenuActions(props);
   const {
-    sections: boundAgentSections,
-    loading: boundAgentsLoading,
-    refresh: refreshBoundAgents,
-  } = useSurfaceBoundAgents(surfaceName, { isEditable });
-
-  const { launchShortcut, launchAgent } = useAgentLauncher();
-  const {
-    openQuickNotes,
-    openQuickTasks,
-    openQuickChat,
-    openChatWindow,
-    openQuickData,
-    openQuickFiles,
-    openVoicePad,
-  } = useQuickActions();
-  const openDiffWindow = useOpenDiffViewerWindow();
-  const openFindReplace = useOpenFindReplace();
-  const openContextAssignment = useOpenContextAssignment();
-  const openShareModalWindow = useOpenShareModalWindow();
-  const openStateViewer = useOpenStateViewerOverlay();
-  const openSurfaceInspector = useOpenSurfaceContextInspector();
-
-  const hasCompareBase = useAppSelector(selectHasCompareBase);
-  const currentUserId = useAppSelector(selectUserId);
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const isDebugMode = useAppSelector(selectIsDebugMode);
-  const isAdminIndicatorOpen = useAppSelector((state) =>
-    selectIsOverlayOpen(state, "adminIndicator"),
-  );
-
-  // The single, deduped fetch — fires on mount (= on open). Same guards as desktop.
-  useEffect(() => {
-    void refresh();
-    void refreshBoundAgents();
-  }, []);
-
-  const scope = resolveApplicationScope({
-    getApplicationScope,
-    contextData,
-    selectedText,
-    selectionRange,
-    fallbackContent,
-  });
-  const actionText = resolveActionText(scope);
-
-  const richDocSource: ContentSource = props.contentSource ?? { type: "raw" };
-  const richDocAdapter = getSourceAdapter(richDocSource.type);
-  const richDocCtx: RichDocumentActionContext = {
-    content: actionText.text,
-    source: richDocSource,
-    metadata: null,
-    dispatch,
-    isAuthenticated: Boolean(currentUserId),
+    actionText,
+    resolvedPlacementMode,
+    grouped,
+    loading,
+    boundAgentSections,
+    boundAgentsLoading,
+    richDocCtx,
+    copyVariantActions,
+    exportActions,
+    convertActions,
+    hasCompareBase,
     isAdmin,
-    isCreator: false,
-    surfaceKey: surfaceName ?? null,
-    onClose: () => {},
-    instanceKey: (prefix) =>
-      `${richDocAdapter.instanceKeyPrefix(richDocSource)}-${prefix}`,
-    sourceAdapter: richDocAdapter,
-  };
-  const richActions =
-    actionText.source !== "none" ? resolveActions(richDocCtx) : [];
-  const copyVariantActions = richActions.filter((a) => a.category === "copy");
-  const exportActions = richActions.filter(
-    (a) => a.category === "export" || a.id === "save-as-file",
-  );
-  const convertActions = richActions.filter(
-    (a) => a.category === "save" && a.id !== "save-as-file",
-  );
-
-  useEffect(() => {
-    reportMenuDiagnostics({
-      surfaceName,
-      scope,
-      isEditable,
-      hasExtraSections: Boolean(extraSections && extraSections.length > 0),
-    });
-  }, []);
-
-  // ── Handlers (ported 1:1 from MenuContent — keep in lockstep) ───────────────
-  const handleCopy = async () => {
-    if (!actionText.text) return;
-    try {
-      await navigator.clipboard.writeText(actionText.text);
-    } catch (err) {
-      console.error("[ContextMenuV3] copy failed", err);
-    }
-  };
-  const handleCut = async () => {
-    if (!selectionRange || selectionRange.type !== "editable") return;
-    const element = selectionRange.element;
-    if (
-      !(element instanceof HTMLTextAreaElement) &&
-      !(element instanceof HTMLInputElement)
-    )
-      return;
-    const { start, end } = selectionRange;
-    const cutText = element.value.substring(start, end);
-    try {
-      await navigator.clipboard.writeText(cutText);
-      if (onTextReplace) {
-        onTextReplace(
-          element.value.substring(0, start) + element.value.substring(end),
-        );
-      } else {
-        spliceInputValue(element, start, end, "");
-      }
-    } catch (err) {
-      console.error("[ContextMenuV3] cut failed", err);
-    }
-  };
-  const handlePaste = async () => {
-    if (!isEditable || !selectionRange || selectionRange.type !== "editable")
-      return;
-    const element = selectionRange.element;
-    if (
-      !(element instanceof HTMLTextAreaElement) &&
-      !(element instanceof HTMLInputElement)
-    )
-      return;
-    try {
-      const text = await navigator.clipboard.readText();
-      const { start, end } = selectionRange;
-      if (onTextReplace) {
-        onTextReplace(
-          element.value.substring(0, start) +
-            text +
-            element.value.substring(end),
-        );
-      } else {
-        spliceInputValue(element, start, end, text);
-      }
-    } catch (err) {
-      console.error("[ContextMenuV3] paste failed", err);
-    }
-  };
-  const handleSelectAll = () => {
-    if (!selectionRange) return;
-    if (selectionRange.type === "editable") {
-      const element = selectionRange.element;
-      if (
-        element instanceof HTMLTextAreaElement ||
-        element instanceof HTMLInputElement
-      ) {
-        requestAnimationFrame(() => {
-          element.focus();
-          element.select();
-        });
-      }
-    } else {
-      const container = selectionRange.containerElement;
-      if (!container) return;
-      requestAnimationFrame(() => {
-        try {
-          const range = document.createRange();
-          range.selectNodeContents(container);
-          const selection = window.getSelection();
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        } catch {
-          // best-effort
-        }
-      });
-    }
-  };
-
-  const editableElement: HTMLTextAreaElement | HTMLInputElement | null =
-    (() => {
-      const fromRange =
-        selectionRange?.type === "editable" ? selectionRange.element : null;
-      const el = fromRange ?? getTextarea?.() ?? null;
-      return el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
-        ? el
-        : null;
-    })();
-  const canNativeUndo = Boolean(isEditable && editableElement);
-  const runNativeEdit = (command: "undo" | "redo") => {
-    if (!editableElement) return;
-    editableElement.focus();
-    try {
-      document.execCommand(command);
-    } catch (err) {
-      console.error(`[ContextMenuV3] native ${command} failed`, err);
-    }
-  };
-  const handleUndo = () => (onUndo ? onUndo() : runNativeEdit("undo"));
-  const handleRedo = () => (onRedo ? onRedo() : runNativeEdit("redo"));
-
-  const compareContent = (): { content: string; label: string } =>
-    actionText.source === "selection"
-      ? { content: actionText.text, label: "Selection" }
-      : { content: actionText.text, label: "Current" };
-  const handleCompareClipboard = async () => {
-    const { content, label } = compareContent();
-    let clip = "";
-    try {
-      clip = await navigator.clipboard.readText();
-    } catch {
-      toast({ title: "Couldn't read the clipboard", variant: "destructive" });
-      return;
-    }
-    if (!clip) {
-      toast({ title: "Clipboard is empty" });
-      return;
-    }
-    // Current content is the baseline (old); the clipboard is the incoming
-    // version the user is about to paste (new). Clipboard-only text => addition.
-    openDiffWindow({
-      original: content,
-      modified: clip,
-      originalLabel: label,
-      modifiedLabel: "Clipboard",
-      title: "Compare with clipboard",
-      engine: "light",
-    });
-  };
-  const handleSetCompareBase = () => {
-    const { content, label } = compareContent();
-    dispatch(setCompareBase({ content, label, language: null }));
-    toast({
-      title: "Set as compare base",
-      description: "Open another item and choose “Compare with base”.",
-    });
-  };
-  const handleCompareWithBase = async () => {
-    const { content, label } = compareContent();
-    const opened = await dispatch(
-      openCompareWithBase({ current: content, currentLabel: label }),
-    ).unwrap();
-    if (!opened) {
-      toast({
-        title: "No compare base set",
-        description: "Choose “Set as compare base” on another item first.",
-      });
-    }
-  };
-
-  const handleShortcutExecute = async (
-    entry: Extract<AgentMenuEntry, { entryType: "agent_shortcut" }>,
-  ) => {
-    if (!entry.agentId) {
-      toast({
-        title: "Agent Not Connected",
-        description: `"${entry.label}" has no connected agent. Configure it in the admin panel.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    const resultDisplay = (entry.displayMode ??
-      "modal-full") as ResultDisplayMode;
-    try {
-      await launchShortcut(entry.id, scope, {
-        surfaceKey: `${sourceFeature}:${entry.id}`,
-        sourceFeature,
-        config: { displayMode: resultDisplay },
-        runtime: { originalText: actionText.text, surfaceName },
-      });
-    } catch (error) {
-      toast({
-        title: "Execution Failed",
-        description: `${entry.label}: ${
-          error instanceof Error ? error.message : "An unknown error occurred"
-        }`,
-        variant: "destructive",
-      });
-    }
-  };
-  const handleBoundAgentExecute = async (entry: SurfaceBoundAgentEntry) => {
-    try {
-      await launchAgent(entry.agentId, {
-        surfaceKey: `${sourceFeature}:bound-agent:${entry.agentId}`,
-        sourceFeature,
-        // Managed entries share the WindowPanel default. autoRun is deliberately
-        // absent so the safe open-and-wait default remains authoritative.
-        config: MANAGED_CONTEXT_MENU_AGENT_CONFIG,
-        runtime: {
-          applicationScope: scope,
-          originalText: actionText.text,
-          surfaceName,
-        },
-      });
-    } catch (error) {
-      toast({
-        title: "Execution Failed",
-        description: `${entry.name}: ${
-          error instanceof Error ? error.message : "An unknown error occurred"
-        }`,
-        variant: "destructive",
-      });
-    }
-  };
-  const handleContentBlockInsert = (
-    entry: Extract<AgentMenuEntry, { entryType: "content_block" }>,
-  ) => {
-    const template = entry.template;
-    if (editorId) {
-      if (insertTextAtCursor(editorId, template)) onContentInserted?.();
-      return;
-    }
-    if (getTextarea) {
-      const textarea = getTextarea();
-      if (textarea && insertTextAtTextareaCursor(textarea, template))
-        onContentInserted?.();
-    }
-  };
-  const handleEntrySelect = (entry: AgentMenuEntry) => {
-    if (entry.entryType === "agent_shortcut") void handleShortcutExecute(entry);
-    else handleContentBlockInsert(entry);
-  };
-  const handleDelete = async () => {
-    if (!onDelete) return;
-    const ok = await confirm({
-      title: "Delete this item?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
-      variant: "destructive",
-    });
-    if (ok) onDelete();
-  };
-  const handleFind = () => {
-    openFindReplace({
-      getTargetElement: () =>
-        selectionRange?.type === "editable" ? selectionRange.element : null,
-      onReplace: onTextReplace,
-    });
-  };
-  const handleAttach = () => {
-    if (!entity) return;
-    openContextAssignment({
-      subject: {
-        entityType: entity.type,
-        entityId: entity.id,
-        title: entity.title,
-      },
-    });
-  };
-  const handleShare = () => {
-    if (!entity?.resourceType) return;
-    openShareModalWindow({
-      resourceType: entity.resourceType,
-      resourceId: entity.id,
-      resourceName: entity.title,
-    });
-  };
-  const handleInspectValues = () => {
-    openSurfaceInspector({
-      surfaceName: surfaceName ?? null,
-      scope,
-      isEditable: Boolean(isEditable),
-    });
-  };
+    isDebugMode,
+    isAdminIndicatorOpen,
+    canNativeUndo,
+    quickActions,
+  } = m;
+  const entity = props.entity;
 
   // Wrap a terminal action so it closes the sheet after firing.
   const close = (fn: () => void) => () => {
@@ -631,17 +155,14 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
 
   // ── Build the drill-down model ──────────────────────────────────────────────
   const richActionNode = (a: RichDocumentAction): MobileNode => {
-    const label = typeof a.label === "function" ? a.label(richDocCtx) : a.label;
-    const disabledResult = a.disabled?.(richDocCtx);
-    const isDisabled =
-      typeof disabledResult === "object" ? true : Boolean(disabledResult);
+    const { label, disabled } = resolveRichActionView(a, richDocCtx);
     return {
       kind: "action",
       id: a.id,
       label,
       icon: a.icon as Icon,
       iconClass: a.iconColor ?? "",
-      disabled: isDisabled,
+      disabled,
       onSelect: close(() => void a.run(richDocCtx)),
     };
   };
@@ -651,7 +172,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
   ): MobileNode[] => {
     const nodes: MobileNode[] = [];
     for (const entry of group.items) {
-      const ItemIcon = resolveIcon(entry.iconName);
+      const ItemIcon = resolveIcon(entry.iconName) as Icon;
       const isDisabled = entry.entryType === "agent_shortcut" && !entry.agentId;
       nodes.push({
         kind: "action",
@@ -660,11 +181,11 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         icon: ItemIcon,
         disabled: isDisabled,
         sublabel: isDisabled ? "Not configured" : undefined,
-        onSelect: close(() => handleEntrySelect(entry)),
+        onSelect: close(() => m.handleEntrySelect(entry)),
       });
     }
     for (const child of group.children) {
-      const ChildIcon = resolveIcon(child.category.iconName);
+      const ChildIcon = resolveIcon(child.category.iconName) as Icon;
       nodes.push({
         kind: "submenu",
         id: child.category.id,
@@ -678,20 +199,15 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     return nodes;
   };
 
-  const grouped = groupsByPlacement(categoryGroups);
   const placementSubmenu = (placementType: string): MobileNode | null => {
     if (resolvedPlacementMode[placementType as PlacementKey] === "hide")
       return null;
     const groups = grouped[placementType] || [];
     const hasItems = groups.length > 0 && groups.some(hasItemsRecursive);
-    const label =
-      PLACEMENT_LABEL_OVERRIDE[placementType] ??
-      PLACEMENT_TYPE_META[placementType as keyof typeof PLACEMENT_TYPE_META]
-        ?.label ??
-      placementType;
+    const label = getPlacementLabel(placementType);
     const children: MobileNode[] = [];
     for (const g of groups) {
-      const CatIcon = resolveIcon(g.category.iconName);
+      const CatIcon = resolveIcon(g.category.iconName) as Icon;
       children.push({
         kind: "submenu",
         id: g.category.id,
@@ -705,7 +221,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       kind: "submenu",
       id: placementType,
       label,
-      icon: getPlacementIcon(placementType),
+      icon: getPlacementIcon(placementType) as Icon,
       disabled:
         resolvedPlacementMode[placementType as PlacementKey] === "disable" ||
         !hasItems ||
@@ -733,7 +249,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
           label: agent.name,
           icon: Rocket,
           iconClass: "text-indigo-500",
-          onSelect: close(() => void handleBoundAgentExecute(agent)),
+          onSelect: close(() => void m.handleBoundAgentExecute(agent)),
         });
       }
     }
@@ -810,7 +326,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     icon: Copy,
     iconClass: "text-emerald-500",
     disabled: actionText.source === "none",
-    onSelect: close(() => void handleCopy()),
+    onSelect: close(() => void m.handleCopy()),
   });
   if (copyVariantActions.length > 0)
     push({
@@ -828,8 +344,8 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       label: "Cut",
       icon: Scissors,
       iconClass: "text-emerald-500",
-      disabled: !selectedText,
-      onSelect: close(() => void handleCut()),
+      disabled: !props.selectedText,
+      onSelect: close(() => void m.handleCut()),
     });
     push({
       kind: "action",
@@ -837,7 +353,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       label: "Paste",
       icon: Clipboard,
       iconClass: "text-emerald-500",
-      onSelect: close(() => void handlePaste()),
+      onSelect: close(() => void m.handlePaste()),
     });
   }
   push({
@@ -846,7 +362,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     label: "Select All",
     icon: Type,
     iconClass: "text-muted-foreground",
-    onSelect: close(handleSelectAll),
+    onSelect: close(m.handleSelectAll),
   });
   push({
     kind: "action",
@@ -854,7 +370,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     label: "Find & Replace",
     icon: Search,
     iconClass: "text-muted-foreground",
-    onSelect: close(handleFind),
+    onSelect: close(m.handleFind),
   });
   for (const n of extraNodes("after-clipboard")) push(n);
   push({ kind: "separator", id: "sep-1" });
@@ -866,7 +382,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     label: "Chat",
     icon: MessageSquare,
     iconClass: "text-primary",
-    onSelect: close(() => openChatWindow()),
+    onSelect: close(() => quickActions.openChatWindow()),
   });
   push({ kind: "separator", id: "sep-1b" });
 
@@ -878,7 +394,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     icon: Undo2,
     iconClass: "text-sky-500",
     disabled: onUndo ? !canUndo : !canNativeUndo,
-    onSelect: close(handleUndo),
+    onSelect: close(m.handleUndo),
   });
   push({
     kind: "action",
@@ -887,7 +403,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     icon: Redo2,
     iconClass: "text-sky-500",
     disabled: onRedo ? !canRedo : !canNativeUndo,
-    onSelect: close(handleRedo),
+    onSelect: close(m.handleRedo),
   });
   push({
     kind: "action",
@@ -910,7 +426,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         id: "cmp-clip",
         label: "Compare with clipboard",
         icon: ClipboardIcon,
-        onSelect: close(() => void handleCompareClipboard()),
+        onSelect: close(() => void m.handleCompareClipboard()),
       },
       {
         kind: "action",
@@ -919,7 +435,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         icon: Pin,
         sublabel:
           actionText.source === "selection" ? "Use selection" : "Use content",
-        onSelect: close(handleSetCompareBase),
+        onSelect: close(m.handleSetCompareBase),
       },
       {
         kind: "action",
@@ -928,7 +444,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         icon: GitCompareArrows,
         disabled: !hasCompareBase,
         sublabel: !hasCompareBase ? "No base set yet" : undefined,
-        onSelect: close(() => void handleCompareWithBase()),
+        onSelect: close(() => void m.handleCompareWithBase()),
       },
     ],
   });
@@ -957,7 +473,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       label: "Attach To",
       icon: Link2,
       iconClass: "text-sky-500",
-      onSelect: close(handleAttach),
+      onSelect: close(m.handleAttach),
     });
   if (entity?.resourceType)
     push({
@@ -966,7 +482,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       label: "Share",
       icon: Share2,
       iconClass: "text-emerald-500",
-      onSelect: close(handleShare),
+      onSelect: close(m.handleShare),
     });
   push({ kind: "separator", id: "sep-2" });
   for (const n of extraNodes("after-compare")) push(n);
@@ -994,42 +510,42 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
           id: "q-notes",
           label: "Notes",
           icon: StickyNote,
-          onSelect: close(() => openQuickNotes()),
+          onSelect: close(() => quickActions.openQuickNotes()),
         },
         {
           kind: "action",
           id: "q-tasks",
           label: "Tasks",
           icon: CheckSquare,
-          onSelect: close(() => openQuickTasks()),
+          onSelect: close(() => quickActions.openQuickTasks()),
         },
         {
           kind: "action",
           id: "q-chat",
           label: "Chat",
           icon: MessageSquare,
-          onSelect: close(() => openQuickChat()),
+          onSelect: close(() => quickActions.openQuickChat()),
         },
         {
           kind: "action",
           id: "q-data",
           label: "Data",
           icon: Database,
-          onSelect: close(() => openQuickData()),
+          onSelect: close(() => quickActions.openQuickData()),
         },
         {
           kind: "action",
           id: "q-files",
           label: "Files",
           icon: FolderOpen,
-          onSelect: close(() => openQuickFiles()),
+          onSelect: close(() => quickActions.openQuickFiles()),
         },
         {
           kind: "action",
           id: "q-voice",
           label: "Voice Input",
           icon: Mic,
-          onSelect: close(() => openVoicePad()),
+          onSelect: close(() => quickActions.openVoicePad()),
         },
       ],
     });
@@ -1053,7 +569,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         label: "Delete",
         icon: Trash2,
         destructive: true,
-        onSelect: close(() => void handleDelete()),
+        onSelect: close(() => void m.handleDelete()),
       });
   }
 
@@ -1067,14 +583,14 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         label: "Context Values",
         icon: Bug,
         iconClass: "text-amber-600 dark:text-amber-400",
-        onSelect: close(handleInspectValues),
+        onSelect: close(m.handleInspectValues),
       },
       {
         kind: "action",
         id: "debug-toggle",
         label: `${isDebugMode ? "Disable" : "Enable"} Debug Mode`,
         icon: isDebugMode ? EyeOff : Eye,
-        onSelect: () => dispatch(toggleDebugMode()),
+        onSelect: m.handleToggleDebugMode,
       },
     ];
     if (isDebugMode)
@@ -1084,14 +600,14 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         label: "Redux State",
         icon: Database,
         iconClass: "text-amber-600 dark:text-amber-400",
-        onSelect: close(() => openStateViewer()),
+        onSelect: close(m.handleInspectState),
       });
     adminChildren.push({
       kind: "action",
       id: "admin-indicator",
       label: `${isAdminIndicatorOpen ? "Hide" : "Show"} Admin Indicator`,
       icon: isAdminIndicatorOpen ? Eye : EyeOff,
-      onSelect: () => dispatch(toggleOverlay({ overlayId: "adminIndicator" })),
+      onSelect: m.handleToggleAdminIndicator,
     });
     push({
       kind: "submenu",

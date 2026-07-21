@@ -153,10 +153,12 @@ function buildFromMenuContext(args: ResolveScopeArgs): ApplicationScope {
  * otherwise the resolved primary content. This is what makes Copy work on a
  * read-only surface where the user merely right-clicked.
  */
-export function resolveActionText(scope: ApplicationScope): {
+export interface ResolvedActionText {
   text: string;
   source: "selection" | "content" | "none";
-} {
+}
+
+export function resolveActionText(scope: ApplicationScope): ResolvedActionText {
   const selection = strOf(scope.selection).trim();
   if (selection) return { text: strOf(scope.selection), source: "selection" };
   const content = strOf(scope.content).trim();

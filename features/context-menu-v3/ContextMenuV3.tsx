@@ -48,6 +48,8 @@ import {
   type SelectionRange,
 } from "./utils/selection-tracking";
 import type { ContextMenuV3Props, MenuContentProps } from "./types";
+import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
+import { buildEditableWidgetHandle } from "./utils/widget-handle";
 
 /**
  * Canonical v3 menu revision. Rendered in the footer as
@@ -162,6 +164,27 @@ export function ContextMenuV3({
   // Set by MenuContent (via suppressSelectionRestore) when an action opens an
   // overlay that should keep focus — so closing the menu doesn't yank it back.
   const skipSelectionRestoreRef = useRef(false);
+
+  // ── Inline agent editing (WidgetHandle) ──────────────────────────────────
+  // Editable surfaces get a widget handle derived from the SAME callbacks they
+  // already pass the menu, registered here in the shell (NOT in the lazy
+  // MenuContent — that unmounts on close, and the handle must outlive the menu
+  // for the whole agent stream). Read-only surfaces register nothing. The
+  // launch handlers pass the id as `runtime.widgetHandleId`, so agents
+  // launched from this menu can stream `widget_text_*` edits into the surface.
+  // Weight check: buildEditableWidgetHandle + useOptionalWidgetHandle pull in
+  // only types, the callbackManager map, and selection-tracking — no data
+  // hooks, no icons; the shell stays inert.
+  const widgetHandle = isEditable
+    ? buildEditableWidgetHandle({
+        getTextarea,
+        onTextReplace,
+        onTextInsertBefore,
+        onTextInsertAfter,
+        getApplicationScope,
+      })
+    : null;
+  const widgetHandleId = useOptionalWidgetHandle(widgetHandle);
 
   // Effective contextData for THIS invocation: static prop + per-target merge.
   const getEffectiveContextData = (): Record<string, unknown> => {
@@ -504,6 +527,7 @@ export function ContextMenuV3({
     redoHint,
     onViewHistory,
     hasHistory,
+    widgetHandleId,
     suppressSelectionRestore: () => {
       skipSelectionRestoreRef.current = true;
     },

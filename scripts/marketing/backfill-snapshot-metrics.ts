@@ -15,10 +15,8 @@
  */
 import { readFileSync } from "fs";
 
-for (const f of [
-  "/Users/armanisadeghi/code/matrx-frontend/.env.local",
-  "/Users/armanisadeghi/code/matrx-frontend/.env",
-]) {
+// Run from the repo root (`npx tsx scripts/marketing/...`) so these resolve.
+for (const f of [".env.local", ".env"]) {
   try {
     for (const line of readFileSync(f, "utf8").split("\n")) {
       const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
@@ -31,16 +29,16 @@ for (const f of [
 
 async function main() {
   const { createAdminClient } = await import(
-    "/Users/armanisadeghi/code/matrx-frontend/utils/supabase/adminClient"
+    "@/utils/supabase/adminClient"
   );
   const { buildStoredSeoMetrics } = await import(
-    "/Users/armanisadeghi/code/matrx-frontend/features/seo/serp/metrics"
+    "@/features/seo/serp/metrics"
   );
   const { buildStoredAuditMetrics, socialInputFromRawTags } = await import(
-    "/Users/armanisadeghi/code/matrx-frontend/features/seo/audit/stored"
+    "@/features/seo/audit/stored"
   );
   const { headingInputsFromRaw } = await import(
-    "/Users/armanisadeghi/code/matrx-frontend/features/seo/audit/headings"
+    "@/features/seo/audit/headings"
   );
 
   const supabase = createAdminClient();
