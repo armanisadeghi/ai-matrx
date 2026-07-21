@@ -532,6 +532,10 @@ const CharacterCounterWindow = lazyOverlay(
     import("@/features/window-panels/windows/text-counter/CharacterCounterWindow"),
   { ssr: false },
 );
+const SerpAnalyzerWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/seo/SerpAnalyzerWindow"),
+  { ssr: false },
+);
 const ImageUploaderWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/image/ImageUploaderWindow"),
   { ssr: false },
@@ -1120,6 +1124,9 @@ export default function OverlayController() {
     characterCounterWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "characterCounterWindow"),
     ),
+    serpAnalyzerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "serpAnalyzerWindow"),
+    ),
     quickChatWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickChatWindow"),
     ),
@@ -1438,6 +1445,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     characterCounterWindow: useAppSelector((s) =>
       selectOverlayData(s, "characterCounterWindow"),
+    ) as Record<string, unknown> | null,
+    serpAnalyzerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "serpAnalyzerWindow"),
     ) as Record<string, unknown> | null,
     setContextValueWindow: useAppSelector((s) =>
       selectOverlayData(s, "setContextValueWindow"),
@@ -3738,6 +3748,31 @@ export default function OverlayController() {
             initialText={
               typeof data?.initialText === "string"
                 ? data.initialText
+                : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* serpAnalyzerWindow */}
+      {(() => {
+        const isOpen = isOpenById.serpAnalyzerWindow;
+        const data = dataById.serpAnalyzerWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <SerpAnalyzerWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "serpAnalyzerWindow" }))
+            }
+            initialUrl={typeof data?.url === "string" ? data.url : undefined}
+            initialTitle={
+              typeof data?.title === "string" ? data.title : undefined
+            }
+            initialDescription={
+              typeof data?.description === "string"
+                ? data.description
                 : undefined
             }
           />

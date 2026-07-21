@@ -13,7 +13,7 @@ const CRAWL_LINK_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, snapshot_id, source_page_id, target_url, target_page_id, is_internal, rel, anchor_text, http_status, position, source_page:page!link_edge_source_page_id_fkey(url), target_page:page!link_edge_target_page_id_fkey(url), snapshot:snapshot!inner(captured_at, session_id)";
 
 const SNAPSHOT_SELECT =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted, page:page(url)";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted, seo_metrics, page:page(url)";
 
 const SCREENSHOT_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, snapshot_id, kind, file_id, width, height, captured_at, page:page(url)";

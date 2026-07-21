@@ -1,24 +1,29 @@
 /**
  * SEO meta-tag limits + measurement — the SINGLE source of truth.
  *
- * These numbers MUST match the Python backend
- * (aidream `seo/utils/meta_calculators.py`) so that:
- *   - the live SERP calculator page (which measures in-browser) and
- *   - the agent tool checks (which precompute `*_ok` flags server-side)
- * never disagree about whether a title/description "passes".
+ * Measurement is DETERMINISTIC: a shared character-width table
+ * (`char-widths.ts`) that is an exact mirror of the Python backend
+ * (aidream `seo/utils/meta_calculators.py`). The same string produces the
+ * same pixel width in the browser, during SSR, in a unit test, and in the
+ * scraper's crawl-time computation — so persisted metrics, live previews,
+ * and agent tool checks can never disagree.
  *
- * Before this module existed there were three copies of these limits in the
- * frontend — the calculator page checked the title at 580px, the tool overlay
- * at 600px, and the backend at 600/500. Anything that needs an SEO limit or a
- * pixel measurement imports it from HERE.
+ * History: this module originally measured via a browser canvas while Python
+ * used the character table, which meant client and server widths could drift
+ * a few percent and SSR always returned 0. Before THAT, there were three
+ * copies of the limits in the frontend (580px / 600px / 600px…). Anything
+ * that needs an SEO limit, a pixel measurement, or an evaluation imports it
+ * from HERE — and any change to limits, table, or issue wording must land in
+ * `meta_calculators.py` in the same unit of work (parity is unit-tested in
+ * `metrics.parity.test.ts` against Python-generated fixtures).
  */
+
+import { calculateTextWidth } from "./char-widths";
 
 /** Google renders meta titles in ~20px Roboto/Google Sans (weight 400). */
 export const TITLE_FONT_PX = 20;
 /** Google renders meta descriptions in ~13px Roboto/Google Sans (weight 400). */
 export const DESCRIPTION_FONT_PX = 13;
-
-const SERP_FONT_STACK = "'Google Sans', Roboto, Arial, sans-serif";
 
 /** Meta-title limits (mirror of `calculate_meta_title_metrics`). */
 export const TITLE_LIMITS = {
@@ -53,37 +58,26 @@ export interface MetaEvaluation {
   issues: string[];
 }
 
-let sharedCanvasCtx: CanvasRenderingContext2D | null | undefined;
-
-function getCtx(): CanvasRenderingContext2D | null {
-  if (sharedCanvasCtx !== undefined) return sharedCanvasCtx;
-  if (typeof document === "undefined") {
-    sharedCanvasCtx = null;
-    return null;
-  }
-  sharedCanvasCtx = document.createElement("canvas").getContext("2d") ?? null;
-  return sharedCanvasCtx;
-}
-
 /**
- * Measure the rendered pixel width of SERP text in the browser. Returns 0 on
- * the server (no canvas) — callers that need a width during SSR should rely on
- * precomputed server values instead.
+ * Measure the pixel width of SERP text. Deterministic and environment-free —
+ * safe in RSC, SSR, workers, and tests.
  */
 export function measureSerpWidth(
   text: string,
   kind: "title" | "description",
 ): number {
   if (!text) return 0;
-  const ctx = getCtx();
-  if (!ctx) return 0;
   const size = kind === "title" ? TITLE_FONT_PX : DESCRIPTION_FONT_PX;
-  ctx.font = `400 ${size}px ${SERP_FONT_STACK}`;
-  return ctx.measureText(text).width;
+  return calculateTextWidth(text, size);
+}
+
+/** Unicode code-point count — matches Python `len(str)`, not UTF-16 units. */
+function codePointCount(text: string): number {
+  return Array.from(text).length;
 }
 
 export function evaluateMetaTitle(title: string): MetaEvaluation {
-  const charCount = title.length;
+  const charCount = codePointCount(title);
   if (!title.trim()) {
     return {
       pixelWidth: 0,
@@ -132,7 +126,7 @@ export function evaluateMetaTitle(title: string): MetaEvaluation {
 }
 
 export function evaluateMetaDescription(description: string): MetaEvaluation {
-  const charCount = description.length;
+  const charCount = codePointCount(description);
   if (!description.trim()) {
     return {
       pixelWidth: 0,
@@ -184,4 +178,94 @@ export function evaluateMetaDescription(description: string): MetaEvaluation {
 export function pctOf(value: number, limit: number): number {
   if (!limit) return 0;
   return Math.min((value / limit) * 100, 100);
+}
+
+// ---------------------------------------------------------------------------
+// Stored metrics — the canonical persisted shape (`web.snapshot.seo_metrics`
+// and `web.page.seo_metrics_desired`). snake_case because the scraper (Python)
+// is a co-writer of the identical shape.
+// ---------------------------------------------------------------------------
+
+/** One field's persisted metrics — identical whether written by TS or Python. */
+export interface StoredMetaFieldMetrics {
+  pixel_width: number;
+  character_count: number;
+  desktop_ok: boolean;
+  mobile_ok: boolean;
+  seo_length_ok: boolean;
+  too_short: boolean;
+  ok: boolean;
+  issues: string[];
+}
+
+export interface StoredSeoMetrics {
+  /** Payload contract version. Bump when the shape changes. */
+  v: 1;
+  /** Who computed it: "client" (browser recalc) or "scraper" (crawl time). */
+  source: "client" | "scraper";
+  computed_at: string;
+  title: StoredMetaFieldMetrics;
+  description: StoredMetaFieldMetrics;
+  overall_ok: boolean;
+}
+
+function toStoredField(evaluation: MetaEvaluation): StoredMetaFieldMetrics {
+  return {
+    pixel_width: evaluation.pixelWidth,
+    character_count: evaluation.charCount,
+    desktop_ok: evaluation.desktopOk,
+    mobile_ok: evaluation.mobileOk,
+    seo_length_ok: evaluation.seoLengthOk,
+    too_short: evaluation.tooShort,
+    ok: evaluation.ok,
+    issues: evaluation.issues,
+  };
+}
+
+/** Build the canonical persisted payload from a title + description. */
+export function buildStoredSeoMetrics(
+  title: string,
+  description: string,
+  source: StoredSeoMetrics["source"] = "client",
+): StoredSeoMetrics {
+  const titleEval = evaluateMetaTitle(title);
+  const descriptionEval = evaluateMetaDescription(description);
+  return {
+    v: 1,
+    source,
+    computed_at: new Date().toISOString(),
+    title: toStoredField(titleEval),
+    description: toStoredField(descriptionEval),
+    overall_ok: titleEval.ok && descriptionEval.ok,
+  };
+}
+
+/** Narrow an unknown JSON value (a jsonb column) to StoredSeoMetrics. */
+export function parseStoredSeoMetrics(value: unknown): StoredSeoMetrics | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<StoredSeoMetrics>;
+  if (candidate.v !== 1) return null;
+  if (!candidate.title || !candidate.description) return null;
+  if (
+    typeof candidate.title.pixel_width !== "number" ||
+    typeof candidate.description.pixel_width !== "number"
+  )
+    return null;
+  return candidate as StoredSeoMetrics;
+}
+
+/** Convert a stored field back to the UI evaluation shape. */
+export function storedFieldToEvaluation(
+  field: StoredMetaFieldMetrics,
+): MetaEvaluation {
+  return {
+    pixelWidth: field.pixel_width,
+    charCount: field.character_count,
+    desktopOk: field.desktop_ok,
+    mobileOk: field.mobile_ok,
+    seoLengthOk: field.seo_length_ok,
+    tooShort: field.too_short,
+    ok: field.ok,
+    issues: field.issues,
+  };
 }

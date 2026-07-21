@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MetaInputWidget } from "./_components/MetaInputWidget";
+import { MetadataAnalyzer } from "@/features/seo/serp/MetadataAnalyzer";
 import { GoogleLogo } from "./_components/GoogleLogo";
 
 export const metadata: Metadata = {
@@ -24,12 +24,12 @@ export default function MetaCalculatorPage() {
           </div>
         </div>
         <span className="hidden text-xs text-muted-foreground sm:block">
-          Updated 2024 · Google Sans · 13px descriptions
+          Updated 2026 · Google Sans · 13px descriptions
         </span>
       </header>
 
       <main className="mx-auto max-w-[1400px] px-4 py-6 pb-12 xl:px-8">
-        <MetaInputWidget />
+        <MetadataAnalyzer />
       </main>
     </div>
   );

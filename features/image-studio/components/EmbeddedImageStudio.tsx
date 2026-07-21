@@ -60,7 +60,6 @@ import { formatBytes, formatDimensions } from "../utils/format-bytes";
 import type { ImagePosition, StudioSourceFile } from "../types";
 import dynamic from "next/dynamic";
 import { StudioDropZone } from "./StudioDropZone";
-import { useFilePicker } from "@/features/files";
 
 // InitialCropWindow renders <WindowPanel> as styling chrome — keep it
 // out of EmbeddedImageStudio's static graph so the parent's chunk
@@ -71,6 +70,17 @@ const InitialCropWindow = dynamic(
     import("./InitialCropWindow").then((m) => ({
       default: m.InitialCropWindow,
     })),
+  { ssr: false, loading: () => null },
+);
+
+// THE one canonical file picker (FilesResourcePicker in a non-blocking
+// WindowPanel). Dynamic for the same chunk-size rationale as
+// InitialCropWindow — don't pull window-panels into this static graph.
+const FilePickerWindow = dynamic(
+  () =>
+    import(
+      "@/features/resource-manager/resource-picker/FilePickerWindow"
+    ).then((m) => ({ default: m.FilePickerWindow })),
   { ssr: false, loading: () => null },
 );
 import { useAppStore } from "@/lib/redux/hooks";
@@ -169,7 +179,7 @@ export function EmbeddedImageStudio({
   const effectiveLabel = hideTitle ? undefined : label;
   const studio = useImageStudio({ defaultFolder: rootFolderSegment });
   const store = useAppStore();
-  const filePicker = useFilePicker();
+  const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
 
   // ── Local UI state ────────────────────────────────────────────────────
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -413,15 +423,12 @@ export function EmbeddedImageStudio({
     toast.success("Using pasted URL");
   }, [pasteUrlInput, validateImageUrl, studio, emitExternalSaved]);
 
-  const handlePickFromLibrary = useCallback(async () => {
+  const handlePickFromLibrary = useCallback(() => {
+    setLibraryPickerOpen(true);
+  }, []);
+
+  const handleLibraryFilePicked = useCallback(async (fileId: string) => {
     try {
-      const result = await filePicker.open({
-        multi: false,
-        title: "Pick an image from your library",
-        allowedExtensions: ["jpg", "jpeg", "png", "webp", "avif", "gif"],
-      });
-      if (!result || result.length === 0) return;
-      const fileId = result[0];
       const cloudFile = store.getState().cloudFiles.filesById[fileId];
       if (!cloudFile) {
         toast.error("Could not load that file");
@@ -456,7 +463,21 @@ export function EmbeddedImageStudio({
       const msg = err instanceof Error ? err.message : "Pick cancelled";
       toast.error(msg);
     }
-  }, [filePicker, store, studio, emitExternalSaved]);
+  }, [store, studio, emitExternalSaved]);
+
+  const libraryPickerElement = (
+    <FilePickerWindow
+      open={libraryPickerOpen}
+      onClose={() => setLibraryPickerOpen(false)}
+      scopeId="image-studio-library"
+      title="Pick an image from your library"
+      initialFilter="photos"
+      onPick={(selection) => {
+        void handleLibraryFilePicked(selection.fileId);
+        return "close";
+      }}
+    />
+  );
 
   // ── Render ────────────────────────────────────────────────────────────
 
@@ -473,7 +494,7 @@ export function EmbeddedImageStudio({
           onClear={handleClear}
           disabled={disabled}
         />
-        {filePicker.element}
+        {libraryPickerElement}
       </Wrapper>
     );
   }
@@ -495,7 +516,7 @@ export function EmbeddedImageStudio({
           onClear={handleClear}
           disabled={disabled}
         />
-        {filePicker.element}
+        {libraryPickerElement}
       </Wrapper>
     );
   }
@@ -519,7 +540,7 @@ export function EmbeddedImageStudio({
           onComplete={handleCropComplete}
           onCancel={handleCropCancel}
         />
-        {filePicker.element}
+        {libraryPickerElement}
       </Wrapper>
     );
   }
@@ -594,7 +615,7 @@ export function EmbeddedImageStudio({
         primaryPresetId={primaryPresetId ?? presetIds[0]}
         pipelineState={pipelineState}
       />
-      {filePicker.element}
+      {libraryPickerElement}
     </Wrapper>
   );
 }

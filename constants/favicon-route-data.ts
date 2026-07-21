@@ -69,6 +69,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/workflows", favicon: { color: "#6d28d9", letter: "Q" } },
   { href: "/scopes", favicon: { color: "#047857", letter: "S" } },
   { href: "/war-room", favicon: { color: "#dc2626", letter: "WR" } },
+  { href: "/marketing", favicon: { color: "#15803d", letter: "Mk" } },
   { href: "/free", favicon: { color: "#14b8a6", letter: "Fr" } },
   { href: "/free/data-truncator", favicon: { color: "#14b8a6", letter: "Dt" } },
   { href: "/free/uuid", favicon: { color: "#14b8a6", letter: "Ui" } },

@@ -1143,6 +1143,21 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Search Appearance (SERP / metadata analyzer) ──────────────────────────
+  // The canonical MetadataAnalyzer (features/seo/serp) in a floating window:
+  // meta title/description inputs, deterministic pixel/char analysis, Google
+  // desktop + mobile SERP previews, recommendations. Open with page data via
+  // `useOpenSerpAnalyzerWindow({ url, title, description })`.
+  {
+    slug: "serp-analyzer-window",
+    overlayId: "serpAnalyzerWindow",
+    kind: "window",
+    label: "Search Appearance",
+    defaultData: { url: "", title: "", description: "" },
+    mobilePresentation: "fullscreen",
+    urlSync: { key: "serp_analyzer" },
+  },
+
   // ── Resource Picker ───────────────────────────────────────────────────────
   {
     slug: "resource-picker-window",

@@ -127,16 +127,13 @@ export { FilePreview } from "@/features/files/components/core/FilePreview/FilePr
 export { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
 export { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 
-// Pickers — currently distinct components; Phase 1 may unify them.
-export { FilePicker } from "@/features/files/components/pickers/FilePicker";
+// Pickers. FILE picking has exactly ONE component:
+// `FilesResourcePicker` (features/resource-manager/resource-picker), hosted
+// non-blocking via `FilePickerWindow` or the imperative `openFilePicker()`
+// below. The legacy thin FilePicker/useFilePicker is deleted — never rebuild
+// it. Folder pick + Save As remain here (folder selection, not file pick).
 export { FolderPicker } from "@/features/files/components/pickers/FolderPicker";
 export { SaveAsDialog } from "@/features/files/components/pickers/SaveAsDialog";
-export {
-  useFilePicker,
-  type FilePickerProps,
-  type UseFilePickerOpenOptions,
-  type UseFilePickerResult,
-} from "@/features/files/components/pickers/FilePicker";
 
 // CloudFilesPickerHost — mounted once at the app root (Providers.tsx). Pairs
 // with the imperative openers below so non-React code can pop pickers.
@@ -151,6 +148,7 @@ export {
   type FileOpener,
   type FolderOpener,
   type SaveAsOpener,
+  type UseFilePickerOpenOptions,
 } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 
 // Dialogs / context menus that consumers compose into their own surfaces.

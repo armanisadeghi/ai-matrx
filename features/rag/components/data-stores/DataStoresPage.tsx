@@ -49,7 +49,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { CldFilePicker } from "@/features/rag/components/data-stores/CldFilePicker";
+import { FilePickerWindow } from "@/features/resource-manager/resource-picker/FilePickerWindow";
 import { RichMemberTable } from "@/features/rag/components/data-stores/RichMemberTable";
 import {
   useDataStoreDetail,
@@ -676,34 +676,30 @@ function StoreDetailPanel({
         />
       )}
 
-      {/* Pick-from-your-files dialog */}
-      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
-        <DialogContent className="max-w-2xl p-0">
-          <DialogHeader className="px-4 pt-4 pb-2 border-b">
-            <DialogTitle className="text-sm flex items-center gap-2">
-              <FilePlus className="h-4 w-4" />
-              Add files to {s.name}
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Pick existing cloud files. Selected files will be bound to this
-              store and queued for RAG ingestion if not already indexed.
-            </DialogDescription>
-          </DialogHeader>
-          <CldFilePicker
-            mimePrefixes={["application/pdf", "text/", "image/"]}
-            excludeIds={boundCldFileIds}
-            onConfirm={async (picks) => {
-              setPickerOpen(false);
-              await bindAndReprocess(
-                picks,
-                `Adding ${picks.length} to ${s.name}`,
-              );
-            }}
-            onCancel={() => setPickerOpen(false)}
-            confirmLabel="Add + queue"
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Pick from your files — THE canonical picker in a non-blocking
+          window. Each pick binds + queues immediately; the window stays open
+          for multi-add. Already-bound files are skipped with a notice. */}
+      <FilePickerWindow
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        scopeId={`data-store:${storeId}`}
+        title={`Add files to ${s.name}`}
+        onPick={(selection) => {
+          if (boundCldFileIds.has(selection.fileId)) {
+            toast.info("Already bound to this store");
+            return;
+          }
+          void bindAndReprocess(
+            [
+              {
+                cldFileId: selection.fileId,
+                fileName: selection.details.filename || "File",
+              },
+            ],
+            `Adding ${selection.details.filename || "file"} to ${s.name}`,
+          );
+        }}
+      />
 
       {/* Advanced: bind by raw source_kind/UUID */}
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>

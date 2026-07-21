@@ -254,6 +254,20 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
+      name: "MetadataAnalyzer (features/seo/serp)",
+      filePath: "features/seo/serp/MetadataAnalyzer.tsx",
+      description:
+        "Canonical SERP/metadata analyzer consumed by the page-workspace SERP section, the Search Appearance window panel (overlayId serpAnalyzerWindow), and the public /seo/metadata page. Deterministic metrics, TS↔Python parity-tested.",
+      tier: "official",
+    },
+    {
+      name: "buildMarketingPageScope",
+      filePath: "features/marketing/lib/marketing-page-scope.ts",
+      description:
+        "Runtime scope builder for the matrx-user/marketing-page surface (agent launches).",
+      tier: "internal",
+    },
+    {
       name: "MarketingSiteLayoutClient",
       filePath:
         "features/marketing/components/site/MarketingSiteLayoutClient.tsx",

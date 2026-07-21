@@ -609,9 +609,7 @@ function FloatingUploadAction({ parentFolderId }: FloatingUploadActionProps) {
           Upload
         </span>
       </FileUploadDropzone>
-      {/* Simple "+" button that triggers the hidden input. For now we surface
-          a simple anchor to the Dropzone's picker via a more ergonomic Phase
-          7 hook (useFilePicker). */}
+      {/* Simple "+" button that triggers the hidden OS upload input. */}
       <button
         type="button"
         onClick={() => {

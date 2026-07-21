@@ -201,13 +201,13 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
 
     channel = supabase
       .channel(`cloud-files:${userId}`)
-      // Files — NO owner filter. We rely on Realtime RLS authorization (same
-      // pattern as files.file_versions / platform.share_links below) so the user
-      // receives changes to every file they can SELECT: their own AND files
-      // shared WITH them. A column filter on created_by would silently drop
-      // shared-with-me updates (the row's created_by is someone else's id).
-      // handleFilePayload upserts/dedups by id and honors the request ledger,
-      // so receiving a shared file's change is safe and idempotent.
+      // Files — no server-side column filter (a created_by filter would drop
+      // updates to explicitly-shared files), BUT RLS alone is NOT the listing
+      // boundary: the `pub_read` policy makes every public file SELECT-visible,
+      // so handleFilePayload applies the LISTING gate client-side (owner or
+      // already-in-store only — mirror of DB `files.is_listable_for`). Never
+      // remove that gate; without it public files from other users stream
+      // into everyone's tree.
       .on(
         "postgres_changes",
         {
@@ -351,6 +351,18 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // at the boundary so they never appear in the user tree.
     // See `isSystemPath` + from_python/UPDATES.md §9 (2026-05-16 entry).
     if (isHiddenFromUserTree(newRow.file_path)) return;
+    // LISTING gate (client mirror of DB `files.is_listable_for`): realtime
+    // is RLS-authorized and RLS includes a `pub_read` policy, so without
+    // this check every PUBLIC file any other user touches would stream into
+    // this user's tree/recents (a shipped leak). Accept a row only if this
+    // user owns it, or it's already in the store (it arrived through the
+    // listing-gated tree RPC — i.e. an explicit grant).
+    const alreadyInStore = Boolean(
+      (store.getState() as StateWithCloudFiles).cloudFiles.filesById[
+        newRow.id
+      ],
+    );
+    if (newRow.created_by !== subscribedUserId && !alreadyInStore) return;
     const file = dbRowToCloudFile(newRow);
     // `files.files` is REPLICA IDENTITY DEFAULT — `payload.old` carries ONLY
     // the PK on UPDATE/DELETE, so the previous parent must come from OUR
@@ -424,6 +436,9 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // Same system-path guard as the file handler — the backfill also
     // creates per-source-file folders under `system-files/variants/<id>/`.
     if (isHiddenFromUserTree(newRow.folder_path)) return;
+    // Same LISTING gate as files — the tree RPC only ever returns the
+    // user's OWN folders, so realtime must not inject anyone else's.
+    if (newRow.created_by !== subscribedUserId) return;
     const folder = dbRowToCloudFolder(newRow);
     // REPLICA IDENTITY DEFAULT: `payload.old` is PK-only — read the previous
     // parent from our store (see the file handler above).

@@ -1,11 +1,10 @@
-import { createRouteMetadata } from "@/utils/route-metadata";
+import { headers } from "next/headers";
+import { getMarketingRouteMetadata } from "@/features/marketing/lib/route-metadata";
 
-export const metadata = createRouteMetadata("/marketing", {
-  title: "Marketing",
-  description:
-    "Manage websites, canonical pages, crawl sessions, and marketing analysis.",
-  letter: "Mk",
-});
+export async function generateMetadata() {
+  const pathname = (await headers()).get("x-pathname") ?? "/marketing";
+  return getMarketingRouteMetadata(pathname);
+}
 
 export default function MarketingLayout({
   children,

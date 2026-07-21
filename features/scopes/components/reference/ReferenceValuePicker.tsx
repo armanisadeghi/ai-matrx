@@ -10,9 +10,10 @@
  * ```matrx reference fence string (or `null` when cleared) — never a bare id.
  *
  * One sub-picker per reference type, added here as the taxonomy grows:
- *   - `file`   → the canonical stored-files picker (`FilePickerSheet` around
- *                `FilesResourcePicker` — the same picker as Smart Agent
- *                Input's "Stored Files"; never a plain file list)
+ *   - `file`   → THE canonical stored-files picker (`FilePickerWindow` =
+ *                non-blocking WindowPanel around `FilesResourcePicker`, the
+ *                same component as chat's "Stored Files"; never a plain
+ *                file list, never a blocking sheet/dialog)
  *   - `url`    → a plain URL + optional label form (no Matrx-owned id)
  *   - `scope`  → the org's scope tree, filtered by `allowed_scope_type_ids`
  *   - default  → `useUniversalEntitySearch` for any other listable
@@ -30,7 +31,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { FilePickerSheet } from "@/features/resource-manager/resource-picker/FilePickerSheet";
+import { FilePickerWindow } from "@/features/resource-manager/resource-picker/FilePickerWindow";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
   makeSelectScope,
@@ -86,7 +87,7 @@ export function ReferenceValuePicker({
   const canAddMore = remaining > 0 && allowedTypes.length > 0;
 
   const [addOpen, setAddOpen] = useState(false);
-  const [fileSheetOpen, setFileSheetOpen] = useState(false);
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [addType, setAddType] = useState<string>(
     currentType ?? allowedTypes[0] ?? "",
   );
@@ -140,7 +141,20 @@ export function ReferenceValuePicker({
       )}
 
       {!disabled && canAddMore && (
-        <Popover open={addOpen} onOpenChange={setAddOpen}>
+        <Popover
+          open={addOpen}
+          onOpenChange={(next) => {
+            // File is picked with the canonical picker WINDOW, not a popover
+            // form — when "file" is the active type, the Add button goes
+            // straight to the picker (zero intermediate clicks). Other types
+            // (and the type-switch chips) still use the popover.
+            if (next && activeAddType === "file" && allowedTypes.length === 1) {
+              setFilePickerOpen(true);
+              return;
+            }
+            setAddOpen(next);
+          }}
+        >
           <PopoverTrigger asChild>
             <Button
               type="button"
@@ -193,7 +207,7 @@ export function ReferenceValuePicker({
                 // The canonical picker lives in a portal Sheet — close the
                 // popover first so its dismiss logic can't unmount the sheet.
                 setAddOpen(false);
-                setFileSheetOpen(true);
+                setFilePickerOpen(true);
               }}
               onPickMany={(picked) => {
                 addItems(activeAddType, picked);
@@ -204,15 +218,16 @@ export function ReferenceValuePicker({
         </Popover>
       )}
 
-      {/* Canonical stored-files picker for `file` references. Mounted at the
-          component root (not inside the popover) so it survives the popover
-          closing. Stays open for multi-pick until max_items is reached. */}
+      {/* THE canonical stored-files picker, in a NON-BLOCKING draggable
+          window (never a sheet/dialog). Mounted at the component root so it
+          survives the popover closing. Stays open for multi-pick until
+          max_items is reached. */}
       {!disabled && (
-        <FilePickerSheet
-          open={fileSheetOpen}
-          onOpenChange={setFileSheetOpen}
+        <FilePickerWindow
+          open={filePickerOpen}
+          onClose={() => setFilePickerOpen(false)}
+          scopeId={`reference:${scopeId}`}
           title="Choose file(s)"
-          description="Pick from your stored files"
           onPick={(selection) => {
             const label = selection.details.filename || undefined;
             addItems("file", [
@@ -316,20 +331,16 @@ function ReferenceTypeAdder({
 }
 
 function FileTypeAdder({ onBrowseFiles }: { onBrowseFiles: () => void }) {
+  // Selecting the "file" type IS the intent to pick files — open the
+  // canonical picker window immediately, no intermediate button click.
+  useEffect(() => {
+    onBrowseFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once on mount
+  }, []);
   return (
-    <div className="space-y-2">
-      <Button
-        data-reference-autofocus
-        type="button"
-        size="sm"
-        variant="secondary"
-        className="w-full"
-        onClick={onBrowseFiles}
-      >
-        <FileText className="mr-1.5 h-3.5 w-3.5" />
-        Browse files
-      </Button>
-    </div>
+    <p className="px-1 py-2 text-xs text-muted-foreground">
+      Opening your files…
+    </p>
   );
 }
 

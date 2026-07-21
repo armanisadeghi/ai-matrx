@@ -22,6 +22,7 @@ import {
   FilesResourcePicker,
   type FileSelection,
 } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
+import { FilePickerWindow } from "@/features/resource-manager/resource-picker/FilePickerWindow";
 import {
   Sheet,
   SheetContent,
@@ -57,12 +58,37 @@ export interface AssociationPickerProps {
 export function AssociationPicker(props: AssociationPickerProps) {
   const isMobile = useIsMobile();
   const info = getEntityInfo(props.token);
+
+  // Files never open a blocking sheet — the ONE canonical picker in a
+  // non-blocking draggable window. Picking toggles attach/detach.
+  if (props.token === "file") {
+    return (
+      <FilePickerWindow
+        open={props.open}
+        onClose={() => props.onOpenChange(false)}
+        scopeId={`association:${props.containerLabel ?? "container"}`}
+        title={
+          props.containerLabel
+            ? `Add files to ${props.containerLabel}`
+            : "Add files"
+        }
+        onPick={async (selection) => {
+          if (props.attachedIds.has(selection.fileId)) {
+            await props.onDetach(selection.fileId);
+          } else {
+            await props.onAttach(
+              selection.fileId,
+              selection.details.filename || "File",
+            );
+          }
+        }}
+      />
+    );
+  }
   const title = `Add ${info.labelPlural}`;
   const subtitle = props.containerLabel
     ? `Attach to ${props.containerLabel}`
-    : props.token === "file"
-      ? "Pick from your stored files"
-      : "Click an item to attach or detach it";
+    : "Click an item to attach or detach it";
 
   const body = (
     <AssociationCandidateBody
@@ -98,10 +124,7 @@ export function AssociationPicker(props: AssociationPickerProps) {
     <Sheet open={props.open} onOpenChange={props.onOpenChange}>
       <SheetContent
         side="right"
-        className={cn(
-          "w-full flex flex-col gap-3",
-          props.token === "file" ? "sm:max-w-lg" : "sm:max-w-md",
-        )}
+        className="w-full sm:max-w-md flex flex-col gap-3"
       >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">

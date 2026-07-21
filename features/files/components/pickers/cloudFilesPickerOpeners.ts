@@ -17,9 +17,22 @@
  * preserving the existing public import path for callers.
  */
 
-import type { UseFilePickerOpenOptions } from "./FilePicker";
 import type { UseFolderPickerOpenOptions } from "./FolderPicker";
 import type { SaveAsDestination, UseSaveAsOpenOptions } from "./SaveAsDialog";
+
+/**
+ * Options for `openFilePicker`. Since 2026-07-20 the opener mounts THE one
+ * canonical file picker (`FilesResourcePicker` in a non-blocking
+ * `FilePickerWindow`) — the legacy thin FilePicker dialog is deleted.
+ * `allowedExtensions` is mapped to the canonical picker's type filter.
+ */
+export interface UseFilePickerOpenOptions {
+  multi?: boolean;
+  initialFolderId?: string | null;
+  allowedExtensions?: string[];
+  title?: string;
+  description?: string;
+}
 
 export type FileOpener = (
   options?: UseFilePickerOpenOptions,

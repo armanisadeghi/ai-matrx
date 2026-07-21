@@ -76,6 +76,7 @@ import {
   Shrink,
   SlidersHorizontal,
   CircleDot,
+  SearchCheck,
   StickyNote,
   TestTube2,
   ToyBrick,
@@ -533,6 +534,13 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
       url: "https://lucide.dev/icons/",
       windowTitle: "Lucide",
     }),
+  },
+  {
+    id: "tile.search-appearance",
+    label: "Search Appearance",
+    icon: SearchCheck,
+    category: "files-web",
+    overlayId: "serpAnalyzerWindow",
   },
   {
     id: "tile.site-workbench",

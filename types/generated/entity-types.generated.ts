@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 285 active entity tokens. A token here is FK-valid for
+// 293 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -300,19 +300,27 @@ export type EntityTypeToken =
   | "web_analysis_item"
   | "web_batch_item"
   | "web_batch_job"
+  | "web_brand"
+  | "web_brand_asset"
+  | "web_business_fact"
   | "web_crawl_event"
   | "web_crawl_schedule"
   | "web_crawl_session"
   | "web_crawl_url"
+  | "web_discovered_item"
   | "web_finding"
+  | "web_gsc_page_stat"
   | "web_link_edge"
   | "web_page"
   | "web_page_evidence"
+  | "web_page_sitemap"
+  | "web_property"
   | "web_provider"
   | "web_result"
   | "web_screenshot"
   | "web_site"
   | "web_site_item_config"
+  | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
   | "window_session"
@@ -441,6 +449,7 @@ export type ReferencePickableEntityToken =
   | "wbx_pattern"
   | "wc_impairment_definition"
   | "web_analysis_item"
+  | "web_brand"
   | "web_crawl_schedule"
   | "web_provider"
   | "web_site"
@@ -535,17 +544,24 @@ export type ComponentEntityToken =
   | "wc_report"
   | "web_batch_item"
   | "web_batch_job"
+  | "web_brand_asset"
+  | "web_business_fact"
   | "web_crawl_event"
   | "web_crawl_schedule"
   | "web_crawl_session"
   | "web_crawl_url"
+  | "web_discovered_item"
   | "web_finding"
+  | "web_gsc_page_stat"
   | "web_link_edge"
   | "web_page"
   | "web_page_evidence"
+  | "web_page_sitemap"
+  | "web_property"
   | "web_result"
   | "web_screenshot"
   | "web_site_item_config"
+  | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
   | "workflow_checkpoint"
@@ -796,19 +812,27 @@ export type ScopeableEntityToken =
   | "web_analysis_item"
   | "web_batch_item"
   | "web_batch_job"
+  | "web_brand"
+  | "web_brand_asset"
+  | "web_business_fact"
   | "web_crawl_event"
   | "web_crawl_schedule"
   | "web_crawl_session"
   | "web_crawl_url"
+  | "web_discovered_item"
   | "web_finding"
+  | "web_gsc_page_stat"
   | "web_link_edge"
   | "web_page"
   | "web_page_evidence"
+  | "web_page_sitemap"
+  | "web_property"
   | "web_provider"
   | "web_result"
   | "web_screenshot"
   | "web_site"
   | "web_site_item_config"
+  | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
   | "window_session"
@@ -1109,19 +1133,27 @@ export const ENTITY_TYPE_METADATA = {
   "web_analysis_item": { token: "web_analysis_item", schema: "web", table: "analysis_item", label: "Analysis Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "web_batch_item": { token: "web_batch_item", schema: "web", table: "batch_item", label: "Batch Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_batch_job": { token: "web_batch_job", schema: "web", table: "batch_job", label: "Batch Job", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_brand": { token: "web_brand", schema: "web", table: "brand", label: "Brand", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "web_brand_asset": { token: "web_brand_asset", schema: "web", table: "brand_asset", label: "Brand Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "web_business_fact": { token: "web_business_fact", schema: "web", table: "business_fact", label: "Business Fact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "web_crawl_event": { token: "web_crawl_event", schema: "web", table: "crawl_event", label: "Web Crawl Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_crawl_schedule": { token: "web_crawl_schedule", schema: "web", table: "crawl_schedule", label: "Web Crawl Schedule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_crawl_session": { token: "web_crawl_session", schema: "web", table: "crawl_session", label: "Crawl Session", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_crawl_url": { token: "web_crawl_url", schema: "web", table: "crawl_url", label: "Web Crawl URL", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_discovered_item": { token: "web_discovered_item", schema: "web", table: "discovered_item", label: "Discovered Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_finding": { token: "web_finding", schema: "web", table: "finding", label: "Finding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_gsc_page_stat": { token: "web_gsc_page_stat", schema: "web", table: "gsc_page_stat", label: "GSC Page Stat", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_link_edge": { token: "web_link_edge", schema: "web", table: "link_edge", label: "Link Edge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_page": { token: "web_page", schema: "web", table: "page", label: "Canonical Page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_page_evidence": { token: "web_page_evidence", schema: "web", table: "page_evidence", label: "Web Page Evidence", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_page_sitemap": { token: "web_page_sitemap", schema: "web", table: "page_sitemap", label: "Page Sitemap Membership", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_property": { token: "web_property", schema: "web", table: "property", label: "Brand Property", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "web_provider": { token: "web_provider", schema: "web", table: "provider", label: "Provider", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "web_result": { token: "web_result", schema: "web", table: "analysis_result", label: "Analysis Result", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_screenshot": { token: "web_screenshot", schema: "web", table: "screenshot", label: "Screenshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_site": { token: "web_site", schema: "web", table: "site", label: "Site", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_site_item_config": { token: "web_site_item_config", schema: "web", table: "site_item_config", label: "Site Item Config", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_sitemap": { token: "web_sitemap", schema: "web", table: "sitemap", label: "Sitemap", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "url", contentRole: null, referenceCategory: null },
   "web_snapshot": { token: "web_snapshot", schema: "web", table: "snapshot", label: "Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "wf_node_data_slot": { token: "wf_node_data_slot", schema: "workflow", table: "node_data_slot", label: "Workflow Node Data Slot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "window_session": { token: "window_session", schema: "public", table: "window_sessions", label: "Window Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
@@ -1398,19 +1430,27 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_analysis_item",
   "web_batch_item",
   "web_batch_job",
+  "web_brand",
+  "web_brand_asset",
+  "web_business_fact",
   "web_crawl_event",
   "web_crawl_schedule",
   "web_crawl_session",
   "web_crawl_url",
+  "web_discovered_item",
   "web_finding",
+  "web_gsc_page_stat",
   "web_link_edge",
   "web_page",
   "web_page_evidence",
+  "web_page_sitemap",
+  "web_property",
   "web_provider",
   "web_result",
   "web_screenshot",
   "web_site",
   "web_site_item_config",
+  "web_sitemap",
   "web_snapshot",
   "wf_node_data_slot",
   "window_session",

@@ -13,9 +13,9 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D73 — Consolidate remaining thin file-picker consumers onto the canonical picker (2026-07-20)
+### D73 — Folder picking needs a canonical story; feedback MCP rejects agent submissions (2026-07-20)
 
-Follow-up to the 2026-07-20 file-listing leak fix (see `features/files/FEATURE.md` change log). The scopes reference flow and the association pickers now mount the canonical `FilesResourcePicker` (via `features/resource-manager/resource-picker/FilePickerSheet.tsx`); the bare-list `AssociationPickerSheet` is deleted. Three consumers still use the thin `useFilePicker`/`PickerShell` browser: `features/pdf-demo/components/PdfSourcePicker.tsx`, `features/image-studio/components/EmbeddedImageStudio.tsx`, and `features/files/components/pickers/FolderPicker.tsx` (folder mode — no canonical equivalent yet). They are SAFE (the DB listing gate `files.is_listable_for` protects every consumer of `get_user_file_tree`), but for one canonical picking UX they should migrate to `FilePickerSheet`/`FilesResourcePicker`, after which `FilePicker.tsx`/`useFilePicker` and `PickerShell`'s file mode can be deleted. FolderPicker needs a folder-mode story first. Also tried filing this via the matrx-feedback MCP: `submit_feedback` fails with FK violation `user_feedback_user_id_fkey` for agent submissions — that's its own backend bug.
+The one-file-picker consolidation is DONE (see `features/files/FEATURE.md` 2026-07-20): `FilesResourcePicker` + `FilePickerWindow` everywhere; thin `FilePicker`/`useFilePicker`, `AssociationPickerSheet`, and rag `CldFilePicker` deleted. Two remainders: (1) `FolderPicker`/`SaveAsDialog` (folder selection, not file pick) still use the old `PickerShell` dialog — needs a decision on a canonical folder-select mode (extend `FilesResourcePicker` or keep a dedicated folder surface, then retire `PickerShell`); safe meanwhile (DB listing gate protects all tree consumers). (2) matrx-feedback MCP `submit_feedback` fails with FK violation `user_feedback_user_id_fkey` for agent submissions — backend bug in the feedback service.
 
 ### D72 — CRITICAL: /files desktop table row click can create a real share link as a side effect (2026-07-19)
 

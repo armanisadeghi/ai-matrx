@@ -1,0 +1,381 @@
+[
+  {
+    "text": "",
+    "title": {
+      "pixel_width": 0,
+      "character_count": 0,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Title is empty"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 0,
+      "character_count": 0,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is empty"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "   ",
+    "title": {
+      "pixel_width": 0,
+      "character_count": 3,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Title is empty"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 0,
+      "character_count": 3,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is empty"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "Short",
+    "title": {
+      "pixel_width": 48,
+      "character_count": 5,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Title is too short (5 chars; minimum is 15)"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 31,
+      "character_count": 5,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is too short (5 chars; minimum is 70)"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "Fillers for Men: The Complete Guide to Male Lip Fillers",
+    "title": {
+      "pixel_width": 489,
+      "character_count": 55,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [],
+      "title_ok": true
+    },
+    "description": {
+      "pixel_width": 318,
+      "character_count": 55,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is too short (55 chars; minimum is 70)"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "AI Matrx — No-Code AI App Builder for Enterprise Teams",
+    "title": {
+      "pixel_width": 503,
+      "character_count": 54,
+      "desktop_ok": true,
+      "mobile_ok": false,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [
+        "Title exceeds the mobile width limit (503px > 500px) and may be truncated on mobile"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 327,
+      "character_count": 54,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is too short (54 chars; minimum is 70)"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "This is an extremely long meta title that definitely exceeds the recommended character limit and pixel width for SEO optimization",
+    "title": {
+      "pixel_width": 1148,
+      "character_count": 129,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": false,
+      "issues": [
+        "Title is too long (129 chars; maximum is 60)",
+        "Title exceeds the desktop width limit (1148px > 600px) and may be truncated",
+        "Title exceeds the mobile width limit (1148px > 500px) and may be truncated on mobile"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 746,
+      "character_count": 129,
+      "desktop_ok": true,
+      "mobile_ok": false,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [
+        "Description exceeds the mobile width limit (746px > 680px) and may be truncated on mobile"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "In this guide, we will tell you how to find the best aesthetic practitioner, the various types of lip fillers for men and the differences between them.",
+    "title": {
+      "pixel_width": 1278,
+      "character_count": 151,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": false,
+      "issues": [
+        "Title is too long (151 chars; maximum is 60)",
+        "Title exceeds the desktop width limit (1278px > 600px) and may be truncated",
+        "Title exceeds the mobile width limit (1278px > 500px) and may be truncated on mobile"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 830,
+      "character_count": 151,
+      "desktop_ok": true,
+      "mobile_ok": false,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [
+        "Description exceeds the mobile width limit (830px > 680px) and may be truncated on mobile"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "Recyclage écologique — déchets électroniques & informatiques à Montréal",
+    "title": {
+      "pixel_width": 664,
+      "character_count": 71,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": false,
+      "issues": [
+        "Title is too long (71 chars; maximum is 60)",
+        "Title exceeds the desktop width limit (664px > 600px) and may be truncated",
+        "Title exceeds the mobile width limit (664px > 500px) and may be truncated on mobile"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 432,
+      "character_count": 71,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [],
+      "description_ok": true
+    }
+  },
+  {
+    "text": "Ünïcödé test with symbols @#$%&*() and \"quotes\" + 'apostrophes'",
+    "title": {
+      "pixel_width": 598,
+      "character_count": 63,
+      "desktop_ok": true,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": false,
+      "issues": [
+        "Title is too long (63 chars; maximum is 60)",
+        "Title exceeds the mobile width limit (598px > 500px) and may be truncated on mobile"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 389,
+      "character_count": 63,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is too short (63 chars; minimum is 70)"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "WWWWWMMMMM wide characters mmmmwwww",
+    "title": {
+      "pixel_width": 453,
+      "character_count": 35,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [],
+      "title_ok": true
+    },
+    "description": {
+      "pixel_width": 295,
+      "character_count": 35,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is too short (35 chars; minimum is 70)"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "iiiiillllljjjj narrow characters !!!....",
+    "title": {
+      "pixel_width": 277,
+      "character_count": 40,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [],
+      "title_ok": true
+    },
+    "description": {
+      "pixel_width": 180,
+      "character_count": 40,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is too short (40 chars; minimum is 70)"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "Números 1234567890 y guiones - _ = + [brackets] {braces} <angle>",
+    "title": {
+      "pixel_width": 605,
+      "character_count": 64,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": false,
+      "issues": [
+        "Title is too long (64 chars; maximum is 60)",
+        "Title exceeds the desktop width limit (605px > 600px) and may be truncated",
+        "Title exceeds the mobile width limit (605px > 500px) and may be truncated on mobile"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 393,
+      "character_count": 64,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is too short (64 chars; minimum is 70)"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "日本語のタイトルテスト with mixed ASCII content here",
+    "title": {
+      "pixel_width": 399,
+      "character_count": 41,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [],
+      "title_ok": true
+    },
+    "description": {
+      "pixel_width": 259,
+      "character_count": 41,
+      "desktop_ok": true,
+      "mobile_ok": true,
+      "seo_length_ok": false,
+      "too_short": true,
+      "issues": [
+        "Description is too short (41 chars; minimum is 70)"
+      ],
+      "description_ok": false
+    }
+  },
+  {
+    "text": "A meta description that lands right in the sweet spot of length, giving searchers a clear, compelling reason to click through to the page.",
+    "title": {
+      "pixel_width": 1199,
+      "character_count": 138,
+      "desktop_ok": false,
+      "mobile_ok": false,
+      "seo_length_ok": false,
+      "too_short": false,
+      "issues": [
+        "Title is too long (138 chars; maximum is 60)",
+        "Title exceeds the desktop width limit (1199px > 600px) and may be truncated",
+        "Title exceeds the mobile width limit (1199px > 500px) and may be truncated on mobile"
+      ],
+      "title_ok": false
+    },
+    "description": {
+      "pixel_width": 779,
+      "character_count": 138,
+      "desktop_ok": true,
+      "mobile_ok": false,
+      "seo_length_ok": true,
+      "too_short": false,
+      "issues": [
+        "Description exceeds the mobile width limit (779px > 680px) and may be truncated on mobile"
+      ],
+      "description_ok": false
+    }
+  }
+]

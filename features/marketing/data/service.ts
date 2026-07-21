@@ -1,4 +1,5 @@
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import { buildStoredSeoMetrics } from "@/features/seo/serp/metrics";
 import type {
   BrandAsset,
   BrandListRow,
@@ -410,7 +411,11 @@ export async function listBrandOptions(
 
 /** Every `web.page` column — ONE list so selects can never drift per call site. */
 export const PAGE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, target_keyword, meta_title_desired, meta_description_desired, latest_snapshot_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, latest_snapshot_id";
+
+/** Every `web.snapshot` column — ONE list so selects can never drift per call site. */
+export const SNAPSHOT_COLUMNS =
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted, seo_metrics";
 
 /**
  * Source-disagreement coverage filters over the canonical page registry.
@@ -844,7 +849,7 @@ export async function getPageWorkspace(
   const pageResponse = await db
     .from("page")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, target_keyword, meta_title_desired, meta_description_desired, latest_snapshot_id",
+      PAGE_COLUMNS,
     )
     .eq("site_id", siteId)
     .eq("id", pageId)
@@ -859,7 +864,7 @@ export async function getPageWorkspace(
         ? db
             .from("snapshot")
             .select(
-              "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted",
+              SNAPSHOT_COLUMNS,
             )
             .eq("site_id", siteId)
             .eq("page_id", pageId)
@@ -901,10 +906,22 @@ export async function getPageWorkspace(
 export async function updatePageIntent(
   input: UpdatePageIntentInput,
 ): Promise<MarketingPage> {
+  // Desired-metadata metrics are recomputed on EVERY intent save (contract in
+  // migrations/web_seo_metrics.sql) — the deterministic evaluator matches the
+  // scraper's crawl-time computation exactly, so stored numbers never depend
+  // on who wrote them.
+  const hasDesired = Boolean(input.desiredMetaTitle || input.desiredMetaDescription);
   const patch: PageUpdate = {
     target_keyword: input.targetKeyword,
     meta_title_desired: input.desiredMetaTitle,
     meta_description_desired: input.desiredMetaDescription,
+    seo_metrics_desired: hasDesired
+      ? buildStoredSeoMetrics(
+          input.desiredMetaTitle ?? "",
+          input.desiredMetaDescription ?? "",
+          "client",
+        )
+      : null,
   };
   const response = await (
     await authenticatedWebDb(supabase)
@@ -916,7 +933,7 @@ export async function updatePageIntent(
     .eq("version", input.expectedVersion)
     .is("deleted_at", null)
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, target_keyword, meta_title_desired, meta_description_desired, latest_snapshot_id",
+      PAGE_COLUMNS,
     )
     .maybeSingle();
   if (response.error) throw response.error;
@@ -949,7 +966,7 @@ export async function listSnapshots(
   let query = (await authenticatedWebDb(supabase))
     .from("snapshot")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted",
+      SNAPSHOT_COLUMNS,
       { count: "exact" },
     )
     .eq("site_id", siteId)
@@ -992,7 +1009,7 @@ export async function getSnapshot(
   )
     .from("snapshot")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted",
+      SNAPSHOT_COLUMNS,
     )
     .eq("site_id", siteId)
     .eq("page_id", pageId)

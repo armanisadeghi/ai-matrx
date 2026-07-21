@@ -202,6 +202,7 @@ export function CondensedFieldGrid({
 export function SectionCard({
   title,
   action,
+  headerExtra,
   children,
   className,
 }: {
@@ -210,6 +211,8 @@ export function SectionCard({
   action?:
     | { label: string; href: string }
     | { label: string; onClick: () => void };
+  /** Free-form right-side header content (icon buttons, toggles). Renders before `action`. */
+  headerExtra?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -224,24 +227,27 @@ export function SectionCard({
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </h2>
-        {action && "href" in action ? (
-          <Link
-            href={action.href}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary"
-          >
-            {action.label}
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        ) : action ? (
-          <button
-            type="button"
-            onClick={action.onClick}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary"
-          >
-            {action.label}
-            <Plus className="h-3 w-3" />
-          </button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {headerExtra}
+          {action && "href" in action ? (
+            <Link
+              href={action.href}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary"
+            >
+              {action.label}
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          ) : action ? (
+            <button
+              type="button"
+              onClick={action.onClick}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary"
+            >
+              {action.label}
+              <Plus className="h-3 w-3" />
+            </button>
+          ) : null}
+        </div>
       </div>
       {children}
     </section>

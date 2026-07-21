@@ -24,8 +24,6 @@ export interface SerpResultProps {
   device?: SerpDevice;
   /** "full" = page hero size, "compact" = inline/list size. Ignored for mobile. */
   density?: SerpDensity;
-  /** Show the decorative rich-snippet row (stars / price / stock). */
-  showRichSnippet?: boolean;
   /** Clamp the description to 2 lines like Google does. Default true. */
   clampDescription?: boolean;
   /**
@@ -118,7 +116,6 @@ export function SerpResult({
   description,
   device = "desktop",
   density = "full",
-  showRichSnippet = false,
   clampDescription = true,
   placeholderTitle = "Your meta title will appear here…",
   placeholderDescription = "Your meta description will appear here. This is usually taken from the Meta Description tag if relevant to the query.",
@@ -206,19 +203,6 @@ export function SerpResult({
           ) : (
             <span className="text-muted-foreground/70">{placeholderDescription}</span>
           )}
-        </div>
-      ) : null}
-
-      {showRichSnippet ? (
-        <div
-          className={cn(
-            "mt-2.5 flex gap-5 text-muted-foreground",
-            size === "sm" ? "text-[10px]" : "text-xs",
-          )}
-        >
-          <span className="text-warning">★★★★☆</span>
-          <span>$99 – $199</span>
-          <span>In stock</span>
         </div>
       ) : null}
     </div>

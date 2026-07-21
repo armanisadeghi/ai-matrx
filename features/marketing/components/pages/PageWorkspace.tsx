@@ -3,13 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  AppWindow,
   FileCode2,
   FileQuestion,
   FileText,
   History,
   ImageOff,
   Loader2,
+  Monitor,
   Save,
+  Smartphone,
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -35,6 +38,15 @@ import type {
   SiteScreenshot,
 } from "@/features/marketing/types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
+import { SerpResult, type SerpDevice } from "@/features/seo/serp/SerpResult";
+import { SerpFieldChips } from "@/features/seo/serp/SerpValidation";
+import { MetaRecommendations } from "@/features/seo/serp/MetaRecommendations";
+import {
+  evaluateMetaTitle,
+  evaluateMetaDescription,
+  type MetaEvaluation,
+} from "@/features/seo/serp/metrics";
+import { useOpenSerpAnalyzerWindow } from "@/features/overlays/openers/serpAnalyzerWindow";
 import {
   parseSnapshotExtracted,
   parseSnapshotHeadings,
@@ -65,6 +77,13 @@ function IntentForm({ page }: { page: MarketingPage }) {
     keyword !== (page.target_keyword ?? "") ||
     title !== (page.meta_title_desired ?? "") ||
     description !== (page.meta_description_desired ?? "");
+
+  // Live verdict on the editorial draft — same deterministic evaluator the
+  // scraper and the Search Appearance analyzer use.
+  const draftTitleEval = title.trim() ? evaluateMetaTitle(title) : null;
+  const draftDescEval = description.trim()
+    ? evaluateMetaDescription(description)
+    : null;
 
   const save = async () => {
     try {
@@ -102,9 +121,17 @@ function IntentForm({ page }: { page: MarketingPage }) {
           <Label htmlFor="desired-title" className="text-xs">
             Desired meta title
           </Label>
-          <span className="text-[10px] tabular-nums text-muted-foreground">
-            {title.length} characters
-          </span>
+          {draftTitleEval ? (
+            <SerpFieldChips
+              chars={draftTitleEval.charCount}
+              pixels={draftTitleEval.pixelWidth}
+              ok={draftTitleEval.ok}
+            />
+          ) : (
+            <span className="text-[10px] tabular-nums text-muted-foreground">
+              0 characters
+            </span>
+          )}
         </div>
         <Input
           id="desired-title"
@@ -118,9 +145,17 @@ function IntentForm({ page }: { page: MarketingPage }) {
           <Label htmlFor="desired-description" className="text-xs">
             Desired meta description
           </Label>
-          <span className="text-[10px] tabular-nums text-muted-foreground">
-            {description.length} characters
-          </span>
+          {draftDescEval ? (
+            <SerpFieldChips
+              chars={draftDescEval.charCount}
+              pixels={draftDescEval.pixelWidth}
+              ok={draftDescEval.ok}
+            />
+          ) : (
+            <span className="text-[10px] tabular-nums text-muted-foreground">
+              0 characters
+            </span>
+          )}
         </div>
         <Textarea
           id="desired-description"
@@ -131,6 +166,14 @@ function IntentForm({ page }: { page: MarketingPage }) {
           placeholder="Editorial target, separate from observed content"
         />
       </div>
+      {draftTitleEval?.issues.length || draftDescEval?.issues.length ? (
+        <MetaRecommendations
+          titleEval={draftTitleEval}
+          descriptionEval={draftDescEval}
+          issuesOnly
+          compact
+        />
+      ) : null}
       <div className="flex justify-end">
         <Button
           size="sm"
@@ -155,10 +198,13 @@ function IntentDiffRow({
   label,
   observed,
   desired,
+  metrics,
 }: {
   label: string;
   observed: string | null;
   desired: string | null;
+  /** Deterministic evaluation of the DESIRED value (null when unset). */
+  metrics: MetaEvaluation | null;
 }) {
   const state = !desired
     ? "none"
@@ -180,6 +226,13 @@ function IntentDiffRow({
             Differs from live
           </Badge>
         ) : null}
+        {desired && metrics ? (
+          <SerpFieldChips
+            chars={metrics.charCount}
+            pixels={metrics.pixelWidth}
+            ok={metrics.ok}
+          />
+        ) : null}
       </div>
       <p
         className={cn(
@@ -193,12 +246,21 @@ function IntentDiffRow({
   );
 }
 
+/**
+ * Search result preview — renders the canonical SerpResult (features/seo/serp)
+ * for the OBSERVED metadata with a desktop/mobile toggle, deterministic
+ * pixel/char chips, the observed-vs-desired editorial diff, and condensed
+ * recommendations. The section header carries the "open in Search Appearance"
+ * window-panel launcher.
+ */
 function SerpPreview({
   page,
   snapshot,
+  device,
 }: {
   page: MarketingPage;
   snapshot: PageSnapshot | null;
+  device: SerpDevice;
 }) {
   const head = snapshot
     ? parseSnapshotHeadTags(snapshot.head_tags)
@@ -206,61 +268,76 @@ function SerpPreview({
   const title = head.title;
   const description = head.metaDescription;
 
-  let host = page.url;
-  let pathCrumbs = "";
-  try {
-    const parsed = new URL(page.url);
-    host = parsed.host;
-    pathCrumbs = parsed.pathname
-      .split("/")
-      .filter(Boolean)
-      .join(" › ");
-  } catch {
-    /* keep raw URL */
-  }
+  const titleEval = title ? evaluateMetaTitle(title) : null;
+  const descEval = description ? evaluateMetaDescription(description) : null;
+  const desiredTitleEval = page.meta_title_desired
+    ? evaluateMetaTitle(page.meta_title_desired)
+    : null;
+  const desiredDescEval = page.meta_description_desired
+    ? evaluateMetaDescription(page.meta_description_desired)
+    : null;
 
   return (
     <div className="grid gap-3 p-3">
-      <div className="rounded-lg border border-border bg-background p-3">
-        <p className="truncate text-xs text-muted-foreground">
-          {host}
-          {pathCrumbs ? ` › ${pathCrumbs}` : ""}
-        </p>
-        {title ? (
-          <p className="mt-0.5 line-clamp-1 text-[15px] font-medium leading-snug text-primary">
-            {title}
-          </p>
-        ) : (
-          <p className="mt-0.5 text-[15px] italic text-muted-foreground">
-            No observed title
-          </p>
-        )}
-        {description ? (
-          <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-muted-foreground">
-            {description}
-          </p>
-        ) : (
-          <p className="mt-0.5 text-xs italic text-muted-foreground">
-            No observed meta description — search engines will improvise one.
-          </p>
-        )}
-        <p className="mt-1.5 text-[10px] tabular-nums text-muted-foreground">
-          Title {title?.length ?? 0} chars
-          {(title?.length ?? 0) > 60 ? " (long)" : ""} · Description{" "}
-          {description?.length ?? 0} chars
-          {(description?.length ?? 0) > 160 ? " (long)" : ""}
-        </p>
+      <div className="rounded-lg border border-border bg-background px-4 py-3">
+        <SerpResult
+          url={page.url}
+          title={title ?? undefined}
+          description={description ?? undefined}
+          device={device}
+          density="compact"
+          placeholderTitle="No observed title"
+          placeholderDescription="No observed meta description — search engines will improvise one."
+        />
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-2">
+          {titleEval ? (
+            <SerpFieldChips
+              prefix="Title"
+              chars={titleEval.charCount}
+              pixels={titleEval.pixelWidth}
+              ok={titleEval.ok}
+            />
+          ) : (
+            <span className="font-mono text-[11px] text-muted-foreground">
+              Title —
+            </span>
+          )}
+          {descEval ? (
+            <SerpFieldChips
+              prefix="Description"
+              chars={descEval.charCount}
+              pixels={descEval.pixelWidth}
+              ok={descEval.ok}
+            />
+          ) : (
+            <span className="font-mono text-[11px] text-muted-foreground">
+              Description —
+            </span>
+          )}
+        </div>
       </div>
+
+      {titleEval?.issues.length || descEval?.issues.length ? (
+        <MetaRecommendations
+          titleEval={titleEval}
+          descriptionEval={descEval}
+          issuesOnly
+          compact
+        />
+      ) : null}
+
       <div className="grid gap-2.5">
         <IntentDiffRow
           label="Desired title"
           observed={title}
           desired={page.meta_title_desired}
+          metrics={desiredTitleEval}
         />
         <IntentDiffRow
           label="Desired description"
           observed={description}
           desired={page.meta_description_desired}
+          metrics={desiredDescEval}
         />
       </div>
     </div>
@@ -705,6 +782,8 @@ function PageCaptures({ pageId }: { pageId: string }) {
 export function PageWorkspace({ pageId }: { pageId: string }) {
   const { site, sitePath } = useMarketingSite();
   const workspace = usePageWorkspace(site.id, pageId);
+  const openSerpAnalyzer = useOpenSerpAnalyzerWindow();
+  const [serpDevice, setSerpDevice] = useState<SerpDevice>("desktop");
   if (workspace.isLoading)
     return <LoadingSurface label="Loading canonical page…" />;
   if (workspace.isError || !workspace.data) {
@@ -774,8 +853,65 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         </section>
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <SectionCard title="Search result preview">
-            <SerpPreview page={page} snapshot={snapshot} />
+          <SectionCard
+            title="Search result preview"
+            headerExtra={
+              <div className="flex items-center gap-1">
+                <div className="flex items-center rounded-md border border-border">
+                  <button
+                    type="button"
+                    onClick={() => setSerpDevice("desktop")}
+                    aria-label="Desktop preview"
+                    title="Desktop preview"
+                    className={cn(
+                      "flex h-6 w-7 items-center justify-center rounded-l-[5px] transition-colors",
+                      serpDevice === "desktop"
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Monitor className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSerpDevice("mobile")}
+                    aria-label="Mobile preview"
+                    title="Mobile preview"
+                    className={cn(
+                      "flex h-6 w-7 items-center justify-center rounded-r-[5px] transition-colors",
+                      serpDevice === "mobile"
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Smartphone className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const head = snapshot
+                      ? parseSnapshotHeadTags(snapshot.head_tags)
+                      : parseSnapshotHeadTags(null);
+                    openSerpAnalyzer({
+                      url: page.url,
+                      title: head.title ?? page.meta_title_desired ?? "",
+                      description:
+                        head.metaDescription ??
+                        page.meta_description_desired ??
+                        "",
+                    });
+                  }}
+                  aria-label="Open in Search Appearance analyzer"
+                  title="Open in Search Appearance analyzer"
+                  className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <AppWindow className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            }
+          >
+            <SerpPreview page={page} snapshot={snapshot} device={serpDevice} />
           </SectionCard>
           <SectionCard title="User-owned page intent">
             <IntentForm key={`${page.id}:${page.updated_at}`} page={page} />

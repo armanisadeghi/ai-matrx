@@ -55,6 +55,7 @@ import { cmsSiteManifest } from "./cms-site.manifest";
 import { cmsPageManifest } from "./cms-page.manifest";
 import { cmsComponentManifest } from "./cms-component.manifest";
 import { htmlPageManifest } from "./html-page.manifest";
+import { marketingPageManifest } from "./marketing-page.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -97,6 +98,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   cmsPageManifest,
   cmsComponentManifest,
   htmlPageManifest,
+  marketingPageManifest,
 ];
 
 // ---------------------------------------------------------------------------

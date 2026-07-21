@@ -10,9 +10,8 @@
  *    (`{ kind: "file", file }`) — `fileHandler` then does the rest
  *    (Python `/files/upload`, optimistic Redux updates, optional share
  *    links).
- *  - **Pick existing** path → `useFilePicker()` from `features/files`. Opens
- *    the adaptive Dialog↔Drawer that browses the user's cld_files tree
- *    and returns the chosen file id.
+ *  - **Pick existing** path → `FilePickerWindow` — THE one canonical file
+ *    picker (`FilesResourcePicker` in a non-blocking WindowPanel).
  *  - **URL** path → just records the URL on the request body so the backend
  *    fetches it through `FileManager.resolve_media_async`.
  *
@@ -28,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFileUpload } from "@/features/files";
-import { useFilePicker } from "@/features/files";
+import { FilePickerWindow } from "@/features/resource-manager/resource-picker/FilePickerWindow";
 import { toast } from "@/lib/toast";
 
 export interface PdfSourcePayload {
@@ -55,7 +54,7 @@ export const EMPTY_PDF_SOURCE: PdfSourceState = EMPTY;
 
 export function PdfSourcePicker({ value, onChange }: Props) {
   const { upload, uploading, error: uploadError } = useFileUpload();
-  const { open: openPicker, element: pickerElement } = useFilePicker();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [urlInput, setUrlInput] = useState("");
 
   async function handleFile(file: File | undefined) {
@@ -89,19 +88,8 @@ export function PdfSourcePicker({ value, onChange }: Props) {
     }
   }
 
-  async function pickExisting() {
-    const ids = await openPicker({
-      multi: false,
-      allowedExtensions: ["pdf"],
-      title: "Choose a PDF",
-      description: "Pick a PDF that's already in your cloud files.",
-    });
-    if (!ids || !ids.length) return;
-    onChange({
-      payload: { media: { file_id: ids[0] } },
-      label: `cld_files: ${ids[0].slice(0, 8)}…`,
-    });
-    toast.success("PDF selected.");
+  function pickExisting() {
+    setPickerOpen(true);
   }
 
   function commitUrl() {
@@ -215,7 +203,21 @@ export function PdfSourcePicker({ value, onChange }: Props) {
         </Tabs>
       )}
 
-      {pickerElement}
+      <FilePickerWindow
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        scopeId="pdf-demo-source"
+        title="Choose a PDF"
+        initialFilter="pdfs"
+        onPick={(selection) => {
+          onChange({
+            payload: { media: { file_id: selection.fileId } },
+            label: selection.details.filename || selection.fileId,
+          });
+          toast.success("PDF selected.");
+          return "close";
+        }}
+      />
     </div>
   );
 }

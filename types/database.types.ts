@@ -43901,6 +43901,7 @@ export type Database = {
           organization_id: string
           path: string | null
           provenance: string
+          seo_metrics_desired: Json | null
           site_id: string
           status: string
           target_keyword: string | null
@@ -43925,6 +43926,7 @@ export type Database = {
           organization_id: string
           path?: string | null
           provenance: string
+          seo_metrics_desired?: Json | null
           site_id: string
           status?: string
           target_keyword?: string | null
@@ -43949,6 +43951,7 @@ export type Database = {
           organization_id?: string
           path?: string | null
           provenance?: string
+          seo_metrics_desired?: Json | null
           site_id?: string
           status?: string
           target_keyword?: string | null
@@ -44631,6 +44634,7 @@ export type Database = {
           organization_id: string
           page_id: string
           perf: Json
+          seo_metrics: Json | null
           session_id: string
           site_id: string
           structured_data: Json
@@ -44659,6 +44663,7 @@ export type Database = {
           organization_id: string
           page_id: string
           perf?: Json
+          seo_metrics?: Json | null
           session_id: string
           site_id: string
           structured_data?: Json
@@ -44687,6 +44692,7 @@ export type Database = {
           organization_id?: string
           page_id?: string
           perf?: Json
+          seo_metrics?: Json | null
           session_id?: string
           site_id?: string
           structured_data?: Json
