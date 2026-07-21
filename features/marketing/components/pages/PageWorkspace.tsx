@@ -16,6 +16,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { PageContentCard } from "@/features/marketing/components/pages/PageContentCard";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -595,31 +598,49 @@ function ContentStats({ snapshot }: { snapshot: PageSnapshot }) {
   );
 }
 
-function SitemapMemberships({ pageId }: { pageId: string }) {
+function SitemapMembershipsCard({ page }: { page: MarketingPage }) {
   const { site, sitePath } = useMarketingSite();
-  const memberships = usePageSitemapMemberships(site.id, pageId);
+  const memberships = usePageSitemapMemberships(site.id, page.id);
+  const rows = memberships.data ?? [];
+  const copy = webCopy({
+    kind: "web-page-sitemap-memberships",
+    label: "Sitemap memberships",
+    description: "Which sitemap documents advertise this canonical URL.",
+    surface: `Sitemap memberships — ${page.url}`,
+    data: rows,
+    lines: [
+      ["URL", page.url],
+      ["Sitemaps advertising this URL", rows.length],
+      ...rows.map(
+        (membership): [string, string] => [
+          "Sitemap",
+          `${membership.sitemap.url} (last seen ${formatDate(membership.last_seen)})`,
+        ],
+      ),
+    ],
+    attributes: { page_id: page.id, count: rows.length },
+  });
+
+  let body: React.ReactNode;
   if (memberships.isLoading) {
-    return (
+    body = (
       <div className="m-3 h-16 animate-pulse rounded-lg border border-border bg-muted/40" />
     );
-  }
-  if (memberships.isError) {
-    return (
+  } else if (memberships.isError) {
+    body = (
       <QueryError
         error={memberships.error}
         onRetry={() => void memberships.refetch()}
       />
     );
-  }
-  const rows = memberships.data ?? [];
-  if (rows.length === 0) {
-    return (
+  } else if (rows.length === 0) {
+    body = (
       <p className="p-4 text-xs text-muted-foreground">
         No sitemap advertises this URL — it was found another way.
       </p>
     );
-  }
-  return (
+  } else {
+    body = (
     <ul className="divide-y divide-border">
       {rows.map((membership) => (
         <li
@@ -643,43 +664,28 @@ function SitemapMemberships({ pageId }: { pageId: string }) {
         </li>
       ))}
     </ul>
+    );
+  }
+  return (
+    <SectionCard title="Sitemap memberships" copy={copy}>
+      {body}
+    </SectionCard>
   );
 }
 
 /** Current capture per kind + per-page capture history, canonical file viewer on click. */
-function PageCaptures({ pageId }: { pageId: string }) {
+function PageCapturesCard({ page }: { page: MarketingPage }) {
   const { site, sitePath } = useMarketingSite();
+  const pageId = page.id;
   const screenshots = usePageScreenshots(site.id, pageId);
   const deleteMutation = useDeleteScreenshot(site.id);
   const openFilePreview = useOpenFilePreviewWindow();
   const [deleting, setDeleting] = useState<SiteScreenshot | null>(null);
 
-  if (screenshots.isLoading) {
-    return (
-      <div className="m-3 h-40 animate-pulse rounded-lg border border-border bg-muted/40" />
-    );
-  }
-  if (screenshots.isError) {
-    return (
-      <QueryError
-        error={screenshots.error}
-        onRetry={() => void screenshots.refetch()}
-      />
-    );
-  }
   const rows = (screenshots.data ?? []).filter(
     (screenshot): screenshot is SiteScreenshot & { file_id: string } =>
       Boolean(screenshot.file_id),
   );
-  if (rows.length === 0) {
-    return (
-      <p className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
-        <ImageOff className="h-4 w-4" />
-        No captures exist for this page yet — they are stored by site
-        initialization and screenshot-enabled crawls.
-      </p>
-    );
-  }
 
   // Rows arrive newest-first; the first row per kind is the current capture.
   const byKind = new Map<string, (SiteScreenshot & { file_id: string })[]>();
@@ -688,6 +694,26 @@ function PageCaptures({ pageId }: { pageId: string }) {
     list.push(row);
     byKind.set(row.kind, list);
   }
+
+  const copy = webCopy({
+    kind: "web-page-captures",
+    label: "Page captures",
+    description:
+      "Visual capture records for this page (current per kind + history); file_id values open via the canonical file viewer.",
+    surface: `Captures — ${page.url}`,
+    data: rows,
+    lines: [
+      ["URL", page.url],
+      ["Captures", rows.length],
+      ...[...byKind.entries()].map(
+        ([kind, captures]): [string, string] => [
+          kind,
+          `current as of ${formatDate(captures[0].captured_at)} (${captures.length} total)`,
+        ],
+      ),
+    ],
+    attributes: { page_id: pageId, count: rows.length },
+  });
 
   const confirmDelete = async () => {
     if (!deleting) return;
@@ -702,7 +728,28 @@ function PageCaptures({ pageId }: { pageId: string }) {
     }
   };
 
-  return (
+  let body: React.ReactNode;
+  if (screenshots.isLoading) {
+    body = (
+      <div className="m-3 h-40 animate-pulse rounded-lg border border-border bg-muted/40" />
+    );
+  } else if (screenshots.isError) {
+    body = (
+      <QueryError
+        error={screenshots.error}
+        onRetry={() => void screenshots.refetch()}
+      />
+    );
+  } else if (rows.length === 0) {
+    body = (
+      <p className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
+        <ImageOff className="h-4 w-4" />
+        No captures exist for this page yet — they are stored by site
+        initialization and screenshot-enabled crawls.
+      </p>
+    );
+  } else {
+    body = (
     <div className="grid gap-4 p-3">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {[...byKind.entries()].map(([kind, captures]) => {
@@ -776,6 +823,12 @@ function PageCaptures({ pageId }: { pageId: string }) {
         onConfirm={() => void confirmDelete()}
       />
     </div>
+    );
+  }
+  return (
+    <SectionCard title="Captures" copy={copy}>
+      {body}
+    </SectionCard>
   );
 }
 
@@ -797,6 +850,31 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const data = workspace.data;
   const page = data.page;
   const snapshot = data.latestSnapshot;
+  const head = parseSnapshotHeadTags(snapshot ? snapshot.head_tags : null);
+  const extracted = parseSnapshotExtracted(snapshot?.extracted ?? null);
+  const headings = parseSnapshotHeadings(snapshot?.headings ?? null);
+
+  const pageCopy = webCopy({
+    kind: "web-page",
+    label: `Page ${page.path || "/"}`,
+    description:
+      "A canonical page from the Marketing site workspace: identity, user intent, and its latest observed snapshot.",
+    surface: `Page workspace — ${page.url}`,
+    data: { page, latestSnapshot: snapshot, openFindings: data.openFindings },
+    lines: [
+      ["URL", page.url],
+      ["Status", page.status],
+      ["Provenance", page.provenance],
+      ["Target keyword", page.target_keyword],
+      ["Observed title", head.title],
+      ["Observed description", head.metaDescription],
+      ["Open findings", data.openFindings],
+      ["Last HTTP", page.http_status_last],
+      ["Words", snapshot?.word_count ?? null],
+      ["Captured", snapshot ? formatDate(snapshot.captured_at) : "never"],
+    ],
+    attributes: { page_id: page.id, site_id: site.id },
+  });
 
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
@@ -814,12 +892,15 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             </h1>
             <MarketingUrlRow url={page.url} className="mt-0.5" />
           </div>
-          <Button asChild variant="outline" size="sm" className="h-8 shrink-0">
-            <Link href={`${sitePath}/pages/${page.id}/snapshots`}>
-              <History className="mr-1.5 h-3.5 w-3.5" />
-              Snapshot history
-            </Link>
-          </Button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <CopyButtons size="icon" {...pageCopy} />
+            <Button asChild variant="outline" size="sm" className="h-8">
+              <Link href={`${sitePath}/pages/${page.id}/snapshots`}>
+                <History className="mr-1.5 h-3.5 w-3.5" />
+                Snapshot history
+              </Link>
+            </Button>
+          </div>
         </section>
 
         <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
@@ -855,6 +936,35 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard
             title="Search result preview"
+            copy={webCopy({
+              kind: "web-page-serp",
+              label: "Search result preview",
+              description:
+                "Observed search-appearance metadata vs the desired editorial targets for this page.",
+              surface: `Search result preview — ${page.url}`,
+              data: {
+                url: page.url,
+                observed: {
+                  title: head.title,
+                  description: head.metaDescription,
+                },
+                desired: {
+                  title: page.meta_title_desired,
+                  description: page.meta_description_desired,
+                  targetKeyword: page.target_keyword,
+                },
+                seoMetrics: snapshot?.seo_metrics ?? null,
+              },
+              lines: [
+                ["URL", page.url],
+                ["Observed title", head.title ?? "none"],
+                ["Observed description", head.metaDescription ?? "none"],
+                ["Desired title", page.meta_title_desired],
+                ["Desired description", page.meta_description_desired],
+                ["Target keyword", page.target_keyword],
+              ],
+              attributes: { page_id: page.id },
+            })}
             headerExtra={
               <div className="flex items-center gap-1">
                 <div className="flex items-center rounded-md border border-border">
@@ -913,7 +1023,30 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           >
             <SerpPreview page={page} snapshot={snapshot} device={serpDevice} />
           </SectionCard>
-          <SectionCard title="User-owned page intent">
+          <SectionCard
+            title="User-owned page intent"
+            copy={webCopy({
+              kind: "web-page-intent",
+              label: "Page intent",
+              description:
+                "The user-owned editorial intent for this page (target keyword + desired metadata).",
+              surface: `Page intent — ${page.url}`,
+              data: {
+                url: page.url,
+                target_keyword: page.target_keyword,
+                meta_title_desired: page.meta_title_desired,
+                meta_description_desired: page.meta_description_desired,
+                seo_metrics_desired: page.seo_metrics_desired,
+              },
+              lines: [
+                ["URL", page.url],
+                ["Target keyword", page.target_keyword ?? "not set"],
+                ["Desired title", page.meta_title_desired ?? "not set"],
+                ["Desired description", page.meta_description_desired ?? "not set"],
+              ],
+              attributes: { page_id: page.id },
+            })}
+          >
             <IntentForm key={`${page.id}:${page.updated_at}`} page={page} />
           </SectionCard>
         </div>
@@ -921,21 +1054,129 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         {snapshot ? (
           <>
             <div className="grid gap-3 lg:grid-cols-2">
-              <SectionCard title="Social share preview">
+              <SectionCard
+                title="Social share preview"
+                copy={webCopy({
+                  kind: "web-page-social-card",
+                  label: "Social share preview",
+                  description:
+                    "Observed Open Graph and Twitter card tags controlling how shares of this URL render.",
+                  surface: `Social share preview — ${page.url}`,
+                  data: { url: page.url, og: head.og, twitter: head.twitter },
+                  lines: [
+                    ["URL", page.url],
+                    ["Social title", head.og.title ?? head.twitter.title ?? "none"],
+                    [
+                      "Social description",
+                      head.og.description ?? head.twitter.description ?? "none",
+                    ],
+                    ["Share image", head.og.image ?? head.twitter.image ?? "none"],
+                    ["Twitter card", head.twitter.card ?? "none"],
+                    ["og:type", head.og.type],
+                  ],
+                  attributes: { page_id: page.id },
+                })}
+              >
                 <SocialCardPreview snapshot={snapshot} />
               </SectionCard>
-              <SectionCard title="Indexability">
+              <SectionCard
+                title="Indexability"
+                copy={webCopy({
+                  kind: "web-page-indexability",
+                  label: "Indexability",
+                  description:
+                    "Crawl/indexing signals observed on this page: HTTP status, robots, canonical, redirects.",
+                  surface: `Indexability — ${page.url}`,
+                  data: {
+                    url: page.url,
+                    http_status: snapshot.http_status,
+                    meta_robots: head.metaRobots,
+                    canonical_url: head.canonicalUrl,
+                    redirect_chain: extracted.redirectChain,
+                    final_url: snapshot.final_url,
+                    lang: head.lang,
+                  },
+                  lines: [
+                    ["URL", page.url],
+                    ["HTTP status", snapshot.http_status],
+                    ["Meta robots", head.metaRobots ?? "not set"],
+                    ["Canonical URL", head.canonicalUrl ?? "not set"],
+                    [
+                      "Redirects",
+                      extracted.redirectChain.length > 1
+                        ? extracted.redirectChain
+                            .map((hop) => `${hop.status ?? "—"} ${hop.url}`)
+                            .join(" → ")
+                        : "direct",
+                    ],
+                    ["Final URL", snapshot.final_url ?? page.url],
+                  ],
+                  attributes: { page_id: page.id },
+                })}
+              >
                 <IndexabilitySection page={page} snapshot={snapshot} />
               </SectionCard>
             </div>
             <div className="grid gap-3 lg:grid-cols-2">
-              <SectionCard title="Headings outline">
+              <SectionCard
+                title="Headings outline"
+                copy={webCopy({
+                  kind: "web-page-headings",
+                  label: "Headings outline",
+                  description:
+                    "The observed heading structure (h1–h6) of this page, in document order.",
+                  surface: `Headings outline — ${page.url}`,
+                  data: { url: page.url, headings: headings.all },
+                  lines: [
+                    ["URL", page.url],
+                    ["H1 count", headings.h1Count],
+                    ...headings.all.map(
+                      (heading): [string, string] => [
+                        `h${heading.level}`,
+                        heading.text,
+                      ],
+                    ),
+                  ],
+                  attributes: { page_id: page.id, count: headings.all.length },
+                })}
+              >
                 <HeadingsOutline snapshot={snapshot} />
               </SectionCard>
-              <SectionCard title="Content stats">
+              <SectionCard
+                title="Content stats"
+                copy={webCopy({
+                  kind: "web-page-content-stats",
+                  label: "Content stats",
+                  description:
+                    "Quantitative content signals from this page's latest snapshot.",
+                  surface: `Content stats — ${page.url}`,
+                  data: {
+                    url: page.url,
+                    word_count: snapshot.word_count,
+                    extracted: snapshot.extracted,
+                    links_summary: snapshot.links_summary,
+                    images: snapshot.images,
+                    captured_at: snapshot.captured_at,
+                  },
+                  lines: [
+                    ["URL", page.url],
+                    ["Words", snapshot.word_count],
+                    ["Sentences", extracted.sentenceCount],
+                    ["Flesch reading ease", extracted.fleschReadingEase],
+                    ["Captured", formatDate(snapshot.captured_at)],
+                  ],
+                  attributes: { page_id: page.id },
+                })}
+              >
                 <ContentStats snapshot={snapshot} />
               </SectionCard>
             </div>
+            {snapshot.markdown_file_id ? (
+              <PageContentCard
+                page={page}
+                markdownFileId={snapshot.markdown_file_id}
+              />
+            ) : null}
           </>
         ) : (
           <section className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
@@ -948,13 +1189,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           </section>
         )}
 
-        <SectionCard title="Sitemap memberships">
-          <SitemapMemberships pageId={page.id} />
-        </SectionCard>
+        <SitemapMembershipsCard page={page} />
 
-        <SectionCard title="Captures">
-          <PageCaptures pageId={page.id} />
-        </SectionCard>
+        <PageCapturesCard page={page} />
       </div>
     </main>
   );

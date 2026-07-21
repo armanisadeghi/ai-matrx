@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButtons, type CopyButtonsProps } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
@@ -203,6 +204,7 @@ export function SectionCard({
   title,
   action,
   headerExtra,
+  copy,
   children,
   className,
 }: {
@@ -213,6 +215,11 @@ export function SectionCard({
     | { label: string; onClick: () => void };
   /** Free-form right-side header content (icon buttons, toggles). Renders before `action`. */
   headerExtra?: React.ReactNode;
+  /**
+   * Copy + Copy-for-AI pair for this card (agent-copy doctrine: every section
+   * is copyable). Build with `webCopy` from `features/marketing/lib/copy-payloads`.
+   */
+  copy?: Pick<CopyButtonsProps, "label" | "human" | "agent">;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -228,6 +235,7 @@ export function SectionCard({
           {title}
         </h2>
         <div className="flex items-center gap-2">
+          {copy ? <CopyButtons size="icon" {...copy} /> : null}
           {headerExtra}
           {action && "href" in action ? (
             <Link
