@@ -105,6 +105,10 @@ import { NoteTabBar } from "./NoteTabBar";
 import { NoteSidebar } from "./NoteSidebar";
 import { FolderQuickPick } from "./FolderQuickPick";
 import { cn } from "@/lib/utils";
+import {
+  NAV_ITEM_SELECTED,
+  NAV_ITEM_UNSELECTED,
+} from "@/features/shell/components/header/navItemClasses";
 
 export interface NotesViewConfig {
   /** Show the sidebar with folder tree (default: true) */
@@ -528,8 +532,8 @@ export function NotesView({
       "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
       "[&_svg]:w-3.5 [&_svg]:h-3.5",
       editorMode === mode
-        ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
-        : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
+        ? NAV_ITEM_SELECTED
+        : NAV_ITEM_UNSELECTED,
     );
 
   // Main editor column — shared by the sidebar-shown (resizable panel) and the

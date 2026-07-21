@@ -305,7 +305,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           </div>
         }
       />
-      <main className="h-dvh overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
+      <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="grid w-full gap-3">
           <section className="flex flex-wrap items-start gap-4 rounded-lg border border-border bg-card p-4">
             <SiteIdentityMark site={current} size={56} />

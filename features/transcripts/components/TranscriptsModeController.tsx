@@ -10,6 +10,10 @@ import {
   TRANSCRIPTS_MODES,
   type TranscriptsPageMode,
 } from "@/features/transcripts/constants/transcriptsRoutes";
+import {
+  NAV_ITEM_SELECTED,
+  NAV_ITEM_UNSELECTED,
+} from "@/features/shell/components/header/navItemClasses";
 
 export function TranscriptsModeController() {
   const router = useRouter();
@@ -41,8 +45,8 @@ export function TranscriptsModeController() {
               "px-2.5",
               "[&_svg]:h-3.5 [&_svg]:w-3.5",
               isActive
-                ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
-                : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
+                ? NAV_ITEM_SELECTED
+                : NAV_ITEM_UNSELECTED,
             )}
           >
             <Icon />

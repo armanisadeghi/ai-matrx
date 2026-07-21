@@ -63,6 +63,19 @@
   --shell-nav-icon: rgba(0, 0, 0, 0.82);
   --shell-nav-icon-hover: rgba(0, 0, 0, 1);
 
+  /* Route-mode-nav selection (RouteModeNav). The selected item must read as
+     selected in BOTH themes. Light glass is nearly opaque, so the low-alpha
+     --matrx-glass-bg-active tint that works in dark is invisible on it —
+     light therefore gets a SOLID raised pill (segmented-control treatment)
+     plus a real text-colour delta. Dark keeps the glass tint that reads well. */
+  --shell-nav-selected-bg: #ffffff;
+  --shell-nav-selected-text: rgb(29, 78, 216);
+  --shell-nav-selected-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.07);
+  /* Unselected must sit clearly BELOW selected — the default --shell-nav-text
+     (0.82 black) is too close to the 1.0 hover value to signal state. */
+  --shell-nav-unselected-text: rgba(0, 0, 0, 0.55);
+
   --shell-auth-text: rgba(0, 0, 0, 0.7);
 }
 
@@ -90,6 +103,12 @@
   --shell-nav-text-hover: rgba(255, 255, 255, 0.9);
   --shell-nav-icon: rgba(255, 255, 255, 0.55);
   --shell-nav-icon-hover: rgba(255, 255, 255, 0.9);
+
+  /* Dark already reads well — keep the glass tint, just name it. */
+  --shell-nav-selected-bg: var(--matrx-glass-bg-active);
+  --shell-nav-selected-text: rgba(255, 255, 255, 0.98);
+  --shell-nav-selected-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shell-nav-unselected-text: rgba(255, 255, 255, 0.55);
 
   --shell-auth-text: rgba(255, 255, 255, 0.75);
 }

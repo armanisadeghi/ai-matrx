@@ -35,6 +35,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
+import {
+  NAV_ITEM_SELECTED,
+  NAV_ITEM_UNSELECTED,
+} from "@/features/shell/components/header/navItemClasses";
 
 export interface RouteNavItem {
   name: string;
@@ -67,6 +71,12 @@ const PILL =
 const ITEM =
   "flex items-center justify-center gap-1 py-0.5 px-2.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
 
+// Breathing room the nav must keep between itself and the header's left/right
+// flanks. Without it the measurement picks "full" whenever the content fits by
+// even 1px, so the pill ends up flush against the shell's own icons (observed
+// on /marketing at ~700px: 365px of content into a 368px slot).
+const FLANK_GUTTER = 32;
+
 export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -91,7 +101,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
     if (!cell) return;
 
     const compute = () => {
-      const avail = cell.clientWidth;
+      const avail = cell.clientWidth - FLANK_GUTTER;
       const fullW = fullRef.current?.scrollWidth ?? 0;
       const iconsW = iconsRef.current?.scrollWidth ?? 0;
       if (fullW <= avail) setVariant("full");
@@ -119,12 +129,8 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
         }}
         title={item.name}
         aria-label={item.name}
-        className={cn(
-          ITEM,
-          isActive
-            ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
-            : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
-        )}
+        aria-current={isActive ? "page" : undefined}
+        className={cn(ITEM, isActive ? NAV_ITEM_SELECTED : NAV_ITEM_UNSELECTED)}
       >
         {Icon && <Icon />}
         {showLabel && <span>{item.name}</span>}
@@ -139,16 +145,22 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
     // space, not the currently-rendered variant's content width — otherwise a
     // compact first render (portal not yet laid out) locks the nav in "menu".
     <div ref={cellRef} className="relative flex w-full min-w-0 justify-center">
-      {/* Hidden measurers — always at natural width, never affect layout. */}
+      {/* Hidden measurers — always at natural width, never affect layout.
+          `w-max` on EACH measurer is load-bearing: they are block-level
+          siblings inside one shrink-to-fit absolute box, so without it both
+          stretch to the widest sibling and the icons measurer reports the
+          FULL width. That made `iconsW <= avail` unreachable whenever
+          `fullW > avail`, so the "icons" stage was dead code and every nav
+          jumped full → menu. (Fixed 2026-07-20; do not regress.) */}
       <div
         aria-hidden
         className="pointer-events-none invisible absolute left-0 top-0"
       >
-        <div ref={fullRef} className={PILL}>
+        <div ref={fullRef} className={cn(PILL, "w-max")}>
           {items.map((i) => renderItem(i, true))}
         </div>
         {canIcons && (
-          <div ref={iconsRef} className={PILL}>
+          <div ref={iconsRef} className={cn(PILL, "w-max")}>
             {items.map((i) => renderItem(i, false))}
           </div>
         )}
@@ -163,12 +175,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
               className={cn(PILL, "px-1")}
               aria-label="Switch view"
             >
-              <span
-                className={cn(
-                  ITEM,
-                  "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]",
-                )}
-              >
+              <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
                 {ActiveIcon && <ActiveIcon />}
                 {/* Phones: icon-only trigger — the label would overflow the
                     tiny center cell into the shell's right icons. */}
@@ -187,7 +194,11 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                 <DropdownMenuItem
                   key={item.href}
                   asChild
-                  className={cn("gap-2", isActive && "font-semibold")}
+                  className={cn(
+                    "gap-2",
+                    isActive &&
+                      "font-semibold bg-accent text-accent-foreground focus:bg-accent",
+                  )}
                 >
                   <Link
                     href={item.href}

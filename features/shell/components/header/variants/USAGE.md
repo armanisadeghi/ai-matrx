@@ -253,6 +253,8 @@ import { GlassButton, BottomSheet, GlassDropdown } from "@/components/header-var
 | Desktop → glass dropdown | Overflow actions use `GlassDropdown` positioned below trigger |
 | Token consistency | All colors, shadows, blurs reference `--shell-*` tokens from `shell.css` |
 | Spring physics | All interactive transitions use `--shell-ease-spring` |
+| Nav degrades in three stages | `RouteModeNav` measures and steps icon+text → icon-only → `…` menu; hidden measurers carry `w-max`, fit test reserves a 32px flank gutter |
+| Selection visible in both themes | Selected nav items use `--shell-nav-selected-bg/-text/-shadow` + `--shell-nav-unselected-text` — **never** `--matrx-glass-bg-active`, which disappears on light-mode glass |
 
 ---
 

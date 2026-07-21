@@ -60,7 +60,7 @@ Sibling routes sharing one header (e.g. `/cms` + `/cms/html-pages`) get ONE shar
 
 - **List/gallery page** → copy `/agents/all`: `PageHeader` with a small injected header (search / filters / New), body `h-full overflow-hidden`, scroll container inside, floating grid content gets `pt-[var(--shell-header-h)]` if it has interactive elements at the top.
 - **Detail/editor `[id]` page** → copy `/agents/[id]/build`: `ChevronLeftTapButton` back (from `components/icons/tap-buttons.tsx`), entity **dropdown** (not a static title) for `[id]` routes, actions right. No title/description prose.
-- **Sub-mode family** (build/run/templates…) → `RouteModeNav` (`features/shell/components/header/RouteModeNav.tsx`) — measurement-driven full → icons → menu collapse. It is the ONE control for mode switching; never pair it with a second selector.
+- **Sub-mode family** (build/run/templates…) → `RouteModeNav` (`features/shell/components/header/RouteModeNav.tsx`) — measurement-driven full → icons → menu collapse. It is the ONE control for mode switching; never pair it with a second selector. **Give every item an `icon`** — the icon-only stage is skipped entirely when even one lacks it, so the nav jumps straight from full text to a dropdown.
 - **Drill-down hierarchy** (org → type → item…) → `ScopesRouteHeader` pattern: one layout-level breadcrumb header, pathname-gated, per-level sibling dropdowns, mobile drawer.
 - **Actions overflow** → `HeaderStructured` / `HeaderActions` (see USAGE.md variants) — inline on `lg+`, glass dropdown for overflow, `BottomSheet` on mobile.
 - **Right slot** (save status, page-scoped icons) → `PageHeaderRightPortal` (`features/shell/components/header/PageHeaderRightPortal.tsx`).
@@ -77,6 +77,15 @@ grep -rn "pt-12\|pt-10\|pt-8" <route dir>  # hardcoded header offsets → var(--
 ```
 Find a new faux-header class combo? **Add it to `FAUX_HEADER_MARKERS` in `scripts/check-page-headers.ts`** in the same change — the guard must learn what you learned.
 
+## RouteModeNav — the three-stage contract
+
+The center nav MUST degrade **icon + text → icon only → `…` menu**, driven by measured space, never by breakpoints. All three stages are load-bearing; a nav that skips one is a defect. Two invariants keep it honest (both were live bugs on `/marketing`, fixed 2026-07-20):
+
+- **Each hidden measurer carries `w-max`.** They are block-level siblings in one shrink-to-fit absolute box, so without it every measurer stretches to the widest one and the icons measurer reports the FULL width — making `iconsW <= avail` unreachable and turning the icon-only stage into dead code.
+- **The fit test reserves `FLANK_GUTTER` (32px).** `centerSlotWidth` returns the theoretical maximum, so an exact-fit test picks `full` when the pill is 1px from the shell's own icons. Collapse *before* the flanks are touched, not when they collide.
+
+**Selection must be obvious in BOTH themes.** Never style the selected item with `--matrx-glass-bg-active` directly — that low-alpha tint reads in dark and vanishes against light-mode glass, which is exactly how the selected route became invisible in light. Use the `--shell-nav-selected-bg` / `-text` / `-shadow` + `--shell-nav-unselected-text` tokens (`styles/shell.css`): light resolves to a solid raised pill with a real text-colour delta, dark keeps the glass tint. Selection also needs a genuine *unselected* baseline — `--shell-nav-text` (0.82 black) sits too close to its own hover value to signal state.
+
 ## Gotchas proven in the field
 
 - **Radix `asChild` wrappers take ONE child.** Injecting `<PageHeader>` as a sibling inside `NonEditableContextMenu`/any trigger wrapper crashes with "Primitive.span failed to slot". Put the header OUTSIDE the wrapper.
@@ -88,8 +97,10 @@ Find a new faux-header class combo? **Add it to `FAUX_HEADER_MARKERS` in `script
 
 1. Reuse a running dev server (`pnpm dev:status`) or `preview_start`; log in via `/login` with `admin@admin.com` / `Password1234#`.
 2. Navigate to the route. **Desktop (1280×800):** no in-body title bar; actions in the header center; nothing behind the avatar; no dead strip at the bottom; content scrolls behind the glass.
-3. **Mobile (375×812 via `resize_window`):** every desktop action reachable (bottom sheet, not vanished); no interactive element floating into the glass header; single scroll area.
-4. Screenshot both. A visible flaw in your own screenshot is a failure — fix it, don't present it.
+3. **Intermediate (~700–900px):** the center nav must have already stepped down a stage rather than sitting flush against the shell icons. Skipping this width is how a nav that only ever does full → menu passes review.
+4. **Mobile (375×812 via `resize_window`):** every desktop action reachable (bottom sheet, not vanished); no interactive element floating into the glass header; single scroll area.
+5. **Both themes.** The app's theme is a `.dark` class, NOT `prefers-color-scheme` — `resize_window`'s `colorScheme` does nothing. Toggle with `document.documentElement.classList.toggle('dark')`. Light mode is where selected-state contrast dies; check it explicitly.
+6. Screenshot each. A visible flaw in your own screenshot is a failure — fix it, don't present it.
 
 ## Do not break
 
