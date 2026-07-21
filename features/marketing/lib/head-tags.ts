@@ -23,6 +23,7 @@ export interface ParsedSnapshotHeadTags {
   canonicalUrl: string | null;
   metaRobots: string | null;
   lang: string | null;
+  hreflangCount: number;
   og: ParsedSnapshotOpenGraph;
   twitter: ParsedSnapshotTwitterCard;
 }
@@ -60,6 +61,7 @@ export function parseSnapshotHeadTags(headTags: Json): ParsedSnapshotHeadTags {
       canonicalUrl: null,
       metaRobots: null,
       lang: null,
+      hreflangCount: 0,
       og: EMPTY_OG,
       twitter: EMPTY_TWITTER,
     };
@@ -74,6 +76,9 @@ export function parseSnapshotHeadTags(headTags: Json): ParsedSnapshotHeadTags {
     canonicalUrl: trimmedString(headTags, "canonical_url"),
     metaRobots: trimmedString(headTags, "meta_robots"),
     lang: trimmedString(headTags, "lang"),
+    hreflangCount: Array.isArray(headTags.hreflang)
+      ? headTags.hreflang.length
+      : 0,
     og: {
       title: trimmedString(og, "og:title"),
       description: trimmedString(og, "og:description"),

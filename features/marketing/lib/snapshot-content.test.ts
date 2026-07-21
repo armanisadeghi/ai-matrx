@@ -3,6 +3,8 @@ import {
   parseSnapshotHeadings,
   parseSnapshotImages,
   parseSnapshotLinksSummary,
+  parseSnapshotPerformance,
+  parseSnapshotStructuredData,
 } from "@/features/marketing/lib/snapshot-content";
 
 describe("parseSnapshotHeadings", () => {
@@ -66,6 +68,7 @@ describe("parseSnapshotExtracted", () => {
         { url: "https://example.com/", status: 200 },
         { status: 200 },
       ],
+      mixed_content: ["http://example.com/script.js"],
     });
     expect(parsed.sentenceCount).toBe(149);
     expect(parsed.fleschReadingEase).toBe(42.5);
@@ -73,6 +76,7 @@ describe("parseSnapshotExtracted", () => {
       { url: "http://example.com/", status: 301 },
       { url: "https://example.com/", status: 200 },
     ]);
+    expect(parsed.mixedContentCount).toBe(1);
   });
 
   it("returns empty evidence for invalid payloads", () => {
@@ -80,6 +84,37 @@ describe("parseSnapshotExtracted", () => {
       sentenceCount: null,
       fleschReadingEase: null,
       redirectChain: [],
+      mixedContentCount: 0,
+    });
+  });
+});
+
+describe("parseSnapshotStructuredData", () => {
+  it("reads schema types and payload presence", () => {
+    expect(
+      parseSnapshotStructuredData({
+        schema_types: ["Organization", "WebSite", 4],
+        schema_org: { "@type": "Organization" },
+      }),
+    ).toEqual({
+      schemaTypes: ["Organization", "WebSite"],
+      hasPayload: true,
+    });
+    expect(parseSnapshotStructuredData(null)).toEqual({
+      schemaTypes: [],
+      hasPayload: false,
+    });
+  });
+});
+
+describe("parseSnapshotPerformance", () => {
+  it("reads finite timing and transfer values", () => {
+    expect(
+      parseSnapshotPerformance({ response_time_ms: 241, bytes: 4096 }),
+    ).toEqual({ responseTimeMs: 241, bytes: 4096 });
+    expect(parseSnapshotPerformance(null)).toEqual({
+      responseTimeMs: null,
+      bytes: null,
     });
   });
 });
@@ -90,6 +125,9 @@ describe("parseSnapshotImages", () => {
       count: 23,
       missingAlt: 2,
     });
-    expect(parseSnapshotImages(null)).toEqual({ count: null, missingAlt: null });
+    expect(parseSnapshotImages(null)).toEqual({
+      count: null,
+      missingAlt: null,
+    });
   });
 });

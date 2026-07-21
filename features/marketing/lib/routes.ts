@@ -19,9 +19,7 @@ export const marketingRoutes = {
   sites: () => "/marketing/sites",
   /** Pass a brandId to pre-bind the new site to that brand (`?brand=`). */
   newSite: (brandId?: string) =>
-    brandId
-      ? `/marketing/sites/new?brand=${brandId}`
-      : "/marketing/sites/new",
+    brandId ? `/marketing/sites/new?brand=${brandId}` : "/marketing/sites/new",
   connections: () => "/marketing/connections",
   /**
    * Canonical site base. Falls back to the legacy flat path (which
@@ -32,4 +30,21 @@ export const marketingRoutes = {
     brandId
       ? `/marketing/brands/${brandId}/sites/${siteId}${sub}`
       : `/marketing/sites/${siteId}${sub}`,
+  crawlReports: (
+    brandId: string | null | undefined,
+    siteId: string,
+    crawlId: string,
+  ) =>
+    brandId
+      ? `/marketing/brands/${brandId}/sites/${siteId}/crawls/${crawlId}/reports`
+      : `/marketing/sites/${siteId}/crawls/${crawlId}/reports`,
+  crawlReport: (
+    brandId: string | null | undefined,
+    siteId: string,
+    crawlId: string,
+    reportKey: string,
+  ) =>
+    brandId
+      ? `/marketing/brands/${brandId}/sites/${siteId}/crawls/${crawlId}/reports/${reportKey}`
+      : `/marketing/sites/${siteId}/crawls/${crawlId}/reports/${reportKey}`,
 };

@@ -20,6 +20,28 @@ export type InspectionLinkRow = InspectionLinkEdge & {
   snapshot: InspectionSnapshotReference | null;
 };
 
+/** Minimal link-edge projection fetched for the link-graph visualization. */
+export type LinkGraphEdgeRow = Pick<
+  InspectionLinkEdge,
+  | "id"
+  | "source_page_id"
+  | "target_url"
+  | "target_page_id"
+  | "is_internal"
+  | "rel"
+  | "anchor_text"
+  | "http_status"
+> & {
+  source_page: InspectionPageReference | null;
+};
+
+/** Link-graph fetch result — capped at a hard row limit, flagged when hit. */
+export interface LinkGraphEdgeResult {
+  rows: LinkGraphEdgeRow[];
+  total: number;
+  truncated: boolean;
+}
+
 /** Snapshot row projected with its crawl-independent canonical page URL. */
 export type InspectionSnapshotRow = InspectionSnapshot & {
   page: InspectionPageReference | null;

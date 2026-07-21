@@ -7,6 +7,7 @@ import {
   getSnapshotScreenshots,
   listCrawlLinks,
   listCrawlSnapshots,
+  listLinkGraphEdges,
   listSiteLinks,
 } from "@/features/marketing/data/inspection-queries";
 import { marketingKeys } from "@/features/marketing/data/hooks";
@@ -20,6 +21,8 @@ const inspectionKeys = {
     ] as const,
   siteLinks: (siteId: string, state: MatrxDataTableQueryState) =>
     [...marketingKeys.site(siteId), "inspection-links", state] as const,
+  linkGraph: (siteId: string, crawlId: string | null) =>
+    [...marketingKeys.site(siteId), "link-graph", crawlId ?? "site"] as const,
   snapshotScreenshots: (siteId: string, snapshotId: string) =>
     [
       ...marketingKeys.site(siteId),
@@ -87,6 +90,20 @@ export function useSiteLinks(
   });
 }
 
+/** Raw link edges (capped) feeding the link-graph visualization. */
+export function useLinkGraphEdges(
+  siteId: string,
+  crawlId: string | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: inspectionKeys.linkGraph(siteId, crawlId),
+    queryFn: ({ signal }) => listLinkGraphEdges(siteId, crawlId, signal),
+    enabled: enabled && Boolean(siteId),
+    staleTime: 60_000,
+  });
+}
+
 /** Direct browser-to-Supabase query for a site's screenshot gallery. */
 
 /** Direct browser-to-Supabase query for one crawl's page captures. */
@@ -94,11 +111,12 @@ export function useCrawlSnapshots(
   siteId: string,
   crawlId: string,
   state: MatrxDataTableQueryState,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: inspectionKeys.crawlSnapshots(siteId, crawlId, state),
     queryFn: ({ signal }) => listCrawlSnapshots(siteId, crawlId, state, signal),
-    enabled: Boolean(siteId && crawlId),
+    enabled: enabled && Boolean(siteId && crawlId),
     placeholderData: keepPreviousData,
   });
 }

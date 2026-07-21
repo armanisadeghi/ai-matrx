@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, FileStack, Link2, ListTree, Network } from "lucide-react";
+import {
+  Activity,
+  FileStack,
+  Link2,
+  ListTree,
+  Network,
+  PanelsTopLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CrawlSession } from "@/features/marketing/types";
 import {
@@ -18,6 +25,7 @@ export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
   const items = [
     { label: "Summary", href: root, icon: Activity },
     { label: "URLs", href: `${root}/urls`, icon: Link2 },
+    { label: "Reports", href: `${root}/reports`, icon: PanelsTopLeft },
     { label: "Snapshots", href: `${root}/snapshots`, icon: FileStack },
     { label: "Links", href: `${root}/links`, icon: Network },
     { label: "Logs", href: `${root}/logs`, icon: ListTree },
@@ -37,7 +45,7 @@ export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
         </p>
       </div>
       <nav
-        className="flex shrink-0 items-center rounded-full border border-border bg-muted/40 p-0.5"
+        className="flex max-w-full shrink-0 items-center overflow-x-auto rounded-full border border-border bg-muted/40 p-0.5"
         aria-label="Crawl views"
       >
         {items.map((item) => {
@@ -51,7 +59,7 @@ export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
+                "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
                 active && "bg-background text-foreground shadow-sm",
               )}
             >

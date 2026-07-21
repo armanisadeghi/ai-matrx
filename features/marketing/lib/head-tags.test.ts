@@ -19,6 +19,10 @@ describe("parseSnapshotHeadTags", () => {
       canonical_url: "https://example.com/",
       meta_robots: "follow, index",
       lang: "en-US",
+      hreflang: [
+        { lang: "en", url: "https://example.com/" },
+        { lang: "fr", url: "https://example.com/fr" },
+      ],
       og: {
         "og:title": "OG Page",
         "og:description": "Share copy",
@@ -35,6 +39,7 @@ describe("parseSnapshotHeadTags", () => {
     expect(parsed.canonicalUrl).toBe("https://example.com/");
     expect(parsed.metaRobots).toBe("follow, index");
     expect(parsed.lang).toBe("en-US");
+    expect(parsed.hreflangCount).toBe(2);
     expect(parsed.og).toEqual({
       title: "OG Page",
       description: "Share copy",
@@ -53,6 +58,7 @@ describe("parseSnapshotHeadTags", () => {
     expect(empty.metaDescription).toBeNull();
     expect(empty.og.title).toBeNull();
     expect(empty.twitter.card).toBeNull();
+    expect(empty.hreflangCount).toBe(0);
     expect(parseSnapshotHeadTags({ title: "   " }).title).toBeNull();
   });
 });

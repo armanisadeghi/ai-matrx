@@ -87,6 +87,14 @@ function textFilter(
     : null;
 }
 
+function booleanFilter(
+  state: MatrxDataTableQueryState,
+  column: string,
+): boolean | null {
+  const filter = state.columnFilters[column];
+  return filter?.kind === "boolean" ? filter.value : null;
+}
+
 function visibilityFilter(
   state: MatrxDataTableQueryState,
 ): MarketingSite["visibility"] | null {
@@ -169,10 +177,7 @@ export async function listSites(
 
   let query = db
     .from("site")
-    .select(
-      SITE_COLUMNS,
-      { count: "exact" },
-    )
+    .select(SITE_COLUMNS, { count: "exact" })
     .is("deleted_at", null);
 
   const search = cleanSearch(state.search);
@@ -232,9 +237,7 @@ export async function listSiteOptions(
     const from = page * 1000;
     const response = await db
       .from("site")
-      .select(
-        SITE_COLUMNS,
-      )
+      .select(SITE_COLUMNS)
       .is("deleted_at", null)
       .order("name", { ascending: true })
       .order("id", { ascending: true })
@@ -267,9 +270,7 @@ export async function getSite(
     await authenticatedWebDb(supabase)
   )
     .from("site")
-    .select(
-      SITE_COLUMNS,
-    )
+    .select(SITE_COLUMNS)
     .eq("id", siteId)
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
@@ -528,13 +529,9 @@ export async function listPages(
   } else if (coverage === "in_gsc") {
     query = query.not("gsc_page_stat", "is", null);
   } else if (coverage === "gsc_no_sitemap") {
-    query = query
-      .not("gsc_page_stat", "is", null)
-      .is("page_sitemap", null);
+    query = query.not("gsc_page_stat", "is", null).is("page_sitemap", null);
   } else if (coverage === "sitemap_no_gsc") {
-    query = query
-      .not("page_sitemap", "is", null)
-      .is("gsc_page_stat", null);
+    query = query.not("page_sitemap", "is", null).is("gsc_page_stat", null);
   }
 
   const search = cleanSearch(state.search);
@@ -869,9 +866,7 @@ export async function getPageWorkspace(
   const abortSignal = signal ?? new AbortController().signal;
   const pageResponse = await db
     .from("page")
-    .select(
-      PAGE_COLUMNS,
-    )
+    .select(PAGE_COLUMNS)
     .eq("site_id", siteId)
     .eq("id", pageId)
     .is("deleted_at", null)
@@ -884,9 +879,7 @@ export async function getPageWorkspace(
       page.latest_snapshot_id
         ? db
             .from("snapshot")
-            .select(
-              SNAPSHOT_COLUMNS,
-            )
+            .select(SNAPSHOT_COLUMNS)
             .eq("site_id", siteId)
             .eq("page_id", pageId)
             .eq("id", page.latest_snapshot_id)
@@ -931,7 +924,9 @@ export async function updatePageIntent(
   // migrations/web_seo_metrics.sql) — the deterministic evaluator matches the
   // scraper's crawl-time computation exactly, so stored numbers never depend
   // on who wrote them.
-  const hasDesired = Boolean(input.desiredMetaTitle || input.desiredMetaDescription);
+  const hasDesired = Boolean(
+    input.desiredMetaTitle || input.desiredMetaDescription,
+  );
   const patch: PageUpdate = {
     target_keyword: input.targetKeyword,
     meta_title_desired: input.desiredMetaTitle,
@@ -953,9 +948,7 @@ export async function updatePageIntent(
     .eq("id", input.pageId)
     .eq("version", input.expectedVersion)
     .is("deleted_at", null)
-    .select(
-      PAGE_COLUMNS,
-    )
+    .select(PAGE_COLUMNS)
     .maybeSingle();
   if (response.error) throw response.error;
   if (!response.data) {
@@ -986,10 +979,7 @@ export async function listSnapshots(
   const ascending = state.sort?.direction === "asc";
   let query = (await authenticatedWebDb(supabase))
     .from("snapshot")
-    .select(
-      SNAPSHOT_COLUMNS,
-      { count: "exact" },
-    )
+    .select(SNAPSHOT_COLUMNS, { count: "exact" })
     .eq("site_id", siteId)
     .eq("page_id", pageId);
   const search = cleanSearch(state.search);
@@ -1029,9 +1019,7 @@ export async function getSnapshot(
     await authenticatedWebDb(supabase)
   )
     .from("snapshot")
-    .select(
-      SNAPSHOT_COLUMNS,
-    )
+    .select(SNAPSHOT_COLUMNS)
     .eq("site_id", siteId)
     .eq("page_id", pageId)
     .eq("id", snapshotId)
@@ -1121,6 +1109,10 @@ export async function listCrawlUrls(
     discovery_source: "discovery_source",
     depth: "depth",
     http_status: "http_status",
+    final_url: "final_url",
+    reason_code: "reason_code",
+    reason: "reason",
+    is_in_scope: "is_in_scope",
     discovered_at: "discovered_at",
     completed_at: "completed_at",
   } as const;
@@ -1144,13 +1136,20 @@ export async function listCrawlUrls(
     );
   }
   const rawUrl = textFilter(state, "raw_url");
+  const finalUrl = textFilter(state, "final_url");
+  const reasonCode = textFilter(state, "reason_code");
+  const reason = textFilter(state, "reason");
   const outcome = selectFilter(state, "outcome");
   const classification = selectFilter(state, "classification");
   const source = selectFilter(state, "discovery_source");
   const sequence = numberFilter(state, "sequence");
   const depth = numberFilter(state, "depth");
   const http = numberFilter(state, "http_status");
+  const isInScope = booleanFilter(state, "is_in_scope");
   if (rawUrl) query = query.ilike("raw_url", `%${rawUrl}%`);
+  if (finalUrl) query = query.ilike("final_url", `%${finalUrl}%`);
+  if (reasonCode) query = query.ilike("reason_code", `%${reasonCode}%`);
+  if (reason) query = query.ilike("reason", `%${reason}%`);
   if (outcome) query = query.eq("outcome", outcome);
   if (classification) query = query.eq("classification", classification);
   if (source) query = query.eq("discovery_source", source);
@@ -1160,6 +1159,7 @@ export async function listCrawlUrls(
   if (depth?.max !== undefined) query = query.lte("depth", depth.max);
   if (http?.min !== undefined) query = query.gte("http_status", http.min);
   if (http?.max !== undefined) query = query.lte("http_status", http.max);
+  if (isInScope !== null) query = query.eq("is_in_scope", isInScope);
   query = query.order(sortColumn, { ascending, nullsFirst: false });
   query = query.order("id", { ascending });
   const response = await query
@@ -1436,7 +1436,9 @@ export async function confirmDiscoveredFact(
       brand_id: input.item.brand_id,
       kind: input.factKind,
       label: input.label,
-      value: input.item.url ? { url: input.item.url, ...asRecord(input.item.value) } : input.item.value,
+      value: input.item.url
+        ? { url: input.item.url, ...asRecord(input.item.value) }
+        : input.item.value,
       source: "discovered",
       confirmed_at: new Date().toISOString(),
     })
@@ -1512,10 +1514,18 @@ export async function listBrands(
 
   const brandIds = brands.map((brand) => brand.id);
   const abortSignal = signal ?? new AbortController().signal;
-  const [sitesResponse, pendingResponse, propertiesResponse, assetsResponse, factsResponse] = await Promise.all([
+  const [
+    sitesResponse,
+    pendingResponse,
+    propertiesResponse,
+    assetsResponse,
+    factsResponse,
+  ] = await Promise.all([
     db
       .from("site")
-      .select("id, brand_id, name, domain, favicon_url, logo_url, initialized_at")
+      .select(
+        "id, brand_id, name, domain, favicon_url, logo_url, initialized_at",
+      )
       .in("brand_id", brandIds)
       .is("deleted_at", null)
       .order("name", { ascending: true })
@@ -1558,7 +1568,10 @@ export async function listBrands(
   }
   const pendingByBrand = new Map<string, number>();
   for (const item of pending) {
-    pendingByBrand.set(item.brand_id, (pendingByBrand.get(item.brand_id) ?? 0) + 1);
+    pendingByBrand.set(
+      item.brand_id,
+      (pendingByBrand.get(item.brand_id) ?? 0) + 1,
+    );
   }
   const countBy = (rowsWithBrand: Array<{ brand_id: string }>) => {
     const map = new Map<string, number>();
@@ -1567,9 +1580,15 @@ export async function listBrands(
     }
     return map;
   };
-  const socialsByBrand = countBy(assertData(propertiesResponse.data, propertiesResponse.error));
-  const assetsByBrand = countBy(assertData(assetsResponse.data, assetsResponse.error));
-  const factsByBrand = countBy(assertData(factsResponse.data, factsResponse.error));
+  const socialsByBrand = countBy(
+    assertData(propertiesResponse.data, propertiesResponse.error),
+  );
+  const assetsByBrand = countBy(
+    assertData(assetsResponse.data, assetsResponse.error),
+  );
+  const factsByBrand = countBy(
+    assertData(factsResponse.data, factsResponse.error),
+  );
 
   return {
     rows: brands.map((brand) => ({
@@ -1848,7 +1867,9 @@ export async function getSitemapCoverage(
 // Brand CRUD — full user control over everything user-editable
 // ============================================================================
 
-export async function createBrand(input: CreateBrandInput): Promise<MarketingBrand> {
+export async function createBrand(
+  input: CreateBrandInput,
+): Promise<MarketingBrand> {
   const response = await (
     await authenticatedWebDb(supabase)
   )
@@ -1871,7 +1892,9 @@ export async function createBrand(input: CreateBrandInput): Promise<MarketingBra
   return assertData(response.data, response.error);
 }
 
-export async function updateBrand(input: UpdateBrandInput): Promise<MarketingBrand> {
+export async function updateBrand(
+  input: UpdateBrandInput,
+): Promise<MarketingBrand> {
   const response = await (
     await authenticatedWebDb(supabase)
   )
@@ -1884,7 +1907,9 @@ export async function updateBrand(input: UpdateBrandInput): Promise<MarketingBra
     .maybeSingle();
   if (response.error) throw response.error;
   if (!response.data) {
-    throw new Error("This brand changed in another session. Reload and try again.");
+    throw new Error(
+      "This brand changed in another session. Reload and try again.",
+    );
   }
   return response.data;
 }

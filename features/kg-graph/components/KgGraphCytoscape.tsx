@@ -93,7 +93,16 @@ export default function KgGraphCytoscape({
 
   // DATA → rebuild graph + recompute analysis + run current layout. Snap into
   // place on the first load, animate subsequent reloads.
+  // Mount-guard refs (firstData / layoutMounted) survive a StrictMode remount,
+  // so they MUST reset on unmount — otherwise the second mount pass treats a
+  // fresh cytoscape instance as "already loaded" and runs redundant animated
+  // layouts that can strand the camera unfit.
   const firstData = useRef(true);
+  useEffect(() => {
+    return () => {
+      firstData.current = true;
+    };
+  }, []);
   useEffect(() => {
     const cy = getCy();
     if (!cy) return;
@@ -122,6 +131,11 @@ export default function KgGraphCytoscape({
 
   // LAYOUT → re-run on switch (skip the mount run; the data effect already laid out).
   const layoutMounted = useRef(false);
+  useEffect(() => {
+    return () => {
+      layoutMounted.current = false;
+    };
+  }, []);
   useEffect(() => {
     const cy = getCy();
     if (!cy) return;

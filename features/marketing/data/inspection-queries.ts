@@ -4,6 +4,7 @@ import type {
   InspectionPagedResult,
   InspectionScreenshotRow,
   InspectionSnapshotRow,
+  LinkGraphEdgeResult,
 } from "@/features/marketing/data/inspection-types";
 import { assertFound } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
@@ -183,6 +184,63 @@ export function listCrawlLinks(
   signal?: AbortSignal,
 ) {
   return listLinks(siteId, crawlId, state, signal);
+}
+
+// The graph aggregates duplicate edges client-side, so the cap bounds payload
+// size, not visual fidelity — 5k raw rows collapse to far fewer unique edges.
+// PostgREST hard-caps each response at 1,000 rows, so the fetch pages.
+const LINK_GRAPH_ROW_CAP = 5000;
+const LINK_GRAPH_PAGE_SIZE = 1000;
+
+// Two static select strings (a computed/union string defeats the PostgREST
+// query-string type parser): the crawl variant joins snapshot to filter by
+// session, the site variant skips the join entirely.
+const LINK_GRAPH_SELECT =
+  "id, source_page_id, target_url, target_page_id, is_internal, rel, anchor_text, http_status, source_page:page!link_edge_source_page_id_fkey(url)";
+const LINK_GRAPH_CRAWL_SELECT =
+  "id, source_page_id, target_url, target_page_id, is_internal, rel, anchor_text, http_status, source_page:page!link_edge_source_page_id_fkey(url), snapshot:snapshot!inner(session_id)";
+
+/**
+ * Fetch the raw link edges feeding the link-graph visualization. Newest rows
+ * first so a truncated fetch reflects the site's current link structure.
+ */
+export async function listLinkGraphEdges(
+  siteId: string,
+  crawlId: string | null,
+  signal?: AbortSignal,
+): Promise<LinkGraphEdgeResult> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const rows: LinkGraphEdgeResult["rows"] = [];
+  let total = 0;
+  for (let from = 0; from < LINK_GRAPH_ROW_CAP; from += LINK_GRAPH_PAGE_SIZE) {
+    const to = Math.min(from + LINK_GRAPH_PAGE_SIZE, LINK_GRAPH_ROW_CAP) - 1;
+    const response = crawlId
+      ? await db
+          .from("link_edge")
+          .select(LINK_GRAPH_CRAWL_SELECT, { count: "exact" })
+          .eq("site_id", siteId)
+          .is("deleted_at", null)
+          .eq("snapshot.session_id", crawlId)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to)
+          .abortSignal(abortSignal)
+      : await db
+          .from("link_edge")
+          .select(LINK_GRAPH_SELECT, { count: "exact" })
+          .eq("site_id", siteId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to)
+          .abortSignal(abortSignal);
+    const page = assertData(response.data, response.error);
+    rows.push(...page);
+    total = response.count ?? rows.length;
+    if (rows.length >= total || page.length === 0) break;
+  }
+  return { rows, total, truncated: total > rows.length };
 }
 
 /** List immutable content captures produced by one crawl session. */

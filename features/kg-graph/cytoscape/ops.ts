@@ -105,9 +105,14 @@ export function applySearch(cy: cytoscape.Core, query: string): void {
 
 const EASE = "ease-in-out-cubic";
 
+// Camera ops clear the core animation queue first (`cy.stop(true)`): a stalled
+// or long-running earlier core animation otherwise blocks every queued camera
+// animation, making fit/zoom buttons appear dead.
+
 /** Animated fit to the whole graph. */
 export function fitAll(cy: cytoscape.Core, padding = 40): void {
   if (cy.elements().empty()) return;
+  cy.stop(true);
   cy.animate({ fit: { eles: cy.elements(), padding } }, { duration: 400, easing: EASE });
 }
 
@@ -118,11 +123,13 @@ export function fitTo(
   padding = 60,
 ): void {
   if (eles.empty()) return;
+  cy.stop(true);
   cy.animate({ fit: { eles, padding } }, { duration: 400, easing: EASE });
 }
 
 /** Animated zoom about the viewport centre. */
 export function zoomByFactor(cy: cytoscape.Core, factor: number): void {
+  cy.stop(true);
   const next = Math.min(Math.max(cy.zoom() * factor, cy.minZoom()), cy.maxZoom());
   cy.animate(
     {

@@ -13,15 +13,15 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 ## Where to get what
 
-| Need | Go to |
-|---|---|
-| Full work order, remaining items, decisions needed | [docs/handoffs/marketing-brand-coverage-program.md](handoffs/marketing-brand-coverage-program.md) |
-| Feature truth (invariants, CRUD map, data model) | [features/marketing/FEATURE.md](../features/marketing/FEATURE.md) |
-| Scraper twin (commands, contracts, deployment env) | aidream `packages/matrx-scraper/matrx_scraper/web_crawl/FEATURE.md` |
-| Copy/Copy-for-AI pattern | `features/marketing/lib/copy-payloads.ts` + the `agent-copy` skill; exemplar `components/pages/PageWorkspace.tsx` |
-| Scraper commands from the browser | `features/marketing/crawler/direct-client.ts` |
-| DB | schema `web`, project `txzxabzwovsujtloxrus`; migrations via Supabase MCP + `public._schema_migrations` ledger + `pnpm db-types` |
-| Test login | `/login` admin@admin.com / Password1234#, or the dev-login URL your session hook prints |
+| Need                                               | Go to                                                                                                                            |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Full work order, remaining items, decisions needed | [docs/handoffs/marketing-brand-coverage-program.md](handoffs/marketing-brand-coverage-program.md)                                |
+| Feature truth (invariants, CRUD map, data model)   | [features/marketing/FEATURE.md](../features/marketing/FEATURE.md)                                                                |
+| Scraper twin (commands, contracts, deployment env) | aidream `packages/matrx-scraper/matrx_scraper/web_crawl/FEATURE.md`                                                              |
+| Copy/Copy-for-AI pattern                           | `features/marketing/lib/copy-payloads.ts` + the `agent-copy` skill; exemplar `components/pages/PageWorkspace.tsx`                |
+| Scraper commands from the browser                  | `features/marketing/crawler/direct-client.ts`                                                                                    |
+| DB                                                 | schema `web`, project `txzxabzwovsujtloxrus`; migrations via Supabase MCP + `public._schema_migrations` ledger + `pnpm db-types` |
+| Test login                                         | `/login` admin@admin.com / Password1234#, or the dev-login URL your session hook prints                                          |
 
 **DEV SERVER RULE (non-negotiable):** do NOT start your own `pnpm dev`. Check for a running server first (`lsof -nP -iTCP -sTCP:LISTEN | grep next` — there is usually one on **http://localhost:3050**) and share it. Multiple `.next` build dirs balloon memory and crash the machine. Never kill a server you didn't start.
 
@@ -55,3 +55,14 @@ Small, delegatable, not worth stopping the main line. Move to "In motion" when y
 - **Latent RSC trap:** `SectionCard`'s `copy` prop takes functions — the first SERVER component to pass it will hit a serialization error (`MarketingUi.tsx` has no "use client"). Fine today; worth a guard comment or client-only split if server usage grows.
 
 <!-- Add new findings below this line: one bullet, file/route, one-sentence symptom, one-sentence suggested fix. -->
+
+- **Public-view field boundary:** authenticated universal reads expose explicitly internal brand/asset/fact notes (plus operational site fields) because visibility is row-wide; split public scraped truth from org-private notes/settings instead of relying on root-row RLS.
+- **Crawler scope escape:** `crawler.py::_registrable_domain()` treats the last two labels as the registrable domain, so `follow_subdomains=true` considers unrelated hosts such as `evil.co.uk` and `example.co.uk` the same site; use the package's existing `tldextract` dependency and add public-suffix tests.
+- **No per-site active-run/monotonic-current guard:** `WebCrawlRepository.create_session()` permits overlapping writers, while page current pointers and negative reconciliation update unconditionally; atomically claim one active full crawl per site and make current-pointer writes timestamp-monotonic.
+- **Active-work deletion hazard:** `deleteSite()` / `deleteCrawlSession()` can soft-delete queued/running work without canceling it, after which the worker can continue writing while terminal updates and the stale-session reaper ignore the hidden session; enforce cancel-to-terminal before deletion in the database/command boundary.
+- **Live-crawl recovery contract drift:** the developer guide promises reconnect by `after_sequence`, but the router exposes no reconnect command and crawl detail hooks neither poll nor subscribe, so a refresh leaves active session/status/URL/event views stale; implement authenticated broker reattach plus persisted-row invalidation.
+- **Crawler input fails open:** invalid include/exclude regexes are accepted by `CrawlStartRequest` and silently skipped by `_compile_patterns()`, potentially widening a constrained crawl; validate all patterns at the request boundary and return 422 before creating a session.
+- **Canonical page state corruption:** `_persist_failed_url_in_active_transaction()` marks an existing page `missing` for every fetch failure, including transient/network/render failures; keep failure on the crawl outcome and change canonical presence only from qualified negative evidence or authoritative HTTP results.
+- **Crawl defaults are lossy:** Site settings omits valid server fields/modes and replaces the whole `crawl_defaults` object, deleting advanced values written elsewhere; round-trip the full typed contract and expose basic scope/depth/include/exclude/throttle controls.
+- **Brand asset authority is incomplete:** `brand_asset.file_id`/`source='uploaded'` exist but the editor creates URL-only manual rows, file-backed assets do not render through Files, and multiple assets can be primary without synchronizing brand/site identity; wire canonical upload/rendering and enforce one atomic primary per brand/type.
+- **Brand/site soft-delete drift:** deleting a site leaves its live `property(kind='website')` row, allowing the owning brand to be deleted while a live property still points at the hidden site; make the lifecycle transition atomic across both authorities.

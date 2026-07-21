@@ -35,8 +35,7 @@ export function parseSnapshotHeadings(headings: Json): ParsedSnapshotHeadings {
       })
     : [];
   const h1Count =
-    typeof headings.h1_count === "number" &&
-    Number.isInteger(headings.h1_count)
+    typeof headings.h1_count === "number" && Number.isInteger(headings.h1_count)
       ? headings.h1_count
       : all.filter((entry) => entry.level === 1).length;
   return { all, h1Count };
@@ -79,6 +78,7 @@ export interface ParsedSnapshotExtracted {
   sentenceCount: number | null;
   fleschReadingEase: number | null;
   redirectChain: SnapshotRedirectHop[];
+  mixedContentCount: number;
 }
 
 /** Normalize `web.snapshot.extracted` (readability + redirect evidence). */
@@ -86,7 +86,12 @@ export function parseSnapshotExtracted(
   extracted: Json,
 ): ParsedSnapshotExtracted {
   if (!isJsonRecord(extracted)) {
-    return { sentenceCount: null, fleschReadingEase: null, redirectChain: [] };
+    return {
+      sentenceCount: null,
+      fleschReadingEase: null,
+      redirectChain: [],
+      mixedContentCount: 0,
+    };
   }
   const redirectChain = Array.isArray(extracted.redirect_chain)
     ? extracted.redirect_chain.flatMap((hop): SnapshotRedirectHop[] => {
@@ -100,6 +105,9 @@ export function parseSnapshotExtracted(
     sentenceCount: finiteNumber(extracted, "sentence_count"),
     fleschReadingEase: finiteNumber(extracted, "flesch_reading_ease"),
     redirectChain,
+    mixedContentCount: Array.isArray(extracted.mixed_content)
+      ? extracted.mixed_content.length
+      : 0,
   };
 }
 
@@ -114,5 +122,51 @@ export function parseSnapshotImages(images: Json): ParsedSnapshotImages {
   return {
     count: finiteNumber(images, "count"),
     missingAlt: finiteNumber(images, "missing_alt"),
+  };
+}
+
+export interface ParsedSnapshotStructuredData {
+  schemaTypes: string[];
+  hasPayload: boolean;
+}
+
+/** Normalize `web.snapshot.structured_data` into reportable schema evidence. */
+export function parseSnapshotStructuredData(
+  structuredData: Json,
+): ParsedSnapshotStructuredData {
+  if (!isJsonRecord(structuredData)) {
+    return { schemaTypes: [], hasPayload: false };
+  }
+  const schemaTypes = Array.isArray(structuredData.schema_types)
+    ? structuredData.schema_types.filter(
+        (value): value is string => typeof value === "string" && Boolean(value),
+      )
+    : [];
+  const schemaOrg = structuredData.schema_org;
+  const hasPayload =
+    schemaOrg !== null &&
+    (Array.isArray(schemaOrg)
+      ? schemaOrg.length > 0
+      : typeof schemaOrg === "object"
+        ? Object.keys(schemaOrg).length > 0
+        : false);
+  return { schemaTypes, hasPayload };
+}
+
+export interface ParsedSnapshotPerformance {
+  responseTimeMs: number | null;
+  bytes: number | null;
+}
+
+/** Normalize crawler timing and transfer metrics from `web.snapshot.perf`. */
+export function parseSnapshotPerformance(
+  performance: Json,
+): ParsedSnapshotPerformance {
+  if (!isJsonRecord(performance)) {
+    return { responseTimeMs: null, bytes: null };
+  }
+  return {
+    responseTimeMs: finiteNumber(performance, "response_time_ms"),
+    bytes: finiteNumber(performance, "bytes"),
   };
 }

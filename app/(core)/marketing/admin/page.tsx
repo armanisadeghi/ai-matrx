@@ -134,6 +134,24 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/reports",
+      label: "Crawl report catalogue",
+      description:
+        "Dedicated bulk technical-SEO report index for one crawl session.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/reports/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/reports/[reportKey]",
+      label: "Crawl report",
+      description:
+        "Response, metadata, heading, canonical, directive, image, content, structured-data, and performance reports.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/reports/[reportKey]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/sites/[siteId]/crawls/[crawlId]/logs",
       label: "Crawl events",
       description:

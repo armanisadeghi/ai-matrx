@@ -163,6 +163,7 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-07-20 — Claude: the cytoscape engine is now REUSED outside this feature — `features/marketing/components/inspection/link-graph/` consumes `useKgCytoscape`, `ops`, `layouts`, `style`/`KG_CLASS`, and the chrome/tier constants for the marketing site link graph; keep their signatures stable. Robustness fixes from that integration: camera ops (`fitAll`/`fitTo`/`zoomByFactor`) now `cy.stop(true)` first so a stalled/queued core animation can't make the buttons appear dead; `KgGraphCytoscape`'s StrictMode mount-guard refs (`firstData`/`layoutMounted`) reset on unmount — they previously survived the remount and made the second pass run a redundant animated layout against the fresh instance.
 - 2026-06-04 — Org picker + bigger card + org-page card. Toolbar now has an
   always-visible **organization picker** (`KgOrgFilter`) beside the scope picker,
   so org → scope-type → scope are manually changeable even when arriving via a

@@ -223,8 +223,7 @@ export function useUpdatePageIntent() {
 export function usePageSitemapMemberships(siteId: string, pageId: string) {
   return useQuery({
     queryKey: [...marketingKeys.page(siteId, pageId), "sitemaps"] as const,
-    queryFn: ({ signal }) =>
-      listPageSitemapMemberships(siteId, pageId, signal),
+    queryFn: ({ signal }) => listPageSitemapMemberships(siteId, pageId, signal),
     enabled: Boolean(siteId && pageId),
   });
 }
@@ -283,11 +282,12 @@ export function useCrawlUrls(
   siteId: string,
   crawlId: string,
   state: MatrxDataTableQueryState,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: marketingKeys.crawlUrls(siteId, crawlId, state),
     queryFn: ({ signal }) => listCrawlUrls(siteId, crawlId, state, signal),
-    enabled: Boolean(siteId && crawlId),
+    enabled: enabled && Boolean(siteId && crawlId),
     placeholderData: keepPreviousData,
   });
 }

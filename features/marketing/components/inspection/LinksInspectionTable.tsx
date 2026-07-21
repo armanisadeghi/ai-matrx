@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Link2Off } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ExternalLink, Link2Off, Network, Table2 } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
@@ -23,23 +24,46 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { LinkGraphView } from "@/features/marketing/components/inspection/link-graph/LinkGraphView";
+import { displayUrl } from "@/features/marketing/components/inspection/link-graph/model";
+import { cn } from "@/lib/utils";
 
 function sourceUrl(row: InspectionLinkRow): string {
   return row.source_page?.url ?? row.source_page_id;
 }
 
+type LinksViewMode = "graph" | "table";
+
 export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
   const { site, sitePath } = useMarketingSite();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Graph is the default view — the URL only records the exception.
+  const view: LinksViewMode =
+    searchParams.get("view") === "table" ? "table" : "graph";
+  const setView = (next: LinksViewMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    next === "table" ? params.set("view", "table") : params.delete("view");
+    const encoded = params.toString();
+    router.replace(encoded ? `${pathname}?${encoded}` : pathname, {
+      scroll: false,
+    });
+  };
   const table = useMarketingTableState({
     defaultSort: { id: "created_at", direction: "desc" },
     defaultPageSize: 50,
   });
-  const siteLinks = useSiteLinks(site.id, table.queryState, !crawlId);
+  const siteLinks = useSiteLinks(
+    site.id,
+    table.queryState,
+    !crawlId && view === "table",
+  );
   const crawlLinks = useCrawlLinks(
     site.id,
     crawlId ?? "",
     table.queryState,
-    Boolean(crawlId),
+    Boolean(crawlId) && view === "table",
   );
   const crawl = useCrawl(site.id, crawlId ?? "");
   const links = crawlId ? crawlLinks : siteLinks;
@@ -53,10 +77,10 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       cell: (row) => (
         <Link
           href={`${sitePath}/pages/${row.source_page_id}`}
-          className="block min-w-64 max-w-xl truncate font-mono text-xs text-primary"
+          className="block min-w-48 max-w-xl truncate font-mono text-xs text-primary"
           title={sourceUrl(row)}
         >
-          {sourceUrl(row)}
+          {displayUrl(sourceUrl(row), site.root_url)}
         </Link>
       ),
     },
@@ -67,9 +91,12 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       filter: "text",
       cellKind: "text",
       cell: (row) => (
-        <div className="flex min-w-64 max-w-xl items-center gap-1.5">
-          <span className="min-w-0 flex-1 truncate font-mono text-xs">
-            {row.target_url}
+        <div className="flex min-w-48 max-w-xl items-center gap-1.5">
+          <span
+            className="min-w-0 flex-1 truncate font-mono text-xs"
+            title={row.target_url}
+          >
+            {displayUrl(row.target_url, site.root_url)}
           </span>
           <a
             href={row.target_url}
@@ -188,12 +215,42 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
               : "Links observed across all retained snapshots for this site."}
           </p>
         </div>
-        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-          {(links.data?.total ?? 0).toLocaleString()} edges
-        </span>
+        <div className="flex shrink-0 items-center gap-3">
+          {view === "table" ? (
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {(links.data?.total ?? 0).toLocaleString()} edges
+            </span>
+          ) : null}
+          <div className="flex items-center rounded-md border border-border p-0.5">
+            {(
+              [
+                { id: "graph", label: "Graph", icon: Network },
+                { id: "table", label: "Table", icon: Table2 },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={view === option.id}
+                onClick={() => setView(option.id)}
+                className={cn(
+                  "inline-flex h-6 items-center gap-1 rounded px-2 text-xs font-medium transition-colors",
+                  view === option.id
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <option.icon className="h-3 w-3" />
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
       <div className="min-h-0 flex-1">
-        {links.isError ? (
+        {view === "graph" ? (
+          <LinkGraphView crawlId={crawlId} />
+        ) : links.isError ? (
           <QueryError error={links.error} onRetry={() => void links.refetch()} />
         ) : (
           <MatrxDataTable<InspectionLinkRow>

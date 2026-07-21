@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import {
+  getCrawlReport,
+  isCrawlReportKey,
+} from "@/features/marketing/lib/crawl-reports";
 
 interface MarketingRouteIdentity {
   titlePrefix?: string;
@@ -235,6 +239,23 @@ function getCrawlIdentity(rest: readonly string[]): MarketingRouteIdentity {
       titlePrefix: "Crawl Detail",
       description: "Inspect a crawl session and its durable results.",
       letter: "Cd",
+    };
+  }
+  if (detail === "reports") {
+    const reportKey = rest[2];
+    if (reportKey && isCrawlReportKey(reportKey)) {
+      const report = getCrawlReport(reportKey);
+      return {
+        titlePrefix: report.label,
+        description: report.description,
+        letter: report.badge,
+      };
+    }
+    return {
+      titlePrefix: "Crawl Reports",
+      description:
+        "Browse dedicated technical SEO reports for this crawl session.",
+      letter: "Rp",
     };
   }
   const identities: Readonly<Record<string, MarketingRouteIdentity>> = {
