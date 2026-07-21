@@ -46,7 +46,7 @@ import { selectOverlayData } from "@/lib/redux/slices/overlaySlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useGlobalRecordingOptional } from "@/providers/GlobalRecordingProvider";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevicesPanel";
+import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
 import { AudioLevelIndicator } from "@/features/audio/components/AudioLevelIndicator";
 import { useAudioPlayback } from "@/features/audio/playback/useAudioPlayback";
 import { useAudioSessions } from "@/features/audio/session/useAudioSessions";
@@ -134,7 +134,7 @@ function AudioControlBody() {
         <div className="h-px bg-border" />
         <section className="space-y-1.5">
           <SectionLabel>Devices</SectionLabel>
-          <AudioDevicesPanel />
+          <MediaDevicesPanel />
         </section>
       </div>
     );
@@ -165,7 +165,7 @@ function AudioControlBody() {
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2.5 text-foreground">
         {tab === "playback" && <PlaybackSurface />}
         {tab === "recording" && <RecordingSurface />}
-        {tab === "devices" && <AudioDevicesPanel />}
+        {tab === "devices" && <MediaDevicesPanel />}
       </div>
     </div>
   );

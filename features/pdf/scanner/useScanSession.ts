@@ -19,6 +19,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CloudFolders, fileHandler } from "@/features/files";
+import {
+  createTrackedObjectUrl,
+  revokeTrackedObjectUrl,
+} from "@/lib/media/object-url-registry";
 
 import type {
   Quad,
@@ -76,11 +80,6 @@ function toManifestItems(items: ScanItem[]): ScanManifestItem[] {
     }));
 }
 
-async function dataUrlToFile(dataUrl: string, fileName: string): Promise<File> {
-  const blob = await (await fetch(dataUrl)).blob();
-  return new File([blob], fileName, { type: blob.type || "image/jpeg" });
-}
-
 export interface UseScanSessionResult {
   sessionId: string;
   items: ScanItem[];
@@ -92,8 +91,8 @@ export interface UseScanSessionResult {
   dismissResume: () => void;
   /** Add picked/dropped files (photos, PDFs, anything the pipeline takes). */
   addFiles: (files: File[]) => void;
-  /** Add a camera shot (data URL from takePhoto()). */
-  addCapture: (dataUrl: string) => void;
+  /** Add a camera shot (JPEG Blob from the capture pipeline). */
+  addCapture: (blob: Blob) => void;
   retryItem: (itemId: string) => void;
   removeItem: (itemId: string) => void;
   /** dnd-kit reorder: move item `activeId` to `overId`'s position. */
@@ -227,7 +226,7 @@ export function useScanSession(): UseScanSessionResult {
         file.name.toLowerCase().endsWith(".pdf");
       let preview = previewUrl;
       if (!preview && !isPdf) {
-        preview = URL.createObjectURL(file);
+        preview = createTrackedObjectUrl(file);
         blobUrlsRef.current.set(itemId, preview);
       }
       const item: ScanItem = {
@@ -254,12 +253,13 @@ export function useScanSession(): UseScanSessionResult {
   );
 
   const addCapture = useCallback(
-    (dataUrl: string) => {
+    (blob: Blob) => {
       shotCounterRef.current += 1;
       const fileName = `scan-${String(shotCounterRef.current).padStart(2, "0")}.jpg`;
-      void dataUrlToFile(dataUrl, fileName).then((file) =>
-        addOne(file, dataUrl, "camera"),
-      );
+      const file = new File([blob], fileName, {
+        type: blob.type || "image/jpeg",
+      });
+      addOne(file, undefined, "camera");
     },
     [addOne],
   );
@@ -278,7 +278,7 @@ export function useScanSession(): UseScanSessionResult {
     pendingFilesRef.current.delete(itemId);
     const url = blobUrlsRef.current.get(itemId);
     if (url) {
-      URL.revokeObjectURL(url);
+      revokeTrackedObjectUrl(url);
       blobUrlsRef.current.delete(itemId);
     }
     setItems((prev) => prev.filter((i) => i.itemId !== itemId));
@@ -334,7 +334,7 @@ export function useScanSession(): UseScanSessionResult {
   );
 
   const clearAfterSave = useCallback(() => {
-    blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    blobUrlsRef.current.forEach((url) => revokeTrackedObjectUrl(url));
     blobUrlsRef.current.clear();
     pendingFilesRef.current.clear();
     setItems([]);

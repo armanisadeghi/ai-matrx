@@ -20,7 +20,7 @@ import type {
   SystemPreferences,
   AgentContextPreferences,
   MermaidPreferences,
-  AudioDevicePreferences,
+  MediaDevicePreferences,
   OrganizationPreferences,
   FavoritesPreferences,
   FavoriteItem,
@@ -152,9 +152,9 @@ export const selectMermaidPreferences = createSelector(
   (state): MermaidPreferences => state.mermaid,
 );
 
-export const selectAudioDevicePreferences = createSelector(
+export const selectMediaDevicePreferences = createSelector(
   selectUserPreferences,
-  (state): AudioDevicePreferences => state.audioDevices,
+  (state): MediaDevicePreferences => state.mediaDevices,
 );
 
 export const selectOrganizationPreferences = createSelector(
@@ -176,23 +176,38 @@ export const selectDefaultOrganizationId = createSelector(
 // component that only reads one device id (every property gets its own
 // selector — house rule).
 export const selectAudioInputDeviceId = createSelector(
-  selectAudioDevicePreferences,
+  selectMediaDevicePreferences,
   (audio): string => audio.audioInputDeviceId,
 );
 
 export const selectAudioInputDeviceLabel = createSelector(
-  selectAudioDevicePreferences,
+  selectMediaDevicePreferences,
   (audio): string => audio.audioInputDeviceLabel,
 );
 
 export const selectAudioOutputDeviceId = createSelector(
-  selectAudioDevicePreferences,
+  selectMediaDevicePreferences,
   (audio): string => audio.audioOutputDeviceId,
 );
 
 export const selectAudioOutputDeviceLabel = createSelector(
-  selectAudioDevicePreferences,
+  selectMediaDevicePreferences,
   (audio): string => audio.audioOutputDeviceLabel,
+);
+
+export const selectVideoInputDeviceId = createSelector(
+  selectMediaDevicePreferences,
+  (media): string => media.videoInputDeviceId,
+);
+
+export const selectVideoInputDeviceLabel = createSelector(
+  selectMediaDevicePreferences,
+  (media): string => media.videoInputDeviceLabel,
+);
+
+export const selectPreferredFacingMode = createSelector(
+  selectMediaDevicePreferences,
+  (media): "user" | "environment" | "" => media.preferredFacingMode,
 );
 
 // ── Favorites / pinning ────────────────────────────────────────────────────

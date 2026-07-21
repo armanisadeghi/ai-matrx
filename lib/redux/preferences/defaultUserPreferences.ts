@@ -59,9 +59,9 @@ export const defaultUserPreferences: UserPreferences = {
   videoConference: {
     background: "default",
     filter: "default",
-    defaultCamera: "default",
-    // Mic/speaker choice is canonical in `audioDevices` below — the legacy
-    // videoConference.defaultMicrophone/defaultSpeaker fields are deleted.
+    // Device choice (mic/speaker/camera) is canonical in `mediaDevices` below —
+    // the legacy videoConference.defaultMicrophone/defaultSpeaker/defaultCamera
+    // fields are deleted.
     defaultMeetingType: "default",
     defaultLayout: "default",
     defaultNotesType: "default",
@@ -204,13 +204,16 @@ export const defaultUserPreferences: UserPreferences = {
   conversationFilters: {
     surfaces: {},
   },
-  // "" everywhere = system default (no explicit audio device chosen yet). Keep
-  // in sync with the in-slice defaults at userPreferencesSlice.ts.
-  audioDevices: {
+  // "" everywhere = system default / auto (no explicit device chosen yet).
+  // Keep in sync with the in-slice defaults at userPreferencesSlice.ts.
+  mediaDevices: {
     audioInputDeviceId: "",
     audioInputDeviceLabel: "",
     audioOutputDeviceId: "",
     audioOutputDeviceLabel: "",
+    videoInputDeviceId: "",
+    videoInputDeviceLabel: "",
+    preferredFacingMode: "",
   },
   // null = no default org chosen → header reminder nudges the user. Keep in
   // sync with the in-slice defaults at userPreferencesSlice.ts.

@@ -2,13 +2,13 @@
 
 // features/flashcards/fast-fire/voice-test/VoiceAnswerMicMeter.tsx
 //
-// Live mic feedback while the learner speaks — matches AudioDevicesPanel's level
+// Live mic feedback while the learner speaks — matches MediaDevicesPanel's level
 // bar colors/thresholds so voice pickup is obvious, not a faint icon pulse.
 
 import { Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Same scaling as AudioDevicesPanel MicLevelMeter (0–100). */
+/** Same scaling as MediaDevicesPanel MicLevelMeter (0–100). */
 function levelPercent(normalized: number): number {
   return Math.min(100, Math.round(normalized * 140));
 }

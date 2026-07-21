@@ -4,8 +4,8 @@
 // singleton, the single source of truth for "what mic / speaker / camera is
 // selected and are the mic + camera permissions granted". The React surface is
 // `useAudioDevices` (camera hooks arrive with the capture system — see
-// docs/media-capture-plan.md). Generalized from `features/audio/audioDevices.ts`
-// in Phase 1 of the media capture plan.
+// docs/media-capture-plan.md). Generalized from the former audio-only device
+// manager in Phase 1 of the media capture plan.
 //
 // WHY THIS EXISTS
 // ---------------

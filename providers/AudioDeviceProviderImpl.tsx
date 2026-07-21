@@ -8,7 +8,11 @@
 //   2. applies the user's persisted mic + speaker choice to the mic singleton /
 //      output sink EARLY — and re-applies whenever the persisted choice changes
 //      (cross-tab edit, rehydrate) or the live device list changes (so a stored
-//      label re-resolves to a fresh deviceId on iOS, where ids regenerate).
+//      label re-resolves to a fresh deviceId on iOS, where ids regenerate),
+//   3. installs the LAZY preferred-camera resolver + the camera-permission
+//      acquirer on the camera stream manager. NO boot-time camera acquisition —
+//      the resolver is only consulted when a surface calls acquireCameraLease,
+//      and the acquirer only runs when ensureCameraPermission is invoked.
 //
 // Web Audio speaker routing is owned by SinkAwarePlayer
 // (features/audio/sinkAwarePlayer.ts), which reads the output-sink store this
@@ -21,6 +25,9 @@ import {
   selectAudioInputDeviceLabel,
   selectAudioOutputDeviceId,
   selectAudioOutputDeviceLabel,
+  selectPreferredFacingMode,
+  selectVideoInputDeviceId,
+  selectVideoInputDeviceLabel,
 } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
   applyInputDevice,
@@ -31,6 +38,11 @@ import {
   subscribeMediaDevices,
   type MediaDevicesSnapshot,
 } from "@/features/media-devices/deviceManager";
+import {
+  installCameraPermissionAcquirer,
+  setPreferredCameraResolver,
+  type PreferredCameraSelection,
+} from "@/features/media-capture/runtime/camera-stream-manager";
 
 const EMPTY_SNAPSHOT: MediaDevicesSnapshot = {
   permissionState: "unknown",
@@ -45,6 +57,9 @@ export default function AudioDeviceProviderImpl(): null {
   const inputLabel = useAppSelector(selectAudioInputDeviceLabel);
   const outputId = useAppSelector(selectAudioOutputDeviceId);
   const outputLabel = useAppSelector(selectAudioOutputDeviceLabel);
+  const cameraId = useAppSelector(selectVideoInputDeviceId);
+  const cameraLabel = useAppSelector(selectVideoInputDeviceLabel);
+  const facingMode = useAppSelector(selectPreferredFacingMode);
 
   const snapshot = useSyncExternalStore(
     subscribeMediaDevices,
@@ -52,10 +67,13 @@ export default function AudioDeviceProviderImpl(): null {
     () => EMPTY_SNAPSHOT,
   );
 
-  // One-time boot wiring.
+  // One-time boot wiring. `installCameraPermissionAcquirer` only REGISTERS the
+  // acquirer with the device manager — nothing touches the camera until a
+  // surface explicitly calls ensureCameraPermission / acquireCameraLease.
   useEffect(() => {
     console.log("[AudioDeviceProviderImpl] Starting device listeners");
     startDeviceListeners();
+    installCameraPermissionAcquirer();
   }, []);
 
   // Apply the persisted INPUT choice to the mic singleton. Prefer a live
@@ -80,6 +98,28 @@ export default function AudioDeviceProviderImpl(): null {
         : outputId;
     applyOutputDevice(resolved);
   }, [outputId, outputLabel, snapshot.outputs]);
+
+  // Install the LAZY preferred-camera resolver: consulted by the camera stream
+  // manager only at acquire time (for spec fields the caller leaves undefined).
+  // Mirrors the audio-input application above — resolve the stored id+label
+  // against the live camera list (id → label → auto) — but never acquires the
+  // camera itself. Reinstalled when the choice or camera list changes so the
+  // closure always reads current values; cleared on unmount.
+  useEffect(() => {
+    setPreferredCameraResolver((): PreferredCameraSelection => {
+      const resolved =
+        snapshot.cameras.length > 0
+          ? resolveDeviceId(snapshot.cameras, cameraId, cameraLabel)
+          : cameraId;
+      return {
+        deviceId: resolved || null,
+        facingMode: facingMode || null,
+      };
+    });
+    return () => {
+      setPreferredCameraResolver(null);
+    };
+  }, [cameraId, cameraLabel, facingMode, snapshot.cameras]);
 
   return null;
 }

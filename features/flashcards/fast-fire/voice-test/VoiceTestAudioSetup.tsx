@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevicesPanel";
+import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   generateSpokenFront,
@@ -176,7 +176,7 @@ export function VoiceTestAudioSetup({
 
       {showDevices && (
         <section className="overflow-hidden rounded-xl border border-border bg-background">
-          <AudioDevicesPanel />
+          <MediaDevicesPanel />
         </section>
       )}
     </div>

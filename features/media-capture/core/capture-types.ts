@@ -73,6 +73,7 @@ export type CaptureMetadata =
  * Terminal error kinds — every one is explicit and user-visible (invariant 10).
  */
 export type CaptureErrorKind =
+  | "not-supported"
   | "permission-denied"
   | "device-removed"
   | "stream-ended"
@@ -101,6 +102,35 @@ export interface CaptureError {
   kind: CaptureErrorKind;
   /** Human-readable, user-visible explanation. Never empty. */
   message: string;
+}
+
+// ─── Builders ────────────────────────────────────────────────────────────────
+
+export interface BuildPhotoCaptureMetadataArgs {
+  source: CaptureSource;
+  sourceFeature: string;
+  sourceSettings: VisualSourceSettings;
+  framing: FramingMode;
+  mirroredOutput: boolean;
+  /** ISO timestamp; defaults to now. */
+  capturedAt?: string;
+}
+
+/** Build the persisted `metadata.capture` payload for a photo. Pure — the
+ *  uploader still runs `isCaptureMetadata` before any bytes leave. */
+export function buildPhotoCaptureMetadata(
+  args: BuildPhotoCaptureMetadataArgs,
+): PhotoCaptureMetadata {
+  return {
+    version: 1,
+    captured_at: args.capturedAt ?? new Date().toISOString(),
+    source: args.source,
+    source_feature: args.sourceFeature,
+    artifact_kind: "photo",
+    source_settings: args.sourceSettings,
+    framing: args.framing,
+    mirrored_output: args.mirroredOutput,
+  };
 }
 
 // ─── Runtime validator ───────────────────────────────────────────────────────

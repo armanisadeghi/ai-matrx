@@ -699,6 +699,23 @@ const reactFlowStaticImportBan = [
     },
 ];
 
+// Camera getUserMedia chokepoint (docs/media-capture-plan.md §5 invariant 1,
+// the camera twin of the micStream rule): the ONE legal `getUserMedia({video})`
+// call site is features/media-capture/runtime/camera-stream-manager.ts —
+// ref-counted leases, compatibility/pinning policy, immediate last-release
+// shutdown, permission reporting to the device manager. A second call site
+// recreates every prompt/leak/wrong-spec bug the manager exists to kill.
+// Audio-only `getUserMedia({audio})` is unaffected (micStream owns that).
+// Matches a `video` property in the direct constraints argument.
+const cameraGetUserMediaChokepointBan = [
+    {
+        selector:
+            "CallExpression[callee.property.name='getUserMedia'] > ObjectExpression > Property[key.name='video']",
+        message:
+            'getUserMedia({video}) is banned outside the camera stream manager — acquire the camera via acquireCameraLease() from features/media-capture/runtime/camera-stream-manager.ts (the ONE legal call site: leases, compatibility policy, recording pin, last-release shutdown). If this IS the manager (or a legacy file slated for Phase 5 deletion), add `// eslint-disable-next-line no-restricted-syntax` with a one-line justification. See features/media-capture/FEATURE.md.',
+    },
+];
+
 export default [
     // Generated Next build output — NEVER lint it. `.next`, plus every
     // `NEXT_DISTDIR` variant a parallel dev server invents (`.next-preview`,
@@ -852,6 +869,8 @@ export default [
                 ...heavyImplStaticImportBan,
                 // React Flow is a heavy browser-only canvas — only the Agent Set builder Impl may import it.
                 ...reactFlowStaticImportBan,
+                // getUserMedia({video}) only inside the camera stream manager.
+                ...cameraGetUserMediaChokepointBan,
             ],
         },
     },
@@ -908,6 +927,7 @@ export default [
                 ...storageUriEradicationBan,
                 ...directObjectStoreSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
+                ...cameraGetUserMediaChokepointBan,
             ],
         },
     },
@@ -934,6 +954,7 @@ export default [
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
+                ...cameraGetUserMediaChokepointBan,
                 {
                     selector: "JSXOpeningElement[name.name='img']",
                     message:

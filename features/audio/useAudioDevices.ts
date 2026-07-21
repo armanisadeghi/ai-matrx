@@ -23,6 +23,8 @@ import {
   selectAudioInputDeviceLabel,
   selectAudioOutputDeviceId,
   selectAudioOutputDeviceLabel,
+  selectVideoInputDeviceId,
+  selectVideoInputDeviceLabel,
 } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
   type MediaDeviceDescriptor,
@@ -30,6 +32,7 @@ import {
   type MediaPermissionState,
   applyInputDevice,
   applyOutputDevice,
+  ensureCameraPermission,
   ensurePermission,
   getMediaDevicesSnapshot,
   listDevices,
@@ -48,8 +51,11 @@ const EMPTY_SNAPSHOT: MediaDevicesSnapshot = {
 
 export interface UseAudioDevicesResult {
   permissionState: MediaPermissionState;
+  /** Camera permission state (independent of the mic grant). */
+  cameraPermissionState: MediaPermissionState;
   inputs: MediaDeviceDescriptor[];
   outputs: MediaDeviceDescriptor[];
+  cameras: MediaDeviceDescriptor[];
   /** Resolved live deviceId for the persisted input choice ("" = default). */
   selectedInputId: string;
   /** Resolved live deviceId for the persisted output choice ("" = default). */
@@ -58,12 +64,22 @@ export interface UseAudioDevicesResult {
   selectedInputLabel: string;
   /** The stored output label. */
   selectedOutputLabel: string;
+  /** Resolved live deviceId for the persisted camera choice ("" = auto). */
+  selectedCameraId: string;
+  /** The stored camera label (survives id regeneration on iOS). */
+  selectedCameraLabel: string;
   /** Choose an input device. "" = system default. Persists + applies live. */
   setInput: (deviceId: string, label: string) => void;
   /** Choose an output device. "" = system default. Persists + applies live. */
   setOutput: (deviceId: string, label: string) => void;
+  /** Choose a camera. "" = auto. Persists; applied on the NEXT camera acquire
+   *  via the preferred-camera resolver (never touches a live lease). */
+  setCamera: (deviceId: string, label: string) => void;
   /** Prompt for mic permission only if needed; refreshes labels on grant. */
   requestPermission: () => Promise<MediaPermissionState>;
+  /** Prompt for CAMERA permission only if needed (acquire + immediate release
+   *  through the camera stream manager); refreshes labels on grant. */
+  requestCameraPermission: () => Promise<MediaPermissionState>;
   /** Re-enumerate devices now. */
   refresh: () => Promise<void>;
   /** False on Safari (no `setSinkId`) — the speaker picker is disabled there. */
@@ -83,6 +99,8 @@ export function useAudioDevices(): UseAudioDevicesResult {
   const storedInputLabel = useAppSelector(selectAudioInputDeviceLabel);
   const storedOutputId = useAppSelector(selectAudioOutputDeviceId);
   const storedOutputLabel = useAppSelector(selectAudioOutputDeviceLabel);
+  const storedCameraId = useAppSelector(selectVideoInputDeviceId);
+  const storedCameraLabel = useAppSelector(selectVideoInputDeviceLabel);
 
   const selectedInputId = resolveDeviceId(
     snapshot.inputs,
@@ -94,12 +112,17 @@ export function useAudioDevices(): UseAudioDevicesResult {
     storedOutputId,
     storedOutputLabel,
   );
+  const selectedCameraId = resolveDeviceId(
+    snapshot.cameras,
+    storedCameraId,
+    storedCameraLabel,
+  );
 
   const setInput = useCallback(
     (deviceId: string, label: string) => {
       dispatch(
         setModulePreferences({
-          module: "audioDevices",
+          module: "mediaDevices",
           preferences: {
             audioInputDeviceId: deviceId,
             audioInputDeviceLabel: label,
@@ -115,7 +138,7 @@ export function useAudioDevices(): UseAudioDevicesResult {
     (deviceId: string, label: string) => {
       dispatch(
         setModulePreferences({
-          module: "audioDevices",
+          module: "mediaDevices",
           preferences: {
             audioOutputDeviceId: deviceId,
             audioOutputDeviceLabel: label,
@@ -127,22 +150,50 @@ export function useAudioDevices(): UseAudioDevicesResult {
     [dispatch],
   );
 
+  const setCamera = useCallback(
+    (deviceId: string, label: string) => {
+      dispatch(
+        setModulePreferences({
+          module: "mediaDevices",
+          preferences: {
+            videoInputDeviceId: deviceId,
+            videoInputDeviceLabel: label,
+          },
+        }),
+      );
+      // No live "apply" here — the camera never runs at boot/idle. The
+      // preferred-camera resolver (wired in AudioDeviceProviderImpl) reads the
+      // updated preference on the NEXT acquireCameraLease.
+    },
+    [dispatch],
+  );
+
   const requestPermission = useCallback(() => ensurePermission(), []);
+  const requestCameraPermission = useCallback(
+    () => ensureCameraPermission(),
+    [],
+  );
   const refresh = useCallback(async () => {
     await listDevices();
   }, []);
 
   return {
     permissionState: snapshot.permissionState,
+    cameraPermissionState: snapshot.cameraPermissionState,
     inputs: snapshot.inputs,
     outputs: snapshot.outputs,
+    cameras: snapshot.cameras,
     selectedInputId,
     selectedOutputId,
     selectedInputLabel: storedInputLabel,
     selectedOutputLabel: storedOutputLabel,
+    selectedCameraId,
+    selectedCameraLabel: storedCameraLabel,
     setInput,
     setOutput,
+    setCamera,
     requestPermission,
+    requestCameraPermission,
     refresh,
     outputSelectionSupported: outputSelectionSupported(),
   };

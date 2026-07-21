@@ -55,6 +55,16 @@ export const CloudFolders = {
   /** Podcast asset uploads. */
   AUDIO_PODCASTS: "Audio/Podcasts",
 
+  /** Top-level "Captures" drawer — everything the in-browser media-capture
+   *  system saves (features/media-capture). User-produced, so visible. */
+  CAPTURES: "Captures",
+  /** Photos taken with the in-app camera (Capture Studio / device fallback). */
+  CAPTURES_PHOTOS: "Captures/Photos",
+  /** Videos recorded with the in-app camera (media-capture Phase 7). */
+  CAPTURES_VIDEOS: "Captures/Videos",
+  /** Audio recorded through the Capture Studio (media-capture Phase 7). */
+  CAPTURES_AUDIO: "Captures/Audio",
+
   /**
    * Static app assets (sounds, hero images, model-card thumbnails, demo
    * data) owned by an admin service account and rendered globally.
@@ -498,6 +508,10 @@ export const CloudFolderDescriptions: Record<string, string> = {
   [CloudFolders.AUDIO]: "Audio files.",
   [CloudFolders.AUDIO_RECORDINGS]: "Voice recordings.",
   [CloudFolders.AUDIO_PODCASTS]: "Podcast assets.",
+  [CloudFolders.CAPTURES]: "Photos, videos, and audio captured in the app.",
+  [CloudFolders.CAPTURES_PHOTOS]: "Photos taken with the in-app camera.",
+  [CloudFolders.CAPTURES_VIDEOS]: "Videos recorded with the in-app camera.",
+  [CloudFolders.CAPTURES_AUDIO]: "Audio recorded in the Capture Studio.",
   [CloudFolders.APP_ASSETS]: "Static app assets shared across the platform.",
   [CloudFolders.DOCUMENTS]: "Documents and reports.",
   [CloudFolders.DOCUMENTS_PDFS]: "PDFs.",
@@ -550,6 +564,9 @@ const DEFAULT_VISIBILITY_RULES: ReadonlyArray<{
 
   // IMAGES_EDITED_SOURCES is private — these are the user's working
   // source files for the image studio, not public render targets.
+  // Captures are the user's own camera/mic output — never public render
+  // targets. Explicit rule (not just the fallback) so the intent is recorded.
+  { prefix: CloudFolders.CAPTURES, visibility: "private" },
   { prefix: CloudFolders.IMAGES_EDITED_SOURCES, visibility: "private" },
   { prefix: CloudFolders.IMAGES_GENERATED, visibility: "private" },
   { prefix: CloudFolders.CHAT_ATTACHMENTS, visibility: "private" },

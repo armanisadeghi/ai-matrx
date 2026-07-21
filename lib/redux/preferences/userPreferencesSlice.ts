@@ -99,14 +99,15 @@ export interface EmailPreferences {
 }
 
 // Suggested preferences for video conferencing (you can add or adjust fields)
-// NOTE: mic/speaker choice is NOT here — it is canonical in `audioDevices`
-// (AudioDevicePreferences). The legacy free-text `defaultMicrophone` /
-// `defaultSpeaker` fields were deleted; stale persisted copies are stripped
-// loudly on load (see stripSupersededVideoConferenceAudio).
+// NOTE: device choice (mic/speaker/camera) is NOT here — it is canonical in
+// `mediaDevices` (MediaDevicePreferences). The legacy free-text
+// `defaultMicrophone` / `defaultSpeaker` fields and the placeholder-enum
+// `defaultCamera` field were deleted; stale persisted copies are stripped
+// loudly on load (see stripSupersededVideoConferenceAudio /
+// liftLegacyAudioDevicesToMediaDevices).
 export interface VideoConferencePreferences {
   background: string;
   filter: string;
-  defaultCamera: string;
   defaultMeetingType: string;
   defaultLayout: string;
   defaultNotesType: string;
@@ -441,23 +442,32 @@ export interface ConversationFilterPreferences {
 }
 
 /**
- * Persisted audio input/output DEVICE choice — the canonical "remember my mic
- * and speaker" store, read by the audio-devices manager (`features/audio/
- * audioDevices.ts`). We store BOTH the `deviceId` AND the human `label` for
- * each, because iOS Safari regenerates `deviceId` on every page load — on
- * resolve we match by id → else by label → else system default. `""` everywhere
- * means "system default" (no explicit choice).
+ * Persisted media DEVICE choice — the canonical "remember my mic, speaker,
+ * and camera" store, read by the media-device manager
+ * (`features/media-devices/deviceManager.ts`) and the camera stream manager.
+ * We store BOTH the `deviceId` AND the human `label` for each, because iOS
+ * Safari regenerates `deviceId` on every page load — on resolve we match by
+ * id → else by label → else system default. `""` everywhere means "system
+ * default" / "auto" (no explicit choice).
  *
- * NOTE: this superseded — and has now absorbed — the legacy free-text
- * `videoConference.defaultMicrophone` / `defaultSpeaker` fields (which were
- * never wired to real `enumerateDevices` ids). Those fields are deleted from
- * the shape; stale persisted copies are stripped loudly on load.
+ * NOTE: this superseded — and has now absorbed — the legacy `audioDevices`
+ * module (mic + speaker only) and the placeholder-enum
+ * `videoConference.defaultCamera` field (never wired to real
+ * `enumerateDevices` ids; dropped with no mapping). Stale persisted copies
+ * are lifted/stripped loudly on load (see
+ * liftLegacyAudioDevicesToMediaDevices) and healed in the DB by
+ * `users.normalize_preferences_jsonb`
+ * (migrations/user_preferences_media_devices_backfill.sql).
  */
-export interface AudioDevicePreferences {
+export interface MediaDevicePreferences {
   audioInputDeviceId: string;
   audioInputDeviceLabel: string;
   audioOutputDeviceId: string;
   audioOutputDeviceLabel: string;
+  videoInputDeviceId: string;
+  videoInputDeviceLabel: string;
+  /** "" = auto (no explicit facing preference). */
+  preferredFacingMode: "user" | "environment" | "";
 }
 
 // `FavoriteKind` ("what a favorite points at") is the canonical
@@ -529,7 +539,7 @@ export interface UserPreferences {
   agentConnections: AgentConnectionsPreferences;
   mermaid: MermaidPreferences;
   conversationFilters: ConversationFilterPreferences;
-  audioDevices: AudioDevicePreferences;
+  mediaDevices: MediaDevicePreferences;
   organization: OrganizationPreferences;
   scratchpad: ScratchpadPreferences;
   siteWorkbench: SiteWorkbenchPreferences;
@@ -549,7 +559,7 @@ export interface UserPreferencesState extends UserPreferences {
 /**
  * LOUD MIGRATION (2026-07): the legacy free-text
  * `videoConference.defaultMicrophone` / `defaultSpeaker` fields were folded
- * into the canonical `audioDevices` module and deleted from the shape. A
+ * into the canonical device module (now `mediaDevices`) and deleted from the shape. A
  * persisted blob (IDB / localStorage mirror / remote) may still carry them;
  * strip them here — with a warning, never silently — so they can't shadow-
  * revive through the shallow module merges. The blob self-heals on the next
@@ -567,12 +577,88 @@ function stripSupersededVideoConferenceAudio(
   console.warn(
     "[userPreferences] MIGRATION: dropping superseded videoConference audio " +
       `field(s) [${stale.join(", ")}] from a persisted payload — mic/speaker ` +
-      "choice is canonical in userPreferences.audioDevices. The stored blob " +
+      "choice is canonical in userPreferences.mediaDevices. The stored blob " +
       "self-heals on the next save.",
   );
   const cleaned: Record<string, unknown> = { ...carrier };
   for (const k of stale) delete cleaned[k];
   return cleaned as Partial<VideoConferencePreferences>;
+}
+
+/**
+ * LOUD MIGRATION (2026-07, media-capture Phase 4): the audio-only
+ * `audioDevices` module was superseded by the unified `mediaDevices` module
+ * (mic + speaker + camera + facing mode), and the placeholder-enum
+ * `videoConference.defaultCamera` field was deleted (never wired to real
+ * `enumerateDevices` ids — dropped with no mapping). A persisted blob
+ * (IDB / localStorage mirror / remote) may still carry them; lift/strip here —
+ * with a warning, never silently. Mirrors the SQL rule in
+ * `users.normalize_preferences_jsonb`
+ * (migrations/user_preferences_media_devices_backfill.sql). Follows the exact
+ * pattern of stripSupersededVideoConferenceAudio above.
+ */
+function liftLegacyAudioDevicesToMediaDevices(
+  loaded: Partial<UserPreferences>,
+): Partial<UserPreferences> {
+  const carrier = loaded as Record<string, unknown>;
+  const legacy = carrier["audioDevices"];
+  const vc = loaded.videoConference as
+    | (VideoConferencePreferences & { defaultCamera?: unknown })
+    | undefined;
+  const hasLegacyModule = legacy !== undefined;
+  const hasLegacyCamera = vc !== undefined && "defaultCamera" in vc;
+  if (!hasLegacyModule && !hasLegacyCamera) return loaded;
+
+  const out: Record<string, unknown> = { ...carrier };
+  const dropped: string[] = [];
+
+  if (hasLegacyModule) {
+    const existing = out["mediaDevices"];
+    const mediaDevicesEmpty =
+      existing === undefined ||
+      existing === null ||
+      (typeof existing === "object" &&
+        Object.keys(existing as object).length === 0);
+    if (
+      mediaDevicesEmpty &&
+      legacy !== null &&
+      typeof legacy === "object" &&
+      !Array.isArray(legacy)
+    ) {
+      const l = legacy as Record<string, unknown>;
+      const str = (v: unknown): string => (typeof v === "string" ? v : "");
+      out["mediaDevices"] = {
+        audioInputDeviceId: str(l["audioInputDeviceId"]),
+        audioInputDeviceLabel: str(l["audioInputDeviceLabel"]),
+        audioOutputDeviceId: str(l["audioOutputDeviceId"]),
+        audioOutputDeviceLabel: str(l["audioOutputDeviceLabel"]),
+        videoInputDeviceId: "",
+        videoInputDeviceLabel: "",
+        preferredFacingMode: "",
+      } satisfies MediaDevicePreferences;
+      dropped.push("audioDevices (lifted → mediaDevices)");
+    } else {
+      dropped.push("audioDevices (mediaDevices already set — discarded)");
+    }
+    delete out["audioDevices"];
+  }
+
+  if (hasLegacyCamera) {
+    const cleanedVc: Record<string, unknown> = {
+      ...(vc as unknown as Record<string, unknown>),
+    };
+    delete cleanedVc["defaultCamera"];
+    out["videoConference"] = cleanedVc;
+    dropped.push("videoConference.defaultCamera (placeholder enum, no mapping)");
+  }
+
+  console.warn(
+    "[userPreferences] MIGRATION: lifting/dropping superseded device " +
+      `preference field(s) [${dropped.join(", ")}] from a persisted payload — ` +
+      "device choice is canonical in userPreferences.mediaDevices. The stored " +
+      "blob self-heals on the next save.",
+  );
+  return out as Partial<UserPreferences>;
 }
 
 /**
@@ -652,12 +738,13 @@ export function stripLegacyDefaultModelSentinels(
 export function sanitizeLoadedPreferences(
   loaded: Partial<UserPreferences>,
 ): Partial<UserPreferences> {
-  const out = stripLegacyDefaultModelSentinels(loaded);
+  let out = stripLegacyDefaultModelSentinels(loaded);
   if (out.videoConference) {
     out.videoConference = stripSupersededVideoConferenceAudio(
       out.videoConference,
     ) as VideoConferencePreferences;
   }
+  out = liftLegacyAudioDevicesToMediaDevices(out);
   return out;
 }
 
@@ -754,7 +841,6 @@ export const initializeUserPreferencesState = (
     videoConference: {
       background: "default",
       filter: "default",
-      defaultCamera: "default",
       defaultMeetingType: "default",
       defaultLayout: "default",
       defaultNotesType: "default",
@@ -877,12 +963,15 @@ export const initializeUserPreferencesState = (
       // (source-registry.ts → SURFACE_DEFAULTS).
       surfaces: {},
     },
-    audioDevices: {
-      // "" everywhere = system default (no explicit device chosen yet).
+    mediaDevices: {
+      // "" everywhere = system default / auto (no explicit device chosen yet).
       audioInputDeviceId: "",
       audioInputDeviceLabel: "",
       audioOutputDeviceId: "",
       audioOutputDeviceLabel: "",
+      videoInputDeviceId: "",
+      videoInputDeviceLabel: "",
+      preferredFacingMode: "",
     },
     organization: {
       // null = no default chosen → header reminder nudges the user.
@@ -949,9 +1038,9 @@ export const initializeUserPreferencesState = (
       ...defaultPreferences.conversationFilters,
       ...preferences.conversationFilters,
     },
-    audioDevices: {
-      ...defaultPreferences.audioDevices,
-      ...preferences.audioDevices,
+    mediaDevices: {
+      ...defaultPreferences.mediaDevices,
+      ...preferences.mediaDevices,
     },
     organization: {
       ...defaultPreferences.organization,
@@ -1072,8 +1161,8 @@ const userPreferencesSlice = createSlice({
         state.conversationFilters = {
           ...state._meta.loadedPreferences.conversationFilters,
         };
-        state.audioDevices = {
-          ...state._meta.loadedPreferences.audioDevices,
+        state.mediaDevices = {
+          ...state._meta.loadedPreferences.mediaDevices,
         };
         state.organization = {
           ...state._meta.loadedPreferences.organization,
@@ -1216,10 +1305,10 @@ const userPreferencesSlice = createSlice({
           ...state.conversationFilters,
           ...loaded.conversationFilters,
         };
-      if (loaded.audioDevices)
-        state.audioDevices = {
-          ...state.audioDevices,
-          ...loaded.audioDevices,
+      if (loaded.mediaDevices)
+        state.mediaDevices = {
+          ...state.mediaDevices,
+          ...loaded.mediaDevices,
         };
       if (loaded.organization)
         state.organization = {
@@ -1307,7 +1396,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "agentConnections",
   "mermaid",
   "conversationFilters",
-  "audioDevices",
+  "mediaDevices",
   "organization",
   "scratchpad",
   "siteWorkbench",

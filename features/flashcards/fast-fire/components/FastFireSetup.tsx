@@ -37,7 +37,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
-import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevicesPanel";
+import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
 import { updateConfig } from "../redux/fastFireSlice";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
@@ -62,7 +62,7 @@ export function FastFireSetup() {
   const [loadError, setLoadError] = useState<string | null>(null);
   // Device-check gate (Zoom/Meet style): confirm + test mic/speaker BEFORE the
   // drill. Open by default so the learner sees it; reuses the shared
-  // AudioDevicesPanel (the same component the avatar-menu window opens).
+  // MediaDevicesPanel (the same component the avatar-menu window opens).
   const [showDevices, setShowDevices] = useState(true);
   // Spoken-front prep (TTS): generated ON-DEMAND here (a pre-step, so the mic-warm
   // in the Start gesture stays in-gesture). Cached after — instant on later runs.
@@ -378,7 +378,7 @@ export function FastFireSetup() {
         </section>
 
         {/* Device check (Zoom/Meet style) — confirm + test mic/speaker before the
-            drill. Reuses the shared AudioDevicesPanel (also openable as a window
+            drill. Reuses the shared MediaDevicesPanel (also openable as a window
             from the avatar menu via dispatch). Built to host video later. */}
         <section className="mb-5 rounded-xl border border-border bg-card">
           <button
@@ -398,7 +398,7 @@ export function FastFireSetup() {
           </button>
           {showDevices && (
             <div className="border-t border-border">
-              <AudioDevicesPanel />
+              <MediaDevicesPanel />
               <div className="flex items-start gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
                 <Video className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>Camera setup for video study aids is coming soon.</span>

@@ -72,6 +72,7 @@ const TextGenerationTab = lazyTab(() => import("./tabs/TextGenerationTab"));
 const ImageGenerationTab = lazyTab(() => import("./tabs/ImageGenerationTab"));
 const PhotoEditingTab = lazyTab(() => import("./tabs/PhotoEditingTab"));
 const VideoConferenceTab = lazyTab(() => import("./tabs/VideoConferenceTab"));
+const MediaDevicesTab = lazyTab(() => import("./tabs/MediaDevicesTab"));
 const CodingTab = lazyTab(() => import("./tabs/CodingTab"));
 const CodeWorkspaceTab = lazyTab(() => import("./tabs/CodeWorkspaceTab"));
 const FlashcardsTab = lazyTab(() => import("./tabs/FlashcardsTab"));
@@ -352,6 +353,31 @@ export const settingsRegistry: SettingsTabDef[] = [
     icon: Keyboard,
     parentId: "editor",
     component: Placeholder,
+    persistence: "synced",
+  },
+
+  // ── Devices ───────────────────────────────────────────────────────────────
+  {
+    id: "devices",
+    label: "Camera, microphone & speakers",
+    icon: Camera,
+    description:
+      "Choose and test your camera, microphone, and speaker devices.",
+    searchKeywords: [
+      "camera",
+      "microphone",
+      "mic",
+      "speaker",
+      "webcam",
+      "devices",
+      "audio",
+      "video",
+      "input",
+      "output",
+      "permissions",
+      "facing",
+    ],
+    component: MediaDevicesTab,
     persistence: "synced",
   },
 

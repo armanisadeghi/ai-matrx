@@ -34,6 +34,9 @@ const LEGACY_TAB_ALIASES: Record<string, string> = {
   flashcard: "learning.flashcards",
   playground: "ai",
   agentContext: "ai.assistants",
+  // Unified device tab (media-capture Phase 4) — legacy short ids route here.
+  audioDevices: "devices",
+  mediaDevices: "devices",
 };
 
 function SettingsPreferencesInner() {

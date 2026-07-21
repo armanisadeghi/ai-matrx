@@ -1,7 +1,7 @@
 "use client";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevicesPanel";
+import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
 
 interface AudioDevicesWindowProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ export default function AudioDevicesWindow({
       onClose={onClose}
       overlayId="audioDevices"
     >
-      <AudioDevicesPanel />
+      <MediaDevicesPanel />
     </WindowPanel>
   );
 }

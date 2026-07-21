@@ -1,30 +1,41 @@
 "use client";
 
-// features/audio/components/devices/AudioDevicesPanel.tsx
+// features/audio/components/devices/MediaDevicesPanel.tsx
 //
-// The audio-devices control surface, shared by the desktop window and the
-// mobile drawer (WindowPanel renders one or the other from the registry's
-// mobilePresentation). It hosts:
+// The media-devices control surface (formerly AudioDevicesPanel), shared by
+// the desktop window and the mobile drawer (WindowPanel renders one or the
+// other from the registry's mobilePresentation). It hosts:
 //   • mic picker (live device list — populated after permission),
 //   • speaker picker (gated on `outputSelectionSupported`; Safari shows a note),
-//   • permission status + a "Grant access" button when not granted,
+//   • camera picker + independent camera-permission row (grant runs through
+//     `ensureCameraPermission` → the camera stream manager),
+//   • permission status + "Grant access" buttons when not granted,
 //   • a LIVE input-level meter ("test mic") — acquires the shared mic stream +
 //     an AnalyserNode, releases on close (never stops the singleton's tracks),
 //   • a "Test speaker" button that plays a short tone through the selected
-//     output device.
+//     output device,
+//   • an OPT-IN camera preview tile ("Test camera") — acquires a camera lease
+//     only on the explicit button press, shows the effective resolution /
+//     frame rate from the lease's track summary, and releases on hide/unmount.
+//     NEVER auto-starts.
 //
 // Reuses the canonical primitives: `useAudioDevices`, the mic singleton
-// (`acquireMicStream` / `releaseMicStream`), the shared AudioContext, and the
-// output-sink feature detection. No forked audio plumbing.
+// (`acquireMicStream` / `releaseMicStream`), the shared AudioContext, the
+// output-sink feature detection, and the camera stream manager
+// (`acquireCameraLease` + `CameraPreview`). No forked media plumbing.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
+  Camera,
+  CameraOff,
   Mic,
   MicOff,
   Play,
   RefreshCw,
   Speaker,
+  Video,
+  VideoOff,
   Volume2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,36 +59,52 @@ import {
   getPreferredOutputDeviceId,
 } from "@/features/audio/audioOutputSink";
 import type { MediaDeviceDescriptor } from "@/features/media-devices/deviceManager";
+import {
+  acquireCameraLease,
+  type CameraLease,
+} from "@/features/media-capture/runtime/camera-stream-manager";
+import { CameraPreview } from "@/features/media-capture/components/CameraPreview";
 
 const SYSTEM_DEFAULT = "__system_default__";
 
 /** Friendly fallback label for a device whose label is blank (pre-grant). */
 function deviceLabel(
   d: MediaDeviceDescriptor,
-  kind: "input" | "output",
+  kind: "input" | "output" | "camera",
 ): string {
   if (d.label) return d.label;
   const short = d.deviceId ? d.deviceId.slice(0, 6) : "unknown";
-  return kind === "input" ? `Microphone (${short})` : `Speaker (${short})`;
+  return kind === "input"
+    ? `Microphone (${short})`
+    : kind === "output"
+      ? `Speaker (${short})`
+      : `Camera (${short})`;
 }
 
-export function AudioDevicesPanel() {
+export function MediaDevicesPanel() {
   const {
     permissionState,
+    cameraPermissionState,
     inputs,
     outputs,
+    cameras,
     selectedInputId,
     selectedOutputId,
+    selectedCameraId,
     setInput,
     setOutput,
+    setCamera,
     requestPermission,
+    requestCameraPermission,
     refresh,
     outputSelectionSupported,
   } = useAudioDevices();
 
   const [granting, setGranting] = useState(false);
+  const [grantingCamera, setGrantingCamera] = useState(false);
   const isGranted = permissionState === "granted";
   const isDenied = permissionState === "denied";
+  const isCameraDenied = cameraPermissionState === "denied";
 
   // On mount, make sure we have an up-to-date list. If already granted, labels
   // are present; otherwise the list shows device counts without labels.
@@ -99,6 +126,26 @@ export function AudioDevicesPanel() {
       setGranting(false);
     }
   }, [requestPermission]);
+
+  const handleGrantCamera = useCallback(async () => {
+    setGrantingCamera(true);
+    try {
+      const result = await requestCameraPermission();
+      if (result === "denied") {
+        toast.error("Camera access denied", {
+          description:
+            "Enable camera access for this site in your browser settings, then try again.",
+        });
+      }
+    } catch (err) {
+      console.error("[MediaDevicesPanel] camera permission request failed:", err);
+      toast.error("Couldn't request camera access", {
+        description: err instanceof Error ? err.message : "Camera unavailable.",
+      });
+    } finally {
+      setGrantingCamera(false);
+    }
+  }, [requestCameraPermission]);
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -191,6 +238,48 @@ export function AudioDevicesPanel() {
             </span>
           </p>
         )}
+      </section>
+
+      {/* Camera */}
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <Camera className="h-4 w-4 text-muted-foreground" />
+          Camera
+        </div>
+        <CameraPermissionRow
+          state={cameraPermissionState}
+          granting={grantingCamera}
+          onGrant={() => void handleGrantCamera()}
+        />
+        <Select
+          value={selectedCameraId || SYSTEM_DEFAULT}
+          onValueChange={(v) => {
+            if (v === SYSTEM_DEFAULT) {
+              setCamera("", "");
+              return;
+            }
+            const dev = cameras.find((d) => d.deviceId === v);
+            setCamera(v, dev?.label ?? "");
+          }}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Automatic" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={SYSTEM_DEFAULT}>Automatic</SelectItem>
+            {cameras.map((d) => (
+              <SelectItem key={d.deviceId || "default-cam"} value={d.deviceId}>
+                {deviceLabel(d, "camera")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {cameraPermissionState !== "granted" && !isCameraDenied && (
+          <p className="text-xs text-muted-foreground">
+            Grant camera access to see your camera names.
+          </p>
+        )}
+        <CameraTestTile disabled={isCameraDenied} />
       </section>
 
       <div className="flex justify-end">
@@ -338,7 +427,7 @@ function MicLevelMeter({ disabled }: { disabled: boolean }) {
         heldRef.current = false;
       }
 
-      console.error("[AudioDevicesPanel] mic test failed:", err);
+      console.error("[MediaDevicesPanel] mic test failed:", err);
       toast.error("Couldn't start the mic test", {
         description:
           err instanceof Error ? err.message : "Microphone unavailable.",
@@ -436,7 +525,7 @@ function TestSpeakerButton() {
         osc.onended = () => resolve();
       });
     } catch (err) {
-      console.error("[AudioDevicesPanel] speaker test failed:", err);
+      console.error("[MediaDevicesPanel] speaker test failed:", err);
       toast.error("Couldn't play the test tone");
     } finally {
       try {
@@ -463,5 +552,164 @@ function TestSpeakerButton() {
       )}
       {playing ? "Playing…" : "Test speaker"}
     </Button>
+  );
+}
+
+/**
+ * Independent camera-permission status row + Grant button. The grant runs
+ * through `ensureCameraPermission` → the camera stream manager (acquire +
+ * immediate release) — this panel never calls getUserMedia itself.
+ */
+function CameraPermissionRow({
+  state,
+  granting,
+  onGrant,
+}: {
+  state: ReturnType<typeof useAudioDevices>["cameraPermissionState"];
+  granting: boolean;
+  onGrant: () => void;
+}) {
+  const granted = state === "granted";
+  const denied = state === "denied";
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 rounded-md border px-3 py-2",
+        granted
+          ? "border-border bg-card"
+          : denied
+            ? "border-destructive/40 bg-destructive/5"
+            : "border-amber-500/40 bg-amber-500/5",
+      )}
+    >
+      <div className="flex items-center gap-2 text-sm">
+        {granted ? (
+          <Camera className="h-4 w-4 text-primary" />
+        ) : (
+          <CameraOff
+            className={cn(
+              "h-4 w-4",
+              denied ? "text-destructive" : "text-amber-500",
+            )}
+          />
+        )}
+        <span className="text-foreground">
+          {granted
+            ? "Camera access granted"
+            : denied
+              ? "Camera access blocked"
+              : "Camera access not granted"}
+        </span>
+      </div>
+      {!granted && (
+        <Button size="sm" onClick={onGrant} disabled={granting || denied}>
+          {granting ? "Requesting…" : denied ? "Blocked" : "Grant access"}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * OPT-IN camera preview tile. Acquires a camera lease ONLY on the explicit
+ * "Test camera" press (720p profile; the preferred-camera resolver applies the
+ * user's saved device/facing choice), renders through the canonical
+ * `CameraPreview`, shows the effective resolution / frame rate from the
+ * lease's track summary while running, and releases the lease on hide and on
+ * unmount. NEVER auto-starts.
+ */
+function CameraTestTile({ disabled }: { disabled: boolean }) {
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [summaryText, setSummaryText] = useState<string | null>(null);
+  const leaseRef = useRef<CameraLease | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stop = useCallback(() => {
+    if (intervalRef.current != null) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    leaseRef.current?.release();
+    leaseRef.current = null;
+    setStream(null);
+    setSummaryText(null);
+  }, []);
+
+  const readSummary = useCallback(() => {
+    const summary = leaseRef.current?.getTrackSummary() ?? null;
+    if (!summary) {
+      setSummaryText(null);
+      return;
+    }
+    const { width, height, frameRate } = summary.effective;
+    const parts: string[] = [];
+    if (width && height) parts.push(`${width}×${height}`);
+    if (frameRate) parts.push(`${Math.round(frameRate)} fps`);
+    setSummaryText(parts.length > 0 ? parts.join(" · ") : null);
+  }, []);
+
+  const start = useCallback(async () => {
+    setStarting(true);
+    try {
+      const lease = await acquireCameraLease({ profile: "720p" });
+      leaseRef.current = lease;
+      setStream(lease.stream);
+      // The shared stream can be swapped under us (another surface acquired an
+      // incompatible spec) — re-read it and the summary.
+      lease.on("reconfigured", (next) => {
+        setStream(next);
+        readSummary();
+      });
+      readSummary();
+      // Effective settings can settle a moment after start; poll while running.
+      intervalRef.current = setInterval(readSummary, 1000);
+    } catch (err) {
+      stop();
+      console.error("[MediaDevicesPanel] camera test failed:", err);
+      toast.error("Couldn't start the camera test", {
+        description:
+          err instanceof Error ? err.message : "Camera unavailable.",
+      });
+    } finally {
+      setStarting(false);
+    }
+  }, [readSummary, stop]);
+
+  // Always release on unmount — the camera-indicator-leak guard.
+  useEffect(() => stop, [stop]);
+
+  const running = stream !== null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <Button
+          variant={running ? "secondary" : "outline"}
+          size="sm"
+          disabled={disabled || starting}
+          onClick={() => (running ? stop() : void start())}
+          className="gap-1.5"
+        >
+          {running ? (
+            <VideoOff className="h-3.5 w-3.5" />
+          ) : (
+            <Video className="h-3.5 w-3.5" />
+          )}
+          {starting ? "Starting…" : running ? "Stop camera" : "Test camera"}
+        </Button>
+        {running && summaryText && (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {summaryText}
+          </span>
+        )}
+      </div>
+      {running && (
+        <div className="aspect-video w-full overflow-hidden rounded-md border border-border bg-muted">
+          <CameraPreview stream={stream} framing="full-frame" />
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 
-import { Video } from "lucide-react";
+import { Camera, Video } from "lucide-react";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
+import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
+import { useSettingsTabNavigate } from "../components/SettingsPresentationContext";
 import { useSetting } from "../hooks/useSetting";
 
 export default function VideoConferenceTab() {
@@ -12,9 +14,6 @@ export default function VideoConferenceTab() {
   );
   const [filter, setFilter] = useSetting<string>(
     "userPreferences.videoConference.filter",
-  );
-  const [camera, setCamera] = useSetting<string>(
-    "userPreferences.videoConference.defaultCamera",
   );
   const [meetingType, setMeetingType] = useSetting<string>(
     "userPreferences.videoConference.defaultMeetingType",
@@ -28,6 +27,7 @@ export default function VideoConferenceTab() {
   const [aiActivity, setAiActivity] = useSetting<string>(
     "userPreferences.videoConference.AiActivityLevel",
   );
+  const navigateToTab = useSettingsTabNavigate();
 
   return (
     <>
@@ -63,20 +63,17 @@ export default function VideoConferenceTab() {
           last
         />
       </SettingsSection>
-      {/* Mic + speaker live in the canonical audio-device preferences
-          (userPreferences.audioDevices — the audio device settings, wired to
-          real enumerateDevices ids). Only the camera stays here. */}
+      {/* Camera + mic + speaker choice is canonical in the unified device
+          preferences (userPreferences.mediaDevices) — managed on the
+          "Camera, microphone & speakers" tab, wired to real
+          enumerateDevices ids. */}
       <SettingsSection title="Devices">
-        <SettingsSelect
-          label="Camera"
-          value={camera}
-          onValueChange={setCamera}
-          options={[
-            { value: "default", label: "System default" },
-            { value: "front", label: "Front" },
-            { value: "rear", label: "Rear" },
-            { value: "external", label: "External" },
-          ]}
+        <SettingsButton
+          label="Camera, microphone & speakers"
+          description="Meetings use your saved devices from the unified device settings."
+          icon={Camera}
+          actionLabel="Open device settings"
+          onClick={() => navigateToTab("devices")}
           last
         />
       </SettingsSection>

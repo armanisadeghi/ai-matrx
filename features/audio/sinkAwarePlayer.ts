@@ -17,7 +17,7 @@
 // utterance. This fork:
 //
 //   1. Applies the preferred output device (from the same store the
-//      `userPreferences.audioDevices` module feeds via
+//      `userPreferences.mediaDevices` module feeds via
 //      `providers/AudioDeviceProviderImpl` → `applyOutputDevice`) to its own
 //      context at creation, and
 //   2. Subscribes to `subscribeOutputDevice` while a context is live, so a

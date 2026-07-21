@@ -3,31 +3,50 @@
 /**
  * CaptureView — full-screen rapid-capture camera overlay.
  *
- * Built on the canonical camera primitives (`CameraProvider` +
- * `CameraView` from components/matrx/camera) with scanner behavior:
- * rear camera preferred, 4K ideal (browsers clamp to the sensor max),
- * and strict WYSIWYG — the `fill` view shows the ENTIRE sensor frame
- * (letterboxed) and `fullFrameCapture` photographs exactly that frame,
- * so nothing hidden under the controls sneaks into the photo.
+ * Built on the media-capture runtime (`acquireCameraLease` +
+ * `<CameraPreview framing="full-frame">` + `capturePhotoFromVideo`) with the
+ * scanner contract: rear camera preferred, `maximum-available` profile (4096
+ * over-ask — browsers clamp to the sensor max), and strict WYSIWYG — the
+ * letterboxed full-frame preview shows the ENTIRE stream frame and each shot
+ * captures exactly that frame via the canvas path (output dims ===
+ * videoWidth×videoHeight; native takePhoto() is deliberately NOT used here
+ * because it may return a different resolution than the stream).
  *
- * Filmstrip thumbs open a full-screen preview (stay in capture mode) so
- * blurry shots can be re-taken immediately.
+ * Per-shot output is a JPEG **Blob** at quality 0.92 (data URLs are banned in
+ * the capture pipeline); the session layer turns it into a File + tracked
+ * object URL. Filmstrip thumbs open a full-screen preview (stay in capture
+ * mode) so blurry shots can be re-taken immediately.
  *
- * When getUserMedia is unavailable (permission denied, in-app webview),
- * the fallback button opens the OS camera via `<input capture>`.
+ * When getUserMedia is unavailable (permission denied, in-app webview), the
+ * fallback button opens the OS camera via `<input capture="environment">` —
+ * the raw file is passed through byte-identical (the scan pipeline handles
+ * processing server-side).
  */
 
-import React, { useCallback, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Camera as CameraIcon, SwitchCamera, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  CameraProvider,
-  useCamera,
-} from "@/components/matrx/camera/camera-provider";
-import { CameraView } from "@/components/matrx/camera/camera-view";
-import type { CameraType } from "@/components/matrx/camera/camera-types";
 import { cn } from "@/lib/utils";
+import {
+  getMediaDevicesSnapshot,
+  listDevices,
+  subscribeMediaDevices,
+} from "@/features/media-devices/deviceManager";
+import {
+  acquireCameraLease,
+  type CameraLease,
+} from "@/features/media-capture/runtime/camera-stream-manager";
+import { CameraPreview } from "@/features/media-capture/components/CameraPreview";
+import { capturePhotoFromVideo } from "@/features/media-capture/hooks/usePhotoCapture";
+
+const SCANNER_JPEG_QUALITY = 0.92;
 
 export interface CaptureShot {
   itemId: string;
@@ -35,8 +54,8 @@ export interface CaptureShot {
 }
 
 interface CaptureViewProps {
-  /** Fired per shot with the JPEG data URL — upload starts immediately. */
-  onCapture: (dataUrl: string) => void;
+  /** Fired per shot with the JPEG Blob — upload starts immediately. */
+  onCapture: (blob: Blob) => void;
   /** Session shots for the filmstrip (newest last). */
   shots: CaptureShot[];
   onRemoveShot: (itemId: string) => void;
@@ -44,66 +63,127 @@ interface CaptureViewProps {
   onDone: () => void;
 }
 
-export function CaptureView(props: CaptureViewProps) {
-  return (
-    <CameraProvider
-      videoConstraints={{
-        facingMode: { ideal: "environment" },
-        // Square over-ask: the UA clamps each axis to the sensor max, so we
-        // get the camera's NATIVE aspect (typically 4:3) at full resolution.
-        // Asking 3840x2160 biased streams toward a 16:9 crop, which turned
-        // portrait captures unnaturally tall and narrow.
-        width: { ideal: 4096 },
-        height: { ideal: 4096 },
-        aspectRatio: undefined,
-      }}
-      photoQuality={0.92}
-      fullFrameCapture
-    >
-      <CaptureViewInner {...props} />
-    </CameraProvider>
-  );
-}
-
-function CaptureViewInner({
+export function CaptureView({
   onCapture,
   shots,
   onRemoveShot,
   uploadingCount,
   onDone,
 }: CaptureViewProps) {
-  const cameraRef = useRef<CameraType | null>(null);
-  const { numberOfCameras, switchCamera, stopStream, notSupported, permissionDenied } =
-    useCamera();
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [notSupported, setNotSupported] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
   const [previewShot, setPreviewShot] = useState<CaptureShot | null>(null);
+
+  const leaseRef = useRef<CameraLease | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const fallbackInputRef = useRef<HTMLInputElement>(null);
+
+  const devices = useSyncExternalStore(
+    subscribeMediaDevices,
+    getMediaDevicesSnapshot,
+    getMediaDevicesSnapshot,
+  );
+  const numberOfCameras = devices.cameras.length;
+
+  // Acquire/release the scanner lease: environment facing, sensor maximum.
+  useEffect(() => {
+    let cancelled = false;
+    let myLease: CameraLease | null = null;
+    let unsubscribe: (() => void) | null = null;
+
+    acquireCameraLease({
+      profile: "maximum-available",
+      ...(deviceId ? { deviceId } : { facingMode: "environment" as const }),
+    })
+      .then((lease) => {
+        if (cancelled) {
+          lease.release();
+          return;
+        }
+        myLease = lease;
+        leaseRef.current = lease;
+        setStream(lease.stream);
+        setPermissionDenied(false);
+        setNotSupported(false);
+        unsubscribe = lease.on("reconfigured", (next) => setStream(next));
+        // Labels/counts unlock after the grant.
+        void listDevices();
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const name =
+          err && typeof err === "object" && "name" in err
+            ? String((err as { name: unknown }).name)
+            : "";
+        if (name === "NotAllowedError" || name === "SecurityError") {
+          setPermissionDenied(true);
+        } else {
+          setNotSupported(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+      if (myLease) {
+        myLease.release();
+        if (leaseRef.current === myLease) leaseRef.current = null;
+      }
+      setStream(null);
+    };
+  }, [deviceId]);
 
   const cameraBlocked = notSupported || permissionDenied;
 
-  const handleShutter = useCallback(() => {
-    const dataUrl = cameraRef.current?.takePhoto();
-    if (!dataUrl) return;
-    onCapture(dataUrl);
-    setFlash(true);
-    window.setTimeout(() => setFlash(false), 120);
-  }, [onCapture]);
+  const switchCamera = useCallback(() => {
+    const cams = getMediaDevicesSnapshot().cameras;
+    if (cams.length < 2) return;
+    const currentIdx = deviceId
+      ? cams.findIndex((c) => c.deviceId === deviceId)
+      : cams.findIndex(
+          (c) =>
+            c.deviceId ===
+            leaseRef.current?.stream.getVideoTracks()[0]?.getSettings().deviceId,
+        );
+    const next = cams[(Math.max(currentIdx, 0) + 1) % cams.length];
+    if (next) setDeviceId(next.deviceId);
+  }, [deviceId]);
 
-  const handleDone = useCallback(() => {
-    stopStream();
-    onDone();
-  }, [stopStream, onDone]);
+  const handleShutter = useCallback(() => {
+    const video = videoRef.current;
+    const lease = leaseRef.current;
+    if (!video || !lease || video.videoWidth === 0) return;
+    void capturePhotoFromVideo({
+      video,
+      lease,
+      framing: "full-frame",
+      quality: SCANNER_JPEG_QUALITY,
+      fileNamePrefix: "scan",
+      // WYSIWYG contract: canvas only — output dims must equal the stream's
+      // videoWidth×videoHeight, which native takePhoto() does not guarantee.
+      allowNativeTakePhoto: false,
+    })
+      .then((result) => {
+        onCapture(result.blob);
+        setFlash(true);
+        window.setTimeout(() => setFlash(false), 120);
+      })
+      .catch((err: unknown) => {
+        console.error("[pdf-scanner] shutter capture failed", err);
+      });
+  }, [onCapture]);
 
   const handleFallbackChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") onCapture(reader.result);
-      };
-      reader.readAsDataURL(file);
       e.target.value = "";
+      if (!file) return;
+      // A File IS a Blob — raw bytes pass through; the scan pipeline
+      // processes (crop/enhance) server-side.
+      onCapture(file);
     },
     [onCapture],
   );
@@ -111,12 +191,7 @@ function CaptureViewInner({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        <CameraView
-          ref={cameraRef}
-          variant="fill"
-          errorMessages={undefined}
-          videoReadyCallback={() => null}
-        />
+        <CameraPreview stream={stream} framing="full-frame" videoRef={videoRef} />
         {flash && <div className="absolute inset-0 z-20 bg-white/70" />}
         {cameraBlocked && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80 px-8 text-center">
@@ -197,7 +272,7 @@ function CaptureViewInner({
             <Button
               size="sm"
               className="h-11 whitespace-nowrap rounded-full px-5"
-              onClick={handleDone}
+              onClick={onDone}
             >
               Done
             </Button>

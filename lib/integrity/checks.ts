@@ -335,9 +335,10 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
     description:
       "Live users.user_preferences rows whose JSONB blob still holds a legacy " +
       "value that a shape migration retired — the hardcoded defaultModel seed " +
-      "constants (now null = platform default) or the superseded " +
-      "videoConference.defaultMicrophone/defaultSpeaker fields (now canonical " +
-      "in audioDevices). The FE strips these on load with a loud console.warn, " +
+      "constants (now null = platform default), the superseded " +
+      "videoConference.defaultMicrophone/defaultSpeaker/defaultCamera fields, " +
+      "or the retired audioDevices module (both now canonical in " +
+      "mediaDevices). The FE lifts/strips these on load with a loud console.warn, " +
       "so a non-zero count is what floods affected users' consoles. The WHERE " +
       "clause is the SAME normalizer the healer uses, so this can never " +
       "disagree with the fix. Should sit at zero: the weekly " +
@@ -369,7 +370,11 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
           case when (up.preferences #> '{videoConference}') ? 'defaultMicrophone'
                then 'videoConference.defaultMicrophone' end,
           case when (up.preferences #> '{videoConference}') ? 'defaultSpeaker'
-               then 'videoConference.defaultSpeaker' end
+               then 'videoConference.defaultSpeaker' end,
+          case when (up.preferences #> '{videoConference}') ? 'defaultCamera'
+               then 'videoConference.defaultCamera' end,
+          case when up.preferences ? 'audioDevices'
+               then 'audioDevices (superseded by mediaDevices)' end
         ], null), ', ') as drifted_fields,
         count(*) over() as _total
       from users.user_preferences up

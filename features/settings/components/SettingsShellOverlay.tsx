@@ -95,6 +95,9 @@ const LEGACY_TAB_MAP: Record<string, string> = {
   flashcard: "learning.flashcards",
   playground: "ai", // recipes are dead; send to category
   agentContext: "ai.assistants",
+  // Unified device tab (media-capture Phase 4) — legacy short ids route here.
+  audioDevices: "devices",
+  mediaDevices: "devices",
 };
 
 function mapLegacyTab(legacy: string | undefined): string | undefined {
