@@ -56,7 +56,7 @@ import {
 /**
  * Index a flat list of thread assignment rows into the per-tile signals the
  * roster needs. Replaces the three deleted `list*ForTiles` link-table readers —
- * the polymorphic ctx_war_room_assignments table is now the single source. The
+ * the polymorphic `platform.associations` edges are now the single source. The
  * tile id is the assignment's `container_id` (container_type='thread').
  */
 export interface ThreadAssignmentIndex {

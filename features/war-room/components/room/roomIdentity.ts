@@ -6,7 +6,7 @@
 // the single source of truth for both the editor (RoomIdentityButton) and the
 // branding consumers (SessionCard, WarRoomShell header).
 //
-// Two stored primitives — BOTH plain strings on ctx_war_room_sessions:
+// Two stored primitives — BOTH plain strings on workspace.war_rooms:
 //   • session.icon  — one of ROOM_ICON_NAMES (a Lucide icon name)
 //   • session.color — one of ROOM_COLOR_TOKENS (a semantic-token id)
 //

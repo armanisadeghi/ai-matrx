@@ -4,7 +4,7 @@
 //
 // Compact room IDENTITY editor in the room header. Edits a room's title,
 // description, icon, and color in one popover — the setters that activate the
-// dormant ctx_war_room_sessions.{icon,color,description} columns. Saves through
+// dormant workspace.war_rooms.{icon,color,description} columns. Saves through
 // the optimistic updateRoomIdentity thunk (failures route to reportWarRoomError).
 //
 // Title commits live via the shared EditableTitle in the header (this editor's

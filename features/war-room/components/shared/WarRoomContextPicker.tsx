@@ -6,7 +6,7 @@
 // EntityTargetPicker (organization) + EntityScopeTagger (controlled scopes).
 // Reports the selection via onChange and writes NOTHING to appContextSlice
 // (global active context) or ctx_scope_assignments — the caller persists the
-// value onto its own ctx_war_room_* record. See features/scopes/FEATURE.md.
+// value onto its own workspace.war_rooms / workspace.threads record. See features/scopes/FEATURE.md.
 
 import { EntityTargetPicker } from "@/features/scopes/components/entity-context/EntityTargetPicker";
 import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
