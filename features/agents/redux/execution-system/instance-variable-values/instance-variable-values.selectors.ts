@@ -126,6 +126,18 @@ export const selectVariablesForRequest = (conversationId: string) =>
           out[def.name] = null;
         }
       }
+      // Explicitly-set values are NEVER silently dropped. userValues only
+      // ever holds deliberate sets (variable panel edits, or caller-injected
+      // `runtime.variables` at launch). When the instance's definitions
+      // haven't hydrated (stale/minimal agent record → empty definitions),
+      // the loop above misses them and the server silently falls back to the
+      // agent's defaults — the injected value vanishes with no error (first
+      // hit: KindAgentActionButton's video_prompt_options launch). Sending
+      // them unconditionally is safe: the server ignores names the agent
+      // doesn't declare.
+      for (const [name, value] of Object.entries(userValues)) {
+        if (!(name in out)) out[name] = value;
+      }
       return Object.keys(out).length === 0 ? EMPTY_RECORD : out;
     },
   );

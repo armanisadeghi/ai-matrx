@@ -286,6 +286,39 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
   };
   const extraItemToNodes = (item: ContextMenuExtraItem): MobileNode[] => {
     if (item.kind === "separator") return [{ kind: "separator", id: item.id }];
+    if (item.kind === "checkbox") {
+      // The sheet closes after a toggle (no stay-open checkbox UX on mobile);
+      // the check state is conveyed via the sublabel.
+      return [
+        {
+          kind: "action",
+          id: item.id,
+          label: item.label,
+          icon: (item.icon as Icon) ?? FileText,
+          disabled: item.disabled,
+          hint: item.hint,
+          sublabel: item.description ?? (item.checked ? "On" : "Off"),
+          onSelect: close(() => item.onCheckedChange(!item.checked)),
+        },
+      ];
+    }
+    if (item.kind === "link") {
+      return [
+        {
+          kind: "action",
+          id: item.id,
+          label: item.label,
+          icon: (item.icon as Icon) ?? FileText,
+          disabled: item.disabled,
+          hint: item.hint,
+          sublabel: item.description,
+          onSelect: close(() => {
+            if (item.target === "_blank") window.open(item.href, "_blank");
+            else window.location.assign(item.href);
+          }),
+        },
+      ];
+    }
     if (item.kind === "submenu") {
       return [
         {

@@ -74,6 +74,32 @@ export type ContextMenuExtraItem =
       disabled?: boolean;
       children: ContextMenuExtraItem[];
     }
+  | {
+      /** Toggleable item. Desktop stays OPEN on toggle (checkbox semantics);
+       *  the mobile sheet closes after toggling. */
+      kind: "checkbox";
+      id: string;
+      label: string;
+      icon?: LucideIcon;
+      description?: string;
+      checked: boolean;
+      onCheckedChange: (next: boolean) => void;
+      disabled?: boolean;
+      hint?: string;
+    }
+  | {
+      /** Real anchor navigation — renders an <a> on desktop so middle-click /
+       *  cmd-click / a11y semantics hold. */
+      kind: "link";
+      id: string;
+      label: string;
+      icon?: LucideIcon;
+      description?: string;
+      href: string;
+      target?: string;
+      disabled?: boolean;
+      hint?: string;
+    }
   | { kind: "separator"; id: string };
 
 /**

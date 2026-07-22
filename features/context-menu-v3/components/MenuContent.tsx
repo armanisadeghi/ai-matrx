@@ -22,6 +22,7 @@
 
 import React from "react";
 import {
+  ContextMenuCheckboxItem,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuSub,
@@ -30,6 +31,7 @@ import {
   ContextMenuLabel,
 } from "@/components/ui/context-menu/context-menu";
 import {
+  DropdownMenuCheckboxItem,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
@@ -134,6 +136,8 @@ export default function MenuContent(props: MenuContentProps) {
 
   // ── Variant-aware menu primitives ────────────────────────────────────────
   const Item = variant === "context" ? ContextMenuItem : DropdownMenuItem;
+  const CheckboxItem =
+    variant === "context" ? ContextMenuCheckboxItem : DropdownMenuCheckboxItem;
   const Separator =
     variant === "context" ? ContextMenuSeparator : DropdownMenuSeparator;
   const Sub = variant === "context" ? ContextMenuSub : DropdownMenuSub;
@@ -146,6 +150,63 @@ export default function MenuContent(props: MenuContentProps) {
   // ── Render helpers ────────────────────────────────────────────────────────
   const renderExtraItem = (item: ContextMenuExtraItem): React.ReactElement => {
     if (item.kind === "separator") return <Separator key={item.id} />;
+    if (item.kind === "checkbox") {
+      return (
+        <CheckboxItem
+          key={item.id}
+          checked={item.checked}
+          disabled={item.disabled}
+          // preventDefault keeps the menu OPEN across toggles (checkbox UX).
+          onSelect={(e: Event) => e.preventDefault()}
+          onCheckedChange={(next: boolean) => item.onCheckedChange(next)}
+        >
+          {item.icon && <item.icon className="h-4 w-4 mr-2" />}
+          {item.description ? (
+            <div className="flex flex-col">
+              <span>{item.label}</span>
+              <span className="text-xs text-muted-foreground">
+                {item.description}
+              </span>
+            </div>
+          ) : (
+            item.label
+          )}
+          {item.hint && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {item.hint}
+            </span>
+          )}
+        </CheckboxItem>
+      );
+    }
+    if (item.kind === "link") {
+      return (
+        <Item key={item.id} asChild disabled={item.disabled}>
+          <a
+            href={item.href}
+            target={item.target}
+            rel={item.target === "_blank" ? "noopener noreferrer" : undefined}
+          >
+            {item.icon && <item.icon className="h-4 w-4 mr-2" />}
+            {item.description ? (
+              <div className="flex flex-col">
+                <span>{item.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {item.description}
+                </span>
+              </div>
+            ) : (
+              item.label
+            )}
+            {item.hint && (
+              <span className="ml-auto text-xs text-muted-foreground">
+                {item.hint}
+              </span>
+            )}
+          </a>
+        </Item>
+      );
+    }
     if (item.kind === "submenu") {
       return (
         <Sub key={item.id}>
