@@ -1,7 +1,8 @@
 // features/kg-graph/components/KgGraphCanvas.tsx
 //
-// The single KG canvas surface — serves BOTH `/knowledge-graph` (mode="org")
-// and `/scopes/[scopeId]/graph` (mode="scope"). It owns the data fetch and the
+// The single KG canvas surface — serves `/knowledge-graph` in mode="org" or
+// mode="scope" (the legacy `/scopes/[scopeId]/graph` route is deleted; scope
+// graphs open via `/knowledge-graph?scope=…`). It owns the data fetch and the
 // chrome around the graph: toolbar (search, layout, colour/size encoding, kind
 // filter, reload), legend, empty/error/loading states, and the side panel. The
 // actual cytoscape render surface is loaded via next/dynamic({ ssr:false })
