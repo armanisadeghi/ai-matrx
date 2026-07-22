@@ -51,8 +51,8 @@ const VISIBLE_FIELDS: FieldSpec[] = [
     max: 20,
   },
   {
-    // Topic-wide synthesis cap (renamed from "project synthesis" — the DB
-    // column is still max_project_syntheses until Phase 4; the service maps).
+    // Topic-wide synthesis cap (renamed from the legacy "project synthesis"
+    // vocabulary; DB column is max_topic_syntheses since the Phase-4 rename).
     key: "max_topic_syntheses",
     label: "Topic synthesis",
     hint: "Cap on full topic-wide reports. Almost always 1.",
