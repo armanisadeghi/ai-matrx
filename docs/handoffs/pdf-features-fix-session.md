@@ -1,5 +1,5 @@
 ---
-status: blocked
+status: active
 updated: 2026-07-22
 repos: [matrx-frontend]
 vision: [features/pdf/FEATURE.md]
@@ -21,6 +21,13 @@ This doc is the PREP for that session — the agent running it works interactive
 - Archaeology (2026-07-21): the annotation build was abandoned mid-flight on 2026-05-11 — the region menu + promote-to-entity + regions/extract had NO callers until now; region resize/move after creation still has NO UI (`useAnnotations.update` exists, nothing calls it with a bbox); `PdfAnnotationLayer`'s `onRegionContextMenu` prop is now intentionally unused (v3 delegation via `data-region-id` instead).
 - Docs: `features/pdf/FEATURE.md` (canonical parts table; its "Known gaps" section predates the region menu). There is NO features/file-analysis/FEATURE.md — creating one during the session would be in-scope.
 
+## Session state (2026-07-22, in flight)
+
+- Demo-vs-real decision: `/demos/pdf-processing/components` mounts the IDENTICAL production components (PdfEditTab, AnalysisTab, PdfPreview — verified imports) so it's a valid isolation bench; StudioShell is NOT in the bench, so Studio testing happens on the real route. Primary surface = real UI, bench = fallback.
+- Test file: Bio-Chapter-9.pdf `7e59da76-0548-4f4f-b645-10bb391d48fc` (admin@admin.com, 4MB multi-page). More PDF ids obtainable via `files.files` join `auth.users` on `created_by`.
+- Backend: prod aidream healthy (200); NEXT_PUBLIC_BACKEND_URL → server.app.matrxserver.com.
+- Dev-env hazards hit: routes take 3-9 min cold compile on this machine; the dev server silently died twice under compile load — check `curl localhost:3001` before trusting a stuck browser pane.
+
 ## Remaining work (the session's agenda — verify each WITH Arman, fix live)
 
 1. Ask Arman to demonstrate each broken flow on the Studio, in his order — capture the exact failure (console, network, server response) per feature before fixing. Candidates from his "none working" report: draw-to-annotate, label picker, extract-at-bbox, region right-click actions (extract / promote / redact / delete), annotations panel, thumbnails/page jumps, redact flow, entities panel.
@@ -31,3 +38,4 @@ This doc is the PREP for that session — the agent running it works interactive
 ## Done
 
 - Region right-click menu built on v3 with the 4 backend actions (2026-07-21) — unverified by Arman; treat as suspect until the session proves it.
+- `/files/all` infinite redirect loop (URL grew `/files/all/all/all/…`, one segment ~1s, full reload each — files list unusable in dev) root-caused to the unguarded legacy catch-all `app/(core)/files/[...path]/page.tsx` being matched for URLs owned by static siblings while routes compile; self-heal guard added there (strips `all` prefixes, routes static-section heads back to their canonical URL) — verify in browser + confirm whether prod ever hit it.

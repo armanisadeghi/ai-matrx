@@ -14,14 +14,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import { formatFileSize } from "@/features/files/utils/format";
 import { formatRelativeTime } from "@/utils/datetime";
 import { FilesystemPropertiesDialog } from "./FilesystemPropertiesDialog";
@@ -414,10 +411,105 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   const indentStyle = { paddingLeft: 8 + depth * 12 };
   const childIndentStyle = { paddingLeft: 8 + (depth + 1) * 12 };
 
+  const menuItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "fs-properties",
+      label: "Properties…",
+      icon: Info,
+      onSelect: () => setPropertiesOpen(true),
+    },
+    { kind: "separator", id: "fs-sep-1" },
+  ];
+  if (isDir) {
+    menuItems.push(
+      {
+        kind: "item",
+        id: "fs-new-file",
+        label: "New file",
+        icon: FilePlus,
+        onSelect: () => startCreate("file"),
+      },
+      {
+        kind: "item",
+        id: "fs-new-folder",
+        label: "New folder",
+        icon: FolderPlus,
+        onSelect: () => startCreate("directory"),
+      },
+    );
+  } else {
+    menuItems.push({
+      kind: "item",
+      id: "fs-download",
+      label: "Download",
+      icon: Download,
+      onSelect: () => void handleDownload(),
+    });
+  }
+  menuItems.push(
+    { kind: "separator", id: "fs-sep-2" },
+    {
+      kind: "item",
+      id: "fs-rename",
+      label: "Rename",
+      icon: Pencil,
+      hint: "F2",
+      onSelect: startRename,
+    },
+    {
+      kind: "item",
+      id: "fs-delete",
+      label: "Delete",
+      icon: Trash2,
+      destructive: true,
+      hint: "⌫",
+      onSelect: () => setConfirmingDelete(true),
+    },
+    { kind: "separator", id: "fs-sep-3" },
+    {
+      kind: "item",
+      id: "fs-copy-path",
+      label: "Copy path",
+      icon: CopyIcon,
+      onSelect: handleCopyPath,
+    },
+    { kind: "separator", id: "fs-sep-4" },
+    {
+      kind: "item",
+      id: "fs-refresh",
+      label: "Refresh",
+      icon: RefreshCw,
+      onSelect: handleRefresh,
+    },
+    { kind: "separator", id: "fs-sep-5" },
+  );
+  // Fixed-height metadata footer — always MENU_SUMMARY_SLOTS rows so async
+  // property enrichment never shifts action items above. Disabled items
+  // stand in for the old ContextMenuLabel rows (informational, inert).
+  menuSummary.forEach((line, i) => {
+    menuItems.push({
+      kind: "item",
+      id: `fs-summary-${i}`,
+      label: line || " ",
+      disabled: true,
+      onSelect: () => {},
+    });
+  });
+
+  const extraSections: ContextMenuExtraSection[] = [
+    { id: "fs-node-actions", anchor: "after-clipboard", items: menuItems },
+  ];
+
   return (
     <div className="select-none">
-      <ContextMenu onOpenChange={handleContextMenuOpenChange}>
-        <ContextMenuTrigger asChild>
+      <NonEditableContextMenu
+        sourceFeature="code-editor"
+        contextData={{ content: node.name }}
+        extraSections={extraSections}
+        enableFloatingIcon={false}
+        onMenuOpenChange={handleContextMenuOpenChange}
+      >
           <div
             role="treeitem"
             aria-expanded={isDir ? expanded : undefined}
@@ -479,61 +571,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
               <span className="truncate">{node.name}</span>
             )}
           </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent className="w-52">
-          <ContextMenuItem onSelect={() => setPropertiesOpen(true)}>
-            <Info className="mr-2 h-3.5 w-3.5" /> Properties…
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          {isDir ? (
-            <>
-              <ContextMenuItem onSelect={() => startCreate("file")}>
-                <FilePlus className="mr-2 h-3.5 w-3.5" /> New file
-              </ContextMenuItem>
-              <ContextMenuItem onSelect={() => startCreate("directory")}>
-                <FolderPlus className="mr-2 h-3.5 w-3.5" /> New folder
-              </ContextMenuItem>
-            </>
-          ) : (
-            <ContextMenuItem onSelect={() => void handleDownload()}>
-              <Download className="mr-2 h-3.5 w-3.5" /> Download
-            </ContextMenuItem>
-          )}
-          <ContextMenuSeparator />
-          <ContextMenuItem onSelect={startRename}>
-            <Pencil className="mr-2 h-3.5 w-3.5" /> Rename
-            <span className="ml-auto text-[10px] text-muted-foreground">
-              F2
-            </span>
-          </ContextMenuItem>
-          <ContextMenuItem
-            onSelect={() => setConfirmingDelete(true)}
-            className="text-destructive focus:text-destructive"
-          >
-            <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
-            <span className="ml-auto text-[10px] text-muted-foreground">⌫</span>
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onSelect={handleCopyPath}>
-            <CopyIcon className="mr-2 h-3.5 w-3.5" /> Copy path
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onSelect={handleRefresh}>
-            <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          {/* Fixed-height metadata footer — always MENU_SUMMARY_SLOTS rows so
-              async property enrichment never shifts action items above. */}
-          {menuSummary.map((line, i) => (
-            <ContextMenuLabel
-              key={i}
-              className="h-5 py-0 text-[11px] font-normal leading-5 text-muted-foreground"
-            >
-              {line || "\u00A0"}
-            </ContextMenuLabel>
-          ))}
-        </ContextMenuContent>
-      </ContextMenu>
+      </NonEditableContextMenu>
 
       {/* Inline "new file / new folder" input — only renders when this node
        *  is a directory in `pendingCreate` state. The input lives at the top

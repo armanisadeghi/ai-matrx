@@ -18,13 +18,11 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,55 +71,6 @@ const NODE_ICONS: Record<TreeNodeType, LucideIcon> = {
 
 const INDENT_PER_DEPTH = 14;
 
-interface NodeMenuItemsProps {
-  node: TreeNodeData;
-  onEdit?: (node: TreeNodeData) => void;
-  onDelete?: (node: TreeNodeData) => void;
-  onAddItem?: (node: TreeNodeData) => void;
-  onInfo?: (node: TreeNodeData) => void;
-}
-
-function NodeMenuItems({
-  node,
-  onEdit,
-  onDelete,
-  onAddItem,
-  onInfo,
-}: NodeMenuItemsProps) {
-  return (
-    <>
-      {onInfo && (
-        <ContextMenuItem onClick={() => onInfo(node)}>
-          <Info className="h-3.5 w-3.5 mr-2" />
-          View details
-        </ContextMenuItem>
-      )}
-      {(node.type === "list" || node.type === "group") && onAddItem && (
-        <ContextMenuItem onClick={() => onAddItem(node)}>
-          <Plus className="h-3.5 w-3.5 mr-2" />
-          Add item
-        </ContextMenuItem>
-      )}
-      {onEdit && (
-        <ContextMenuItem onClick={() => onEdit(node)}>
-          <Pencil className="h-3.5 w-3.5 mr-2" />
-          Edit
-        </ContextMenuItem>
-      )}
-      {(onEdit || onAddItem) && onDelete && <ContextMenuSeparator />}
-      {onDelete && (
-        <ContextMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={() => onDelete(node)}
-        >
-          <Trash2 className="h-3.5 w-3.5 mr-2" />
-          Delete
-        </ContextMenuItem>
-      )}
-    </>
-  );
-}
-
 export function TreeNode({
   node,
   depth,
@@ -164,9 +113,59 @@ export function TreeNode({
 
   const paddingLeft = 6 + depth * INDENT_PER_DEPTH;
 
+  const menuItems: ContextMenuExtraItem[] = [];
+  if (onInfo) {
+    menuItems.push({
+      kind: "item",
+      id: "list-node-info",
+      label: "View details",
+      icon: Info,
+      onSelect: () => onInfo(node),
+    });
+  }
+  if ((node.type === "list" || node.type === "group") && onAddItem) {
+    menuItems.push({
+      kind: "item",
+      id: "list-node-add-item",
+      label: "Add item",
+      icon: Plus,
+      onSelect: () => onAddItem(node),
+    });
+  }
+  if (onEdit) {
+    menuItems.push({
+      kind: "item",
+      id: "list-node-edit",
+      label: "Edit",
+      icon: Pencil,
+      onSelect: () => onEdit(node),
+    });
+  }
+  if (onDelete) {
+    if (onEdit || onAddItem) {
+      menuItems.push({ kind: "separator", id: "list-node-sep-delete" });
+    }
+    menuItems.push({
+      kind: "item",
+      id: "list-node-delete",
+      label: "Delete",
+      icon: Trash2,
+      destructive: true,
+      onSelect: () => onDelete(node),
+    });
+  }
+  const extraSections: ContextMenuExtraSection[] =
+    menuItems.length > 0
+      ? [{ id: "list-node-actions", anchor: "after-clipboard", items: menuItems }]
+      : [];
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
+    <NonEditableContextMenu
+      sourceFeature="user-lists"
+      contextData={{ content: node.label }}
+      extraSections={extraSections}
+      enableFloatingIcon={false}
+    >
         <div
           className={cn(
             "group relative flex items-center gap-1 rounded-md transition-colors cursor-pointer select-none",
@@ -294,17 +293,6 @@ export function TreeNode({
             </div>
           )}
         </div>
-      </ContextMenuTrigger>
-
-      <ContextMenuContent className="w-44">
-        <NodeMenuItems
-          node={node}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onAddItem={onAddItem}
-          onInfo={onInfo}
-        />
-      </ContextMenuContent>
-    </ContextMenu>
+    </NonEditableContextMenu>
   );
 }

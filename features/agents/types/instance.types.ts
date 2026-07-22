@@ -161,6 +161,10 @@ export type SourceFeature =
   /** RichDocument content right-click (markdown/stream documents). */
   | "rich-document"
 
+  // ── User lists ───────────────────────────────────────────────────────────
+  /** User Lists tree + rows (`features/user-lists`, `/lists`). */
+  | "user-lists"
+
   // ── Documents & conversation scratch surfaces ────────────────────────────
   | "documents"
   /** The per-conversation collaborative working document (agent reads + writes). */
@@ -312,6 +316,7 @@ export const SOURCE_FEATURES = [
   "transcription-cleanup",
   "item-context-menu",
   "rich-document",
+  "user-lists",
   "dictionary",
   "tasks",
   "task-create",

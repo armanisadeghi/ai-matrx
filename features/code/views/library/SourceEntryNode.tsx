@@ -4,13 +4,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ChevronRight, Pencil, Copy as CopyIcon, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import { FileIcon } from "../../styles/file-icon";
 import {
   ACTIVE_ROW,
@@ -142,10 +140,46 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
       .catch(() => toast.error("Clipboard blocked"));
   }, [adapter.tabIdPrefix, entry.rowId]);
 
+  const menuItems: ContextMenuExtraItem[] = [];
+  if (onRename) {
+    menuItems.push({
+      kind: "item",
+      id: "source-entry-rename",
+      label: "Rename",
+      icon: Pencil,
+      hint: "F2",
+      onSelect: startRename,
+    });
+  }
+  menuItems.push(
+    {
+      kind: "item",
+      id: "source-entry-copy-tab-id",
+      label: "Copy tab id",
+      icon: CopyIcon,
+      onSelect: handleCopyPath,
+    },
+    { kind: "separator", id: "source-entry-sep-1" },
+    {
+      kind: "item",
+      id: "source-entry-refresh",
+      label: "Refresh source",
+      icon: RefreshCw,
+      onSelect: () => void onRefresh(),
+    },
+  );
+  const extraSections: ContextMenuExtraSection[] = [
+    { id: "source-entry-actions", anchor: "after-clipboard", items: menuItems },
+  ];
+
   return (
     <div className="select-none">
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
+      <NonEditableContextMenu
+        sourceFeature="code-editor"
+        contextData={{ content: entry.name }}
+        extraSections={extraSections}
+        enableFloatingIcon={false}
+      >
           <div
             role="treeitem"
             aria-expanded={adapter.multiField ? expanded : undefined}
@@ -217,23 +251,7 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
               </span>
             )}
           </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent className="w-48">
-          {onRename && (
-            <ContextMenuItem onSelect={startRename}>
-              <Pencil className="mr-2 h-3.5 w-3.5" /> Rename
-              <span className="ml-auto text-[10px] text-muted-foreground">F2</span>
-            </ContextMenuItem>
-          )}
-          <ContextMenuItem onSelect={handleCopyPath}>
-            <CopyIcon className="mr-2 h-3.5 w-3.5" /> Copy tab id
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onSelect={() => void onRefresh()}>
-            <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh source
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+      </NonEditableContextMenu>
 
       {adapter.multiField && expanded && fields && fields.length > 0 && (
         <div role="group">
