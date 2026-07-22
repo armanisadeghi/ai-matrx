@@ -4,7 +4,9 @@
 // the scopes; columns are the type's context items (capped at
 // MAX_ITEM_COLUMNS, sorted by sort_order) with each scope's current cell
 // value summarized via the canonical `summarizeContextCell`. Row click →
-// the scope's page; the type header links to the scope-type page. Data:
+// the CANONICAL org-scoped scope page (/organizations/{org}/scopes/{type}/{scope}
+// — the legacy /scopes/{id} detail route is deleted); the type header links
+// to the scope-type page. Data:
 // tree via `useScopeTree`, columns/cells batch-loaded via
 // `useScopeTypeTables` (two round-trips total). Never writes global
 // context (Surface A invariant — everything here navigates).
@@ -282,13 +284,13 @@ function ScopeTypeTable({
           >
             <thead>
               <tr className="border-b border-border/50 text-left">
-                <th className="px-3 sm:px-4 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                <th className="px-3 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap">
                   {type.label_singular}
                 </th>
                 {columns.map((item) => (
                   <th
                     key={item.id}
-                    className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap max-w-[16rem] truncate"
+                    className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap max-w-[16rem] truncate"
                     title={item.description || item.display_name}
                   >
                     {item.display_name}
@@ -304,32 +306,28 @@ function ScopeTypeTable({
                   <tr
                     key={scope.id}
                     onClick={() =>
-                      startTransition(() => router.push(`/scopes/${scope.id}`))
+                      startTransition(() =>
+                        router.push(`${typeHref}/${scope.id}`),
+                      )
                     }
                     className={cn(
                       "border-b border-border/30 last:border-b-0 cursor-pointer transition-colors hover:bg-accent/60",
                       isActive && "bg-primary/5",
                     )}
+                    style={
+                      isActive
+                        ? { boxShadow: `inset 2px 0 0 ${type.color}` }
+                        : undefined
+                    }
                   >
                     <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="h-[7px] w-[7px] rounded-full shrink-0"
-                          style={{
-                            backgroundColor: isActive ? type.color : undefined,
-                            border: isActive
-                              ? undefined
-                              : `1.5px solid color-mix(in srgb, ${type.color} 55%, transparent)`,
-                          }}
-                        />
-                        <span
-                          className={cn(
-                            "font-medium",
-                            isActive && "font-semibold",
-                          )}
-                        >
-                          {scope.name}
-                        </span>
+                      <span
+                        className={cn(
+                          "font-medium",
+                          isActive && "font-semibold",
+                        )}
+                      >
+                        {scope.name}
                       </span>
                     </td>
                     {columns.map((item) => {

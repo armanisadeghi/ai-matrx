@@ -15,8 +15,8 @@ export default async function ScopeGraphPage({ params }: ScopeGraphPageProps) {
         left={
           <>
             <ChevronLeftTapButton
-              href={`/scopes/${scopeId}`}
-              ariaLabel="Back to scope"
+              href="/scopes"
+              ariaLabel="Back to scopes"
             />
             <span className="truncate max-w-[55vw] sm:max-w-[220px] text-sm font-medium text-foreground px-1.5">
               Scope graph

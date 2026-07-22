@@ -3,8 +3,8 @@
 // Data hook for the /scopes hub tables: given the scope types on screen,
 // batch-load every type's active context-item catalog (the table columns)
 // and every scope's CURRENT cell values (the table cells) in two
-// round-trips total. View-scoped cache (same pattern as ScopeDetailView's
-// item-catalog fetch); the per-scope Redux cache stays the editor path.
+// round-trips total. View-scoped cache; the per-scope Redux cache
+// (`useContextValues`) stays the editor path.
 
 "use client";
 
