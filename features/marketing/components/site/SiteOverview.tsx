@@ -297,6 +297,7 @@ export function SiteOverview() {
       <div className="grid w-full gap-3">
         <SiteHero
           site={site}
+          sitePath={sitePath}
           heroFileId={hero.data?.file_id ?? null}
           heroLoading={hero.isLoading || initBusy}
           onRecapture={() => void runInitialize()}
@@ -433,65 +434,6 @@ export function SiteOverview() {
             ))}
           </ul>
         </section>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          <SectionCard title="Discovery inbox">
-            <div className="flex flex-wrap items-center gap-3 p-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <Inbox className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">
-                  {pendingDiscovered.data
-                    ? `${pendingDiscovered.data.toLocaleString()} items awaiting review`
-                    : "Nothing awaiting review"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Confirm discovered logos, images, contact details, and social
-                  profiles as brand truth.
-                </p>
-              </div>
-              <Button asChild size="sm" variant="outline" className="h-8">
-                <Link href={`${sitePath}/discovery`}>Review</Link>
-              </Button>
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Quick work">
-            <div className="grid gap-2 p-3">
-              <Button
-                asChild
-                variant="outline"
-                className="h-9 justify-start gap-2"
-              >
-                <Link href={`${sitePath}/pages`}>
-                  <FileText className="h-4 w-4" />
-                  Review canonical pages
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="h-9 justify-start gap-2"
-              >
-                <Link href={`${sitePath}/crawls/new`}>
-                  <Play className="h-4 w-4" />
-                  Start a crawl
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="h-9 justify-start gap-2"
-              >
-                <Link href={`${sitePath}/coverage`}>
-                  <ScanSearch className="h-4 w-4" />
-                  Coverage matrix
-                </Link>
-              </Button>
-            </div>
-          </SectionCard>
-        </div>
       </div>
     </main>
   );
@@ -499,6 +441,7 @@ export function SiteOverview() {
 
 function SiteHero({
   site,
+  sitePath,
   heroFileId,
   heroLoading,
   onRecapture,
@@ -508,6 +451,7 @@ function SiteHero({
   pendingDiscovered,
 }: {
   site: MarketingSite;
+  sitePath: string;
   heroFileId: string | null;
   heroLoading: boolean;
   onRecapture: () => void;
@@ -689,11 +633,76 @@ function SiteHero({
                     : "No sessions yet"}
                 </span>
               </div>
+
+              <ReviewInboxCard
+                sitePath={sitePath}
+                pendingDiscovered={pendingDiscovered}
+              />
+              <QuickWorkCard sitePath={sitePath} />
             </div>
           )}
         </div>
       </div>
     </section>
+  );
+}
+
+function ReviewInboxCard({
+  sitePath,
+  pendingDiscovered,
+}: {
+  sitePath: string;
+  pendingDiscovered: number;
+}) {
+  return (
+    <SectionCard title="Review inbox">
+      <div className="flex flex-wrap items-center gap-3 p-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Inbox className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">
+            {pendingDiscovered
+              ? `${pendingDiscovered.toLocaleString()} items awaiting review`
+              : "Nothing awaiting review"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Confirm discovered logos, images, contact details, and social
+            profiles as brand truth.
+          </p>
+        </div>
+        <Button asChild size="sm" variant="outline" className="h-8">
+          <Link href={`${sitePath}/discovery`}>Review</Link>
+        </Button>
+      </div>
+    </SectionCard>
+  );
+}
+
+function QuickWorkCard({ sitePath }: { sitePath: string }) {
+  return (
+    <SectionCard title="Quick work">
+      <div className="grid gap-2 p-3">
+        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+          <Link href={`${sitePath}/pages`}>
+            <FileText className="h-4 w-4" />
+            Review canonical pages
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+          <Link href={`${sitePath}/crawls/new`}>
+            <Play className="h-4 w-4" />
+            Start a crawl
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+          <Link href={`${sitePath}/coverage`}>
+            <ScanSearch className="h-4 w-4" />
+            Coverage matrix
+          </Link>
+        </Button>
+      </div>
+    </SectionCard>
   );
 }
 
