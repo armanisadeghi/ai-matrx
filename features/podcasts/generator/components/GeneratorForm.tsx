@@ -68,6 +68,12 @@ import { Badge } from "@/components/ui/badge";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { cn } from "@/lib/utils";
 import { ShowPicker } from "./ShowPicker";
+import {
+  DEFAULT_FEATURE_IMAGE_STYLE,
+  FEATURE_IMAGE_STYLES,
+  toFeatureImageStyle,
+  type FeatureImageStyleValue,
+} from "../featureImageStyles";
 import { SourceResolverPanel } from "./SourceResolverPanel";
 import {
   SOURCE_OPTIONS,
@@ -227,6 +233,8 @@ export function GeneratorForm({
   /** Per-run image/video caps — default to the full set; the user dials them
    *  down to One or Skip for fast, cheap test runs. */
   const [imageMode, setImageMode] = useState<MediaLimitMode>("all");
+  const [featureImageStyle, setFeatureImageStyle] =
+    useState<FeatureImageStyleValue>(DEFAULT_FEATURE_IMAGE_STYLE);
   const [videoMode, setVideoMode] = useState<MediaLimitMode>("all");
   const [prepMessage, setPrepMessage] = useState(() =>
     [
@@ -297,6 +305,11 @@ export function GeneratorForm({
     if (maxImages !== undefined) body.max_images = maxImages;
     const maxVideos = mediaModeToCap(videoMode);
     if (maxVideos !== undefined) body.max_videos = maxVideos;
+    // Feature image style. Sent only when it differs from the default so the
+    // server stays the single owner of that default.
+    if (featureImageStyle !== DEFAULT_FEATURE_IMAGE_STYLE) {
+      body.feature_image_style = featureImageStyle;
+    }
     // Attach the resolved dictionary so script + audio agents spell/pronounce
     // terms correctly: `entries` is the persistent (global+user rollup) set,
     // `custom_entries` is the per-task additions (override persistent). Send
@@ -734,6 +747,46 @@ export function GeneratorForm({
               rows={2}
               showCopyButton={false}
             />
+          </div>
+
+          {/* Feature image — the sixth image, drawn from the finished
+              transcript rather than the up-front metadata blurbs. Sits with the
+              creative controls, NOT with the media limits below (those are
+              explicitly framed as test/cost controls). */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Feature image style
+            </Label>
+            <Select
+              value={featureImageStyle}
+              onValueChange={(v) => setFeatureImageStyle(toFeatureImageStyle(v))}
+            >
+              <SelectTrigger className="w-full sm:w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FEATURE_IMAGE_STYLES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              {imageMode === "skip" ? (
+                // The server gates the feature image on the image budget, so
+                // "Skip" genuinely skips it — say so rather than promising an
+                // image that will never be rendered.
+                <>Skipped while Images below is set to Skip.</>
+              ) : (
+                <>
+                  {FEATURE_IMAGE_STYLES.find(
+                    (s) => s.value === featureImageStyle,
+                  )?.blurb ?? ""}{" "}
+                  An extra image rendered from the full transcript.
+                </>
+              )}
+            </p>
           </div>
 
           {/* Test mode — hidden in Advanced (defaults ON for fast, cheap runs). */}

@@ -95,6 +95,21 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-07-22 — **Feature image style picker (the transcript-derived sixth image).**
+  aidream now renders an extra image per run from the FULL transcript via a
+  two-step agent chain (prompt generator → Matrx Image Ultra / gpt-image-2). The
+  frontend contributes only the style: `features/podcasts/generator/featureImageStyles.ts`
+  owns the 11 wire tokens (default `infographic`; `auto` = "let the agent decide")
+  and `GeneratorForm` exposes them under Advanced options, sending the style only
+  when it differs from the default so the SERVER stays the single owner of that
+  default. **The tokens must stay character-identical to aidream's
+  `FeatureImageStyle` StrEnum** — an unknown token degrades to the default
+  server-side (loudly) rather than failing a run, so drift downgrades silently;
+  keep them in sync deliberately. No render plumbing was needed: the image
+  arrives as a normal asset at slot `eff_images`, and `reduce.ts#applyAsset`
+  appends + re-sorts any unknown slot index, so it lands in the existing images
+  grid. The episode cover is unchanged — aidream appends the URL to the END of
+  `image_urls` and the cover is `image_urls[0]`.
 - 2026-07-22 — **False "connection went quiet" stall during research + real
   activity feed.** Root cause was server-side: `scrape_url_core`
   (`matrx-scraper/features/mcp_tool_helpers.py`) ran `extract_text_from_pdf_bytes`

@@ -6,6 +6,7 @@
 // to. Mirrors aidream `api/routers/podcast_generator.py` event models.
 
 import type { DictEntryDraft } from "@/features/dictionary/types";
+import type { FeatureImageStyleValue } from "./featureImageStyles";
 
 // ── Request ────────────────────────────────────────────────────────────────
 
@@ -137,6 +138,13 @@ export interface PodcastGenerateRequest {
   // 1 → a single asset; 0 → skip that media type entirely.
   max_images?: number;
   max_videos?: number;
+  /** Visual style for the transcript-derived feature image (the sixth image).
+   *  Wire token from FEATURE_IMAGE_STYLES; omit → server default (Infographic).
+   *  An unknown token degrades to the default server-side, never a 422. */
+  feature_image_style?: FeatureImageStyleValue;
+  /** Opt out of the feature image entirely (skips both agent calls).
+   *  Omit → the server includes it. */
+  include_feature_image?: boolean;
   // Resolved Custom Dictionary (terminology + pronunciation) for this run.
   // Shape matches aidream's DictionaryConfig; the script + audio agents use it
   // to spell terms right and pronounce them correctly. See features/dictionary.
