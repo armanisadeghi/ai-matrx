@@ -412,8 +412,9 @@ export function DataForSeoLab() {
               <p className="mt-1 text-muted-foreground">
                 Both modes persist the run, request, raw response, provider
                 calls, and costs. Standard additionally checkpoints submission
-                and every poll. This lab uses raw_provider, so it does not write
-                normalized SEO fact rows.
+                plus the latest state for each provider task; provider-call
+                evidence retains the outbound requests. This lab uses
+                raw_provider, so it does not write normalized SEO fact rows.
               </p>
             </div>
           </div>

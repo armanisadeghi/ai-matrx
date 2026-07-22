@@ -26,8 +26,9 @@ organization comes from `selectEffectiveOrganizationId`.
   application-wide `JsonInspector`: formatted expand-depth controls, path explorer, tree,
   truncator, copy, and a linted CodeMirror editor for the task body.
 - Live performs one synchronous provider POST and accepts one task. Standard submits with
-  `task_post`, durably checkpoints the external task and each poll, then holds the request
-  open while polling `task_get` to completion.
+  `task_post`, durably checkpoints the submission marker and latest state for each external
+  task, then holds the request open while polling `task_get` to completion. Provider-call
+  evidence retains the outbound request trail; task checkpoints are not append-only poll rows.
 - Both workflows persist the collection run and request, raw payload, provider-call/cost
   evidence, and failures when available. Standard additionally persists task checkpoints.
   This lab deliberately requests `raw_provider`, so it writes no normalized SEO fact rows;
