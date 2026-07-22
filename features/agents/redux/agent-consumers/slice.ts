@@ -64,6 +64,27 @@ export interface AgentConsumerState {
 
   /** Current page for shared-agent list items. */
   sharedPage: number;
+
+  /**
+   * Ids returned by the last server-side search (`agx_search`), in server rank
+   * order. Additive: an agent in this list survives the search filter even
+   * when the local scorer gives it 0.
+   *
+   * That is load-bearing for tier 2. A deep search matches an agent's prompt
+   * content, which the client never loads — so the local scorer cannot see it.
+   * Without this list the server would return prompt matches and the UI would
+   * immediately filter them back out.
+   *
+   * Server-only matches sort BELOW every locally-scored match, in server rank
+   * order, so obvious matches always come first.
+   */
+  serverMatchedIds: string[];
+
+  /** True while a server search is in flight — drives the search spinner. */
+  isServerSearching: boolean;
+
+  /** Tier 2: also search agent prompt content. Opt-in, per consumer. */
+  deepSearch: boolean;
 }
 
 export const DEFAULT_AGENT_CONSUMER_STATE: AgentConsumerState = {
@@ -78,6 +99,9 @@ export const DEFAULT_AGENT_CONSUMER_STATE: AgentConsumerState = {
   favoritesFirst: true,
   listPage: 1,
   sharedPage: 1,
+  serverMatchedIds: [],
+  isServerSearching: false,
+  deepSearch: false,
 };
 
 export interface AgentConsumersState {
@@ -179,6 +203,36 @@ const agentConsumersSlice = createSlice({
     },
 
     /**
+     * Record the outcome of a server-side search for a consumer.
+     *
+     * Deliberately does NOT reset pagination the way setAgentConsumerFilter
+     * does: server results arrive asynchronously after the user already typed,
+     * and yanking them back to page 1 mid-scroll would be its own bug.
+     *
+     * Purely additive — this widens what the search filter admits, it never
+     * removes an agent the local scorer already matched.
+     */
+    setAgentConsumerServerSearch: (
+      state,
+      action: PayloadAction<{
+        consumerId: string;
+        matchedIds?: string[];
+        isSearching?: boolean;
+      }>,
+    ) => {
+      const { consumerId, matchedIds, isSearching } = action.payload;
+      if (!state.consumers[consumerId]) {
+        state.consumers[consumerId] = { ...DEFAULT_AGENT_CONSUMER_STATE };
+      }
+      if (matchedIds !== undefined) {
+        state.consumers[consumerId].serverMatchedIds = matchedIds;
+      }
+      if (isSearching !== undefined) {
+        state.consumers[consumerId].isServerSearching = isSearching;
+      }
+    },
+
+    /**
      * Reset all filter state for a consumer back to defaults.
      * Keeps the consumer registered.
      */
@@ -210,6 +264,7 @@ export const {
   unregisterAgentConsumer,
   setAgentConsumerFilter,
   setAgentConsumerPage,
+  setAgentConsumerServerSearch,
   resetAgentConsumerFilters,
 } = agentConsumersSlice.actions;
 

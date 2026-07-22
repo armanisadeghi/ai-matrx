@@ -42,6 +42,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type {
   AgentDefinition,
   AgentListRow,
+  AgentSearchRow,
   AgentExecutionMinimal,
   AgentExecutionFull,
   UpdateFromSourceResult,
@@ -82,6 +83,13 @@ import {
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
 const AGENT_LIST_RPC_PAGE_SIZE = 100;
+
+/**
+ * Cap on rows returned by one server search. Generous — the point of server
+ * search is to reach agents the client never loaded, so a tight cap would
+ * reintroduce the very blindness this exists to fix.
+ */
+const AGENT_SEARCH_LIMIT = 200;
 
 function mergeAgentListRows(dispatch: AppDispatch, rows: AgentListRow[]) {
   for (const row of rows) {
@@ -157,6 +165,55 @@ export const fetchAgentsList = createAsyncThunk<void, void, ThunkApi>(
     }
 
     dispatch(setAgentsStatus("succeeded"));
+  },
+);
+
+/**
+ * Server-side agent search — the canonical path for finding an agent.
+ *
+ * WHY THIS EXISTS: the list is paginated. Filtering only what the client has
+ * already loaded silently reports "no results" for agents that were simply
+ * never fetched. Any paginated collection therefore needs a server search.
+ *
+ * ADDITIVE BY CONTRACT: results go through `mergeAgentListRows`, the same
+ * merge the list fetch uses. Rows are ADDED to the store and existing records
+ * are enriched, never replaced or evicted. Local matches keep rendering
+ * instantly while this resolves, then server-only matches fold in beneath
+ * them — nothing the user is already looking at disappears.
+ *
+ * Two tiers:
+ *   deep = false (default) — name, description, category, tags, model, id
+ *   deep = true            — the above PLUS the agent's own prompt content
+ *
+ * Tier 2 is a strict superset and prompt hits always score below every tier-1
+ * field, so enabling it can only append below the obvious matches.
+ *
+ * Returns the matched ids in server rank order so a caller can preserve
+ * server relevance ordering if it wants to.
+ */
+export const searchAgentsServer = createAsyncThunk<
+  { ids: string[]; deep: boolean; query: string },
+  { query: string; deep?: boolean; limit?: number },
+  ThunkApi
+>(
+  "agentDefinition/searchServer",
+  async ({ query, deep = false, limit = AGENT_SEARCH_LIMIT }, { dispatch }) => {
+    const q = query.trim();
+    if (!q) return { ids: [], deep, query: q };
+
+    const { data, error } = await supabase.rpc("agx_search", {
+      p_query: q,
+      p_deep: deep,
+      p_limit: limit,
+      p_offset: 0,
+    });
+
+    if (error) throw pgErrorToError(error);
+
+    const rows = (data ?? []) as AgentSearchRow[];
+    mergeAgentListRows(dispatch, rows);
+
+    return { ids: rows.map((r) => r.id), deep, query: q };
   },
 );
 

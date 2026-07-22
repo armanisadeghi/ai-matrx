@@ -400,6 +400,38 @@ export interface AgentListRow {
   shared_by_email: string;
 }
 
+/**
+ * Which field a server-side search hit. Lets the UI say WHY a row matched —
+ * particularly "prompt", which is the only one the user cannot see on the card.
+ */
+export type AgentSearchMatchField =
+  | "id"
+  | "name"
+  | "description"
+  | "category"
+  | "tags"
+  | "shared_by_email"
+  | "model"
+  | "agent_type"
+  | "prompt";
+
+/**
+ * Returned by `agx_search()` — the canonical server-side agent search.
+ *
+ * A strict superset of `AgentListRow`, so search results merge into the store
+ * through the exact same path as a list fetch. Two extra fields:
+ *   match_score — relevance, mirroring features/agents/search/score.ts
+ *   match_field — the highest-priority field that matched
+ *
+ * Tier 2 (`p_deep`) additionally searches the agent's own prompt content and
+ * always scores it BELOW every tier-1 field, so deep results can only ever
+ * append below the obvious matches.
+ */
+export interface AgentSearchRow extends AgentListRow {
+  match_score: number;
+  match_field: AgentSearchMatchField;
+}
+
 /** Input for `agx_duplicate_agent(agent_id)`. Returns the new agent's UUID. */
 export interface DuplicateAgentParams {
   agent_id: string;
@@ -553,6 +585,11 @@ type _Check_AgentListRow =
   AgentListRow extends DbRpcRow<"agx_get_list"> ? true : false;
 declare const _agentListRow: _Check_AgentListRow;
 true satisfies typeof _agentListRow;
+
+type _Check_AgentSearchRow =
+  AgentSearchRow extends DbRpcRow<"agx_search"> ? true : false;
+declare const _agentSearchRow: _Check_AgentSearchRow;
+true satisfies typeof _agentSearchRow;
 
 type _Check_AgentVersionSnapshot =
   AgentVersionSnapshot extends DbRpcRow<"agx_get_version_snapshot">

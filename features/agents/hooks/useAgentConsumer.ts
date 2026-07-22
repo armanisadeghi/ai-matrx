@@ -22,9 +22,11 @@ import {
   unregisterAgentConsumer,
   setAgentConsumerFilter,
   setAgentConsumerPage,
+  setAgentConsumerServerSearch,
   resetAgentConsumerFilters,
   selectAgentConsumer,
 } from "@/features/agents/redux/agent-consumers/slice";
+import { useServerAgentSearch } from "@/features/agents/hooks/useServerAgentSearch";
 import type {
   AgentSortOption,
   AgentTab,
@@ -50,8 +52,17 @@ export interface UseAgentConsumerReturn {
   /** True if any filter differs from its default value. */
   hasActiveFilters: boolean;
 
+  /** Tier 2 search — also match against agent prompt content. */
+  deepSearch: boolean;
+
+  /** True while a server-side search is in flight. */
+  isServerSearching: boolean;
+
   // ── Write ───────────────────────────────────────────────────────────────
   setSearchTerm: (value: string) => void;
+
+  /** Turn tier-2 (prompt content) search on or off. */
+  setDeepSearch: (value: boolean) => void;
   setSortBy: (value: AgentSortOption) => void;
   setTab: (value: AgentTab) => void;
   setFavFilter: (value: AgentFavFilter) => void;
@@ -114,6 +125,14 @@ export function useAgentConsumer(
     (value: string) =>
       dispatch(
         setAgentConsumerFilter({ consumerId, patch: { searchTerm: value } }),
+      ),
+    [consumerId, dispatch],
+  );
+
+  const setDeepSearch = useCallback(
+    (value: boolean) =>
+      dispatch(
+        setAgentConsumerFilter({ consumerId, patch: { deepSearch: value } }),
       ),
     [consumerId, dispatch],
   );
@@ -222,6 +241,30 @@ export function useAgentConsumer(
     [consumerId, dispatch],
   );
 
+  // ── Server-side search ───────────────────────────────────────────────────
+  // Wired here, not in a page, so EVERY agent surface that uses a consumer
+  // searches the full server-side set. A local-only search over a paginated
+  // list reports "no results" for agents that were merely never fetched —
+  // that is a wrong answer, not a missing feature.
+  //
+  // Results merge into the agent store additively (see searchAgentsServer) and
+  // are recorded on the consumer so the filter admits matches the local
+  // scorer cannot see, notably tier-2 prompt hits.
+  const { matchedIds, isSearching } = useServerAgentSearch(
+    consumer.searchTerm,
+    consumer.deepSearch,
+  );
+
+  useEffect(() => {
+    dispatch(
+      setAgentConsumerServerSearch({
+        consumerId,
+        matchedIds: matchedIds ?? [],
+        isSearching,
+      }),
+    );
+  }, [consumerId, dispatch, matchedIds, isSearching]);
+
   // ── hasActiveFilters ─────────────────────────────────────────────────────
   const hasActiveFilters =
     consumer.searchTerm !== "" ||
@@ -246,8 +289,11 @@ export function useAgentConsumer(
     listPage: consumer.listPage,
     sharedPage: consumer.sharedPage,
     hasActiveFilters,
+    deepSearch: consumer.deepSearch,
+    isServerSearching: consumer.isServerSearching,
     // Write
     setSearchTerm,
+    setDeepSearch,
     setSortBy,
     setTab,
     setFavFilter,

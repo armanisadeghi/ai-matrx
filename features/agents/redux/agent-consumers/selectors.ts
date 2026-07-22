@@ -133,10 +133,22 @@ function sortFilteredAgents(
     filtered.forEach((a) => {
       scores.set(a.id, computeAgentSearchScore(a, searchTerm));
     });
+
+    // Server rank, used only to order matches the local scorer cannot see
+    // (tier-2 prompt hits). Locally-scored matches all have score > 0, so
+    // they sort above this group unconditionally — obvious matches first.
+    const serverRank = new Map<string, number>();
+    consumer.serverMatchedIds.forEach((id, i) => serverRank.set(id, i));
+
     return [...filtered].sort((a, b) => {
       const sa = scores.get(a.id) ?? 0;
       const sb = scores.get(b.id) ?? 0;
       if (sb !== sa) return sb - sa;
+      if (sa === 0) {
+        const ra = serverRank.get(a.id);
+        const rb = serverRank.get(b.id);
+        if (ra !== undefined && rb !== undefined && ra !== rb) return ra - rb;
+      }
       return applyAgentSortComparator(a, b, sortBy);
     });
   }
@@ -165,6 +177,9 @@ export function filterUserTypeAgents(
     accessFilter,
     tab,
   } = consumer;
+
+  // Built once, not per row — this runs on every keystroke over the full list.
+  const serverMatched = new Set(consumer.serverMatchedIds);
 
   const filtered = agents.filter((agent) => {
     if (tab === "mine" && agent.isOwner !== true) return false;
@@ -208,7 +223,15 @@ export function filterUserTypeAgents(
       }
     }
 
-    if (searchTerm && !agentMatchesSearch(agent, searchTerm)) return false;
+    // A server hit counts as a match even when the local scorer scores 0 —
+    // that is the only way tier-2 prompt matches can reach the screen, since
+    // the client never loads prompt content to score against.
+    if (
+      searchTerm &&
+      !agentMatchesSearch(agent, searchTerm) &&
+      !serverMatched.has(agent.id)
+    )
+      return false;
 
     return true;
   });
@@ -222,8 +245,11 @@ export function filterBuiltinTypeAgents(
   consumer: AgentConsumerState,
 ): AgentDefinitionRecord[] {
   const { searchTerm } = consumer;
+  const serverMatched = new Set(consumer.serverMatchedIds);
   const filtered = searchTerm
-    ? agents.filter((a) => agentMatchesSearch(a, searchTerm))
+    ? agents.filter(
+        (a) => agentMatchesSearch(a, searchTerm) || serverMatched.has(a.id),
+      )
     : agents;
   return sortFilteredAgents(filtered, consumer);
 }

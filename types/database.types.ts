@@ -8041,6 +8041,10 @@ export type Database = {
         Args: { p_data: Json; p_schema: Json }
         Returns: string
       }
+      evaluate_kind_activation: {
+        Args: { p_kind_definition_id: string }
+        Returns: Json
+      }
       resolve_kind_version: {
         Args: { p_kind: string; p_organization_id: string; p_version?: number }
         Returns: {
@@ -8070,6 +8074,14 @@ export type Database = {
           new_status: string
           old_status: string
         }[]
+      }
+      set_kind_activation: {
+        Args: {
+          p_active: boolean
+          p_kind_definition_id: string
+          p_note?: string
+        }
+        Returns: Json
       }
       strip_kind_deep: { Args: { p: Json }; Returns: Json }
     }
@@ -27870,6 +27882,38 @@ export type Database = {
       agx_purge_versions: {
         Args: { p_agent_id: string; p_keep_count?: number }
         Returns: Json
+      }
+      agx_search: {
+        Args: {
+          p_deep?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_query: string
+        }
+        Returns: {
+          access_level: string
+          agent_type: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          is_archived: boolean
+          is_favorite: boolean
+          is_owner: boolean
+          match_field: string
+          match_score: number
+          model_id: string
+          name: string
+          organization_id: string
+          project_id: string
+          shared_by_email: string
+          source_agent_id: string
+          tags: string[]
+          task_id: string
+          updated_at: string
+          user_id: string
+        }[]
       }
       agx_sync_linked_agents: {
         Args: {

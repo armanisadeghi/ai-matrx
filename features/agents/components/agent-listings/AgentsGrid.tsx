@@ -27,6 +27,8 @@ import {
   Users,
   Network,
   History,
+  FileSearch,
+  Loader2,
 } from "lucide-react";
 import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
 import {
@@ -135,6 +137,9 @@ export function AgentsGrid() {
     setTab: setActiveTab,
     setSortBy,
     setSearchTerm,
+    deepSearch,
+    setDeepSearch,
+    isServerSearching,
     setFavFilter,
     setArchFilter,
     toggleFavoritesFirst,
@@ -550,6 +555,29 @@ export function AgentsGrid() {
                   placeholder="Search agents..."
                   className="flex-1 bg-transparent border-0 outline-none text-base text-foreground placeholder:text-muted-foreground"
                 />
+                {isServerSearching && (
+                  <Loader2 className="h-4 w-4 text-muted-foreground animate-spin flex-shrink-0" />
+                )}
+                {searchTerm && (
+                  <button
+                    onClick={() => setDeepSearch(!deepSearch)}
+                    title={
+                      deepSearch
+                        ? "Searching inside agent prompts — click to search names and tags only"
+                        : "Also search inside agent prompts"
+                    }
+                    aria-pressed={deepSearch}
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors flex-shrink-0",
+                      deepSearch
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted/50",
+                    )}
+                  >
+                    <FileSearch className="h-3.5 w-3.5" />
+                    Prompts
+                  </button>
+                )}
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm("")}
@@ -692,6 +720,16 @@ export function AgentsGrid() {
                       : "Start building your AI agent library."}
                   </p>
                 </div>
+                {searchTerm && !deepSearch && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeepSearch(true)}
+                    className="gap-2"
+                  >
+                    <FileSearch className="h-4 w-4" />
+                    Search inside agent prompts
+                  </Button>
+                )}
                 {!hasActiveFilters && (
                   <Link href="/agents/new">
                     <Button>
@@ -748,6 +786,16 @@ export function AgentsGrid() {
                     Create Agent
                   </Button>
                 </Link>
+              )}
+              {searchTerm && !deepSearch && (
+                <Button
+                  variant="outline"
+                  onClick={() => setDeepSearch(true)}
+                  className="gap-2"
+                >
+                  <FileSearch className="h-4 w-4" />
+                  Search inside agent prompts
+                </Button>
               )}
               {hasActiveFilters && (
                 <Button variant="outline" onClick={resetFilters}>
