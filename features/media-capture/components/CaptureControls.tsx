@@ -4,16 +4,19 @@
  * features/media-capture/components/CaptureControls.tsx
  *
  * Control strip for the Capture Studio: mode switch (photo / video / audio),
- * then per-mode controls —
+ * the device rail, then per-mode controls —
  * - photo: shutter + framing toggle,
- * - video/audio: record / pause / resume / stop / cancel with a live
- *   pause-aware elapsed timer (fed from the recorder controller's monotonic
- *   clock, never a chunk-derived time), plus a mic on/off toggle for video.
+ * - video/audio: the Record button (mic on/off for video).
  *
- * Camera selection: facingMode flip on mobile, device select on desktop
- * (devices from the shared media-devices manager; labels appear once
- * permission is granted). Device/facing switching is disabled while a
- * recording pins the camera.
+ * Live recording controls (timer, gauges, pause/stop/cancel) are NOT here —
+ * `RecordingHud` owns them, so there is exactly one place that renders a live
+ * recording.
+ *
+ * Device selection is NOT here either: `CaptureDeviceRail` owns camera / mic /
+ * speaker, sourced from `useAudioDevices()` and persisted to
+ * `userPreferences.mediaDevices`. This strip keeps only facingMode (a
+ * constraint, not a device choice) on mobile, where a front/rear flip beats a
+ * device list.
  */
 
 import {
@@ -24,37 +27,16 @@ import {
   Loader2,
   Mic,
   MicOff,
-  Pause,
-  Play,
-  Square,
   SwitchCamera,
   Video,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { MediaDeviceDescriptor } from "@/features/media-devices/deviceManager";
+import { CaptureDeviceRail } from "@/features/media-capture/components/CaptureDeviceRail";
 import type { FramingMode } from "@/features/media-capture/core/capture-types";
 
 export type CaptureMode = "photo" | "video" | "audio";
 
 export type RecordingUiState = "idle" | "starting" | "recording" | "paused";
-
-export function formatElapsed(ms: number): string {
-  const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const mm = `${m}`.padStart(2, "0");
-  const ss = `${s}`.padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
-}
 
 export interface CaptureControlsProps {
   mode: CaptureMode;
@@ -67,23 +49,21 @@ export interface CaptureControlsProps {
   isMobile: boolean;
   facing: "user" | "environment";
   onToggleFacing: () => void;
-  cameras: MediaDeviceDescriptor[];
-  selectedDeviceId: string | null;
-  onSelectDevice: (deviceId: string) => void;
   onShutter: () => void;
   shutterDisabled: boolean;
   capturing: boolean;
 
   // ── Recording (video/audio modes) ──
   recordingState: RecordingUiState;
-  elapsedMs: number;
   withMic: boolean;
   onToggleMic: () => void;
   onStartRecording: () => void;
-  onPauseResume: () => void;
-  onStopRecording: () => void;
-  onCancelRecording: () => void;
   recordDisabled: boolean;
+  /**
+   * Why the primary action is unavailable. A disabled Capture/Record button
+   * with no stated reason reads as a broken app — the strip always SAYS why.
+   */
+  blockedReason?: string | null;
 }
 
 const MODES: Array<{ mode: CaptureMode; label: string; Icon: typeof Camera }> = [
@@ -102,21 +82,15 @@ export function CaptureControls(props: CaptureControlsProps) {
     isMobile,
     facing,
     onToggleFacing,
-    cameras,
-    selectedDeviceId,
-    onSelectDevice,
     onShutter,
     shutterDisabled,
     capturing,
     recordingState,
-    elapsedMs,
     withMic,
     onToggleMic,
     onStartRecording,
-    onPauseResume,
-    onStopRecording,
-    onCancelRecording,
     recordDisabled,
+    blockedReason,
   } = props;
 
   const isRecordingLive =
@@ -124,7 +98,13 @@ export function CaptureControls(props: CaptureControlsProps) {
 
   return (
     <div className="flex shrink-0 flex-col gap-2 pb-safe pt-2">
-      <div className="flex items-center gap-2">
+      {/* Device rail — always visible, right where the user captures. */}
+      <CaptureDeviceRail
+        showCamera={mode !== "audio"}
+        recording={isRecordingLive || recordingState === "starting"}
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
         <div
           className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5"
           role="tablist"
@@ -174,38 +154,19 @@ export function CaptureControls(props: CaptureControlsProps) {
               </Button>
             )}
 
-            {isMobile ? (
+            {/* facingMode is a CONSTRAINT, not a device choice — the rail owns
+                device selection. On mobile a front/rear flip beats a list. */}
+            {isMobile && (
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9"
+                className="h-11 sm:h-9"
                 onClick={onToggleFacing}
                 aria-label="Switch camera"
               >
                 <SwitchCamera className="mr-1.5 h-4 w-4" />
                 {facing === "user" ? "Front" : "Rear"}
               </Button>
-            ) : (
-              cameras.length > 1 && (
-                <Select
-                  value={selectedDeviceId ?? undefined}
-                  onValueChange={onSelectDevice}
-                >
-                  <SelectTrigger
-                    className="h-9 w-[190px] text-xs"
-                    aria-label="Camera"
-                  >
-                    <SelectValue placeholder="Camera" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cameras.map((cam, i) => (
-                      <SelectItem key={cam.deviceId} value={cam.deviceId}>
-                        {cam.label || `Camera ${i + 1}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )
             )}
           </>
         )}
@@ -227,12 +188,20 @@ export function CaptureControls(props: CaptureControlsProps) {
           </Button>
         )}
 
+        {/* Stated reason for an unavailable primary action, right beside it. */}
+        {blockedReason && (
+          <span className="basis-full text-[11px] leading-snug text-muted-foreground sm:ml-auto sm:max-w-[18rem] sm:basis-auto sm:text-right">
+            {blockedReason}
+          </span>
+        )}
+
         {mode === "photo" ? (
           <Button
             size="sm"
-            className="ml-auto h-9"
+            className="ml-auto h-9 max-sm:w-full"
             onClick={onShutter}
             disabled={shutterDisabled}
+            title={blockedReason ?? undefined}
             aria-label="Take photo"
           >
             {capturing ? (
@@ -243,68 +212,25 @@ export function CaptureControls(props: CaptureControlsProps) {
             Capture
           </Button>
         ) : (
-          <div className="ml-auto flex items-center gap-2">
-            {isRecordingLive && (
-              <span
-                className="min-w-[3.5rem] text-right font-mono text-sm tabular-nums text-foreground"
-                aria-live="polite"
-              >
-                {formatElapsed(elapsedMs)}
-              </span>
-            )}
-            {recordingState === "idle" || recordingState === "starting" ? (
-              <Button
-                size="sm"
-                className="h-9"
-                onClick={onStartRecording}
-                disabled={recordDisabled || recordingState === "starting"}
-                aria-label="Start recording"
-              >
-                {recordingState === "starting" ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Circle className="mr-1.5 h-4 w-4 fill-destructive text-destructive" />
-                )}
-                Record
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9"
-                  onClick={onPauseResume}
-                  aria-label={
-                    recordingState === "paused" ? "Resume recording" : "Pause recording"
-                  }
-                >
-                  {recordingState === "paused" ? (
-                    <Play className="h-4 w-4" />
-                  ) : (
-                    <Pause className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  className="h-9"
-                  onClick={onStopRecording}
-                  aria-label="Stop and review"
-                >
-                  <Square className="mr-1.5 h-4 w-4" />
-                  Stop
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9"
-                  onClick={onCancelRecording}
-                  aria-label="Discard recording"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
+          // Live recording controls live in `RecordingHud` — this strip only
+          // ever starts a recording.
+          !isRecordingLive && (
+            <Button
+              size="sm"
+              className="ml-auto h-11 max-sm:w-full sm:h-9"
+              onClick={onStartRecording}
+              disabled={recordDisabled || recordingState === "starting"}
+              title={blockedReason ?? undefined}
+              aria-label="Start recording"
+            >
+              {recordingState === "starting" ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Circle className="mr-1.5 h-4 w-4 fill-destructive text-destructive" />
+              )}
+              Record
+            </Button>
+          )
         )}
       </div>
     </div>

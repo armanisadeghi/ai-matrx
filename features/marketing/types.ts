@@ -125,6 +125,8 @@ export interface PageListRow extends MarketingPage {
   social_ok: boolean | null;
   /** Stored indexability verdict; null = not computed. */
   indexability_verdict: "indexable" | "check" | "blocked" | null;
+  /** Count of passing stored health verdicts (SERP, social, indexability). */
+  health_score: number | null;
   /** 28-day GSC click sum; null when Google has no data for the page. */
   gsc_clicks_28d: number | null;
   /** 28-day GSC impression sum; null when Google has no data for the page. */

@@ -82,6 +82,17 @@ function selectFilter(
   return filter?.kind === "select" && filter.value ? filter.value : null;
 }
 
+function selectFilterValues(
+  state: MatrxDataTableQueryState,
+  column: string,
+): string[] {
+  const filter = state.columnFilters[column];
+  if (filter?.kind !== "select") return [];
+  const values = filter.values?.filter(Boolean);
+  if (values?.length) return values;
+  return filter.value ? [filter.value] : [];
+}
+
 function textFilter(
   state: MatrxDataTableQueryState,
   column: string,
@@ -500,6 +511,12 @@ export async function listPages(
   const db = await authenticatedWebDb(supabase);
   const { from, to } = rangeFor(state);
   const sortColumns = {
+    sitemap_count: "sitemap_count",
+    word_count: "word_count",
+    health_score: "health_score",
+    gsc_clicks_28d: "gsc_clicks_28d",
+    gsc_impressions_28d: "gsc_impressions_28d",
+    gsc_position_28d: "gsc_position_28d",
     url: "url",
     path: "path",
     status: "status",
@@ -509,184 +526,157 @@ export async function listPages(
     first_seen: "first_seen",
     last_seen: "last_seen",
   } as const;
-  const requestedSort = state.sort?.id ?? "last_seen";
+  const requestedSort = state.sort?.id ?? "gsc_clicks_28d";
   const sortColumn =
-    sortColumns[requestedSort as keyof typeof sortColumns] ?? "last_seen";
+    sortColumns[requestedSort as keyof typeof sortColumns] ?? "gsc_clicks_28d";
   const ascending = state.sort?.direction === "asc";
 
-  // The left-joined embeds power the coverage filters and the per-row
-  // "in N sitemaps" signal; soft-deleted evidence never counts. The GSC embed
-  // is a presence probe only — its returned rows are capped at 1 below, and
-  // the top-level `is null` / `not is null` semi-join filters are unaffected
-  // by that cap.
+  // The one-row-per-page projection makes enriched snapshot, sitemap, and GSC
+  // values queryable BEFORE the bounded range. Canonical page rows are still
+  // hydrated from web.page by id; the view is a query projection, not a second
+  // page authority.
   let query = db
-    .from("page")
-    .select(`${PAGE_COLUMNS}, page_sitemap!left(id), gsc_page_stat!left(id)`, {
-      count: "exact",
-    })
-    .eq("site_id", siteId)
-    .is("deleted_at", null)
-    .is("page_sitemap.deleted_at", null)
-    .is("gsc_page_stat.deleted_at", null)
-    .limit(1, { referencedTable: "gsc_page_stat" });
+    .from("v_page_list")
+    .select(
+      "page_id, sitemap_count, in_gsc, observed_title, word_count, serp_ok, social_ok, indexability_verdict, health_score, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d",
+      { count: "exact" },
+    )
+    .eq("site_id", siteId);
 
   if (coverage === "in_sitemap") {
-    query = query.not("page_sitemap", "is", null);
+    query = query.gt("sitemap_count", 0);
   } else if (coverage === "crawled") {
     query = query.not("latest_snapshot_id", "is", null);
   } else if (coverage === "never_crawled") {
     query = query.is("latest_snapshot_id", null);
   } else if (coverage === "sitemap_not_crawled") {
     query = query
-      .not("page_sitemap", "is", null)
+      .gt("sitemap_count", 0)
       .is("latest_snapshot_id", null);
   } else if (coverage === "crawled_no_sitemap") {
-    query = query
-      .is("page_sitemap", null)
-      .not("latest_snapshot_id", "is", null);
+    query = query.eq("sitemap_count", 0).not("latest_snapshot_id", "is", null);
   } else if (coverage === "in_gsc") {
-    query = query.not("gsc_page_stat", "is", null);
+    query = query.eq("in_gsc", true);
   } else if (coverage === "gsc_no_sitemap") {
-    query = query.not("gsc_page_stat", "is", null).is("page_sitemap", null);
+    query = query.eq("in_gsc", true).eq("sitemap_count", 0);
   } else if (coverage === "sitemap_no_gsc") {
-    query = query.not("page_sitemap", "is", null).is("gsc_page_stat", null);
+    query = query.gt("sitemap_count", 0).eq("in_gsc", false);
   }
 
   const search = cleanSearch(state.search);
   if (search) {
     query = query.or(
-      `url.ilike.%${search}%,path.ilike.%${search}%,target_keyword.ilike.%${search}%`,
+      `url.ilike.%${search}%,path.ilike.%${search}%,target_keyword.ilike.%${search}%,observed_title.ilike.%${search}%`,
     );
   }
   const url = textFilter(state, "url");
   const path = textFilter(state, "path");
   const keyword = textFilter(state, "target_keyword");
-  const status = selectFilter(state, "status");
-  const provenance = selectFilter(state, "provenance");
+  const statuses = selectFilterValues(state, "status");
+  const provenances = selectFilterValues(state, "provenance");
+  const sitemapCount = numberFilter(state, "sitemap_count");
+  const wordCount = numberFilter(state, "word_count");
   const http = numberFilter(state, "http_status_last");
+  const healthScore = numberFilter(state, "health_score");
+  const clicks = numberFilter(state, "gsc_clicks_28d");
+  const impressions = numberFilter(state, "gsc_impressions_28d");
+  const position = numberFilter(state, "gsc_position_28d");
   if (url) query = query.ilike("url", `%${url}%`);
   if (path) query = query.ilike("path", `%${path}%`);
   if (keyword) query = query.ilike("target_keyword", `%${keyword}%`);
-  if (status) query = query.eq("status", status);
-  if (provenance) query = query.eq("provenance", provenance);
+  if (statuses.length === 1) query = query.eq("status", statuses[0]);
+  if (statuses.length > 1) query = query.in("status", statuses);
+  if (provenances.length === 1) query = query.eq("provenance", provenances[0]);
+  if (provenances.length > 1) query = query.in("provenance", provenances);
+  if (sitemapCount?.min !== undefined)
+    query = query.gte("sitemap_count", sitemapCount.min);
+  if (sitemapCount?.max !== undefined)
+    query = query.lte("sitemap_count", sitemapCount.max);
+  if (wordCount?.min !== undefined)
+    query = query.gte("word_count", wordCount.min);
+  if (wordCount?.max !== undefined)
+    query = query.lte("word_count", wordCount.max);
   if (http?.min !== undefined) query = query.gte("http_status_last", http.min);
   if (http?.max !== undefined) query = query.lte("http_status_last", http.max);
+  if (healthScore?.min !== undefined)
+    query = query.gte("health_score", healthScore.min);
+  if (healthScore?.max !== undefined)
+    query = query.lte("health_score", healthScore.max);
+  if (clicks?.min !== undefined)
+    query = query.gte("gsc_clicks_28d", clicks.min);
+  if (clicks?.max !== undefined)
+    query = query.lte("gsc_clicks_28d", clicks.max);
+  if (impressions?.min !== undefined)
+    query = query.gte("gsc_impressions_28d", impressions.min);
+  if (impressions?.max !== undefined)
+    query = query.lte("gsc_impressions_28d", impressions.max);
+  if (position?.min !== undefined)
+    query = query.gte("gsc_position_28d", position.min);
+  if (position?.max !== undefined)
+    query = query.lte("gsc_position_28d", position.max);
 
   query = query.order(sortColumn, { ascending, nullsFirst: false });
-  query = query.order("id", { ascending });
+  if (sortColumn === "gsc_clicks_28d") {
+    query = query.order("gsc_impressions_28d", {
+      ascending,
+      nullsFirst: false,
+    });
+  }
+  query = query.order("page_id", { ascending: true });
   const response = await query
     .range(from, to)
     .abortSignal(signal ?? new AbortController().signal);
-  const pages = assertData(response.data, response.error);
-  if (pages.length === 0) return { rows: [], total: response.count ?? 0 };
-
-  // Batched observed-content enrichment: one snapshot read for the whole page.
-  const snapshotIds = pages.flatMap((page) =>
-    page.latest_snapshot_id ? [page.latest_snapshot_id] : [],
+  const projections = assertData(response.data, response.error);
+  if (projections.length === 0) return { rows: [], total: response.count ?? 0 };
+  const projectionRows = projections.flatMap((projection) =>
+    projection.page_id ? [{ ...projection, page_id: projection.page_id }] : [],
   );
-  const bySnapshot = new Map<
-    string,
-    {
-      title: string | null;
-      wordCount: number | null;
-      serpOk: boolean | null;
-      socialOk: boolean | null;
-      indexabilityVerdict: "indexable" | "check" | "blocked" | null;
-    }
-  >();
-  if (snapshotIds.length > 0) {
-    const snapshotResponse = await db
-      .from("snapshot")
-      .select("id, head_tags, word_count, seo_metrics, audit_metrics")
-      .eq("site_id", siteId)
-      .in("id", snapshotIds)
-      .abortSignal(signal ?? new AbortController().signal);
-    const snapshots = assertData(snapshotResponse.data, snapshotResponse.error);
-    for (const snapshot of snapshots) {
-      const seo = parseStoredSeoMetrics(snapshot.seo_metrics);
-      const audit = parseStoredAuditMetrics(snapshot.audit_metrics);
-      bySnapshot.set(snapshot.id, {
-        title: parseSnapshotHeadTags(snapshot.head_tags).title,
-        wordCount: snapshot.word_count,
-        serpOk: seo ? seo.overall_ok : null,
-        socialOk: audit ? audit.social.ok : null,
-        indexabilityVerdict: audit ? audit.indexability.verdict : null,
-      });
-    }
+  if (projectionRows.length !== projections.length) {
+    throw new Error("Page-list projection returned a row without a page id.");
   }
-
-  // Batched 28-day GSC rollup: paginate past PostgREST's row cap so sums are
-  // never silently truncated; (page_id, date) is unique, so the ordering is
-  // deterministic across pages.
-  const since = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-  const gscByPage = new Map<
-    string,
-    {
-      clicks: number;
-      impressions: number;
-      positionWeight: number;
-      weightSum: number;
-    }
-  >();
-  const pageIds = pages.map((page) => page.id);
-  for (let offset = 0; ; offset += 1000) {
-    if (offset >= 20000) {
-      throw new Error(
-        "GSC stat enrichment exceeded its expected row bound — aborting instead of returning truncated sums.",
-      );
-    }
-    const statResponse = await db
-      .from("gsc_page_stat")
-      .select("page_id, clicks, impressions, position")
-      .eq("site_id", siteId)
-      .in("page_id", pageIds)
-      .gte("date", since)
-      .is("deleted_at", null)
-      .order("page_id", { ascending: true })
-      .order("date", { ascending: true })
-      .range(offset, offset + 999)
-      .abortSignal(signal ?? new AbortController().signal);
-    const stats = assertData(statResponse.data, statResponse.error);
-    for (const stat of stats) {
-      const bucket = gscByPage.get(stat.page_id) ?? {
-        clicks: 0,
-        impressions: 0,
-        positionWeight: 0,
-        weightSum: 0,
-      };
-      bucket.clicks += stat.clicks;
-      bucket.impressions += stat.impressions;
-      if (stat.position !== null) {
-        const weight = Math.max(stat.impressions, 1);
-        bucket.positionWeight += stat.position * weight;
-        bucket.weightSum += weight;
-      }
-      gscByPage.set(stat.page_id, bucket);
-    }
-    if (stats.length < 1000) break;
-  }
+  const pageIds = projectionRows.map((projection) => projection.page_id);
+  const pageResponse = await db
+    .from("page")
+    .select(PAGE_COLUMNS)
+    .eq("site_id", siteId)
+    .in("id", pageIds)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal);
+  const pageRows = assertData(pageResponse.data, pageResponse.error);
+  const pageById = new Map(pageRows.map((page) => [page.id, page]));
 
   return {
-    rows: pages.map(({ page_sitemap, gsc_page_stat, ...page }) => {
-      const observed = page.latest_snapshot_id
-        ? bySnapshot.get(page.latest_snapshot_id)
-        : undefined;
-      const gsc = gscByPage.get(page.id);
+    rows: projectionRows.map((projection) => {
+      const page = pageById.get(projection.page_id);
+      if (!page) {
+        throw new Error(
+          `Page-list projection referenced missing page ${projection.page_id}.`,
+        );
+      }
+      const verdict = projection.indexability_verdict;
+      if (
+        verdict !== null &&
+        verdict !== "indexable" &&
+        verdict !== "check" &&
+        verdict !== "blocked"
+      ) {
+        throw new Error(
+          `Page-list projection returned invalid indexability verdict “${verdict}”.`,
+        );
+      }
       return {
         ...page,
-        sitemap_count: page_sitemap.length,
-        in_gsc: gsc_page_stat.length > 0,
-        observed_title: observed?.title ?? null,
-        word_count: observed?.wordCount ?? null,
-        serp_ok: observed?.serpOk ?? null,
-        social_ok: observed?.socialOk ?? null,
-        indexability_verdict: observed?.indexabilityVerdict ?? null,
-        gsc_clicks_28d: gsc ? gsc.clicks : null,
-        gsc_impressions_28d: gsc ? gsc.impressions : null,
-        gsc_position_28d:
-          gsc && gsc.weightSum > 0 ? gsc.positionWeight / gsc.weightSum : null,
+        sitemap_count: Number(projection.sitemap_count ?? 0),
+        in_gsc: projection.in_gsc ?? false,
+        observed_title: projection.observed_title,
+        word_count: projection.word_count,
+        serp_ok: projection.serp_ok,
+        social_ok: projection.social_ok,
+        indexability_verdict: verdict,
+        health_score: projection.health_score,
+        gsc_clicks_28d: projection.gsc_clicks_28d,
+        gsc_impressions_28d: projection.gsc_impressions_28d,
+        gsc_position_28d: projection.gsc_position_28d,
       };
     }),
     total: response.count ?? 0,

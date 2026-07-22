@@ -116,6 +116,11 @@ export interface MediaRecorderController {
   /** Pause-aware monotonic elapsed recording time. */
   getElapsedMs(): number;
   getEmittedBytes(): number;
+  /** Projected final size — emitted bytes plus bitrate extrapolation over the
+   *  interval since the last chunk. This is the SAME number `maxBytes`
+   *  enforcement uses, so a size gauge fed from it can never disagree with the
+   *  hard stop the user is about to hit. */
+  getEstimatedBytes(): number;
   getState(): RecorderControllerState;
   /** Authoritative output MIME: emitted Blob type when non-empty, else
    *  `recorder.mimeType`, else the confirmed requested candidate. */
@@ -380,6 +385,7 @@ export function createMediaRecorderController(
 
     getElapsedMs: () => elapsedMs(),
     getEmittedBytes: () => emittedBytes,
+    getEstimatedBytes: () => estimatedBytes(),
     getState: () => state,
     getAuthoritativeMime: () => authoritativeMime(),
   };

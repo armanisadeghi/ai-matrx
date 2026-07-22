@@ -51,27 +51,89 @@ export function MicDeviceMenuPanel({
   const { inputs, currentValue, choose } = useMicDevicePicker();
 
   return (
+    <DeviceMenuPanel
+      heading="Microphone"
+      icon={<Mic className="h-3.5 w-3.5" />}
+      devices={inputs}
+      selectedId={currentValue === MIC_SYSTEM_DEFAULT ? "" : currentValue}
+      defaultLabel="System default"
+      fallbackLabel="Microphone"
+      onSelect={(deviceId) => choose(deviceId || MIC_SYSTEM_DEFAULT)}
+      onOpenSettings={onOpenSettings}
+    />
+  );
+}
+
+export interface DeviceMenuPanelProps {
+  /** Uppercase section header, e.g. "MICROPHONE" / "CAMERA" / "SPEAKER". */
+  heading: string;
+  icon: React.ReactNode;
+  devices: Array<{ deviceId: string; label: string }>;
+  /** Resolved live deviceId; `""` selects the default row. */
+  selectedId: string;
+  /** Label of the `""` row — "System default" for mic/speaker, "Auto" etc. */
+  defaultLabel: string;
+  /** Prefix for an unlabeled device (labels are blank before a grant). */
+  fallbackLabel: string;
+  /** Receives `""` for the default row. */
+  onSelect: (deviceId: string) => void;
+  onOpenSettings: () => void;
+  settingsLabel?: string;
+  /** When set, every row is inert and this explains why (e.g. recording). */
+  disabledReason?: string | null;
+  /** Rendered under the rows — permission prompts, unsupported notices. */
+  footerSlot?: React.ReactNode;
+}
+
+/**
+ * The canonical compact device popover body (w-60): uppercase heading, a
+ * default row, one row per device with a Check on the active one, a divider,
+ * and a "settings…" footer link. Mic, camera, and speaker pickers all render
+ * this — there is no second device-list markup.
+ */
+export function DeviceMenuPanel({
+  heading,
+  icon,
+  devices,
+  selectedId,
+  defaultLabel,
+  fallbackLabel,
+  onSelect,
+  onOpenSettings,
+  settingsLabel = "Audio settings…",
+  disabledReason = null,
+  footerSlot,
+}: DeviceMenuPanelProps) {
+  return (
     <>
       <div className="px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        Microphone
+        {heading}
       </div>
+      {disabledReason && (
+        <p className="px-2 pb-1.5 text-[11px] leading-snug text-muted-foreground">
+          {disabledReason}
+        </p>
+      )}
       <MicDeviceRow
-        label="System default"
-        icon={<Mic className="h-3.5 w-3.5" />}
-        selected={currentValue === MIC_SYSTEM_DEFAULT}
-        onClick={() => choose(MIC_SYSTEM_DEFAULT)}
+        label={defaultLabel}
+        icon={icon}
+        selected={selectedId === ""}
+        disabled={disabledReason !== null}
+        onClick={() => onSelect("")}
       />
-      {inputs
+      {devices
         .filter((d) => d.deviceId)
         .map((d) => (
           <MicDeviceRow
             key={d.deviceId}
-            label={d.label || `Microphone (${d.deviceId.slice(0, 6)})`}
-            icon={<Mic className="h-3.5 w-3.5" />}
-            selected={currentValue === d.deviceId}
-            onClick={() => choose(d.deviceId)}
+            label={d.label || `${fallbackLabel} (${d.deviceId.slice(0, 6)})`}
+            icon={icon}
+            selected={selectedId === d.deviceId}
+            disabled={disabledReason !== null}
+            onClick={() => onSelect(d.deviceId)}
           />
         ))}
+      {footerSlot}
       <div className="my-1 h-px bg-border" />
       <button
         type="button"
@@ -79,7 +141,7 @@ export function MicDeviceMenuPanel({
         className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
       >
         <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-        Audio settings…
+        {settingsLabel}
       </button>
     </>
   );
@@ -89,20 +151,24 @@ function MicDeviceRow({
   label,
   icon,
   selected,
+  disabled = false,
   onClick,
 }: {
   label: string;
   icon: React.ReactNode;
   selected: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
         selected ? "text-foreground" : "text-muted-foreground",
+        disabled && "pointer-events-none opacity-50",
       )}
     >
       <span className="shrink-0 text-muted-foreground">{icon}</span>

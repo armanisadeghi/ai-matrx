@@ -87,7 +87,43 @@ const CAMERA_ADMIN_MAP: FeatureAdminMap = {
       name: "CaptureLibrary",
       filePath: "features/media-capture/components/CaptureLibrary.tsx",
       description:
-        "The /camera management lens over Captures/* (filters, upload chips, retry, recovery).",
+        "The /camera management lens over Captures/* (filters, transport strip, recovery, per-tile actions).",
+      status: "Live",
+      tier: "internal",
+    },
+    {
+      name: "CaptureItemActions",
+      filePath: "features/media-capture/components/CaptureItemActions.tsx",
+      description:
+        "The ONE per-capture action menu (library tiles + Camera-tab rows): Preview / Download / Copy link / Rename / Move / Share / Transcribe / Delete, all on the canonical files action stack.",
+      status: "Live",
+      tier: "internal",
+      notes: [
+        "Move + Share are the two items FileContextMenu leaves to its host — wired here with openFolderPicker + useFileMutation and PermissionsDialog.",
+        "Transcribe calls transcribeCloudFile (POST /audio/transcribe-file) by file_id; result renders through <ContentActionBar />.",
+      ],
+    },
+    {
+      name: "CaptureRecoverySection",
+      filePath: "features/media-capture/components/CaptureRecoverySection.tsx",
+      description:
+        "Shared recoverable-journal surface (library + Camera tab): Finish & save runs the one finishJournalRecovery flow; loud 'Recovered N of M' phrasing.",
+      status: "Live",
+      tier: "internal",
+    },
+    {
+      name: "CaptureTransportStrip",
+      filePath: "features/media-capture/components/CaptureTransportStrip.tsx",
+      description:
+        "Shared upload/transport strip (library + Camera tab): in-flight %, failed uploads with Retry from the diagnostics retry payload, TUS resume-pending.",
+      status: "Live",
+      tier: "internal",
+    },
+    {
+      name: "CaptureThumb",
+      filePath: "features/media-capture/components/CaptureThumb.tsx",
+      description:
+        "Leaf wrapper over <InlineMediaRef> that confines the JSX ref= hand-off (keeps the React Compiler ref analysis from tainting the CloudFile object).",
       status: "Live",
       tier: "internal",
     },
@@ -95,15 +131,31 @@ const CAMERA_ADMIN_MAP: FeatureAdminMap = {
       name: "CaptureControls / CaptureReview / DeviceFallbackInput",
       filePath: "features/media-capture/components/",
       description:
-        "Studio sub-surfaces: mode/framing/device controls, review playback via the audio output sink, and the OS-camera fallback input (EXIF-stripped).",
+        "Studio sub-surfaces: mode/framing controls, review playback via the audio output sink plus server-side transcription with the shared ContentActionBar, and the OS-camera fallback input (EXIF-stripped).",
       status: "Live",
       tier: "internal",
+    },
+    {
+      name: "CaptureDeviceRail",
+      filePath: "features/media-capture/components/CaptureDeviceRail.tsx",
+      description:
+        "Inline camera / microphone / speaker pickers in the studio, sourced from useAudioDevices() and persisted to userPreferences.mediaDevices. Renders the canonical DeviceMenuPanel popover; locks camera + mic while recording pins them.",
+      status: "Live",
+      tier: "official",
+    },
+    {
+      name: "RecordingHud",
+      filePath: "features/media-capture/components/RecordingHud.tsx",
+      description:
+        "Live recording HUD: monotonic mono-space timer, AudioLevelIndicator fed from the composed recording stream, Duration + Estimated Size gauges against the controller-enforced caps (red past 80%), near-cap alert, pause/stop/cancel.",
+      status: "Live",
+      tier: "official",
     },
     {
       name: "CameraControlTab",
       filePath: "features/media-capture/components/CameraControlTab.tsx",
       description:
-        "Camera tab of the Media control window — read-only diagnostics from mediaCaptureDiagnostics.",
+        "Camera tab of the Media control window — live capture clock + Stop, recovery, transport, this session's captures with per-item actions; raw diagnostics collapsed behind a disclosure.",
       status: "Live",
       tier: "internal",
     },

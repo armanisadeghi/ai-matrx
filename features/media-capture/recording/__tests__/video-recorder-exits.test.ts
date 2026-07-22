@@ -33,6 +33,16 @@ jest.mock("@/features/media-capture/runtime/camera-stream-manager", () => ({
   pinForRecording: jest.fn(),
   unpin: jest.fn(),
   subscribeCameraInterruption: jest.fn(() => () => undefined),
+  // The orchestrator pulls in `mediaCaptureDiagnostics`, which snapshots the
+  // camera stream at module load. The mock must cover the whole surface the
+  // module graph touches, not just what this file asserts on.
+  getCameraStreamState: jest.fn(() => ({
+    state: "idle",
+    leaseCount: 0,
+    pinnedBy: null,
+    activeSpec: null,
+  })),
+  subscribeCameraStream: jest.fn(() => () => undefined),
 }));
 
 const mockedAcquireMic = acquireMicStream as jest.MockedFunction<

@@ -28,7 +28,10 @@ export default function CameraPage() {
       <PageHeader>
         <div className="flex w-full min-w-0 items-center gap-2">
           <Camera className="h-4 w-4 shrink-0 text-primary" />
-          <h1 className="truncate text-sm font-semibold">Camera</h1>
+          <h1 className="shrink-0 text-sm font-semibold">Camera</h1>
+          <span className="hidden min-w-0 truncate text-xs text-muted-foreground sm:inline">
+            Photo, video, and audio — saved to your captures.
+          </span>
           {!studioOpen && (
             <Button
               size="sm"

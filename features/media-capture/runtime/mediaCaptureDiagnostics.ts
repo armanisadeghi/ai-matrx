@@ -23,6 +23,13 @@
  *     original File + validated metadata) live in a side table — they never
  *     enter the snapshot.
  *
+ * It also carries two side tables for the ONE live capture — progress READERS
+ * (`registerLiveCapture`, written by the recorder) and persistence CONTROLS
+ * (`registerLiveCaptureControls`, written by the Capture Studio). Both hold
+ * functions, so neither is in the snapshot; surfaces poll them. The controls
+ * are what let the app-wide indicator and the navigation guard stop-and-SAVE a
+ * recording from outside the studio component.
+ *
  * Wiring to the live sources is LAZY (first getter/subscriber), never an
  * import side effect — importing this module must not touch the camera, the
  * lock, or the session registry.
@@ -90,6 +97,65 @@ export interface CaptureFailureEntry {
   retryable: boolean;
 }
 
+/**
+ * The ONE live media-capture recording, as registered by the recording
+ * orchestrator. Serializable identity only — the pause-aware elapsed clock and
+ * controller state are READERS in a side table (`getLiveCaptureProgress`), so
+ * the snapshot never churns on every tick.
+ */
+export interface LiveCaptureInfo {
+  captureId: string;
+  kind: "video" | "audio";
+  label: string;
+  sourceFeature: string;
+  /** Epoch ms the recorder started. */
+  startedAt: number;
+}
+
+/** Live readers for the active capture — polled by surfaces, never pushed. */
+export interface LiveCaptureProgress {
+  /** Pause-aware elapsed from the recorder controller (NOT wall clock). */
+  elapsedMs: number;
+  /** Controller state — "recording" | "paused" | "ended" | … */
+  state: string;
+}
+
+/** Outcome of a salvage — a stop that finalizes AND persists in one step. */
+export interface LiveCaptureSaveResult {
+  fileId: string;
+  /** True when chunks were lost or the stop was environmental. Callers MUST
+   *  say so — a salvage never presents a partial artifact as whole. */
+  partial: boolean;
+}
+
+/**
+ * Controls for the live capture, registered by the SURFACE that owns
+ * persistence (the Capture Studio) — deliberately NOT by the recorder.
+ *
+ * Layering: `video-recorder` owns capture and knows nothing about metadata,
+ * folders, or uploads; the studio owns those. So identity + progress are
+ * registered by the recorder (`registerLiveCapture`) while the controls that
+ * can SAVE the artifact are registered here by the studio.
+ *
+ * These exist so a recording can be stopped-and-saved from OUTSIDE the studio
+ * component — the app-wide indicator chip and the navigation guard. Before
+ * this, leaving the route silently downgraded a live recording into an
+ * "interrupted, recover what survived" journal.
+ */
+export interface LiveCaptureControls {
+  pause(): void;
+  resume(): void;
+  /** Route the owning studio is mounted on, for "return to the recording". */
+  returnPath: string;
+  /**
+   * Stop the recorder, assemble the artifact from the journal, and upload it.
+   * Idempotent for one recording — concurrent callers share one salvage.
+   * Throws when the media could not be saved; the journal stays preserved so
+   * the recovery banner can still offer it.
+   */
+  stopAndSave(): Promise<LiveCaptureSaveResult>;
+}
+
 export interface MediaCaptureDiagnosticsSnapshot {
   camera: CameraStreamSnapshot;
   /** captureLock holder id (e.g. "media-capture-recording"), or null. */
@@ -106,6 +172,8 @@ export interface MediaCaptureDiagnosticsSnapshot {
   journalsRefreshedAt: number | null;
   /** Bounded recent-failure ring, newest first. */
   failures: CaptureFailureEntry[];
+  /** The ONE live media-capture recording, or null. */
+  liveCapture: LiveCaptureInfo | null;
 }
 
 /** Retry payload retained beside a failed-upload ring entry. */
@@ -128,6 +196,7 @@ interface RegistryInternal {
   journals: CaptureJournalSummary[];
   journalsRefreshedAt: number | null;
   failures: CaptureFailureEntry[];
+  liveCapture: LiveCaptureInfo | null;
   unsubscribers: Array<() => void>;
 }
 
@@ -140,10 +209,24 @@ const m: RegistryInternal = {
   journals: [],
   journalsRefreshedAt: null,
   failures: [],
+  liveCapture: null,
   unsubscribers: [],
 };
 
 const retryPayloads = new Map<string, CaptureRetryPayload>();
+
+/** Live readers for the active capture — side table, never in the snapshot. */
+let liveCaptureReaders: {
+  getElapsedMs: () => number;
+  getState: () => string;
+} | null = null;
+
+/** Live controls for the active capture — side table (functions), keyed by the
+ *  capture they belong to so a stale registration can never drive a new one. */
+let liveCaptureControls: {
+  captureId: string;
+  controls: LiveCaptureControls;
+} | null = null;
 
 let failureSeq = 0;
 
@@ -163,6 +246,7 @@ function buildSnapshot(): MediaCaptureDiagnosticsSnapshot {
     journals: m.journals,
     journalsRefreshedAt: m.journalsRefreshedAt,
     failures: m.failures,
+    liveCapture: m.liveCapture,
   };
 }
 
@@ -329,6 +413,87 @@ export function recordCaptureFailure(input: {
   return id;
 }
 
+/**
+ * Register the live recording so surfaces (the Media window's Camera tab)
+ * can show a REAL, pause-aware clock and identity without holding the
+ * recorder handle. Called by the recording orchestrator on start; the
+ * returned unregister runs on every terminal path.
+ *
+ * `readers` stay OUT of the snapshot (they are functions, and elapsed changes
+ * continuously) — surfaces poll `getLiveCaptureProgress()` on their own tick.
+ * Registering a second capture while one is live is a bug (captureLock
+ * guarantees one at a time) and screams.
+ */
+export function registerLiveCapture(
+  info: LiveCaptureInfo,
+  readers: { getElapsedMs: () => number; getState: () => string },
+): () => void {
+  if (m.liveCapture !== null) {
+    console.error(
+      `[mediaCaptureDiagnostics] a live capture (${m.liveCapture.captureId}) was already registered when ${info.captureId} started — captureLock should make this impossible.`,
+    );
+  }
+  m.liveCapture = info;
+  liveCaptureReaders = readers;
+  emit();
+  return () => {
+    if (m.liveCapture?.captureId !== info.captureId) return;
+    m.liveCapture = null;
+    liveCaptureReaders = null;
+    // The capture is over — its controls can never be valid again. Clearing
+    // here means no terminal path can strand a stop-and-save handle that would
+    // drive a dead recorder.
+    if (liveCaptureControls?.captureId === info.captureId) {
+      liveCaptureControls = null;
+    }
+    emit();
+  };
+}
+
+/**
+ * Register the persistence controls for the live capture (see
+ * `LiveCaptureControls`). Called by the Capture Studio right after the
+ * recorder handle exists; the returned unregister runs on every terminal path.
+ *
+ * Controls stay OUT of the snapshot (they are functions). Surfaces read them
+ * with `getLiveCaptureControls()` at interaction time — they already poll
+ * `getLiveCaptureProgress()` on their own tick, so the brief window between
+ * the recorder publishing its identity and the studio publishing its controls
+ * resolves on the next tick with no extra emit.
+ */
+export function registerLiveCaptureControls(
+  captureId: string,
+  controls: LiveCaptureControls,
+): () => void {
+  liveCaptureControls = { captureId, controls };
+  return () => {
+    if (liveCaptureControls?.captureId !== captureId) return;
+    liveCaptureControls = null;
+  };
+}
+
+/** Controls for the active capture, or null when none is registered yet. */
+export function getLiveCaptureControls(): LiveCaptureControls | null {
+  if (!liveCaptureControls) return null;
+  // Never hand back controls for a capture that is no longer the live one.
+  if (m.liveCapture?.captureId !== liveCaptureControls.captureId) return null;
+  return liveCaptureControls.controls;
+}
+
+/** Live elapsed + controller state for the active capture, or null. */
+export function getLiveCaptureProgress(): LiveCaptureProgress | null {
+  if (!liveCaptureReaders) return null;
+  try {
+    return {
+      elapsedMs: liveCaptureReaders.getElapsedMs(),
+      state: liveCaptureReaders.getState(),
+    };
+  } catch (err) {
+    console.error("[mediaCaptureDiagnostics] live capture reader threw:", err);
+    return null;
+  }
+}
+
 /** Retained retry payload for a ring entry, if any. */
 export function getCaptureRetryPayload(
   failureId: string,
@@ -363,6 +528,9 @@ export function __resetMediaCaptureDiagnostics(): void {
   m.journals = [];
   m.journalsRefreshedAt = null;
   m.failures = [];
+  m.liveCapture = null;
+  liveCaptureReaders = null;
+  liveCaptureControls = null;
   retryPayloads.clear();
   emit();
 }

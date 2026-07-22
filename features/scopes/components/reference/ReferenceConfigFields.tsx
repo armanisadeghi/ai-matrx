@@ -5,7 +5,6 @@ import { AlertTriangle, Eye, Link2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/official/Field";
-import { cn } from "@/utils/cn";
 import {
   Select,
   SelectContent,
@@ -42,6 +41,7 @@ export interface ReferenceConfigOrgScopeType {
  */
 const BASICS_BUCKET = "__basics__";
 const SYNTHETIC_TYPES = new Set(["url", "scope"]);
+const GROUP_SELECT_NONE = "__group_none__";
 
 // Buckets: an admin-assigned reference category wins (prefixed keys keep the
 // two namespaces from colliding); otherwise the type's schema.
@@ -61,15 +61,6 @@ function bucketLabel(bucket: string): string {
   }
   const schema = bucket.slice("schema:".length);
   return SCHEMA_DISPLAY[schema]?.label ?? schema;
-}
-
-function bucketSortOrder(bucket: string): number {
-  if (bucket === BASICS_BUCKET) return -1;
-  if (bucket.startsWith("cat:")) {
-    // Admin categories sort before schema buckets — they are deliberate.
-    return (REFERENCE_CATEGORY_DISPLAY[bucket.slice(4)]?.sortOrder ?? 50) - 1000;
-  }
-  return SCHEMA_DISPLAY[bucket.slice("schema:".length)]?.sortOrder ?? 999;
 }
 
 function TypeIcon({ type, className }: { type: string; className?: string }) {
@@ -120,18 +111,18 @@ export interface ReferenceConfigFieldsProps {
  * `ContextItemAddForm` and `ContextItemSettingsForm`; do not re-implement
  * this block a third time.
  *
- * Type selection is TWO-TIER: tier 1 the DB schema (pretty name from
- * `platform.schemas` via the generated `SCHEMA_DISPLAY`, plus a "Basics"
- * bucket for the synthetic `url`/`scope` types), tier 2 the entity types in
- * that schema. The set is deliberately open — every `reference_pickable`
+ * Type selection is TWO-TIER via paired selects: tier 1 the DB schema
+ * (pretty name from `platform.schemas` via the generated `SCHEMA_DISPLAY`,
+ * plus a "Basics" bucket for the synthetic `url`/`scope` types), tier 2 the
+ * entity types in that schema. Both selects stay mounted at all times so the
+ * layout never shifts. The set is deliberately open — every `reference_pickable`
  * type in `platform.entity_types` is offered; we do not predetermine what a
- * user may associate. Typing in the search filters across ALL buckets.
- * Selections span buckets and stay visible in the "Selected" chip row. The
- * optional preview mounts the REAL `ReferenceValuePicker` against throwaway
- * local state — nothing picked there is saved.
+ * user may associate. Typing in the search repoints tier 2 at matches across
+ * ALL buckets. Selections span buckets and stay visible in the "Selected"
+ * chip row. The optional preview mounts the REAL `ReferenceValuePicker`
+ * against throwaway local state — nothing picked there is saved.
  *
- * Chips use canonical `Button size="sm"` so they match `EntryModeToggle`
- * (`h-7 text-xs`). Labels use canonical `Field`.
+ * Labels use canonical `Field`.
  */
 export function ReferenceConfigFields({
   allowedReferenceTypes,
@@ -153,12 +144,15 @@ export function ReferenceConfigFields({
   const uid = useId();
   const options = typeOptions ?? CONTEXT_REFERENCE_TYPE_OPTIONS;
   const typesId = `${uid}-types`;
+  const groupSelectId = `${uid}-group`;
+  const typeSelectId = `${uid}-type`;
   const maxId = `${uid}-max`;
   const scopesId = `${uid}-scopes`;
   const templateId = `${uid}-table-template`;
   const previewId = `${uid}-preview`;
   const [templates, setTemplates] = useState<DatasetTableTemplate[]>([]);
   const [typeSearch, setTypeSearch] = useState("");
+  const [typeSelectKey, setTypeSelectKey] = useState(0);
 
   // ── Two-tier grouping: schema buckets ────────────────────────────────────
   const groups = useMemo(() => {
@@ -175,27 +169,45 @@ export function ReferenceConfigFields({
           referenceTypeLabel(a).localeCompare(referenceTypeLabel(b)),
         ),
       }))
-      .sort(
-        (a, b) =>
-          bucketSortOrder(a.bucket) - bucketSortOrder(b.bucket) ||
-          a.label.localeCompare(b.label),
-      );
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [options]);
 
-  const [activeBucket, setActiveBucket] = useState<string | null>(null);
+  const defaultBucket = groups[0]?.bucket ?? GROUP_SELECT_NONE;
+  const [activeBucket, setActiveBucket] = useState(defaultBucket);
   const activeGroup =
     groups.find((g) => g.bucket === activeBucket) ?? groups[0] ?? null;
+  const searching = typeSearch.trim().length > 0;
 
   // Search cuts across every bucket (flat result list).
   const searchMatches = useMemo(() => {
     const q = typeSearch.trim().toLowerCase();
-    if (!q) return null;
-    return options.filter(
-      (t) =>
-        referenceTypeLabel(t).toLowerCase().includes(q) ||
-        t.toLowerCase().includes(q),
-    );
+    if (!q) return [];
+    return options
+      .filter(
+        (t) =>
+          referenceTypeLabel(t).toLowerCase().includes(q) ||
+          t.toLowerCase().includes(q),
+      )
+      .sort((a, b) =>
+        referenceTypeLabel(a).localeCompare(referenceTypeLabel(b)),
+      );
   }, [options, typeSearch]);
+
+  const typeSelectOptions = searching
+    ? searchMatches
+    : (activeGroup?.types ?? []);
+
+  useEffect(() => {
+    if (groups.length === 0) {
+      setActiveBucket(GROUP_SELECT_NONE);
+      return;
+    }
+    if (!groups.some((group) => group.bucket === activeBucket)) {
+      setActiveBucket(groups[0].bucket);
+    }
+  }, [groups, activeBucket]);
+
+  const pickerDisabled = disabled || !!datasetTemplateId;
 
   // ── Throwaway preview state — NEVER persisted anywhere ────────────────────
   const [previewValue, setPreviewValue] = useState<string | null>(null);
@@ -229,98 +241,97 @@ export function ReferenceConfigFields({
     };
   }, [organizationId, onDatasetTemplateChange]);
 
-  const renderTypeChip = (t: string) => {
-    const active = allowedReferenceTypes.includes(t);
-    return (
-      <Button
-        key={t}
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={disabled || !!datasetTemplateId}
-        onClick={() => onToggleReferenceType(t)}
-        aria-pressed={active}
-        className={
-          active
-            ? "border-primary/50 bg-primary/10 text-foreground hover:bg-primary/15 hover:text-foreground"
-            : "text-muted-foreground"
-        }
-      >
-        <TypeIcon type={t} className="mr-1 h-3.5 w-3.5" />
-        {referenceTypeLabel(t)}
-      </Button>
-    );
+  const addReferenceType = (type: string) => {
+    if (pickerDisabled || allowedReferenceTypes.includes(type)) return;
+    onToggleReferenceType(type);
+    setTypeSelectKey((key) => key + 1);
   };
 
   return (
     <div className={className ? className : "space-y-3"}>
       <Field label="Allowed types" htmlFor={typesId}>
         <div id={typesId} className="space-y-1.5">
-          <div className="relative max-w-xs">
+          <div className="relative max-w-md">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={typeSearch}
               onChange={(e) => setTypeSearch(e.target.value)}
               placeholder="Search all types…"
-              disabled={disabled || !!datasetTemplateId}
+              disabled={pickerDisabled}
               style={{ fontSize: "16px" }}
               className="h-7 pl-7 pr-2 text-xs"
             />
           </div>
 
-          {searchMatches ? (
-            searchMatches.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5" role="group">
-                {searchMatches.map(renderTypeChip)}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                No types match &ldquo;{typeSearch.trim()}&rdquo;.
-              </p>
-            )
-          ) : (
-            <>
-              {/* Tier 1 — schema buckets (pretty names from platform.schemas) */}
-              <div className="flex flex-wrap gap-1" role="tablist">
+          <div className="grid max-w-md grid-cols-1 gap-1.5 sm:grid-cols-2">
+            <Select
+              value={
+                groups.some((group) => group.bucket === activeBucket)
+                  ? activeBucket
+                  : GROUP_SELECT_NONE
+              }
+              onValueChange={(value) => {
+                if (value !== GROUP_SELECT_NONE) setActiveBucket(value);
+              }}
+              disabled={pickerDisabled || groups.length === 0 || searching}
+            >
+              <SelectTrigger id={groupSelectId} size="sm" aria-label="Group">
+                <SelectValue placeholder="Group" />
+              </SelectTrigger>
+              <SelectContent>
                 {groups.map(({ bucket, label, types }) => {
                   const selectedIn = types.filter((t) =>
                     allowedReferenceTypes.includes(t),
                   ).length;
-                  const active = activeGroup?.bucket === bucket;
                   return (
-                    <button
-                      key={bucket}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      disabled={disabled || !!datasetTemplateId}
-                      onClick={() => setActiveBucket(bucket)}
-                      className={cn(
-                        "inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] transition-colors",
-                        active
-                          ? "border-primary/50 bg-primary/10 text-foreground"
-                          : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
-                      )}
-                    >
+                    <SelectItem key={bucket} value={bucket}>
                       {label}
-                      {selectedIn > 0 && (
-                        <span className="rounded bg-primary/15 px-1 text-[10px] tabular-nums">
-                          {selectedIn}
-                        </span>
-                      )}
-                    </button>
+                      {selectedIn > 0 ? ` (${selectedIn} selected)` : ""}
+                    </SelectItem>
                   );
                 })}
-              </div>
+              </SelectContent>
+            </Select>
 
-              {/* Tier 2 — the types in the active bucket */}
-              {activeGroup && (
-                <div className="flex flex-wrap gap-1.5" role="group">
-                  {activeGroup.types.map(renderTypeChip)}
-                </div>
-              )}
-            </>
-          )}
+            <Select
+              key={typeSelectKey}
+              onValueChange={addReferenceType}
+              disabled={pickerDisabled || typeSelectOptions.length === 0}
+            >
+              <SelectTrigger id={typeSelectId} size="sm" aria-label="Type">
+                <SelectValue
+                  placeholder={
+                    searching
+                      ? typeSelectOptions.length > 0
+                        ? "Add from search results…"
+                        : "No search matches"
+                      : "Add a type…"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {typeSelectOptions.map((t) => (
+                  <SelectItem
+                    key={t}
+                    value={t}
+                    disabled={allowedReferenceTypes.includes(t)}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <TypeIcon type={t} className="h-3.5 w-3.5" />
+                      {referenceTypeLabel(t)}
+                      {allowedReferenceTypes.includes(t) ? " (selected)" : ""}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {searching && typeSelectOptions.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No types match &ldquo;{typeSearch.trim()}&rdquo;.
+            </p>
+          ) : null}
 
           {/* Selections span buckets — keep them all visible + removable */}
           {allowedReferenceTypes.length > 0 ? (
@@ -328,25 +339,29 @@ export function ReferenceConfigFields({
               <span className="text-[11px] text-muted-foreground">
                 Selected:
               </span>
-              {allowedReferenceTypes.map((t) => (
-                <span
-                  key={t}
-                  className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[11px]"
-                >
-                  <TypeIcon type={t} className="h-3 w-3" />
-                  {referenceTypeLabel(t)}
-                  {!disabled && !datasetTemplateId && (
-                    <button
-                      type="button"
-                      onClick={() => onToggleReferenceType(t)}
-                      className="hover:text-rose-600"
-                      aria-label={`Remove ${referenceTypeLabel(t)}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </span>
-              ))}
+              {[...allowedReferenceTypes]
+                .sort((a, b) =>
+                  referenceTypeLabel(a).localeCompare(referenceTypeLabel(b)),
+                )
+                .map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[11px]"
+                  >
+                    <TypeIcon type={t} className="h-3 w-3" />
+                    {referenceTypeLabel(t)}
+                    {!disabled && !datasetTemplateId && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleReferenceType(t)}
+                        className="hover:text-rose-600"
+                        aria-label={`Remove ${referenceTypeLabel(t)}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
             </div>
           ) : (
             <p className="text-xs text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
@@ -444,9 +459,7 @@ export function ReferenceConfigFields({
             disabled={disabled || !organizationId}
           >
             <SelectTrigger id={templateId} size="sm" className="max-w-md">
-              <SelectValue
-                placeholder="No template"
-              />
+              <SelectValue placeholder="No template" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">No template</SelectItem>
@@ -459,7 +472,8 @@ export function ReferenceConfigFields({
           </Select>
           {datasetTemplateId && (
             <p className="text-xs text-muted-foreground">
-              The table value is provisioned automatically; users edit rows, not columns.
+              The table value is provisioned automatically; users edit rows, not
+              columns.
             </p>
           )}
         </Field>

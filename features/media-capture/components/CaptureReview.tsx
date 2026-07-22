@@ -16,12 +16,23 @@
  * `partialNote` — a recovered recording is never presented as whole.
  */
 
-import { useRef, useState } from "react";
-import { AlertTriangle, Check, Download, Loader2, RotateCcw, Save } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AlertTriangle,
+  Check,
+  Download,
+  FileText,
+  Loader2,
+  RotateCcw,
+  Save,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InlineMediaRef } from "@/features/files";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
+import { transcribeCloudFile } from "@/features/audio/services/speechApi";
+import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { toast } from "@/lib/toast";
 
 export interface CaptureReviewProps {
   /** Which artifact kind is under review. */
@@ -62,6 +73,67 @@ export function CaptureReview({
   );
   const [isPlaying, setIsPlaying] = useState(false);
 
+  // ── Transcription (saved video/audio only — the server reads the file_id) ──
+  //
+  // The transcription state carries the file id it belongs to, so a new
+  // capture simply stops matching and nothing is displayed. Deriving this
+  // beats resetting it in an effect: there is no frame in which the previous
+  // capture's transcript is shown under the new one, and a late response for
+  // an old file can never be rendered.
+  interface TranscriptionState {
+    fileId: string;
+    status: "loading" | "done" | "error";
+    text: string;
+    error: string;
+  }
+  const [transcription, setTranscription] = useState<TranscriptionState | null>(
+    null,
+  );
+  const abortRef = useRef<AbortController | null>(null);
+
+  const canTranscribe = kind !== "photo" && savedFileId !== null;
+  const current =
+    transcription && transcription.fileId === savedFileId ? transcription : null;
+  const transcribing = current?.status === "loading";
+  const transcript = current?.status === "done" ? current.text : null;
+  const transcriptError = current?.status === "error" ? current.error : null;
+
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const handleTranscribe = useCallback(async () => {
+    if (!savedFileId || transcribing) return;
+    const fileId = savedFileId;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setTranscription({ fileId, status: "loading", text: "", error: "" });
+    try {
+      const result = await transcribeCloudFile({ fileId }, controller.signal);
+      if (controller.signal.aborted) return;
+      const text = result.text.trim();
+      setTranscription(
+        text
+          ? { fileId, status: "done", text, error: "" }
+          : {
+              fileId,
+              status: "error",
+              text: "",
+              error:
+                "No speech was detected in this recording — nothing to transcribe.",
+            },
+      );
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      console.error("[CaptureReview] transcription failed", err);
+      const message =
+        err instanceof Error ? err.message : "Transcription failed — try again.";
+      setTranscription({ fileId, status: "error", text: "", error: message });
+      toast.error(message);
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
+    }
+  }, [savedFileId, transcribing]);
+
   // Join the unified audio system while review playback runs (playback lock
   // + Audio panel visibility). Photos never register.
   useMediaElementPlaybackSession({
@@ -73,7 +145,7 @@ export function CaptureReview({
   });
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/30">
         {kind === "photo" ? (
           savedFileId ? (
@@ -157,6 +229,26 @@ export function CaptureReview({
           <Download className="mr-1.5 h-4 w-4" />
           Download
         </Button>
+        {canTranscribe && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={() => void handleTranscribe()}
+            disabled={transcribing}
+          >
+            {transcribing ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="mr-1.5 h-4 w-4" />
+            )}
+            {transcribing
+              ? "Transcribing…"
+              : transcript
+                ? "Transcribe again"
+                : "Transcribe"}
+          </Button>
+        )}
         {!savedFileId && (
           <Button size="sm" className="ml-auto h-9" onClick={onSave} disabled={saving}>
             {saving ? (
@@ -168,6 +260,60 @@ export function CaptureReview({
           </Button>
         )}
       </div>
+
+      {/* ── Transcript ────────────────────────────────────────────────────── */}
+      {kind !== "photo" && (transcribing || transcript || transcriptError) && (
+        <div className="mt-2 shrink-0 rounded-lg border border-border bg-card p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-foreground">Transcript</span>
+            {transcript && (
+              <ContentActionBar
+                content={transcript}
+                title={`Transcript — ${fileName}`}
+                metadata={{ file_id: savedFileId, source: "media-capture" }}
+                instanceKey={`capture-transcript-${savedFileId ?? "pending"}`}
+                className="ml-auto"
+              />
+            )}
+          </div>
+
+          {transcribing && (
+            <div className="space-y-2" aria-live="polite">
+              <div className="h-3 w-full animate-pulse rounded bg-muted" />
+              <div className="h-3 w-11/12 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-8/12 animate-pulse rounded bg-muted" />
+              <p className="pt-1 text-xs text-muted-foreground">
+                Transcribing on the server — long recordings are split
+                automatically. You can keep this page open.
+              </p>
+            </div>
+          )}
+
+          {!transcribing && transcriptError && (
+            <div className="flex items-start gap-1.5">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+              <div className="min-w-0">
+                <p className="text-xs text-destructive">{transcriptError}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-1.5 h-7 text-xs"
+                  onClick={() => void handleTranscribe()}
+                >
+                  Try again
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!transcribing && transcript && (
+            <p className="max-h-56 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-foreground">
+              {transcript}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

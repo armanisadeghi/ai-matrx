@@ -22,7 +22,7 @@ import {
   FilesResourcePicker,
   type FileSelection,
 } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
-import { FilePickerWindow } from "@/features/resource-manager/resource-picker/FilePickerWindow";
+import dynamic from "next/dynamic";
 import {
   Sheet,
   SheetContent,
@@ -40,6 +40,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+
+// THE one canonical file picker. Lazy — WindowPanel must never be parsed in
+// a route/boot bundle (features/window-panels FEATURE.md → Bundle invariant).
+const FilePickerWindow = dynamic(
+  () =>
+    import("@/features/resource-manager/resource-picker/FilePickerWindow").then(
+      (m) => ({ default: m.FilePickerWindow }),
+    ),
+  { ssr: false, loading: () => null },
+);
 
 export interface AssociationPickerProps {
   open: boolean;
@@ -193,6 +203,7 @@ export function AssociationCandidateBody({
         <FilesResourcePicker
           onBack={() => onClose?.()}
           onSelect={(selection) => void handleFilePick(selection)}
+          fillHost
         />
       </div>
     );

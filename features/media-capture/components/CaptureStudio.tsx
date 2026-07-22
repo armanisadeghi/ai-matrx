@@ -26,14 +26,17 @@
  *   unsupported-codec, storage-quota, and lock-takeover for recordings.
  */
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import { AlertTriangle, Camera, History, Loader2, Trash2 } from "lucide-react";
+  AlertTriangle,
+  Camera,
+  History,
+  LifeBuoy,
+  Loader2,
+  Mic,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,11 +45,9 @@ import {
   createTrackedObjectUrl,
   revokeTrackedObjectUrl,
 } from "@/lib/media/object-url-registry";
-import {
-  listDevices,
-  getMediaDevicesSnapshot,
-  subscribeMediaDevices,
-} from "@/features/media-devices/deviceManager";
+import { listDevices } from "@/features/media-devices/deviceManager";
+import { useAudioDevices } from "@/features/audio/useAudioDevices";
+import { useStreamAudioLevel } from "@/features/audio/useStreamAudioLevel";
 import {
   acquireCameraLease,
   subscribeCameraInterruption,
@@ -79,7 +80,12 @@ import {
   type RecoverableJournal,
 } from "@/features/media-capture/recording/chunk-journal";
 import { finishJournalRecovery } from "@/features/media-capture/recording/journal-recovery";
-import { recordCaptureFailure } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
+import {
+  recordCaptureFailure,
+  registerLiveCaptureControls,
+  type LiveCaptureSaveResult,
+} from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
+import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import { CameraPreview } from "@/features/media-capture/components/CameraPreview";
 import {
   CaptureControls,
@@ -87,6 +93,7 @@ import {
   type RecordingUiState,
 } from "@/features/media-capture/components/CaptureControls";
 import { CaptureReview } from "@/features/media-capture/components/CaptureReview";
+import { RecordingHud } from "@/features/media-capture/components/RecordingHud";
 import {
   DeviceFallbackInput,
   type DeviceFallbackInputHandle,
@@ -204,6 +211,43 @@ function captureFileName(mime: string): string {
   return `capture-${stamp}.${extensionForMime(mime)}`;
 }
 
+/**
+ * ONE metadata path for a finished recording — used by the in-studio review
+ * flow AND by the out-of-studio salvage (`stopAndSave`). The visual settings
+ * are a SNAPSHOT taken when recording started, so a salvage that runs after
+ * the camera lease is gone still describes the real source.
+ */
+function buildRecordingMetadata(args: {
+  result: CaptureRecordingResult;
+  kind: "video" | "audio";
+  sourceFeature: string;
+  sourceSettings: VisualSourceSettings;
+}): CaptureMetadata {
+  if (args.kind === "audio") {
+    return buildAudioCaptureMetadata({
+      source: "browser-media-devices",
+      sourceFeature: args.sourceFeature,
+      recorderMimeType: args.result.mime,
+    });
+  }
+  return buildVideoCaptureMetadata({
+    source: "browser-media-devices",
+    sourceFeature: args.sourceFeature,
+    sourceSettings: args.sourceSettings,
+    framing: "full-frame", // the recorder records the full stream
+    mirroredOutput: false,
+    hasAudio: args.result.hasAudio,
+    recorderMimeType: args.result.mime,
+  });
+}
+
+const EMPTY_VISUAL_SETTINGS: VisualSourceSettings = {
+  width: 0,
+  height: 0,
+  frame_rate: null,
+  facing_mode: null,
+};
+
 export function CaptureStudio({
   sourceFeature = "camera",
   profile = "1080p",
@@ -221,17 +265,54 @@ export function CaptureStudio({
   const [facing, setFacing] = useState<"user" | "environment">(
     isMobile ? "environment" : "user",
   );
-  const [deviceId, setDeviceId] = useState<string | null>(null);
   const [captured, setCaptured] = useState<CapturedDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedFileId, setSavedFileId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  /**
+   * Bumped to force a fresh camera acquisition. Without this, clearing an error
+   * (Try again, or switching photo↔video) changed no lease-effect dep, so the
+   * effect never re-ran and the studio sat on a blank "starting" skeleton
+   * forever with no way out but a page reload.
+   */
+  const [acquireToken, setAcquireToken] = useState(0);
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
 
   // ── Recording state (video/audio modes) ───────────────────────────────────
   const [recUi, setRecUi] = useState<RecordingUiState>("idle");
   const [withMic, setWithMic] = useState(true);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [estimatedBytes, setEstimatedBytes] = useState(0);
+  /** The composed recording stream, exposed for the HUD's level meter only. */
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(
+    null,
+  );
   const recordingRef = useRef<CaptureRecordingHandle | null>(null);
+  /**
+   * Source settings SNAPSHOT taken when recording starts. A salvage
+   * (`stopAndSave`) can run after this component unmounted and the camera
+   * lease was released, so metadata must never depend on a live lease.
+   */
+  const visualSettingsRef = useRef<VisualSourceSettings>(EMPTY_VISUAL_SETTINGS);
+  /** In-flight salvage for the CURRENT recording — makes stop-and-save
+   *  idempotent when the nav guard and the unmount path both fire. */
+  const salvageRef = useRef<Promise<LiveCaptureSaveResult> | null>(null);
+  /**
+   * Stop-the-recording-and-UPLOAD-it for the current recording, or null when
+   * nothing is recording. Built at recording start (where the handle, the kind
+   * and the source settings are all fixed for the recording's lifetime) so it
+   * closes over no component state and can complete AFTER this component
+   * unmounts — which is exactly when it matters.
+   */
+  const salvageFnRef = useRef<(() => Promise<LiveCaptureSaveResult>) | null>(
+    null,
+  );
+  /** Clears this recording's entry in the live-capture controls registry. */
+  const unregisterControlsRef = useRef<(() => void) | null>(null);
+
+  // Live mic level off the COMPOSED stream — meters exactly what is recorded
+  // (and correctly reads 0 when the user recorded with the mic off).
+  const audioLevel = useStreamAudioLevel(recordingStream);
 
   // ── Recovery (interrupted journals) ──────────────────────────────────────
   const [recoverables, setRecoverables] = useState<RecoverableJournal[]>([]);
@@ -246,11 +327,10 @@ export function CaptureStudio({
     capturedRef.current = captured;
   }, [captured]);
 
-  const devices = useSyncExternalStore(
-    subscribeMediaDevices,
-    getMediaDevicesSnapshot,
-    getMediaDevicesSnapshot,
-  );
+  // Canonical device state — the SAME hook the rail writes through, so a
+  // camera chosen in the rail re-acquires the lease here. Never a parallel
+  // device store, never raw enumerateDevices.
+  const { selectedCameraId } = useAudioDevices();
 
   const needsCamera = mode !== "audio";
 
@@ -282,8 +362,10 @@ export function CaptureStudio({
         setError(null);
         return acquireCameraLease({
           profile,
-          ...(deviceId && !isMobile ? { deviceId } : {}),
-          ...(isMobile ? { facingMode: facing } : {}),
+          // An explicit device choice wins everywhere; on mobile with no
+          // explicit choice, facingMode selects front/rear.
+          ...(selectedCameraId ? { deviceId: selectedCameraId } : {}),
+          ...(isMobile && !selectedCameraId ? { facingMode: facing } : {}),
         });
       })
       .then((lease) => {
@@ -317,7 +399,7 @@ export function CaptureStudio({
       }
       setStream(null);
     };
-  }, [profile, deviceId, facing, isMobile, needsCamera]);
+  }, [profile, selectedCameraId, facing, isMobile, needsCamera, acquireToken]);
 
   // ── Interruptions are LOUD terminal states while previewing ───────────────
   useEffect(() => {
@@ -358,30 +440,83 @@ export function CaptureStudio({
     };
   }, []);
 
-  // ── Elapsed ticker while recording ────────────────────────────────────────
+  // ── Elapsed + size ticker while recording ─────────────────────────────────
+  // Both numbers come from the controller (pause-aware monotonic clock and the
+  // same projected size the maxBytes hard stop enforces) — never derived here.
   useEffect(() => {
     if (recUi !== "recording" && recUi !== "paused") return;
     const t = setInterval(() => {
       const h = recordingRef.current;
-      if (h) setElapsedMs(h.getElapsedMs());
+      if (!h) return;
+      setElapsedMs(h.getElapsedMs());
+      setEstimatedBytes(h.getEstimatedBytes());
     }, 200);
     return () => clearInterval(t);
   }, [recUi]);
 
-  // ── Revoke any outstanding preview URL + kill a live recording on unmount ─
+  // ── Closing the tab mid-recording must WARN ──────────────────────────────
+  //
+  // A tab close or reload is the ONE exit this app cannot rescue: there is no
+  // time to finalize and upload, so the recording drops to the journal and the
+  // user meets a "recovered N of M / interrupted" banner instead. The browser
+  // prompt is the only guard available there, so a live recording arms it and
+  // a stopped one disarms it immediately. In-app navigation is handled far
+  // better by `LiveCaptureIndicator`'s guard (confirm → stop → save) and by
+  // this component's unmount salvage.
   useEffect(() => {
+    if (recUi !== "recording" && recUi !== "paused") return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [recUi]);
+
+  // ── Revoke any outstanding preview URL + SALVAGE a live recording on unmount
+  //
+  // A route unmount mid-recording used to stop the recorder and merely preserve
+  // the journal, so the user's recording silently became an "Interrupted —
+  // only media captured before the interruption can be recovered" banner on
+  // their next visit. That is data loss with extra steps.
+  //
+  // The recorder handle and the uploader are both framework-free, so the
+  // recording can be finalized AND uploaded after this component is gone.
+  // `stopAndSave` is idempotent, so when the navigation guard already started
+  // the save this just joins it. The journal stays intact on failure, so the
+  // recovery banner remains the last line of defence — it is no longer the
+  // FIRST one.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       revokeTrackedObjectUrl(capturedRef.current?.previewUrl);
       const h = recordingRef.current;
       if (h) {
-        // Route unmount mid-recording: stop and PRESERVE the journal — the
-        // recovery banner offers it on the next open.
         console.error(
-          "[CaptureStudio] unmounted mid-recording — stopping and preserving the journal.",
+          "[CaptureStudio] unmounted mid-recording — stopping and saving the recording.",
         );
-        recordingRef.current = null;
         h.done.catch(() => undefined);
-        void h.stop().catch(() => undefined);
+        const salvage = salvageFnRef.current?.();
+        recordingRef.current = null;
+        unregisterControlsRef.current?.();
+        unregisterControlsRef.current = null;
+        salvageFnRef.current = null;
+        void salvage
+          ?.then(({ partial }) => {
+            toast.success(
+              partial
+                ? "Recording stopped and saved to your captures — it was interrupted, so only the media captured before the interruption is included."
+                : "Recording stopped and saved to your captures.",
+            );
+          })
+          .catch((err: unknown) => {
+            console.error("[CaptureStudio] unmount salvage failed", err);
+            toast.error(
+              "Your recording could not be saved automatically. Open the camera to recover it from the interrupted-recording banner.",
+            );
+          });
       }
     };
   }, []);
@@ -441,24 +576,12 @@ export function CaptureStudio({
   // ── Recording flow (video + audio modes, ONE engine) ─────────────────────
   const acceptRecordingResult = useCallback(
     (result: CaptureRecordingResult, kind: "video" | "audio") => {
-      const metadata: CaptureMetadata =
-        kind === "video"
-          ? buildVideoCaptureMetadata({
-              source: "browser-media-devices",
-              sourceFeature,
-              sourceSettings: toVisualSourceSettings(
-                leaseRef.current?.getTrackSummary() ?? null,
-              ),
-              framing: "full-frame", // the recorder records the full stream
-              mirroredOutput: false,
-              hasAudio: result.hasAudio,
-              recorderMimeType: result.mime,
-            })
-          : buildAudioCaptureMetadata({
-              source: "browser-media-devices",
-              sourceFeature,
-              recorderMimeType: result.mime,
-            });
+      const metadata = buildRecordingMetadata({
+        result,
+        kind,
+        sourceFeature,
+        sourceSettings: visualSettingsRef.current,
+      });
       const file = new File([result.blob], captureFileName(result.mime), {
         type: result.mime,
       });
@@ -484,6 +607,7 @@ export function CaptureStudio({
     setRecUi("starting");
     setError(null);
     setElapsedMs(0);
+    setEstimatedBytes(0);
     try {
       const common = {
         maxDurationMs: MAX_RECORDING_DURATION_MS,
@@ -515,10 +639,75 @@ export function CaptureStudio({
             })
           : await startAudioRecording({ label: "Audio recording", ...common });
       recordingRef.current = handle;
+      salvageRef.current = null;
+      // Snapshot the source settings while the lease is guaranteed live — a
+      // salvage after unmount has no lease to read.
+      const sourceSettings =
+        kind === "video"
+          ? toVisualSourceSettings(leaseRef.current?.getTrackSummary() ?? null)
+          : EMPTY_VISUAL_SETTINGS;
+      visualSettingsRef.current = sourceSettings;
+
+      // Stop → assemble from the journal → UPLOAD, in one idempotent step.
+      // Everything it needs is captured here, so it survives this component.
+      const salvage = (): Promise<LiveCaptureSaveResult> => {
+        const inFlight = salvageRef.current;
+        if (inFlight) return inFlight;
+        const started = (async (): Promise<LiveCaptureSaveResult> => {
+          const result = await handle.stop();
+          const metadata = buildRecordingMetadata({
+            result,
+            kind,
+            sourceFeature,
+            sourceSettings,
+          });
+          const file = new File([result.blob], captureFileName(result.mime), {
+            type: result.mime,
+          });
+          const uploaded = await uploadCapture({ file, capture: metadata });
+          // uploadCapture throws when fileId is absent — this narrows, it
+          // never defaults.
+          return { fileId: uploaded.fileId as string, partial: result.partial };
+        })();
+        salvageRef.current = started;
+        return started;
+      };
+      salvageFnRef.current = salvage;
+
+      // Publish stop-and-SAVE controls so the app-wide indicator and the
+      // navigation guard can rescue this recording from outside the studio.
+      unregisterControlsRef.current?.();
+      unregisterControlsRef.current = registerLiveCaptureControls(
+        handle.captureId,
+        {
+          pause: () => {
+            handle.pause();
+            setRecUi("paused");
+          },
+          resume: () => {
+            handle.resume();
+            setRecUi("recording");
+          },
+          returnPath:
+            typeof window === "undefined" ? "/camera" : window.location.pathname,
+          stopAndSave: salvage,
+        },
+      );
+      // Read-only observation for the level meter — the engine owns every
+      // track's lifetime; we never stop or mutate this stream.
+      setRecordingStream(handle.getRecordingStream());
       setRecUi("recording");
       void handle.done
         .then((result) => {
           recordingRef.current = null;
+          unregisterControlsRef.current?.();
+          unregisterControlsRef.current = null;
+          salvageFnRef.current = null;
+          // After an unmount the salvage path owns this result — building a
+          // review draft here would strand a tracked object URL with nothing
+          // left alive to revoke it.
+          if (!mountedRef.current) return;
+          setRecordingStream(null);
           setRecUi("idle");
           if (result) {
             acceptRecordingResult(result, kind);
@@ -533,8 +722,13 @@ export function CaptureStudio({
         })
         .catch((err: unknown) => {
           recordingRef.current = null;
-          setRecUi("idle");
+          unregisterControlsRef.current?.();
+          unregisterControlsRef.current = null;
+          salvageFnRef.current = null;
           console.error("[CaptureStudio] recording failed", err);
+          if (!mountedRef.current) return;
+          setRecordingStream(null);
+          setRecUi("idle");
           const classified = classifyRecordingError(err);
           recordCaptureFailure({
             scope: "recording",
@@ -545,6 +739,10 @@ export function CaptureStudio({
         });
     } catch (err) {
       recordingRef.current = null;
+      unregisterControlsRef.current?.();
+      unregisterControlsRef.current = null;
+      salvageFnRef.current = null;
+      setRecordingStream(null);
       setRecUi("idle");
       console.error("[CaptureStudio] recording start failed", err);
       const classified = classifyRecordingError(err);
@@ -576,6 +774,10 @@ export function CaptureStudio({
     if (!h) return;
     void h.cancel().then(() => {
       recordingRef.current = null;
+      unregisterControlsRef.current?.();
+      unregisterControlsRef.current = null;
+      salvageFnRef.current = null;
+      setRecordingStream(null);
       setRecUi("idle");
     });
   }, []);
@@ -686,12 +888,28 @@ export function CaptureStudio({
     }
   }, [saving, onSaved]);
 
+  /**
+   * Re-attempt camera acquisition after a terminal error — the way OUT of a
+   * permission-denied / device-busy state once the user has fixed it in their
+   * browser settings, without reloading the page.
+   */
+  const handleRetryCamera = useCallback(() => {
+    setError(null);
+    setPhase("starting");
+    setAcquireToken((t) => t + 1);
+  }, []);
+
   const handleModeChange = useCallback(
     (next: CaptureMode) => {
       if (recordingRef.current) return; // locked while recording
       setMode(next);
-      setError(null);
-      if (phase === "error") setPhase("starting");
+      // Leaving an error state must actually retry: clearing `error` alone
+      // changes no lease-effect dep, so the acquire token is what re-runs it.
+      if (phase === "error") {
+        setError(null);
+        setPhase("starting");
+        setAcquireToken((t) => t + 1);
+      }
     },
     [phase],
   );
@@ -775,7 +993,9 @@ export function CaptureStudio({
         <>
           <div
             ref={containerRef}
-            className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/30"
+            // The stage is the point of the screen — it never gets squeezed
+            // below a usable height by the control strip wrapping under it.
+            className="relative min-h-[240px] flex-1 overflow-hidden rounded-lg border border-border bg-muted/30 sm:min-h-[280px]"
           >
             {needsCamera && phase === "starting" && (
               <Skeleton className="h-full w-full" />
@@ -791,18 +1011,38 @@ export function CaptureStudio({
               />
             )}
             {!needsCamera && phase !== "error" && (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                {isRecordingLive ? (
-                  <span className="flex items-center gap-2 text-sm text-foreground">
+              <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+                {/* Ceremonial recorder stage (the transcripts recorder's
+                    pulsing circle), scaled by the LIVE mic level. */}
+                <div
+                  className={`relative flex h-28 w-28 items-center justify-center rounded-full transition-colors ${
+                    isRecordingLive
+                      ? "bg-destructive/10"
+                      : "bg-primary/10"
+                  }`}
+                >
+                  {isRecordingLive && recUi !== "paused" && (
                     <span
-                      className={`h-2.5 w-2.5 rounded-full ${recUi === "paused" ? "bg-muted-foreground" : "animate-pulse bg-destructive"}`}
+                      className="absolute inset-0 rounded-full bg-destructive/15"
+                      style={{
+                        transform: `scale(${1 + audioLevel / 160})`,
+                        transition: "transform 75ms",
+                      }}
+                      aria-hidden
                     />
-                    {recUi === "paused" ? "Paused" : "Recording audio…"}
-                  </span>
-                ) : (
+                  )}
+                  <Mic
+                    className={`relative h-12 w-12 ${
+                      isRecordingLive
+                        ? "text-destructive"
+                        : "text-primary"
+                    }`}
+                  />
+                </div>
+                {!isRecordingLive && (
                   <p className="max-w-sm text-sm text-muted-foreground">
-                    Audio-only capture — the microphone starts when you hit
-                    Record.
+                    Audio-only capture. The microphone starts when you press
+                    Record — nothing is listening until then.
                   </p>
                 )}
               </div>
@@ -813,12 +1053,41 @@ export function CaptureStudio({
                 <p className="max-w-sm text-sm text-muted-foreground">
                   {error.message}
                 </p>
-                {showFallbackOffer && (
-                  <Button size="sm" onClick={() => fallbackRef.current?.open()}>
-                    <Camera className="mr-1.5 h-4 w-4" />
-                    Use device camera
+                {/* Every terminal error gets a way forward — a retry for the
+                    user who just fixed the grant, the device fallback where a
+                    photo can still be taken, and the shared diagnostics. */}
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {needsCamera && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9"
+                      onClick={handleRetryCamera}
+                    >
+                      <RefreshCw className="mr-1.5 h-4 w-4" />
+                      Try again
+                    </Button>
+                  )}
+                  {showFallbackOffer && (
+                    <Button
+                      size="sm"
+                      className="h-9"
+                      onClick={() => fallbackRef.current?.open()}
+                    >
+                      <Camera className="mr-1.5 h-4 w-4" />
+                      Use device camera
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-9"
+                    onClick={() => setShowTroubleshooting(true)}
+                  >
+                    <LifeBuoy className="mr-1.5 h-4 w-4" />
+                    Get help
                   </Button>
-                )}
+                </div>
               </div>
             )}
             {isRecordingLive && needsCamera && (
@@ -831,37 +1100,61 @@ export function CaptureStudio({
             )}
           </div>
 
-          <CaptureControls
-            mode={mode}
-            onModeChange={handleModeChange}
-            modeLocked={isRecordingLive || recUi === "starting"}
-            framing={framing}
-            onFramingChange={setFraming}
-            isMobile={isMobile}
-            facing={facing}
-            onToggleFacing={() =>
-              setFacing((f) => (f === "user" ? "environment" : "user"))
-            }
-            cameras={devices.cameras}
-            selectedDeviceId={deviceId}
-            onSelectDevice={setDeviceId}
-            onShutter={() => void handleShutter()}
-            shutterDisabled={phase !== "preview" || capturing}
-            capturing={capturing}
-            recordingState={recUi}
-            elapsedMs={elapsedMs}
-            withMic={withMic}
-            onToggleMic={() => setWithMic((v) => !v)}
-            onStartRecording={() => void handleStartRecording()}
-            onPauseResume={handlePauseResume}
-            onStopRecording={handleStopRecording}
-            onCancelRecording={handleCancelRecording}
-            recordDisabled={
-              mode === "video" ? phase !== "preview" : phase === "error"
-            }
-          />
+          {isRecordingLive ? (
+            <RecordingHud
+              kind={mode === "audio" ? "audio" : "video"}
+              paused={recUi === "paused"}
+              elapsedMs={elapsedMs}
+              maxDurationMs={MAX_RECORDING_DURATION_MS}
+              estimatedBytes={estimatedBytes}
+              maxBytes={MAX_RECORDING_BYTES}
+              audioLevel={audioLevel}
+              hasAudio={mode === "audio" || withMic}
+              onPauseResume={handlePauseResume}
+              onStop={handleStopRecording}
+              onCancel={handleCancelRecording}
+              className="shrink-0 pb-safe pt-3"
+            />
+          ) : (
+            <CaptureControls
+              mode={mode}
+              onModeChange={handleModeChange}
+              modeLocked={isRecordingLive || recUi === "starting"}
+              framing={framing}
+              onFramingChange={setFraming}
+              isMobile={isMobile}
+              facing={facing}
+              onToggleFacing={() =>
+                setFacing((f) => (f === "user" ? "environment" : "user"))
+              }
+              onShutter={() => void handleShutter()}
+              shutterDisabled={phase !== "preview" || capturing}
+              capturing={capturing}
+              recordingState={recUi}
+              withMic={withMic}
+              onToggleMic={() => setWithMic((v) => !v)}
+              onStartRecording={() => void handleStartRecording()}
+              recordDisabled={
+                mode === "video" ? phase !== "preview" : phase === "error"
+              }
+              blockedReason={
+                phase === "error"
+                  ? "Camera unavailable — fix access above, or switch to Audio."
+                  : needsCamera && phase === "starting"
+                    ? "Starting the camera…"
+                    : null
+              }
+            />
+          )}
         </>
       )}
+
+      <VoiceTroubleshootingModal
+        isOpen={showTroubleshooting}
+        onClose={() => setShowTroubleshooting(false)}
+        error={error?.message ?? null}
+        errorCode={error?.kind ?? null}
+      />
 
       <DeviceFallbackInput
         ref={fallbackRef}

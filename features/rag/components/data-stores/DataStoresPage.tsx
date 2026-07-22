@@ -49,7 +49,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { FilePickerWindow } from "@/features/resource-manager/resource-picker/FilePickerWindow";
+import dynamic from "next/dynamic";
 import { RichMemberTable } from "@/features/rag/components/data-stores/RichMemberTable";
 import {
   useDataStoreDetail,
@@ -66,6 +66,17 @@ import { fileHandler } from "@/features/files";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
+
+// THE one canonical file picker. Lazy — WindowPanel must never be parsed in
+// a route/boot bundle (features/window-panels FEATURE.md → Bundle invariant).
+const FilePickerWindow = dynamic(
+  () =>
+    import("@/features/resource-manager/resource-picker/FilePickerWindow").then(
+      (m) => ({ default: m.FilePickerWindow }),
+    ),
+  { ssr: false, loading: () => null },
+);
+
 
 export function DataStoresPage() {
   const router = useRouter();

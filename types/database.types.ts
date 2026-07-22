@@ -43015,6 +43015,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "analysis_result_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
@@ -43521,6 +43528,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crawl_event_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "crawl_event_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -43794,11 +43808,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crawl_url_discovered_from_page_id_fkey"
+            columns: ["discovered_from_page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "crawl_url_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "page"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_url_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
           },
           {
             foreignKeyName: "crawl_url_session_id_fkey"
@@ -44082,6 +44110,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "finding_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "finding_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
@@ -44152,6 +44187,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "page"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_page_stat_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
           },
           {
             foreignKeyName: "gsc_page_stat_site_id_fkey"
@@ -44249,11 +44291,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "link_edge_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "link_edge_target_page_id_fkey"
             columns: ["target_page_id"]
             isOneToOne: false
             referencedRelation: "page"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_edge_target_page_id_fkey"
+            columns: ["target_page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
           },
         ]
       }
@@ -44416,6 +44472,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "page_evidence_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "page_evidence_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
@@ -44489,6 +44552,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "page"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_sitemap_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
           },
           {
             foreignKeyName: "page_sitemap_site_id_fkey"
@@ -44703,6 +44773,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "page"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screenshot_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
           },
           {
             foreignKeyName: "screenshot_site_id_fkey"
@@ -45085,6 +45162,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "snapshot_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "snapshot_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -45128,6 +45212,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "batch_item_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
@@ -45156,6 +45247,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "page"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
           },
           {
             foreignKeyName: "batch_item_site_id_fkey"
@@ -45244,6 +45342,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
             foreignKeyName: "analysis_result_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
@@ -45266,6 +45371,41 @@ export type Database = {
           },
         ]
       }
+      v_page_list: {
+        Row: {
+          first_seen: string | null
+          gsc_clicks_28d: number | null
+          gsc_impressions_28d: number | null
+          gsc_position_28d: number | null
+          health_score: number | null
+          http_status_last: number | null
+          in_gsc: boolean | null
+          indexability_verdict: string | null
+          last_seen: string | null
+          latest_snapshot_id: string | null
+          observed_title: string | null
+          page_id: string | null
+          path: string | null
+          provenance: string | null
+          serp_ok: boolean | null
+          site_id: string | null
+          sitemap_count: number | null
+          social_ok: boolean | null
+          status: string | null
+          target_keyword: string | null
+          url: string | null
+          word_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_page_score: {
         Row: {
           fail_count: number | null
@@ -45280,6 +45420,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "page"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
           },
           {
             foreignKeyName: "analysis_result_site_id_fkey"
@@ -45315,6 +45462,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "page"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
           },
           {
             foreignKeyName: "finding_site_id_fkey"

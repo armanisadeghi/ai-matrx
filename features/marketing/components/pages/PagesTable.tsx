@@ -182,7 +182,7 @@ export function PagesTable() {
   const coverageRaw = searchParams.get("coverage");
   const coverage = isPageCoverageFilter(coverageRaw) ? coverageRaw : null;
   const table = useMarketingTableState({
-    defaultSort: { id: "last_seen", direction: "desc" },
+    defaultSort: { id: "gsc_clicks_28d", direction: "desc" },
   });
   const pages = usePages(site.id, table.queryState, coverage);
   const createMutation = useCreateManualPage(site.id);
@@ -251,8 +251,7 @@ export function PagesTable() {
       id: "sitemap_count",
       accessorKey: "sitemap_count",
       header: "Sitemaps",
-      filter: false,
-      sortable: false,
+      filter: "number",
       align: "right",
       cell: (row) => (
         <span
@@ -269,8 +268,7 @@ export function PagesTable() {
       id: "word_count",
       accessorKey: "word_count",
       header: "Words",
-      filter: false,
-      sortable: false,
+      filter: "number",
       align: "right",
       cell: (row) => (
         <span className="font-mono text-xs tabular-nums">
@@ -294,19 +292,17 @@ export function PagesTable() {
       // Deterministic per-capture verdicts stamped in web.snapshot
       // (seo_metrics + audit_metrics) — SERP metadata, social card,
       // indexability. "·" = no stored metrics for the latest snapshot yet.
-      id: "health",
-      accessorKey: "serp_ok",
+      id: "health_score",
+      accessorKey: "health_score",
       header: "Health",
-      filter: false,
-      sortable: false,
+      filter: "number",
       cell: (row) => <PageHealthChips row={row} />,
     },
     {
       id: "gsc_clicks_28d",
       accessorKey: "gsc_clicks_28d",
       header: "Clicks 28d",
-      filter: false,
-      sortable: false,
+      filter: "number",
       align: "right",
       cell: (row) => (
         <span className="font-mono text-xs tabular-nums">
@@ -320,8 +316,7 @@ export function PagesTable() {
       id: "gsc_impressions_28d",
       accessorKey: "gsc_impressions_28d",
       header: "Impr 28d",
-      filter: false,
-      sortable: false,
+      filter: "number",
       align: "right",
       cell: (row) => (
         <span className="font-mono text-xs tabular-nums">
@@ -335,8 +330,7 @@ export function PagesTable() {
       id: "gsc_position_28d",
       accessorKey: "gsc_position_28d",
       header: "Pos",
-      filter: false,
-      sortable: false,
+      filter: "number",
       align: "right",
       cell: (row) => (
         <span className="font-mono text-xs tabular-nums">

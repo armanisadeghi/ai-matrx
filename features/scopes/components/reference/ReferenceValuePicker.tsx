@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { FilePickerWindow } from "@/features/resource-manager/resource-picker/FilePickerWindow";
+import dynamic from "next/dynamic";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
   makeSelectScope,
@@ -63,6 +63,16 @@ export interface ReferenceValuePickerProps {
   disabled?: boolean;
   className?: string;
 }
+
+// THE one canonical file picker. Lazy — WindowPanel must never be parsed in
+// a route/boot bundle (features/window-panels FEATURE.md → Bundle invariant).
+const FilePickerWindow = dynamic(
+  () =>
+    import("@/features/resource-manager/resource-picker/FilePickerWindow").then(
+      (m) => ({ default: m.FilePickerWindow }),
+    ),
+  { ssr: false, loading: () => null },
+);
 
 const typeLabel = referenceTypeLabel;
 
@@ -331,16 +341,22 @@ function ReferenceTypeAdder({
 }
 
 function FileTypeAdder({ onBrowseFiles }: { onBrowseFiles: () => void }) {
-  // Selecting the "file" type IS the intent to pick files — open the
-  // canonical picker window immediately, no intermediate button click.
-  useEffect(() => {
-    onBrowseFiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once on mount
-  }, []);
+  // Reached only when the item allows SEVERAL reference types, so the popover
+  // must stay open for the type chips (auto-opening the picker here would
+  // make "url"/"scope" unreachable). The single-allowed-type case never gets
+  // here — it opens the picker window straight from the Add button.
   return (
-    <p className="px-1 py-2 text-xs text-muted-foreground">
-      Opening your files…
-    </p>
+    <Button
+      data-reference-autofocus
+      type="button"
+      size="sm"
+      variant="secondary"
+      className="w-full"
+      onClick={onBrowseFiles}
+    >
+      <FileText className="mr-1.5 h-3.5 w-3.5" />
+      Browse files
+    </Button>
   );
 }
 

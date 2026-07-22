@@ -47,6 +47,30 @@ export async function transcribeAudioFile(
   return normalizeTranscription(data);
 }
 
+/**
+ * Transcribe an ALREADY-SAVED cloud file by `file_id`.
+ *
+ * Prefer this over `transcribeAudioFile` whenever the media is already in
+ * `files.files`: the bytes never leave the server, so there is no re-upload,
+ * and the server demuxes video → audio and chunks past the provider size limit
+ * itself. The caller passes an owned file id; ownership is enforced serverside.
+ */
+export async function transcribeCloudFile(
+  params: { fileId: string; language?: string; model?: string },
+  signal?: AbortSignal,
+): Promise<TranscriptionResult> {
+  const { data } = await apiPost(
+    "/audio/transcribe-file",
+    {
+      file_id: params.fileId,
+      language: params.language ?? null,
+      ...(params.model ? { model: params.model } : {}),
+    },
+    { signal },
+  );
+  return normalizeTranscription(data);
+}
+
 export async function transcribeAudioUrl(
   url: string,
   options?: TranscriptionOptions,

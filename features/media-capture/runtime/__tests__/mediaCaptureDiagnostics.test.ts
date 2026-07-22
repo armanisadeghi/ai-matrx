@@ -186,6 +186,65 @@ describe("mediaCaptureDiagnostics", () => {
     expect(snap.journalsRefreshedAt).not.toBeNull();
   });
 
+  describe("live-capture controls side table", () => {
+    const info = {
+      captureId: "cap1",
+      kind: "video" as const,
+      label: "Camera recording",
+      sourceFeature: "camera",
+      startedAt: 1,
+    };
+    const readers = { getElapsedMs: () => 5_000, getState: () => "recording" };
+    const controls = {
+      pause: jest.fn(),
+      resume: jest.fn(),
+      returnPath: "/camera",
+      stopAndSave: jest.fn(() =>
+        Promise.resolve({ fileId: "f1", partial: false }),
+      ),
+    };
+
+    it("hands back the controls registered for the live capture", async () => {
+      const reg = await freshRegistry();
+      reg.registerLiveCapture(info, readers);
+      reg.registerLiveCaptureControls("cap1", controls);
+      expect(reg.getLiveCaptureControls()?.returnPath).toBe("/camera");
+    });
+
+    it("returns null before the owning surface has registered controls", async () => {
+      const reg = await freshRegistry();
+      reg.registerLiveCapture(info, readers);
+      expect(reg.getLiveCaptureControls()).toBeNull();
+    });
+
+    // The whole point of the side table: a stale registration must never be
+    // able to drive a recorder that has already ended.
+    it("drops controls when the capture they belong to ends", async () => {
+      const reg = await freshRegistry();
+      const unregister = reg.registerLiveCapture(info, readers);
+      reg.registerLiveCaptureControls("cap1", controls);
+      unregister();
+      expect(reg.getLiveCaptureControls()).toBeNull();
+      expect(reg.getMediaCaptureDiagnostics().liveCapture).toBeNull();
+    });
+
+    it("never returns controls belonging to a different capture", async () => {
+      const reg = await freshRegistry();
+      reg.registerLiveCapture(info, readers);
+      reg.registerLiveCaptureControls("some-other-capture", controls);
+      expect(reg.getLiveCaptureControls()).toBeNull();
+    });
+
+    it("unregistering controls is scoped to its own capture", async () => {
+      const reg = await freshRegistry();
+      reg.registerLiveCapture(info, readers);
+      const stale = reg.registerLiveCaptureControls("old-capture", controls);
+      reg.registerLiveCaptureControls("cap1", controls);
+      stale(); // late cleanup from the previous recording
+      expect(reg.getLiveCaptureControls()).not.toBeNull();
+    });
+  });
+
   it("__reset clears everything and unwires", async () => {
     const reg = await freshRegistry();
     reg.recordCaptureFailure({ scope: "camera", message: "boom" });

@@ -66,6 +66,16 @@ const LazyKgNewSuggestionNotifier = dynamic(
 // Admin-only floating chip that appears the moment a Supabase error is captured
 // anywhere in the app and opens the Error Inspector. Self-gates on admin + on
 // having at least one captured error, so it renders nothing for everyone else.
+// App-wide floating control for a LIVE media capture, plus the in-app
+// navigation guard that stops a sidebar click from silently killing a
+// recording. Self-gates on there being a live capture, so it renders nothing
+// (and touches no camera/mic) for everyone else. Dynamic so the media-capture
+// runtime never enters any route's static graph.
+const LazyLiveCaptureIndicator = dynamic(
+  () => import("@/features/media-capture/components/LiveCaptureIndicator"),
+  { ssr: false, loading: () => null },
+);
+
 const LazyErrorInspectorBadge = dynamic(
   () => import("@/features/admin/error-inspector/ErrorInspectorBadge"),
   { ssr: false, loading: () => null },
@@ -258,6 +268,7 @@ export default function DeferredSingletons() {
       <AnnouncementProvider />
       <AdminFeatureProvider />
       <LazyErrorInspectorBadge />
+      <LazyLiveCaptureIndicator />
     </>
   );
 }

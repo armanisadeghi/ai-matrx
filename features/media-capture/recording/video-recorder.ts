@@ -56,6 +56,7 @@ import {
   readChunks,
 } from "@/features/media-capture/recording/chunk-journal";
 import type { RecordingKind } from "@/features/media-capture/core/mime-selection";
+import { registerLiveCapture } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
 
 /** The one capture-lock id for studio recordings (video AND audio modes). */
 export const MEDIA_CAPTURE_LOCK_ID = "media-capture-recording";
@@ -86,6 +87,18 @@ export interface CaptureRecordingHandle {
   /** Discard — journal dropped, nothing delivered. */
   cancel(): Promise<void>;
   getElapsedMs(): number;
+  /** Projected final size (same number the `maxBytes` hard stop uses). */
+  getEstimatedBytes(): number;
+  /**
+   * The COMPOSED recording stream (camera track + mic clone, or the mic clone
+   * alone), for read-only observation — the HUD's level meter taps this so it
+   * meters exactly what is being recorded.
+   *
+   * Read-only by contract: callers must never stop, remove, or clone tracks
+   * from it. The engine's teardown owns every track's lifetime (invariant 3 —
+   * the mic clone is stopped exactly once, on the engine's exit path).
+   */
+  getRecordingStream(): MediaStream;
   getState(): RecorderControllerState;
   /** Resolves on ANY terminal: result on delivery paths, null on discard
    *  (cancel/takeover). Rejects only on unrecoverable internal errors. */
@@ -126,6 +139,8 @@ async function startEngine(args: EngineArgs): Promise<CaptureRecordingHandle> {
   let endReason: RecordingEndReason | null = null;
   let discarded = false;
   let session: PlaybackSessionHandle | null = null;
+  /** Unregisters the diagnostics live-capture entry — runs on every terminal. */
+  let unregisterLive: (() => void) | null = null;
   const unsubscribers: Array<() => void> = [];
 
   let resolveDone!: (r: CaptureRecordingResult | null) => void;
@@ -139,6 +154,10 @@ async function startEngine(args: EngineArgs): Promise<CaptureRecordingHandle> {
 
   const finish = async (terminal: RecorderTerminal): Promise<void> => {
     teardownOnce();
+    // Every terminal path funnels through here, so this is the ONE place the
+    // live-capture diagnostics entry is cleared — no path can leak it.
+    unregisterLive?.();
+    unregisterLive = null;
     for (const u of unsubscribers.splice(0)) u();
     releaseCapture(MEDIA_CAPTURE_LOCK_ID);
     try {
@@ -298,6 +317,22 @@ async function startEngine(args: EngineArgs): Promise<CaptureRecordingHandle> {
     },
   });
 
+  // Publish the live capture so the Media window's Camera tab can show the
+  // real, pause-aware clock without holding this handle. Cleared in finish().
+  unregisterLive = registerLiveCapture(
+    {
+      captureId,
+      kind: args.kind,
+      label: args.label,
+      sourceFeature: args.sourceFeature,
+      startedAt: Date.now(),
+    },
+    {
+      getElapsedMs: () => controller.getElapsedMs(),
+      getState: () => controller.getState(),
+    },
+  );
+
   return {
     captureId,
     pause: () => controller.pause(),
@@ -319,6 +354,8 @@ async function startEngine(args: EngineArgs): Promise<CaptureRecordingHandle> {
       await done;
     },
     getElapsedMs: () => controller.getElapsedMs(),
+    getEstimatedBytes: () => controller.getEstimatedBytes(),
+    getRecordingStream: () => built.stream,
     getState: () => controller.getState(),
     done,
     endReason: () => endReason,

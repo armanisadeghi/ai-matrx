@@ -16,7 +16,13 @@
  * (legacy utility — same as before).
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ChevronDown,
   ChevronLeft,
@@ -135,6 +141,16 @@ interface FilesResourcePickerProps {
    * already filtered without changing the Smart Agent Input path.
    */
   initialFilter?: FilesResourcePickerFilter;
+  /**
+   * Fill the host's height instead of self-capping.
+   *
+   * Default (`false`) keeps the compact popover sizing the chat "+" menu
+   * relies on. Hosts that supply their own definite height — the
+   * `FilePickerWindow` window panel — pass `true` so the list uses the full
+   * available height and scrolls inside it, instead of capping at 460px and
+   * leaving dead space with a clipped final row.
+   */
+  fillHost?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -476,6 +492,7 @@ export function FilesResourcePicker({
   onSelect,
   allowedBuckets,
   initialFilter = "all",
+  fillHost = false,
 }: FilesResourcePickerProps) {
   const currentUserId = useAppSelector(
     (s: unknown) => (s as { user?: { id?: string | null } }).user?.id ?? null,
@@ -489,6 +506,31 @@ export function FilesResourcePicker({
 
   const fileMutation = useFileMutation();
   const searchInputRef = usePickerInputFocus();
+
+  // ── Scroll affordance ──────────────────────────────────────────────────
+  // Drives the bottom fade. Recomputed on scroll and whenever the content
+  // box resizes (filter change, folder expand/collapse, host resize) so it
+  // never claims "more below" for a list that already ends on screen.
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const listContentRef = useRef<HTMLDivElement>(null);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
+  const syncScrollAffordance = useCallback(() => {
+    const el = listScrollRef.current;
+    if (!el) return;
+    setHasMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+  }, []);
+  useEffect(() => {
+    syncScrollAffordance();
+    const content = listContentRef.current;
+    const scroller = listScrollRef.current;
+    if (!content || !scroller || typeof ResizeObserver === "undefined") {
+      return undefined;
+    }
+    const observer = new ResizeObserver(() => syncScrollAffordance());
+    observer.observe(content);
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  }, [syncScrollAffordance]);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<PickerViewMode>("list");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -723,7 +765,15 @@ export function FilesResourcePicker({
     : treeStatus === "error";
 
   return (
-    <div className="flex flex-col max-h-[min(460px,70dvh)]">
+    <div
+      className={cn(
+        "flex flex-col",
+        // `fillHost` hosts (window panel) give us a definite height — fill it
+        // so the list scrolls inside the full window instead of capping short
+        // and leaving dead space under a clipped row.
+        fillHost ? "h-full min-h-0" : "max-h-[min(460px,70dvh)]",
+      )}
+    >
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
         <Button
@@ -835,8 +885,16 @@ export function FilesResourcePicker({
         </select>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin relative">
+      {/* Content. The scroller lives inside a non-scrolling wrapper so the
+          "more below" fade can sit still at the bottom edge instead of
+          scrolling away with the list. */}
+      <div className="relative flex-1 min-h-0">
+        <div
+          ref={listScrollRef}
+          onScroll={syncScrollAffordance}
+          className="h-full overflow-y-auto scrollbar-visible relative"
+        >
+          <div ref={listContentRef}>
         {loading ? (
           <div className="flex items-center justify-center h-full py-8">
             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -927,10 +985,23 @@ export function FilesResourcePicker({
           </div>
         )}
 
-        {isProcessing && (
-          <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 flex items-center justify-center">
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           </div>
+
+          {isProcessing && (
+            <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        {/* "There's more below" affordance. macOS overlay scrollbars are
+            invisible at rest, so a clipped final row read as "the list just
+            ends" — this fade makes the cut-off unmistakable. */}
+        {hasMoreBelow && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background via-background/80 to-transparent"
+          />
         )}
       </div>
     </div>
