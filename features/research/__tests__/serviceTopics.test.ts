@@ -97,14 +97,13 @@ function topicRow(overrides: Record<string, unknown> = {}) {
     organization_id: ORG_ID,
     // Non-authoritative leftover column (Phase-4 pending drop) — the mapper
     // must strip it from the domain shape.
-    project_id: null,
     autonomy_level: "semi",
     tag_suggestions: null,
     max_keywords: 3,
     scrapes_per_keyword: 5,
     analyses_per_keyword: 3,
     max_keyword_syntheses: 3,
-    max_project_syntheses: 1,
+    max_topic_syntheses: 1,
     max_documents: 1,
     max_tag_consolidations: 0,
     max_auto_tag_calls: 0,
@@ -187,7 +186,7 @@ describe("createTopic (project-optional)", () => {
     );
   });
 
-  it("maps the Phase-4-pending max_project_syntheses column to max_topic_syntheses", async () => {
+  it("exposes max_topic_syntheses and carries no project-era fields", async () => {
     const { topic } = await createTopic(ORG_ID, { name: "Test topic" });
     expect(topic.max_topic_syntheses).toBe(1);
     expect(topic).not.toHaveProperty("max_project_syntheses");

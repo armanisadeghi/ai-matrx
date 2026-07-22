@@ -3286,7 +3286,6 @@
           "AI"
         ],
         "summary": "Preview Context",
-        "description": "Return EXACTLY what context resolution produces for these selections.",
         "operationId": "preview_context_ai_context_preview_post",
         "requestBody": {
           "content": {
@@ -3903,6 +3902,48 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TranscriptionUrlRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audio/transcribe-file": {
+      "post": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Transcribe File",
+        "description": "Transcribe a managed files.files object by reference (bounded memory;\nvideo and over-provider-limit audio are normalized + chunked).",
+        "operationId": "transcribe_file_audio_transcribe_file_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptionFileRequest"
               }
             }
           },
@@ -7814,6 +7855,369 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GoogleConnectionCredentialResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bing-integrations/authorize-url": {
+      "get": {
+        "tags": [
+          "Bing Webmaster Integrations"
+        ],
+        "summary": "Authorization Url",
+        "operationId": "authorization_url_bing_integrations_authorize_url_get",
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Redirect Uri"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "webmaster.read",
+              "title": "Scope"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BingAuthorizationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bing-integrations/exchange": {
+      "post": {
+        "tags": [
+          "Bing Webmaster Integrations"
+        ],
+        "summary": "Exchange",
+        "operationId": "exchange_bing_integrations_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BingOAuthExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BingConnectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bing-integrations/api-key": {
+      "post": {
+        "tags": [
+          "Bing Webmaster Integrations"
+        ],
+        "summary": "Api Key Connection",
+        "operationId": "api_key_connection_bing_integrations_api_key_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BingApiKeyConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BingConnectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bing-integrations/bind-site": {
+      "post": {
+        "tags": [
+          "Bing Webmaster Integrations"
+        ],
+        "summary": "Bind Site",
+        "operationId": "bind_site_bing_integrations_bind_site_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BingSiteBindingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BingSiteBinding"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bing-integrations/disconnect": {
+      "post": {
+        "tags": [
+          "Bing Webmaster Integrations"
+        ],
+        "summary": "Disconnect",
+        "operationId": "disconnect_bing_integrations_disconnect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BingDisconnectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/collections": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Create Collection",
+        "operationId": "create_collection_seo_collections_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AidreamCollectionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "List Collections",
+        "operationId": "list_collections_seo_collections_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/matrx_seo__standalone__app__RunListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/collections/{run_id}": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Get Collection",
+        "operationId": "get_collection_seo_collections__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatusResponse"
                 }
               }
             }
@@ -13832,6 +14236,44 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Create Topic Canonical",
+        "description": "Create a research topic. No project required — ever.\n\nOrg resolves via `resolve_effective_organization_id` (explicit\n`organization_id` wins, else the caller's personal org). An optional\n`project_id` becomes one canonical `platform.associations` edge; edge\nfailure is loud but never fails the create.",
+        "operationId": "create_topic_canonical_research_topics_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/research/sources/by-url": {
@@ -13922,7 +14364,9 @@
           "Research"
         ],
         "summary": "Create Topic",
+        "description": "DEPRECATED — use POST /research/topics (project optional).",
         "operationId": "create_topic_research_projects__project_id__topics_post",
+        "deprecated": true,
         "parameters": [
           {
             "name": "project_id",
@@ -13970,7 +14414,9 @@
           "Research"
         ],
         "summary": "List Topics",
+        "description": "DEPRECATED — use GET /research/topics; project filtering is an\nassociation-edge query, never a column filter.",
         "operationId": "list_topics_research_projects__project_id__topics_get",
+        "deprecated": true,
         "parameters": [
           {
             "name": "project_id",
@@ -30071,6 +30517,66 @@
         }
       }
     },
+    "/files/{file_id}/extract-audio": {
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Extract Audio",
+        "description": "Create or reuse the audio_extracted derivative of a video file.",
+        "operationId": "extract_audio_files__file_id__extract_audio_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AudioExtractionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioExtractionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/{file_id}/download": {
       "get": {
         "tags": [
@@ -31783,7 +32289,9 @@
       "options": {
         "tags": [
           "Files",
-          "TUS"
+          "TUS",
+          "files",
+          "tus"
         ],
         "summary": "Tus Options",
         "operationId": "tus_options_files_upload_tus_options",
@@ -31801,7 +32309,9 @@
       "post": {
         "tags": [
           "Files",
-          "TUS"
+          "TUS",
+          "files",
+          "tus"
         ],
         "summary": "Tus Create",
         "operationId": "tus_create_files_upload_tus_post",
@@ -31849,7 +32359,9 @@
       "head": {
         "tags": [
           "Files",
-          "TUS"
+          "TUS",
+          "files",
+          "tus"
         ],
         "summary": "Tus Head",
         "operationId": "tus_head_files_upload_tus__upload_id__head",
@@ -31888,7 +32400,9 @@
       "patch": {
         "tags": [
           "Files",
-          "TUS"
+          "TUS",
+          "files",
+          "tus"
         ],
         "summary": "Tus Patch",
         "operationId": "tus_patch_files_upload_tus__upload_id__patch",
@@ -31943,7 +32457,9 @@
       "delete": {
         "tags": [
           "Files",
-          "TUS"
+          "TUS",
+          "files",
+          "tus"
         ],
         "summary": "Tus Delete",
         "operationId": "tus_delete_files_upload_tus__upload_id__delete",
@@ -37901,7 +38417,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RunListResponse"
+                  "$ref": "#/components/schemas/matrx_scheduler__api__schemas__RunListResponse"
                 }
               }
             }
@@ -43986,6 +44502,103 @@
         ],
         "title": "AiCatalogReloadSummary"
       },
+      "AidreamCollectionCreateRequest": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "capability": {
+            "$ref": "#/components/schemas/SeoCapability"
+          },
+          "operation": {
+            "type": "string",
+            "title": "Operation"
+          },
+          "target_ref": {
+            "type": "string",
+            "title": "Target Ref"
+          },
+          "observation_period": {
+            "type": "string",
+            "title": "Observation Period"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/CollectionTrigger",
+            "default": "on_demand"
+          },
+          "credential_reference_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential Reference Id"
+          },
+          "credential_reference_kind": {
+            "$ref": "#/components/schemas/CredentialReferenceKind",
+            "default": "platform_secret"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "execution_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Id"
+          },
+          "resume_existing": {
+            "type": "boolean",
+            "title": "Resume Existing",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "capability",
+          "operation",
+          "target_ref",
+          "observation_period"
+        ],
+        "title": "AidreamCollectionCreateRequest",
+        "description": "Same body as the standalone app, but organization_id may be omitted —\naidream resolves the caller's personal org (never NULL)."
+      },
       "AnalysisPreferencesBody": {
         "properties": {
           "per_detector_enabled": {
@@ -45270,11 +45883,11 @@
             "type": "string",
             "enum": [
               "public",
-              "private",
+              "personal",
               "shared"
             ],
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "folder": {
             "type": "string",
@@ -45377,7 +45990,7 @@
                 "type": "string",
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ]
               },
@@ -46274,6 +46887,63 @@
         ],
         "title": "AssignmentUniqueness"
       },
+      "AudioExtractionRequest": {
+        "properties": {
+          "signed_ttl": {
+            "type": "integer",
+            "maximum": 604800,
+            "minimum": 60,
+            "title": "Signed Ttl",
+            "default": 3600
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AudioExtractionRequest"
+      },
+      "AudioExtractionResult": {
+        "properties": {
+          "source_file_id": {
+            "type": "string",
+            "title": "Source File Id"
+          },
+          "audio_codec": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Codec"
+          },
+          "extraction_mode": {
+            "type": "string",
+            "enum": [
+              "stream_copy",
+              "transcoded"
+            ],
+            "title": "Extraction Mode"
+          },
+          "cache_hit": {
+            "type": "boolean",
+            "title": "Cache Hit"
+          },
+          "file": {
+            "$ref": "#/components/schemas/FileRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_file_id",
+          "extraction_mode",
+          "cache_hit",
+          "file"
+        ],
+        "title": "AudioExtractionResult",
+        "description": "One extracted-audio derivative plus lineage diagnostics."
+      },
       "AudioStyle": {
         "type": "string",
         "enum": [
@@ -47169,6 +47839,199 @@
         "type": "object",
         "title": "BgRemoveParams"
       },
+      "BingApiKeyConnectionRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Api Key"
+          },
+          "owner_type": {
+            "type": "string",
+            "pattern": "^(user|organization)$",
+            "title": "Owner Type",
+            "default": "user"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key"
+        ],
+        "title": "BingApiKeyConnectionRequest"
+      },
+      "BingAuthorizationResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url"
+        ],
+        "title": "BingAuthorizationResponse"
+      },
+      "BingConnectionResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "BingConnectionResponse"
+      },
+      "BingDisconnectRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "BingDisconnectRequest"
+      },
+      "BingOAuthExchangeRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Code"
+          },
+          "returned_state": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Returned State"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Redirect Uri"
+          },
+          "client_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Client Secret"
+          },
+          "owner_type": {
+            "type": "string",
+            "pattern": "^(user|organization)$",
+            "title": "Owner Type",
+            "default": "user"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "returned_state",
+          "redirect_uri",
+          "client_id",
+          "client_secret"
+        ],
+        "title": "BingOAuthExchangeRequest"
+      },
+      "BingSiteBinding": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "credential_ref": {
+            "type": "string",
+            "title": "Credential Ref"
+          },
+          "resource_ref": {
+            "type": "string",
+            "title": "Resource Ref"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "enabled",
+          "credential_ref",
+          "resource_ref"
+        ],
+        "title": "BingSiteBinding"
+      },
+      "BingSiteBindingRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Organization Id"
+          },
+          "site_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Site Id"
+          },
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "resource_ref": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Resource Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "site_id",
+          "connection_id",
+          "resource_ref"
+        ],
+        "title": "BingSiteBindingRequest"
+      },
       "Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post": {
         "properties": {
           "file": {
@@ -47383,7 +48246,7 @@
             "type": "string",
             "enum": [
               "public",
-              "private",
+              "personal",
               "shared"
             ],
             "title": "Visibility",
@@ -47488,11 +48351,11 @@
             "type": "string",
             "enum": [
               "public",
-              "private",
+              "personal",
               "shared"
             ],
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "share_with": {
             "anyOf": [
@@ -47620,8 +48483,8 @@
           "visibility": {
             "type": "string",
             "title": "Visibility",
-            "description": "private (default; research artifacts can be paywalled/sensitive) | public | shared",
-            "default": "private"
+            "description": "personal (default; research artifacts can be paywalled/sensitive) | public | shared",
+            "default": "personal"
           }
         },
         "type": "object",
@@ -52547,6 +53410,55 @@
         ],
         "title": "CodeDeclaration"
       },
+      "CollectionReceipt": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "raw_payload_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Payload Id"
+          },
+          "created_observations": {
+            "type": "integer",
+            "title": "Created Observations",
+            "default": 0
+          },
+          "existing_observations": {
+            "type": "integer",
+            "title": "Existing Observations",
+            "default": 0
+          },
+          "reused_completed_run": {
+            "type": "boolean",
+            "title": "Reused Completed Run",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "title": "CollectionReceipt"
+      },
+      "CollectionTrigger": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "on_demand",
+          "backfill",
+          "test"
+        ],
+        "title": "CollectionTrigger"
+      },
       "CombinedRatingItem": {
         "properties": {
           "formula": {
@@ -52822,11 +53734,11 @@
             "type": "string",
             "enum": [
               "public",
-              "private",
+              "personal",
               "shared"
             ],
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "metadata": {
             "anyOf": [
@@ -53657,8 +54569,7 @@
           }
         },
         "type": "object",
-        "title": "ContextPreviewBindings",
-        "description": "Serialized ``ScopeBindingResult`` — the agent's scope-bound fill."
+        "title": "ContextPreviewBindings"
       },
       "ContextPreviewRequest": {
         "properties": {
@@ -53783,8 +54694,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "ContextPreviewRequest",
-        "description": "Inputs mirroring what ``AgentStartRequest`` feeds context resolution.\n\n``organization_id`` / ``project_id`` / ``task_id`` / ``scope_ids`` arrive\nvia the :class:`ScopedRequest` base (FE ``callApi`` auto-injects them)."
+        "title": "ContextPreviewRequest"
       },
       "ContextPreviewResponse": {
         "properties": {
@@ -53923,8 +54833,7 @@
           }
         },
         "type": "object",
-        "title": "ContextPreviewVariables",
-        "description": "Resolved scope variables split by delivery tier (RPC ``inject_as``)."
+        "title": "ContextPreviewVariables"
       },
       "ContextRenderRequest": {
         "properties": {
@@ -54636,7 +55545,7 @@
                 "type": "string",
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ]
               },
@@ -55037,11 +55946,11 @@
             "type": "string",
             "enum": [
               "public",
-              "private",
+              "personal",
               "shared"
             ],
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "metadata": {
             "anyOf": [
@@ -55397,6 +56306,14 @@
           "display_name"
         ],
         "title": "CredentialCreateRequest"
+      },
+      "CredentialReferenceKind": {
+        "type": "string",
+        "enum": [
+          "platform_secret",
+          "integration_connection"
+        ],
+        "title": "CredentialReferenceKind"
       },
       "CredentialUpdateRequest": {
         "properties": {
@@ -63476,7 +64393,7 @@
                 "type": "string",
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ]
               },
@@ -63837,7 +64754,7 @@
           "visibility": {
             "type": "string",
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "current_version": {
             "type": "integer",
@@ -63982,11 +64899,11 @@
             "type": "string",
             "enum": [
               "public",
-              "private",
+              "personal",
               "shared"
             ],
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "file_name": {
             "anyOf": [
@@ -64717,7 +65634,7 @@
           "visibility": {
             "type": "string",
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "metadata": {
             "additionalProperties": true,
@@ -66043,12 +66960,12 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "private",
+              "personal",
               "public",
               "shared"
             ],
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "folder": {
             "anyOf": [
@@ -74605,7 +75522,7 @@
           "visibility": {
             "type": "string",
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           }
         },
         "type": "object",
@@ -75877,7 +76794,7 @@
                 "type": "string",
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ]
               },
@@ -78069,11 +78986,11 @@
             "type": "string",
             "enum": [
               "public",
-              "private",
+              "personal",
               "shared"
             ],
             "title": "Visibility",
-            "default": "private"
+            "default": "personal"
           },
           "metadata": {
             "anyOf": [
@@ -83163,22 +84080,6 @@
         "title": "RunFormVariable",
         "description": "One declared run variable (Definition.variables) surfaced on the run\nform. ``required`` is True when the declaration has no default — the run\nwould otherwise park loudly on the first node referencing it."
       },
-      "RunListResponse": {
-        "properties": {
-          "runs": {
-            "items": {
-              "$ref": "#/components/schemas/RunResponse"
-            },
-            "type": "array",
-            "title": "Runs"
-          }
-        },
-        "type": "object",
-        "required": [
-          "runs"
-        ],
-        "title": "RunListResponse"
-      },
       "RunNowResponse": {
         "properties": {
           "run_id": {
@@ -83617,6 +84518,161 @@
           "due_at"
         ],
         "title": "RunResponse"
+      },
+      "RunStatusResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "capability": {
+            "type": "string",
+            "title": "Capability"
+          },
+          "operation": {
+            "type": "string",
+            "title": "Operation"
+          },
+          "trigger": {
+            "type": "string",
+            "title": "Trigger"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "target_ref": {
+            "type": "string",
+            "title": "Target Ref"
+          },
+          "observation_period": {
+            "type": "string",
+            "title": "Observation Period"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "created_by": {
+            "type": "string",
+            "title": "Created By"
+          },
+          "attempt_count": {
+            "type": "integer",
+            "title": "Attempt Count"
+          },
+          "requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "request_count": {
+            "type": "integer",
+            "title": "Request Count",
+            "default": 0
+          },
+          "reported_cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Cost"
+          },
+          "estimated_cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "USD"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectionReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "provider",
+          "capability",
+          "operation",
+          "trigger",
+          "status",
+          "target_ref",
+          "observation_period",
+          "organization_id",
+          "created_by",
+          "attempt_count"
+        ],
+        "title": "RunStatusResponse"
       },
       "RunWorkflowRequest": {
         "properties": {
@@ -84925,6 +85981,20 @@
           "source_id"
         ],
         "title": "SearchSourceRef"
+      },
+      "SeoCapability": {
+        "type": "string",
+        "enum": [
+          "serp_rank",
+          "keyword_metrics",
+          "search_performance",
+          "web_analytics",
+          "page_performance",
+          "backlinks",
+          "competitors",
+          "raw_provider"
+        ],
+        "title": "SeoCapability"
       },
       "SetCanonicalCleanRequest": {
         "properties": {
@@ -88366,7 +89436,7 @@
             "type": "string",
             "enum": [
               "keyword",
-              "project"
+              "topic"
             ],
             "title": "Scope"
           },
@@ -90855,9 +91925,26 @@
       "TopicCreate": {
         "properties": {
           "project_id": {
-            "type": "string",
-            "title": "Project Id",
-            "default": ""
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
           },
           "created_by": {
             "anyOf": [
@@ -90946,9 +92033,9 @@
             "title": "Max Keyword Syntheses",
             "default": 3
           },
-          "max_project_syntheses": {
+          "max_topic_syntheses": {
             "type": "integer",
-            "title": "Max Project Syntheses",
+            "title": "Max Topic Syntheses",
             "default": 1
           },
           "max_documents": {
@@ -91129,7 +92216,7 @@
             ],
             "title": "Max Keyword Syntheses"
           },
-          "max_project_syntheses": {
+          "max_topic_syntheses": {
             "anyOf": [
               {
                 "type": "integer"
@@ -91138,7 +92225,7 @@
                 "type": "null"
               }
             ],
-            "title": "Max Project Syntheses"
+            "title": "Max Topic Syntheses"
           },
           "max_documents": {
             "anyOf": [
@@ -91497,6 +92584,70 @@
         ],
         "title": "TraceFileSummary",
         "description": "One entry in the ``GET /admin/debug-traces/files`` listing."
+      },
+      "TranscriptionFileRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "stt-default"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "TranscriptionFileRequest"
       },
       "TranscriptionMeta": {
         "properties": {
@@ -96728,6 +97879,22 @@
         ],
         "title": "DeletedResponse"
       },
+      "matrx_scheduler__api__schemas__RunListResponse": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunResponse"
+            },
+            "type": "array",
+            "title": "Runs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runs"
+        ],
+        "title": "RunListResponse"
+      },
       "matrx_scheduler__api__schemas__ScannerStatusResponse": {
         "properties": {
           "running": {
@@ -96814,6 +97981,27 @@
           "running"
         ],
         "title": "ScannerStatusResponse"
+      },
+      "matrx_seo__standalone__app__RunListResponse": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunStatusResponse"
+            },
+            "type": "array",
+            "title": "Runs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "runs"
+        ],
+        "title": "RunListResponse"
       }
     }
   }

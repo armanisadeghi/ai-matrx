@@ -23794,6 +23794,359 @@ export type Database = {
         }
         Relationships: []
       }
+      cld_file_permissions: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          grantee_id: string
+          grantee_type: string
+          id: string
+          permission_level: string
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          grantee_id: string
+          grantee_type?: string
+          id?: string
+          permission_level: string
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          grantee_id?: string
+          grantee_type?: string
+          id?: string
+          permission_level?: string
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: []
+      }
+      cld_file_versions: {
+        Row: {
+          change_summary: string | null
+          checksum: string | null
+          created_at: string
+          created_by: string | null
+          file_id: string
+          file_size: number | null
+          id: string
+          storage_uri: string
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          checksum?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_id: string
+          file_size?: number | null
+          id?: string
+          storage_uri: string
+          version_number: number
+        }
+        Update: {
+          change_summary?: string | null
+          checksum?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_id?: string
+          file_size?: number | null
+          id?: string
+          storage_uri?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cld_file_versions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cld_files: {
+        Row: {
+          checksum: string | null
+          created_at: string
+          current_version: number
+          deleted_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          metadata: Json
+          mime_type: string | null
+          owner_id: string
+          parent_folder_id: string | null
+          storage_uri: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          checksum?: string | null
+          created_at?: string
+          current_version?: number
+          deleted_at?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          owner_id: string
+          parent_folder_id?: string | null
+          storage_uri: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          checksum?: string | null
+          created_at?: string
+          current_version?: number
+          deleted_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          owner_id?: string
+          parent_folder_id?: string | null
+          storage_uri?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cld_files_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "cld_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cld_folders: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          folder_name: string
+          folder_path: string
+          id: string
+          metadata: Json
+          owner_id: string
+          parent_id: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          folder_name: string
+          folder_path: string
+          id?: string
+          metadata?: Json
+          owner_id: string
+          parent_id?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          folder_name?: string
+          folder_path?: string
+          id?: string
+          metadata?: Json
+          owner_id?: string
+          parent_id?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cld_folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cld_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cld_share_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          permission_level: string
+          resource_id: string
+          resource_type: string
+          share_token: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          permission_level?: string
+          resource_id: string
+          resource_type: string
+          share_token?: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          permission_level?: string
+          resource_id?: string
+          resource_type?: string
+          share_token?: string
+          use_count?: number
+        }
+        Relationships: []
+      }
+      cld_uploads_inflight: {
+        Row: {
+          bucket: string
+          created_at: string
+          expires_at: string
+          file_id: string
+          file_name: string
+          file_path: string
+          id: string
+          idempotency_key: string | null
+          key: string
+          metadata: Json
+          mime_type: string | null
+          multipart_upload_id: string
+          owner_id: string
+          parts: Json
+          status: string
+          updated_at: string
+          upload_length: number
+          upload_offset: number
+          visibility: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          expires_at?: string
+          file_id: string
+          file_name: string
+          file_path: string
+          id?: string
+          idempotency_key?: string | null
+          key: string
+          metadata?: Json
+          mime_type?: string | null
+          multipart_upload_id: string
+          owner_id: string
+          parts?: Json
+          status?: string
+          updated_at?: string
+          upload_length: number
+          upload_offset?: number
+          visibility?: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          expires_at?: string
+          file_id?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          idempotency_key?: string | null
+          key?: string
+          metadata?: Json
+          mime_type?: string | null
+          multipart_upload_id?: string
+          owner_id?: string
+          parts?: Json
+          status?: string
+          updated_at?: string
+          upload_length?: number
+          upload_offset?: number
+          visibility?: string
+        }
+        Relationships: []
+      }
+      cld_user_group_members: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          group_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          group_id: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          group_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cld_user_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "cld_user_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cld_user_groups: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           admin_notes: string | null
@@ -28143,6 +28496,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cld_get_effective_permission: {
+        Args: { p_file_id: string; p_user_id: string }
+        Returns: string
+      }
+      cld_get_user_file_tree: { Args: { p_user_id: string }; Returns: Json }
       cleanup_deleted_sandboxes: {
         Args: { retention_days?: number }
         Returns: number
@@ -35921,13 +36279,12 @@ export type Database = {
           max_documents: number
           max_keyword_syntheses: number
           max_keywords: number
-          max_project_syntheses: number
           max_tag_consolidations: number
+          max_topic_syntheses: number
           metadata: Json
           name: string
           organization_id: string
           outputs: Json
-          project_id: string | null
           scrapes_per_keyword: number
           status: string
           tag_suggestions: Json | null
@@ -35954,13 +36311,12 @@ export type Database = {
           max_documents?: number
           max_keyword_syntheses?: number
           max_keywords?: number
-          max_project_syntheses?: number
           max_tag_consolidations?: number
+          max_topic_syntheses?: number
           metadata?: Json
           name?: string
           organization_id: string
           outputs?: Json
-          project_id?: string | null
           scrapes_per_keyword?: number
           status?: string
           tag_suggestions?: Json | null
@@ -35987,13 +36343,12 @@ export type Database = {
           max_documents?: number
           max_keyword_syntheses?: number
           max_keywords?: number
-          max_project_syntheses?: number
           max_tag_consolidations?: number
+          max_topic_syntheses?: number
           metadata?: Json
           name?: string
           organization_id?: string
           outputs?: Json
-          project_id?: string | null
           scrapes_per_keyword?: number
           status?: string
           tag_suggestions?: Json | null

@@ -1449,10 +1449,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Preview Context
-         * @description Return EXACTLY what context resolution produces for these selections.
-         */
+        /** Preview Context */
         post: operations["preview_context_ai_context_preview_post"];
         delete?: never;
         options?: never;
@@ -1715,6 +1712,27 @@ export interface paths {
         put?: never;
         /** Transcribe Url */
         post: operations["transcribe_url_audio_transcribe_url_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audio/transcribe-file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transcribe File
+         * @description Transcribe a managed files.files object by reference (bounded memory;
+         *     video and over-provider-limit audio are normalized + chunked).
+         */
+        post: operations["transcribe_file_audio_transcribe_file_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3117,6 +3135,126 @@ export interface paths {
          *     trusted server-side consumer (the standalone scraper's GSC sync).
          */
         get: operations["internal_credential_google_integrations_internal_credential_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bing-integrations/authorize-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Authorization Url */
+        get: operations["authorization_url_bing_integrations_authorize_url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bing-integrations/exchange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange */
+        post: operations["exchange_bing_integrations_exchange_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bing-integrations/api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Key Connection */
+        post: operations["api_key_connection_bing_integrations_api_key_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bing-integrations/bind-site": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bind Site */
+        post: operations["bind_site_bing_integrations_bind_site_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bing-integrations/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect */
+        post: operations["disconnect_bing_integrations_disconnect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Collections */
+        get: operations["list_collections_seo_collections_get"];
+        put?: never;
+        /** Create Collection */
+        post: operations["create_collection_seo_collections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/collections/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Collection */
+        get: operations["get_collection_seo_collections__run_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5309,7 +5447,16 @@ export interface paths {
          */
         get: operations["list_user_topics_research_topics_get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Topic Canonical
+         * @description Create a research topic. No project required — ever.
+         *
+         *     Org resolves via `resolve_effective_organization_id` (explicit
+         *     `organization_id` wins, else the caller's personal org). An optional
+         *     `project_id` becomes one canonical `platform.associations` edge; edge
+         *     failure is loud but never fails the create.
+         */
+        post: operations["create_topic_canonical_research_topics_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5362,10 +5509,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Topics */
+        /**
+         * List Topics
+         * @deprecated
+         * @description DEPRECATED — use GET /research/topics; project filtering is an
+         *     association-edge query, never a column filter.
+         */
         get: operations["list_topics_research_projects__project_id__topics_get"];
         put?: never;
-        /** Create Topic */
+        /**
+         * Create Topic
+         * @deprecated
+         * @description DEPRECATED — use POST /research/topics (project optional).
+         */
         post: operations["create_topic_research_projects__project_id__topics_post"];
         delete?: never;
         options?: never;
@@ -11156,6 +11312,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/files/{file_id}/extract-audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract Audio
+         * @description Create or reuse the audio_extracted derivative of a video file.
+         */
+        post: operations["extract_audio_files__file_id__extract_audio_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/{file_id}/download": {
         parameters: {
             query?: never;
@@ -15976,6 +16152,43 @@ export interface components {
             /** Quarantined Rows */
             quarantined_rows: components["schemas"]["QuarantinedRowSummary"][];
         };
+        /**
+         * AidreamCollectionCreateRequest
+         * @description Same body as the standalone app, but organization_id may be omitted —
+         *     aidream resolves the caller's personal org (never NULL).
+         */
+        AidreamCollectionCreateRequest: {
+            /** Provider */
+            provider: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            capability: components["schemas"]["SeoCapability"];
+            /** Operation */
+            operation: string;
+            /** Target Ref */
+            target_ref: string;
+            /** Observation Period */
+            observation_period: string;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** @default on_demand */
+            trigger?: components["schemas"]["CollectionTrigger"];
+            /** Credential Reference Id */
+            credential_reference_id?: string | null;
+            /** @default platform_secret */
+            credential_reference_kind?: components["schemas"]["CredentialReferenceKind"];
+            /** Request Id */
+            request_id?: string | null;
+            /** Execution Id */
+            execution_id?: string | null;
+            /**
+             * Resume Existing
+             * @default false
+             */
+            resume_existing?: boolean;
+        };
         /** AnalysisPreferencesBody */
         AnalysisPreferencesBody: {
             /**
@@ -16438,7 +16651,7 @@ export interface components {
             file_id: string;
             /**
              * Visibility
-             * @default private
+             * @default personal
              * @enum {string}
              */
             visibility?: "public" | "personal" | "shared";
@@ -16832,6 +17045,32 @@ export interface components {
          * @enum {string}
          */
         AssignmentUniqueness: "allow_repeats" | "without_replacement";
+        /** AudioExtractionRequest */
+        AudioExtractionRequest: {
+            /**
+             * Signed Ttl
+             * @default 3600
+             */
+            signed_ttl?: number;
+        };
+        /**
+         * AudioExtractionResult
+         * @description One extracted-audio derivative plus lineage diagnostics.
+         */
+        AudioExtractionResult: {
+            /** Source File Id */
+            source_file_id: string;
+            /** Audio Codec */
+            audio_codec?: string | null;
+            /**
+             * Extraction Mode
+             * @enum {string}
+             */
+            extraction_mode: "stream_copy" | "transcoded";
+            /** Cache Hit */
+            cache_hit: boolean;
+            file: components["schemas"]["FileRef"];
+        };
         /**
          * AudioStyle
          * @enum {string}
@@ -17170,6 +17409,75 @@ export interface components {
              */
             post_process_mask?: boolean;
         };
+        /** BingApiKeyConnectionRequest */
+        BingApiKeyConnectionRequest: {
+            /** Api Key */
+            api_key: string;
+            /**
+             * Owner Type
+             * @default user
+             */
+            owner_type?: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** BingAuthorizationResponse */
+        BingAuthorizationResponse: {
+            /** Authorization Url */
+            authorization_url: string;
+        };
+        /** BingConnectionResponse */
+        BingConnectionResponse: {
+            /** Connection Id */
+            connection_id: string;
+        };
+        /** BingDisconnectRequest */
+        BingDisconnectRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** BingOAuthExchangeRequest */
+        BingOAuthExchangeRequest: {
+            /** Code */
+            code: string;
+            /** Returned State */
+            returned_state: string;
+            /** Redirect Uri */
+            redirect_uri: string;
+            /** Client Id */
+            client_id: string;
+            /** Client Secret */
+            client_secret: string;
+            /**
+             * Owner Type
+             * @default user
+             */
+            owner_type?: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** BingSiteBinding */
+        BingSiteBinding: {
+            /** Enabled */
+            enabled: boolean;
+            /** Credential Ref */
+            credential_ref: string;
+            /** Resource Ref */
+            resource_ref: string;
+        };
+        /** BingSiteBindingRequest */
+        BingSiteBindingRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Site Id */
+            site_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Resource Ref */
+            resource_ref: string;
+        };
         /** Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post */
         Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post: {
             /** File */
@@ -17315,7 +17623,7 @@ export interface components {
             file_path: string;
             /**
              * Visibility
-             * @default private
+             * @default personal
              * @enum {string}
              */
             visibility?: "public" | "personal" | "shared";
@@ -17368,8 +17676,8 @@ export interface components {
             enrich_goal?: string | null;
             /**
              * Visibility
-             * @description private (default; research artifacts can be paywalled/sensitive) | public | shared
-             * @default private
+             * @description personal (default; research artifacts can be paywalled/sensitive) | public | shared
+             * @default personal
              */
             visibility?: string;
         };
@@ -18898,6 +19206,33 @@ export interface components {
             /** @default {} */
             parameters?: components["schemas"]["JsonValue"];
         };
+        /** CollectionReceipt */
+        CollectionReceipt: {
+            /** Run Id */
+            run_id: string;
+            /** Raw Payload Id */
+            raw_payload_id?: string | null;
+            /**
+             * Created Observations
+             * @default 0
+             */
+            created_observations?: number;
+            /**
+             * Existing Observations
+             * @default 0
+             */
+            existing_observations?: number;
+            /**
+             * Reused Completed Run
+             * @default false
+             */
+            reused_completed_run?: boolean;
+        };
+        /**
+         * CollectionTrigger
+         * @enum {string}
+         */
+        CollectionTrigger: "scheduled" | "on_demand" | "backfill" | "test";
         /**
          * CombinedRatingItem
          * @description One injury's per-row rating breakdown — what the FE renders in the
@@ -18982,7 +19317,7 @@ export interface components {
             folder_path?: string;
             /**
              * Visibility
-             * @default private
+             * @default personal
              * @enum {string}
              */
             visibility?: "public" | "personal" | "shared";
@@ -19278,10 +19613,7 @@ export interface components {
             /** Organizations */
             organizations: components["schemas"]["ContextOrganizationOption"][];
         };
-        /**
-         * ContextPreviewBindings
-         * @description Serialized ``ScopeBindingResult`` — the agent's scope-bound fill.
-         */
+        /** ContextPreviewBindings */
         ContextPreviewBindings: {
             /** Variables */
             variables?: {
@@ -19302,13 +19634,7 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
-        /**
-         * ContextPreviewRequest
-         * @description Inputs mirroring what ``AgentStartRequest`` feeds context resolution.
-         *
-         *     ``organization_id`` / ``project_id`` / ``task_id`` / ``scope_ids`` arrive
-         *     via the :class:`ScopedRequest` base (FE ``callApi`` auto-injects them).
-         */
+        /** ContextPreviewRequest */
         ContextPreviewRequest: {
             /** Organization Id */
             organization_id?: string | null;
@@ -19367,10 +19693,7 @@ export interface components {
             /** Entity Is New */
             entity_is_new: boolean;
         };
-        /**
-         * ContextPreviewVariables
-         * @description Resolved scope variables split by delivery tier (RPC ``inject_as``).
-         */
+        /** ContextPreviewVariables */
         ContextPreviewVariables: {
             /** Direct */
             direct?: {
@@ -19865,7 +20188,7 @@ export interface components {
             folder_path: string;
             /**
              * Visibility
-             * @default private
+             * @default personal
              * @enum {string}
              */
             visibility?: "public" | "personal" | "shared";
@@ -19991,6 +20314,11 @@ export interface components {
             /** Service Account Json */
             service_account_json?: string | null;
         };
+        /**
+         * CredentialReferenceKind
+         * @enum {string}
+         */
+        CredentialReferenceKind: "platform_secret" | "integration_connection";
         /** CredentialUpdateRequest */
         CredentialUpdateRequest: {
             /** Display Name */
@@ -23012,7 +23340,7 @@ export interface components {
             checksum?: string | null;
             /**
              * Visibility
-             * @default private
+             * @default personal
              */
             visibility?: string;
             /**
@@ -23090,7 +23418,7 @@ export interface components {
             file_id: string;
             /**
              * Visibility
-             * @default private
+             * @default personal
              * @enum {string}
              */
             visibility?: "public" | "personal" | "shared";
@@ -23366,7 +23694,7 @@ export interface components {
             parent_id?: string | null;
             /**
              * Visibility
-             * @default private
+             * @default personal
              */
             visibility?: string;
             /** Metadata */
@@ -23852,7 +24180,7 @@ export interface components {
         ImageEditOutput: {
             /**
              * Visibility
-             * @default private
+             * @default personal
              * @enum {string}
              */
             visibility?: "personal" | "public" | "shared";
@@ -26846,7 +27174,7 @@ export interface components {
             cdn_url?: string | null;
             /**
              * Visibility
-             * @default private
+             * @default personal
              */
             visibility?: string;
         };
@@ -28033,7 +28361,7 @@ export interface components {
             expected_size_bytes?: number | null;
             /**
              * Visibility
-             * @default private
+             * @default personal
              * @enum {string}
              */
             visibility?: "public" | "personal" | "shared";
@@ -30002,11 +30330,6 @@ export interface components {
              */
             required?: boolean;
         };
-        /** RunListResponse */
-        RunListResponse: {
-            /** Runs */
-            runs: components["schemas"]["RunResponse"][];
-        };
         /** RunNowResponse */
         RunNowResponse: {
             /** Run Id */
@@ -30126,6 +30449,56 @@ export interface components {
             } | null;
             /** Created At */
             created_at?: string | null;
+        };
+        /** RunStatusResponse */
+        RunStatusResponse: {
+            /** Id */
+            id: string;
+            /** Provider */
+            provider: string;
+            /** Capability */
+            capability: string;
+            /** Operation */
+            operation: string;
+            /** Trigger */
+            trigger: string;
+            /** Status */
+            status: string;
+            /** Target Ref */
+            target_ref: string;
+            /** Observation Period */
+            observation_period: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Created By */
+            created_by: string;
+            /** Attempt Count */
+            attempt_count: number;
+            /** Requested At */
+            requested_at?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /**
+             * Request Count
+             * @default 0
+             */
+            request_count?: number;
+            /** Reported Cost */
+            reported_cost?: string | null;
+            /** Estimated Cost */
+            estimated_cost?: string | null;
+            /**
+             * Currency
+             * @default USD
+             */
+            currency?: string;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            receipt?: components["schemas"]["CollectionReceipt"] | null;
         };
         /** RunWorkflowRequest */
         RunWorkflowRequest: {
@@ -30763,6 +31136,11 @@ export interface components {
             /** Source Id */
             source_id: string;
         };
+        /**
+         * SeoCapability
+         * @enum {string}
+         */
+        SeoCapability: "serp_rank" | "keyword_metrics" | "search_performance" | "web_analytics" | "page_performance" | "backlinks" | "competitors" | "raw_provider";
         /** SetCanonicalCleanRequest */
         SetCanonicalCleanRequest: {
             /** Organization Id */
@@ -31995,7 +32373,7 @@ export interface components {
              * Scope
              * @enum {string}
              */
-            scope: "keyword" | "project";
+            scope: "keyword" | "topic";
             /** Keyword Id */
             keyword_id?: string | null;
             /**
@@ -32825,11 +33203,10 @@ export interface components {
         };
         /** TopicCreate */
         TopicCreate: {
-            /**
-             * Project Id
-             * @default
-             */
-            project_id?: string;
+            /** Project Id */
+            project_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
             /** Created By */
             created_by?: string | null;
             /**
@@ -32883,10 +33260,10 @@ export interface components {
              */
             max_keyword_syntheses?: number;
             /**
-             * Max Project Syntheses
+             * Max Topic Syntheses
              * @default 1
              */
-            max_project_syntheses?: number;
+            max_topic_syntheses?: number;
             /**
              * Max Documents
              * @default 1
@@ -32935,8 +33312,8 @@ export interface components {
             analyses_per_keyword?: number | null;
             /** Max Keyword Syntheses */
             max_keyword_syntheses?: number | null;
-            /** Max Project Syntheses */
-            max_project_syntheses?: number | null;
+            /** Max Topic Syntheses */
+            max_topic_syntheses?: number | null;
             /** Max Documents */
             max_documents?: number | null;
             /** Max Tag Consolidations */
@@ -33045,6 +33422,24 @@ export interface components {
             modified_at: string;
             /** Is Header Only */
             is_header_only: boolean;
+        };
+        /** TranscriptionFileRequest */
+        TranscriptionFileRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** File Id */
+            file_id: string;
+            /** Language */
+            language?: string | null;
+            /**
+             * Model
+             * @default stt-default
+             */
+            model?: string;
         };
         /** TranscriptionMeta */
         TranscriptionMeta: {
@@ -34851,6 +35246,11 @@ export interface components {
              */
             soft?: boolean;
         };
+        /** RunListResponse */
+        matrx_scheduler__api__schemas__RunListResponse: {
+            /** Runs */
+            runs: components["schemas"]["RunResponse"][];
+        };
         /** ScannerStatusResponse */
         matrx_scheduler__api__schemas__ScannerStatusResponse: {
             /** Running */
@@ -34893,6 +35293,13 @@ export interface components {
             consecutive_errors?: number;
             /** Error Message */
             error_message?: string | null;
+        };
+        /** RunListResponse */
+        matrx_seo__standalone__app__RunListResponse: {
+            /** Organization Id */
+            organization_id: string;
+            /** Runs */
+            runs: components["schemas"]["RunStatusResponse"][];
         };
     };
     responses: never;
@@ -37693,6 +38100,39 @@ export interface operations {
             };
         };
     };
+    transcribe_file_audio_transcribe_file_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranscriptionFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     text_to_speech_audio_text_to_speech_post: {
         parameters: {
             query?: never;
@@ -40343,6 +40783,265 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoogleConnectionCredentialResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorization_url_bing_integrations_authorize_url_get: {
+        parameters: {
+            query: {
+                client_id: string;
+                redirect_uri: string;
+                scope?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BingAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_bing_integrations_exchange_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BingOAuthExchangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BingConnectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_key_connection_bing_integrations_api_key_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BingApiKeyConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BingConnectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_site_bing_integrations_bind_site_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BingSiteBindingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BingSiteBinding"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_bing_integrations_disconnect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BingDisconnectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_collections_seo_collections_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["matrx_seo__standalone__app__RunListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_collection_seo_collections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AidreamCollectionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionReceipt"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_collection_seo_collections__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunStatusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -44237,6 +44936,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchTopicSummary"][];
+                };
+            };
+        };
+    };
+    create_topic_canonical_research_topics_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -54697,6 +55429,41 @@ export interface operations {
             };
         };
     };
+    extract_audio_files__file_id__extract_audio_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AudioExtractionRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioExtractionResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     download_file_files__file_id__download_get: {
         parameters: {
             query?: {
@@ -59456,7 +60223,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunListResponse"];
+                    "application/json": components["schemas"]["matrx_scheduler__api__schemas__RunListResponse"];
                 };
             };
             /** @description Validation Error */

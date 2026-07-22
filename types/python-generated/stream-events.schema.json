@@ -2166,7 +2166,7 @@
               {
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ],
                 "type": "string"
@@ -2428,7 +2428,7 @@
               {
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ],
                 "type": "string"
@@ -2690,7 +2690,7 @@
               {
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ],
                 "type": "string"
@@ -2965,7 +2965,7 @@
               {
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ],
                 "type": "string"
@@ -3249,7 +3249,7 @@
               {
                 "enum": [
                   "public",
-                  "private",
+                  "personal",
                   "shared"
                 ],
                 "type": "string"

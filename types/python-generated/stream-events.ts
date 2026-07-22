@@ -776,7 +776,7 @@ export interface LegalSyncEventData {
 export interface AudioBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
-  visibility?: "public" | "private" | "shared" | null;
+  visibility?: "public" | "personal" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
   download_url?: string | null;
@@ -801,7 +801,7 @@ export interface AudioBlock {
 export interface DocumentBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
-  visibility?: "public" | "private" | "shared" | null;
+  visibility?: "public" | "personal" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
   download_url?: string | null;
@@ -826,7 +826,7 @@ export interface DocumentBlock {
 export interface ImageBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
-  visibility?: "public" | "private" | "shared" | null;
+  visibility?: "public" | "personal" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
   download_url?: string | null;
@@ -855,7 +855,7 @@ export interface JsonValue {
 export interface VideoBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
-  visibility?: "public" | "private" | "shared" | null;
+  visibility?: "public" | "personal" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
   download_url?: string | null;
@@ -882,7 +882,7 @@ export interface VideoBlock {
 export interface YouTubeBlock {
   origin?: "external";
   file_id?: string | null;
-  visibility?: "public" | "private" | "shared" | null;
+  visibility?: "public" | "personal" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
   download_url?: string | null;

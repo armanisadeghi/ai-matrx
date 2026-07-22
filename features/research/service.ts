@@ -297,19 +297,12 @@ export async function updateTopic(
   topicId: string,
   updates: TopicUpdate,
 ): Promise<ResearchTopic> {
-  // Boundary translation, both deliberate:
-  // - `project_id` is NOT writable here — the project relationship is the
-  //   canonical association edge (`setTopicProject`), never a column.
-  // - `max_topic_syntheses` (feature vocabulary) maps to the physical column
-  //   `max_project_syntheses` until the Phase-4 rename migration (PHASE-4
-  //   COMPAT — see common-docs/research-project-decoupling/FEATURE.md).
-  const { max_topic_syntheses, ...rest } = updates;
+  // The project relationship is the canonical association edge
+  // (`setTopicProject`), never a column — nothing project-shaped is writable
+  // here.
   const dbUpdate: Database["research"]["Tables"]["rs_topic"]["Update"] = {
-    ...(rest as Database["research"]["Tables"]["rs_topic"]["Update"]),
+    ...(updates as Database["research"]["Tables"]["rs_topic"]["Update"]),
   };
-  if (max_topic_syntheses != null) {
-    dbUpdate.max_project_syntheses = max_topic_syntheses;
-  }
   const { data, error } = await supabase
     .schema("research")
     .from("rs_topic")

@@ -30,12 +30,7 @@ export type TopicUpdate = {
   max_keywords?: number | null;
   analyses_per_keyword?: number | null;
   max_keyword_syntheses?: number | null;
-  /**
-   * Feature-level name for the topic-wide synthesis cap. PHASE-4 COMPAT
-   * (research-project-decoupling): the physical DB column is still
-   * `max_project_syntheses` until the Phase-4 rename migration; the service
-   * translates at the write boundary (`updateTopic`).
-   */
+  /** Topic-wide synthesis cap (`rs_topic.max_topic_syntheses`). */
   max_topic_syntheses?: number | null;
   max_documents?: number | null;
   max_tag_consolidations?: number | null;
@@ -226,13 +221,11 @@ export function normalizeSynthesisScope(scope: string): SynthesisScope {
 }
 
 /**
- * PHASE-3/4 COMPAT (research-project-decoupling): the aidream
- * `SynthesisRequest.scope` contract still accepts only `'keyword' | 'project'`
- * — `'project'` on the wire means TOPIC-WIDE synthesis. Every topic-wide
- * synthesize API call sends this constant so there is exactly ONE flip site:
- * change it to `"topic"` once the backend Phase-3 deploy accepts it.
+ * Topic-wide synthesis wire scope. The backend Phase-3 deploy (live) accepts
+ * and emits `'topic'`; legacy `'project'` remains readable in
+ * `normalizeSynthesisScope` for old persisted stream payloads only.
  */
-export const TOPIC_SYNTHESIS_WIRE_SCOPE = "project" as const;
+export const TOPIC_SYNTHESIS_WIRE_SCOPE = "topic" as const;
 export type IterationMode = "initial" | "rebuild" | "update";
 export type BulkAction =
   | "include"
@@ -263,17 +256,13 @@ export type ResearchTopicRow = Database["research"]["Tables"]["rs_topic"]["Row"]
  * 2026-07-21 `pnpm db-types` regen), so this interface exists only to give the
  * topic-wide synthesis cap its FEATURE-LEVEL name.
  *
- * PHASE-4 COMPAT (research-project-decoupling): the physical column is still
- * `max_project_syntheses` until the Phase-4 rename migration. The boundary
- * mapper `rowToResearchTopic` translates read-side; `updateTopic` translates
- * write-side. Nothing above the service layer may use the old name.
+ * The Phase-4 rename landed: the physical column is `max_topic_syntheses`.
  */
 export interface TopicQuotaFields {
   max_keywords: number;
   scrapes_per_keyword: number;
   analyses_per_keyword: number;
   max_keyword_syntheses: number;
-  /** Topic-wide synthesis cap — DB column `max_project_syntheses` until Phase 4. */
   max_topic_syntheses: number;
   max_documents: number;
   max_tag_consolidations: number;
@@ -319,22 +308,13 @@ export interface TopicCostSummary {
  * - `autonomy_level` narrows from the loose Supabase `string` to the three
  *   documented values;
  * - `tag_suggestions` narrows from `Json` to `TagSuggestionsBundle | null`;
- * - `max_project_syntheses` (physical column, Phase-4-pending rename) is
- *   exposed ONLY as `max_topic_syntheses`.
- *
- * `project_id` survives on the row as a NULLABLE, NON-AUTHORITATIVE leftover
- * until the Phase-4 column drop — it is deliberately omitted here so no UI
- * code can read it. The project relationship is the canonical
- * `research_topic → project` association edge.
+ * The project relationship is the canonical `research_topic → project`
+ * association edge; the physical column was dropped in Phase 4.
  */
-export type ResearchTopic = Omit<
-  ResearchTopicRow,
-  "autonomy_level" | "tag_suggestions" | "max_project_syntheses" | "project_id"
-> &
-  TopicQuotaFields & {
-    autonomy_level: "auto" | "semi" | "manual";
-    tag_suggestions: TagSuggestionsBundle | null;
-  };
+export type ResearchTopic = Omit<ResearchTopicRow, "autonomy_level" | "tag_suggestions"> & {
+  autonomy_level: "auto" | "semi" | "manual";
+  tag_suggestions: TagSuggestionsBundle | null;
+};
 
 /**
  * THE boundary mapper from a raw `rs_topic` row to the canonical
@@ -344,22 +324,11 @@ export type ResearchTopic = Omit<
  * undefined at runtime while the compiler says it exists).
  */
 export function rowToResearchTopic(row: ResearchTopicRow): ResearchTopic {
-  const {
-    autonomy_level,
-    tag_suggestions,
-    max_project_syntheses,
-    // PHASE-4 COMPAT: strip the non-authoritative leftover column so no UI
-    // code can read it. Project comes from the association edge only.
-    project_id: _legacyProjectId,
-    ...rest
-  } = row;
-  void _legacyProjectId;
+  const { autonomy_level, tag_suggestions, ...rest } = row;
   return {
     ...rest,
     autonomy_level: autonomyLevelFromDb(autonomy_level),
     tag_suggestions: tagSuggestionsFromJson(tag_suggestions),
-    // PHASE-4 COMPAT: physical column name until the rename migration lands.
-    max_topic_syntheses: max_project_syntheses,
   };
 }
 
