@@ -16,6 +16,9 @@ import {
 } from "./json-utils";
 import { PathArray, Bookmark } from "./types";
 import { isJsonArray, isJsonObject, isJsonPrimitive, type JsonValue } from "@/types/json";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { toast } from "@/lib/toast";
 
 // Import extracted components
 import BookmarkDialog from "./BookmarkDialog";
@@ -61,17 +64,9 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
 
   // Hidden paths feature
   const [hiddenPaths, setHiddenPaths] = useState<string[]>([]);
-  const [contextMenu, setContextMenu] = useState<{
-    open: boolean;
-    x: number;
-    y: number;
-    path: string | null;
-  }>({
-    open: false,
-    x: 0,
-    y: 0,
-    path: null,
-  });
+  // The nav key under the last right-click, resolved at menu-open time
+  // (single-instance v3 delegation via resolveContextOnOpen).
+  const [contextPath, setContextPath] = useState<string | null>(null);
 
   // Load bookmarks on component mount
   useEffect(() => {
@@ -167,9 +162,6 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
         ? getDataAtPath(originalData, dataPath)
         : originalData;
     setDisplayData(newData);
-
-    // Clear context menu when changing paths
-    setContextMenu({ open: false, x: 0, y: 0, path: null });
   };
 
   // Reset explorer to initial state
@@ -178,26 +170,8 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
     setDisplayData(originalData);
   };
 
-  // Context menu handlers
-  const handleContextMenu = (e: React.MouseEvent, path: PathArray) => {
-    e.preventDefault();
-
-    // Get the key name from the path
-    const keyName = path[path.length - 1][1];
-
-    // Generate path in the simple dot notation format that matches our processing
-    const relativePath = `data.${keyName}`;
-
-    setContextMenu({
-      open: true,
-      x: e.clientX,
-      y: e.clientY,
-      path: relativePath,
-    });
-  };
-
   const handleHideToggle = () => {
-    const targetPath = contextMenu.path;
+    const targetPath = contextPath;
     if (!targetPath) return;
 
     const isCurrentlyHidden = hiddenPaths.includes(targetPath);
@@ -208,23 +182,7 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
         : [...prev, targetPath];
       return newPaths;
     });
-
-    setContextMenu({ open: false, x: 0, y: 0, path: null });
   };
-
-  // Close context menu on click outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (contextMenu.open) {
-        setContextMenu({ open: false, x: 0, y: 0, path: null });
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [contextMenu.open]);
 
   // Check if we need to add a new row based on current selection
   useEffect(() => {
@@ -346,8 +304,7 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
   const handleExportBookmarks = () => {
     const exported = exportBookmarks(bookmarks);
     copyToClipboard(exported);
-    // Show a simple toast or alert that the bookmarks were copied
-    alert("Bookmarks copied to clipboard as JSON");
+    toast.success("Bookmarks copied to clipboard as JSON");
   };
 
   // Convert any bracket notation paths to dot notation for consistency
@@ -460,44 +417,67 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
         </div>
       </div>
 
-      {withSelect ? (
-        <NavigationSelects
-          originalData={originalData}
-          currentPath={currentPath}
-          onKeySelect={handleKeySelect}
-          onContextMenu={handleContextMenu}
-          hiddenPaths={hiddenPaths}
-          isPathHidden={isPathHidden}
-        />
-      ) : (
-        <NavigationRows
-          originalData={originalData}
-          currentPath={currentPath}
-          onKeySelect={handleKeySelect}
-          onContextMenu={handleContextMenu}
-          hiddenPaths={hiddenPaths}
-          isPathHidden={isPathHidden}
-        />
-      )}
+      <NonEditableContextMenu
+        sourceFeature="json-explorer"
+        resolveContextOnOpen={(target) => {
+          const hit = target?.closest?.("[data-json-key]");
+          const key =
+            hit instanceof HTMLElement ? hit.dataset.jsonKey : undefined;
+          if (!key) {
+            setContextPath(null);
+            return null;
+          }
+          // Path in the simple dot notation format that matches our processing.
+          setContextPath(`data.${key}`);
+          return { content: key };
+        }}
+        extraSections={
+          contextPath
+            ? ([
+                {
+                  id: "json-explorer-hidden-paths",
+                  anchor: "after-clipboard",
+                  items: [
+                    {
+                      kind: "item",
+                      id: "json-explorer-hide-toggle",
+                      label: hiddenPaths.includes(contextPath)
+                        ? "Show content"
+                        : "Hide content",
+                      onSelect: handleHideToggle,
+                    },
+                  ],
+                },
+              ] satisfies ContextMenuExtraSection[])
+            : []
+        }
+        enableFloatingIcon={false}
+      >
+        {/* Real DOM element for the Radix asChild trigger. */}
+        <div>
+          {withSelect ? (
+            <NavigationSelects
+              originalData={originalData}
+              currentPath={currentPath}
+              onKeySelect={handleKeySelect}
+              hiddenPaths={hiddenPaths}
+              isPathHidden={isPathHidden}
+            />
+          ) : (
+            <NavigationRows
+              originalData={originalData}
+              currentPath={currentPath}
+              onKeySelect={handleKeySelect}
+              hiddenPaths={hiddenPaths}
+              isPathHidden={isPathHidden}
+            />
+          )}
+        </div>
+      </NonEditableContextMenu>
 
       <pre className="whitespace-pre-wrap p-2 text-foreground font-mono overflow-auto h-full">
         {displayJsonStr}
       </pre>
-
-      {/* Context Menu */}
-      {contextMenu.open && (
-        <div
-          className="fixed bg-textured shadow-md rounded border border-border z-50"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-        >
-          <button
-            className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
-            onClick={handleHideToggle}
-          >
-            {contextMenu.path && hiddenPaths.includes(contextMenu.path) ? "Show content" : "Hide content"}
-          </button>
-        </div>
-      )}
 
       <BookmarkDialog
         open={bookmarkDialogOpen}

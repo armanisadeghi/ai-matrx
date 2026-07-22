@@ -1,5 +1,9 @@
 // ProfileSection.jsx
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Briefcase, MapPin, DollarSign, Calendar, MoreHorizontal, Edit, Trash, Plus, Trophy, ChevronUp, ChevronDown } from "lucide-react";
@@ -74,9 +78,65 @@ const ProfileSection = ({
     toggleSection(section.id);
   };
 
+  const sectionMenuItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "profile-section-edit",
+      label: "Edit Section",
+      icon: Edit,
+      onSelect: () => openEditModal("section", section),
+    },
+    {
+      kind: "item",
+      id: "profile-section-delete",
+      label: "Delete Section",
+      icon: Trash,
+      destructive: true,
+      onSelect: () => deleteItem("section", section.id),
+    },
+    { kind: "separator", id: "profile-section-sep-add" },
+  ];
+  if (section.type === "experience") {
+    sectionMenuItems.push({
+      kind: "item",
+      id: "profile-section-add-experience",
+      label: "Add Experience",
+      icon: Plus,
+      onSelect: () => {
+        const newExp: ExperienceItemType = {
+          id: "temp-new",
+          title: "",
+          company: "",
+          details: [],
+        };
+        openEditModal("experience", newExp, "add", section.id);
+      },
+    });
+  }
+  sectionMenuItems.push({
+    kind: "item",
+    id: "profile-section-add-item",
+    label: "Add Item",
+    icon: Plus,
+    onSelect: () => {
+      const newItem: ProfileItemType = {
+        id: "temp-new",
+        content: "",
+      };
+      openEditModal("item", newItem, "add", section.id);
+    },
+  });
+  const extraSections: ContextMenuExtraSection[] = [
+    { id: "profile-section-actions", anchor: "after-clipboard", items: sectionMenuItems },
+  ];
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger>
+    <NonEditableContextMenu
+      sourceFeature="assistant-message"
+      contextData={{ content: section.title }}
+      extraSections={extraSections}
+      enableFloatingIcon={false}
+    >
         <div className="space-y-5 mb-6">
           <div 
             className="flex items-center justify-between border-b pb-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-md group cursor-pointer"
@@ -187,43 +247,7 @@ const ProfileSection = ({
             </div>
           )}
         </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-52">
-        <ContextMenuItem onClick={() => openEditModal("section", section)}>
-          <Edit className="h-4 w-4 mr-2" /> Edit Section
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => deleteItem("section", section.id)} className="text-destructive focus:text-destructive">
-          <Trash className="h-4 w-4 mr-2" /> Delete Section
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        {section.type === "experience" && (
-          <ContextMenuItem
-            onClick={() => {
-              const newExp: ExperienceItemType = {
-                id: "temp-new",
-                title: "",
-                company: "",
-                details: [],
-              };
-              openEditModal("experience", newExp, "add", section.id);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" /> Add Experience
-          </ContextMenuItem>
-        )}
-        <ContextMenuItem
-          onClick={() => {
-            const newItem: ProfileItemType = {
-              id: "temp-new",
-              content: "",
-            };
-            openEditModal("item", newItem, "add", section.id);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" /> Add Item
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+    </NonEditableContextMenu>
   );
 };
 

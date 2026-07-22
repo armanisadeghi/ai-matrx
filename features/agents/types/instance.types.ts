@@ -190,6 +190,9 @@ export type SourceFeature =
   // ── Content extraction ───────────────────────────────────────────────────
   | "content-extractor"
   | "extractor-chunker"
+  /** Official JSON navigation tools — RawJsonExplorer + ProcessorExtractor
+   *  (`components/official/json-explorer`, `components/official/processor-extractor`). */
+  | "json-explorer"
 
   // ── PDF (`pdf-*`) ────────────────────────────────────────────────────────
   | "pdf-widgets"
@@ -335,6 +338,7 @@ export const SOURCE_FEATURES = [
   "ai-results",
   "content-extractor",
   "extractor-chunker",
+  "json-explorer",
   "pdf-widgets",
   "analysis-studio",
   "scanner",

@@ -26,13 +26,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-  ContextMenuSeparator,
-} from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import {
   MoreHorizontal,
   Edit,
@@ -99,6 +97,9 @@ const TaskChecklist = ({
   const [addToTaskId, setAddToTaskId] = useState("");
   const [resetSuccess, setResetSuccess] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  // The task row under the last right-click, resolved at menu-open time
+  // (single-instance v3 delegation — see resolveContextOnOpen below).
+  const [contextTask, setContextTask] = useState<TaskItemType | null>(null);
 
   // Parse the markdown content to extract checklist structure
   useEffect(() => {
@@ -396,47 +397,10 @@ const TaskChecklist = ({
       return null;
     }
 
-    // Task actions menu items
-    const TaskActionMenuItems = () => (
-      <>
-        <ContextMenuItem onClick={() => openEditModal(item)}>
-          <Edit className="h-4 w-4 mr-2" /> Edit
-        </ContextMenuItem>
-        <ContextMenuItem
-          onClick={() => deleteTask(item.id)}
-          className="text-destructive focus:text-destructive"
-        >
-          <Trash className="h-4 w-4 mr-2" /> Delete
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem onClick={() => openEditModal(item, true, "above")}>
-          <Plus className="h-4 w-4 mr-2" /> Add Above
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => openEditModal(item, true, "below")}>
-          <Plus className="h-4 w-4 mr-2" /> Add Below
-        </ContextMenuItem>
-        {isMainTask && (
-          <ContextMenuItem
-            onClick={() => {
-              const subtaskTemplate: TaskItemType = {
-                id: `temp-${Date.now()}`,
-                title: "",
-                type: "subtask",
-              };
-              openEditModal(subtaskTemplate, true, "", item.id);
-              setEditIsSubtask(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" /> Add Subtask
-          </ContextMenuItem>
-        )}
-      </>
-    );
-
     return (
-      <ContextMenu key={checkboxId}>
-        <ContextMenuTrigger>
           <div
+            key={checkboxId}
+            data-task-id={item.id}
             className={`bg-transparent dark:bg-transparent mb-2 ${depth > 0 ? "ml-8" : ""}`}
           >
             <div className="flex items-start gap-3 group/task-row relative">
@@ -516,14 +480,82 @@ const TaskChecklist = ({
               </div>
             )}
           </div>
-        </ContextMenuTrigger>
-
-        <ContextMenuContent>
-          <TaskActionMenuItems />
-        </ContextMenuContent>
-      </ContextMenu>
     );
   };
+
+  // Find a task anywhere in the checklist tree by id.
+  const findTaskById = (
+    items: TaskItemType[],
+    taskId: string,
+  ): TaskItemType | null => {
+    for (const item of items) {
+      if (item.id === taskId) return item;
+      if (item.children) {
+        const found = findTaskById(item.children, taskId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Task-row actions for the universal v3 context menu, derived from the row
+  // that was right-clicked (resolved by resolveContextOnOpen).
+  const taskMenuItems: ContextMenuExtraItem[] = [];
+  if (contextTask) {
+    taskMenuItems.push(
+      {
+        kind: "item",
+        id: "task-edit",
+        label: "Edit",
+        icon: Edit,
+        onSelect: () => openEditModal(contextTask),
+      },
+      {
+        kind: "item",
+        id: "task-delete",
+        label: "Delete",
+        icon: Trash,
+        destructive: true,
+        onSelect: () => deleteTask(contextTask.id),
+      },
+      { kind: "separator", id: "task-sep-add" },
+      {
+        kind: "item",
+        id: "task-add-above",
+        label: "Add Above",
+        icon: Plus,
+        onSelect: () => openEditModal(contextTask, true, "above"),
+      },
+      {
+        kind: "item",
+        id: "task-add-below",
+        label: "Add Below",
+        icon: Plus,
+        onSelect: () => openEditModal(contextTask, true, "below"),
+      },
+    );
+    if (contextTask.type === "task") {
+      taskMenuItems.push({
+        kind: "item",
+        id: "task-add-subtask",
+        label: "Add Subtask",
+        icon: Plus,
+        onSelect: () => {
+          const subtaskTemplate: TaskItemType = {
+            id: `temp-${Date.now()}`,
+            title: "",
+            type: "subtask",
+          };
+          openEditModal(subtaskTemplate, true, "", contextTask.id);
+          setEditIsSubtask(true);
+        },
+      });
+    }
+  }
+  const taskExtraSections: ContextMenuExtraSection[] =
+    taskMenuItems.length > 0
+      ? [{ id: "task-actions", anchor: "after-clipboard", items: taskMenuItems }]
+      : [];
 
   const progress = calculateProgress();
 
@@ -553,17 +585,35 @@ const TaskChecklist = ({
         </CardHeader>
 
         <CardContent className="pt-4 space-y-4 relative">
-          {checklist.map((item) => {
-            if (item.type === "section") {
-              return (
-                <div key={item.id} className="space-y-3">
-                  {item.children?.map((task) => renderTaskItem(task))}
-                </div>
-              );
-            } else {
-              return renderTaskItem(item);
-            }
-          })}
+          <NonEditableContextMenu
+            sourceFeature="tasks"
+            resolveContextOnOpen={(target) => {
+              const hit = target?.closest?.("[data-task-id]");
+              const taskId =
+                hit instanceof HTMLElement ? hit.dataset.taskId : undefined;
+              const task = taskId ? findTaskById(checklist, taskId) : null;
+              setContextTask(task);
+              if (!task) return null;
+              return { content: task.title };
+            }}
+            extraSections={taskExtraSections}
+            enableFloatingIcon={false}
+          >
+            {/* Real DOM element for the Radix asChild trigger. */}
+            <div className="space-y-4">
+              {checklist.map((item) => {
+                if (item.type === "section") {
+                  return (
+                    <div key={item.id} className="space-y-3">
+                      {item.children?.map((task) => renderTaskItem(task))}
+                    </div>
+                  );
+                } else {
+                  return renderTaskItem(item);
+                }
+              })}
+            </div>
+          </NonEditableContextMenu>
 
           {/* Bottom right save/reset/import buttons */}
           {!hideActions && (

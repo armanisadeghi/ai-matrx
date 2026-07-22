@@ -27,16 +27,12 @@ import {
   resolveTranscriptInnerHeaderLabel,
   type ParsedTranscript,
 } from "./transcript-parser";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-} from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Search,
@@ -213,10 +209,94 @@ const TranscriptSegmentItem = React.memo(
       );
     }
 
+    // Segment actions — ride into the universal v3 menu as extraSections.
+    const segmentItems: ContextMenuExtraItem[] = [
+      {
+        kind: "item",
+        id: "segment-edit",
+        label: "Edit Segment",
+        icon: Edit,
+        onSelect: () => onEdit(segment),
+      },
+      {
+        kind: "item",
+        id: "segment-split",
+        label: "Split Segment",
+        icon: Scissors,
+        onSelect: () => onSplit(segment),
+      },
+      {
+        kind: "item",
+        id: "segment-merge",
+        label: "Merge with Next",
+        icon: MergeIcon,
+        disabled: isLastSegment,
+        onSelect: () => onMerge(segment.id),
+      },
+      { kind: "separator", id: "segment-sep-copy" },
+      {
+        kind: "item",
+        id: "segment-copy",
+        label: "Copy Text",
+        icon: Copy,
+        onSelect: () => onCopy(segment.text, segment.id),
+      },
+    ];
+    if (transcriptId) {
+      segmentItems.push({
+        kind: "item",
+        id: "segment-copy-reference",
+        label: "Copy Reference",
+        icon: Bookmark,
+        onSelect: () => {
+          const segmentIndex = transcriptSegmentIndexFromId(segment.id) ?? index;
+          void navigator.clipboard
+            .writeText(
+              buildTranscriptSegmentReferenceFence({
+                transcriptId,
+                segmentIndex,
+                label: segment.text.slice(0, 80),
+              }),
+            )
+            .then(() => toast.success("Segment reference copied"))
+            .catch(() => toast.error("Failed to copy segment reference"));
+        },
+      });
+    }
+    segmentItems.push(
+      {
+        kind: "item",
+        id: "segment-timestamp-link",
+        label: "Timestamp Link",
+        icon: Link,
+        onSelect: () => {
+          const timeText = `${window.location.href.split("#")[0]}#t=${segment.seconds}`;
+          navigator.clipboard.writeText(timeText);
+        },
+      },
+      { kind: "separator", id: "segment-sep-delete" },
+      {
+        kind: "item",
+        id: "segment-delete",
+        label: "Delete Segment",
+        icon: Trash,
+        destructive: true,
+        onSelect: () => onDelete(segment.id),
+      },
+    );
+    const extraSections: ContextMenuExtraSection[] = [
+      { id: "segment-actions", anchor: "after-clipboard", items: segmentItems },
+    ];
+
     // Detailed/Compact view
     return (
-      <ContextMenu key={segment.id}>
-        <ContextMenuTrigger disabled={readOnly}>
+      <NonEditableContextMenu
+        sourceFeature="transcripts"
+        contextData={{ content: segment.text }}
+        extraSections={extraSections}
+        enableFloatingIcon={false}
+        suppressed={readOnly}
+      >
           <div
             ref={setRef}
             className={`relative rounded-md transition-colors group/segment ${
@@ -363,66 +443,7 @@ const TranscriptSegmentItem = React.memo(
 
             {!isLastSegment && <Separator className="my-1" />}
           </div>
-        </ContextMenuTrigger>
-
-        {!readOnly && (
-          <ContextMenuContent className="w-48">
-            <ContextMenuItem onClick={() => onEdit(segment)}>
-              <Edit className="h-4 w-4 mr-2" /> Edit Segment
-            </ContextMenuItem>
-            <ContextMenuItem onClick={() => onSplit(segment)}>
-              <Scissors className="h-4 w-4 mr-2" /> Split Segment
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => onMerge(segment.id)}
-              disabled={isLastSegment}
-            >
-              <MergeIcon className="h-4 w-4 mr-2" /> Merge with Next
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem onClick={() => onCopy(segment.text, segment.id)}>
-              <Copy className="h-4 w-4 mr-2" /> Copy Text
-            </ContextMenuItem>
-            {transcriptId ? (
-              <ContextMenuItem
-                onClick={async () => {
-                  const segmentIndex =
-                    transcriptSegmentIndexFromId(segment.id) ?? index;
-                  try {
-                    await navigator.clipboard.writeText(
-                      buildTranscriptSegmentReferenceFence({
-                        transcriptId,
-                        segmentIndex,
-                        label: segment.text.slice(0, 80),
-                      }),
-                    );
-                    toast.success("Segment reference copied");
-                  } catch {
-                    toast.error("Failed to copy segment reference");
-                  }
-                }}
-              >
-                <Bookmark className="h-4 w-4 mr-2" /> Copy Reference
-              </ContextMenuItem>
-            ) : null}
-            <ContextMenuItem
-              onClick={() => {
-                const timeText = `${window.location.href.split("#")[0]}#t=${segment.seconds}`;
-                navigator.clipboard.writeText(timeText);
-              }}
-            >
-              <Link className="h-4 w-4 mr-2" /> Timestamp Link
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem
-              onClick={() => onDelete(segment.id)}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash className="h-4 w-4 mr-2" /> Delete Segment
-            </ContextMenuItem>
-          </ContextMenuContent>
-        )}
-      </ContextMenu>
+      </NonEditableContextMenu>
     );
   },
 );
@@ -814,8 +835,14 @@ const AdvancedTranscriptViewer = ({
   };
 
   // Delete segment function
-  const handleDeleteSegment = (segmentId: string) => {
-    if (confirm("Are you sure you want to delete this segment?")) {
+  const handleDeleteSegment = async (segmentId: string) => {
+    const ok = await confirm({
+      title: "Delete segment?",
+      description: "Are you sure you want to delete this segment?",
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (ok) {
       const updatedTranscript = transcript.filter(
         (segment) => segment.id !== segmentId,
       );

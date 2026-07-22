@@ -1,5 +1,6 @@
 // ExperienceItem.jsx
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash, Plus } from "lucide-react";
@@ -28,9 +29,77 @@ const ExperienceItem = ({
   editable,
   renderContent,
 }: ExperienceItemProps) => {
+  const experienceSections: ContextMenuExtraSection[] = [
+    {
+      id: "experience-actions",
+      anchor: "after-clipboard",
+      items: [
+        {
+          kind: "item",
+          id: "experience-edit",
+          label: "Edit Experience",
+          icon: Edit,
+          onSelect: () => openEditModal("experience", experience),
+        },
+        {
+          kind: "item",
+          id: "experience-delete",
+          label: "Delete Experience",
+          icon: Trash,
+          destructive: true,
+          onSelect: () => deleteItem("experience", experience.id),
+        },
+        { kind: "separator", id: "experience-sep-add" },
+        {
+          kind: "item",
+          id: "experience-add-detail",
+          label: "Add Detail",
+          icon: Plus,
+          onSelect: () => {
+            const newItem: ProfileItemType = {
+              id: "temp-new",
+              content: "",
+            };
+            openEditModal("item", newItem, "add", experience.id);
+          },
+        },
+      ],
+    },
+  ];
+
+  const detailSections = (detail: ProfileItemType): ContextMenuExtraSection[] => [
+    {
+      id: "experience-detail-actions",
+      anchor: "after-clipboard",
+      items: [
+        {
+          kind: "item",
+          id: "experience-detail-edit",
+          label: "Edit Item",
+          icon: Edit,
+          onSelect: () => openEditModal("item", detail),
+        },
+        {
+          kind: "item",
+          id: "experience-detail-delete",
+          label: "Delete Item",
+          icon: Trash,
+          destructive: true,
+          onSelect: () => deleteItem("item", detail.id),
+        },
+      ],
+    },
+  ];
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger>
+    <NonEditableContextMenu
+      sourceFeature="assistant-message"
+      contextData={{
+        content: `${experience.company}${experience.title ? ` – ${experience.title}` : ""}`,
+      }}
+      extraSections={experienceSections}
+      enableFloatingIcon={false}
+    >
         <div className="space-y-4 mb-8 pl-1 w-full">
           {/* Experience Header */}
           <div className="flex items-center justify-between group w-full">
@@ -40,7 +109,7 @@ const ExperienceItem = ({
                 {experience.title && <span className="ml-1">– {experience.title}</span>}
               </h4>
             </div>
-            
+
             {editable && (
               <div className="flex-shrink-0">
                 <DropdownMenu>
@@ -86,14 +155,19 @@ const ExperienceItem = ({
           {experience.details.length > 0 && (
             <ul className="space-y-4 list-disc list-outside text-sm ml-5 mt-2">
               {experience.details.map((detail) => (
-                <ContextMenu key={detail.id}>
-                  <ContextMenuTrigger>
+                <NonEditableContextMenu
+                  key={detail.id}
+                  sourceFeature="assistant-message"
+                  contextData={{ content: detail.content }}
+                  extraSections={detailSections(detail)}
+                  enableFloatingIcon={false}
+                >
                     <li className="group w-full">
                       <div className="flex items-start w-full">
                         <div className="flex-grow mr-2">
                           {renderContent(detail.content)}
                         </div>
-                        
+
                         {editable && (
                           <div className="flex-shrink-0">
                             <Button
@@ -112,49 +186,12 @@ const ExperienceItem = ({
                         )}
                       </div>
                     </li>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent className="w-40">
-                    <ContextMenuItem onClick={() => openEditModal("item", detail)}>
-                      <Edit className="h-4 w-4 mr-2" /> Edit Item
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                      onClick={() => deleteItem("item", detail.id)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash className="h-4 w-4 mr-2" /> Delete Item
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
+                </NonEditableContextMenu>
               ))}
             </ul>
           )}
         </div>
-      </ContextMenuTrigger>
-      
-      <ContextMenuContent className="w-48">
-        <ContextMenuItem onClick={() => openEditModal("experience", experience)}>
-          <Edit className="h-4 w-4 mr-2" /> Edit Experience
-        </ContextMenuItem>
-        <ContextMenuItem
-          onClick={() => deleteItem("experience", experience.id)}
-          className="text-destructive focus:text-destructive"
-        >
-          <Trash className="h-4 w-4 mr-2" /> Delete Experience
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onClick={() => {
-            const newItem: ProfileItemType = {
-              id: "temp-new",
-              content: "",
-            };
-            openEditModal("item", newItem, "add", experience.id);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" /> Add Detail
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+    </NonEditableContextMenu>
   );
 };
 

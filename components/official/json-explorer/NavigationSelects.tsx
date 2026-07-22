@@ -31,6 +31,7 @@ const NavigationSelects: React.FC<NavigationRowsProps> = ({
       <select
         key={`select-${rowIndex}`}
         value={selectedKey}
+        data-json-key={selectedKey}
         onChange={(e) => onKeySelect(rowIndex, e.target.value)}
         onContextMenu={(e) => onContextMenu && onContextMenu(e, selectedPath)}
         className={`
