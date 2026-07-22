@@ -162,6 +162,16 @@ export function assembleRequest(
   // Variables for the request — three-tier merge, but untouched scope-bound vars are
   // omitted so the server resolves them from the active scope (see selector).
   const variables = selectVariablesForRequest(conversationId)(state);
+  // TEMP DEBUG (kind-action variable injection) — remove
+  console.warn("[kind-action-debug] assembly", {
+    conversationId,
+    variables,
+    userValues:
+      state.instanceVariableValues.byConversationId[conversationId]?.userValues,
+    defNames: state.instanceVariableValues.byConversationId[
+      conversationId
+    ]?.definitions?.map((d) => d.name),
+  });
   const variableResourceContext =
     selectRuntimeVariableResourcePolicies(conversationId)(state);
 

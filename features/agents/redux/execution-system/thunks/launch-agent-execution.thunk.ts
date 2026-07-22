@@ -727,6 +727,15 @@ export const launchAgentExecution = createAsyncThunk<
 
     if (variables && Object.keys(variables).length > 0) {
       dispatch(setUserVariableValues({ conversationId, values: variables }));
+      // TEMP DEBUG (kind-action variable injection) — remove
+      const dbgEntry = (getState() as RootState).instanceVariableValues
+        .byConversationId[conversationId];
+      console.warn("[kind-action-debug] after seed", {
+        conversationId,
+        entryExists: !!dbgEntry,
+        userValues: dbgEntry?.userValues,
+        defNames: dbgEntry?.definitions?.map((d) => d.name),
+      });
     }
 
     const llmOverrides = config?.llmOverrides;
