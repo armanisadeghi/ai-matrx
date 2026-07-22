@@ -46,6 +46,7 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
     agentCountsRes,
     surfaceValueCountsRes,
   ] = await Promise.all([
+    // VIEW LAW: public catalog by design — ui_surface is platform-wide admin config, not user-owned
     c
       .schema("ui")
       .from("ui_surface")
@@ -138,6 +139,7 @@ export interface SurfaceOption {
 export async function listSurfaceOptions(options?: {
   includeInactive?: boolean;
 }): Promise<SurfaceOption[]> {
+  // VIEW LAW: public catalog by design — ui_surface is platform-wide admin config, not user-owned
   let q = sb()
     .schema("ui")
     .from("ui_surface")
@@ -233,6 +235,7 @@ export async function deleteSurface(name: string): Promise<void> {
 export async function listClientNames(): Promise<
   { name: string; description: string | null; is_active: boolean | null }[]
 > {
+  // VIEW LAW: public catalog by design — ui_client is platform-wide admin config, not user-owned
   const { data, error } = await sb()
     .schema("ui")
     .from("ui_client")
@@ -333,11 +336,13 @@ export async function getSurfaceUsage(
       .select("always_include_tools, always_include_bundles")
       .eq("surface_name", surfaceName)
       .maybeSingle(),
+    // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     c
       .schema("agent")
       .from("menu_surface")
       .select("agent_id, agent_name")
       .eq("surface_name", surfaceName),
+    // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     c
       .schema("tool")
       .from("ui")
@@ -499,6 +504,7 @@ function rowToSurfaceValue(row: UiSurfaceValueRow): SurfaceValue {
 export async function listSurfaceValues(
   surfaceName: string,
 ): Promise<SurfaceValue[]> {
+  // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
   const { data, error } = await sb()
     .schema("ui")
     .from("ui_surface_value")
@@ -512,6 +518,7 @@ export async function listSurfaceValues(
 
 /** List the agent ↔ surface bindings for a surface (admin overview). */
 export async function listAgentBindings(surfaceName: string) {
+  // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
   const { data, error } = await sb()
     .schema("agent")
     .from("menu_surface")

@@ -186,6 +186,7 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-07-22** — Added a `// VIEW LAW:` comment to `service/queries.ts` `listAgentTasks` noting the existing RLS container-scope (sch_task rows are user-scoped by policy), clearing THE VIEW LAW's bare-RLS guard finding (no behavior change).
 - **2026-07-13** (later) — `EntityModeHeader` v2 on `/schedules/[id]`: actions are declarative — Run now (solid primary), Pause/Enable (glass, replaces the Switch — one canonical control), Delete (solid destructive); on mobile the header is back + title + one `…` opening a bottom drawer with View/Edit/New + all actions.
 - **2026-07-13** — `/schedules/[id]` view + edit now consume the new `EntityModeHeader` shell template (back + title sibling-dropdown + View|Edit|New center nav + enabled-switch/run/delete as glass tap targets); `ScheduleDetail`'s in-body back row, h1 title block, and button row are deleted; body widened to `max-w-5xl`.
 - **2026-07-13** — `/schedules`, `/schedules/new`, `/schedules/[id]/edit` conformed to the (core) shell-header doctrine (`core-route-headers` skill): in-body faux headers + `h-[calc(100dvh-2.5rem)]` replaced with `RouteHeader` injection (title/back left, count center on the list, refresh + new as tap targets right) and `h-full` bodies with `var(--shell-header-h)` top clearance.

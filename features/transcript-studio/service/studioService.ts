@@ -12,6 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
@@ -126,12 +127,14 @@ function applySourceFilter(query: any, filter?: SessionListFilter) {
 export async function listSessions(
   filter?: SessionListFilter,
 ): Promise<StudioSession[]> {
+  const userId = requireUserId();
   const { data, error } = await applySourceFilter(
     db
       .schema("transcripts")
       .from("studio_sessions")
       .select("*")
-      .eq("is_deleted", false),
+      .eq("is_deleted", false)
+      .eq("user_id", userId), // VIEW LAW: mine-scoped
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -250,12 +253,19 @@ export async function listSessionsServer(
   filter?: SessionListFilter,
 ): Promise<StudioSession[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
+  const {
+    data: { user },
+  } = await serverClient.auth.getUser();
+  if (!user) {
+    throw new Error("[studio] listSessionsServer: no authenticated user");
+  }
   const { data, error } = await applySourceFilter(
     looseClient
       .schema("transcripts")
       .from("studio_sessions")
       .select("*")
-      .eq("is_deleted", false),
+      .eq("is_deleted", false)
+      .eq("user_id", user.id), // VIEW LAW: mine-scoped
     filter,
   )
     .order("updated_at", { ascending: false })

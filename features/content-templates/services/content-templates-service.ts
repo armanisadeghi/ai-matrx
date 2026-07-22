@@ -23,7 +23,14 @@ function getClient() {
   }
 }
 
-// Fetch all content templates from database
+// Fetch all content templates from database.
+//
+// VIEW LAW: `is_public` decides the branch. Callers that pass `is_public`
+// explicitly are declaring a deliberate public-library browse (org-neutral
+// by design) and keep bare RLS for that shared library. The DEFAULT list
+// (no `is_public` passed) is the caller's personal template list and MUST
+// be mine-scoped — it must not blend in every org's/public templates just
+// because RLS lets them through.
 export async function fetchContentTemplates(
   options: ContentTemplateQueryOptions = {},
 ) {
@@ -37,6 +44,10 @@ export async function fetchContentTemplates(
 
   if (options.is_public !== undefined) {
     query = query.eq("is_public", options.is_public);
+  } else {
+    // VIEW LAW: mine-scoped default list.
+    const userId = requireUserId();
+    query = query.eq("user_id", userId);
   }
 
   if (options.search) {

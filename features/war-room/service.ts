@@ -57,10 +57,12 @@ function deriveAnchor(input: CreateThreadInput): {
 // ── Sessions ──────────────────────────────────────────────────────────
 
 export async function listSessions(): Promise<WarRoomSession[]> {
+  const userId = requireUserId();
   const { data, error } = await wsDb
     .from(SESSIONS)
     .select("*")
     .is("deleted_at", null)
+    .eq("created_by", userId) // VIEW LAW: mine-scoped
     .order("last_opened_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false });
 
@@ -188,10 +190,12 @@ export async function softDeleteSession(id: string): Promise<void> {
 
 /** Every non-deleted thread owned by the caller (RLS-scoped). */
 export async function listAllUserThreads(): Promise<WarRoomThread[]> {
+  const userId = requireUserId();
   const { data, error } = await wsDb
     .from(THREADS)
     .select("*")
     .is("deleted_at", null)
+    .eq("created_by", userId) // VIEW LAW: mine-scoped
     .order("updated_at", { ascending: false });
 
   if (error) {

@@ -929,6 +929,24 @@ export const componentList: ComponentEntry[] = [
       "string-array",
     ],
   },
+  {
+    id: "list-scope-switcher",
+    name: "List Scope Switcher",
+    path: "components/official/ListScopeSwitcher.tsx",
+    description:
+      "Compact segmented control for THE VIEW LAW's canonical list scope: Mine / Shared / one chip per non-personal org, controlled component driving applyListScope.",
+    categories: ["selectors", "navigation"],
+    tags: [
+      "scope",
+      "view-law",
+      "mine",
+      "shared",
+      "organization",
+      "list",
+      "segmented",
+      "filter",
+    ],
+  },
 ];
 
 // Updated helper functions for multiple categories

@@ -117,6 +117,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
+- `2026-07-22` — **THE VIEW LAW.** `getAllTopics()` was a bare RLS-only read ("All really means All" — the exact anti-pattern the law targets for a multi-org user); it now explicitly `.eq("created_by", userId)`. "All topics" now means "all of mine", not every org's topics blended together.
 - `2026-07-22` — **This-run strip honesty.** Empty phase-activated stages finalize as `skipped` (hidden), not green `complete` with zeros. Live strip labeled "This run · session only"; stage labels aligned to orchestra nouns (Sources / Content / Analysis / Synthesis). Search square uses `sourcesDiscoveredFromItems` (same formula as metrics strip).
 - `2026-07-22` — **Compact canonical project selection.** The topic creation wizard now uses the shared `EntityTargetPicker` scoped to the active organization instead of rendering a bespoke all-organization wall of large project cards. The project association remains optional and controlled by the wizard; selecting it never mutates global app context.
 - `2026-07-22` — **Existing-topic execution scope anchored to the topic.**

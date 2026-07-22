@@ -72,6 +72,7 @@ const LIST_COLUMNS =
  * "Failed to load library — Not authenticated" on first paint.
  */
 export async function fetchCodeFilesList(): Promise<CodeFile[]> {
+  // VIEW LAW: container-scoped via RLS (auth.uid() = created_by) — see docblock above
   const { data, error } = await supabase
     .schema("code")
     .from("code_files")
@@ -197,9 +198,9 @@ export async function deleteCodeFile(id: string): Promise<void> {
 // ── Folders ─────────────────────────────────────────────────────────────────
 
 export async function fetchCodeFolders(): Promise<CodeFolder[]> {
-  // No explicit owner filter — RLS scopes rows by `auth.uid()` (owner
-  // short-circuit on `created_by`). See the matching note on
-  // `fetchCodeFilesList` for why we don't gate this on Redux auth hydration.
+  // VIEW LAW: container-scoped via RLS (auth.uid() = created_by). No explicit
+  // owner filter here — see the matching note on `fetchCodeFilesList` for why
+  // we don't gate this on Redux auth hydration.
   const { data, error } = await supabase
     .schema("code")
     .from("code_file_folders")

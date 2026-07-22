@@ -191,6 +191,7 @@ export const fetchDriftAlerts = createAsyncThunk<void, { force?: boolean } | voi
     if (!force && (alerts.status === "loading" || alerts.status === "succeeded")) return;
     dispatch(alertsPending());
     try {
+      // VIEW LAW: container-scoped via RLS — drift_alert rows are already caller-scoped, see docblock above
       const { data, error } = await supabase
         .schema("agent")
         .from("drift_alert")

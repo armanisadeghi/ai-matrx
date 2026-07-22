@@ -152,6 +152,7 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
   // reversible UI state, delete is gone-from-user-view. Matches the
   // aidream /scheduler/tasks router and the partial index
   // sch_task_user_id_active_idx.
+  // VIEW LAW: container-scoped via RLS (sch_task rows are user-scoped by policy)
   const { data, error } = await schedulerDb(supabase)
     .schema("scheduler").from("sch_task")
     .select(SELECT_AGENT_TASK)

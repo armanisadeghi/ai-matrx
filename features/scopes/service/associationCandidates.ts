@@ -130,6 +130,9 @@ export async function listAssociationCandidates(
   ) as typeof supabase;
 
   const runQuery = async (applyOwnerFilter: boolean) => {
+    // VIEW LAW: owner filter applied conditionally below via info.ownerColumn/ownerId
+    // when the entity type is caller-owned; RPC-first path above is preferred, this
+    // dynamic table read is the documented legacy fallback.
     let q = db
       .from(info.table as never)
       .select(`id, ${titleCol}`)

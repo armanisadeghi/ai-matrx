@@ -27,6 +27,7 @@ import { formatDuration, formatRelativeTime } from "../utils/dateFormatting";
 import { DraftIndicator } from "./DraftIndicator";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { useToastManager } from "@/hooks/useToastManager";
+import { ListScopeSwitcher } from "@/components/official/ListScopeSwitcher";
 
 interface TranscriptsSidebarProps {
   onCreateTranscript?: () => void;
@@ -40,6 +41,8 @@ export function TranscriptsSidebar({
     activeTranscript,
     setActiveTranscript,
     updateTranscript,
+    scope,
+    setScope,
   } = useTranscriptsContext();
   const toast = useToastManager("transcripts");
   const [searchTerm, setSearchTerm] = useState("");
@@ -148,6 +151,9 @@ export function TranscriptsSidebar({
             <span className="ml-1">New</span>
           </Button>
         </div>
+
+        {/* VIEW LAW scope switcher — Mine / org chips (transcripts has no shared-with-me RPC yet, so Shared is omitted) */}
+        <ListScopeSwitcher value={scope} onChange={setScope} className="mb-2 w-full overflow-x-auto" />
 
         {/* Search */}
         <div className="relative">

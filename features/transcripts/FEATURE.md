@@ -120,6 +120,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-07-22` — Mine-scoped `searchTranscripts` / `getTranscriptsByFolder` / `getTranscriptsByTag` in `transcriptsService.ts` (`.eq("user_id", userId)`) and added `// VIEW LAW:` comments in `transcriptsHubService.ts`, clearing THE VIEW LAW's bare-RLS guard findings for this feature.
 - `2026-07-20` — Removed the obsolete Audio Recorder Test suite from the transcripts admin resource map after the demo tree was deleted.
 - `2026-07-15` — Routed upload and recording transcription through aidream's authenticated catalog STT endpoints; removed the duplicate Next Groq middle tier.
 
@@ -136,6 +137,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 - `2026-06-15` — **Imported audio stays visible; only mic recordings are hidden.** `saveAudioToStorage` now takes a `{ source: "recording" | "import" }` option. `recording` (default) is unchanged — tagged `origin: "transcripts"`, relocated/hidden by the backend under `system-files/transcripts/...`. `import` (only `AudioImportDialog`) is treated as an ordinary VISIBLE user file: no `origin` tag (backend leaves it in place), original filename preserved, stored under `Transcripts/Imports`. Rationale: a file the user deliberately chose is theirs to see; hiding it (the prior behavior — everything went through `origin: "transcripts"`) was wrong. No backend change needed — anything not in the origin→system-folder map is untouched.
 - `2026-06-15` — Processor UX: `?focus=` deep-link selects the target recording; header + per-segment copy icons always visible; sidebar inline rename; inline transcript text editor.
 - `2026-06-10` — claude: Created as the canonical core-storage contract for all `/transcripts` routes (two record stores + `cld_files` audio, bridge-only conversion). Corrected README's stale deprecated file backend-bucket claims; fixed stale `types.ts` comments.
+- `2026-07-22` — claude: THE VIEW LAW rollout. `fetchTranscripts`/`fetchTranscriptsPaginated` now take a `ListScope` (default "mine") via `lib/list-scope/applyListScope`; `getDraftTranscripts` and the processor/session/cleanup hub lists in `transcriptsHubService.ts` gained explicit `user_id` mine-scoping. `TranscriptsContext` carries the declared scope + `setScope`; `TranscriptsSidebar` wires the new `ListScopeSwitcher` (Mine + org chips; no Shared yet — no shared-with-me RPC for transcripts) as the reference implementation.
 
 ---
 

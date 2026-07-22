@@ -147,6 +147,7 @@ export const fetchConversationHistory = createAsyncThunk<
       }),
     );
 
+    // VIEW LAW: container-scoped via RLS on cx_conversation (user-filtered policy) — see docblock above
     let query = supabase
       .schema("chat").from("conversation")
       .select(HISTORY_COLUMNS)

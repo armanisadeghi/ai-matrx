@@ -217,6 +217,7 @@ export async function listSurfaceValues(
   sb: Sb,
   surfaceName: string,
 ): Promise<SurfaceValue[]> {
+  // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
   const { data, error } = await sb
     .schema("ui")
     .from("ui_surface_value")

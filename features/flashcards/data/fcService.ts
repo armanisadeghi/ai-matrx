@@ -195,7 +195,15 @@ export const fcService = {
     }
   },
 
-  /** Sets owned by or shared with the current user (RLS-filtered), recent first. */
+  /**
+   * Sets owned by or shared with the current user (RLS-filtered), recent first.
+   *
+   * VIEW LAW: this is a DELIBERATE blended view (mine + org-visible +
+   * public `visibility`), not an accidental bare list — RLS still bounds
+   * it, but the union is intentional for the flashcards home page. Splitting
+   * into explicit Mine/Org/Shared tabs is a UX change, not a bug fix; when
+   * that lands, wire `applyListScope` here instead of this comment.
+   */
   async listSets(): Promise<FcResult<FcSetRow[]>> {
     try {
       const { data, error } = await EDU()

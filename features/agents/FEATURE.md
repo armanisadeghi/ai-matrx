@@ -229,6 +229,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-22` — THE VIEW LAW: documented (not narrowed) `fetchAppsInitial` in `agent-apps/thunks.ts` as a deliberate blended view (mine + org/project-shared + public + admin-sees-all) — mine-scoping it would drop legitimate org/public apps from the apps home page; a real Mine/Org/Public tab split is future UX work, not this fix.
 - `2026-07-19` — PlusAttachMenu manual-mode gate: `selectIsManualExecutionMode` disables the model picker (shows live builder model read-only) and Advanced Settings Window on Agent Builder test runs; agent-mode runs unchanged.
 - `2026-07-18` — Unified file-family controls across Agent Builder defaults,
   runtime media variables, and durable chat attachments. The shared dynamic
@@ -393,6 +394,7 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-07-22` — Added `// VIEW LAW:` comments to five redux thunks (`agent-apps/thunks.ts`, `conversation-history/thunks.ts`, `conversation-list.thunks.ts`, `execution-system/client-capabilities/desktop-presence.ts`, `execution-system/thunks/conversation-bundle.ts`, `tools/tools.thunks.ts`, `usages/usages.thunks.ts`) documenting each list read's existing scope (deliberate blended view, RLS container-scope, or message_id container-scope) inline at the query site, clearing THE VIEW LAW's bare-RLS guard findings (no behavior change).
 - `2026-07-18` — **Builder artifact persistence uses the reserved message's server conversation.** Manual runs intentionally keep a stable local Redux conversation while `/ai/manual` mints a fresh durable wire conversation per request. Chat canvas upserts now omit the client conversation argument so `cx_canvas_upsert` resolves `chat.message.conversation_id`; materialization carries the returned server id into adapters and the discovery index. This removes the `canvas_items_conversation_id_fkey` 409 cascade without changing stream dispatch keys. Focused service/materialization regressions cover both boundaries. The Builder endpoint docs were corrected from the retired `/prompts` model to the live `/ai/manual` contract.
 - `2026-07-18` — **System Agents admin hub/catalog parity.** The Administration dashboard's `Agents: System` category card now opens the canonical `/administration/system-agents` parent page. That hub now exposes every route advertised by the admin catalog: the flat All Shortcuts view plus guided agent creation, manual agent creation, and system-app creation join the existing agent/lineage/shortcut/category/content-block/app management tiles. The general Administration route directory is catalog-grouped, so all system-agent list, creation, and dynamic detail routes appear together instead of being split by raw filesystem segments.
 

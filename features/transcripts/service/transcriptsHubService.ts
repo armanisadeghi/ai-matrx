@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { requireUserId } from "@/utils/auth/getUserId";
 import { HUB_PAGE_SIZE } from "@/features/transcripts/constants/hubSections";
 import type {
   CleanupHubItem,
@@ -103,12 +104,14 @@ export async function fetchProcessorHubPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
+  const userId = requireUserId();
   const { data, error, count } = await transcriptsDb().from("transcripts")
     .select(
       "id, title, description, source_type, folder_name, tags, metadata, created_at, updated_at, is_draft",
       { count: "exact" },
     )
     .eq("is_deleted", false)
+    .eq("user_id", userId) // VIEW LAW: mine-scoped — processor hub is the caller's own transcripts
     .order("updated_at", { ascending: false })
     .range(from, to);
 
@@ -175,6 +178,7 @@ export async function fetchRecordingHubItemsForSessions(
   if (ids.length === 0) return [];
   const kindById = new Map(parents.map((p) => [p.id, p.kind]));
 
+  // VIEW LAW: container-scoped via session_id — ids are the caller's own sessions/cleanups
   const { data, error } = await transcriptsDb()
     .from("studio_recording_segments")
     .select("id, session_id, segment_index, started_at, ended_at, updated_at")
@@ -219,6 +223,7 @@ function parentKindFromSessionSource(
 export async function fetchActiveRecordingHubItems(): Promise<
   RecordingHubItem[]
 > {
+  // VIEW LAW: container-scoped via RLS — recording segments are already caller-scoped, see docblock above
   const { data, error } = await transcriptsDb()
     .from("studio_recording_segments")
     .select(
@@ -293,10 +298,12 @@ export async function fetchSessionHubPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
+  const userId = requireUserId();
   const { data, error, count } = await transcriptsDb()
     .from("studio_sessions")
     .select("*", { count: "exact" })
     .eq("is_deleted", false)
+    .eq("user_id", userId) // VIEW LAW: mine-scoped
     .neq("source", "cleanup")
     .order("updated_at", { ascending: false })
     .range(from, to);
@@ -321,11 +328,13 @@ export async function fetchCleanupHubPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
+  const userId = requireUserId();
   const { data, error, count } = await transcriptsDb()
     .from("studio_sessions")
     .select("*", { count: "exact" })
     .eq("is_deleted", false)
     .eq("source", "cleanup")
+    .eq("user_id", userId) // VIEW LAW: mine-scoped
     .order("updated_at", { ascending: false })
     .range(from, to);
 

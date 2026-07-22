@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   PcShow,
@@ -18,10 +19,12 @@ export const podcastService = {
   // ── Shows ──────────────────────────────────────────────────────────────
 
   async fetchAllShows(): Promise<PcShow[]> {
+    const userId = requireUserId();
     const { data, error } = await supabase
       .schema("podcast").from("pc_shows")
       .select("*")
       .is("deleted_at", null)
+      .eq("created_by", userId) // VIEW LAW: mine-scoped
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []).map(mapPcShowRow);

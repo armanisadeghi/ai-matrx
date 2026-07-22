@@ -14,6 +14,7 @@ export const fetchAvailableTools = createAsyncThunk<
     return getState().tools.tools;
   }
 
+  // VIEW LAW: public catalog by design — tool definitions are platform-wide, not user-owned
   const { data, error } = await supabase
     .schema("tool").from("definition")
     .select("*")

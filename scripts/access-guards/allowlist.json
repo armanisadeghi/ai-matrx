@@ -1,0 +1,43 @@
+{
+  "_comment": "Access guard allowlist. Every entry MUST carry a justification — this file is reviewed like code. Shape per detector below. Paths are repo-relative, forward-slash.",
+
+  "_shape": {
+    "lowestTierDefault": {
+      "_comment": "Historical migrations predating the 2026-07-21 'personal' rename/policy are exempt by filename. New entries here require a dated justification, not just a filename.",
+      "example": { "file": "migrations/20260101_old_default.sql", "justification": "Applied before 2026-07-21 visibility policy; grandfathered, do not edit.", "addedBy": "check-access-guards bootstrap", "date": "2026-07-22" }
+    },
+    "activeOrgAccess": {
+      "_comment": "File-level or file:line-level suppressions for detector 2 (active-org reads inside access-decision files).",
+      "example": { "file": "utils/permissions/someFile.ts", "line": 42, "justification": "Reads active org only for a UI label, not an access decision — grep context above/below confirms no .eq(...) gate follows.", "addedBy": "arman", "date": "2026-07-22" }
+    },
+    "handRolledLadder": {
+      "_comment": "Files outside utils/permissions/** that legitimately compare permission_level strings (e.g. read-only display formatting, not an access decision).",
+      "example": { "file": "features/sharing/components/RoleBadge.tsx", "justification": "Cosmetic label mapping only, never gates a read/write; the real check happens via iam.has_access upstream.", "addedBy": "arman", "date": "2026-07-22" }
+    },
+    "bareRlsList": {
+      "_comment": "List-shaped Supabase reads in features/**/{service,services,redux}/** that are intentionally unscoped (e.g. genuinely public reference data, or scope handled by a wrapping RPC not visible in this chain).",
+      "example": { "file": "features/ai-models/service.ts", "line": 10, "justification": "Public model catalog, world-readable by design, RLS enforces read-only; no owner/org scope applies.", "addedBy": "arman", "date": "2026-07-22" }
+    }
+  },
+
+  "lowestTierDefault": [],
+  "activeOrgAccess": [],
+  "handRolledLadder": [
+    { "file": "features/admin/relationships/components/RelationshipRulesClient.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/cx-chat/types/cx-tables.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/marketing/components/access/SiteAccessWorkspace.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/marketing/data/access-service.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/messaging/types.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/notes/components/NoteSidebar.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/notes/components/mobile/MobileNotesList.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/notes/redux/notes.types.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/organizations/components/OrgModuleSettings.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/public-chat/types/cx-tables.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/sharing/components/PermissionsList.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/sharing/components/tabs/ShareWithOrgTab.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/sharing/components/tabs/ShareWithUserTab.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/tasks/services/taskService.ts", "line": 739, "justification": "cosmetic UI union, no access decision — level is a pass-through param to share_resource_with_user RPC, never compared", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "lib/redux/slices/agentCacheSlice.ts", "line": 48, "justification": "cosmetic UI union, no access decision — display-only shared-cache metadata field", "addedBy": "claude", "date": "2026-07-22" }
+  ],
+  "bareRlsList": []
+}

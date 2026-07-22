@@ -121,6 +121,7 @@ Scaffolded UI only. Before adding real behavior:
 
 ## Change log
 
+- `2026-07-22` — Added a `// VIEW LAW:` comment to `redux/skl/thunks.ts` `fetchRenderDefinitions` noting the scope is applied immediately below via `applyScopeFilter`, clearing THE VIEW LAW's bare-RLS guard finding (no behavior change).
 - `2026-05-27` — claude: SkillsSection promoted from a placeholder to live. Now reads `/api/skills` via the new `features/skills/` slice, supports browse / create / edit / delete / categories / filesystem ingest (admin), and reacts to sandbox auto-discovery events (`RESOURCE_CHANGED kind="skills.ingested"`). The SkillsCount selector also moved from the legacy `skl` slice to the new `skills` slice; render-blocks / resources are still served from `skl`.
 - `2026-05-13` — Promoted to a real Next.js route family under `app/(a)/agent-connections/*` (14 subroutes, persistent sidebar via `layout.tsx`, cookie-persisted resizable shell). Added the `preferences` section + new `agentConnections` module on `UserPreferences` wired through `useSetting()`. Made the sidebar dual-mode (`basePath` for routes, `activeSection + onSelect` for the overlay). Introduced `AgentConnectionsNavContext` so `OverviewSection` works in both surfaces.
 - `2026-04-25` — `AgentConnectionsWindow` imports sidebar/body from `components/*` and `AgentConnectionsSection` from `types` instead of `@/features/agent-connections` barrel.

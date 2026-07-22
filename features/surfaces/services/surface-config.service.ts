@@ -144,6 +144,7 @@ export async function fetchSurfaceConfigBundle(
 ): Promise<SurfaceConfigBundle> {
   const client = sb();
   const [rolesRes, prefsRes, configRes] = await Promise.all([
+    // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     client
       .schema("ui").from("ui_surface_agent_role")
       .select(

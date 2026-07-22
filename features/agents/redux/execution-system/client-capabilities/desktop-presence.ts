@@ -63,6 +63,7 @@ function readEngineVersion(metadata: unknown): string {
 
 async function fetchPresence(): Promise<DesktopPresence | null> {
   const cutoff = new Date(Date.now() - LIVE_WINDOW_MS).toISOString();
+  // VIEW LAW: container-scoped via RLS — app_instances rows are keyed (user_id, instance_id), see docblock above
   const { data, error } = await supabase
     .from("app_instances")
     .select("instance_id,instance_name,platform,metadata,tunnel_active,last_seen")

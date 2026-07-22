@@ -275,6 +275,7 @@ export async function fetchConversationBundle(
 
   let toolCalls: CxToolCallRow[] = [];
   if (messageIds.length > 0) {
+    // VIEW LAW: container-scoped via message_id — messageIds come from this caller's own conversation, fetched above
     const toolsRes = await supabase
       .schema("chat").from("tool_call")
       .select("*")

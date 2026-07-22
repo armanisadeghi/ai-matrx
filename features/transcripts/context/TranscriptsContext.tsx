@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import type { ListScope } from "@/lib/list-scope/types";
 import type {
   Transcript,
   CreateTranscriptInput,
@@ -33,6 +34,9 @@ interface TranscriptsContextType {
   refreshTranscripts: () => Promise<void>;
   initialize: () => void;
   initialized: boolean;
+  /** VIEW LAW: the declared list scope driving fetchAllTranscripts. */
+  scope: ListScope;
+  setScope: (scope: ListScope) => void;
 }
 
 const TranscriptsContext = createContext<TranscriptsContextType | undefined>(
@@ -46,15 +50,16 @@ export function TranscriptsProvider({ children }: { children: ReactNode }) {
     null,
   );
   const [initialized, setInitialized] = useState(false);
+  const [scope, setScope] = useState<ListScope>({ kind: "mine" });
   const channelRef = React.useRef<ReturnType<typeof supabase.channel> | null>(
     null,
   );
 
-  // Fetch all transcripts
+  // Fetch all transcripts, scoped per THE VIEW LAW (defaults to "mine").
   const fetchAllTranscripts = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await transcriptsService.fetchTranscripts();
+      const data = await transcriptsService.fetchTranscripts(scope);
       setTranscripts(data);
 
       // If we have an active transcript, refresh it from the new data
@@ -77,7 +82,14 @@ export function TranscriptsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTranscript]);
+  }, [activeTranscript, scope]);
+
+  // Re-fetch whenever the declared scope changes (after initial load).
+  useEffect(() => {
+    if (!initialized) return;
+    fetchAllTranscripts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, initialized]);
 
   const initialize = useCallback(() => {
     if (initialized) return;
@@ -192,6 +204,8 @@ export function TranscriptsProvider({ children }: { children: ReactNode }) {
     refreshTranscripts,
     initialize,
     initialized,
+    scope,
+    setScope,
   };
 
   return (

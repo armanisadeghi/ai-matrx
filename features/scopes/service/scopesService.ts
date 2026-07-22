@@ -185,6 +185,8 @@ export const scopesService = {
               error: null,
             });
 
+      // VIEW LAW: org-scoped — restricted to orgIds (the caller's own
+      // memberships, resolved above via iam.memberships), never a bare RLS-only read.
       const scopeTypesP = contextDb(supabase)
         .from("scope_types")
         .select(
@@ -192,19 +194,24 @@ export const scopesService = {
            max_assignments_per_entity, sort_order, parent_type_id,
            default_variable_keys`,
         )
+        .in("organization_id", orgIds)
         .order("sort_order", { ascending: true });
 
+      // VIEW LAW: org-scoped — restricted to orgIds (see scopeTypesP above).
       const scopesP = contextDb(supabase)
         .from("scopes")
         .select(
           `id, scope_type_id, organization_id, name, description,
            parent_scope_id, settings`,
         )
+        .in("organization_id", orgIds)
         .order("name", { ascending: true });
 
+      // VIEW LAW: org-scoped — restricted to orgIds (see scopeTypesP above).
       const projectsP = workspaceDb(supabase)
         .from("projects")
         .select("id, organization_id, name, slug")
+        .in("organization_id", orgIds)
         .is("deleted_at", null)
         .order("name", { ascending: true });
 
@@ -711,6 +718,7 @@ export const scopesService = {
     activeOnly = true,
   ): Promise<ScopesRpcResult<{ templates: ContextTemplate[] }>> {
     try {
+      // VIEW LAW: public catalog by design — templates are a read-only, platform-wide catalog (see header above)
       const query = contextDb(supabase)
         .from("templates")
         .select(

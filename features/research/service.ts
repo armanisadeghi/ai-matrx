@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import type {
@@ -178,16 +179,19 @@ export async function setTopicProject(
 }
 
 /**
- * Fetch every topic the caller can read. RLS is the only filter — no
- * client-side narrowing. Used when no hierarchy filter is selected so that
- * "All" really means "All".
+ * Fetch every topic owned by the caller. Used when no hierarchy filter is
+ * selected — VIEW LAW: "All" means "all of mine", not "everything RLS
+ * lets through" (a user belongs to multiple orgs; a bare RLS-only read
+ * here previously blended all of them into one undifferentiated list).
  */
 export async function getAllTopics(): Promise<ResearchTopic[]> {
+  const userId = requireUserId();
   const { data, error } = await supabase
     .schema("research")
     .from("rs_topic")
     .select("*")
     .is("deleted_at", null)
+    .eq("created_by", userId) // VIEW LAW: mine-scoped
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(rowToResearchTopic);

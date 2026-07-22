@@ -4,6 +4,8 @@ import { supabase } from "@/utils/supabase/client";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { applyListScope } from "@/lib/list-scope/applyListScope";
+import type { ListScope } from "@/lib/list-scope/types";
 import type { Database, Json } from "@/types/database.types";
 import type {
   Transcript,
@@ -65,15 +67,20 @@ export function mapTranscriptRow(row: TranscriptRow): Transcript {
 }
 
 /**
- * Fetch all transcripts for the current user (excluding deleted)
+ * Fetch all transcripts for the caller's declared scope (excluding deleted).
+ * VIEW LAW: defaults to "mine" — RLS is the ceiling, never the filter.
  */
-export async function fetchTranscripts(): Promise<Transcript[]> {
-  const { data, error } = await supabase
+export async function fetchTranscripts(
+  scope: ListScope = { kind: "mine" },
+): Promise<Transcript[]> {
+  const userId = requireUserId();
+  let query = supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .eq("is_deleted", false)
-    .order("updated_at", { ascending: false });
+    .eq("is_deleted", false);
+  query = applyListScope(query, scope, { userId, ownerColumn: "user_id" });
+  const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching transcripts:", error);
@@ -84,17 +91,22 @@ export async function fetchTranscripts(): Promise<Transcript[]> {
 }
 
 /**
- * Fetch paginated transcripts for the current user (excluding deleted)
+ * Fetch paginated transcripts for the caller's declared scope (excluding deleted).
+ * VIEW LAW: defaults to "mine".
  */
 export async function fetchTranscriptsPaginated(
   limit: number = 20,
   offset: number = 0,
+  scope: ListScope = { kind: "mine" },
 ): Promise<Transcript[]> {
-  const { data, error } = await supabase
+  const userId = requireUserId();
+  let query = supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .eq("is_deleted", false)
+    .eq("is_deleted", false);
+  query = applyListScope(query, scope, { userId, ownerColumn: "user_id" });
+  const { data, error } = await query
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -397,12 +409,14 @@ export async function getDraftTranscripts(
   limit: number = 20,
   offset: number = 0,
 ): Promise<Transcript[]> {
+  const userId = requireUserId();
   const { data, error } = await supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
     .eq("is_draft", true)
+    .eq("user_id", userId) // VIEW LAW: mine-scoped — drafts are always the caller's own
     .order("draft_saved_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -463,11 +477,13 @@ export async function copyTranscript(id: string): Promise<Transcript> {
  * Search transcripts by text (searches title and description)
  */
 export async function searchTranscripts(query: string): Promise<Transcript[]> {
+  const userId = requireUserId();
   const { data, error } = await supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
+    .eq("user_id", userId) // VIEW LAW: mine-scoped
     .or(buildSearchOr(query, ["title", "description"]))
     .order("updated_at", { ascending: false });
 
@@ -485,11 +501,13 @@ export async function searchTranscripts(query: string): Promise<Transcript[]> {
 export async function getTranscriptsByFolder(
   folderName: string,
 ): Promise<Transcript[]> {
+  const userId = requireUserId();
   const { data, error } = await supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
+    .eq("user_id", userId) // VIEW LAW: mine-scoped
     .eq("folder_name", folderName)
     .order("updated_at", { ascending: false });
 
@@ -505,11 +523,13 @@ export async function getTranscriptsByFolder(
  * Get transcripts by tag
  */
 export async function getTranscriptsByTag(tag: string): Promise<Transcript[]> {
+  const userId = requireUserId();
   const { data, error } = await supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
+    .eq("user_id", userId) // VIEW LAW: mine-scoped
     .contains("tags", [tag])
     .order("updated_at", { ascending: false });
 

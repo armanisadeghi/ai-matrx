@@ -115,6 +115,7 @@ export const fetchRenderDefinitions = createAsyncThunk(
         .from("render_definition")
         .select("*")
         .is("deleted_at", null)
+        // VIEW LAW: scope applied immediately below via applyScopeFilter (user/org/task)
         .order("sort_order", { ascending: true })
         .order("label", { ascending: true });
       query = applyScopeFilter(query, args, userId);

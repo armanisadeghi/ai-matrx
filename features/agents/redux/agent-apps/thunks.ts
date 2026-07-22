@@ -34,7 +34,14 @@ interface ThunkApi {
 
 /**
  * Fetch every app the caller can see, ordered by most-recently-updated.
- * RLS handles scope filtering. Used by the user-facing list page.
+ *
+ * VIEW LAW: this is a DELIBERATE blended view (mine + org/project-shared +
+ * public + admin-sees-all), not a bare RLS-relies-on-it list — RLS is
+ * still the ceiling, but the union it produces here is the intended
+ * "everything I can see" surface for the apps home page, not an accidental
+ * cross-org leak. Do not mine-scope this without splitting the app list
+ * page into explicit Mine/Org/Public tabs first (a real UX change, not a
+ * bug fix).
  */
 export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
   "agentApp/fetchInitial",
@@ -42,6 +49,7 @@ export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
     dispatch(agentAppActions.setAppsStatus("loading"));
     dispatch(agentAppActions.setAppsError(null));
 
+    // VIEW LAW: deliberate blended "everything I can see" view — see docblock above
     const { data, error } = await supabase
       .schema("app").from("definition")
       .select("*")

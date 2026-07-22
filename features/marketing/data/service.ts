@@ -161,6 +161,17 @@ export function assertMutated(
 export const SITE_COLUMNS =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync";
 
+/**
+ * VIEW LAW: listSites / listSiteOptions are DELIBERATE org-browse surfaces,
+ * not bare-RLS-relies-on-it lists. The marketing admin table shows every
+ * `web.site` row the caller's org membership grants — a cross-org
+ * "everything I administer" view is the intended product behavior here
+ * (site management, not a personal content list). RLS remains the ceiling;
+ * this constant documents the intent so it reads as a decision, not an
+ * accidental leak.
+ */
+export const MARKETING_SITES_IS_DELIBERATE_ORG_BROWSE = true as const;
+
 export async function listSites(
   state: MatrxDataTableQueryState,
   signal?: AbortSignal,

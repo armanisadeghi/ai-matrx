@@ -252,6 +252,7 @@ export const fetchGlobalConversations = createAsyncThunk<
 
     dispatch(setGlobalListLoading());
 
+    // VIEW LAW: container-scoped via RLS on cx_conversation (user-filtered policy) — see docblock above
     const { data, error } = await supabase
       .schema("chat").from("conversation")
       .select(

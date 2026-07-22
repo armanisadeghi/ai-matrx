@@ -45,6 +45,7 @@ if $STRICT; then
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts --strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
+        "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -58,6 +59,7 @@ else
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
+        "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
     )
 fi
 

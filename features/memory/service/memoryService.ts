@@ -28,6 +28,7 @@ export interface MemoryEntry {
 
 /** List the current user's memory entries, ordered by path. */
 export async function listMemory(): Promise<MemoryEntry[]> {
+  // VIEW LAW: container-scoped via RLS (auth.uid() = user_id) — see docblock above
   const { data, error } = await supabase
     .schema("users").from("user_memory")
     .select("path, content, updated_at")

@@ -122,6 +122,8 @@
     "check:tsconfig:strict": "tsx scripts/check-tsconfig-hygiene.ts --strict",
     "check:doc-claims": "tsx scripts/check-doc-claims.ts",
     "check:doc-claims:strict": "tsx scripts/check-doc-claims.ts --strict",
+    "check:access-guards": "tsx scripts/check-access-guards.ts",
+    "check:access-guards:strict": "tsx scripts/check-access-guards.ts --strict",
     "clean:next": "rm -rf .next-preview* .next-qa* && echo 'removed alternate NEXT_DISTDIR build dirs (.next left intact)'",
     "clean:next:all": "bash scripts/dev-cleanup.sh next",
     "dev:status": "bash scripts/dev-cleanup.sh status",
