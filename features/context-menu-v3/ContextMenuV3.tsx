@@ -262,6 +262,7 @@ export function ContextMenuV3({
   useEffect(() => {
     const shouldShow =
       enableFloatingIcon &&
+      !suppressed &&
       selectedText.length > 0 &&
       selectionRect !== null &&
       !menuOpen &&
@@ -427,6 +428,7 @@ export function ContextMenuV3({
   const handleOpenFloating = (
     e: React.MouseEvent | React.TouchEvent | React.KeyboardEvent,
   ) => {
+    if (suppressed) return;
     e.preventDefault();
     e.stopPropagation();
     selectionLocked.current = true;
@@ -481,6 +483,7 @@ export function ContextMenuV3({
   const handleOpenFloatingMobile = (
     e: React.MouseEvent | React.TouchEvent | React.KeyboardEvent,
   ) => {
+    if (suppressed) return;
     e.preventDefault();
     e.stopPropagation();
     selectionLocked.current = true;

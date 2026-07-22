@@ -274,7 +274,24 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   if (enableContextMenu) {
     const cmOptions =
       typeof enableContextMenu === "object" ? enableContextMenu : {};
+    // v3's engine renders copy/export/convert(save) from the registry itself;
+    // every OTHER registry category (edit, fullscreen editor, app group, …)
+    // must ride along as extras or it silently vanishes from right-click.
+    const cmExcludes = [
+      ...(actionsProp?.exclude ?? []),
+      ...(cmOptions.exclude ?? []),
+    ];
+    const registryRest = resolveActions(ctx, {
+      exclude: cmExcludes,
+    }).filter(
+      (a) =>
+        a.category !== "copy" &&
+        a.category !== "export" &&
+        a.category !== "save" &&
+        a.id !== "save-as-file",
+    );
     const extraActions = [
+      ...registryRest,
       ...(actionsProp?.extra ?? []),
       ...(cmOptions.extra ?? []),
     ];
@@ -309,10 +326,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         suppressed={isStreamActive}
         contentSource={source}
         contextData={{ content: ctx.content }}
-        excludedRichActions={[
-          ...(actionsProp?.exclude ?? []),
-          ...(cmOptions.exclude ?? []),
-        ]}
+        excludedRichActions={cmExcludes}
         extraSections={extraSections}
       >
         {engineInner}
