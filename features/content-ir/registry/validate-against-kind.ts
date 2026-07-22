@@ -2,11 +2,17 @@
  * `validateAgainstKind(value, kind)` — the one-call "is this data a valid X?"
  * primitive for the browser.
  *
- * Before this existed, every caller hand-composed the same three steps:
- * fetch the contract → materialize `emitted_json_schema` → run
- * `validateStructuralLeg`. That composition was written out independently in
- * `KindInputForm`, `ShapeOwnerEditor`, and the shape doctor — three chances to
- * drift on `__kind` stripping, ajv config, or the "schema missing" branch.
+ * WHO THIS IS FOR: a caller holding a kind SLUG and a payload, and nothing else
+ * — an agent result, a chat block, an import, an external contributor. Those
+ * callers otherwise have to learn the contract-fetch dance before they can ask
+ * a yes/no question.
+ *
+ * WHO THIS IS NOT FOR (deliberately): `KindInputForm`, `ShapeOwnerEditor`, and
+ * `instance-service` each already hold `emitted_json_schema` because they need
+ * it for something else (building the form, pinning `kind_version`). They call
+ * `validateStructuralLeg` directly and should keep doing so — routing them
+ * through here would re-fetch a schema they are already holding. This is an
+ * additional front door, not a replacement for the leg.
  *
  * ── A skip is never a pass ──────────────────────────────────────────────────
  *
