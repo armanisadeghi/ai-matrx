@@ -240,6 +240,10 @@ export function useAgentLauncher(
         showAutoClearToggle: opts?.showAutoClearToggle,
         autoClearConversation: opts?.autoClearConversation,
         jsonExtraction: opts?.jsonExtraction,
+        // Fires as soon as createInstanceFromShortcut lands — BEFORE the
+        // stream runs — so callers can mount selectors against the id
+        // immediately instead of waiting for the launch promise.
+        onConversationCreated: opts?.onConversationCreated,
       };
       return dispatch(launchAgentExecution(payload)).unwrap();
     },

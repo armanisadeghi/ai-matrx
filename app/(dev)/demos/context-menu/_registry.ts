@@ -100,10 +100,9 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     tagline:
       "Fire a specific shortcut with a hand-crafted applicationScope and inspect the assembled request envelope.",
     description:
-      "Planned. Pick a shortcut from the menu (or by id), edit a sample applicationScope, watch the full `launchAgentExecution` pipeline produce its conversation, request body, variable values, context entries, and active-request state. The full agent execution flow with everything pinned.",
+      "Pick a shortcut from the menu (or by id), edit a sample applicationScope, watch the full `launchAgentExecution` pipeline produce its conversation, request body, variable values, context entries, and active-request state. The full agent execution flow with everything pinned.",
     icon: "flask-conical",
-    status: "planned",
-    hiddenFromNav: true,
+    status: "stable",
   },
 ];
 
