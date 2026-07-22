@@ -336,11 +336,13 @@ export function SectionCard({
   );
 
   if (collapsible) {
-    return <Collapsible defaultOpen={defaultOpen}>{card}</Collapsible>;
+    return (
+      <Collapsible defaultOpen={defaultOpen} className="min-w-0 self-start">
+        {card}
+      </Collapsible>
+    );
   }
-  return (
-    card
-  );
+  return card;
 }
 
 export function JsonPreview({ value }: { value: Json }) {

@@ -5,16 +5,23 @@ import Link from "next/link";
 import {
   AlertTriangle,
   AppWindow,
+  BrainCircuit,
   CheckCircle,
+  Download,
   FileCode2,
   FileQuestion,
   FileText,
+  Gauge,
   History,
   ImageOff,
+  Lightbulb,
+  LineChart,
   Loader2,
   Monitor,
   OctagonAlert,
+  RefreshCw,
   Save,
+  Search,
   Smartphone,
   Trash2,
 } from "lucide-react";
@@ -89,10 +96,19 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { MarketingUrlRow } from "@/features/marketing/components/shared/MarketingUrlRow";
+import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 
-function IntentForm({ page }: { page: MarketingPage }) {
+function IntentForm({
+  page,
+  observedTitle,
+  observedDescription,
+}: {
+  page: MarketingPage;
+  observedTitle: string | null;
+  observedDescription: string | null;
+}) {
   const mutation = useUpdatePageIntent();
   const [keyword, setKeyword] = useState(page.target_keyword ?? "");
   const [title, setTitle] = useState(page.meta_title_desired ?? "");
@@ -129,93 +145,139 @@ function IntentForm({ page }: { page: MarketingPage }) {
     }
   };
 
+  const useObservedMetadata = () => {
+    setTitle(observedTitle ?? "");
+    setDescription(observedDescription ?? "");
+    toast.success("Current metadata copied into page intent");
+  };
+
+  const copy = webCopy({
+    kind: "web-page-intent",
+    label: "Page intent",
+    description:
+      "The user-owned editorial intent for this page (target keyword + desired metadata).",
+    surface: `Page intent — ${page.url}`,
+    data: {
+      url: page.url,
+      target_keyword: page.target_keyword,
+      meta_title_desired: page.meta_title_desired,
+      meta_description_desired: page.meta_description_desired,
+      seo_metrics_desired: page.seo_metrics_desired,
+    },
+    lines: [
+      ["URL", page.url],
+      ["Target keyword", page.target_keyword ?? "not set"],
+      ["Desired title", page.meta_title_desired ?? "not set"],
+      ["Desired description", page.meta_description_desired ?? "not set"],
+    ],
+    attributes: { page_id: page.id },
+  });
+
   return (
-    <div className="grid gap-3 p-3">
-      <div className="space-y-1.5">
-        <Label htmlFor="target-keyword" className="text-xs">
-          Target keyword
-        </Label>
-        <Input
-          id="target-keyword"
-          value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
-          placeholder="Primary search intent"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="desired-title" className="text-xs">
-            Desired meta title
-          </Label>
-          {draftTitleEval ? (
-            <SerpFieldChips
-              chars={draftTitleEval.charCount}
-              pixels={draftTitleEval.pixelWidth}
-              ok={draftTitleEval.ok}
-            />
-          ) : (
-            <span className="text-[10px] tabular-nums text-muted-foreground">
-              0 characters
-            </span>
-          )}
-        </div>
-        <Input
-          id="desired-title"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Editorial target, separate from observed content"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="desired-description" className="text-xs">
-            Desired meta description
-          </Label>
-          {draftDescEval ? (
-            <SerpFieldChips
-              chars={draftDescEval.charCount}
-              pixels={draftDescEval.pixelWidth}
-              ok={draftDescEval.ok}
-            />
-          ) : (
-            <span className="text-[10px] tabular-nums text-muted-foreground">
-              0 characters
-            </span>
-          )}
-        </div>
-        <Textarea
-          id="desired-description"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          minHeight={86}
-          maxHeight={160}
-          placeholder="Editorial target, separate from observed content"
-        />
-      </div>
-      {draftTitleEval?.issues.length || draftDescEval?.issues.length ? (
-        <MetaRecommendations
-          titleEval={draftTitleEval}
-          descriptionEval={draftDescEval}
-          issuesOnly
-          compact
-        />
-      ) : null}
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          className="h-8"
-          disabled={!dirty || mutation.isPending}
-          onClick={() => void save()}
+    <SectionCard
+      title="User-owned page intent"
+      copy={copy}
+      collapsible
+      headerExtra={
+        <button
+          type="button"
+          onClick={useObservedMetadata}
+          disabled={!observedTitle && !observedDescription}
+          aria-label="Fill intent from current page metadata"
+          title="Fill desired title and description from the latest captured page"
+          className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {mutation.isPending ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Save className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          Save intent
-        </Button>
+          <Download className="h-3.5 w-3.5" />
+        </button>
+      }
+    >
+      <div className="grid gap-3 p-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="target-keyword" className="text-xs">
+            Target keyword
+          </Label>
+          <Input
+            id="target-keyword"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="Primary search intent"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="desired-title" className="text-xs">
+              Desired meta title
+            </Label>
+            {draftTitleEval ? (
+              <SerpFieldChips
+                chars={draftTitleEval.charCount}
+                pixels={draftTitleEval.pixelWidth}
+                ok={draftTitleEval.ok}
+              />
+            ) : (
+              <span className="text-[10px] tabular-nums text-muted-foreground">
+                0 characters
+              </span>
+            )}
+          </div>
+          <Input
+            id="desired-title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Editorial target, separate from observed content"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="desired-description" className="text-xs">
+              Desired meta description
+            </Label>
+            {draftDescEval ? (
+              <SerpFieldChips
+                chars={draftDescEval.charCount}
+                pixels={draftDescEval.pixelWidth}
+                ok={draftDescEval.ok}
+              />
+            ) : (
+              <span className="text-[10px] tabular-nums text-muted-foreground">
+                0 characters
+              </span>
+            )}
+          </div>
+          <Textarea
+            id="desired-description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            minHeight={86}
+            maxHeight={160}
+            placeholder="Editorial target, separate from observed content"
+          />
+        </div>
+        {draftTitleEval?.issues.length || draftDescEval?.issues.length ? (
+          <MetaRecommendations
+            titleEval={draftTitleEval}
+            descriptionEval={draftDescEval}
+            issuesOnly
+            compact
+          />
+        ) : null}
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            className="h-8"
+            disabled={!dirty || mutation.isPending}
+            onClick={() => void save()}
+          >
+            {mutation.isPending ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Save intent
+          </Button>
+        </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -232,11 +294,7 @@ function IntentDiffRow({
   /** Deterministic evaluation of the DESIRED value (null when unset). */
   metrics: MetaEvaluation | null;
 }) {
-  const state = !desired
-    ? "none"
-    : observed === desired
-      ? "match"
-      : "differs";
+  const state = !desired ? "none" : observed === desired ? "match" : "differs";
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-2">
@@ -711,12 +769,10 @@ function SitemapMembershipsCard({ page }: { page: MarketingPage }) {
     lines: [
       ["URL", page.url],
       ["Sitemaps advertising this URL", rows.length],
-      ...rows.map(
-        (membership): [string, string] => [
-          "Sitemap",
-          `${membership.sitemap.url} (last seen ${formatDate(membership.last_seen)})`,
-        ],
-      ),
+      ...rows.map((membership): [string, string] => [
+        "Sitemap",
+        `${membership.sitemap.url} (last seen ${formatDate(membership.last_seen)})`,
+      ]),
     ],
     attributes: { page_id: page.id, count: rows.length },
   });
@@ -741,33 +797,33 @@ function SitemapMembershipsCard({ page }: { page: MarketingPage }) {
     );
   } else {
     body = (
-    <ul className="divide-y divide-border">
-      {rows.map((membership) => (
-        <li
-          key={membership.id}
-          className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2"
-        >
-          <Link
-            href={`${sitePath}/sitemaps/${membership.sitemap.id}`}
-            className="min-w-0 flex-1 basis-56 truncate font-mono text-xs text-foreground hover:text-primary"
+      <ul className="divide-y divide-border">
+        {rows.map((membership) => (
+          <li
+            key={membership.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2"
           >
-            {membership.sitemap.url}
-          </Link>
-          <span className="text-[11px] text-muted-foreground">
-            {membership.lastmod
-              ? `lastmod ${formatDate(membership.lastmod)}`
-              : "no lastmod"}
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            seen {formatDate(membership.last_seen)}
-          </span>
-        </li>
-      ))}
-    </ul>
+            <Link
+              href={`${sitePath}/sitemaps/${membership.sitemap.id}`}
+              className="min-w-0 flex-1 basis-56 truncate font-mono text-xs text-foreground hover:text-primary"
+            >
+              {membership.sitemap.url}
+            </Link>
+            <span className="text-[11px] text-muted-foreground">
+              {membership.lastmod
+                ? `lastmod ${formatDate(membership.lastmod)}`
+                : "no lastmod"}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              seen {formatDate(membership.last_seen)}
+            </span>
+          </li>
+        ))}
+      </ul>
     );
   }
   return (
-    <SectionCard title="Sitemap memberships" copy={copy}>
+    <SectionCard title="Sitemap memberships" copy={copy} collapsible>
       {body}
     </SectionCard>
   );
@@ -785,6 +841,16 @@ function PageCapturesCard({ page }: { page: MarketingPage }) {
   const rows = (screenshots.data ?? []).filter(
     (screenshot): screenshot is SiteScreenshot & { file_id: string } =>
       Boolean(screenshot.file_id),
+  );
+  const hasMobileCapture = rows.some(
+    (screenshot) =>
+      screenshot.kind.toLowerCase().includes("mobile") ||
+      (screenshot.width !== null && screenshot.width <= 600),
+  );
+  const hasDesktopCapture = rows.some(
+    (screenshot) =>
+      !screenshot.kind.toLowerCase().includes("mobile") &&
+      (screenshot.width === null || screenshot.width > 600),
   );
 
   // Rows arrive newest-first; the first row per kind is the current capture.
@@ -805,12 +871,10 @@ function PageCapturesCard({ page }: { page: MarketingPage }) {
     lines: [
       ["URL", page.url],
       ["Captures", rows.length],
-      ...[...byKind.entries()].map(
-        ([kind, captures]): [string, string] => [
-          kind,
-          `current as of ${formatDate(captures[0].captured_at)} (${captures.length} total)`,
-        ],
-      ),
+      ...[...byKind.entries()].map(([kind, captures]): [string, string] => [
+        kind,
+        `current as of ${formatDate(captures[0].captured_at)} (${captures.length} total)`,
+      ]),
     ],
     attributes: { page_id: pageId, count: rows.length },
   });
@@ -850,83 +914,109 @@ function PageCapturesCard({ page }: { page: MarketingPage }) {
     );
   } else {
     body = (
-    <div className="grid gap-4 p-3">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {[...byKind.entries()].map(([kind, captures]) => {
-          const current = captures[0];
-          return (
-            <div key={kind} className="min-w-0">
-              <CaptureThumb
-                fileId={current.file_id}
-                alt={`${kind} capture as of ${formatDate(current.captured_at)}`}
-                footer={
-                  <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-1.5 text-[11px]">
-                    <span className="font-medium capitalize">{kind}</span>
-                    <span className="text-muted-foreground">
-                      as of {formatDate(current.captured_at)}
-                    </span>
-                  </div>
-                }
-              />
-              {captures.length > 1 ? (
-                <ul className="mt-1.5 grid gap-1">
-                  {captures.slice(1).map((capture) => (
-                    <li
-                      key={capture.id}
-                      className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-[11px]"
-                    >
-                      <button
-                        type="button"
-                        className="truncate text-left text-foreground hover:text-primary"
-                        onClick={() => openFilePreview({ fileId: capture.file_id })}
-                        title="Open in file viewer"
+      <div className="grid gap-4 p-3">
+        <div className="flex flex-wrap items-center gap-2 text-[11px]">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border px-2 py-1",
+              hasDesktopCapture
+                ? "border-border bg-muted/30 text-foreground"
+                : "border-warning/40 bg-warning/10 text-warning",
+            )}
+          >
+            <Monitor className="h-3.5 w-3.5" />
+            {hasDesktopCapture ? "Desktop captured" : "Desktop not captured"}
+          </span>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border px-2 py-1",
+              hasMobileCapture
+                ? "border-border bg-muted/30 text-foreground"
+                : "border-warning/40 bg-warning/10 text-warning",
+            )}
+          >
+            <Smartphone className="h-3.5 w-3.5" />
+            {hasMobileCapture ? "Mobile captured" : "Mobile not captured"}
+          </span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[...byKind.entries()].map(([kind, captures]) => {
+            const current = captures[0];
+            return (
+              <div key={kind} className="min-w-0">
+                <CaptureThumb
+                  fileId={current.file_id}
+                  alt={`${kind} capture as of ${formatDate(current.captured_at)}`}
+                  footer={
+                    <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-1.5 text-[11px]">
+                      <span className="font-medium capitalize">{kind}</span>
+                      <span className="text-muted-foreground">
+                        as of {formatDate(current.captured_at)}
+                      </span>
+                    </div>
+                  }
+                />
+                {captures.length > 1 ? (
+                  <ul className="mt-1.5 grid gap-1">
+                    {captures.slice(1).map((capture) => (
+                      <li
+                        key={capture.id}
+                        className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-[11px]"
                       >
-                        as of {formatDate(capture.captured_at)}
-                        {capture.width && capture.height
-                          ? ` · ${capture.width}×${capture.height}`
-                          : ""}
-                      </button>
-                      <span className="flex shrink-0 items-center gap-1.5">
-                        {capture.snapshot_id ? (
-                          <Link
-                            href={`${sitePath}/pages/${pageId}/snapshots/${capture.snapshot_id}`}
-                            className="text-muted-foreground hover:text-primary"
-                          >
-                            Snapshot
-                          </Link>
-                        ) : null}
                         <button
                           type="button"
-                          title="Delete capture"
-                          onClick={() => setDeleting(capture)}
-                          className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          className="truncate text-left text-foreground hover:text-primary"
+                          onClick={() =>
+                            openFilePreview({ fileId: capture.file_id })
+                          }
+                          title="Open in file viewer"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          as of {formatDate(capture.captured_at)}
+                          {capture.width && capture.height
+                            ? ` · ${capture.width}×${capture.height}`
+                            : ""}
                         </button>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          );
-        })}
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          {capture.snapshot_id ? (
+                            <Link
+                              href={`${sitePath}/pages/${pageId}/snapshots/${capture.snapshot_id}`}
+                              className="text-muted-foreground hover:text-primary"
+                            >
+                              Snapshot
+                            </Link>
+                          ) : null}
+                          <button
+                            type="button"
+                            title="Delete capture"
+                            onClick={() => setDeleting(capture)}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+        <ConfirmDialog
+          open={Boolean(deleting)}
+          onOpenChange={(open) => !open && setDeleting(null)}
+          title="Delete capture?"
+          description="The capture record moves to trash. The stored file itself is not destroyed."
+          variant="destructive"
+          confirmLabel="Delete capture"
+          busy={deleteMutation.isPending}
+          onConfirm={() => void confirmDelete()}
+        />
       </div>
-      <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete capture?"
-        description="The capture record moves to trash. The stored file itself is not destroyed."
-        variant="destructive"
-        confirmLabel="Delete capture"
-        busy={deleteMutation.isPending}
-        onConfirm={() => void confirmDelete()}
-      />
-    </div>
     );
   }
   return (
-    <SectionCard title="Captures" copy={copy}>
+    <SectionCard title="Captures" copy={copy} collapsible>
       {body}
     </SectionCard>
   );
@@ -955,6 +1045,12 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const head = parseSnapshotHeadTags(snapshot ? snapshot.head_tags : null);
   const extracted = parseSnapshotExtracted(snapshot?.extracted ?? null);
   const headings = parseSnapshotHeadings(snapshot?.headings ?? null);
+  const integrations = parseSiteIntegrations(site.integrations);
+  const searchPerformance = data.searchPerformance;
+  const searchCtr = searchPerformance.gsc_impressions_28d
+    ? (searchPerformance.gsc_clicks_28d ?? 0) /
+      searchPerformance.gsc_impressions_28d
+    : null;
 
   const pageCopy = webCopy({
     kind: "web-page",
@@ -1039,6 +1135,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard
             title="Search result preview"
+            collapsible
             copy={webCopy({
               kind: "web-page-serp",
               label: "Search result preview",
@@ -1126,32 +1223,12 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           >
             <SerpPreview page={page} snapshot={snapshot} device={serpDevice} />
           </SectionCard>
-          <SectionCard
-            title="User-owned page intent"
-            copy={webCopy({
-              kind: "web-page-intent",
-              label: "Page intent",
-              description:
-                "The user-owned editorial intent for this page (target keyword + desired metadata).",
-              surface: `Page intent — ${page.url}`,
-              data: {
-                url: page.url,
-                target_keyword: page.target_keyword,
-                meta_title_desired: page.meta_title_desired,
-                meta_description_desired: page.meta_description_desired,
-                seo_metrics_desired: page.seo_metrics_desired,
-              },
-              lines: [
-                ["URL", page.url],
-                ["Target keyword", page.target_keyword ?? "not set"],
-                ["Desired title", page.meta_title_desired ?? "not set"],
-                ["Desired description", page.meta_description_desired ?? "not set"],
-              ],
-              attributes: { page_id: page.id },
-            })}
-          >
-            <IntentForm key={`${page.id}:${page.updated_at}`} page={page} />
-          </SectionCard>
+          <IntentForm
+            key={`${page.id}:${page.updated_at}`}
+            page={page}
+            observedTitle={head.title}
+            observedDescription={head.metaDescription}
+          />
         </div>
 
         {snapshot ? (
@@ -1159,6 +1236,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             <div className="grid gap-3 lg:grid-cols-2">
               <SectionCard
                 title="Social share preview"
+                collapsible
                 headerExtra={
                   <div className="flex items-center gap-1">
                     <div className="flex items-center rounded-md border border-border">
@@ -1222,12 +1300,18 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                   data: { url: page.url, og: head.og, twitter: head.twitter },
                   lines: [
                     ["URL", page.url],
-                    ["Social title", head.og.title ?? head.twitter.title ?? "none"],
+                    [
+                      "Social title",
+                      head.og.title ?? head.twitter.title ?? "none",
+                    ],
                     [
                       "Social description",
                       head.og.description ?? head.twitter.description ?? "none",
                     ],
-                    ["Share image", head.og.image ?? head.twitter.image ?? "none"],
+                    [
+                      "Share image",
+                      head.og.image ?? head.twitter.image ?? "none",
+                    ],
                     ["Twitter card", head.twitter.card ?? "none"],
                     ["og:type", head.og.type],
                   ],
@@ -1242,6 +1326,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               </SectionCard>
               <SectionCard
                 title="Indexability"
+                collapsible
                 copy={webCopy({
                   kind: "web-page-indexability",
                   label: "Indexability",
@@ -1279,8 +1364,286 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               </SectionCard>
             </div>
             <div className="grid gap-3 lg:grid-cols-2">
+              {[
+                {
+                  title: "Matrx Analysis",
+                  icon: BrainCircuit,
+                  message:
+                    "This panel is ready for the page-level Matrx analysis connection.",
+                  kind: "web-page-matrx-analysis",
+                },
+                {
+                  title: "Matrx Suggestions",
+                  icon: Lightbulb,
+                  message:
+                    "This panel is ready for prioritized Matrx recommendations.",
+                  kind: "web-page-matrx-suggestions",
+                },
+              ].map(({ title, icon: Icon, message, kind }) => (
+                <SectionCard
+                  key={title}
+                  title={title}
+                  collapsible
+                  copy={webCopy({
+                    kind,
+                    label: title,
+                    description: message,
+                    surface: `${title} — ${page.url}`,
+                    data: {
+                      url: page.url,
+                      page_id: page.id,
+                      status: "pending",
+                    },
+                    lines: [
+                      ["URL", page.url],
+                      ["Status", "Awaiting connection"],
+                    ],
+                    attributes: { page_id: page.id },
+                  })}
+                >
+                  <div className="flex min-h-28 items-center gap-3 p-4">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-medium text-foreground">
+                        Awaiting connection
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {message}
+                      </p>
+                    </div>
+                  </div>
+                </SectionCard>
+              ))}
+            </div>
+            <div className="grid gap-3 xl:grid-cols-3">
+              <SectionCard
+                title="Google Search Console"
+                collapsible
+                headerExtra={
+                  <button
+                    type="button"
+                    disabled
+                    aria-label="Refresh Search Console data for this page"
+                    title="A page-scoped Search Console collection command is not available yet"
+                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground opacity-40"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </button>
+                }
+                copy={webCopy({
+                  kind: "web-page-search-console",
+                  label: "Google Search Console",
+                  description:
+                    "Stored 28-day Google Search Console performance for this canonical page.",
+                  surface: `Google Search Console — ${page.url}`,
+                  data: {
+                    url: page.url,
+                    ...searchPerformance,
+                    ctr_28d: searchCtr,
+                    site_synced_at: site.gsc_synced_at,
+                  },
+                  lines: [
+                    ["URL", page.url],
+                    ["Clicks (28d)", searchPerformance.gsc_clicks_28d],
+                    [
+                      "Impressions (28d)",
+                      searchPerformance.gsc_impressions_28d,
+                    ],
+                    ["CTR (28d)", searchCtr],
+                    [
+                      "Average position (28d)",
+                      searchPerformance.gsc_position_28d,
+                    ],
+                    ["Site last synced", site.gsc_synced_at],
+                  ],
+                  attributes: { page_id: page.id },
+                })}
+              >
+                <div className="grid gap-3 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
+                      <Search className="h-3.5 w-3.5 text-primary" />
+                      Last 28 days
+                    </span>
+                    <Badge
+                      variant={searchPerformance.in_gsc ? "success" : "outline"}
+                    >
+                      {searchPerformance.in_gsc ? "Reporting" : "No page data"}
+                    </Badge>
+                  </div>
+                  <CondensedFieldGrid
+                    fields={[
+                      {
+                        label: "Clicks",
+                        value:
+                          searchPerformance.gsc_clicks_28d?.toLocaleString() ??
+                          "—",
+                      },
+                      {
+                        label: "Impressions",
+                        value:
+                          searchPerformance.gsc_impressions_28d?.toLocaleString() ??
+                          "—",
+                      },
+                      {
+                        label: "CTR",
+                        value:
+                          searchCtr === null
+                            ? "—"
+                            : `${(searchCtr * 100).toFixed(2)}%`,
+                      },
+                      {
+                        label: "Average position",
+                        value:
+                          searchPerformance.gsc_position_28d?.toFixed(1) ?? "—",
+                      },
+                    ]}
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Site collection last completed{" "}
+                    {formatDate(site.gsc_synced_at)}. The existing refresh
+                    command syncs the whole site, so it is intentionally not
+                    presented here as a page-only refresh.
+                  </p>
+                </div>
+              </SectionCard>
+              <SectionCard
+                title="PageSpeed Insights"
+                collapsible
+                headerExtra={
+                  <button
+                    type="button"
+                    disabled
+                    aria-label="Run PageSpeed Insights for this page"
+                    title="The page-scoped collection exists server-side but has no frontend read contract yet"
+                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground opacity-40"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </button>
+                }
+                copy={webCopy({
+                  kind: "web-page-pagespeed",
+                  label: "PageSpeed Insights",
+                  description:
+                    "Page-level Lighthouse and CrUX evidence for desktop and mobile.",
+                  surface: `PageSpeed Insights — ${page.url}`,
+                  data: {
+                    url: page.url,
+                    enabled: integrations.pageSpeedInsights.enabled,
+                    status: "read-contract-pending",
+                  },
+                  lines: [
+                    ["URL", page.url],
+                    [
+                      "Integration enabled",
+                      integrations.pageSpeedInsights.enabled ? "yes" : "no",
+                    ],
+                    ["Status", "Frontend read contract pending"],
+                  ],
+                  attributes: { page_id: page.id },
+                })}
+              >
+                <div className="flex min-h-36 items-center gap-3 p-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Gauge className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-medium text-foreground">
+                        No page evidence available
+                      </p>
+                      <Badge
+                        variant={
+                          integrations.pageSpeedInsights.enabled
+                            ? "success"
+                            : "outline"
+                        }
+                      >
+                        {integrations.pageSpeedInsights.enabled
+                          ? "Enabled"
+                          : "Not enabled"}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Desktop/mobile storage exists in the SEO service, but this
+                      frontend cannot read it until that schema gets a supported
+                      page-evidence endpoint.
+                    </p>
+                  </div>
+                </div>
+              </SectionCard>
+              <SectionCard
+                title="Google Analytics"
+                collapsible
+                headerExtra={
+                  <button
+                    type="button"
+                    disabled
+                    aria-label="Refresh Google Analytics data for this page"
+                    title="The page-scoped collection exists server-side but has no frontend read contract yet"
+                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground opacity-40"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </button>
+                }
+                copy={webCopy({
+                  kind: "web-page-google-analytics",
+                  label: "Google Analytics",
+                  description:
+                    "Stored GA4 landing-page traffic and engagement evidence for this canonical page.",
+                  surface: `Google Analytics — ${page.url}`,
+                  data: {
+                    url: page.url,
+                    enabled: integrations.googleAnalytics4.enabled,
+                    status: "read-contract-pending",
+                  },
+                  lines: [
+                    ["URL", page.url],
+                    [
+                      "Integration enabled",
+                      integrations.googleAnalytics4.enabled ? "yes" : "no",
+                    ],
+                    ["Status", "Frontend read contract pending"],
+                  ],
+                  attributes: { page_id: page.id },
+                })}
+              >
+                <div className="flex min-h-36 items-center gap-3 p-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <LineChart className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-medium text-foreground">
+                        No page evidence available
+                      </p>
+                      <Badge
+                        variant={
+                          integrations.googleAnalytics4.enabled
+                            ? "success"
+                            : "outline"
+                        }
+                      >
+                        {integrations.googleAnalytics4.enabled
+                          ? "Connected"
+                          : "Not connected"}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      GA4 landing-page storage exists in the SEO service, but
+                      this frontend cannot read it until that schema gets a
+                      supported page-evidence endpoint.
+                    </p>
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-2">
               <SectionCard
                 title="Headings outline"
+                collapsible
                 copy={webCopy({
                   kind: "web-page-headings",
                   label: "Headings outline",
@@ -1291,12 +1654,10 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                   lines: [
                     ["URL", page.url],
                     ["H1 count", headings.h1Count],
-                    ...headings.all.map(
-                      (heading): [string, string] => [
-                        `h${heading.level}`,
-                        heading.text,
-                      ],
-                    ),
+                    ...headings.all.map((heading): [string, string] => [
+                      `h${heading.level}`,
+                      heading.text,
+                    ]),
                   ],
                   attributes: { page_id: page.id, count: headings.all.length },
                 })}
@@ -1305,6 +1666,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               </SectionCard>
               <SectionCard
                 title="Content stats"
+                collapsible
                 copy={webCopy({
                   kind: "web-page-content-stats",
                   label: "Content stats",

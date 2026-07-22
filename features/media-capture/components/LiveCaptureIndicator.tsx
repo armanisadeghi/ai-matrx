@@ -42,18 +42,8 @@ import {
 import { interceptableHref } from "@/features/media-capture/runtime/live-capture-nav";
 import { formatClock } from "@/features/media-capture/components/RecordingHud";
 
-// TEMP-VERIFY: forced render state, removed before reporting.
-const FORCED: LiveCaptureInfo | null = {
-  captureId: "cap_forced",
-  kind: "video",
-  label: "Camera recording",
-  sourceFeature: "camera",
-  startedAt: Date.now(),
-};
-
 /** The live capture, or null. Server snapshot is null — capture is client-only. */
 function useLiveCapture(): LiveCaptureInfo | null {
-  if (FORCED) return FORCED;
   return useSyncExternalStore(
     subscribeMediaCaptureDiagnostics,
     () => getMediaCaptureDiagnostics().liveCapture,

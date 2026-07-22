@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { useFileBlob } from "@/features/files";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingPage } from "@/features/marketing/types";
@@ -10,9 +10,9 @@ import type { MarketingPage } from "@/features/marketing/types";
 // Heavy previewer (react-markdown + KaTeX + Prism) — always code-split.
 const MarkdownPreview = dynamic(
   () =>
-    import(
-      "@/features/files/components/core/FilePreview/previewers/MarkdownPreview"
-    ).then((module) => module.MarkdownPreview),
+    import("@/features/files/components/core/FilePreview/previewers/MarkdownPreview").then(
+      (module) => module.MarkdownPreview,
+    ),
   { ssr: false },
 );
 
@@ -52,7 +52,10 @@ export function PageContentCard({
     data: { url: page.url, path: page.path, markdown: text },
     lines: [
       ["URL", page.url],
-      ["Content", text ? `${text.length.toLocaleString()} characters` : "loading…"],
+      [
+        "Content",
+        text ? `${text.length.toLocaleString()} characters` : "loading…",
+      ],
     ],
     attributes: { page_id: page.id },
   });

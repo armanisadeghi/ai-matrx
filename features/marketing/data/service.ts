@@ -550,9 +550,7 @@ export async function listPages(
   } else if (coverage === "never_crawled") {
     query = query.is("latest_snapshot_id", null);
   } else if (coverage === "sitemap_not_crawled") {
-    query = query
-      .gt("sitemap_count", 0)
-      .is("latest_snapshot_id", null);
+    query = query.gt("sitemap_count", 0).is("latest_snapshot_id", null);
   } else if (coverage === "crawled_no_sitemap") {
     query = query.eq("sitemap_count", 0).not("latest_snapshot_id", "is", null);
   } else if (coverage === "in_gsc") {
@@ -902,41 +900,39 @@ export async function getPageWorkspace(
     findingsResponse,
     searchPerformanceResponse,
   ] = await Promise.all([
-      page.latest_snapshot_id
-        ? db
-            .from("snapshot")
-            .select(SNAPSHOT_COLUMNS)
-            .eq("site_id", siteId)
-            .eq("page_id", pageId)
-            .eq("id", page.latest_snapshot_id)
-            .abortSignal(abortSignal)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-      db
-        .from("v_page_score")
-        .select("site_id, page_id, page_score, fail_count")
-        .eq("site_id", siteId)
-        .eq("page_id", pageId)
-        .abortSignal(abortSignal)
-        .maybeSingle(),
-      db
-        .from("finding")
-        .select("id", { count: "exact", head: true })
-        .eq("site_id", siteId)
-        .eq("page_id", pageId)
-        .in("status", ["open", "reopened"])
-        .eq("suppressed", false)
-        .is("deleted_at", null)
-        .abortSignal(abortSignal),
-      db
-        .from("v_page_list")
-        .select(
-          "in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d",
-        )
-        .eq("site_id", siteId)
-        .eq("page_id", pageId)
-        .abortSignal(abortSignal)
-        .maybeSingle(),
+    page.latest_snapshot_id
+      ? db
+          .from("snapshot")
+          .select(SNAPSHOT_COLUMNS)
+          .eq("site_id", siteId)
+          .eq("page_id", pageId)
+          .eq("id", page.latest_snapshot_id)
+          .abortSignal(abortSignal)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    db
+      .from("v_page_score")
+      .select("site_id, page_id, page_score, fail_count")
+      .eq("site_id", siteId)
+      .eq("page_id", pageId)
+      .abortSignal(abortSignal)
+      .maybeSingle(),
+    db
+      .from("finding")
+      .select("id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("page_id", pageId)
+      .in("status", ["open", "reopened"])
+      .eq("suppressed", false)
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d")
+      .eq("site_id", siteId)
+      .eq("page_id", pageId)
+      .abortSignal(abortSignal)
+      .maybeSingle(),
   ]);
   if (snapshotResponse.error) throw snapshotResponse.error;
   if (scoreResponse.error) throw scoreResponse.error;

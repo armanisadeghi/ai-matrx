@@ -164,10 +164,7 @@ export interface PageWorkspaceData {
   openFindings: number;
   searchPerformance: Pick<
     WebViews["v_page_list"]["Row"],
-    | "in_gsc"
-    | "gsc_clicks_28d"
-    | "gsc_impressions_28d"
-    | "gsc_position_28d"
+    "in_gsc" | "gsc_clicks_28d" | "gsc_impressions_28d" | "gsc_position_28d"
   >;
 }
 
