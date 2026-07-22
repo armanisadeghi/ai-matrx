@@ -11,8 +11,6 @@ import {
   ChevronRight,
   LayoutTemplate,
   Check,
-  FolderOpen,
-  Building2,
   ChevronDown,
   Atom,
   FlaskConical,
@@ -44,7 +42,7 @@ import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
-import { CreateProjectModal } from "@/features/projects/components/CreateProjectModal";
+import { EntityTargetPicker } from "@/features/scopes/components/entity-context/EntityTargetPicker";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { TemplatePicker } from "./TemplatePicker";
 import { AiReviewQuotaDialog } from "./AiReviewQuotaDialog";
@@ -69,11 +67,7 @@ import {
   reorderKeywords,
   createTag,
 } from "../../service";
-import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
-import { groupProjectsByOrgDisplay } from "@/features/agent-context/utils/groupProjectsByOrgDisplay";
-import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { invalidateNavTree } from "@/features/agent-context/redux/hierarchySlice";
 // Org comes from the app's CANONICAL active-org context — never from the
 // selected project object (research-project decoupling).
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -104,6 +98,7 @@ type AiPhase =
   | {
       status: "suggesting";
       topicId: string;
+      organizationId: string;
       // Live-streaming preview parsed from the AI's content tokens.
       streamTitle: string | null;
       streamDescription: string;
@@ -113,6 +108,7 @@ type AiPhase =
   | {
       status: "reviewing";
       topicId: string;
+      organizationId: string;
       appliedName: string | null;
       appliedDescription: string | null;
       applied: SuggestApplied;
@@ -270,126 +266,6 @@ function StepDots({ step }: { step: 1 | 2 }) {
       <span className="text-xs text-muted-foreground tabular-nums">
         {step} / 2
       </span>
-    </div>
-  );
-}
-
-// ── Project list (shared) ─────────────────────────────────────────────────────
-
-interface ProjectListProps {
-  selectedId: string | null;
-  onSelect: (id: string, name: string) => void;
-  onCreateInOrg: (orgId: string) => void;
-  isLoading: boolean;
-  projectsByOrg: {
-    org: { id: string; name: string };
-    projects: { id: string; name: string; org_id: string }[];
-  }[];
-  flatProjects: { id: string; name: string; org_id: string }[];
-  orgsForCreate: { id: string; name: string }[];
-}
-
-function ProjectOrgHeader({
-  orgName,
-  onCreate,
-}: {
-  orgName: string;
-  onCreate: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 px-1 pt-2 pb-0.5">
-      <p className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-        <Building2 className="h-3 w-3 shrink-0" />
-        <span className="truncate">{orgName}</span>
-      </p>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
-        aria-label={`Create project in ${orgName}`}
-        onClick={onCreate}
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </Button>
-    </div>
-  );
-}
-
-function ProjectList({
-  selectedId,
-  onSelect,
-  onCreateInOrg,
-  isLoading,
-  projectsByOrg,
-  flatProjects,
-  orgsForCreate,
-}: ProjectListProps) {
-  return (
-    <div className="space-y-1.5">
-      {isLoading ? (
-        <div className="flex items-center justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : flatProjects.length === 0 ? (
-        <div className="space-y-3 py-2">
-          <p className="text-sm text-muted-foreground text-center">
-            No projects yet. Create one in an organization.
-          </p>
-          <div className="space-y-1">
-            {orgsForCreate.map((org) => (
-              <ProjectOrgHeader
-                key={org.id}
-                orgName={org.name}
-                onCreate={() => onCreateInOrg(org.id)}
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        projectsByOrg.map(({ org, projects }) => (
-          <div key={org.id} className="space-y-1.5">
-            <ProjectOrgHeader
-              orgName={org.name}
-              onCreate={() => onCreateInOrg(org.id)}
-            />
-            {projects.map((project) => {
-              const isSelected = selectedId === project.id;
-              return (
-                <button
-                  key={project.id}
-                  type="button"
-                  onClick={() => onSelect(project.id, project.name)}
-                  className={cn(
-                    "w-full flex items-center gap-3 rounded-xl border p-4 text-left text-foreground transition-all duration-150",
-                    isSelected
-                      ? "border-primary/40 bg-primary/5 shadow-sm"
-                      : "border-border/60 bg-card hover:border-primary/20 hover:bg-muted/40",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                      isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {isSelected ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <FolderOpen className="h-4 w-4" />
-                    )}
-                  </div>
-                  <span className="font-medium text-sm text-foreground">
-                    {project.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        ))
-      )}
     </div>
   );
 }
@@ -909,7 +785,6 @@ interface AiCanvasProps {
   onViewFirst?: () => void;
   isLaunching?: boolean;
   maxKeywords?: number;
-  droppedByQuotaCount?: number;
   onOpenSettings?: () => void;
   canStart?: boolean;
 }
@@ -932,7 +807,6 @@ function AiCanvas({
   onViewFirst,
   isLaunching,
   maxKeywords = 5,
-  droppedByQuotaCount = 0,
   onOpenSettings,
   canStart = true,
 }: AiCanvasProps) {
@@ -1051,10 +925,8 @@ function AiCanvas({
                   exceed your pipeline limit ({maxKeywords} max)
                 </p>
                 <p className="text-xs text-destructive/90 leading-relaxed">
-                  {droppedByQuotaCount > 0
-                    ? `The AI suggested ${keywordCount} keywords; ${droppedByQuotaCount} were not saved because of this cap. `
-                    : ""}
-                  Raise the limit in Pipeline settings or remove the highlighted
+                  All {keywordCount} suggested keywords were saved. Raise the
+                  limit in Pipeline settings or remove the highlighted
                   keywords before starting research — only the first{" "}
                   {maxKeywords} run in the pipeline.
                 </p>
@@ -1216,10 +1088,6 @@ export default function ResearchInitForm() {
   const api = useResearchApi();
   const dispatch = useAppDispatch();
   const [, startTransition] = useTransition();
-  const [createProjectOpen, setCreateProjectOpen] = useState(false);
-  const [createProjectOrgId, setCreateProjectOrgId] = useState<string | null>(
-    null,
-  );
   const [showAdditionalInstructions, setShowAdditionalInstructions] = useState(
     Boolean(searchParams.get("instructions")),
   );
@@ -1331,21 +1199,6 @@ export default function ResearchInitForm() {
 
   // ── Active organization — canonical app context, NEVER project-derived ───
   const activeOrgId = useAppSelector(selectEffectiveOrganizationId);
-
-  // ── Hierarchy data ────────────────────────────────────────────────────────
-  const { orgs, flatProjects, isLoading: projectsLoading } = useNavTree();
-  const projectsByOrg = groupProjectsByOrgDisplay(orgs, flatProjects);
-  const orgsForCreate = [...orgs]
-    .sort((a, b) => {
-      if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
-      return formatOrgDisplayName(a).localeCompare(formatOrgDisplayName(b));
-    })
-    .map((org) => ({ id: org.id, name: formatOrgDisplayName(org) }));
-
-  const openCreateProject = (orgId: string) => {
-    setCreateProjectOrgId(orgId);
-    setCreateProjectOpen(true);
-  };
 
   // ── Navigation helpers ────────────────────────────────────────────────────
   const goToStep = (mode: Mode, step: number) => {
@@ -1518,6 +1371,7 @@ export default function ResearchInitForm() {
       setAiPhase({
         status: "suggesting",
         topicId,
+        organizationId: topic.organization_id,
         streamTitle: null,
         streamDescription: "",
         streamDescriptionComplete: false,
@@ -1564,6 +1418,7 @@ export default function ResearchInitForm() {
       let appliedName: string | null = null;
       let appliedDescription: string | null = null;
       let applied: SuggestApplied | null = null;
+      let appliedRejection: string | null = null;
       let suggestedKeywords: string[] = [];
       let contentBuffer = ""; // accumulates streaming chunk text
       const eventTypes: Record<string, number> = {};
@@ -1614,12 +1469,29 @@ export default function ResearchInitForm() {
             }
           }
           if (inner.type === "suggest_applied") {
-            applied = parseSuggestApplied(inner);
+            const parsed = parseSuggestApplied(inner);
+            if (parsed.ok) {
+              applied = parsed.value;
+            } else {
+              // The event ARRIVED but failed contract validation — almost always
+              // frontend/backend drift. Never report this as "no event", and
+              // never swallow the reason: it is the only clue to the mismatch.
+              appliedRejection = parsed.reason;
+            }
           }
         }
       }
 
       if (!applied) {
+        if (appliedRejection) {
+          console.error(
+            "[suggest-stream] suggest_applied event failed contract validation — frontend/backend drift",
+            { reason: appliedRejection, eventTypes },
+          );
+          throw new Error(
+            `AI suggestions came back in an unexpected shape (${appliedRejection}). The topic was created — you can find it in your topic list.`,
+          );
+        }
         console.error(
           "[suggest-stream] no suggest_applied event was received",
           { eventTypes },
@@ -1641,22 +1513,21 @@ export default function ResearchInitForm() {
           ? suggestedKeywords
           : fallbackKeywords.length > 0
             ? fallbackKeywords
-            : [
-                ...applied.keywords_saved,
-                ...applied.keywords_dropped_by_quota,
-                ...applied.keywords_skipped_duplicate,
-              ];
+            : [...applied.keywords_saved, ...applied.keywords_skipped_duplicate];
 
       setAiPhase({
         status: "reviewing",
         topicId,
+        organizationId: topic.organization_id,
         appliedName,
         appliedDescription,
         applied,
         suggestedKeywords: finalSuggestedKeywords,
         keywordRows: null,
         isLaunching: false,
-        quotas: provisionalQuotas(applied.max_keywords ?? 3),
+        // The orchestrator cap lives on the topic row, not on the stream event
+        // (there is no write-time keyword quota — see SuggestApplied).
+        quotas: provisionalQuotas(topic.max_keywords),
       });
     } catch (err) {
       setAiPhase((prev) => ({
@@ -1671,7 +1542,7 @@ export default function ResearchInitForm() {
   // ── AI review actions ─────────────────────────────────────────────────────
   const handleStartResearch = async () => {
     if (aiPhase.status !== "reviewing") return;
-    const { topicId, keywordRows, quotas } = aiPhase;
+    const { topicId, organizationId, keywordRows, quotas } = aiPhase;
     if (!keywordRows || keywordRows.length === 0) {
       toast.error("Add at least one keyword before starting.");
       return;
@@ -1697,7 +1568,7 @@ export default function ResearchInitForm() {
           : prev,
       );
       startTransition(() => {
-        api.runPipeline(topicId).catch(() => {});
+        api.runPipeline(topicId, organizationId).catch(() => {});
         router.push(`/research/topics/${topicId}`);
       });
     } catch (err) {
@@ -2262,9 +2133,6 @@ export default function ResearchInitForm() {
                 onViewFirst={handleViewTopicFirst}
                 isLaunching={aiPhase.isLaunching}
                 maxKeywords={aiPhase.quotas.max_keywords}
-                droppedByQuotaCount={
-                  aiPhase.applied.keywords_dropped_by_quota?.length ?? 0
-                }
                 onOpenSettings={() => setQuotaDialogOpen(true)}
                 canStart={
                   !!aiPhase.keywordRows &&
@@ -2425,8 +2293,12 @@ export default function ResearchInitForm() {
                       Optionally link this topic to a project.
                     </p>
                   </div>
-                  <ProjectList
-                    selectedId={selectedProjectId}
+                  <EntityTargetPicker
+                    kind="project"
+                    value={selectedProjectId}
+                    organizationId={activeOrgId}
+                    label="No project"
+                    className="max-w-sm rounded-lg border border-border/60 bg-card/60 p-1"
                     onSelect={(id, name) => {
                       setSelectedProjectId(id);
                       setSelectedProjectName(name);
@@ -2435,11 +2307,6 @@ export default function ResearchInitForm() {
                         selectedProjectName: name,
                       });
                     }}
-                    onCreateInOrg={openCreateProject}
-                    isLoading={projectsLoading}
-                    projectsByOrg={projectsByOrg}
-                    flatProjects={flatProjects}
-                    orgsForCreate={orgsForCreate}
                   />
                 </div>
               </div>
@@ -2483,8 +2350,12 @@ export default function ResearchInitForm() {
                 </p>
               </div>
 
-              <ProjectList
-                selectedId={selectedProjectId}
+              <EntityTargetPicker
+                kind="project"
+                value={selectedProjectId}
+                organizationId={activeOrgId}
+                label="No project"
+                className="max-w-sm rounded-lg border border-border/60 bg-card/60 p-1"
                 onSelect={(id, name) => {
                   setSelectedProjectId(id);
                   setSelectedProjectName(name);
@@ -2493,11 +2364,6 @@ export default function ResearchInitForm() {
                     selectedProjectName: name,
                   });
                 }}
-                onCreateInOrg={openCreateProject}
-                isLoading={projectsLoading}
-                projectsByOrg={projectsByOrg}
-                flatProjects={flatProjects}
-                orgsForCreate={orgsForCreate}
               />
             </div>
           </div>
@@ -2555,23 +2421,6 @@ export default function ResearchInitForm() {
             )}
           </div>
         )}
-
-      <CreateProjectModal
-        isOpen={createProjectOpen}
-        onClose={() => {
-          setCreateProjectOpen(false);
-          setCreateProjectOrgId(null);
-        }}
-        organizationId={createProjectOrgId}
-        redirectOnSuccess={false}
-        onSuccess={(project) => {
-          dispatch(invalidateNavTree());
-          setSelectedProjectId(project.id);
-          setSelectedProjectName(project.name);
-          setCreateProjectOpen(false);
-          setCreateProjectOrgId(null);
-        }}
-      />
     </div>
   );
 }

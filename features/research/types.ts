@@ -123,6 +123,14 @@ export type SuggestRequest = components["schemas"]["SuggestRequest"] & {
   topic_id?: string | null;
 };
 
+/**
+ * Mirror of aidream `research/stream_events.py::SuggestApplied`.
+ *
+ * There is NO write-time keyword quota: every suggested keyword is persisted
+ * minus case-insensitive duplicates. The topic's `max_keywords` bounds only
+ * what the `/run` orchestrator auto-processes, so it is read from the topic
+ * row — it is deliberately NOT on this event.
+ */
 export type SuggestApplied = {
   type: "suggest_applied";
   topic_id: string;
@@ -130,36 +138,51 @@ export type SuggestApplied = {
   description_updated: boolean;
   keywords_saved: string[];
   keywords_skipped_duplicate: string[];
-  keywords_dropped_by_quota: string[];
-  max_keywords: number;
 };
 
 function isStringArray(v: unknown): v is string[] {
   return Array.isArray(v) && v.every((x) => typeof x === "string");
 }
 
-/** Validate a `suggest_applied` stream event payload at ingress. Returns null
- *  (never a partial/coerced object) when the shape doesn't match the contract. */
-export function parseSuggestApplied(v: unknown): SuggestApplied | null {
-  if (v === null || typeof v !== "object") return null;
+/** Result of validating a stream payload: the parsed value, or the precise
+ *  reason it was rejected. Never a partial/coerced object, and never a bare
+ *  null that forces the caller to invent an explanation. */
+export type ParseResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; reason: string };
+
+/** Validate a `suggest_applied` stream event payload at ingress. */
+export function parseSuggestApplied(
+  v: unknown,
+): ParseResult<SuggestApplied> {
+  if (v === null || typeof v !== "object") {
+    return { ok: false, reason: `payload is ${v === null ? "null" : typeof v}, expected object` };
+  }
   const o = v as Record<string, unknown>;
-  if (o.type !== "suggest_applied") return null;
-  if (typeof o.topic_id !== "string") return null;
-  if (typeof o.name_updated !== "boolean") return null;
-  if (typeof o.description_updated !== "boolean") return null;
-  if (!isStringArray(o.keywords_saved)) return null;
-  if (!isStringArray(o.keywords_skipped_duplicate)) return null;
-  if (!isStringArray(o.keywords_dropped_by_quota)) return null;
-  if (typeof o.max_keywords !== "number") return null;
+  const bad = (field: string, expected: string) => ({
+    ok: false as const,
+    reason: `field "${field}" is ${JSON.stringify(o[field])} (${typeof o[field]}), expected ${expected}`,
+  });
+  if (o.type !== "suggest_applied") return bad("type", '"suggest_applied"');
+  if (typeof o.topic_id !== "string") return bad("topic_id", "string");
+  if (typeof o.name_updated !== "boolean") return bad("name_updated", "boolean");
+  if (typeof o.description_updated !== "boolean") {
+    return bad("description_updated", "boolean");
+  }
+  if (!isStringArray(o.keywords_saved)) return bad("keywords_saved", "string[]");
+  if (!isStringArray(o.keywords_skipped_duplicate)) {
+    return bad("keywords_skipped_duplicate", "string[]");
+  }
   return {
-    type: "suggest_applied",
-    topic_id: o.topic_id,
-    name_updated: o.name_updated,
-    description_updated: o.description_updated,
-    keywords_saved: o.keywords_saved,
-    keywords_skipped_duplicate: o.keywords_skipped_duplicate,
-    keywords_dropped_by_quota: o.keywords_dropped_by_quota,
-    max_keywords: o.max_keywords,
+    ok: true,
+    value: {
+      type: "suggest_applied",
+      topic_id: o.topic_id,
+      name_updated: o.name_updated,
+      description_updated: o.description_updated,
+      keywords_saved: o.keywords_saved,
+      keywords_skipped_duplicate: o.keywords_skipped_duplicate,
+    },
   };
 }
 export type TagCreate = components["schemas"]["TagCreate"];
