@@ -27,7 +27,7 @@ vision: [features/context-menu-v3/FEATURE.md]
 
 1. **Verify inline editing end-to-end in the browser** — the only unproven link. On `/demos/context-menu/inline-edit`: right-click → Agents → pick one → ask "fix the typos" → confirm the textarea updates live and edits land in the log. Menu render + agent listing already verified; the agent-stream leg was blocked only by the dev-server crashes above. If the model never calls `widget_text_*`, check the request's `client_tools` (assembled per-turn in `features/agents/redux/execution-system/utils/build-tool-injection.ts` from the handle) and whether the agent's prompt needs a nudge about the tools.
 2. **Bespoke-menu consolidation campaign** — fold the independent right-click menus into v3, top-traffic first. The prioritized inventory lives in `FEATURE.md` → "Consolidation backlog" (files RowContextMenu/FileRightClickMenu first, then ItemMenu's right-click mode, notes-legacy shell, rich-document's own menu, code trees, coordinate menus, markdown-block menus). Pattern for coexistence with kebab menus: `ItemRow.disableContextMenu` + v3 wrap (notes sidebar did this).
-3. **Dormant PDF region-menu plumbing** — `features/pdf/components/viewer/annotation-layer/PdfAnnotationLayer.tsx` suppresses the native menu but no consumer passes `onRegionContextMenu`; wire it to v3 `extraSections` or delete the plumbing.
+3. **Act on agent.review_queue feedback** — three rows registered 2026-07-21 (inline-edit demo, hub guide, PDF region menu). When Arman reviews, handle `changes_requested`/`approved` per the `agent-review-queue` skill and update the rows.
 4. **Planned demo pages** (registry cards exist, hidden from nav): `surface-mappings` (resolve agent×surface×scope → value_mappings live) and `launch-inspector` (fire a shortcut with a hand-crafted scope, inspect the assembled request). `app/(dev)/demos/context-menu/_registry.ts`.
 5. **(inferred) Streaming edit visualization** — today an inline edit just changes the text. If Arman wants the v1-style "watch it stream in" affordance (highlight the patched range, pulse on apply), design it in the demo page first, then generalize.
 
@@ -39,6 +39,9 @@ vision: [features/context-menu-v3/FEATURE.md]
 - Inline agent editing wired platform-wide for editable surfaces (shell WidgetHandle + `runtime.widgetHandleId`); demo page shipped.
 - Demo hub rewritten as the core-vs-per-surface guide; bespoke-menu inventory documented as the consolidation backlog.
 - Full bespoke/context-menu inventory swept 2026-07-21 (results in the FEATURE.md backlog).
+- PDF region right-click menu finished (the abandoned 2026-05-11 build) — `features/file-analysis/components/RegionContextMenu.tsx`, wired in StudioShell + PdfEditTab; extract/promote/redact/delete live. First caller of `promoteAnnotationToEntity`.
+- Adversarial multi-agent review run on the engine + widget-handle work; 4 confirmed defects fixed (handle-lifetime ownership in destroyInstance, controlled-field native-setter writes, shell render purity, demo insert semantics) — commit 4a7e9eea4.
+- Review-queue rows registered for the three reviewable surfaces (agent.review_queue, source ai-matrx).
 
 ## Decisions needed
 

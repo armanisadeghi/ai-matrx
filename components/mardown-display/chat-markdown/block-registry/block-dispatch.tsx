@@ -71,6 +71,7 @@ import DbKindComponent from "@/features/content-ir/react/db-component/DbKindComp
 import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 
 // ── The flat render-block shape ──────────────────────────────────────────────
 
@@ -242,9 +243,14 @@ export function isBlockLoading(block: {
  *    flip (an ACTIVE `content_ir.kind_component` row with `source='db'` won
  *    the resolution); never emitted upstream. Shape-classified by
  *    construction.
+ *  - `video_prompt_options` — produced ONLY by `applyIrKindRoute`'s
+ *    compiled-bridge flip for the registered `video_prompt_options` kind
+ *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
+ *    upstream. Shape-classified by construction.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
+  | "video_prompt_options"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -317,6 +323,7 @@ export type ShapeBlockType =
   | "transcript"
   | "structured_info"
   | "item_presentation"
+  | "video_prompt_options"
   | "chart"
   | "map"
   | "stats"
@@ -1240,6 +1247,31 @@ const SHAPE_BLOCK_DISPATCH = {
   map: expectUnifiedArtifactStage,
   stats: expectUnifiedArtifactStage,
   diff: expectUnifiedArtifactStage,
+
+  // Kind-routed (video_prompt_options): the complete-only bridge supplies
+  // serverData; while streaming the bridge yields nothing yet, so show the
+  // shared mini loader instead of raw JSON. A complete block that still has
+  // no serverData falls through to a readable code block (never hidden).
+  video_prompt_options: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.VideoPromptOptionsBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
 
   // NOTE: like `table` — normally consumed by the unified artifact stage
   // (TranscriptArtifact); preserved legacy path below.
