@@ -167,11 +167,11 @@ export function LastRunSummary({
   const { data: media } = useResearchMedia(topicId);
 
   // Compose status line at the top: green check if fully done, amber if partial.
-  const hasReport = (progress?.project_syntheses ?? 0) > 0;
+  const hasReport = (progress?.topic_syntheses ?? 0) > 0;
   const failures =
     (progress?.failed_analyses ?? 0) +
     (progress?.failed_keyword_syntheses ?? 0) +
-    (progress?.failed_project_syntheses ?? 0);
+    (progress?.failed_topic_syntheses ?? 0);
 
   // Pages read (succeeded) vs attempted — integers only, honestly labelled.
   const pagesRead = progress?.total_content ?? 0;
@@ -186,7 +186,7 @@ export function LastRunSummary({
     const outputTokens = costSummary?.total_output_tokens ?? 0;
     const reports =
       (progress?.keyword_syntheses ?? 0) +
-      (progress?.project_syntheses ?? 0) +
+      (progress?.topic_syntheses ?? 0) +
       (progress?.total_documents ?? 0);
     return buildHeroMetrics({
       sources: progress?.total_sources ?? sources?.length ?? 0,

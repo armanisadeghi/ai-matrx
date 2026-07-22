@@ -21,13 +21,22 @@ export type TopicUpdate = {
   default_search_params?: Record<string, unknown> | null;
   good_scrape_threshold?: number | null;
   scrapes_per_keyword?: number | null;
-  project_id?: string | null;
-  // Quota ladder fields (migration 0013) — accepted by Supabase even though
-  // database.types.ts hasn't been regenerated with them yet.
+  // NOTE (research-project-decoupling): `project_id` is deliberately GONE from
+  // TopicUpdate. The project relationship is an optional canonical
+  // `platform.associations` edge (research_topic → project) written through
+  // `associationsService` — never a physical column write. See
+  // common-docs/research-project-decoupling/FEATURE.md.
+  // Quota ladder fields (migration 0013).
   max_keywords?: number | null;
   analyses_per_keyword?: number | null;
   max_keyword_syntheses?: number | null;
-  max_project_syntheses?: number | null;
+  /**
+   * Feature-level name for the topic-wide synthesis cap. PHASE-4 COMPAT
+   * (research-project-decoupling): the physical DB column is still
+   * `max_project_syntheses` until the Phase-4 rename migration; the service
+   * translates at the write boundary (`updateTopic`).
+   */
+  max_topic_syntheses?: number | null;
   max_documents?: number | null;
   max_tag_consolidations?: number | null;
   max_auto_tag_calls?: number | null;
@@ -190,7 +199,40 @@ export type SourceOrigin =
   | "manual"
   | "link_extraction"
   | "file_upload";
-export type SynthesisScope = "keyword" | "project";
+/**
+ * Canonical synthesis scopes. `topic` = whole-topic synthesis (formerly
+ * misnamed `project`). Legacy `rs_synthesis` rows and not-yet-cut-over
+ * backend stream events may still carry `'project'` — accept it on READ via
+ * `normalizeSynthesisScope`, never write it as feature vocabulary.
+ * PHASE-4 COMPAT: after the Phase-4 data migration + backend Phase-3 deploy,
+ * `'project'` disappears from the wire and the compat parsing can be deleted.
+ * See common-docs/research-project-decoupling/FEATURE.md.
+ */
+export type SynthesisScope = "keyword" | "topic";
+
+/**
+ * What can actually arrive over the wire (DB rows, stream events) during the
+ * compatibility window: the canonical scopes plus legacy `'project'`.
+ */
+export type WireSynthesisScope = "keyword" | "project" | "topic";
+
+/**
+ * Normalize a wire/DB synthesis scope to the canonical vocabulary. Legacy
+ * `'project'` MEANS topic-wide synthesis (never a workspace project) — map it
+ * to `'topic'`. PHASE-4 COMPAT: delete once no `'project'` values remain.
+ */
+export function normalizeSynthesisScope(scope: string): SynthesisScope {
+  return scope === "keyword" ? "keyword" : "topic";
+}
+
+/**
+ * PHASE-3/4 COMPAT (research-project-decoupling): the aidream
+ * `SynthesisRequest.scope` contract still accepts only `'keyword' | 'project'`
+ * — `'project'` on the wire means TOPIC-WIDE synthesis. Every topic-wide
+ * synthesize API call sends this constant so there is exactly ONE flip site:
+ * change it to `"topic"` once the backend Phase-3 deploy accepts it.
+ */
+export const TOPIC_SYNTHESIS_WIRE_SCOPE = "project" as const;
 export type IterationMode = "initial" | "rebuild" | "update";
 export type BulkAction =
   | "include"
@@ -216,17 +258,23 @@ export type TopicStatus =
 export type ResearchTopicRow = Database["research"]["Tables"]["rs_topic"]["Row"];
 
 /**
- * Quota ladder fields added in migration 0013_rs_topic_quota_ladder.sql.
- * The Supabase generated types are stale; we layer these on at the type level
- * until `database.types.ts` is regenerated. Values are guaranteed present on
- * `rs_topic` rows since the migration backfilled defaults.
+ * Quota ladder fields (migration 0013). The generated `database.types.ts` now
+ * carries all of these on the row (the stale-type casts were repaid by the
+ * 2026-07-21 `pnpm db-types` regen), so this interface exists only to give the
+ * topic-wide synthesis cap its FEATURE-LEVEL name.
+ *
+ * PHASE-4 COMPAT (research-project-decoupling): the physical column is still
+ * `max_project_syntheses` until the Phase-4 rename migration. The boundary
+ * mapper `rowToResearchTopic` translates read-side; `updateTopic` translates
+ * write-side. Nothing above the service layer may use the old name.
  */
 export interface TopicQuotaFields {
   max_keywords: number;
   scrapes_per_keyword: number;
   analyses_per_keyword: number;
   max_keyword_syntheses: number;
-  max_project_syntheses: number;
+  /** Topic-wide synthesis cap — DB column `max_project_syntheses` until Phase 4. */
+  max_topic_syntheses: number;
   max_documents: number;
   max_tag_consolidations: number;
   max_auto_tag_calls: number;
@@ -249,34 +297,71 @@ export interface TopicCostSummary {
   total_estimated_cost_usd: number;
   page_analyses: CostBreakdownItem;
   keyword_syntheses: CostBreakdownItem;
-  project_syntheses: CostBreakdownItem;
+  /**
+   * Topic-wide synthesis cost line. PHASE-4 COMPAT: the backend still emits
+   * this as `project_syntheses` until its deploy — `useCostSummary` translates
+   * both key spellings at the fetch boundary.
+   */
+  topic_syntheses: CostBreakdownItem;
   tag_consolidations: CostBreakdownItem;
   document_assembly: CostBreakdownItem;
 }
 
 /**
  * Canonical topic shape used throughout the UI.
- * Combines the Supabase row with quota ladder fields. Topics on the wire
- * come from Supabase (`rs_topic`), which does NOT carry the computed
- * `cost_summary` — that lives only on the Python `TopicResponse` and
+ * Combines the Supabase row with the feature-level quota field names. Topics
+ * on the wire come from Supabase (`rs_topic`), which does NOT carry the
+ * computed `cost_summary` — that lives only on the Python `TopicResponse` and
  * must be fetched via `useCostSummary(topicId)` separately.
  *
- * `autonomy_level` is narrowed from the loose Supabase `string` to the
- * three documented values per FRONTEND_SPEC §2 — Supabase column
- * regeneration would do this automatically; for now we narrow at the
- * application boundary.
+ * Boundary narrowings (applied by `rowToResearchTopic` — NEVER cast a raw row
+ * to this type):
+ * - `autonomy_level` narrows from the loose Supabase `string` to the three
+ *   documented values;
+ * - `tag_suggestions` narrows from `Json` to `TagSuggestionsBundle | null`;
+ * - `max_project_syntheses` (physical column, Phase-4-pending rename) is
+ *   exposed ONLY as `max_topic_syntheses`.
  *
- * `tag_suggestions` is narrowed from the loose Supabase `Json` to the typed
- * `TagSuggestionsBundle` (or null) at the same boundary.
+ * `project_id` survives on the row as a NULLABLE, NON-AUTHORITATIVE leftover
+ * until the Phase-4 column drop — it is deliberately omitted here so no UI
+ * code can read it. The project relationship is the canonical
+ * `research_topic → project` association edge.
  */
 export type ResearchTopic = Omit<
   ResearchTopicRow,
-  "autonomy_level" | "tag_suggestions"
+  "autonomy_level" | "tag_suggestions" | "max_project_syntheses" | "project_id"
 > &
   TopicQuotaFields & {
     autonomy_level: "auto" | "semi" | "manual";
     tag_suggestions: TagSuggestionsBundle | null;
   };
+
+/**
+ * THE boundary mapper from a raw `rs_topic` row to the canonical
+ * `ResearchTopic` domain shape. Every topic read in the service layer goes
+ * through this — never a whole-row `as ResearchTopic` cast (the domain type
+ * renames a column, so a raw cast would leave `max_topic_syntheses`
+ * undefined at runtime while the compiler says it exists).
+ */
+export function rowToResearchTopic(row: ResearchTopicRow): ResearchTopic {
+  const {
+    autonomy_level,
+    tag_suggestions,
+    max_project_syntheses,
+    // PHASE-4 COMPAT: strip the non-authoritative leftover column so no UI
+    // code can read it. Project comes from the association edge only.
+    project_id: _legacyProjectId,
+    ...rest
+  } = row;
+  void _legacyProjectId;
+  return {
+    ...rest,
+    autonomy_level: autonomyLevelFromDb(autonomy_level),
+    tag_suggestions: tagSuggestionsFromJson(tag_suggestions),
+    // PHASE-4 COMPAT: physical column name until the rename migration lands.
+    max_topic_syntheses: max_project_syntheses,
+  };
+}
 
 export type LlmStatus = "success" | "failed";
 
@@ -292,10 +377,54 @@ export interface ResearchProgress {
   failed_analyses: number;
   keyword_syntheses: number;
   failed_keyword_syntheses: number;
-  project_syntheses: number;
-  failed_project_syntheses: number;
+  /**
+   * Topic-wide synthesis counts. PHASE-4 COMPAT: the `get_topic_overview`
+   * RPC / backend still emit these as `project_syntheses` /
+   * `failed_project_syntheses` until their cutover — `researchProgressFromJson`
+   * accepts both spellings at the read boundary.
+   */
+  topic_syntheses: number;
+  failed_topic_syntheses: number;
   total_tags: number;
   total_documents: number;
+}
+
+/**
+ * Boundary parser for a raw progress payload (the `get_topic_overview` RPC
+ * result). Translates the legacy `project_syntheses` /
+ * `failed_project_syntheses` key spellings into the canonical
+ * `topic_syntheses` / `failed_topic_syntheses` — PHASE-4 COMPAT, delete once
+ * the RPC emits the new keys. Returns null for a non-object payload.
+ */
+export function researchProgressFromJson(
+  raw: unknown,
+): ResearchProgress | null {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const o = raw as Record<string, unknown>;
+  const num = (v: unknown): number => (typeof v === "number" ? v : 0);
+  return {
+    total_keywords: num(o.total_keywords),
+    stale_keywords: num(o.stale_keywords),
+    total_sources: num(o.total_sources),
+    included_sources: num(o.included_sources),
+    sources_by_status: (o.sources_by_status ?? {}) as Record<
+      ScrapeStatus,
+      number
+    >,
+    total_content: num(o.total_content),
+    total_analyses: num(o.total_analyses),
+    total_eligible_for_analysis: num(o.total_eligible_for_analysis),
+    failed_analyses: num(o.failed_analyses),
+    keyword_syntheses: num(o.keyword_syntheses),
+    failed_keyword_syntheses: num(o.failed_keyword_syntheses),
+    // Accept new key first, then the legacy spelling (PHASE-4 COMPAT).
+    topic_syntheses: num(o.topic_syntheses ?? o.project_syntheses),
+    failed_topic_syntheses: num(
+      o.failed_topic_syntheses ?? o.failed_project_syntheses,
+    ),
+    total_tags: num(o.total_tags),
+    total_documents: num(o.total_documents),
+  };
 }
 
 export interface TopicWithProgress {
@@ -1179,16 +1308,19 @@ export interface RetryAllComplete {
   succeeded: number;
 }
 
+// PHASE-4 COMPAT: synthesis stream events are typed with `WireSynthesisScope`
+// because a not-yet-cut-over backend still emits legacy `scope: "project"`
+// (meaning topic-wide) — consumers normalize via `normalizeSynthesisScope`.
 export interface SynthesisStart {
   type: "synthesis_start";
-  scope: "keyword" | "project";
+  scope: WireSynthesisScope;
   keyword_id?: string | null;
   keyword?: string | null;
 }
 
 export interface SynthesisComplete {
   type: "synthesis_complete";
-  scope: "keyword" | "project";
+  scope: WireSynthesisScope;
   keyword_id?: string | null;
   keyword?: string | null;
   result_length: number;
@@ -1199,7 +1331,7 @@ export interface SynthesisComplete {
 
 export interface SynthesisFailed {
   type: "synthesis_failed";
-  scope: "keyword" | "project";
+  scope: WireSynthesisScope;
   keyword_id?: string | null;
   error: string;
 }

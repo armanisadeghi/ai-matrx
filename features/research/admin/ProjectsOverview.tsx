@@ -20,10 +20,10 @@ import type { Json } from "@/types/database.types";
 import type { ResearchTemplate } from "../types";
 import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "./types";
 import { fetchResearchTopics, fetchTemplates } from "./service";
+import { getTopicProjectLinks } from "../service";
 
 interface ResearchTopicRow {
   id: string;
-  project_id: string;
   name: string;
   status: string;
   template_id: string | null;
@@ -35,6 +35,9 @@ interface ResearchTopicRow {
 export function ProjectsOverview() {
   const [configs, setConfigs] = useState<ResearchTopicRow[]>([]);
   const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
+  // topicId → projectId from the canonical association edges (research-project
+  // decoupling) — `rs_topic.project_id` is dead.
+  const [projectLinks, setProjectLinks] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -49,6 +52,9 @@ export function ProjectsOverview() {
       ]);
       setConfigs(configsData);
       setTemplates(templatesData);
+      setProjectLinks(
+        await getTopicProjectLinks(configsData.map((c) => c.id)),
+      );
     } catch (err) {
       toast({
         title: "Error",
@@ -153,24 +159,33 @@ export function ProjectsOverview() {
                 </TableCell>
               </TableRow>
             )}
-            {configs.map((config) => (
+            {configs.map((config) => {
+              // Association-backed: absent edge = projectless topic (valid).
+              const linkedProjectId = projectLinks[config.id] ?? null;
+              return (
               <TableRow key={config.id}>
                 <TableCell>
-                  <div className="flex items-center gap-1">
-                    <code className="text-[10px] text-muted-foreground">
-                      {config.project_id.slice(0, 12)}...
-                    </code>
-                    <button
-                      onClick={() => copyId(config.project_id)}
-                      className="p-0.5 hover:bg-muted rounded"
-                    >
-                      {copiedId === config.project_id ? (
-                        <Check className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <Copy className="h-3 w-3 text-muted-foreground" />
-                      )}
-                    </button>
-                  </div>
+                  {linkedProjectId ? (
+                    <div className="flex items-center gap-1">
+                      <code className="text-[10px] text-muted-foreground">
+                        {linkedProjectId.slice(0, 12)}...
+                      </code>
+                      <button
+                        onClick={() => copyId(linkedProjectId)}
+                        className="p-0.5 hover:bg-muted rounded"
+                      >
+                        {copiedId === linkedProjectId ? (
+                          <Check className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <Copy className="h-3 w-3 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">
+                      No project
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge
@@ -226,7 +241,8 @@ export function ProjectsOverview() {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </ScrollArea>

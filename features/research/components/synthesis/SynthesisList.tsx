@@ -28,6 +28,10 @@ import MarkdownStream from "@/components/markdown";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
+  normalizeSynthesisScope,
+  TOPIC_SYNTHESIS_WIRE_SCOPE,
+} from "../../types";
+import {
   buildResearchContextData,
   RESEARCH_CONTEXT_MENU_PROPS,
 } from "../../agent-context/buildResearchContextData";
@@ -255,7 +259,12 @@ export default function SynthesisList() {
 
   const filtered = useMemo(() => {
     let items = synthList;
-    if (scopeFilter) items = items.filter((s) => s.scope === scopeFilter);
+    // PHASE-4 COMPAT: legacy rs_synthesis rows still carry scope="project"
+    // (meaning topic-wide) — match on the normalized vocabulary.
+    if (scopeFilter)
+      items = items.filter(
+        (s) => normalizeSynthesisScope(s.scope) === scopeFilter,
+      );
     if (statusFilter) items = items.filter((s) => s.status === statusFilter);
     if (keywordFilter)
       items = items.filter((s) => s.keyword_id === keywordFilter);
@@ -274,11 +283,15 @@ export default function SynthesisList() {
     return items;
   }, [synthList, scopeFilter, statusFilter, keywordFilter, search, kwList]);
 
-  const projectSyntheses = filtered.filter((s) => s.scope === "project");
+  // Topic-wide syntheses: normalized so legacy scope="project" rows are
+  // included (PHASE-4 COMPAT).
+  const topicSyntheses = filtered.filter(
+    (s) => normalizeSynthesisScope(s.scope) === "topic",
+  );
   const keywordSyntheses = filtered.filter((s) => s.scope === "keyword");
 
   const scopeOptions: FilterOption[] = [
-    { id: "project", label: "Project" },
+    { id: "topic", label: "Topic" },
     { id: "keyword", label: "Keyword" },
   ];
   const statusOptions: FilterOption[] = [
@@ -330,11 +343,12 @@ export default function SynthesisList() {
     kwList.length,
   ]);
 
-  const handleRunProjectSynthesis = async () => {
+  const handleRunTopicSynthesis = async () => {
     setStreamingText("");
     setStreamingLabel("");
     const res = await api.synthesize(topicId, {
-      scope: "project",
+      // Wire scope is the compat constant until backend Phase 3 accepts "topic".
+      scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
       iteration_mode: "initial",
       use_user_agent_overrides: false,
     });
@@ -346,7 +360,7 @@ export default function SynthesisList() {
           setStreamingLabel(
             payload.scope === "keyword" && payload.keyword
               ? `Keyword: ${payload.keyword}`
-              : "Project Report",
+              : "Topic Report",
           );
         }
         if (payload.type === "synthesis_complete") {
@@ -373,7 +387,7 @@ export default function SynthesisList() {
 
   const runButton = (
     <button
-      onClick={handleRunProjectSynthesis}
+      onClick={handleRunTopicSynthesis}
       disabled={stream.isStreaming}
       className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full matrx-glass-card text-[11px] font-medium text-primary disabled:opacity-50 transition-colors shrink-0"
     >
@@ -442,7 +456,7 @@ export default function SynthesisList() {
             </div>
             {synthList.length === 0 && (
               <button
-                onClick={handleRunProjectSynthesis}
+                onClick={handleRunTopicSynthesis}
                 disabled={stream.isStreaming}
                 className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all min-h-[44px]"
               >
@@ -457,22 +471,22 @@ export default function SynthesisList() {
           </div>
         ) : (
           <>
-            {projectSyntheses.length > 0 && (
+            {topicSyntheses.length > 0 && (
               <section className="space-y-2">
                 <div className="flex items-center gap-1.5 px-0.5">
                   <Layers className="h-3 w-3 text-muted-foreground" />
                   <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Project Report
+                    Topic Report
                   </span>
                   <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
-                    {projectSyntheses.length}
+                    {topicSyntheses.length}
                   </Badge>
                 </div>
-                {projectSyntheses.map((s) => (
+                {topicSyntheses.map((s) => (
                   <SynthesisCard
                     key={s.id}
                     synthesis={s}
-                    label="Project Report"
+                    label="Topic Report"
                   />
                 ))}
               </section>

@@ -93,6 +93,37 @@ export interface DowngradeRule {
 // non-errors and double as worked examples of the two tiers.
 // ════════════════════════════════════════════════════════════════════════
 export const DOWNGRADE_RULES: DowngradeRule[] = [
+  // ══════════════════════════════════════════════════════════════════════
+  // CRITICAL ESCALATIONS / KNOWN-ERROR TRANSLATIONS — keep these FIRST.
+  // Rules are first-match-wins, so a `tier: "red"` rule at the top acts as a
+  // PIN + ANNOTATION: the error can never be downgraded by a later broad
+  // rule, and the `reason` is the human-readable translation shown in the
+  // Error Inspector. (The tier system has no level above red; red + this
+  // pinned annotation IS the "critical platform violation" classification.)
+  // ══════════════════════════════════════════════════════════════════════
+  {
+    id: "mirror-fk-to-assoc-critical-violation",
+    tier: "red",
+    reason:
+      "CRITICAL PLATFORM VIOLATION — platform._mirror_fk_to_assoc fired. This forbidden FK-mirror helper is a second relationship authority and is banned everywhere (FOUND_DEFECTS D78; CLAUDE.md 'Forbidden relationship shortcuts'). Never repair or recreate the trigger: delete it and write canonical platform.associations edges through the registered association path instead. This rule pins the error red permanently — it must never be downgraded.",
+    addedAt: "2026-07-21",
+    match: {
+      messageIncludes: "_mirror_fk_to_assoc",
+    },
+  },
+  {
+    id: "association-registration-23503-translation",
+    tier: "red",
+    reason:
+      "Association registration failure (23503 on platform.associations source_type/target_type FK). The entity token written as source_type/target_type — shown in this error's details 'Key' (e.g. Key (source_type)=(rs_topic)) — is not registered: either the token is missing from platform.entity_types, or no active rule for the source→target pair exists in platform.association_types. Fix by registering the CANONICAL token (never a physical table name — e.g. research_topic, not rs_topic) and its rule at https://www.aimatrx.com/administration/relationships/rules — never by bypassing the association chokepoint.",
+    addedAt: "2026-07-21",
+    match: {
+      source: "supabase-postgrest",
+      code: "23503",
+      messagePattern:
+        "associations.*(source_type|target_type)|(source_type|target_type).*(entity_types|association_types)|associations_(source|target)_type_fkey",
+    },
+  },
   {
     id: "request-aborted",
     tier: "yellow",

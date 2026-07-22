@@ -76,6 +76,9 @@ function useServiceQuery<T>(
 // Topic hooks
 // ============================================================================
 
+// Project filtering is ASSOCIATION-BACKED (research-project decoupling):
+// the service reads `research_topic → project` edges then does one batched
+// RLS-visible topic read. Signatures unchanged to limit blast radius.
 export function useTopicsForProject(projectId: string | undefined) {
   return useServiceQuery<ResearchTopic[]>(
     () => {
@@ -93,6 +96,20 @@ export function useTopicsForProjects(projectIds: string[]) {
     () => service.getTopicsForProjects(projectIds),
     [key],
     projectIds.length > 0,
+  );
+}
+
+/**
+ * topicId → projectId from the canonical association edges, one batched read.
+ * This is how list surfaces label a topic's project now that
+ * `rs_topic.project_id` is dead — never read a column for this.
+ */
+export function useTopicProjectLinks(topicIds: string[]) {
+  const key = topicIds.join(",");
+  return useServiceQuery<Record<string, string>>(
+    () => service.getTopicProjectLinks(topicIds),
+    [key],
+    topicIds.length > 0,
   );
 }
 

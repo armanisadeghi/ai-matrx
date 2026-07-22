@@ -116,6 +116,7 @@ import htmlPagesReducer from "./slices/htmlPagesSlice";
 
 import mcpReducer from "@/features/agents/redux/mcp/mcp.slice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
+import wizardDraftReducer from "@/lib/redux/slices/wizardDraftSlice";
 
 // ─── New scopes module (features/scopes) ────────────────────────────
 // Mounted alongside the legacy scope slices until Phase 5 deletes them.
@@ -298,6 +299,11 @@ export const slimReducerMap = {
   tools: toolsReducer,
 
   appContext: appContextReducer,
+
+  // Generic persisted wizard-draft primitive (survives refresh/idle/step-nav;
+  // sync-engine policy in the slice file). Keyed by wizardId — reusable, never
+  // feature-specific.
+  wizardDraft: wizardDraftReducer,
 
   // ─── features/scopes (new module) ──────────────────────────────────
   // Phase 5 will delete the legacy `scopes`, `scopeTypes`, `scopeAssignments`,

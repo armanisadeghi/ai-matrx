@@ -54,7 +54,7 @@ export function AiReviewQuotaDialog({
         scrapes_per_keyword: draft.scrapes_per_keyword,
         analyses_per_keyword: draft.analyses_per_keyword,
         max_keyword_syntheses: draft.max_keyword_syntheses,
-        max_project_syntheses: draft.max_project_syntheses,
+        max_topic_syntheses: draft.max_topic_syntheses,
         max_documents: draft.max_documents,
         max_tag_consolidations: draft.max_tag_consolidations,
         max_auto_tag_calls: draft.max_auto_tag_calls,

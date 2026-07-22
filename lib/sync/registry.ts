@@ -17,6 +17,7 @@ import { themePolicy } from "@/styles/themes/themeSlice";
 import { userPreferencesPolicy } from "@/lib/redux/preferences/userPreferencesSlice";
 import { userProfilePolicy } from "@/lib/redux/slices/userProfileSlice";
 import { appContextPolicy } from "@/lib/redux/slices/appContextSlice";
+import { wizardDraftPolicy } from "@/lib/redux/slices/wizardDraftSlice";
 import { scopesTreePolicy } from "@/features/scopes/redux/scopesSlice";
 
 // MATRX-EXCEPTION: `Policy<any>` instead of `Policy<unknown>` because `partialize:
@@ -30,5 +31,6 @@ export const syncPolicies: readonly Policy<any>[] = [
   userPreferencesPolicy,
   userProfilePolicy,
   appContextPolicy,
+  wizardDraftPolicy,
   scopesTreePolicy,
 ] as const;

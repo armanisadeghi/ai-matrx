@@ -30,8 +30,10 @@ function mapCostJson(json: Record<string, unknown>): TopicCostSummary {
     page_analyses: json.page_analyses as TopicCostSummary["page_analyses"],
     keyword_syntheses:
       json.keyword_syntheses as TopicCostSummary["keyword_syntheses"],
-    project_syntheses:
-      json.project_syntheses as TopicCostSummary["project_syntheses"],
+    // PHASE-4 COMPAT: the backend emits `project_syntheses` (= topic-wide)
+    // until its deploy; accept the canonical key first, then the legacy one.
+    topic_syntheses: (json.topic_syntheses ??
+      json.project_syntheses) as TopicCostSummary["topic_syntheses"],
     tag_consolidations:
       json.tag_consolidations as TopicCostSummary["tag_consolidations"],
     document_assembly:

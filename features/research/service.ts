@@ -25,7 +25,12 @@ import type {
   SourceTagRequest,
   MediaUpdate,
 } from "./types";
-import { rowToResearchSource } from "./types";
+import {
+  rowToResearchSource,
+  rowToResearchTopic,
+  researchProgressFromJson,
+  normalizeSynthesisScope,
+} from "./types";
 import {
   summarizeImportance,
   type KeywordRank,
@@ -43,6 +48,11 @@ import type { ScopesRpcResult } from "@/features/scopes/types";
 const RESEARCH_SOURCE = "research_source";
 const RESEARCH_TAG = "research_tag";
 const RESEARCH_KEYWORD = "research_keyword";
+// Topic ↔ project is ALSO a canonical association edge (research-project
+// decoupling, 2026-07-21): `research_topic → project`, optional, never a
+// physical FK/column. See common-docs/research-project-decoupling/FEATURE.md.
+const RESEARCH_TOPIC = "research_topic";
+const PROJECT = "project";
 
 /** Unwrap a never-throwing associations result into the research service's throwing contract. */
 function assocData<T>(r: ScopesRpcResult<T>): T {
@@ -82,40 +92,89 @@ export async function getTopicOverview(
     p_topic_id: topicId,
   });
   if (error) throw error;
-  return (data as unknown as ResearchProgress) ?? null;
+  // Boundary parse: translates the RPC's legacy `project_syntheses` keys into
+  // the canonical `topic_syntheses` vocabulary (PHASE-4 COMPAT — see types.ts).
+  return researchProgressFromJson(data);
 }
 
 // ============================================================================
 // Topics
 // ============================================================================
 
+/**
+ * "A project's topics" is an ASSOCIATION query, never a column filter
+ * (research-project decoupling): read the `research_topic → project` edges
+ * for the requested projects, then ONE batched RLS-visible topic read.
+ */
 export async function getTopicsForProject(
   projectId: string,
 ): Promise<ResearchTopic[]> {
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_topic")
-    .select("*")
-    .is("deleted_at", null)
-    .eq("project_id", projectId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as ResearchTopic[];
+  return getTopicsForProjects([projectId]);
 }
 
 export async function getTopicsForProjects(
   projectIds: string[],
 ): Promise<ResearchTopic[]> {
   if (projectIds.length === 0) return [];
+  const { edges } = assocData(
+    await associationsService.listForTargets(PROJECT, projectIds),
+  );
+  const topicIds = Array.from(
+    new Set(
+      edges
+        .filter((e) => e.sourceType === RESEARCH_TOPIC)
+        .map((e) => e.sourceId),
+    ),
+  );
+  if (topicIds.length === 0) return [];
   const { data, error } = await supabase
     .schema("research")
     .from("rs_topic")
     .select("*")
     .is("deleted_at", null)
-    .in("project_id", projectIds)
+    .in("id", topicIds)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as ResearchTopic[];
+  return (data ?? []).map(rowToResearchTopic);
+}
+
+/**
+ * The `research_topic → project` edge for each of the given topics, keyed by
+ * topic id (a topic has at most one canonical project edge). One batched
+ * association read — this is how list surfaces get project labels now that
+ * `rs_topic.project_id` is dead. Topics with no edge are simply absent.
+ */
+export async function getTopicProjectLinks(
+  topicIds: string[],
+): Promise<Record<string, string>> {
+  if (topicIds.length === 0) return {};
+  const { edges } = assocData(
+    await associationsService.listForSources(RESEARCH_TOPIC, topicIds, PROJECT),
+  );
+  const out: Record<string, string> = {};
+  for (const e of edges) {
+    // First edge wins — the canonical model is one project edge per topic.
+    if (!(e.sourceId in out)) out[e.sourceId] = e.targetId;
+  }
+  return out;
+}
+
+/**
+ * Set (or clear, with null) the topic's optional project — replace-semantics
+ * on the canonical association edge via the chokepoint. Never a column write.
+ */
+export async function setTopicProject(
+  topicId: string,
+  projectId: string | null,
+): Promise<void> {
+  assocData(
+    await associationsService.setTargets({
+      sourceType: RESEARCH_TOPIC,
+      sourceId: topicId,
+      targetType: PROJECT,
+      targetIds: projectId ? [projectId] : [],
+    }),
+  );
 }
 
 /**
@@ -131,26 +190,45 @@ export async function getAllTopics(): Promise<ResearchTopic[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as ResearchTopic[];
+  return (data ?? []).map(rowToResearchTopic);
+}
+
+/** Result of `createTopic`: the topic is ALWAYS valid; the optional project
+ *  edge reports its own outcome so a failed link never invalidates the topic
+ *  — the caller surfaces a loud, retryable warning instead. */
+export interface CreateTopicResult {
+  topic: ResearchTopic;
+  /**
+   * Outcome of the optional `research_topic → project` association write.
+   * `ok: true` when no project was requested or the edge landed; `ok: false`
+   * with `error` when the edge write failed (topic stays valid — retry via
+   * `setTopicProject`).
+   */
+  projectLink: { ok: boolean; error?: string };
 }
 
 /**
  * Create a research topic directly in Supabase. Topic creation is plain
  * user-owned CRUD; Python is reserved for the compute pipeline that runs
  * after the topic exists.
+ *
+ * Research-project decoupling (2026-07-21): a project is OPTIONAL and never a
+ * prerequisite. Tenancy comes from `organizationId` (the app's canonical
+ * active-org context — NEVER derived from a project). When
+ * `options.projectId` is given, ONE canonical association edge is written
+ * through the chokepoint after the insert; an edge failure is loud and
+ * retryable but never deletes or invalidates the topic.
  */
 export async function createTopic(
-  projectId: string,
   organizationId: string,
   input: TopicCreate,
-): Promise<ResearchTopic> {
+  options?: { projectId?: string },
+): Promise<CreateTopicResult> {
   const name = input.name.trim();
   if (!name) throw new Error("Topic name cannot be empty");
-  if (!projectId) throw new Error("Project is required");
   if (!organizationId) throw new Error("Organization is required");
 
   const insert: Database["research"]["Tables"]["rs_topic"]["Insert"] = {
-    project_id: projectId,
     organization_id: organizationId,
     name,
     description: input.description?.trim() || null,
@@ -179,7 +257,25 @@ export async function createTopic(
     .select()
     .single();
   if (error) throw error;
-  return data as ResearchTopic;
+  const topic = rowToResearchTopic(data);
+
+  let projectLink: CreateTopicResult["projectLink"] = { ok: true };
+  if (options?.projectId) {
+    const linkResult = await associationsService.add({
+      sourceType: RESEARCH_TOPIC,
+      sourceId: topic.id,
+      targetType: PROJECT,
+      targetId: options.projectId,
+      orgId: organizationId,
+    });
+    if (!linkResult.ok) {
+      // LOUD, RETRYABLE: the topic is real and stays; only the optional edge
+      // failed. Never delete/invalidate the topic here.
+      projectLink = { ok: false, error: linkResult.error.message };
+    }
+  }
+
+  return { topic, projectLink };
 }
 
 export async function getTopic(topicId: string): Promise<ResearchTopic | null> {
@@ -194,25 +290,35 @@ export async function getTopic(topicId: string): Promise<ResearchTopic | null> {
     if (error.code === "PGRST116") return null;
     throw error;
   }
-  return data as ResearchTopic;
+  return rowToResearchTopic(data);
 }
 
 export async function updateTopic(
   topicId: string,
   updates: TopicUpdate,
 ): Promise<ResearchTopic> {
-  // Cast: TopicUpdate includes quota ladder fields (migration 0013) which
-  // Supabase's generated `Update` type hasn't picked up yet. The columns
-  // exist on the row; the cast is safe and only narrows back when types regen.
+  // Boundary translation, both deliberate:
+  // - `project_id` is NOT writable here — the project relationship is the
+  //   canonical association edge (`setTopicProject`), never a column.
+  // - `max_topic_syntheses` (feature vocabulary) maps to the physical column
+  //   `max_project_syntheses` until the Phase-4 rename migration (PHASE-4
+  //   COMPAT — see common-docs/research-project-decoupling/FEATURE.md).
+  const { max_topic_syntheses, ...rest } = updates;
+  const dbUpdate: Database["research"]["Tables"]["rs_topic"]["Update"] = {
+    ...(rest as Database["research"]["Tables"]["rs_topic"]["Update"]),
+  };
+  if (max_topic_syntheses != null) {
+    dbUpdate.max_project_syntheses = max_topic_syntheses;
+  }
   const { data, error } = await supabase
     .schema("research")
     .from("rs_topic")
-    .update(updates as Database["research"]["Tables"]["rs_topic"]["Update"])
+    .update(dbUpdate)
     .eq("id", topicId)
     .select()
     .single();
   if (error) throw error;
-  return data as ResearchTopic;
+  return rowToResearchTopic(data);
 }
 
 /**
@@ -641,7 +747,17 @@ export async function getSynthesis(
     .eq("topic_id", topicId)
     .eq("is_current", true);
 
-  if (params?.scope) query = query.eq("scope", params.scope);
+  if (params?.scope) {
+    // PHASE-4 COMPAT (research-project-decoupling): topic-wide synthesis is
+    // canonically scope='topic', but legacy rows (and rows written by the
+    // not-yet-cut-over backend) still carry scope='project'. A topic-scope
+    // read must match BOTH until the Phase-4 data migration rewrites rows.
+    if (normalizeSynthesisScope(params.scope) === "topic") {
+      query = query.in("scope", ["topic", "project"]);
+    } else {
+      query = query.eq("scope", params.scope);
+    }
+  }
   if (params?.keyword_id) query = query.eq("keyword_id", params.keyword_id);
 
   query = query.order("created_at", { ascending: false });

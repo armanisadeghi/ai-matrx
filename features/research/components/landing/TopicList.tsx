@@ -25,6 +25,7 @@ import {
   useAllTopics,
   useTopicsForProject,
   useTopicsForProjects,
+  useTopicProjectLinks,
 } from "../../hooks/useResearchState";
 import { StatusBadge } from "../shared/StatusBadge";
 import type { ResearchTopic } from "../../types";
@@ -418,6 +419,12 @@ export default function TopicList() {
     [filter.data?.projects],
   );
 
+  // Project labels come from the canonical `research_topic → project`
+  // association edges (one batched read) — never from a topic column
+  // (research-project decoupling; `rs_topic.project_id` is dead).
+  const topicIds = useMemo(() => (topics ?? []).map((t) => t.id), [topics]);
+  const { data: topicProjectLinks } = useTopicProjectLinks(topicIds);
+
   const handleNavigateToTopic = (topicId: string, e?: React.MouseEvent) => {
     if (e && (e.metaKey || e.ctrlKey)) return;
     e?.preventDefault();
@@ -575,7 +582,11 @@ export default function TopicList() {
                 <TopicCard
                   key={topic.id}
                   topic={topic}
-                  projectName={projectNameMap.get(topic.project_id)}
+                  projectName={
+                    topicProjectLinks?.[topic.id]
+                      ? projectNameMap.get(topicProjectLinks[topic.id])
+                      : null
+                  }
                   showProject={showProject}
                   isNavigating={navigatingId === topic.id}
                   isAnyNavigating={navigatingId !== null}

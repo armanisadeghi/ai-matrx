@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import type { ResearchTopic, ResearchProgress } from '../types';
+import { rowToResearchTopic, researchProgressFromJson } from '../types';
 
 export async function getTopicServer(topicId: string): Promise<ResearchTopic | null> {
     const supabase = await createClient();
@@ -13,12 +14,15 @@ export async function getTopicServer(topicId: string): Promise<ResearchTopic | n
         if (error.code === 'PGRST116') return null;
         throw error;
     }
-    return data as ResearchTopic;
+    // Boundary mapper — narrows autonomy/tag_suggestions and translates the
+    // Phase-4-pending max_project_syntheses column (never a raw cast).
+    return rowToResearchTopic(data);
 }
 
 export async function getTopicOverviewServer(topicId: string): Promise<ResearchProgress | null> {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc('get_topic_overview', { p_topic_id: topicId });
     if (error) throw error;
-    return (data as unknown as ResearchProgress) ?? null;
+    // Boundary parse — accepts legacy `project_syntheses` keys (PHASE-4 COMPAT).
+    return researchProgressFromJson(data);
 }

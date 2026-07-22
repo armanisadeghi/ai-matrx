@@ -45,7 +45,7 @@ const PHASE_LABELS: Array<{
     TopicCostSummary,
     | "page_analyses"
     | "keyword_syntheses"
-    | "project_syntheses"
+    | "topic_syntheses"
     | "tag_consolidations"
     | "document_assembly"
   >;
@@ -53,7 +53,7 @@ const PHASE_LABELS: Array<{
 }> = [
   { key: "page_analyses", icon: Brain },
   { key: "keyword_syntheses", icon: Layers },
-  { key: "project_syntheses", icon: FileText },
+  { key: "topic_syntheses", icon: FileText },
   { key: "tag_consolidations", icon: Tags },
   { key: "document_assembly", icon: Zap },
 ];

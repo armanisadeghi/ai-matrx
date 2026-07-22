@@ -191,10 +191,13 @@ export async function resolveBuiltinNames(
   return map;
 }
 
+// Research-project decoupling (2026-07-21): `rs_topic.project_id` is dead —
+// the topic's optional project comes from the canonical association edge.
+// Admin surfaces re-key on edges via `getTopicProjectLinks` (features/research
+// /service.ts); this fetch no longer selects the column.
 export async function fetchResearchTopics(): Promise<
   Array<{
     id: string;
-    project_id: string;
     name: string;
     status: string;
     template_id: string | null;
@@ -207,7 +210,7 @@ export async function fetchResearchTopics(): Promise<
     .schema("research")
     .from("rs_topic")
     .select(
-      "id, project_id, name, status, template_id, agent_config, autonomy_level, created_at",
+      "id, name, status, template_id, agent_config, autonomy_level, created_at",
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false })

@@ -96,7 +96,8 @@ export function stageSquareData(stage: StageState): StageSquareData {
     case "synthesize": {
       const items = Object.values(stage.items);
       const kw = items.filter((i) => i.metadata.scope === "keyword").length;
-      const proj = items.filter((i) => i.metadata.scope === "project").length;
+      // metadata.scope is normalized at ingress — "topic" covers legacy "project".
+      const proj = items.filter((i) => i.metadata.scope === "topic").length;
       return {
         value: fmt(kw),
         unit: kw === 1 ? "synthesis" : "syntheses",

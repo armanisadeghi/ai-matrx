@@ -112,7 +112,7 @@ export default function DocumentViewer() {
   // project synthesis exists) but no document has been assembled yet — so the
   // user never has to manually click "Generate" after running the pipeline.
   // Fires at most once per mount, after the initial fetch resolves to no doc.
-  const reportReady = (progress?.project_syntheses ?? 0) > 0;
+  const reportReady = (progress?.topic_syntheses ?? 0) > 0;
   useEffect(() => {
     if (
       autoGenAttempted.current ||

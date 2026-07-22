@@ -23,7 +23,7 @@ interface Props {
 }
 
 function SynthCard({ item }: { item: WorkItem }) {
-  const isProject = item.metadata.scope === "project";
+  const isTopic = item.metadata.scope === "topic";
   return (
     <div
       className={cn(
@@ -35,12 +35,12 @@ function SynthCard({ item }: { item: WorkItem }) {
           item.status !== "success" &&
           item.status !== "failed" &&
           "border-border/60 bg-card/40",
-        isProject && "ring-1 ring-primary/20",
+        isTopic && "ring-1 ring-primary/20",
       )}
     >
       <div className="flex items-center gap-2">
         <StatusDot status={item.status} size="md" />
-        {isProject ? (
+        {isTopic ? (
           <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
         ) : (
           <Layers className="h-3 w-3 text-foreground/60 shrink-0" />
@@ -89,12 +89,12 @@ export function SynthesizeStageView({
   const stage = state.stages.synthesize;
   const items = stage.itemOrder.map((id) => stage.items[id]);
   const keywordItems = items.filter((i) => i.metadata.scope === "keyword");
-  const projectItems = items.filter((i) => i.metadata.scope === "project");
+  const topicItems = items.filter((i) => i.metadata.scope === "topic");
 
   // Best guess at the "active model" for the streaming-text footer.
-  const activeProject = projectItems.find((i) => i.status === "active");
+  const activeTopic = topicItems.find((i) => i.status === "active");
   const activeKeyword = keywordItems.find((i) => i.status === "active");
-  const activeItem = activeProject ?? activeKeyword;
+  const activeItem = activeTopic ?? activeKeyword;
   const activeModelId = activeItem?.metadata.model_id ?? null;
 
   return (
@@ -113,7 +113,7 @@ export function SynthesizeStageView({
         subtitle={
           <span>
             {keywordItems.length} keyword{keywordItems.length === 1 ? "" : "s"}
-            {projectItems.length > 0 && ` • project report ${projectItems.find((i) => i.status === "success") ? "ready" : "in flight"}`}
+            {topicItems.length > 0 && ` • topic report ${topicItems.find((i) => i.status === "success") ? "ready" : "in flight"}`}
           </span>
         }
         ratePerSec={ratePerSec}
@@ -133,12 +133,12 @@ export function SynthesizeStageView({
         </div>
       )}
 
-      {projectItems.length > 0 && (
+      {topicItems.length > 0 && (
         <div className="mt-3">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-            Project synthesis
+            Topic synthesis
           </div>
-          {projectItems.map((item) => (
+          {topicItems.map((item) => (
             <SynthCard key={item.id} item={item} />
           ))}
         </div>
@@ -152,8 +152,8 @@ export function SynthesizeStageView({
             isStreaming={isStreaming && activeItem?.status === "active"}
             modelId={activeModelId}
             title={
-              activeProject
-                ? "Generating project report"
+              activeTopic
+                ? "Generating topic report"
                 : "Generating synthesis"
             }
           />

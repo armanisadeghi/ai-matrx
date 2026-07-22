@@ -72,8 +72,17 @@ import {
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { groupProjectsByOrgDisplay } from "@/features/agent-context/utils/groupProjectsByOrgDisplay";
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { invalidateNavTree } from "@/features/agent-context/redux/hierarchySlice";
+// Org comes from the app's CANONICAL active-org context — never from the
+// selected project object (research-project decoupling).
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+// Durable draft state: the generic persisted wizard-draft primitive.
+import {
+  patchWizardDraft,
+  clearWizardDraft,
+  selectWizardDraft,
+} from "@/lib/redux/slices/wizardDraftSlice";
 import TextArrayInput from "@/components/official/TextArrayInput";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
@@ -581,7 +590,7 @@ function quotasFromTopic(topic: ResearchTopic): TopicQuotaFields {
     scrapes_per_keyword: topic.scrapes_per_keyword,
     analyses_per_keyword: topic.analyses_per_keyword,
     max_keyword_syntheses: topic.max_keyword_syntheses,
-    max_project_syntheses: topic.max_project_syntheses,
+    max_topic_syntheses: topic.max_topic_syntheses,
     max_documents: topic.max_documents,
     max_tag_consolidations: topic.max_tag_consolidations,
     max_auto_tag_calls: topic.max_auto_tag_calls,
@@ -594,7 +603,7 @@ function provisionalQuotas(maxKeywords: number): TopicQuotaFields {
     scrapes_per_keyword: 5,
     analyses_per_keyword: 3,
     max_keyword_syntheses: 3,
-    max_project_syntheses: 1,
+    max_topic_syntheses: 1,
     max_documents: 1,
     max_tag_consolidations: 0,
     max_auto_tag_calls: 0,
@@ -1215,6 +1224,15 @@ export default function ResearchInitForm() {
     Boolean(searchParams.get("instructions")),
   );
 
+  // ── Durable draft (wizardDraftSlice) ──────────────────────────────────────
+  // Every text/keyword/project input is mirrored into the persisted generic
+  // wizard-draft slice so a refresh, idle session, or step navigation recovers
+  // the user's work. Cleared on successful topic creation.
+  const WIZARD_ID = "research-init";
+  const draft = useAppSelector(selectWizardDraft(WIZARD_ID));
+  const patchDraft = (patch: Record<string, unknown>) =>
+    dispatch(patchWizardDraft({ wizardId: WIZARD_ID, patch }));
+
   // ── URL-derived step / mode ───────────────────────────────────────────────
   const modeParam = searchParams.get("mode") as Mode | null;
   const stepParam = searchParams.get("step");
@@ -1248,6 +1266,37 @@ export default function ResearchInitForm() {
   );
   const [error, setError] = useState<string | null>(null);
 
+  // One-time draft recovery: fill only fields the user hasn't already typed
+  // into this session (URL params beat the draft for the fields they carry).
+  const draftHydrated = useRef(false);
+  useEffect(() => {
+    if (draftHydrated.current || !draft) return;
+    draftHydrated.current = true;
+    const d = draft.data;
+    const str = (v: unknown): string | null =>
+      typeof v === "string" && v.length > 0 ? v : null;
+    if (!topicName && str(d.topicName)) setTopicName(str(d.topicName) as string);
+    if (!description && str(d.description))
+      setDescription(str(d.description) as string);
+    if (!subjectDescription && str(d.subjectDescription))
+      setSubjectDescription(str(d.subjectDescription) as string);
+    if (!additionalInstructions && str(d.additionalInstructions)) {
+      setAdditionalInstructions(str(d.additionalInstructions) as string);
+      setShowAdditionalInstructions(true);
+    }
+    if (
+      selectedKeywords.length === 0 &&
+      Array.isArray(d.selectedKeywords) &&
+      d.selectedKeywords.every((k) => typeof k === "string")
+    ) {
+      setSelectedKeywords(d.selectedKeywords as string[]);
+    }
+    if (!selectedProjectId && str(d.selectedProjectId)) {
+      setSelectedProjectId(str(d.selectedProjectId));
+      setSelectedProjectName(str(d.selectedProjectName));
+    }
+  }, [draft]);
+
   // ── AI state machine ──────────────────────────────────────────────────────
   const [aiPhase, setAiPhase] = useState<AiPhase>({ status: "idle" });
   const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
@@ -1280,12 +1329,12 @@ export default function ResearchInitForm() {
     });
   };
 
+  // ── Active organization — canonical app context, NEVER project-derived ───
+  const activeOrgId = useAppSelector(selectEffectiveOrganizationId);
+
   // ── Hierarchy data ────────────────────────────────────────────────────────
   const { orgs, flatProjects, isLoading: projectsLoading } = useNavTree();
   const projectsByOrg = groupProjectsByOrgDisplay(orgs, flatProjects);
-  const selectedProject = flatProjects.find(
-    (project) => project.id === selectedProjectId,
-  );
   const orgsForCreate = [...orgs]
     .sort((a, b) => {
       if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
@@ -1322,6 +1371,11 @@ export default function ResearchInitForm() {
     goToStep(currentMode, 2);
   };
 
+  // Deterministic Back (research-project decoupling P2.7d): within the wizard
+  // Back ALWAYS returns to the previous step (2 → 1 → mode select). Leaving to
+  // /research/topics happens only from step 0 — via the page header's
+  // "Back to Topics" link (topics/new/page.tsx), which is the single exit
+  // affordance. Never `router.back()` (history-dependent, non-deterministic).
   const handleBack = () => {
     setError(null);
     // If AI is in processing state, reset to idle (stay on same URL)
@@ -1329,7 +1383,16 @@ export default function ResearchInitForm() {
       setAiPhase({ status: "idle" });
       return;
     }
-    router.back();
+    if (currentStep === 2 && currentMode) {
+      goToStep(currentMode, 1);
+      return;
+    }
+    // Step 1 → mode selection (step 0): drop mode/step params, keep topic.
+    const params = new URLSearchParams();
+    const topic = searchParams.get("topic");
+    if (topic) params.set("topic", topic);
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
   };
 
   // ── Template handling ─────────────────────────────────────────────────────
@@ -1348,12 +1411,12 @@ export default function ResearchInitForm() {
       setError("Please provide a topic name.");
       return;
     }
-    if (!selectedProjectId) {
-      setError("Please select a project.");
-      return;
-    }
-    if (!selectedProject?.org_id) {
-      setError("The selected project does not have an organization.");
+    // Project is OPTIONAL (research-project decoupling). Org comes from the
+    // canonical active-org context — never from the selected project.
+    if (!activeOrgId) {
+      setError(
+        "No active organization is selected. Pick an organization from the app header first.",
+      );
       return;
     }
     if (currentMode === "manual" && selectedKeywords.length < 1) {
@@ -1366,16 +1429,23 @@ export default function ResearchInitForm() {
 
     startTransition(async () => {
       try {
-        const topic = await createTopic(
-          selectedProjectId,
-          selectedProject.org_id,
+        const { topic, projectLink } = await createTopic(
+          activeOrgId,
           {
             name,
             description: description.trim() || null,
             autonomy_level: autonomyLevel,
             template_id: selectedTemplate?.id ?? null,
           },
+          selectedProjectId ? { projectId: selectedProjectId } : undefined,
         );
+        if (!projectLink.ok) {
+          // LOUD + RETRYABLE: topic exists; only the optional edge failed.
+          toast.error(
+            `Topic created, but linking it to the project failed: ${projectLink.error ?? "unknown error"}. Retry from Topic Settings.`,
+          );
+        }
+        dispatch(clearWizardDraft(WIZARD_ID));
 
         if (selectedKeywords.length > 0) {
           await addKeywords(topic.id, { keywords: selectedKeywords });
@@ -1409,12 +1479,12 @@ export default function ResearchInitForm() {
 
   // ── AI submit (sequential: create → suggest → review) ────────────────────
   const handleAiSubmit = async () => {
-    if (!selectedProjectId) {
-      setError("Please select a project.");
-      return;
-    }
-    if (!selectedProject?.org_id) {
-      setError("The selected project does not have an organization.");
+    // Project is OPTIONAL (research-project decoupling). Org comes from the
+    // canonical active-org context — never from the selected project.
+    if (!activeOrgId) {
+      setError(
+        "No active organization is selected. Pick an organization from the app header first.",
+      );
       return;
     }
     if (!subjectDescription.trim()) {
@@ -1427,15 +1497,22 @@ export default function ResearchInitForm() {
 
     try {
       // Step 1: Create placeholder topic with the raw user input as name
-      const topic = await createTopic(
-        selectedProjectId,
-        selectedProject.org_id,
+      const { topic, projectLink } = await createTopic(
+        activeOrgId,
         {
           name: subjectDescription.trim(),
           autonomy_level: "auto",
           template_id: null,
         },
+        selectedProjectId ? { projectId: selectedProjectId } : undefined,
       );
+      if (!projectLink.ok) {
+        // LOUD + RETRYABLE: topic exists; only the optional edge failed.
+        toast.error(
+          `Topic created, but linking it to the project failed: ${projectLink.error ?? "unknown error"}. Retry from Topic Settings.`,
+        );
+      }
+      dispatch(clearWizardDraft(WIZARD_ID));
       const topicId = topic.id;
 
       setAiPhase({
@@ -1457,7 +1534,6 @@ export default function ResearchInitForm() {
         suggestBody.user_input = additionalInstructions.trim();
       }
 
-      console.log("[suggest-stream] sending request", suggestBody);
       const suggestRes = await api.suggest(suggestBody);
       if (!suggestRes.ok) {
         const body = await suggestRes.text();
@@ -1542,14 +1618,6 @@ export default function ResearchInitForm() {
           }
         }
       }
-
-      console.log("[suggest-stream] aggregation complete", {
-        eventTypes,
-        appliedName,
-        appliedDescription,
-        applied,
-        suggestedKeywords,
-      });
 
       if (!applied) {
         console.error(
@@ -1898,7 +1966,7 @@ export default function ResearchInitForm() {
         : currentMode === "template"
           ? selectedTemplate !== null && topicName.trim().length > 0
           : /* ai step 1 */ subjectDescription.trim().length > 10
-      : /* step 2 manual/template */ !!selectedProjectId;
+      : /* step 2 manual/template — project is OPTIONAL now */ true;
 
   const aiIsProcessing =
     aiPhase.status === "creating" ||
@@ -2013,7 +2081,10 @@ export default function ResearchInitForm() {
                 </label>
                 <ProInput
                   value={topicName}
-                  onChange={(e) => setTopicName(e.target.value)}
+                  onChange={(e) => {
+                    setTopicName(e.target.value);
+                    patchDraft({ topicName: e.target.value });
+                  }}
                   placeholder="e.g., EV Battery Technology Trends"
                   className="h-14 text-base text-foreground px-4"
                   wrapperClassName="w-full"
@@ -2032,7 +2103,10 @@ export default function ResearchInitForm() {
                 </p>
                 <TextArrayInput
                   value={selectedKeywords}
-                  onChange={setSelectedKeywords}
+                  onChange={(next) => {
+                    setSelectedKeywords(next);
+                    patchDraft({ selectedKeywords: next });
+                  }}
                   placeholder="Type a keyword and press Enter…"
                   auxiliaryControlsTabIndex={-1}
                 />
@@ -2045,11 +2119,15 @@ export default function ResearchInitForm() {
                 </label>
                 <ProTextarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    patchDraft({ description: e.target.value });
+                  }}
                   placeholder="Brief context about what this research covers…"
                   autoGrow
                   minHeight={60}
                   maxHeight={160}
+                  enableTextStats={false}
                   className="text-base text-foreground"
                   wrapperClassName="w-full"
                   auxiliaryControlsTabIndex={-1}
@@ -2265,7 +2343,10 @@ export default function ResearchInitForm() {
                       surfaceName={RESEARCH_CONTEXT_MENU_PROPS.surfaceName}
                       getApplicationScope={getSubjectApplicationScope}
                       value={subjectDescription}
-                      onChange={(e) => setSubjectDescription(e.target.value)}
+                      onChange={(e) => {
+                        setSubjectDescription(e.target.value);
+                        patchDraft({ subjectDescription: e.target.value });
+                      }}
                       placeholder="e.g., How electric vehicle adoption is reshaping the used car market — pricing trends, consumer sentiment, and which brands are winning…"
                       autoGrow
                       minHeight={160}
@@ -2314,9 +2395,12 @@ export default function ResearchInitForm() {
                     <div className="mt-3">
                       <ProTextarea
                         value={additionalInstructions}
-                        onChange={(e) =>
-                          setAdditionalInstructions(e.target.value)
-                        }
+                        onChange={(e) => {
+                          setAdditionalInstructions(e.target.value);
+                          patchDraft({
+                            additionalInstructions: e.target.value,
+                          });
+                        }}
                         placeholder="Any extra context, constraints, or focus areas for the AI agent…"
                         autoGrow
                         minHeight={80}
@@ -2332,10 +2416,13 @@ export default function ResearchInitForm() {
                 <div className="space-y-3 pt-2 border-t border-border/60">
                   <div>
                     <label className="text-sm font-medium text-foreground">
-                      Project
+                      Project{" "}
+                      <span className="font-normal text-xs text-muted-foreground">
+                        (optional)
+                      </span>
                     </label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Which project should this topic live in?
+                      Optionally link this topic to a project.
                     </p>
                   </div>
                   <ProjectList
@@ -2343,6 +2430,10 @@ export default function ResearchInitForm() {
                     onSelect={(id, name) => {
                       setSelectedProjectId(id);
                       setSelectedProjectName(name);
+                      patchDraft({
+                        selectedProjectId: id,
+                        selectedProjectName: name,
+                      });
                     }}
                     onCreateInOrg={openCreateProject}
                     isLoading={projectsLoading}
@@ -2365,10 +2456,14 @@ export default function ResearchInitForm() {
             <div className="space-y-8">
               <div className="space-y-2">
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-                  Choose a Project
+                  Choose a Project{" "}
+                  <span className="text-xl font-normal text-muted-foreground">
+                    (optional)
+                  </span>
                 </h1>
                 <p className="text-muted-foreground">
-                  Research topics live inside a project.
+                  Optionally link this topic to a project — or skip and create
+                  it standalone.
                 </p>
               </div>
 
@@ -2393,6 +2488,10 @@ export default function ResearchInitForm() {
                 onSelect={(id, name) => {
                   setSelectedProjectId(id);
                   setSelectedProjectName(name);
+                  patchDraft({
+                    selectedProjectId: id,
+                    selectedProjectName: name,
+                  });
                 }}
                 onCreateInOrg={openCreateProject}
                 isLoading={projectsLoading}
@@ -2430,7 +2529,7 @@ export default function ResearchInitForm() {
               /* AI path: single-step, the CTA triggers the state machine */
               <Button
                 onClick={handleAiSubmit}
-                disabled={!canContinue || !selectedProjectId}
+                disabled={!canContinue}
                 className="gap-2 min-h-[44px] bg-violet-600 hover:bg-violet-700 text-white px-6 shadow-sm shadow-violet-500/20"
               >
                 <Atom className="h-4 w-4" />

@@ -51,9 +51,11 @@ const VISIBLE_FIELDS: FieldSpec[] = [
     max: 20,
   },
   {
-    key: "max_project_syntheses",
-    label: "Project synthesis",
-    hint: "Cap on full project reports. Almost always 1.",
+    // Topic-wide synthesis cap (renamed from "project synthesis" — the DB
+    // column is still max_project_syntheses until Phase 4; the service maps).
+    key: "max_topic_syntheses",
+    label: "Topic synthesis",
+    hint: "Cap on full topic-wide reports. Almost always 1.",
     min: 0,
     max: 5,
   },

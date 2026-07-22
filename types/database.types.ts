@@ -35927,7 +35927,7 @@ export type Database = {
           name: string
           organization_id: string
           outputs: Json
-          project_id: string
+          project_id: string | null
           scrapes_per_keyword: number
           status: string
           tag_suggestions: Json | null
@@ -35960,7 +35960,7 @@ export type Database = {
           name?: string
           organization_id: string
           outputs?: Json
-          project_id: string
+          project_id?: string | null
           scrapes_per_keyword?: number
           status?: string
           tag_suggestions?: Json | null
@@ -35993,7 +35993,7 @@ export type Database = {
           name?: string
           organization_id?: string
           outputs?: Json
-          project_id?: string
+          project_id?: string | null
           scrapes_per_keyword?: number
           status?: string
           tag_suggestions?: Json | null

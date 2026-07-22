@@ -58,6 +58,7 @@ import {
   type StageKind,
   type PipelineState,
 } from "../../../hooks/usePipelineProgress";
+import { TOPIC_SYNTHESIS_WIRE_SCOPE } from "../../../types";
 import { LivePipelineActivity } from "../live-pipeline/LivePipelineActivity";
 import { TopicSettingsPanel } from "../TopicSettingsPanel";
 
@@ -274,7 +275,8 @@ export function PipelineOrchestra() {
 
   const handleSynthesize = useCallback(async () => {
     const response = await api.synthesize(topicId, {
-      scope: "project",
+      // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
+      scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
       iteration_mode: "initial",
       use_user_agent_overrides: false,
     });
@@ -305,7 +307,8 @@ export function PipelineOrchestra() {
 
   const handleRebuildReport = useCallback(async () => {
     const response = await api.synthesize(topicId, {
-      scope: "project",
+      // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
+      scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
       iteration_mode: "rebuild",
       use_user_agent_overrides: false,
     });
@@ -316,7 +319,8 @@ export function PipelineOrchestra() {
 
   const handleUpdateReport = useCallback(async () => {
     const response = await api.synthesize(topicId, {
-      scope: "project",
+      // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
+      scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
       iteration_mode: "update",
       use_user_agent_overrides: false,
     });
@@ -370,8 +374,8 @@ export function PipelineOrchestra() {
     failed_analyses: 0,
     keyword_syntheses: 0,
     failed_keyword_syntheses: 0,
-    project_syntheses: 0,
-    failed_project_syntheses: 0,
+    topic_syntheses: 0,
+    failed_topic_syntheses: 0,
     total_tags: 0,
     total_documents: 0,
   };
@@ -428,8 +432,8 @@ export function PipelineOrchestra() {
   });
 
   const reportStatus = statusFor({
-    have: p.project_syntheses,
-    hasFailures: p.failed_project_syntheses > 0,
+    have: p.topic_syntheses,
+    hasFailures: p.failed_topic_syntheses > 0,
     liveStage: pipeline.state.stages.report,
     upstreamReady: p.keyword_syntheses > 0,
     autonomy,
@@ -438,7 +442,7 @@ export function PipelineOrchestra() {
 
   const documentStatus = statusFor({
     have: p.total_documents,
-    upstreamReady: p.project_syntheses > 0,
+    upstreamReady: p.topic_syntheses > 0,
     autonomy,
     isLive,
   });
@@ -712,10 +716,10 @@ export function PipelineOrchestra() {
             <OrchestraNode
               icon={ScrollText}
               label="Report"
-              count={p.project_syntheses > 0 ? "Ready" : "—"}
+              count={p.topic_syntheses > 0 ? "Ready" : "—"}
               hint={
-                p.project_syntheses > 0
-                  ? "project-wide"
+                p.topic_syntheses > 0
+                  ? "topic-wide"
                   : `needs ${p.total_keywords - p.keyword_syntheses} kw syntheses`
               }
               status={reportStatus}
@@ -848,9 +852,9 @@ export function PipelineOrchestra() {
             <OrchestraNode
               icon={ScrollText}
               label="Report"
-              count={p.project_syntheses > 0 ? "Ready" : "—"}
+              count={p.topic_syntheses > 0 ? "Ready" : "—"}
               hint={
-                p.project_syntheses > 0 ? "project-wide" : "awaiting syntheses"
+                p.topic_syntheses > 0 ? "topic-wide" : "awaiting syntheses"
               }
               status={reportStatus}
               href={`${base}/synthesis`}

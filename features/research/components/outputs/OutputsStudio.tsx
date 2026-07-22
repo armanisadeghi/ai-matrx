@@ -30,6 +30,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useTopicContext } from "../../context/ResearchContext";
 import { appendTopicOutput, getDocument, getSynthesis } from "../../service";
 import type { ResearchSynthesis } from "../../types";
+import { normalizeSynthesisScope } from "../../types";
 import { usePodcastRun } from "@/features/podcasts/generator/usePodcastRun";
 import type { PodcastType } from "@/features/podcasts/generator/types";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
@@ -138,7 +139,10 @@ export default function OutputsStudio() {
         if (doc?.content?.trim()) {
           md = doc.content;
         } else {
-          const list = (synth ?? []).filter((s) => s.scope === "project");
+          // PHASE-4 COMPAT: legacy rows carry scope="project" (= topic-wide).
+          const list = (synth ?? []).filter(
+            (s) => normalizeSynthesisScope(s.scope) === "topic",
+          );
           const current =
             list.find((s) => s.is_current && s.result?.trim()) ??
             list.find((s) => s.result?.trim());

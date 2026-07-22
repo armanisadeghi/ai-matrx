@@ -7,6 +7,7 @@ import type {
   ResearchStreamStep,
   ResearchTopic,
 } from "../types";
+import { normalizeSynthesisScope } from "../types";
 
 // ============================================================================
 // Types
@@ -52,7 +53,13 @@ export interface WorkItemMetadata {
   last_failure_reason?: string;
   error?: string;
   delta?: "new" | "changed" | "stale";
-  scope?: "keyword" | "project" | "tag";
+  /**
+   * Normalized at ingress via `normalizeSynthesisScope` — stored metadata is
+   * always canonical vocabulary (`topic` = topic-wide synthesis), even when
+   * the not-yet-cut-over backend streamed legacy `scope: "project"`
+   * (PHASE-4 COMPAT — see common-docs/research-project-decoupling/FEATURE.md).
+   */
+  scope?: "keyword" | "topic" | "tag";
   version?: number;
 }
 
@@ -621,20 +628,26 @@ function reduceData(
       return state;
     }
 
+    // Synthesis events: the wire scope is normalized at ingress — legacy
+    // `"project"` (from a not-yet-cut-over backend) and canonical `"topic"`
+    // both mean topic-wide synthesis and produce the SAME item id, so a run
+    // that straddles the backend deploy can never split one synthesis into
+    // two items (PHASE-4 COMPAT).
     case "synthesis_start": {
+      const scope = normalizeSynthesisScope(e.scope);
       const next = activateStage(state, "synthesize", ts);
-      const id = `${e.scope}:${e.keyword_id ?? "project"}`;
+      const id = `${scope}:${e.keyword_id ?? "topic"}`;
       return upsertItem(next, "synthesize", id, (existing) => ({
         id,
         label:
           existing?.label ??
-          (e.scope === "project"
-            ? "Project synthesis"
+          (scope === "topic"
+            ? "Topic synthesis"
             : (e.keyword ?? "Keyword synthesis")),
         status: "active",
         metadata: {
           ...(existing?.metadata ?? {}),
-          scope: e.scope,
+          scope,
           keyword: e.keyword ?? undefined,
           keyword_id: e.keyword_id ?? undefined,
         },
@@ -645,18 +658,19 @@ function reduceData(
     }
 
     case "synthesis_complete": {
-      const id = `${e.scope}:${e.keyword_id ?? "project"}`;
+      const scope = normalizeSynthesisScope(e.scope);
+      const id = `${scope}:${e.keyword_id ?? "topic"}`;
       const next = upsertItem(state, "synthesize", id, (existing) => ({
         id,
         label:
           existing?.label ??
-          (e.scope === "project"
-            ? "Project synthesis"
+          (scope === "topic"
+            ? "Topic synthesis"
             : (e.keyword ?? "Keyword synthesis")),
         status: "success",
         metadata: {
           ...(existing?.metadata ?? {}),
-          scope: e.scope,
+          scope,
           model_id: e.model_id,
           result_length: e.result_length,
           version: e.version,
@@ -670,14 +684,15 @@ function reduceData(
     }
 
     case "synthesis_failed": {
-      const id = `${e.scope}:${e.keyword_id ?? "project"}`;
+      const scope = normalizeSynthesisScope(e.scope);
+      const id = `${scope}:${e.keyword_id ?? "topic"}`;
       const next = upsertItem(state, "synthesize", id, (existing) => ({
         id,
         label: existing?.label ?? "Synthesis",
         status: "failed",
         metadata: {
           ...(existing?.metadata ?? {}),
-          scope: e.scope,
+          scope,
           error: e.error,
         },
         startedAt: existing?.startedAt ?? ts,
@@ -781,6 +796,11 @@ const SYNTHESIS_CODES = new Set([
   "synthesis_complete",
   "keyword_synthesis_start",
   "keyword_synthesis_complete",
+  // Canonical topic-wide codes + legacy `project_*` aliases: the backend
+  // emits the old names until its Phase-3 deploy — accept BOTH
+  // (PHASE-4 COMPAT; drop the project_* entries once the wire is clean).
+  "topic_synthesis_start",
+  "topic_synthesis_complete",
   "project_synthesis_start",
   "project_synthesis_complete",
 ]);

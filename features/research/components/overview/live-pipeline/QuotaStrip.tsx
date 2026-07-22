@@ -100,10 +100,10 @@ export function QuotaStrip({ topic, state, derived }: Props) {
           label="Reports"
           current={
             Object.values(state.stages.synthesize.items).filter(
-              (i) => i.metadata.scope === "project" && i.status === "success",
+              (i) => i.metadata.scope === "topic" && i.status === "success",
             ).length
           }
-          cap={topic.max_project_syntheses}
+          cap={topic.max_topic_syntheses}
         />
         <Bar
           label="Documents"
