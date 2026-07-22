@@ -27,6 +27,10 @@ returns table (
 language plpgsql stable security definer
 set search_path = public, platform, workspace, chat, workbench, transcripts, files, iam
 as $$
+-- The RETURNS TABLE output columns (thread_id, thread_title, …) are PL/pgSQL
+-- variables; unqualified references to same-named CTE columns below would be
+-- ambiguous. Resolve ambiguity to the COLUMN (the intent everywhere here).
+#variable_conflict use_column
 begin
   if not iam.has_access('war_room', p_war_room_id) then
     raise exception 'not authorized for war_room %', p_war_room_id using errcode = '42501';
