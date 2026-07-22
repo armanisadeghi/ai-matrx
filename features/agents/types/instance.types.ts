@@ -158,6 +158,8 @@ export type SourceFeature =
   | "files"
   /** Generic ItemRow/ItemMenu right-click host (schema-driven row menus). */
   | "item-context-menu"
+  /** RichDocument content right-click (markdown/stream documents). */
+  | "rich-document"
 
   // ── Documents & conversation scratch surfaces ────────────────────────────
   | "documents"
@@ -297,6 +299,7 @@ export const SOURCE_FEATURES = [
   "transcript-studio",
   "transcription-cleanup",
   "item-context-menu",
+  "rich-document",
   "dictionary",
   "tasks",
   "task-create",

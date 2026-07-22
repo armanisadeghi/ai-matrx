@@ -211,6 +211,12 @@ export interface ContextMenuV3CoreProps {
   contentSource?: ContentSource;
   /** The entity this content belongs to — enables Attach To + Share. */
   entity?: ContextMenuEntityRef;
+  /**
+   * Rich-document action ids to EXCLUDE from the menu's Copy-as / Export /
+   * Convert groups (the menu resolves the registry itself; this is the
+   * surface's opt-out, e.g. RichDocument's `enableContextMenu.exclude`).
+   */
+  excludedRichActions?: string[];
 
   // ── Context filters for AI Actions ──────────────────────────────────────
   /** Contexts ADDED to the default `{general}` allow-set. */
@@ -329,6 +335,7 @@ export interface MenuContentProps {
   contextData: Record<string, unknown>;
   contentSource?: ContentSource;
   entity?: ContextMenuEntityRef;
+  excludedRichActions?: string[];
 
   // captured selection (from the shell, at open)
   selectedText: string;

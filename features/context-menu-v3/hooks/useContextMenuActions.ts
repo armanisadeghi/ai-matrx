@@ -353,7 +353,14 @@ export function useContextMenuActions(
     sourceAdapter: richDocAdapter,
   };
   const richActions =
-    actionText.source !== "none" ? resolveActions(richDocCtx) : [];
+    actionText.source !== "none"
+      ? resolveActions(
+          richDocCtx,
+          props.excludedRichActions?.length
+            ? { exclude: props.excludedRichActions }
+            : undefined,
+        )
+      : [];
   const copyVariantActions = richActions.filter((a) => a.category === "copy");
   const exportActions = richActions.filter(
     (a) => a.category === "export" || a.id === "save-as-file",

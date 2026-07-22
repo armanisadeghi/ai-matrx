@@ -36,9 +36,10 @@ import { useActionSurfaceProvider } from "./runtime/useActionSurfaceProvider";
 import { ActionBar } from "./variants/ActionBar";
 import { MiniActionBar } from "./variants/MiniActionBar";
 import { MenuVariant } from "./variants/MenuVariant";
-// Lightweight wrapper — the heavy context-menu chunk is lazy inside it, so
-// this static import costs nothing until the user right-clicks.
-import { ContextMenuMount } from "./runtime/ContextMenuMount";
+// The UNIVERSAL context menu (v3) — the light shell; MenuContent stays lazy
+// inside it, so this static import costs nothing until the user right-clicks.
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import type {
   ContentSource,
   RichDocumentAction,
@@ -263,28 +264,59 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     </div>
   );
 
-  // Optionally wrap the content in the right-click context menu. The context
-  // action set layers any context-menu-only extra/exclude on top of the
-  // base resolved set. The mount is lazy + streaming-safe internally.
+  // Optionally wrap the content in the UNIVERSAL context menu (v3). The menu
+  // resolves the rich-document registry ITSELF from `contentSource` (passing
+  // the resolved action list too would double every Copy-as/Export item), so
+  // only the surface's exclusions and the context-menu-only EXTRA actions are
+  // forwarded. `suppressed` keeps the native browser menu during streaming
+  // without unmounting the content.
   let engine: React.ReactNode = engineInner;
   if (enableContextMenu) {
     const cmOptions =
       typeof enableContextMenu === "object" ? enableContextMenu : {};
-    const contextActions = resolveActions(ctx, {
-      exclude: [
-        ...(actionsProp?.exclude ?? []),
-        ...(cmOptions.exclude ?? []),
-      ],
-      extra: [...(actionsProp?.extra ?? []), ...(cmOptions.extra ?? [])],
-    });
+    const extraActions = [
+      ...(actionsProp?.extra ?? []),
+      ...(cmOptions.extra ?? []),
+    ];
+    const extraSections: ContextMenuExtraSection[] =
+      extraActions.length > 0
+        ? [
+            {
+              id: "rich-doc-extra",
+              anchor: "after-compare",
+              items: extraActions.map((a) => {
+                const label =
+                  typeof a.label === "function" ? a.label(ctx) : a.label;
+                const disabledResult = a.disabled?.(ctx);
+                return {
+                  kind: "item" as const,
+                  id: a.id,
+                  label,
+                  icon: a.icon,
+                  disabled:
+                    typeof disabledResult === "object"
+                      ? true
+                      : Boolean(disabledResult),
+                  onSelect: () => void a.run(getCtx()),
+                };
+              }),
+            },
+          ]
+        : [];
     engine = (
-      <ContextMenuMount
-        actions={contextActions}
-        getCtx={getCtx}
-        isStreamActive={isStreamActive}
+      <NonEditableContextMenu
+        sourceFeature="rich-document"
+        suppressed={isStreamActive}
+        contentSource={source}
+        contextData={{ content: ctx.content }}
+        excludedRichActions={[
+          ...(actionsProp?.exclude ?? []),
+          ...(cmOptions.exclude ?? []),
+        ]}
+        extraSections={extraSections}
       >
         {engineInner}
-      </ContextMenuMount>
+      </NonEditableContextMenu>
     );
   }
 
