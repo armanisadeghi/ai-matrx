@@ -1,22 +1,15 @@
 /**
  * features/files/components/core/FileContextMenu/FileRightClickMenu.tsx
  *
- * RIGHT-CLICK file menu — wraps any element so the user can right-click
- * on it and get the same set of file actions they'd get from the 3-dot
- * dropdown menu in cloud-files. Use this on chips, table rows, grid
- * cells, preview surfaces — anywhere a file is rendered.
+ * RIGHT-CLICK file menu — wraps any element (chips, table rows, grid cells,
+ * preview surfaces) so a right-click gets the file actions. Consolidated onto
+ * the ONE universal context menu (v3): the file actions ride in as
+ * `extraSections` (handlers from the same `useFileMenuActions(fileId)` hook
+ * the 3-dot DropdownMenu uses, so the two can't drift), and the standard menu
+ * adds Copy / AI actions / agents / Attach To / Share for free.
  *
- * Left-click behavior on the wrapped element is preserved (we use
- * Radix's `ContextMenu` primitive, which only intercepts the browser's
- * `contextmenu` event).
- *
- * Why this exists separate from `FileContextMenu`:
- *   - `FileContextMenu` uses `DropdownMenu` and is anchored to a 3-dot
- *     button — its trigger is a click event on a small icon.
- *   - `FileRightClickMenu` uses `ContextMenu` and triggers on the
- *     browser-native right-click anywhere on the wrapped element.
- *   - Both pull their handlers from the same `useFileMenuActions(fileId)`
- *     hook so we don't accidentally drift between the two.
+ * Consumer contract unchanged: same props (`fileId`, `children`, `disabled`,
+ * `onDeleted`). Delete confirms through the global ConfirmDialog.
  */
 
 "use client";
@@ -40,27 +33,9 @@ import {
 } from "@/features/files/components/FileContextSection";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFilesMap } from "@/features/files/redux/selectors";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useFileMenuActions } from "./useFileMenuActions";
 
 export interface FileRightClickMenuProps {
@@ -86,110 +61,143 @@ export function FileRightClickMenu({
   const a = useFileMenuActions(fileId);
   const filesById = useAppSelector(selectAllFilesMap);
   const file = filesById[fileId];
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
 
   if (disabled) return <>{children}</>;
 
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: "Delete file?",
+      description:
+        "This will move the file to trash. You can restore it from versions for 30 days before bytes are removed.",
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await a.deleteFile();
+      await onDeleted?.(fileId);
+    } catch (err) {
+      console.warn("[FileRightClickMenu] delete failed:", err);
+    }
+  };
+
+  const extraSections: ContextMenuExtraSection[] = [
+    {
+      id: "file-actions",
+      anchor: "after-clipboard",
+      items: [
+        {
+          kind: "item",
+          id: "file-preview",
+          label: "Preview",
+          icon: Eye,
+          onSelect: a.preview,
+        },
+        {
+          kind: "item",
+          id: "file-download",
+          label: "Download",
+          icon: Download,
+          onSelect: () => void a.download(),
+        },
+        {
+          kind: "item",
+          id: "file-copy-link",
+          label: "Copy link",
+          icon: Copy,
+          hint: `${a.cmd}L`,
+          onSelect: () => void a.copyShareUrl(),
+        },
+        {
+          kind: "item",
+          id: "file-details",
+          label: "Show details",
+          icon: FileText,
+          onSelect: a.showDetails,
+        },
+        {
+          kind: "item",
+          id: "file-versions",
+          label: "Show versions",
+          icon: History,
+          onSelect: a.showVersions,
+        },
+        {
+          kind: "item",
+          id: "file-context",
+          label: FILE_CONTEXT_MENU_LABEL,
+          icon: FileContextMenuIcon,
+          onSelect: () => setContextOpen(true),
+        },
+        {
+          kind: "submenu",
+          id: "file-visibility",
+          label: "Visibility",
+          icon: Lock,
+          children: [
+            {
+              kind: "item",
+              id: "vis-personal",
+              label: "Private",
+              icon: Lock,
+              onSelect: () => void a.setVisibility("personal"),
+            },
+            {
+              kind: "item",
+              id: "vis-shared",
+              label: "Shared",
+              icon: Users,
+              onSelect: () => void a.setVisibility("shared"),
+            },
+            {
+              kind: "item",
+              id: "vis-public",
+              label: "Public",
+              icon: Globe,
+              onSelect: () => void a.setVisibility("public"),
+            },
+          ],
+        },
+        {
+          kind: "item",
+          id: "file-delete",
+          label: "Delete",
+          icon: Trash2,
+          destructive: true,
+          hint: "⌫",
+          onSelect: () => void handleDelete(),
+        },
+      ],
+    },
+  ];
+
   return (
     <>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-        <ContextMenuContent className="w-56">
-          <ContextMenuItem onClick={a.preview}>
-            <Eye className="mr-2 h-4 w-4" />
-            Preview
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => void a.download()}>
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => void a.copyShareUrl()}>
-            <Copy className="mr-2 h-4 w-4" />
-            Copy link
-            <ContextMenuShortcut>{a.cmd}L</ContextMenuShortcut>
-          </ContextMenuItem>
-
-          <ContextMenuSeparator />
-
-          <ContextMenuItem onClick={a.showDetails}>
-            <FileText className="mr-2 h-4 w-4" />
-            Show details
-          </ContextMenuItem>
-          <ContextMenuItem onClick={a.showVersions}>
-            <History className="mr-2 h-4 w-4" />
-            Show versions
-          </ContextMenuItem>
-
-          <ContextMenuItem onClick={() => setContextOpen(true)}>
-            <FileContextMenuIcon className="mr-2 h-4 w-4" />
-            {FILE_CONTEXT_MENU_LABEL}
-          </ContextMenuItem>
-
-          <ContextMenuSub>
-            <ContextMenuSubTrigger>
-              <Lock className="mr-2 h-4 w-4" />
-              Visibility
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              <ContextMenuItem onClick={() => void a.setVisibility("personal")}>
-                <Lock className="mr-2 h-4 w-4" />
-                Private
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => void a.setVisibility("shared")}>
-                <Users className="mr-2 h-4 w-4" />
-                Shared
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => void a.setVisibility("public")}>
-                <Globe className="mr-2 h-4 w-4" />
-                Public
-              </ContextMenuItem>
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-
-          <ContextMenuSeparator />
-
-          <ContextMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={() => setConfirmOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-            <ContextMenuShortcut>⌫</ContextMenuShortcut>
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete file?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will move the file to trash. You can restore it from versions
-              for 30 days before bytes are removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmOpen(false);
-                void (async () => {
-                  try {
-                    await a.deleteFile();
-                    await onDeleted?.(fileId);
-                  } catch (err) {
-                    // eslint-disable-next-line no-console
-                    console.warn("[FileRightClickMenu] delete failed:", err);
-                  }
-                })();
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <NonEditableContextMenu
+        sourceFeature="files"
+        surfaceName="matrx-user/files"
+        contextData={{
+          content: file?.fileName ?? "",
+          active_file_id: fileId,
+          active_file_name: file?.fileName ?? "",
+          active_file_mime_type: file?.mimeType ?? "",
+        }}
+        entity={
+          file
+            ? {
+                type: "file",
+                id: fileId,
+                title: file.fileName,
+                resourceType: "file",
+              }
+            : undefined
+        }
+        extraSections={extraSections}
+        enableFloatingIcon={false}
+      >
+        {children}
+      </NonEditableContextMenu>
 
       {file ? (
         <FileContextDialog

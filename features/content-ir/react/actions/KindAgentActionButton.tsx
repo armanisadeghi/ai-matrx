@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 export interface KindAgentActionButtonProps {
@@ -38,8 +39,8 @@ export interface KindAgentActionButtonProps {
   variables: Record<string, unknown>;
   /** Partial settings delta (e.g. aspect_ratio, duration_seconds). */
   llmOverrides?: Partial<LLMParams> | null;
-  /** Launch attribution — the surface/feature hosting the rendered content. */
-  sourceFeature: string;
+  /** Launch attribution — a REGISTERED source feature (SOURCE_FEATURES). */
+  sourceFeature: SourceFeature;
   className?: string;
   size?: "default" | "sm" | "lg";
 }
@@ -61,6 +62,7 @@ export function KindAgentActionButton({
     setIsLaunching(true);
     try {
       await launchAgent(agentId, {
+        surfaceKey: `${sourceFeature}:kind-action:${agentId}`,
         sourceFeature,
         config: {
           displayMode: "modal-full",

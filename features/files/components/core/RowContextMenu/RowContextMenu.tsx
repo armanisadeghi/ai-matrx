@@ -1,14 +1,18 @@
 /**
  * features/files/components/core/RowContextMenu/RowContextMenu.tsx
  *
- * Right-click context menus for file and folder rows. Wraps the row content
- * and renders a Radix ContextMenu — distinct from the dropdown shown by the
- * "..." button so we don't have to control the dropdown's open state.
+ * Right-click menus for file and folder rows — consolidated onto the ONE
+ * universal context menu (v3). The file-manager actions (preview, download,
+ * cut/copy/paste of the file object, rename, move, duplicate, PDF surfaces,
+ * RAG, delete) ride in as `extraSections`; everything else (Copy text, AI
+ * actions, surface-bound + default agents, Attach To / Share for files,
+ * Quick Actions, admin tools) is the standard menu. The "..." dropdown menu
+ * remains the full-parity action list; this stays the fast subset.
  *
- * The intent is parity with desktop file managers: right-click anywhere on a
- * row to get the same actions as the More button. We render a focused subset
- * here (the most-used actions) to keep the menu fast and discoverable; the
- * full menu is still available via the "..." button.
+ * Consumer contract is unchanged: same exports, same props. Delete confirms
+ * through the global ConfirmDialog (no local AlertDialog). Folder share keeps
+ * the ShareLinkDialog (folders are not a ctx entity type; files get the v3
+ * entity wire instead).
  */
 
 "use client";
@@ -33,24 +37,13 @@ import {
   Stars,
   Trash2,
 } from "lucide-react";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/components/ui/use-toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllFilesMap,
@@ -79,6 +72,14 @@ import {
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
 import { extractErrorMessage } from "@/utils/errors";
 
+const FILES_SURFACE = "matrx-user/files";
+
+const cmdKey = () =>
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/i.test(navigator.platform)
+    ? "⌘"
+    : "Ctrl";
+
 // ---------------------------------------------------------------------------
 // File row context menu
 // ---------------------------------------------------------------------------
@@ -88,18 +89,17 @@ export interface FileRowContextMenuProps {
   children: React.ReactNode;
 }
 
-export function FileRowContextMenu({ fileId, children }: FileRowContextMenuProps) {
+export function FileRowContextMenu({
+  fileId,
+  children,
+}: FileRowContextMenuProps) {
   const dispatch = useAppDispatch();
   const filesById = useAppSelector(selectAllFilesMap);
   const file = filesById[fileId];
   const actions = useFileActions(fileId);
   const router = useRouter();
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
-  const cmd =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.platform)
-      ? "⌘"
-      : "Ctrl";
+  const cmd = cmdKey();
 
   const handlePreview = useCallback(() => {
     dispatch(setActiveFileId(fileId));
@@ -140,9 +140,8 @@ export function FileRowContextMenu({ fileId, children }: FileRowContextMenuProps
     if (folderId === undefined) return; // user dismissed
     if (folderId === file.parentFolderId) return;
     try {
-      // useFileActions.move is now source-aware: real → moveFileThunk,
-      // virtual → moveAny. Routes correctly without an explicit branch
-      // here.
+      // useFileActions.move is source-aware: real → moveFileThunk,
+      // virtual → moveAny.
       await actions.move(folderId);
     } catch {
       /* error surfaces via slice state */
@@ -180,166 +179,191 @@ export function FileRowContextMenu({ fileId, children }: FileRowContextMenuProps
     }
   }, [actions, dispatch, file]);
 
+  const handleDelete = useCallback(async () => {
+    if (!file) return;
+    const ok = await confirm({
+      title: "Delete file?",
+      description: `This moves "${file.fileName}" to trash. You can restore it from versions for 30 days before bytes are removed.`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (ok) void actions.delete({ hard: false });
+  }, [actions, file]);
+
   if (!file) {
     return <>{children}</>;
   }
 
-  return (
-    <>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-        <ContextMenuContent className="w-56">
-          <ContextMenuItem onClick={handlePreview}>
-            <Eye className="mr-2 h-4 w-4" />
-            Preview
-          </ContextMenuItem>
-          {/* Download / Copy link / Duplicate go through the Python signed-URL
-              endpoint — only meaningful for real cloud-files. Virtual rows
-              hide these (their inline preview owns export/share semantics). */}
-          {!isVirtual ? (
-            <>
-              <ContextMenuItem onClick={() => void actions.download()}>
-                <Download className="mr-2 h-4 w-4" />
-                Download
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => void actions.copyShareUrl()}>
-                <Copy className="mr-2 h-4 w-4" />
-                Copy link
-                <ContextMenuShortcut>{cmd}L</ContextMenuShortcut>
-              </ContextMenuItem>
-            </>
-          ) : null}
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onClick={() =>
-              setClipboard({
-                op: "cut",
-                items: [
-                  {
-                    id: fileId,
-                    kind: "file",
-                    source: isVirtual ? "virtual" : "real",
-                  },
-                ],
-                setAt: Date.now(),
-              })
-            }
-          >
-            <Scissors className="mr-2 h-4 w-4" />
-            Cut
-            <ContextMenuShortcut>{cmd}X</ContextMenuShortcut>
-          </ContextMenuItem>
-          {!isVirtual ? (
-            <ContextMenuItem
-              onClick={() =>
-                setClipboard({
-                  op: "copy",
-                  items: [{ id: fileId, kind: "file", source: "real" }],
-                  setAt: Date.now(),
-                })
-              }
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy
-              <ContextMenuShortcut>{cmd}C</ContextMenuShortcut>
-            </ContextMenuItem>
-          ) : null}
-          <ContextMenuSeparator />
-          <ContextMenuItem onClick={() => requestRename("file", fileId)}>
-            <Edit2 className="mr-2 h-4 w-4" />
-            Rename
-            <ContextMenuShortcut>F2</ContextMenuShortcut>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => void handleMove()}>
-            <FolderInput className="mr-2 h-4 w-4" />
-            Move…
-          </ContextMenuItem>
-          {!isVirtual ? (
-            <ContextMenuItem onClick={() => void handleDuplicate()}>
-              <CopyPlus className="mr-2 h-4 w-4" />
-              Duplicate
-              <ContextMenuShortcut>{cmd}D</ContextMenuShortcut>
-            </ContextMenuItem>
-          ) : null}
-          {/*
-           * RAG / processed-document actions. Real files only — virtual
-           * sources (notes, code-files) ingest via their own source_kind
-           * and surface "Process for RAG" inside their dedicated editors.
-           */}
-          {/* PDF surfaces — canonical registry; identical list everywhere. */}
-          {!isVirtual && file?.mimeType === "application/pdf" ? (
-            <>
-              <ContextMenuSeparator />
-              {PDF_SURFACES.filter((sf) => sf.id !== "rag-library").map(
-                (surface) => {
-                  const Icon = surface.icon;
-                  return (
-                    <ContextMenuItem
-                      key={surface.id}
-                      onClick={() => {
-                        void resolvePdfSurfaceIds({ fileId }).then((ids) => {
-                          const href = surface.buildHref(ids);
-                          if (href) router.push(href);
-                        });
-                      }}
-                    >
-                      <Icon className="mr-2 h-4 w-4" />
-                      Open in {surface.label}
-                    </ContextMenuItem>
-                  );
-                },
-              )}
-            </>
-          ) : null}
-          {!isVirtual ? (
-            <>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={openDocumentTab}>
-                <FileSearch className="mr-2 h-4 w-4" />
-                Open document view
-              </ContextMenuItem>
-              <ContextMenuItem onClick={handleReprocess}>
-                <Stars className="mr-2 h-4 w-4" />
-                Reprocess for RAG
-              </ContextMenuItem>
-            </>
-          ) : null}
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={() => setConfirmDeleteOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-            <ContextMenuShortcut>⌫</ContextMenuShortcut>
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+  const items: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "file-preview",
+      label: "Preview",
+      icon: Eye,
+      onSelect: handlePreview,
+    },
+  ];
 
-      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete file?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This moves <strong>{file.fileName}</strong> to trash. You can
-              restore it from versions for 30 days before bytes are removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                void actions.delete({ hard: false });
-                setConfirmDeleteOpen(false);
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+  // Download / Copy link / Duplicate go through the Python signed-URL
+  // endpoint — only meaningful for real cloud-files. Virtual rows hide these
+  // (their inline preview owns export/share semantics).
+  if (!isVirtual) {
+    items.push(
+      {
+        kind: "item",
+        id: "file-download",
+        label: "Download",
+        icon: Download,
+        onSelect: () => void actions.download(),
+      },
+      {
+        kind: "item",
+        id: "file-copy-link",
+        label: "Copy link",
+        icon: Copy,
+        hint: `${cmd}L`,
+        onSelect: () => void actions.copyShareUrl(),
+      },
+    );
+  }
+
+  items.push({
+    kind: "item",
+    id: "file-cut",
+    label: "Cut file",
+    icon: Scissors,
+    hint: `${cmd}X`,
+    onSelect: () =>
+      setClipboard({
+        op: "cut",
+        items: [
+          { id: fileId, kind: "file", source: isVirtual ? "virtual" : "real" },
+        ],
+        setAt: Date.now(),
+      }),
+  });
+  if (!isVirtual) {
+    items.push({
+      kind: "item",
+      id: "file-copy",
+      label: "Copy file",
+      icon: Copy,
+      hint: `${cmd}C`,
+      onSelect: () =>
+        setClipboard({
+          op: "copy",
+          items: [{ id: fileId, kind: "file", source: "real" }],
+          setAt: Date.now(),
+        }),
+    });
+  }
+
+  items.push(
+    {
+      kind: "item",
+      id: "file-rename",
+      label: "Rename",
+      icon: Edit2,
+      hint: "F2",
+      onSelect: () => requestRename("file", fileId),
+    },
+    {
+      kind: "item",
+      id: "file-move",
+      label: "Move…",
+      icon: FolderInput,
+      onSelect: () => void handleMove(),
+    },
+  );
+  if (!isVirtual) {
+    items.push({
+      kind: "item",
+      id: "file-duplicate",
+      label: "Duplicate",
+      icon: CopyPlus,
+      hint: `${cmd}D`,
+      onSelect: () => void handleDuplicate(),
+    });
+  }
+
+  // PDF surfaces — canonical registry; identical list everywhere.
+  if (!isVirtual && file?.mimeType === "application/pdf") {
+    items.push({
+      kind: "submenu",
+      id: "file-pdf-surfaces",
+      label: "Open in…",
+      icon: FileSearch,
+      children: PDF_SURFACES.filter((sf) => sf.id !== "rag-library").map(
+        (surface) => ({
+          kind: "item" as const,
+          id: `pdf-${surface.id}`,
+          label: surface.label,
+          icon: surface.icon,
+          onSelect: () => {
+            void resolvePdfSurfaceIds({ fileId }).then((ids) => {
+              const href = surface.buildHref(ids);
+              if (href) router.push(href);
+            });
+          },
+        }),
+      ),
+    });
+  }
+
+  if (!isVirtual) {
+    items.push(
+      {
+        kind: "item",
+        id: "file-document-view",
+        label: "Open document view",
+        icon: FileSearch,
+        onSelect: openDocumentTab,
+      },
+      {
+        kind: "item",
+        id: "file-reprocess",
+        label: "Reprocess for RAG",
+        icon: Stars,
+        onSelect: handleReprocess,
+      },
+    );
+  }
+
+  items.push({
+    kind: "item",
+    id: "file-delete",
+    label: "Delete",
+    icon: Trash2,
+    destructive: true,
+    hint: "⌫",
+    onSelect: () => void handleDelete(),
+  });
+
+  const extraSections: ContextMenuExtraSection[] = [
+    { id: "file-actions", anchor: "after-clipboard", items },
+  ];
+
+  return (
+    <NonEditableContextMenu
+      sourceFeature="files"
+      surfaceName={FILES_SURFACE}
+      contextData={{
+        content: file.fileName,
+        active_file_id: fileId,
+        active_file_name: file.fileName,
+        active_file_mime_type: file.mimeType ?? "",
+      }}
+      entity={{
+        type: "file",
+        id: fileId,
+        title: file.fileName,
+        resourceType: "file",
+      }}
+      extraSections={extraSections}
+      enableFloatingIcon={false}
+    >
+      {children}
+    </NonEditableContextMenu>
   );
 }
 
@@ -366,10 +390,7 @@ export function FolderRowContextMenu({
   const folderActions = useFolderActions(folderId);
   const foldersByIdAll = useAppSelector((s) => s.cloudFiles.foldersById);
   const { clipboard } = useFileClipboard();
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const isVirtual = folder?.source.kind === "virtual";
   const hasClipboard = !!clipboard && clipboard.items.length > 0;
@@ -377,10 +398,9 @@ export function FolderRowContextMenu({
   const handlePaste = useCallback(async () => {
     if (!clipboard || clipboard.items.length === 0) return;
     // Only the cut → move case is wired at the row level. For copy →
-    // duplicate (which needs to fetch bytes + re-upload), users should
-    // use the Cmd/Ctrl+V keyboard shortcut on the active folder, where
-    // the full duplicate pipeline lives. Surface a hint by leaving the
-    // menu item disabled for copy state in the JSX below.
+    // duplicate (which needs to fetch bytes + re-upload), users should use
+    // the Cmd/Ctrl+V keyboard shortcut on the active folder, where the full
+    // duplicate pipeline lives.
     if (clipboard.op !== "cut") return;
     for (const item of clipboard.items) {
       try {
@@ -391,15 +411,12 @@ export function FolderRowContextMenu({
             ).unwrap();
           } else {
             await dispatch(
-              moveFileThunk({
-                fileId: item.id,
-                newParentFolderId: folderId,
-              }),
+              moveFileThunk({ fileId: item.id, newParentFolderId: folderId }),
             ).unwrap();
           }
         } else {
-          // Folder cycle guard — refuse to drop a folder into itself or
-          // any of its descendants.
+          // Folder cycle guard — refuse to drop a folder into itself or any
+          // of its descendants.
           if (item.id === folderId) continue;
           let cursor: string | null = folderId;
           const seen = new Set<string>();
@@ -433,10 +450,7 @@ export function FolderRowContextMenu({
     setClipboard(null);
   }, [clipboard, dispatch, foldersByIdAll, folderId]);
 
-  const cmd =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.platform)
-      ? "⌘"
-      : "Ctrl";
+  const cmd = cmdKey();
 
   const handleOpen = useCallback(() => {
     if (onOpen) {
@@ -447,23 +461,28 @@ export function FolderRowContextMenu({
   }, [dispatch, folderId, onOpen]);
 
   const handleDelete = useCallback(async () => {
-    setDeleting(true);
-    setDeleteError(null);
+    if (!folder) return;
+    const ok = await confirm({
+      title: "Delete folder?",
+      description: `Move "${folder.folderName}" and all of its contents to Trash. You can restore it later.`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!ok) return;
     try {
       await folderActions.delete();
-      setConfirmDeleteOpen(false);
     } catch (err) {
-      setDeleteError(extractErrorMessage(err));
-    } finally {
-      setDeleting(false);
+      toast({
+        title: "Delete failed",
+        description: extractErrorMessage(err),
+        variant: "destructive",
+      });
     }
-  }, [folderActions]);
+  }, [folder, folderActions]);
 
   const handleMove = useCallback(async () => {
     if (!folder) return;
-    const newParent = await openFolderPicker({
-      title: "Move folder to…",
-    });
+    const newParent = await openFolderPicker({ title: "Move folder to…" });
     if (newParent === undefined) return;
     if (newParent === folder.parentId) return;
     if (newParent === folderId) return; // can't move into itself
@@ -478,141 +497,140 @@ export function FolderRowContextMenu({
     return <>{children}</>;
   }
 
+  const items: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "folder-open",
+      label: "Open",
+      icon: FolderOpen,
+      onSelect: handleOpen,
+    },
+  ];
+
+  if (!isVirtual) {
+    items.push(
+      {
+        kind: "item",
+        id: "folder-copy-link",
+        label: "Copy link",
+        icon: Copy,
+        hint: `${cmd}L`,
+        onSelect: () => void folderActions.copyShareUrl(),
+      },
+      {
+        kind: "item",
+        id: "folder-share",
+        label: "Share…",
+        icon: Share2,
+        onSelect: () => setShareOpen(true),
+      },
+    );
+  }
+
+  items.push({
+    kind: "item",
+    id: "folder-cut",
+    label: "Cut folder",
+    icon: Scissors,
+    hint: `${cmd}X`,
+    onSelect: () =>
+      setClipboard({
+        op: "cut",
+        items: [
+          {
+            id: folderId,
+            kind: "folder",
+            source: isVirtual ? "virtual" : "real",
+          },
+        ],
+        setAt: Date.now(),
+      }),
+  });
+  if (!isVirtual) {
+    items.push({
+      kind: "item",
+      id: "folder-copy",
+      label: "Copy folder",
+      icon: Copy,
+      hint: `${cmd}C`,
+      onSelect: () =>
+        setClipboard({
+          op: "copy",
+          items: [{ id: folderId, kind: "folder", source: "real" }],
+          setAt: Date.now(),
+        }),
+    });
+  }
+  if (hasClipboard) {
+    items.push({
+      kind: "item",
+      id: "folder-paste",
+      label: `Paste ${clipboard?.op === "cut" ? "into folder" : "(copy)"}`,
+      icon: ClipboardPaste,
+      hint: `${cmd}V`,
+      disabled: clipboard?.op === "copy",
+      description:
+        clipboard?.op === "copy"
+          ? "Use Cmd/Ctrl+V on the active folder to paste a copy"
+          : undefined,
+      onSelect: () => void handlePaste(),
+    });
+  }
+
+  items.push(
+    {
+      kind: "item",
+      id: "folder-rename",
+      label: "Rename",
+      icon: Edit2,
+      hint: "F2",
+      onSelect: () => requestRename("folder", folderId),
+    },
+    {
+      kind: "item",
+      id: "folder-move",
+      label: "Move…",
+      icon: FolderInput,
+      onSelect: () => void handleMove(),
+    },
+  );
+  if (onNewFolderInside) {
+    items.push({
+      kind: "item",
+      id: "folder-new-inside",
+      label: "New folder inside",
+      icon: FolderPlus,
+      onSelect: onNewFolderInside,
+    });
+  }
+  items.push({
+    kind: "item",
+    id: "folder-delete",
+    label: "Delete folder",
+    icon: Trash2,
+    destructive: true,
+    hint: "⌫",
+    onSelect: () => void handleDelete(),
+  });
+
+  const extraSections: ContextMenuExtraSection[] = [
+    { id: "folder-actions", anchor: "after-clipboard", items },
+  ];
+
   return (
     <>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-        <ContextMenuContent className="w-56">
-          <ContextMenuItem onClick={handleOpen}>
-            <FolderOpen className="mr-2 h-4 w-4" />
-            Open
-          </ContextMenuItem>
-          {!isVirtual ? (
-            <>
-              <ContextMenuItem
-                onClick={() => void folderActions.copyShareUrl()}
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Copy link
-                <ContextMenuShortcut>{cmd}L</ContextMenuShortcut>
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => setShareOpen(true)}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Share…
-              </ContextMenuItem>
-            </>
-          ) : null}
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onClick={() =>
-              setClipboard({
-                op: "cut",
-                items: [
-                  {
-                    id: folderId,
-                    kind: "folder",
-                    source: isVirtual ? "virtual" : "real",
-                  },
-                ],
-                setAt: Date.now(),
-              })
-            }
-          >
-            <Scissors className="mr-2 h-4 w-4" />
-            Cut
-            <ContextMenuShortcut>{cmd}X</ContextMenuShortcut>
-          </ContextMenuItem>
-          {!isVirtual ? (
-            <ContextMenuItem
-              onClick={() =>
-                setClipboard({
-                  op: "copy",
-                  items: [{ id: folderId, kind: "folder", source: "real" }],
-                  setAt: Date.now(),
-                })
-              }
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy
-              <ContextMenuShortcut>{cmd}C</ContextMenuShortcut>
-            </ContextMenuItem>
-          ) : null}
-          {hasClipboard ? (
-            <ContextMenuItem
-              onClick={() => void handlePaste()}
-              disabled={clipboard?.op === "copy"}
-              title={
-                clipboard?.op === "copy"
-                  ? "Use Cmd/Ctrl+V on the active folder to paste a copy"
-                  : undefined
-              }
-            >
-              <ClipboardPaste className="mr-2 h-4 w-4" />
-              Paste {clipboard?.op === "cut" ? "into folder" : "(copy)"}
-              <ContextMenuShortcut>{cmd}V</ContextMenuShortcut>
-            </ContextMenuItem>
-          ) : null}
-          <ContextMenuSeparator />
-          <ContextMenuItem onClick={() => requestRename("folder", folderId)}>
-            <Edit2 className="mr-2 h-4 w-4" />
-            Rename
-            <ContextMenuShortcut>F2</ContextMenuShortcut>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => void handleMove()}>
-            <FolderInput className="mr-2 h-4 w-4" />
-            Move…
-          </ContextMenuItem>
-          {onNewFolderInside ? (
-            <ContextMenuItem onClick={onNewFolderInside}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              New folder inside
-            </ContextMenuItem>
-          ) : null}
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={() => setConfirmDeleteOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete folder
-            <ContextMenuShortcut>⌫</ContextMenuShortcut>
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-
-      <AlertDialog
-        open={confirmDeleteOpen}
-        onOpenChange={(open) => {
-          setConfirmDeleteOpen(open);
-          if (!open) setDeleteError(null);
+      <NonEditableContextMenu
+        sourceFeature="files"
+        surfaceName={FILES_SURFACE}
+        contextData={{
+          content: folder.folderName,
+          active_folder_id: folderId,
         }}
+        extraSections={extraSections}
+        enableFloatingIcon={false}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete folder?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Move <strong>{folder.folderName}</strong> and all of its contents
-              to Trash. You can restore it later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {deleteError ? (
-            <p className="text-xs text-destructive">{deleteError}</p>
-          ) : null}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                void handleDelete();
-              }}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting ? "Deleting…" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {children}
+      </NonEditableContextMenu>
 
       {!isVirtual ? (
         <ShareLinkDialog
