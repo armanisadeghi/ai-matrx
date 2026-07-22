@@ -21,7 +21,7 @@ vision: [features/context-menu-v3/FEATURE.md]
 - Inline edit wire: `features/context-menu-v3/utils/widget-handle.ts` (+ shell registration in `ContextMenuV3.tsx`), `features/agents/hooks/useWidgetHandle.ts` (`useOptionalWidgetHandle`), channel docs `features/agents/components/tools-management/CLIENT_SIDE_TOOLS.md`, working reference `features/code-editor/agent-code-editor/hooks/useCodeEditorWidgetHandle.ts`.
 - Skills: `context-menu-v3` (surface rollout recipe), `agent-execution-redux` (launch/runtime contract).
 - Test: log in at `/login` (admin@admin.com / Password1234#), demos at `/demos/context-menu` (hub has the core-vs-per-surface guide) and `/demos/context-menu/inline-edit` (live inline-edit proof page with applied-edits log).
-- Environment trap: dev servers on this volume crashed repeatedly mid-compile (`Interrupted system call` reading node_modules) on 2026-07-21, killing chunk loads (`AgentFlexiblePanel` ChunkLoadError). Use `.claude/launch.json` `next-dev-qa2` (port 3011, own distdir); `pnpm clean:next` clears stale alternate build dirs.
+- Environment trap: dev servers on this volume repeatedly crash or WEDGE mid-compile (`Interrupted system call` reading node_modules; one route "Compiling…" for 10+ min while the whole server stops responding) — 2026-07-21, across several sessions. Use `.claude/launch.json` `next-dev-qa2` (port 3011, own distdir); `pnpm clean:next` clears stale alternate build dirs. If it wedges, prefer verifying on the auto-deployed prod/demos Vercel builds instead of fighting it.
 
 ## Remaining work
 
