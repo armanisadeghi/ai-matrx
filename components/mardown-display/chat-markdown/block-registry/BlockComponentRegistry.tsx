@@ -48,6 +48,9 @@ const StructuredPlanBlock = lazy(
 const FlashcardsBlock = lazy(
   () => import("../../blocks/flashcards/FlashcardsBlock"),
 );
+const VideoPromptOptionsBlock = lazy(
+  () => import("../../blocks/video-prompt-options/VideoPromptOptionsBlock"),
+);
 const MultipleChoiceQuiz = lazy(
   () => import("../../blocks/quiz/MultipleChoiceQuiz"),
 );
@@ -339,6 +342,13 @@ export const BlockComponents = {
   FlashcardsBlock: (props: React.ComponentProps<typeof FlashcardsBlock>) => (
     <LazyBlockWrapper>
       <FlashcardsBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  VideoPromptOptionsBlock: (
+    props: React.ComponentProps<typeof VideoPromptOptionsBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <VideoPromptOptionsBlock {...props} />
     </LazyBlockWrapper>
   ),
   MultipleChoiceQuiz: (props: React.ComponentProps<typeof MultipleChoiceQuiz>) => (

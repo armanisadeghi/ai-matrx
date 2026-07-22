@@ -21,7 +21,6 @@ import type { VariablesPanelStyle } from "@/features/agents/components/inputs/va
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
-import { callbackManager } from "@/utils/callbackManager";
 
 // =============================================================================
 // Visibility helper — maps coarse showVariables config to fine-grained state
@@ -849,12 +848,15 @@ const instanceUIStateSlice = createSlice({
 
     builder.addCase(destroyInstance, (state, action) => {
       const conversationId = action.payload;
-      const entry = state.byConversationId[conversationId];
-      if (entry?.widgetHandleId) {
-        // Widget handles are SINGLE entries (not groups) — use unregister,
-        // not removeGroup. removeGroup here would silently no-op and leak.
-        callbackManager.unregister(entry.widgetHandleId);
-      }
+      // Do NOT unregister the widget handle here. The handle is owned by the
+      // REGISTRANT (useWidgetHandle / useOptionalWidgetHandle unregister on
+      // component unmount) and its lifetime is the WIDGET's, not the
+      // conversation's: the context-menu shell registers ONE handle per
+      // surface and passes the same id to every launch, and a widget can
+      // outlive any single conversation (new-conversation reset, gate
+      // cancel). Unregistering here permanently killed inline editing for a
+      // still-mounted surface — the hooks never re-register after an
+      // external unregister, so every later launch carried a dead id.
       delete state.byConversationId[conversationId];
     });
   },

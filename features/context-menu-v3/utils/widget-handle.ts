@@ -12,15 +12,41 @@
 // tool calls that edit the surface's content in place — zero extra wiring per
 // surface, no bespoke edit protocol (the old XML-in-stream idea stays dead).
 //
-// Precedence mirrors the menu's own Cut/Paste handlers exactly:
-//   - a surface callback (controlled React state) always wins;
-//   - `spliceInputValue` / direct value writes are the UNCONTROLLED fallback.
-// Only methods this surface can actually service are present — the per-turn
-// assembler (`deriveClientToolsFromHandle`) advertises exactly that subset.
+// Precedence: a surface callback (controlled React state) always wins; the
+// fallback writes through `setFieldValue` (native setter + input event), which
+// works on BOTH controlled and uncontrolled textareas. Only methods this
+// surface can actually service are present — the per-turn assembler
+// (`deriveClientToolsFromHandle`) advertises exactly that subset.
 
 import type { WidgetHandle } from "@/features/agents/types/widget-handle.types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import { spliceInputValue } from "./selection-tracking";
+
+/**
+ * Write a value into a textarea so BOTH controlled and uncontrolled fields
+ * take it: the native value setter bypasses React's value tracker, and the
+ * bubbled `input` event makes a controlled component's onChange fire (state
+ * updates instead of React reverting the DOM on the next render). A bare
+ * `element.value = x` write silently loses the edit on controlled fields —
+ * while the tool result still reports ok:true to the agent.
+ */
+function setFieldValue(
+  el: HTMLTextAreaElement,
+  next: string,
+  caret: number,
+): void {
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLTextAreaElement.prototype,
+    "value",
+  )?.set;
+  if (setter) setter.call(el, next);
+  else el.value = next;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  try {
+    el.setSelectionRange(caret, caret);
+  } catch {
+    // non-focusable / detached — caret is best-effort
+  }
+}
 
 export interface BuildEditableWidgetHandleArgs {
   getTextarea?: () => HTMLTextAreaElement | null;
@@ -55,8 +81,8 @@ export function buildEditableWidgetHandle(
     return typeof content === "string" ? content : null;
   };
 
-  // Full-content write. Surface callback (controlled) wins; direct value
-  // assignment is the uncontrolled fallback.
+  // Full-content write. Surface callback wins; the field fallback goes
+  // through setFieldValue so controlled AND uncontrolled textareas take it.
   const writeFull = (next: string): void => {
     if (onTextReplace) {
       onTextReplace(next);
@@ -64,11 +90,16 @@ export function buildEditableWidgetHandle(
     }
     const el = field();
     if (!el) throw new Error("Surface has no writable target");
-    spliceInputValue(el, 0, el.value.length, next);
+    setFieldValue(el, next, next.length);
   };
 
+  // Capability PRESENCE only — this function runs in the shell's render body,
+  // so it must never invoke a surface callback (getTextarea reads the DOM,
+  // getApplicationScope may serialize the whole document; per-keystroke cost
+  // + a React render-purity violation). The method bodies re-check liveness
+  // (readCurrent() null checks) at call time, which is the only time it matters.
   const canWrite = Boolean(onTextReplace) || Boolean(getTextarea);
-  const canRead = readCurrent() !== null || Boolean(getTextarea);
+  const canRead = Boolean(getTextarea) || Boolean(getApplicationScope);
   if (!canWrite) return null;
 
   const handle: WidgetHandle = {
@@ -83,7 +114,11 @@ export function buildEditableWidgetHandle(
       const el = field();
       if (!el) throw new Error("Surface has no writable target");
       const at = el.selectionStart ?? 0;
-      spliceInputValue(el, at, at, text);
+      setFieldValue(
+        el,
+        el.value.slice(0, at) + text + el.value.slice(at),
+        at + text.length,
+      );
     };
   }
   if (onTextInsertAfter || getTextarea) {
@@ -92,7 +127,11 @@ export function buildEditableWidgetHandle(
       const el = field();
       if (!el) throw new Error("Surface has no writable target");
       const at = el.selectionEnd ?? el.value.length;
-      spliceInputValue(el, at, at, text);
+      setFieldValue(
+        el,
+        el.value.slice(0, at) + text + el.value.slice(at),
+        at + text.length,
+      );
     };
   }
 

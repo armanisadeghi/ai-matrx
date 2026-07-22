@@ -22,7 +22,7 @@
  */
 
 import { useRef, useState } from "react";
-import { Wand2 } from "lucide-react";
+import { PenLine } from "lucide-react";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 const INITIAL = `Teh context menu is teh fastest path to everything teh system can do.
@@ -58,7 +58,7 @@ export default function InlineEditDemoPage() {
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
         <header className="space-y-1">
           <div className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4 text-primary" />
+            <PenLine className="h-4 w-4 text-primary" />
             <h1 className="text-lg font-semibold">Inline Agent Editing</h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-3xl">
@@ -78,6 +78,12 @@ export default function InlineEditDemoPage() {
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Editable surface (live)
             </h2>
+            {/* No insert overrides on purpose: widget_text_insert_before/
+                after are CURSOR-relative by contract, and the handle's field
+                fallback (native setter + input event) applies them at the
+                caret while still updating this controlled component via
+                onChange below. onTextReplace covers full-content ops
+                (replace / prepend / append / patch). */}
             <EditableContextMenu
               sourceFeature="context-menu-demo"
               getTextarea={() => textareaRef.current}
@@ -85,20 +91,23 @@ export default function InlineEditDemoPage() {
                 setValue(next);
                 record("replace (full content)", next);
               }}
-              onTextInsertBefore={(text) => {
-                setValue((v) => text + v);
-                record("insert before", text);
-              }}
-              onTextInsertAfter={(text) => {
-                setValue((v) => v + text);
-                record("insert after", text);
-              }}
               contextData={{ content: value }}
             >
               <textarea
                 ref={textareaRef}
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  // A programmatic input event (agent cursor-insert) lands
+                  // here too — log it as an edit when it wasn't typed.
+                  if (
+                    Math.abs(next.length - value.length) > 1 &&
+                    document.activeElement !== textareaRef.current
+                  ) {
+                    record("insert (at cursor)", next);
+                  }
+                  setValue(next);
+                }}
                 spellCheck={false}
                 className="min-h-[320px] w-full rounded-md border border-border bg-card p-3 text-[16px] leading-relaxed outline-none focus:ring-2 focus:ring-primary"
               />
