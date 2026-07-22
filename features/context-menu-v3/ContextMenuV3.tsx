@@ -113,6 +113,7 @@ export function ContextMenuV3({
   scopeId = null,
   enableFloatingIcon = true,
   className,
+  suppressed = false,
   onMenuOpenChange,
   onCloseAutoFocus,
   isEditable,
@@ -280,6 +281,7 @@ export function ContextMenuV3({
 
   // ── Capture handlers ─────────────────────────────────────────────────────
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (suppressed) return; // yield to the native menu (e.g. streaming)
     if (e.button !== 2) return; // right-click only
     const target = e.target as HTMLElement;
     resolvePerTargetContext(target);
@@ -381,6 +383,7 @@ export function ContextMenuV3({
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
+    if (suppressed) return; // trigger is disabled; native menu shows
     captureContext(e.target as HTMLElement, e.currentTarget as HTMLElement);
     setMenuOpen(true);
   };
@@ -446,6 +449,7 @@ export function ContextMenuV3({
     }
   };
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (suppressed) return;
     const t = e.touches[0];
     if (!t) return;
     touchStart.current = {
@@ -567,6 +571,7 @@ export function ContextMenuV3({
           ref={setSelectionOwner}
           style={{ display: "contents" }}
           onContextMenu={(e) => {
+            if (suppressed) return; // native menu shows
             e.preventDefault();
             captureContext(
               e.target as HTMLElement,
@@ -625,6 +630,7 @@ export function ContextMenuV3({
       >
         <ContextMenuTrigger
           asChild
+          disabled={suppressed}
           ref={setSelectionOwner}
           onMouseDown={handleMouseDown}
           onContextMenu={handleContextMenu}

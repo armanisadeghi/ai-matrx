@@ -241,6 +241,14 @@ export interface ContextMenuV3CoreProps {
   enableFloatingIcon?: boolean;
   className?: string;
 
+  /**
+   * While true, right-click / long-press yield to the NATIVE browser menu —
+   * no capture, no open — WITHOUT unmounting the wrapper (children keep
+   * their DOM state). For streaming documents: rich right-click only after
+   * the stream ends.
+   */
+  suppressed?: boolean;
+
   // ── Shell lifecycle (surface-facing) ────────────────────────────────────
   /** Fires when the menu (right-click, floating dropdown, or mobile sheet)
    *  opens/closes. For row-highlight or lazy-config invalidation. */
