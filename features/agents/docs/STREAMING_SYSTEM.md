@@ -180,7 +180,7 @@ If you build a new long-running endpoint, conform to this contract. Do not inven
 
 ## Related
 
-Cross-repo system-of-record for the planned unification of this pipeline: /Users/armanisadeghi/code/common-docs/unified-content-pipeline/FEATURE.md — read it before touching the parsing/rendering spine in ANY repo.
+Cross-repo system-of-record for the planned unification of this pipeline: /Users/armanisadeghi/code/common-docs/projects/unified-content-pipeline/FEATURE.md — read it before touching the parsing/rendering spine in ANY repo.
 
 - [`STREAM_STATUS_LIFECYCLE.md`](./STREAM_STATUS_LIFECYCLE.md) — detailed event + phase reference
 - [`WIDGET_HANDLE_SYSTEM.md`](./WIDGET_HANDLE_SYSTEM.md) — widget tool stream integration

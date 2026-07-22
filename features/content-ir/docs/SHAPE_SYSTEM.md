@@ -1,6 +1,6 @@
 # The Shape System — operating doc
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md` — this file owns frontend operating detail; current platform-wide status and gaps live there.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md` — this file owns frontend operating detail; current platform-wide status and gaps live there.
 
 > **Naming rule:** "Shape" is the product name of the system; **"kind"** is the technical noun (`content_ir.kind_definition.kind`). CLI namespace is `shape:*`; DB and code vocabulary stays `kind`.
 >
@@ -122,7 +122,7 @@ First live rows: `stats_db_demo` (react + transform) and `diff_db_demo` (html) v
 
 ## Historical stage roadmap (retained for implementation context)
 
-Current merge-ordered projects live in `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`; the line below records the earlier frontend-led sequencing and is not a current completion ledger.
+Current merge-ordered projects live in `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md`; the line below records the earlier frontend-led sequencing and is not a current completion ledger.
 
 **W ✅** workflow I/O · **0** this doc + skill + doctor (`check:shapes`) + envelope collision guard · **1** flashcards vertical incl. keystone (`<flashcards>` XML → kind → same component), minimal resolver + `is_active` gate, `[kind]` preview route, `shape:sample` CLI, Python fingerprint parity starts · **2** `kind_example` at scale + capture windows + `shape:new`/`shape:skill` generators + `sample_data` DROP · **3** resolver sweep (all kinds' web components registered; skl annihilation) · **4** input bridge (`kindFieldsToVariableDefinitions`) · **5a** full surface seeding + generated bootstraps swap into accumulator/splitter/`block_detector` · **5b** `__ir` emission (fingerprint-gated) + pydantic binding · **6** per-kind sweep (doctor-arbitrated) · **7** tools `output_kind` (LAST) + React Native maps (first external platform) + user/org render preferences.
 

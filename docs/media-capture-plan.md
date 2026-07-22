@@ -3,7 +3,7 @@
 **Status:** Final — ready for execution.
 **Date:** 2026-07-21
 **Scope:** One platform-grade capture system for **photos, video, and audio** — camera/mic/speaker device management unified in settings, correct sizing, cloud-file integration, full management surfaces — on desktop and mobile browsers.
-**System of record for cross-repo contracts:** `/Users/armanisadeghi/code/common-docs/media-capture/FEATURE.md` (metadata schema, TUS browser-wire contract, bounded-media-processing requirements, transcription and derivative contracts, ownership map). This document is the frontend execution plan; server work is owned by the aidream handoffs listed in Phase 6/9.
+**System of record for cross-repo contracts:** `/Users/armanisadeghi/code/common-docs/systems/media-capture/FEATURE.md` (metadata schema, TUS browser-wire contract, bounded-media-processing requirements, transcription and derivative contracts, ownership map). This document is the frontend execution plan; server work is owned by the aidream handoffs listed in Phase 6/9.
 
 ---
 
@@ -148,7 +148,7 @@ Every phase ends green: `pnpm type-check`, `pnpm check:doctrine`, plus the phase
 ### Phase 0 — System of record + contracts (single owner, everything forks after it)
 
 **Build:**
-1. `common-docs/media-capture/FEATURE.md` — the cross-repo system of record: metadata schema v1, TUS browser-wire contract, bounded-media-processing requirements, transcription-source contract, `audio_extracted` derivative contract, ownership map.
+1. `common-docs/systems/media-capture/FEATURE.md` — the cross-repo system of record: metadata schema v1, TUS browser-wire contract, bounded-media-processing requirements, transcription-source contract, `audio_extracted` derivative contract, ownership map.
 2. `features/media-capture/FEATURE.md` skeleton — status, core-storage contract (bytes → `files.files` via `fileHandler`, no third store), invariants, pointer to common-docs.
 3. Three aidream work-order handoffs filed in `aidream/docs/handoffs/` (contents = Phase 6 and Phase 9 server scopes, with file:line evidence).
 
@@ -314,7 +314,7 @@ Owned by the aidream handoffs. Scope:
 - Browser matrix: Chrome/Edge/Firefox/Safari desktop; Safari iOS + Chrome Android on real devices — simulated streams do not count as verification.
 - Scenario matrix: front/rear/external/unplugged cameras; rotation during preview AND recording; full-frame (scanner) vs viewport-crop pixel comparisons; camera-only / video-only / video+mic; permission combinations (camera granted + mic denied, etc.); compatible and incompatible leases; exact mic acquire/clone/release balance; lock contention with a live transcript recording; tab background, phone lock, track interruption, route unmount mid-recording; large TUS upload with forced interruption + resume + lost final response + token refresh + expiry; buffered↔TUS metadata parity; measured server memory ceiling on a realistically large file; cloud metadata/poster/dimensions/duration/waveform/permissions verified in the live DB; extracted-audio lineage; managed-reference transcription with a source larger than one provider request.
 - Hygiene: zero leaked object URLs, live tracks, IndexedDB chunks, or lock claims after unmount (admin diagnostics prove it); no signed URLs persisted anywhere; legacy camera fully deleted; `react-media-recorder` gone.
-- Docs: `common-docs/media-capture/FEATURE.md` current; repo feature docs point to it; aidream handoffs groomed per the handoff system; `features/audio/FEATURE.md` corrections landed; `features/files/handler/FEATURE.md` documents the transport policy; `/camera/admin` map complete.
+- Docs: `common-docs/systems/media-capture/FEATURE.md` current; repo feature docs point to it; aidream handoffs groomed per the handoff system; `features/audio/FEATURE.md` corrections landed; `features/files/handler/FEATURE.md` documents the transport policy; `/camera/admin` map complete.
 
 ## 7. Key references
 

@@ -6,7 +6,7 @@
 
 This is the live architecture doc for the canonical file management system under `features/files/`. File bytes live in S3 and metadata lives in Postgres; the browser never talks to an object-store SDK.
 
-> **Cross-repo system-of-record — the file BACKEND is now a standalone service:** `/Users/armanisadeghi/code/common-docs/matrx-files-service/FEATURE.md`. The aidream file layer was extracted into the independent `matrx-files` microservice (deployed to EC2 2026-07-13). `NEXT_PUBLIC_FILES_URL` configures server-side consumers and public share URLs; authenticated browser traffic remains on aidream unless `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`. The direct-browser gate stays off until the standalone service passes authenticated CORS preflight from every frontend origin. Read the system-of-record before any file-backend-facing change.
+> **Cross-repo system-of-record — the file BACKEND is now a standalone service:** `/Users/armanisadeghi/code/common-docs/systems/matrx-files-service/FEATURE.md`. The aidream file layer was extracted into the independent `matrx-files` microservice (deployed to EC2 2026-07-13). `NEXT_PUBLIC_FILES_URL` configures server-side consumers and public share URLs; authenticated browser traffic remains on aidream unless `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`. The direct-browser gate stays off until the standalone service passes authenticated CORS preflight from every frontend origin. Read the system-of-record before any file-backend-facing change.
 
 If you're modifying anything in this feature, **also update this doc and [migration/INVENTORY.md](migration/INVENTORY.md) in the same change.** Stale docs cascade across parallel agents.
 

@@ -1,7 +1,7 @@
 # Handoff: Media Capture — launch verification (post-build, post-release)
 
 **Status:** System BUILT (all plan phases P0–P9, both repos) + adversarially verified + released 2026-07-21. This doc tracks the remaining verification-only work and captures the vision so any agent can finish without this conversation.
-**Plan:** [docs/media-capture-plan.md](../media-capture-plan.md) · **Cross-repo contracts:** `/Users/armanisadeghi/code/common-docs/media-capture/FEATURE.md` · **Feature docs:** [features/media-capture/FEATURE.md](../../features/media-capture/FEATURE.md), [features/media-devices/FEATURE.md](../../features/media-devices/FEATURE.md)
+**Plan:** [docs/media-capture-plan.md](../media-capture-plan.md) · **Cross-repo contracts:** `/Users/armanisadeghi/code/common-docs/systems/media-capture/FEATURE.md` · **Feature docs:** [features/media-capture/FEATURE.md](../../features/media-capture/FEATURE.md), [features/media-devices/FEATURE.md](../../features/media-devices/FEATURE.md)
 
 ## The vision (do not drift from this)
 

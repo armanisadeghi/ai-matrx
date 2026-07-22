@@ -20,7 +20,7 @@ _(none)_
 
 ## Active
 
-- **TASK-SLR** — Picklists → Structured Lists full cross-repo rename (2026-07-14, `in-progress`). Eliminate the `picklist` identifier everywhere (data object + dropdown projection: tool, `cc.picklist`, wire tokens, component/route names) → `structured_list`. Layer-by-layer with 100%-verification gates + persisted-data migration (agent.definition JSON, tool bindings, window_sessions). **Full plan + live status = the cross-repo playbook `/Users/armanisadeghi/code/common-docs/structured-lists-rename/FEATURE.md`** (the resumable source of truth — update it, not this line, as layers complete). Layer 0 (data object) done + verified (FE `dee8c4ede`, aidream `d8fbfa7b0`). Next: Layer 1 (RPC rename).
+- **TASK-SLR** — Picklists → Structured Lists full cross-repo rename (2026-07-14, `in-progress`). Eliminate the `picklist` identifier everywhere (data object + dropdown projection: tool, `cc.picklist`, wire tokens, component/route names) → `structured_list`. Layer-by-layer with 100%-verification gates + persisted-data migration (agent.definition JSON, tool bindings, window_sessions). **Full plan + live status = the cross-repo playbook `/Users/armanisadeghi/code/common-docs/projects/structured-lists-rename/FEATURE.md`** (the resumable source of truth — update it, not this line, as layers complete). Layer 0 (data object) done + verified (FE `dee8c4ede`, aidream `d8fbfa7b0`). Next: Layer 1 (RPC rename).
 
 ---
 

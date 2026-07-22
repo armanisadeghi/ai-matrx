@@ -1,6 +1,6 @@
 # Handoff — Access, Scope-Context & Security-Philosophy Campaign
 
-**Owner:** Arman. **State: 2026-07-21, all work committed + pushed to main in ai-matrx, aidream, matrx-common-docs.** Read the three source-of-truth docs before touching anything access- or scope-related: `common-docs/db-rules/FEATURE.md` §6 (rules + THE SECURITY PHILOSOPHY), `common-docs/access-architecture/FEATURE.md` (live-verified mechanics), `common-docs/scope-context-system/FEATURE.md` (the scope/context model, in the owner's own words).
+**Owner:** Arman. **State: 2026-07-21, all work committed + pushed to main in ai-matrx, aidream, matrx-common-docs.** Read the three source-of-truth docs before touching anything access- or scope-related: `common-docs/systems/db-rules/FEATURE.md` §6 (rules + THE SECURITY PHILOSOPHY), `common-docs/systems/access-architecture/FEATURE.md` (live-verified mechanics), `common-docs/systems/scope-context-system/FEATURE.md` (the scope/context model, in the owner's own words).
 
 ## Rules of engagement (unchanged, non-negotiable)
 
@@ -27,6 +27,6 @@
 2. **Regen follow-ups after deploy:** aidream `db/generate.py` (4 package model files were hand-patched), `docs/TOOLS.generated.md`, FE `pnpm sync-types` (api-types unions were hand-patched).
 3. **Existing ROWS still carry `personal`** on org-work tables (defaults were fixed; data was not). Backfilling rows to `internal` changes real visibility — **Arman's call, not an agent's.** Until then, old rows stay locked to their creators.
 4. **`link` tier is inert** (behaves as `internal`; nothing tests it). Either activate or retire it deliberately — don't build on it.
-5. **Open briefs** (`common-docs/access-architecture/DECISION_BRIEFS.md`): Brief 1 (Module Settings as the one org-admin knob + the agent/skill `moduleKey` collision), Brief 3 (shared-with-me + mine-first list contract; `is_discoverable` unused by list surfaces — G14), Brief 4 (`/p/e` allowlist → registry flag).
+5. **Open briefs** (`common-docs/systems/access-architecture/DECISION_BRIEFS.md`): Brief 1 (Module Settings as the one org-admin knob + the agent/skill `moduleKey` collision), Brief 3 (shared-with-me + mine-first list contract; `is_discoverable` unused by list surfaces — G14), Brief 4 (`/p/e` allowlist → registry flag).
 6. **Arman to confirm** the agent read-only contract is honored server-side (builder UI done), and whether tasks/threads/war-rooms also get tagging-is-sharing (one `association_types` row each).
 7. **Recurring failure modes to police in reviews:** new tables defaulting to the lowest visibility without a personal-artifact justification; any access check reading the active org; hand-rolled owner/permission ladders instead of the kernel; silent 0-row RLS-filtered writes (use the `assertMutated` pattern); "security theater" guards that block legitimate owners.

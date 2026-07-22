@@ -7,7 +7,7 @@
 > chain), and the optional project relationship is one canonical
 > `platform.associations` edge `research_topic → project`. Whole-topic
 > synthesis is `scope='topic'` (legacy rows say `project`). Authoritative
-> current architecture: `common-docs/research-project-decoupling/FEATURE.md`
+> current architecture: `common-docs/projects/research-project-decoupling/FEATURE.md`
 > and `features/research/FEATURE.md`. Corrections applied inline below;
 > anything else here that mentions projects should be distrusted.
 

@@ -2,12 +2,12 @@
 status: active
 updated: 2026-07-18
 repos: [matrx-frontend, aidream, common-docs]
-vision: [/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md, /Users/armanisadeghi/code/common-docs/content-ir-system/OWNER_BRIEF.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md, /Users/armanisadeghi/code/common-docs/systems/content-ir-system/OWNER_BRIEF.md]
 ---
 
 # Content IR / Shape System — work order for continuing agents
 
-The system-of-record (evidence, counts, acceptance) is `common-docs/content-ir-system/FEATURE.md`. THIS doc is the working handoff. **Read the Vision section before touching anything** — it is the ground truth and outranks every summary, including this one.
+The system-of-record (evidence, counts, acceptance) is `common-docs/systems/content-ir-system/FEATURE.md`. THIS doc is the working handoff. **Read the Vision section before touching anything** — it is the ground truth and outranks every summary, including this one.
 
 ## Vision — Arman's words (verbatim; never paraphrase these into agent-speak)
 
@@ -47,7 +47,7 @@ Every lane: build → independent adversarial review agent (goal: REFUTE the cla
 - **tool_ui subsumption** (the ratified endgame): migrating tool renderers onto kind components touches tool-call-visualization, workflow-emit, agent-apps, and the tool schema. Needs a design pass and Arman's sequencing call.
 - **Agent bulk-bind** (578 variable-carrying agents → kind contracts): gated on prod soak of the W3-A bridge + Arman's "system is 100%" bar — this IS the production-agent rollout he deliberately holds.
 - **Workflow launch + dynamic contract publisher (P9)** — gated on Arman's "nothing left to do" bar for workflow I/O.
-- **E1 — unified TurnAssembler / parallel-pipeline retirement** (`common-docs/unified-content-pipeline/FEATURE.md`): deliberately last, consumes stabilized contracts.
+- **E1 — unified TurnAssembler / parallel-pipeline retirement** (`common-docs/projects/unified-content-pipeline/FEATURE.md`): deliberately last, consumes stabilized contracts.
 - **Sandbox/safety hardening for shared user components**: Arman ratified open-allowlist now, "make our safety systems better when we get users fully on it" — the *when and how* is his call.
 
 ## Done (compact — git + FEATURE docs hold the detail)
