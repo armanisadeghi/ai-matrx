@@ -68,7 +68,7 @@ function draftFrom(brand: MarketingBrand | null): BrandDraft {
     ogImageUrl: brand?.og_image_url ?? "",
     notes: brand?.notes ?? "",
     status: brand?.status ?? "active",
-    visibility: "public",
+    visibility: "internal",
   };
 }
 
