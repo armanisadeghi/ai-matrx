@@ -4,15 +4,13 @@
  * The canonical Share surface for images across the app — chat
  * messages, peek toasts, image grids, lightbox actions, etc.
  *
- * Three quick options up front (each does the obvious thing without
+ * Two quick options up front (each does the obvious thing without
  * lying about it):
  *
  *   • Copy public link    — Truly permanent. Either the file's CDN URL
  *                           (when visibility="public") or a freshly
  *                           created no-expiry share-link `/share/{token}`.
  *                           Will still work in a week, a month, a year.
- *   • Copy temporary link — The current 1-hour signed URL with an
- *                           explicit "expires soon" label. Honest.
  *   • Manage all links →  — Opens the full {@link ShareLinkDialog}
  *                           for per-link permission/expiry/max-uses
  *                           control + revocation.
@@ -26,8 +24,8 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Clock, Globe, Link2, Loader2, Settings2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Check, Globe, Link2, Loader2, Settings2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
   Popover,
@@ -41,19 +39,16 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { createShareLink, loadShareLinks } from "@/features/files/redux/thunks";
-import { selectActiveShareLinksForResource } from "@/features/files/redux/selectors";
-import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
-import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
+import { pythonShareUrl, ShareLinkDialog, useSharing } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
+import { shareableMediaUrl } from "@/lib/media/durability";
 import type { UnifiedImageBlock } from "./types";
 
 export interface ImageSharePopoverProps {
   block: UnifiedImageBlock;
-  /** Currently-resolved src — used for the temporary-link option. */
+  /** Currently-resolved src — external fallback only; never copied if signed. */
   currentSrc: string | null;
   /** Render-prop for the trigger element. Receives the open state for styling. */
   children: React.ReactNode;
@@ -123,7 +118,7 @@ export function ImageSharePopover({
             <div className="border-b px-3 py-2">
               <div className="text-xs font-semibold">Share image</div>
               <div className="text-[11px] text-muted-foreground">
-                Public link never expires · temporary expires in ~1 hour
+                Public links use Matrx sharing · playback URLs stay private
               </div>
             </div>
             <div className="p-2">{body}</div>
@@ -158,7 +153,7 @@ export interface ShareQuickActionsBodyProps {
 }
 
 /**
- * The bare share quick-actions list (public / temporary / manage). Exported
+ * The bare share quick-actions list (public / manage). Exported
  * so surfaces that already have their own container — e.g. the image
  * options Drawer in {@link UnifiedImageBlockRenderer} — can render the exact
  * same public-link logic inline instead of nesting a second popover. The
@@ -186,7 +181,6 @@ export function ShareQuickActionsBody({
   return (
     <MatrxQuickActions
       block={block}
-      currentSrc={currentSrc}
       onAdvanced={onAdvanced}
       onActionComplete={onActionComplete}
     />
@@ -206,10 +200,10 @@ function ExternalQuickActions({
   currentSrc: string | null;
   onActionComplete: () => void;
 }) {
-  const externalUrl = block.externalUrl || currentSrc || "";
+  const externalUrl = shareableMediaUrl(block.externalUrl || currentSrc);
   const handleCopy = useCallback(async () => {
     if (!externalUrl) {
-      toast.error("No link to copy");
+      toast.error("This private playback URL cannot be shared");
       return;
     }
     try {
@@ -226,7 +220,7 @@ function ExternalQuickActions({
       <QuickActionRow
         icon={<Link2 className="h-4 w-4" />}
         label="Copy external link"
-        sublabel={externalUrl || "No URL available"}
+        sublabel={externalUrl || "No safe external URL available"}
         onClick={handleCopy}
         disabled={!externalUrl}
       />
@@ -239,34 +233,25 @@ function ExternalQuickActions({
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Matrx — full surface with public/temporary/advanced.
+// Matrx — full surface with public/advanced sharing.
 // ───────────────────────────────────────────────────────────────────────────────
 
 function MatrxQuickActions({
   block,
-  currentSrc,
   onAdvanced,
   onActionComplete,
 }: {
   block: Extract<UnifiedImageBlock, { origin: "matrx" }>;
-  currentSrc: string | null;
   onAdvanced: () => void;
   onActionComplete: () => void;
 }) {
-  const dispatch = useAppDispatch();
-  const links = useAppSelector((s) =>
-    selectActiveShareLinksForResource(s, block.fileId),
+  const { activeShareLinks: links, createShareLink } = useSharing(
+    block.fileId,
+    "file",
   );
 
   const [publicBusy, setPublicBusy] = useState(false);
-  const [tempBusy, setTempBusy] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  // Load share links once on mount so we can detect when a no-expiry
-  // public link already exists (avoids creating duplicates on each open).
-  useEffect(() => {
-    void dispatch(loadShareLinks({ resourceId: block.fileId, resourceType: "file" }));
-  }, [dispatch, block.fileId]);
 
   // An "existing public link" is read-only, no expiry, no usage cap.
   // If one exists we reuse it instead of minting a duplicate.
@@ -290,8 +275,10 @@ function MatrxQuickActions({
     setPublicBusy(true);
     try {
       // Path 1 — already a public file with a real CDN URL.
-      if (block.visibility === "public" && block.cdnUrl) {
-        await navigator.clipboard.writeText(block.cdnUrl);
+      const permanentCdnUrl =
+        block.visibility === "public" ? shareableMediaUrl(block.cdnUrl) : null;
+      if (permanentCdnUrl) {
+        await navigator.clipboard.writeText(permanentCdnUrl);
         toast.success("Public link copied", {
           description: "This is the file's permanent public URL.",
         });
@@ -303,13 +290,7 @@ function MatrxQuickActions({
       // Path 2 — reuse an existing no-expiry link, or mint one.
       let token = existingPublicLink?.shareToken;
       if (!token) {
-        const link = await dispatch(
-          createShareLink({
-            resourceId: block.fileId,
-            resourceType: "file",
-            permissionLevel: "viewer",
-          }),
-        ).unwrap();
+        const link = await createShareLink({ permissionLevel: "viewer" });
         token = link.shareToken;
       }
       const publicUrl = pythonShareUrl(token);
@@ -332,42 +313,12 @@ function MatrxQuickActions({
     block.cdnUrl,
     block.fileId,
     existingPublicLink,
-    dispatch,
+    createShareLink,
     onActionComplete,
   ]);
 
-  /**
-   * The current signed URL — short-lived, exactly what `<img>` is using.
-   * Useful for quick paste-into-chat or grabbing the raw S3 bytes.
-   */
-  const handleCopyTemporary = useCallback(async () => {
-    if (tempBusy) return;
-    const tempUrl = block.signedUrl ?? currentSrc;
-    if (!tempUrl) {
-      toast.error("No temporary link available");
-      return;
-    }
-    setTempBusy(true);
-    try {
-      await navigator.clipboard.writeText(tempUrl);
-      toast.success("Temporary link copied", {
-        description: "Expires in about an hour.",
-      });
-      setCopiedKey("temp");
-      onActionComplete();
-    } catch {
-      toast.error("Could not copy link");
-    } finally {
-      setTempBusy(false);
-    }
-  }, [tempBusy, block.signedUrl, currentSrc, onActionComplete]);
-
-  // We can always create a public link for a matrx file, so the action
-  // is never disabled on that grounds — `publicBusy` is the only gate.
-  const tempAvailable = Boolean(block.signedUrl || currentSrc);
-
   const publicLabel = useMemo(() => {
-    if (block.visibility === "public" && block.cdnUrl) {
+    if (block.visibility === "public" && shareableMediaUrl(block.cdnUrl)) {
       return "Copy public link";
     }
     if (existingPublicLink) return "Copy public link";
@@ -375,7 +326,7 @@ function MatrxQuickActions({
   }, [block.visibility, block.cdnUrl, existingPublicLink]);
 
   const publicSublabel = useMemo(() => {
-    if (block.visibility === "public" && block.cdnUrl) {
+    if (block.visibility === "public" && shareableMediaUrl(block.cdnUrl)) {
       return "Permanent CDN URL · anyone with the link";
     }
     if (existingPublicLink) {
@@ -393,15 +344,6 @@ function MatrxQuickActions({
         onClick={handleCopyPublic}
         busy={publicBusy}
         copied={copiedKey === "public"}
-      />
-      <QuickActionRow
-        icon={<Clock className="h-4 w-4 text-amber-500" />}
-        label="Copy temporary link"
-        sublabel="Short-lived · expires in ~1 hour"
-        onClick={handleCopyTemporary}
-        busy={tempBusy}
-        disabled={!tempAvailable}
-        copied={copiedKey === "temp"}
       />
       <div className="my-1 h-px bg-border" />
       <QuickActionRow

@@ -2,7 +2,7 @@
 
 **Status:** `canonical`
 **Tier:** `1`
-**Last updated:** `2026-07-20`
+**Last updated:** `2026-07-21`
 
 ---
 
@@ -78,7 +78,7 @@ This feature is the **single source of resistance** for file flows: direct const
 There is no background refresh. The policy is **lazy mint on demand**:
 
 1. While the file's bytes are already loaded into the `<img>` / `<video>` / `<audio>`, the URL string's expiry does not matter — the browser is not re-requesting it.
-2. The next time *anything* asks for the URL (a download, an edit, a remount, a share action), the resolver routes through `getOrMintSignedUrl(fileId)`. If the cached URL is still valid (with a 60s safety margin), it's returned as-is. If not, a fresh URL is minted in that call and cached.
+2. The next time a private byte consumer asks for the URL (a download, an edit, or a remount), the resolver routes through `getOrMintSignedUrl(fileId)`. If the cached URL is still valid (with a 60s safety margin), it's returned as-is. If not, a fresh URL is minted in that call and cached. **Share/copy actions never use this lane**: they emit an auth-gated internal viewer URL, a durable CDN URL, or a canonical `/share/{token}` URL.
 3. Concurrent callers for the same fileId share one in-flight mint via the cache's request-dedup map — 20 components loading the same file produce 1 network call, not 20.
 4. The 403 retry path: if the browser ever does refetch a stale URL (e.g. memory-pressure cache eviction with the tab still open), an `<img onError>` handler can call `invalidateSignedUrl(fileId)` and force the consumer to remount with a fresh URL. Most consumers don't bother — a manual reload is acceptable for this rare edge case.
 5. Backend errors: on a permissions change, `mintSignedUrl` will surface `FileAccessDeniedError`; the cache won't store the failed mint, so the next call re-tries.
@@ -181,11 +181,13 @@ The previous parallel object-store path is fully removed. Compatibility readers,
 4. Anonymous users (public chat) are authenticated to Supabase with an anonymous UUID — they use the same handler API. There is no second lane.
 5. New file flows must use the handler from day one. Direct object-store SDK calls and direct media-block construction are regressions.
 6. Every uploaded file carries scope (`organization_id / project_id / task_id`) in `metadata.scope` when the active context has them. The handler stamps this.
+7. Signed object-store URLs are private playback/download credentials, never share links. `shareableMediaUrl` rejects both AWS SigV2 and SigV4 URLs at copy/share boundaries; owned media must use its internal viewer URL, a durable public URL, or the canonical share-link RPC flow.
 
 ---
 
 ## Change log
 
+- **2026-07-21 — Signed playback URLs can no longer escape through media actions.** All chat video inputs (`media_block`, legacy `video_output`, and markdown video links) now converge on `UnifiedVideoBlockRenderer`, preserving or recovering `file_id` before rendering actions; the two legacy video components that copied/shared raw `src` values were deleted. `shareableMediaUrl` now fails closed on both AWS signing dialects, image/video share menus no longer offer “Copy temporary link,” misclassified signed “CDN” or external URLs are rejected, and owned Copy/Open actions use the auth-gated file viewer while public sharing continues through durable CDN or canonical `/share/{token}` URLs.
 - **2026-07-21 — TUS transport landed (media-capture Phase 7).** `tusUpload.ts` + the 80 MB transport policy in `cloudUpload` (`resolveUploadTransport`); `UploadOpts` gained `signal` + `transport`; shared `buildUploadMetadataEnvelope` guarantees buffered↔TUS `metadata_json` parity. Live E2E pending aidream deploy (see § Transport policy).
 - **2026-07-20 — Ephemeral object URLs promoted to a shared browser primitive.** The bounded create/revoke registry moved from handler internals to `lib/media/object-url-registry.ts` so the file normalizer and local-only UI thumbnails share one leak-resistant object-URL lifecycle without importing private handler paths.
 - **2026-07-18 — Contextual files cannot leak into nested-folder discovery.**

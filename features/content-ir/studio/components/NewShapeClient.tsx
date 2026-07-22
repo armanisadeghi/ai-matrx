@@ -16,7 +16,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CircleAlert, Loader2, PencilRuler } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { stashChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
 import { shapeCreatorAgentId } from "@/features/content-ir/studio/constants";
 
@@ -78,17 +78,22 @@ export default function NewShapeClient() {
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Describe your data and what you want to see. The agent creates the
-          shape, builds a custom component for it, and you test it right here
-          in the studio.
+          shape, builds a custom component for it, and you test it right here in
+          the studio.
         </p>
 
         <label className="mt-4 block text-xs font-medium text-foreground">
           What do you want to build?
-          <Textarea
+          <ProTextarea
             value={intent}
             onChange={(e) => setIntent(e.target.value)}
             placeholder="e.g. A recipe card with ingredients, steps, cook time, and a difficulty rating"
-            className="mt-1 min-h-[96px] text-base sm:text-sm"
+            className="text-base sm:text-sm"
+            wrapperClassName="mt-1 w-full"
+            autoGrow
+            minHeight={96}
+            maxHeight={240}
+            enableTextStats={false}
           />
         </label>
 
@@ -97,11 +102,16 @@ export default function NewShapeClient() {
           <span className="font-normal text-muted-foreground">
             (optional — paste JSON, CSV, or plain text)
           </span>
-          <Textarea
+          <ProTextarea
             value={sample}
             onChange={(e) => setSample(e.target.value)}
             placeholder="Paste an example of your real data so the agent designs around it"
-            className="mt-1 min-h-[96px] font-mono text-base sm:text-sm"
+            className="font-mono text-base sm:text-sm"
+            wrapperClassName="mt-1 w-full"
+            autoGrow
+            minHeight={96}
+            maxHeight={240}
+            enableTextStats={false}
           />
         </label>
 

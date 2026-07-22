@@ -323,7 +323,7 @@ export function useSiteHeroScreenshot(
     ],
     queryFn: ({ signal }) =>
       getSiteHeroScreenshot(siteId, screenshotId, signal),
-    enabled: Boolean(siteId && screenshotId),
+    enabled: Boolean(siteId),
   });
 }
 

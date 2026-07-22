@@ -3,14 +3,12 @@
  *
  * The Share surface for videos in `UnifiedVideoBlockRenderer`. It is the
  * video twin of `image/ImageSharePopover.tsx` and — critically — uses the
- * SAME share-link path: the `createShareLink` / `loadShareLinks` thunks,
- * the `selectActiveShareLinksForResource` selector, the `ShareLinkDialog`,
- * and `pythonShareUrl`. There is no second share mechanism; only this thin
+ * SAME share-link path through `useSharing`, `ShareLinkDialog`, and
+ * `pythonShareUrl`. There is no second share mechanism; only this thin
  * presentation wrapper differs (a `<video>` has no "copy image" notion).
  *
  *   • Copy public link    — Permanent. CDN URL (visibility="public") or a
  *                           freshly created no-expiry `/share/{token}`.
- *   • Copy temporary link — The current signed URL, labelled "expires soon".
  *   • Manage all links →  — The full ShareLinkDialog (matrx files only).
  *
  * External videos get a simplified surface (just the external URL).
@@ -19,8 +17,8 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Clock, Globe, Link2, Loader2, Settings2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Check, Globe, Link2, Loader2, Settings2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
   Popover,
@@ -34,19 +32,16 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { createShareLink, loadShareLinks } from "@/features/files/redux/thunks";
-import { selectActiveShareLinksForResource } from "@/features/files/redux/selectors";
-import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
-import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
+import { pythonShareUrl, ShareLinkDialog, useSharing } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
+import { shareableMediaUrl } from "@/lib/media/durability";
 import type { VideoBlock } from "../types";
 
 export interface VideoSharePopoverProps {
   block: VideoBlock;
-  /** Currently-resolved src — used for the temporary-link option. */
+  /** Currently-resolved src — external fallback only; never copied if signed. */
   currentSrc: string | null;
   children: React.ReactNode;
   className?: string;
@@ -108,7 +103,7 @@ export function VideoSharePopover({
             <div className="border-b px-3 py-2">
               <div className="text-xs font-semibold">Share video</div>
               <div className="text-[11px] text-muted-foreground">
-                Public link never expires · temporary expires in ~1 hour
+                Public links use Matrx sharing · playback URLs stay private
               </div>
             </div>
             <div className="p-2">{body}</div>
@@ -153,7 +148,6 @@ function ShareQuickActionsBody({
   return (
     <MatrxQuickActions
       block={block}
-      currentSrc={currentSrc}
       onAdvanced={onAdvanced}
       onActionComplete={onActionComplete}
     />
@@ -169,10 +163,10 @@ function ExternalQuickActions({
   currentSrc: string | null;
   onActionComplete: () => void;
 }) {
-  const externalUrl = block.externalUrl || currentSrc || "";
+  const externalUrl = shareableMediaUrl(block.externalUrl || currentSrc);
   const handleCopy = useCallback(async () => {
     if (!externalUrl) {
-      toast.error("No link to copy");
+      toast.error("This private playback URL cannot be shared");
       return;
     }
     try {
@@ -189,7 +183,7 @@ function ExternalQuickActions({
       <QuickActionRow
         icon={<Link2 className="h-4 w-4" />}
         label="Copy external link"
-        sublabel={externalUrl || "No URL available"}
+        sublabel={externalUrl || "No safe external URL available"}
         onClick={handleCopy}
         disabled={!externalUrl}
       />
@@ -203,27 +197,20 @@ function ExternalQuickActions({
 
 function MatrxQuickActions({
   block,
-  currentSrc,
   onAdvanced,
   onActionComplete,
 }: {
   block: Extract<VideoBlock, { origin: "matrx" }>;
-  currentSrc: string | null;
   onAdvanced: () => void;
   onActionComplete: () => void;
 }) {
-  const dispatch = useAppDispatch();
-  const links = useAppSelector((s) =>
-    selectActiveShareLinksForResource(s, block.fileId),
+  const { activeShareLinks: links, createShareLink } = useSharing(
+    block.fileId,
+    "file",
   );
 
   const [publicBusy, setPublicBusy] = useState(false);
-  const [tempBusy, setTempBusy] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    void dispatch(loadShareLinks({ resourceId: block.fileId, resourceType: "file" }));
-  }, [dispatch, block.fileId]);
 
   const existingPublicLink = useMemo(() => {
     return (
@@ -237,8 +224,10 @@ function MatrxQuickActions({
     if (publicBusy) return;
     setPublicBusy(true);
     try {
-      if (block.visibility === "public" && block.cdnUrl) {
-        await navigator.clipboard.writeText(block.cdnUrl);
+      const permanentCdnUrl =
+        block.visibility === "public" ? shareableMediaUrl(block.cdnUrl) : null;
+      if (permanentCdnUrl) {
+        await navigator.clipboard.writeText(permanentCdnUrl);
         toast.success("Public link copied", {
           description: "This is the file's permanent public URL.",
         });
@@ -249,13 +238,7 @@ function MatrxQuickActions({
 
       let token = existingPublicLink?.shareToken;
       if (!token) {
-        const link = await dispatch(
-          createShareLink({
-            resourceId: block.fileId,
-            resourceType: "file",
-            permissionLevel: "viewer",
-          }),
-        ).unwrap();
+        const link = await createShareLink({ permissionLevel: "viewer" });
         token = link.shareToken;
       }
       const publicUrl = pythonShareUrl(token);
@@ -278,42 +261,20 @@ function MatrxQuickActions({
     block.cdnUrl,
     block.fileId,
     existingPublicLink,
-    dispatch,
+    createShareLink,
     onActionComplete,
   ]);
 
-  const handleCopyTemporary = useCallback(async () => {
-    if (tempBusy) return;
-    const tempUrl = block.signedUrl ?? currentSrc;
-    if (!tempUrl) {
-      toast.error("No temporary link available");
-      return;
-    }
-    setTempBusy(true);
-    try {
-      await navigator.clipboard.writeText(tempUrl);
-      toast.success("Temporary link copied", {
-        description: "Expires in about an hour.",
-      });
-      setCopiedKey("temp");
-      onActionComplete();
-    } catch {
-      toast.error("Could not copy link");
-    } finally {
-      setTempBusy(false);
-    }
-  }, [tempBusy, block.signedUrl, currentSrc, onActionComplete]);
-
-  const tempAvailable = Boolean(block.signedUrl || currentSrc);
-
   const publicLabel = useMemo(() => {
-    if (block.visibility === "public" && block.cdnUrl) return "Copy public link";
+    if (block.visibility === "public" && shareableMediaUrl(block.cdnUrl)) {
+      return "Copy public link";
+    }
     if (existingPublicLink) return "Copy public link";
     return "Create + copy public link";
   }, [block.visibility, block.cdnUrl, existingPublicLink]);
 
   const publicSublabel = useMemo(() => {
-    if (block.visibility === "public" && block.cdnUrl) {
+    if (block.visibility === "public" && shareableMediaUrl(block.cdnUrl)) {
       return "Permanent CDN URL · anyone with the link";
     }
     if (existingPublicLink) return "Reuses your existing no-expiry link";
@@ -329,15 +290,6 @@ function MatrxQuickActions({
         onClick={handleCopyPublic}
         busy={publicBusy}
         copied={copiedKey === "public"}
-      />
-      <QuickActionRow
-        icon={<Clock className="h-4 w-4 text-amber-500" />}
-        label="Copy temporary link"
-        sublabel="Short-lived · expires in ~1 hour"
-        onClick={handleCopyTemporary}
-        busy={tempBusy}
-        disabled={!tempAvailable}
-        copied={copiedKey === "temp"}
       />
       <div className="my-1 h-px bg-border" />
       <QuickActionRow

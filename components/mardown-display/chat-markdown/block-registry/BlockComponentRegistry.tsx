@@ -34,7 +34,6 @@ const ConsolidatedReasoningVisualization = lazy(
     import("../../blocks/thinking-reasoning/ConsolidatedReasoningVisualization"),
 );
 const ImageBlock = lazy(() => import("../../blocks/images/ImageBlock"));
-const VideoBlock = lazy(() => import("../../blocks/videos/VideoBlock"));
 const MatrxFileBlock = lazy(
   () => import("../../blocks/matrx-file/MatrxFileBlock"),
 );
@@ -149,9 +148,6 @@ const UnifiedImageBlockRenderer = lazy(() =>
   import("@/features/files/blocks/image/UnifiedImageBlockRenderer").then(
     (m) => ({ default: m.UnifiedImageBlockRenderer }),
   ),
-);
-const VideoOutputBlock = lazy(
-  () => import("../../blocks/videos/VideoOutputBlock"),
 );
 const YouTubeEmbedBlock = lazy(() =>
   import("@/features/files/blocks/youtube/YouTubeEmbed").then((m) => ({
@@ -307,11 +303,6 @@ export const BlockComponents = {
   ImageBlock: (props: React.ComponentProps<typeof ImageBlock>) => (
     <LazyBlockWrapper>
       <ImageBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  VideoBlock: (props: React.ComponentProps<typeof VideoBlock>) => (
-    <LazyBlockWrapper>
-      <VideoBlock {...props} />
     </LazyBlockWrapper>
   ),
   MatrxFileBlock: (props: React.ComponentProps<typeof MatrxFileBlock>) => (
@@ -541,11 +532,6 @@ export const BlockComponents = {
   ImageOutputBlock: (props: React.ComponentProps<typeof UnifiedImageBlockRenderer>) => (
     <LazyBlockWrapper>
       <UnifiedImageBlockRenderer {...props} />
-    </LazyBlockWrapper>
-  ),
-  VideoOutputBlock: (props: React.ComponentProps<typeof VideoOutputBlock>) => (
-    <LazyBlockWrapper>
-      <VideoOutputBlock {...props} />
     </LazyBlockWrapper>
   ),
   SearchResultsBlock: (props: React.ComponentProps<typeof SearchResultsBlock>) => (

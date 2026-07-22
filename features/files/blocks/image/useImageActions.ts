@@ -32,6 +32,7 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
+import { shareableMediaUrl } from "@/lib/media/durability";
 import { deriveViewerUrl } from "./helpers/derive-viewer-url";
 import { printImage } from "./utils/print-image";
 import {
@@ -165,9 +166,18 @@ export function useImageActions({
   // ── Local actions ─────────────────────────────────────────────────
 
   const openNewTab = useCallback(() => {
-    if (!currentSrc) return;
-    window.open(currentSrc, "_blank", "noopener,noreferrer");
-  }, [currentSrc]);
+    const viewerUrl = deriveViewerUrl(block);
+    const target = viewerUrl
+      ? viewerUrl
+      : shareableMediaUrl(
+          block.origin === "external" ? block.externalUrl : currentSrc,
+        );
+    if (!target) {
+      toast.error("No safe link is available for this image");
+      return;
+    }
+    window.open(target, "_blank", "noopener,noreferrer");
+  }, [block, currentSrc]);
 
   const copyLink = useCallback(async () => {
     // Internal viewer URL when we own the file (permanent + auth-gated),
@@ -175,9 +185,11 @@ export function useImageActions({
     const viewerUrl = deriveViewerUrl(block);
     const linkToCopy = viewerUrl
       ? `${window.location.origin}${viewerUrl}`
-      : ((block.origin === "external" ? block.externalUrl : currentSrc) ?? "");
+      : shareableMediaUrl(
+          block.origin === "external" ? block.externalUrl : currentSrc,
+        );
     if (!linkToCopy) {
-      toast.error("No link to copy");
+      toast.error("This private playback URL cannot be shared");
       return;
     }
     try {

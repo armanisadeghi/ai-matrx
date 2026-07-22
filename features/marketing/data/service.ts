@@ -1275,7 +1275,7 @@ export async function updateSiteIdentity(
 const SCREENSHOT_COLUMNS =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, snapshot_id, kind, width, height, captured_at, file_id";
 
-/** Read the bootstrap-selected above-the-fold homepage capture. */
+/** Read the above-the-fold homepage hero capture. */
 export async function getSiteHeroScreenshot(
   siteId: string,
   screenshotId: string | null,
@@ -1299,7 +1299,40 @@ export async function getSiteHeroScreenshot(
     // through to the newest live homepage-family capture instead of an
     // empty hero forever.
   }
-  const fallback = await db
+
+  const homepagePageResponse = await db
+    .from("page")
+    .select("id")
+    .eq("site_id", siteId)
+    .eq("path", "/")
+    .is("deleted_at", null)
+    .abortSignal(abort)
+    .maybeSingle();
+  if (homepagePageResponse.error) throw homepagePageResponse.error;
+
+  const homepagePageId = homepagePageResponse.data?.id ?? null;
+  if (homepagePageId) {
+    // Initialize persists responsive kinds on `/` and deliberately does not
+    // stamp site.homepage_screenshot_id (DB guard requires kind=homepage).
+    for (const kind of ["desktop_fold", "mobile_fold"] as const) {
+      const fold = await db
+        .from("screenshot")
+        .select(SCREENSHOT_COLUMNS)
+        .eq("site_id", siteId)
+        .eq("page_id", homepagePageId)
+        .eq("kind", kind)
+        .is("deleted_at", null)
+        .order("captured_at", { ascending: false })
+        .order("id", { ascending: true })
+        .limit(1)
+        .abortSignal(abort)
+        .maybeSingle();
+      if (fold.error) throw fold.error;
+      if (fold.data) return fold.data;
+    }
+  }
+
+  const legacy = await db
     .from("screenshot")
     .select(SCREENSHOT_COLUMNS)
     .eq("site_id", siteId)
@@ -1310,8 +1343,8 @@ export async function getSiteHeroScreenshot(
     .limit(1)
     .abortSignal(abort)
     .maybeSingle();
-  if (fallback.error) throw fallback.error;
-  return fallback.data;
+  if (legacy.error) throw legacy.error;
+  return legacy.data;
 }
 
 const DISCOVERED_COLUMNS =

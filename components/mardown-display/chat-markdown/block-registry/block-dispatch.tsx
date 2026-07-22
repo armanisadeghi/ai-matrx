@@ -1069,10 +1069,12 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
   },
 
   video: ({ block, index }) => {
-    // Same guard as "image" above — VideoBlock also requires a real src.
+    // Route every markdown video through the canonical file-aware renderer.
+    // A Matrx signed URL recovers its file_id before actions render, so copy
+    // and share can never expose the private playback credential.
     if (!block.src) return null;
     return (
-      <BlockComponents.VideoBlock key={index} src={block.src} alt={block.alt} />
+      <VideoOutputBlockRenderer key={index} data={{ url: block.src }} />
     );
   },
 

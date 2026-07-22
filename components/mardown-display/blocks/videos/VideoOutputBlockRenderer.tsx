@@ -6,7 +6,9 @@
  * The video twin of `AudioOutputBlockRenderer` / `UnifiedImageBlockRenderer`.
  * `BlockRenderer` hands us the raw `video_output` / `media_block(kind=video)`
  * `serverData`; we resolve a DURABLE, playable URL through the universal file
- * handler (`useFileSrc`) before mounting the presentational `<VideoOutputBlock>`.
+ * handler identity before mounting the canonical
+ * `<UnifiedVideoBlockRenderer>`. Playback, copy, sharing, download, and URL
+ * refresh therefore all use the same file-aware action layer.
  *
  * Same rationale as audio (shared `buildMediaSource`): echoing the raw
  * `data.url` didn't play during streaming (Python sends only a `file_id`) and
@@ -14,11 +16,12 @@
  * the same way. See FOUND_DEFECTS.md → "Media durability".
  */
 
-import React, { useEffect } from "react";
-import VideoOutputBlock from "./VideoOutputBlock";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import React from "react";
+import { UnifiedVideoBlockRenderer } from "@/features/files/blocks/video/UnifiedVideoBlockRenderer";
+import { videoBlockFromMediaRef } from "@/features/files/blocks/adapters/from-media-ref";
+import { isVideoBlock } from "@/features/files/blocks/guards";
+import { fileIdToMediaRef, urlToMediaRef } from "@/features/files";
 import { buildMediaSource, pickStr } from "../buildMediaSource";
-import { classifyMediaUrl } from "@/lib/media/durability";
 
 export interface VideoOutputBlockRendererProps {
   /** The block's `serverData` — legacy `video_output` or `media_block(video)`. */
@@ -28,40 +31,35 @@ export interface VideoOutputBlockRendererProps {
 const VideoOutputBlockRenderer: React.FC<VideoOutputBlockRendererProps> = ({
   data,
 }) => {
+  if (isVideoBlock(data)) {
+    return <UnifiedVideoBlockRenderer block={data} />;
+  }
+
   const mime = pickStr(data.mimeType) ?? pickStr(data.mime_type);
   const source = buildMediaSource(data, mime);
-  const resolvedUrl = useFileSrc(source);
+  if (!source) return null;
 
-  // Poster: matrx-owned videos carry `posterUrl` (`Asset.variants.poster_url`).
-  // Resolve it through the handler too so it's durable; falls back to whatever
-  // poster field is present. A poster is decorative, so we don't block render
-  // on it.
-  const posterRaw =
-    pickStr(data.posterUrl) ?? pickStr(data.poster_url) ?? undefined;
-  const posterSource = posterRaw
-    ? buildMediaSource({ url: posterRaw }, undefined)
-    : null;
-  const resolvedPoster = useFileSrc(posterSource);
+  const ref =
+    source.kind === "file_id"
+      ? fileIdToMediaRef(source.fileId, mime)
+      : source.kind === "external_url"
+        ? urlToMediaRef(source.url, mime)
+        : null;
+  if (!ref) return null;
 
-  // Plain `console.log` (not error) — a still-expiring S3 URL means the video
-  // was persisted private server-side (tracked: FOUND_DEFECTS.md → "Media
-  // durability"). Backend fix; no error overlay on a known gap.
-  useEffect(() => {
-    if (!resolvedUrl) return;
-    console.log("[video-block] resolved", {
-      kind: classifyMediaUrl(resolvedUrl),
-      resolvedUrl,
-      rawData: data,
-    });
-  }, [resolvedUrl, data]);
+  const block = videoBlockFromMediaRef(ref);
+  if (!block) return null;
 
-  if (!resolvedUrl) return null;
+  const posterUrl = pickStr(data.posterUrl) ?? pickStr(data.poster_url) ?? null;
+  const fileName = pickStr(data.fileName) ?? pickStr(data.file_name) ?? null;
 
   return (
-    <VideoOutputBlock
-      url={resolvedUrl}
-      mimeType={mime}
-      posterUrl={resolvedPoster ?? posterRaw}
+    <UnifiedVideoBlockRenderer
+      block={{
+        ...block,
+        posterUrl,
+        fileName,
+      }}
     />
   );
 };

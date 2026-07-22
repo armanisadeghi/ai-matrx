@@ -3,7 +3,6 @@
 // component, edit (prefilled KindInputForm), soft delete, honest repin, and
 // the read-only "View as table" Convert Pattern bridge for flat kinds.
 
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getShapeDetail } from "@/features/content-ir/studio/shape-detail-server";
 import ShapeDetailHeader from "@/features/content-ir/studio/components/ShapeDetailHeader";
@@ -11,11 +10,6 @@ import ShapeInstancesTabLoader from "@/features/content-ir/studio/components/Sha
 
 interface PageProps {
   params: Promise<{ kind: string }>;
-}
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { kind } = await params;
-  return { title: `Instances of ${decodeURIComponent(kind)} — Shapes` };
 }
 
 export default async function ShapeInstancesPage({ params }: PageProps) {

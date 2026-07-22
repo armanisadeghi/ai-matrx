@@ -27,6 +27,7 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
+import { shareableMediaUrl } from "@/lib/media/durability";
 import { saveImageFile } from "../image/utils/save-image-file";
 import type { VideoBlock } from "../types";
 
@@ -68,9 +69,16 @@ export function useVideoActions({
   const downloadName = block.fileName ?? `video.${ext}`;
 
   const openNewTab = useCallback(() => {
-    if (!currentSrc) return;
-    window.open(currentSrc, "_blank", "noopener,noreferrer");
-  }, [currentSrc]);
+    const target =
+      block.origin === "matrx"
+        ? `/files/f/${block.fileId}`
+        : shareableMediaUrl(block.externalUrl ?? currentSrc);
+    if (!target) {
+      toast.error("No safe link is available for this video");
+      return;
+    }
+    window.open(target, "_blank", "noopener,noreferrer");
+  }, [block, currentSrc]);
 
   const copyLink = useCallback(async () => {
     // Internal viewer URL when we own the file (permanent + auth-gated),
@@ -79,9 +87,11 @@ export function useVideoActions({
       block.origin === "matrx" ? `/files/f/${block.fileId}` : null;
     const linkToCopy = viewerUrl
       ? `${window.location.origin}${viewerUrl}`
-      : ((block.origin === "external" ? block.externalUrl : currentSrc) ?? "");
+      : shareableMediaUrl(
+          block.origin === "external" ? block.externalUrl : currentSrc,
+        );
     if (!linkToCopy) {
-      toast.error("No link to copy");
+      toast.error("This private playback URL cannot be shared");
       return;
     }
     try {

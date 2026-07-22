@@ -32,6 +32,22 @@ export function isDurableMediaUrl(url: string | null | undefined): boolean {
 }
 
 /**
+ * Return a URL only when it is safe to expose through a share/copy action.
+ *
+ * Playback and downloads may legitimately use a short-lived signed URL for an
+ * authenticated user. Sharing may not: a presigned object-store URL is a
+ * bearer credential and exposes storage-provider authentication details. The
+ * caller must mint a canonical share link (or use an internal viewer URL)
+ * instead when this returns null.
+ */
+export function shareableMediaUrl(
+  url: string | null | undefined,
+): string | null {
+  if (!url || !isDurableMediaUrl(url)) return null;
+  return url;
+}
+
+/**
  * Recover the cld_files file_id from an our-own user-files signed S3 URL
  * (`…/{user_id}/{file_id}?…`). Used to render via the handler (which re-mints) or
  * to publish the file. Returns null for non-user-files URLs.
