@@ -8,6 +8,7 @@ import type {
   PipelineState,
   WorkItem,
 } from "../../../../hooks/usePipelineProgress";
+import { sourcesDiscoveredFromItems } from "../../../../hooks/usePipelineProgress";
 import type { ResearchSource } from "../../../../types";
 import { SectionCard } from "../ui/SectionCard";
 import { StageHeader } from "../ui/StageHeader";
@@ -197,14 +198,8 @@ export function SearchStageView({
   // Delta detection: sources discovered after the pipeline started count as "new".
   const pipelineStart = state.startedAt ?? 0;
 
-  const totalSources = items.reduce(
-    // Canonical "sources" metric: deduped stored count, falling back to the
-    // running search-result count before storage lands. Matches the metrics
-    // strip + per-item display so one screen never shows two different totals.
-    (sum, item) =>
-      sum + (item.metadata.stored_count ?? item.metadata.sources_found ?? 0),
-    0,
-  );
+  // Canonical formula — shared with derived + stageSquareData (FEATURE.md).
+  const totalSources = sourcesDiscoveredFromItems(items);
 
   return (
     <SectionCard

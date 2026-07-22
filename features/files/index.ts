@@ -72,6 +72,11 @@ export {
   type UseFileAssetOptions,
   type UseFileAssetResult,
 } from "@/features/files/hooks/useFileAsset";
+export {
+  useEnsureCloudFile,
+  type EnsureCloudFileResult,
+  type EnsureCloudFileStatus,
+} from "@/features/files/hooks/useEnsureCloudFile";
 
 // Asset API — direct access for components that need fine-grained control
 // (e.g. ImageAssetUploader library tab: pick from library → ensure preset variants).

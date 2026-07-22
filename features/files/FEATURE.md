@@ -2,7 +2,7 @@
 
 **Status:** ✅ Phase 11 complete. Legacy system deleted, cloud-files is the only file system in the app.
 **Owner:** Files migration team.
-**Last updated:** 2026-07-15.
+**Last updated:** 2026-07-22.
 
 This is the live architecture doc for the canonical file management system under `features/files/`. File bytes live in S3 and metadata lives in Postgres; the browser never talks to an object-store SDK.
 
@@ -478,6 +478,8 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 ---
 
 ## Change log
+
+- **2026-07-22 — Off-tree file preview hydrates by canonical file UUID.** Opening `filePreviewWindow` / `PreviewPane` / `FilePreview` with only a `files.files` id (marketing crawl captures, chat chips, deep links) no longer stuck on "File not found." `useEnsureCloudFile` is now the single hydration primitive: direct supabase-js select via `filesDb` + `FILES_TABLE_COLUMNS` (RLS `files.has_access_for`, including crawl artifacts that are viewable but not discoverable), loud on query error, in-flight dedup across concurrent mounts, status returned for Loading / missing / error UI. Wired into `PreviewPane`, `FilePreview`, and `SingleFileShell` (replacing the bespoke deep-link self-heal). Identity remains **only** the canonical file UUID — never storage path / bucket / signed URL construction on the client.
 
 - **2026-07-20 — LISTING doctrine: personal file enumeration is owner + explicit grants ONLY (leak annihilated at the DB).** Regression of the "other users' files in my file list" bug, root-caused and killed structurally. The personal enumeration RPCs (`get_user_file_tree`, `search_files`, `count_user_files`) gated rows with `files.is_discoverable_for` → `iam.is_discoverable_base` — an ACCESS predicate whose `visibility='public'` / org / internal branches let every public file on the platform flood every user's tree and pickers (534 foreign files measured pre-fix). New primitive `files.is_listable_for(user, file)`: owner or explicit grant (`iam.permissions` / explicit membership grant), with NO visibility, org, or reachability branches — ever. All three RPCs now use it (`migrations/files_listing_owner_grant_only.sql`), and `public.reference_search_candidates` got a file-token branch: enumeration → `is_listable_for`; by-id title resolution → `has_access_for` so shared reference chips still resolve (`migrations/reference_candidates_file_listing_gate.sql`). **Rule: a listing surface (tree, search, count, any picker) never uses `is_discoverable_for`/`has_access_for` as its row gate; access-by-id never uses `is_listable_for`.** UI side — ONE FILE PICKER DOCTRINE: `FilesResourcePicker` (features/resource-manager/resource-picker) is the ONLY file-picking component. Overlay use mounts it in the NON-BLOCKING draggable `FilePickerWindow` (WindowPanel host — never a Sheet/Dialog); inline use (chat "+" menu) embeds it directly; imperative use goes through `openFilePicker()` (CloudFilesPickerHost now hosts the window). DELETED: the token-generic `AssociationPickerSheet` bare-list, the thin `FilePicker.tsx`/`useFilePicker`, and rag's `CldFilePicker` — never rebuild any of them. Also gated realtime ingest ([redux/realtime-middleware.ts](redux/realtime-middleware.ts)): RLS `pub_read` makes every public file SELECT-visible, so the file/folder handlers now apply the client-side LISTING gate (owner or already-in-store) — without it public files from other users stream into everyone's tree.
 

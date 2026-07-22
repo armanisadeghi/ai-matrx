@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/tooltip";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { setActiveFileId } from "@/features/files/redux/slice";
+import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
@@ -81,6 +82,10 @@ export function PreviewPane({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
+  // Off-tree opens (marketing captures, chat chips, floating window) pass
+  // only a canonical file UUID — hydrate the Redux row before the pane
+  // tries to render filename / actions / preview body.
+  const ensure = useEnsureCloudFile(fileId);
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const actions = useFileActions(fileId);
 
@@ -210,7 +215,12 @@ export function PreviewPane({
               className="truncate text-sm font-medium"
               title={file?.fileName ?? ""}
             >
-              {file?.fileName ?? "Loading…"}
+              {file?.fileName ??
+                (ensure.status === "error"
+                  ? "Couldn't load file"
+                  : ensure.status === "missing"
+                    ? "File not found"
+                    : "Loading…")}
             </p>
             {/*
              * Lineage chips — silent when the file has no parent and no

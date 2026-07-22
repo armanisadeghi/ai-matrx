@@ -49,7 +49,11 @@ export function StageHeader({
   } else if (stage.status === "failed") {
     StatusIcon = AlertCircle;
     statusColor = "text-destructive";
+  } else if (stage.status === "partial") {
+    StatusIcon = AlertCircle;
+    statusColor = "text-amber-500";
   }
+  // `skipped` keeps the muted Circle — stage was walked past with no work.
 
   return (
     <div className={cn("space-y-1.5", className)}>

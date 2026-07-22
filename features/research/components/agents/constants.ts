@@ -62,7 +62,7 @@ export const SYSTEM_AGENT_VERSION_UUIDS: Record<AgentConfigKey, string> = {
 };
 
 export const SUGGEST_AGENT_VERSION_UUID =
-  "f7555ac0-8bb1-4934-a90c-1a59b813c6bf"; // v14
+  "1e96241e-1719-4c24-875b-a851642b1ac5"; // v17
 
 export interface AgentRoleDefinition {
   /** JSONB key in `rs_topic.agent_config`. `null` for system-only roles. */

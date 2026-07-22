@@ -29,12 +29,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { attachVirtualRoots } from "@/features/files/redux/virtual-thunks";
 import { selectFileById } from "@/features/files/redux/selectors";
+import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { MobileStack } from "../MobileStack";
 import { FileTabsBody, type FileTab } from "../FileTabsBody";
@@ -67,9 +68,13 @@ export function SingleFileShell({ fileId, className }: SingleFileShellProps) {
 
 function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const [activeTab, setActiveTab] = useState<FileTab>("preview");
+
+  // Off-tree / deep-link hydration — same canonical hook as FilePreview /
+  // PreviewPane. Crawl artifacts and extractor uploads are viewable by UUID
+  // but never land in the Files tree (is_discoverable_for = false).
+  useEnsureCloudFile(fileId);
 
   // Bootstrap exactly like PageShell does — set the active file id once so
   // every consumer that reads it (lineage chip, debug panel, share links,
@@ -78,45 +83,6 @@ function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
   useEffect(() => {
     dispatch(setActiveFileId(fileId));
     void dispatch(attachVirtualRoots());
-    // Deep-link self-heal: the route's server component already verified
-    // this file exists, but the client store only hydrates workspace
-    // subtrees — a direct /files/f/{id} visit (or an extractor-uploaded
-    // file outside the workspace roots) otherwise renders "File not
-    // found" forever. Fetch the single row and upsert it. Loud on fire:
-    // a hit here means the proactive hydration path missed a real file.
-    void (async () => {
-      if (selectFileById(store.getState(), fileId)) return;
-      const { supabase } = await import("@/utils/supabase/client");
-      const { filesDb, FILES_TABLE_COLUMNS } =
-        await import("@/features/files/filesDb");
-      const { dbRowToCloudFile } =
-        await import("@/features/files/redux/converters");
-      const { upsertFile } = await import("@/features/files/redux/slice");
-      const { data, error } = await filesDb(supabase)
-        .from("files")
-        .select(FILES_TABLE_COLUMNS)
-        .eq("id", fileId)
-        .is("deleted_at", null)
-        .maybeSingle();
-      // Loud recovery: a query ERROR (RLS/permission denial, schema/connection
-      // failure) must scream — masking it as a silent "File not found" hides
-      // real defects (e.g. an unapplied canonical RLS pass on a files.* table).
-      // A clean `!data` is a legitimate not-found and stays quiet.
-      if (error) {
-        console.error(
-          "[files] deep-link self-heal FAILED to fetch file (RLS/permission or DB error, NOT a real 'not found'):",
-          fileId,
-          error,
-        );
-        return;
-      }
-      if (!data) return;
-      console.warn(
-        "[files] deep-link self-heal hydrated file missing from store:",
-        fileId,
-      );
-      dispatch(upsertFile(dbRowToCloudFile(data)));
-    })();
     // Cleanup: clear the active file id on unmount so navigating away
     // doesn't leave a stale selection that other surfaces could observe.
     return () => {

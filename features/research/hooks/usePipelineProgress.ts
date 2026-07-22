@@ -14,11 +14,7 @@ import { normalizeSynthesisScope } from "../types";
 // ============================================================================
 
 export type StageKind =
-  | "search"
-  | "scrape"
-  | "analyze"
-  | "synthesize"
-  | "report";
+  "search" | "scrape" | "analyze" | "synthesize" | "report";
 
 export type ItemStatus =
   | "pending"
@@ -80,9 +76,7 @@ export function sumCompletedAiCosts(
   items: Array<Pick<WorkItem, "status" | "metadata">>,
 ): number | null {
   const completed = items.filter((item) => item.status === "success");
-  if (
-    completed.some((item) => typeof item.metadata.cost_usd !== "number")
-  ) {
+  if (completed.some((item) => typeof item.metadata.cost_usd !== "number")) {
     return null;
   }
   return completed.reduce(
@@ -93,7 +87,12 @@ export function sumCompletedAiCosts(
 
 export interface StageState {
   kind: StageKind;
-  status: "pending" | "active" | "complete" | "partial" | "failed";
+  /**
+   * `skipped` = the run activated this stage (phase/info) but produced no
+   * work items and no outcomes — typically because the backend walked past
+   * work already done. Must NOT render as a green "complete" with zeros.
+   */
+  status: "pending" | "active" | "complete" | "partial" | "failed" | "skipped";
   items: Record<string, WorkItem>;
   itemOrder: string[];
   totals: {
@@ -207,7 +206,11 @@ function pruneRecent(timestamps: number[], now: number): number[] {
   return timestamps.filter((t) => t >= cutoff);
 }
 
-function activateStage(state: PipelineState, kind: StageKind, ts: number): PipelineState {
+function activateStage(
+  state: PipelineState,
+  kind: StageKind,
+  ts: number,
+): PipelineState {
   const stage = state.stages[kind];
   return {
     ...state,
@@ -271,6 +274,22 @@ function bumpCompletion(
 }
 
 /**
+ * Canonical "sources discovered" total for a search stage — prefer the
+ * deduped stored count, fall back to running results pre-storage. Must stay
+ * identical in `derived.totalSourcesDiscovered` and `stageSquareData("search")`
+ * (FEATURE.md invariant).
+ */
+export function sourcesDiscoveredFromItems(
+  items: Iterable<Pick<WorkItem, "metadata">>,
+): number {
+  let sum = 0;
+  for (const item of items) {
+    sum += item.metadata.stored_count ?? item.metadata.sources_found ?? 0;
+  }
+  return sum;
+}
+
+/**
  * Terminal sweep. A full `/run` does NOT emit per-stage "all complete" events
  * (`search_complete` / `analyze_all_complete` only fire from the standalone
  * endpoints, and there is no scrape/synthesis "all complete" at all — see
@@ -279,13 +298,17 @@ function bumpCompletion(
  *
  * On a terminal signal (`pipeline_complete` or the stream `end`), force every
  * non-terminal stage and item into an honest terminal status:
- *   - a stage that started → `complete` (no failures), `partial` (some), or
- *     `failed` (all failed);
- *   - a still-`active`/`pending` item that never got its own completion event →
- *     `skipped` (we moved on without a result — never a fake `success`).
+ *   - activated with real outcomes → `complete` / `partial` / `failed`;
+ *   - activated via phase/info but ZERO items and ZERO outcomes → `skipped`
+ *     (backend walked past already-done work — never a green 0/0 "complete");
+ *   - items started but none finished → `partial`;
+ *   - a still-`active`/`pending` item → item status `skipped`.
  * Stages that never started (no items, never active) stay `pending`.
  */
-function finalizeStages(state: PipelineState, ts: number): PipelineState {
+export function finalizeStages(
+  state: PipelineState,
+  ts: number,
+): PipelineState {
   const stages: Record<StageKind, StageState> = { ...state.stages };
   let changed = false;
 
@@ -319,21 +342,27 @@ function finalizeStages(state: PipelineState, ts: number): PipelineState {
     if (isNonTerminalStage && startedOrHasItems) {
       const { failed, succeeded } = stage.totals;
       const hasItems = stage.itemOrder.length > 0;
+      // Phase/info can activate a stage the backend then skips (already done).
+      // That is NOT a successful complete — paint it skipped and hide it.
       const nextStatus: StageState["status"] =
-        failed > 0 && succeeded === 0
-          ? "failed"
-          : failed > 0
-            ? "partial"
-            : hasItems && succeeded === 0
-              ? // Started items but none finished — honest "partial", not a
-                // green "complete" that overstates what actually happened.
-                "partial"
-              : "complete";
+        !hasItems && succeeded === 0 && failed === 0
+          ? "skipped"
+          : failed > 0 && succeeded === 0
+            ? "failed"
+            : failed > 0
+              ? "partial"
+              : hasItems && succeeded === 0
+                ? "partial"
+                : "complete";
       stages[kind] = {
         ...stage,
         items,
         status: nextStatus,
-        completedAt: stage.completedAt ?? ts,
+        // Skipped stages have no real duration — clear timestamps so the
+        // rail never shows a fake "3:13" next to 0 sources / 0 scraped.
+        startedAt: nextStatus === "skipped" ? null : stage.startedAt,
+        completedAt:
+          nextStatus === "skipped" ? null : (stage.completedAt ?? ts),
       };
       changed = true;
     } else if (itemsChanged) {
@@ -543,17 +572,22 @@ function reduceData(
               },
             },
           };
-      return upsertItem(stageWithTarget, "analyze", e.source_id, (existing) => ({
-        id: e.source_id,
-        label: existing?.label ?? "Source",
-        url: existing?.url,
-        hostname: existing?.hostname,
-        status: "active",
-        metadata: { ...(existing?.metadata ?? {}) },
-        startedAt: existing?.startedAt ?? ts,
-        updatedAt: ts,
-        completedAt: null,
-      }));
+      return upsertItem(
+        stageWithTarget,
+        "analyze",
+        e.source_id,
+        (existing) => ({
+          id: e.source_id,
+          label: existing?.label ?? "Source",
+          url: existing?.url,
+          hostname: existing?.hostname,
+          status: "active",
+          metadata: { ...(existing?.metadata ?? {}) },
+          startedAt: existing?.startedAt ?? ts,
+          updatedAt: ts,
+          completedAt: null,
+        }),
+      );
     }
 
     case "analysis_complete": {
@@ -744,7 +778,11 @@ function reduceData(
         ...withDoc,
         stages: {
           ...withDoc.stages,
-          report: { ...withDoc.stages.report, status: "complete", completedAt: ts },
+          report: {
+            ...withDoc.stages.report,
+            status: "complete",
+            completedAt: ts,
+          },
         },
       };
     }
@@ -921,7 +959,9 @@ export interface UsePipelineProgressResult {
 export function usePipelineProgress(opts?: {
   topic?: ResearchTopic | null;
 }): UsePipelineProgressResult {
-  const [state, rawDispatch] = useReducer(reducer, undefined, () => emptyState());
+  const [state, rawDispatch] = useReducer(reducer, undefined, () =>
+    emptyState(),
+  );
   const idCounter = useRef(0);
 
   const dispatch = useCallback((event: ResearchDataEvent) => {
@@ -970,14 +1010,9 @@ export function usePipelineProgress(opts?: {
   const derived = useMemo<PipelineDerived>(() => {
     const stages = state.stages;
 
-    // Aggregate counts
-    const totalSourcesDiscovered = Object.values(stages.search.items).reduce(
-      // Canonical "sources" metric — must match SearchStageView's total so the
-      // same number never diverges across the strip and the stage card. Prefer
-      // the deduped stored count; fall back to running results pre-storage.
-      (sum, item) =>
-        sum + (item.metadata.stored_count ?? item.metadata.sources_found ?? 0),
-      0,
+    // Aggregate counts — one formula with stageSquareData / SearchStageView.
+    const totalSourcesDiscovered = sourcesDiscoveredFromItems(
+      Object.values(stages.search.items),
     );
     const totalCharsScraped = Object.values(stages.scrape.items).reduce(
       (sum, item) => sum + (item.metadata.char_count ?? 0),
@@ -990,7 +1025,8 @@ export function usePipelineProgress(opts?: {
     const uniqueAgentsSet = new Set<string>();
     for (const item of Object.values(stages.analyze.items)) {
       if (item.metadata.model_id) uniqueModelsSet.add(item.metadata.model_id);
-      if (item.metadata.agent_type) uniqueAgentsSet.add(item.metadata.agent_type);
+      if (item.metadata.agent_type)
+        uniqueAgentsSet.add(item.metadata.agent_type);
     }
     for (const item of Object.values(stages.synthesize.items)) {
       if (item.metadata.model_id) uniqueModelsSet.add(item.metadata.model_id);
@@ -1000,11 +1036,7 @@ export function usePipelineProgress(opts?: {
     let dedupLabel: string | null = null;
     const keywordCount = stages.search.itemOrder.length;
     const analysesPerKeyword = topic?.analyses_per_keyword;
-    if (
-      keywordCount >= 2 &&
-      analysesPerKeyword &&
-      totalAnalysesCompleted > 0
-    ) {
+    if (keywordCount >= 2 && analysesPerKeyword && totalAnalysesCompleted > 0) {
       const naive = keywordCount * analysesPerKeyword;
       if (naive > totalAnalysesCompleted) {
         dedupLabel = `${totalAnalysesCompleted} analyses serving ${keywordCount} keywords (${naive} → ${totalAnalysesCompleted} deduped)`;
@@ -1042,6 +1074,8 @@ export function usePipelineProgress(opts?: {
     const stageProgress = stageOrder.map((kind) => {
       const s = stages[kind];
       if (s.status === "complete") return 1;
+      // Skipped stages don't count against progress (already done elsewhere).
+      if (s.status === "skipped" || s.status === "pending") return 0;
       if (!s.totals.target) return s.status === "active" ? 0.1 : 0;
       return Math.min(1, s.totals.succeeded / s.totals.target);
     });

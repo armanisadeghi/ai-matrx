@@ -6,8 +6,12 @@
  *   • inbound  — status, headers, and either the ordered stream events or the
  *                whole response body
  *
- * For streaming responses the body is `tee()`d: one branch goes to the caller
- * completely untouched, the other is drained here.
+ * Capture strategy (NON-NEGOTIABLE — pick the wrong one and callers break):
+ *   • Non-streaming (JSON, empty deletes, etc.) → `response.clone()`, drain the
+ *     clone, return the ORIGINAL response untouched. Never tee + rebuild.
+ *   • Streaming → `body.tee()`: one branch to the caller, one drained here.
+ *     If rebuild fails AFTER tee, the original body is already consumed — never
+ *     return it (that surfaces as "body stream already read" in postgrest-js).
  *
  * WHY HERE AND NOT IN `parseNdjsonStream`:
  * a parser-level tap records only the callers that choose to use the parser.
@@ -43,6 +47,11 @@ import {
 } from "./types";
 
 const INSTALL_FLAG = "__matrxCaptureTapInstalled" as const;
+
+/** HTTP statuses that must carry a null body (Fetch spec "null body status"). */
+function isNullBodyStatus(status: number): boolean {
+  return status === 101 || status === 204 || status === 205 || status === 304;
+}
 
 /**
  * Derive a filterable label from the wire envelope. Mirrors the envelope
@@ -82,7 +91,8 @@ async function readRequestBody(
 
   try {
     if (typeof init?.body === "string") return clamp(init.body);
-    if (init?.body instanceof URLSearchParams) return clamp(init.body.toString());
+    if (init?.body instanceof URLSearchParams)
+      return clamp(init.body.toString());
     if (init?.body) return { body: "[non-text body]", truncated: false };
     if (input instanceof Request && input.body) {
       return clamp(await input.clone().text());
@@ -160,19 +170,40 @@ async function drainStream(
   }
 }
 
-/** Drain the capture branch of a non-streaming response as a single body. */
-async function drainBody(
-  body: ReadableStream<Uint8Array>,
-  id: string,
-): Promise<void> {
+/** Drain a cloned non-streaming response as a single body. */
+async function drainClonedResponse(clone: Response, id: string): Promise<void> {
   try {
-    const text = await new Response(body).text();
+    const text = await clone.text();
     recordBytes(id, text.length);
     recordResponseBody(id, text);
     endExchange(id, "closed");
   } catch (err) {
-    endExchange(id, "errored", err instanceof Error ? err.message : String(err));
+    endExchange(
+      id,
+      "errored",
+      err instanceof Error ? err.message : String(err),
+    );
   }
+}
+
+/**
+ * Rebuild a caller-facing Response from a tee'd branch. Restores `url`, which
+ * `new Response()` clears. Used only on the streaming path.
+ */
+function responseFromBranch(
+  branch: ReadableStream<Uint8Array>,
+  source: Response,
+): Response {
+  const tapped = new Response(branch, {
+    status: source.status,
+    statusText: source.statusText,
+    headers: source.headers,
+  });
+  Object.defineProperty(tapped, "url", {
+    value: source.url,
+    configurable: true,
+  });
+  return tapped;
 }
 
 export function installCaptureTap(): void {
@@ -235,6 +266,11 @@ export function installCaptureTap(): void {
     }
 
     // ── Inbound ───────────────────────────────────────────────────────────
+    // After tee(), the original response body is unusable. Track the caller
+    // branch so a mid-rebuild failure never returns a consumed original
+    // (that bug surfaced as postgrest-js "body stream already read" on DELETE).
+    let teeCallerBranch: ReadableStream<Uint8Array> | null = null;
+
     try {
       if (!id) return response;
 
@@ -251,38 +287,46 @@ export function installCaptureTap(): void {
         isStream,
       });
 
-      if (!response.body) {
+      if (!response.body || isNullBodyStatus(response.status)) {
         endExchange(id, "closed");
         return response;
       }
 
-      const [callerBranch, captureBranch] = response.body.tee();
-
-      // Fire-and-forget. Drained eagerly so the tee buffer cannot grow
-      // unbounded when the caller consumes slower than the server sends.
-      if (isStream) {
-        void drainStream(captureBranch, id);
-      } else {
-        void drainBody(captureBranch, id);
+      // Non-streaming (PostgREST, ordinary JSON/text): clone + drain. The
+      // caller keeps the undisturbed original — no Response rebuild, no way
+      // for capture to mark the body used.
+      if (!isStream) {
+        void drainClonedResponse(response.clone(), id);
+        return response;
       }
 
-      const tapped = new Response(callerBranch, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-      });
-
-      // `new Response()` resets `url` to "". Some callers read it, so restore
-      // it rather than silently changing observable behaviour.
-      Object.defineProperty(tapped, "url", {
-        value: response.url,
-        configurable: true,
-      });
-
-      return tapped;
+      // Streaming: tee so the caller still gets a live ReadableStream while
+      // we drain events on the capture branch.
+      const [callerBranch, captureBranch] = response.body.tee();
+      teeCallerBranch = callerBranch;
+      void drainStream(captureBranch, id);
+      return responseFromBranch(callerBranch, response);
     } catch (err) {
-      // Capture is never worth a failed request.
+      // Capture is never worth a failed request — but after tee the original
+      // is unusable, so hand back the caller branch (or a safe empty body).
       console.error("[capture] tap failed; passing response through", err);
+      if (id) {
+        endExchange(
+          id,
+          "errored",
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+      if (teeCallerBranch) {
+        try {
+          return responseFromBranch(teeCallerBranch, response);
+        } catch {
+          return new Response(null, {
+            status: isNullBodyStatus(response.status) ? response.status : 200,
+            statusText: response.statusText,
+          });
+        }
+      }
       return response;
     }
   };

@@ -25,6 +25,7 @@ import { isJsonRecord } from "@/features/marketing/types";
 import { updateSiteSettings } from "@/features/marketing/data/settings-service";
 import { useDeleteSite } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
 import { extractErrorMessage } from "@/utils/errors";
 
 interface CrawlDefaults {
@@ -408,18 +409,12 @@ function NumberSetting({
       <Label htmlFor={id} className="text-xs">
         {label}
       </Label>
-      <Input
+      <ClampedNumberInput
         id={id}
-        className="h-8"
-        type="number"
+        value={value}
         min={min}
         max={max}
-        value={value}
-        onChange={(event) =>
-          onChange(
-            Math.min(max, Math.max(min, Number(event.target.value) || min)),
-          )
-        }
+        onChange={onChange}
       />
     </div>
   );

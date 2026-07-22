@@ -84,17 +84,25 @@ export function LivePipelineActivity({
 }: Props) {
   const { state, derived } = pipeline;
 
+  // Show stages that did real work this run. Hide pending/skipped, and also
+  // hide empty "complete" leftovers from older finalize logic (green 0/0).
   const visibleStages = useMemo(
     () =>
       STAGE_ORDER.filter((kind) => {
         const s = state.stages[kind];
-        return (
-          s.status !== "pending" ||
+        const hasWork =
           s.itemOrder.length > 0 ||
-          s.infoMessage != null ||
           s.totals.started > 0 ||
-          s.totals.succeeded > 0
-        );
+          s.totals.succeeded > 0 ||
+          s.totals.failed > 0;
+        if (
+          s.status === "pending" ||
+          s.status === "skipped" ||
+          (s.status === "complete" && !hasWork)
+        ) {
+          return hasWork;
+        }
+        return true;
       }),
     [state],
   );
@@ -268,7 +276,10 @@ export function LivePipelineActivity({
         <>
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
           <span className="text-[11px] font-medium text-foreground">
-            Last run
+            This run
+          </span>
+          <span className="hidden sm:inline text-[10px] text-muted-foreground">
+            session only — not topic totals
           </span>
           {state.startedAt && state.completedAt && (
             <span className="text-[10px] text-muted-foreground tabular-nums">

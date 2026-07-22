@@ -7,7 +7,6 @@ import { ArrowLeft, Ban, Play, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
 import { LiveCrawlFeed } from "@/features/marketing/components/crawls/LiveCrawlFeed";
 import {
   cancelCrawl,
@@ -168,43 +168,26 @@ export function NewCrawlWorkspace() {
                 <Label htmlFor="crawl-max-pages" className="text-[11px]">
                   Maximum pages
                 </Label>
-                <Input
+                <ClampedNumberInput
                   id="crawl-max-pages"
-                  type="number"
                   min={1}
-                  max={50000}
+                  max={50_000}
                   value={options.max_pages}
                   disabled={active}
-                  onChange={(event) =>
-                    update(
-                      "max_pages",
-                      Math.max(1, Number(event.target.value) || 1),
-                    )
-                  }
-                  className="h-8"
+                  onChange={(value) => update("max_pages", value)}
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="crawl-concurrency" className="text-[11px]">
                   Concurrency
                 </Label>
-                <Input
+                <ClampedNumberInput
                   id="crawl-concurrency"
-                  type="number"
                   min={1}
                   max={32}
                   value={options.concurrency}
                   disabled={active}
-                  onChange={(event) =>
-                    update(
-                      "concurrency",
-                      Math.min(
-                        32,
-                        Math.max(1, Number(event.target.value) || 1),
-                      ),
-                    )
-                  }
-                  className="h-8"
+                  onChange={(value) => update("concurrency", value)}
                 />
               </div>
             </div>

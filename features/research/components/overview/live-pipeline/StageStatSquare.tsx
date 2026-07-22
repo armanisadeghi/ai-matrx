@@ -40,7 +40,12 @@ export function StageStatSquare({
 
   const failed = stage.status === "failed";
   const partial = stage.status === "partial";
-  const StatusIcon = failed ? XCircle : partial ? AlertTriangle : CheckCircle2;
+  const skipped = stage.status === "skipped";
+  const StatusIcon = failed
+    ? XCircle
+    : partial || skipped
+      ? AlertTriangle
+      : CheckCircle2;
 
   const squareClass = cn(
     "animate-in fade-in zoom-in-95 duration-300",
@@ -52,7 +57,9 @@ export function StageStatSquare({
       ? "border-destructive/30 bg-destructive/[0.06]"
       : partial
         ? "border-amber-500/30 bg-amber-500/[0.06]"
-        : "border-green-500/30 bg-green-500/[0.06]",
+        : skipped
+          ? "border-border/50 bg-muted/30 opacity-70"
+          : "border-green-500/30 bg-green-500/[0.06]",
     onToggle && !expanded && "hover:bg-card/80",
   );
 
@@ -70,7 +77,9 @@ export function StageStatSquare({
               ? "text-destructive"
               : partial
                 ? "text-amber-500"
-                : "text-green-500",
+                : skipped
+                  ? "text-muted-foreground"
+                  : "text-green-500",
           )}
         />
       </div>

@@ -28,6 +28,7 @@ import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
+import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { requestRename } from "@/features/files/components/core/RenameDialog/RenameHost";
@@ -157,6 +158,9 @@ export function FilePreview({
 }: FilePreviewProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  // Canonical file UUID only — hydrate when the row isn't already in the
+  // Files tree (system/crawl artifacts, deep links, floating preview).
+  const ensure = useEnsureCloudFile(fileId);
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const actions = useFileActions(fileId);
 
@@ -284,6 +288,12 @@ export function FilePreview({
   }, [file, capability, actions, router, fileId, dispatch]);
 
   if (!file) {
+    const message =
+      ensure.status === "loading" || ensure.status === "idle"
+        ? "Loading…"
+        : ensure.status === "error"
+          ? "Couldn't load this file."
+          : "File not found.";
     return (
       <div
         className={cn(
@@ -291,7 +301,7 @@ export function FilePreview({
           className,
         )}
       >
-        File not found.
+        {message}
       </div>
     );
   }

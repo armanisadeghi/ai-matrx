@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-07-21
+**Last updated:** 2026-07-22
 
 ## Purpose
 
@@ -104,6 +104,7 @@ Grants: `migrations/web_marketing_crud_grants.sql` added the missing authenticat
 
 ## Invariants & gotchas
 
+- **Number fields that clamp to a min must never clamp on every keystroke.** Use `components/shared/ClampedNumberInput` (draft string + commit on blur/Enter). `Number("") || min` immediately overwrites a cleared field and makes the input unusable.
 - **Single-entity fetchers use `.maybeSingle()` + `assertFound` (`data/service.ts`), never `.single()`.** A row can be soft-deleted out from under an open view; `.single()`'s 0-row PGRST116 leaks a red "Cannot coerce…" error into the inspector instead of the human-readable "deleted or no longer accessible" message. Delete mutations invalidate LIST keys only and never refetch the deleted entity's own subtree (see `useDeleteSite`).
 
 - **The five connection statuses (Init / GSC / GA4 / PSI / CMS) are derived ONLY through `features/marketing/lib/site-status.ts`** — the portfolio list and the site page must never compute them independently. A configured GSC binding with `gsc_synced_at` null is `attention` ("Connected, never synced"), never `connected` — no data has flowed until the sync command stamps the site row.
@@ -155,6 +156,8 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-22 — Capture / HTML / Markdown open-in-viewer no longer lands on an empty "File not found" panel. Marketing already passed only the canonical `files.files` UUID into `useOpenFilePreviewWindow`; the Files viewer now hydrates that off-tree crawl artifact via `useEnsureCloudFile` (viewable under `files.has_access_for`, never discoverable in the Files tree). No marketing-side identifier change — still `file_id` / `body_file_id` / `markdown_file_id` only.
+- 2026-07-21 — Fixed the controlled number-input trap on crawl defaults (site settings + start crawl): clearing Maximum pages / Concurrency no longer snaps back mid-keystroke. Shared `ClampedNumberInput` keeps a draft string and only clamps/restores on blur or Enter.
 - 2026-07-21 — Link graph made readable at real site scale + two prod timeouts fixed. **Sections view is now the default**: the map aggregates pages by URL directory (`buildSectionGraph`) — folders are one node sized by page count, links inside a folder become a node stat instead of edges, and the long tail of individual pages at a level collapses into one "N more pages" node (flat sites were the killer case: 212 root-level pages became 212 nodes). Breadcrumb drill-down; Pages (page-per-node) is opt-in and only offered under 60 pages in focus. Labels are single path segments, truncated, width-bounded, and hidden on small nodes at page level — full URLs live in the side panel only. **Perf:** `web.count_link_edges` RPC (checks access once, then counts) replaces PostgREST `count=exact`, which ran `iam.has_access` per row and timed out (57014) on a 103k-edge site; the site-scoped table read dropped its `snapshot!inner` embed (8.1s → fast; the crawl-scoped read keeps it since that is how a session is filtered); added `link_edge_site_created_idx`.
 
 - 2026-07-20 — Claude: outbound-links (External) view — `.../links?view=external` renders the domain-grouped outbound report (`ExternalLinksView` + pure `buildExternalLinkReport` in link-graph `model.ts`; Screaming Frog External tab / Ahrefs Linked Domains): destination domains sorted by link count with target drill-down (exact outbound URL — query kept, fragment dropped — link occurrences, distinct linking pages with clickable root-stripped samples, anchor rollup, nofollow), stat chips, filter, Copy-for-AI (`web-external-links`), and the graph's "external targets" stat jumps to it. Reuses the same capped edge fetch as the graph (no new query). Filed D74: the scraper never populates `web.link_edge.http_status` (ALL rows null) — broken-link detection is blocked on a backend link-check pass; the External view shows an honest unchecked-status notice until then.

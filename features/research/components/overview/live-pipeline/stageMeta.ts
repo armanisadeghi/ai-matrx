@@ -1,13 +1,16 @@
 import { Search, Download, Brain, Layers, FileText } from "lucide-react";
-import type {
-  StageState,
-  StageKind,
-} from "../../../hooks/usePipelineProgress";
+import type { StageState, StageKind } from "../../../hooks/usePipelineProgress";
+import { sourcesDiscoveredFromItems } from "../../../hooks/usePipelineProgress";
 
 /**
  * Canonical per-stage display metadata shared by the live-pipeline surfaces
  * (the stat-square rail, headers, etc.). One source of truth for a stage's
  * icon, label, duration, and headline numbers.
+ *
+ * Labels match the orchestra nouns so the same page never says "Search 0"
+ * next to a Sources node that shows 236:
+ *   Search stage  → Sources (search results)
+ *   Scrape stage  → Content (scrape results)
  */
 
 export const STAGE_ICON: Record<StageKind, typeof Search> = {
@@ -19,10 +22,10 @@ export const STAGE_ICON: Record<StageKind, typeof Search> = {
 };
 
 export const STAGE_LABEL: Record<StageKind, string> = {
-  search: "Search",
-  scrape: "Scrape",
-  analyze: "Analyze",
-  synthesize: "Synthesize",
+  search: "Sources",
+  scrape: "Content",
+  analyze: "Analysis",
+  synthesize: "Synthesis",
   report: "Report",
 };
 
@@ -59,14 +62,18 @@ export interface StageSquareData {
 }
 
 /**
- * The "you had 4 keywords → now you have 37 sources" story, per stage, as a
- * compact stat the rail squares render.
+ * Per-stage headline for the this-run rail. Sources uses the same
+ * `stored_count ?? sources_found` sum as `derived.totalSourcesDiscovered`.
  */
 export function stageSquareData(stage: StageState): StageSquareData {
   const t = stage.totals;
   switch (stage.kind) {
     case "search": {
-      const total = t.target ?? t.succeeded;
+      const fromItems = sourcesDiscoveredFromItems(Object.values(stage.items));
+      // Prefer item-level sum; fall back to search_complete target when the
+      // stage finished without per-keyword metadata (shouldn't happen on a
+      // real search, but keeps the square honest if it does).
+      const total = fromItems > 0 ? fromItems : (t.target ?? 0);
       const kw = stage.itemOrder.length;
       return {
         value: fmt(total),
@@ -75,11 +82,11 @@ export function stageSquareData(stage: StageState): StageSquareData {
       };
     }
     case "scrape": {
-      const total = stage.itemOrder.length;
+      const tried = stage.itemOrder.length;
       return {
         value: fmt(t.succeeded),
-        unit: "scraped",
-        sub: `${total} tried${t.failed ? ` · ${t.failed} failed` : ""}`,
+        unit: t.succeeded === 1 ? "page" : "pages",
+        sub: `${tried} tried${t.failed ? ` · ${t.failed} failed` : ""}`,
       };
     }
     case "analyze": {
@@ -90,7 +97,7 @@ export function stageSquareData(stage: StageState): StageSquareData {
           ? `of ${t.target}${t.failed ? ` · ${t.failed} failed` : ""}`
           : t.failed
             ? `${t.failed} failed`
-            : "done",
+            : "this run",
       };
     }
     case "synthesize": {
@@ -101,7 +108,8 @@ export function stageSquareData(stage: StageState): StageSquareData {
       return {
         value: fmt(kw),
         unit: kw === 1 ? "synthesis" : "syntheses",
-        sub: proj > 0 ? `+ ${proj} report${proj === 1 ? "" : "s"}` : "per keyword",
+        sub:
+          proj > 0 ? `+ ${proj} report${proj === 1 ? "" : "s"}` : "per keyword",
       };
     }
     case "report": {
@@ -112,7 +120,10 @@ export function stageSquareData(stage: StageState): StageSquareData {
         return {
           value: "1",
           unit: "document",
-          sub: tagCount > 0 ? `${tagCount} tag${tagCount === 1 ? "" : "s"}` : "assembled",
+          sub:
+            tagCount > 0
+              ? `${tagCount} tag${tagCount === 1 ? "" : "s"}`
+              : "assembled",
         };
       }
       return {
