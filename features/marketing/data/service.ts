@@ -896,8 +896,12 @@ export async function getPageWorkspace(
     .maybeSingle();
   const page = assertFound(pageResponse.data, pageResponse.error, "page");
 
-  const [snapshotResponse, scoreResponse, findingsResponse] = await Promise.all(
-    [
+  const [
+    snapshotResponse,
+    scoreResponse,
+    findingsResponse,
+    searchPerformanceResponse,
+  ] = await Promise.all([
       page.latest_snapshot_id
         ? db
             .from("snapshot")
@@ -924,11 +928,20 @@ export async function getPageWorkspace(
         .eq("suppressed", false)
         .is("deleted_at", null)
         .abortSignal(abortSignal),
-    ],
-  );
+      db
+        .from("v_page_list")
+        .select(
+          "in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d",
+        )
+        .eq("site_id", siteId)
+        .eq("page_id", pageId)
+        .abortSignal(abortSignal)
+        .maybeSingle(),
+  ]);
   if (snapshotResponse.error) throw snapshotResponse.error;
   if (scoreResponse.error) throw scoreResponse.error;
   if (findingsResponse.error) throw findingsResponse.error;
+  if (searchPerformanceResponse.error) throw searchPerformanceResponse.error;
 
   return {
     page,
@@ -936,6 +949,12 @@ export async function getPageWorkspace(
     score: scoreResponse.data?.page_score ?? null,
     failCount: Number(scoreResponse.data?.fail_count ?? 0),
     openFindings: findingsResponse.count ?? 0,
+    searchPerformance: searchPerformanceResponse.data ?? {
+      in_gsc: false,
+      gsc_clicks_28d: null,
+      gsc_impressions_28d: null,
+      gsc_position_28d: null,
+    },
   };
 }
 

@@ -61,8 +61,9 @@ export function PageContentCard({
     <SectionCard
       title="Page content"
       copy={{ ...copy, human: () => text ?? "Content is still loading." }}
+      collapsible
     >
-      <div className="max-h-[42rem] overflow-y-auto p-3">
+      <div className="p-3">
         <MarkdownPreview fileId={markdownFileId} />
       </div>
     </SectionCard>

@@ -1,7 +1,18 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Loader2, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  ChevronDown,
+  Loader2,
+  Plus,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   CopyButtons,
   type CopyButtonsProps,
@@ -247,6 +258,8 @@ export function SectionCard({
   copy,
   children,
   className,
+  collapsible = false,
+  defaultOpen = true,
 }: {
   title: string;
   /** Link action (`href`) or in-place action (`onClick`). */
@@ -261,11 +274,21 @@ export function SectionCard({
   copy?: Pick<CopyButtonsProps, "label" | "human" | "agent">;
   children: React.ReactNode;
   className?: string;
+  /** Adds a compact disclosure control without changing existing callers. */
+  collapsible?: boolean;
+  /** Initial disclosure state when `collapsible` is enabled. */
+  defaultOpen?: boolean;
 }) {
-  return (
+  const content = collapsible ? (
+    <CollapsibleContent>{children}</CollapsibleContent>
+  ) : (
+    children
+  );
+  const card = (
     <section
       className={cn(
         "min-w-0 rounded-lg border border-border bg-card",
+        collapsible && "self-start",
         className,
       )}
     >
@@ -294,10 +317,29 @@ export function SectionCard({
               <Plus className="h-3 w-3" />
             </button>
           ) : null}
+          {collapsible ? (
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                aria-label={`Toggle ${title}`}
+                title={`Toggle ${title}`}
+                className="group flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=closed]:-rotate-90" />
+              </button>
+            </CollapsibleTrigger>
+          ) : null}
         </div>
       </div>
-      {children}
+      {content}
     </section>
+  );
+
+  if (collapsible) {
+    return <Collapsible defaultOpen={defaultOpen}>{card}</Collapsible>;
+  }
+  return (
+    card
   );
 }
 

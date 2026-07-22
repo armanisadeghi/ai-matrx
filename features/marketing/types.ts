@@ -162,6 +162,13 @@ export interface PageWorkspaceData {
   score: number | null;
   failCount: number;
   openFindings: number;
+  searchPerformance: Pick<
+    WebViews["v_page_list"]["Row"],
+    | "in_gsc"
+    | "gsc_clicks_28d"
+    | "gsc_impressions_28d"
+    | "gsc_position_28d"
+  >;
 }
 
 export interface CreateSiteInput {
