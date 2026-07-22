@@ -217,7 +217,7 @@ export default function MenuContent(props: MenuContentProps) {
             {item.icon && <item.icon className="h-4 w-4 mr-2" />}
             {item.label}
           </SubTrigger>
-          <SubContent className="w-60">
+          <SubContent className="z-[9999] w-60">
             {item.children.map(renderExtraItem)}
           </SubContent>
         </Sub>
@@ -294,7 +294,7 @@ export default function MenuContent(props: MenuContentProps) {
           />
           {category.label}
         </SubTrigger>
-        <SubContent className="w-64">
+        <SubContent className="z-[9999] w-64">
           {!hasContent && (
             <div className="px-2 py-6 text-center">
               <p className="text-sm text-muted-foreground">
@@ -387,7 +387,7 @@ export default function MenuContent(props: MenuContentProps) {
           />
           {label}
         </SubTrigger>
-        <SubContent className="w-64">
+        <SubContent className="z-[9999] w-64">
           {groups.length === 0 || !hasItems ? (
             <div className="px-2 py-6 text-center">
               <p className="text-sm text-muted-foreground">No {label}</p>
@@ -441,7 +441,7 @@ export default function MenuContent(props: MenuContentProps) {
             <Copy className="h-4 w-4 mr-2 text-emerald-500" />
             Copy as
           </SubTrigger>
-          <SubContent className="w-60">
+          <SubContent className="z-[9999] w-60">
             {copyVariantActions.map(renderRichAction)}
           </SubContent>
         </Sub>
@@ -516,7 +516,7 @@ export default function MenuContent(props: MenuContentProps) {
           <GitCompareArrows className="h-4 w-4 mr-2 text-amber-500" />
           Compare
         </SubTrigger>
-        <SubContent className="w-60">
+        <SubContent className="z-[9999] w-60">
           <Item onSelect={() => void m.handleCompareClipboard()}>
             <ClipboardIcon className="h-4 w-4 mr-2" />
             Compare with clipboard
@@ -555,7 +555,7 @@ export default function MenuContent(props: MenuContentProps) {
             <Download className="h-4 w-4 mr-2 text-amber-500" />
             Export
           </SubTrigger>
-          <SubContent className="w-60">
+          <SubContent className="z-[9999] w-60">
             {exportActions.map(renderRichAction)}
           </SubContent>
         </Sub>
@@ -566,7 +566,7 @@ export default function MenuContent(props: MenuContentProps) {
             <Replace className="h-4 w-4 mr-2 text-violet-500" />
             Convert
           </SubTrigger>
-          <SubContent className="w-60">
+          <SubContent className="z-[9999] w-60">
             {convertActions.map(renderRichAction)}
           </SubContent>
         </Sub>
@@ -620,7 +620,7 @@ export default function MenuContent(props: MenuContentProps) {
             <Zap className="h-4 w-4 mr-2 text-pink-500" />
             Quick Actions
           </SubTrigger>
-          <SubContent className="w-56">
+          <SubContent className="z-[9999] w-56">
             <Item onSelect={() => quickActions.openQuickNotes()}>
               <StickyNote className="h-4 w-4 mr-2" />
               Notes
@@ -680,7 +680,7 @@ export default function MenuContent(props: MenuContentProps) {
               <Shield className="h-4 w-4 mr-2 text-rose-500" />
               Admin Tools
             </SubTrigger>
-            <SubContent className="w-56">
+            <SubContent className="z-[9999] w-56">
               <Item onSelect={m.handleToggleDebugMode}>
                 {isDebugMode ? (
                   <EyeOff className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />

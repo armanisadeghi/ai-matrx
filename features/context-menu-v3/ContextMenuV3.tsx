@@ -282,7 +282,7 @@ export function ContextMenuV3({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 2) return; // right-click only
     const target = e.target as HTMLElement;
-    setResolvedContext(resolveContextOnOpen ? resolveContextOnOpen(target) : null);
+    resolvePerTargetContext(target);
     selectionLocked.current = true;
 
     if (
@@ -315,9 +315,20 @@ export function ContextMenuV3({
     }
   };
 
+  // Per-target context resolution — MUST run on EVERY open path (right-click,
+  // keyboard contextmenu, mobile long-press/sheet, floating icon), not just
+  // button-2 mousedown: single-instance consumers (ItemContextMenu, markdown,
+  // PDF regions) build their menu items from this. A double call on the plain
+  // right-click path (mousedown then contextmenu) is deliberate — re-resolving
+  // is idempotent and keeps lazy configs fresh.
+  const resolvePerTargetContext = (target: HTMLElement | null) => {
+    setResolvedContext(resolveContextOnOpen ? resolveContextOnOpen(target) : null);
+  };
+
   // Shared capture — populates selection/content state from a right-click target
   // OR a long-press target (mobile). Does not open anything; the caller does.
   const captureContext = (target: HTMLElement, containerEl: HTMLElement) => {
+    resolvePerTargetContext(target);
     let captured = capturedSelection.current;
     if (!captured || !captured.text) {
       captured =
@@ -422,6 +433,7 @@ export function ContextMenuV3({
       sel && sel.rangeCount > 0
         ? (sel.getRangeAt(0).commonAncestorContainer.parentElement ?? null)
         : null;
+    resolvePerTargetContext(container);
     setFallbackContent(extractElementText(container));
     setDropdownOpen(true);
   };
@@ -481,6 +493,7 @@ export function ContextMenuV3({
       range: sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null,
       containerElement: container,
     });
+    resolvePerTargetContext(container);
     setFallbackContent(extractElementText(container));
     setSheetOpen(true);
   };
@@ -618,8 +631,9 @@ export function ContextMenuV3({
         >
           {children}
         </ContextMenuTrigger>
+        {/* z-[9999]: menus must layer above floating WindowPanels (z >= 1000). */}
         <ContextMenuContent
-          className={`w-64 ${className ?? ""}`}
+          className={`z-[9999] w-64 ${className ?? ""}`}
           onCloseAutoFocus={onCloseAutoFocus}
         >
           <MenuContent variant="context" {...menuContentProps} />
@@ -647,7 +661,7 @@ export function ContextMenuV3({
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-64"
+            className="z-[9999] w-64"
             align="center"
             side="bottom"
             sideOffset={5}
