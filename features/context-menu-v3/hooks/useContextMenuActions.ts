@@ -55,6 +55,7 @@ import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveActions } from "@/features/rich-document/actions/registry";
 import { getSourceAdapter } from "@/features/rich-document/actions/sources";
+import { shortHash } from "@/features/rich-document/actions/sources/raw";
 // Side-effect import: the copy/save/export/convert handlers self-register into
 // the rich-document action registry on load, so resolveActions resolves them.
 import "@/features/rich-document/actions/handlers";
@@ -338,6 +339,13 @@ export function useContextMenuActions(
   // the submenus self-hide on an inert menu.
   const richDocSource: ContentSource = props.contentSource ?? { type: "raw" };
   const richDocAdapter = getSourceAdapter(richDocSource.type);
+  // Raw sources fold a content hash into the instance prefix so two raw
+  // documents on one page never share overlay instance IDs (parity with
+  // useActionSurfaceProvider's ctx builder).
+  const richPrefix =
+    richDocSource.type === "raw"
+      ? `${richDocAdapter.instanceKeyPrefix(richDocSource)}-${shortHash(actionText.text).slice(0, 8)}`
+      : richDocAdapter.instanceKeyPrefix(richDocSource);
   const richDocCtx: RichDocumentActionContext = {
     content: actionText.text,
     source: richDocSource,
@@ -348,9 +356,9 @@ export function useContextMenuActions(
     isCreator: false,
     surfaceKey: surfaceName ?? null,
     onClose: () => {},
-    instanceKey: (prefix) =>
-      `${richDocAdapter.instanceKeyPrefix(richDocSource)}-${prefix}`,
+    instanceKey: (prefix) => `${richPrefix}-${prefix}`,
     sourceAdapter: richDocAdapter,
+    ...(props.richDocCtxExtras ?? {}),
   };
   const richActions =
     actionText.source !== "none"

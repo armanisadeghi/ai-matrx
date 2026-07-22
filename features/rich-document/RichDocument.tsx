@@ -327,6 +327,10 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         contentSource={source}
         contextData={{ content: ctx.content }}
         excludedRichActions={cmExcludes}
+        richDocCtxExtras={{
+          callbacks: actionsProp?.callbacks,
+          extensions: actionsProp?.extensions,
+        }}
         extraSections={extraSections}
       >
         {engineInner}

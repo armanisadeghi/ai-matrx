@@ -6,9 +6,16 @@ import ShellIcon from "@/features/shell/components/ShellIcon";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import { cn } from "@/lib/utils";
 import { usePinned } from "@/components/favorites/usePinned";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 
 export function PinnedSection() {
-  const { favorites, unpin } = usePinned();
+  const { favorites: pinnedFavorites, unpin } = usePinned();
+  // Favorites live in the client Redux store (synced/persisted after boot), so
+  // the server always renders the empty state. Render empty until mounted so
+  // the client's first render matches SSR — otherwise React reports a
+  // hydration mismatch on the count badge and grid.
+  const isMounted = useIsMounted();
+  const favorites = isMounted ? pinnedFavorites : [];
 
   return (
     <section className="space-y-2">

@@ -217,6 +217,16 @@ export interface ContextMenuV3CoreProps {
    * surface's opt-out, e.g. RichDocument's `enableContextMenu.exclude`).
    */
   excludedRichActions?: string[];
+  /**
+   * Host-supplied rich-document context extras (per-instance callbacks +
+   * source-specific extensions) merged into the menu's action context, so
+   * registry handlers that depend on them (delete-message, feedback, print)
+   * work identically from the right-click menu.
+   */
+  richDocCtxExtras?: Pick<
+    import("@/features/rich-document/types").RichDocumentActionContext,
+    "callbacks" | "extensions"
+  >;
 
   // ── Context filters for AI Actions ──────────────────────────────────────
   /** Contexts ADDED to the default `{general}` allow-set. */
@@ -336,6 +346,10 @@ export interface MenuContentProps {
   contentSource?: ContentSource;
   entity?: ContextMenuEntityRef;
   excludedRichActions?: string[];
+  richDocCtxExtras?: Pick<
+    import("@/features/rich-document/types").RichDocumentActionContext,
+    "callbacks" | "extensions"
+  >;
 
   // captured selection (from the shell, at open)
   selectedText: string;
