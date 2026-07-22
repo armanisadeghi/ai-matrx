@@ -811,6 +811,14 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "MessageSquare",
         link: "/administration/feedback",
       },
+      {
+        title: "Agent Review Queue",
+        description:
+          "Everything agents built that needs your eyes — demo pages and features to test, with one-click open, inline feedback, and status flow back to the agents.",
+        iconName: "ClipboardCheck",
+        link: "/administration/agent-review",
+        isNew: true,
+      },
     ],
   },
   {

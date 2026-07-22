@@ -714,6 +714,48 @@ export type Database = {
           },
         ]
       }
+      review_queue: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          feedback_at: string | null
+          id: string
+          instructions: string
+          metadata: Json
+          source: string
+          status: string
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          feedback_at?: string | null
+          id?: string
+          instructions: string
+          metadata?: Json
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          feedback_at?: string | null
+          id?: string
+          instructions?: string
+          metadata?: Json
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       shortcut: {
         Row: {
           agent_id: string | null

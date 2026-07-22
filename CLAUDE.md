@@ -208,6 +208,10 @@ A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days lat
 
 Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Four-file task system: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks). **Invoke the `task-hygiene` skill** to triage, promote, or clean any of them.
 
+## Agent Review Queue — anything you build that Arman must see
+
+Built a demo page, new route, or reviewable UI surface Arman didn't watch you make? **Register it in `agent.review_queue` before ending the turn** — a "please test /demos/foo" buried in a chat message will never be seen. He reviews at `/administration/agent-review`; his feedback comes back through the same table, and you archive the row once handled. **Invoke the `agent-review-queue` skill** for the exact INSERT/feedback/status contract.
+
 ## Handoffs
 
 `docs/handoffs/` holds forward-looking work orders (shared system with aidream — one doc per piece of work). **Invoke the `handoffs` skill** before writing one, taking one over, or ending any turn that progressed work a handoff covers — completed tasks collapse to one bullet, finished handoffs get deleted. Rot backstop: `/handoff-cleanup`.
