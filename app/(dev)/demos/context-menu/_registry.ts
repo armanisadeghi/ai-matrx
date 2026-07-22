@@ -88,12 +88,11 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     slug: "surface-mappings",
     title: "Surface Mappings",
     tagline:
-      "Resolve (agentId × surfaceName × scope) → value_mappings live; preview what mapScopeToInstanceWithSurface emits.",
+      "Resolve (agentId × surfaceName) → layered value_mappings live; preview what mapScopeToInstanceWithSurface emits.",
     description:
-      "Planned. Pick an agent + surface + scope, see the most-specific row from `agent.definition_surface`, and watch `mapScopeToInstanceWithSurface` produce variable + context entries from a sample applicationScope. The missing piece for diagnosing 'surface picked but values didn't land'.",
+      "Pick an agent + surface, see every live binding layer (platform.associations via agent.menu_surface, incl. inherited parents), which tier won each key, and watch `mapScopeToInstanceWithSurface` produce variable + context entries from a sample applicationScope. The missing piece for diagnosing 'surface picked but values didn't land'.",
     icon: "flask-conical",
-    status: "planned",
-    hiddenFromNav: true,
+    status: "stable",
   },
   {
     slug: "launch-inspector",
