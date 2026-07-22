@@ -16,6 +16,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
 import { createClient } from "@/utils/supabase/client";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   checkSeoHealth,
   createDataForSeoCollection,
@@ -451,10 +452,9 @@ export function DataForSeoLab() {
               Run and persist
             </button>
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={freshRequest}
-                onChange={(event) => setFreshRequest(event.target.checked)}
+                onCheckedChange={(checked) => setFreshRequest(checked === true)}
               />
               Force fresh provider call (bypass server TTL)
             </label>

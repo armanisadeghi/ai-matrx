@@ -16,11 +16,12 @@ organization comes from `selectEffectiveOrganizationId`.
 - Start the local package from aidream with `./packages/matrx-seo/scripts/run_local.sh`.
   The SEO server must allow this page's Origin (`https://www.aimatrx.com` or
   `http://localhost:3000`) — defaults cover both.
-- The operation selector is loaded from `GET /providers/dataforseo/operations`, so the UI
-  cannot drift from the package allowlist.
-- The task editor accepts one exact DataForSEO task object. The client wraps it in the
-  provider's task array and sends a `raw_provider` collection, allowing every approved
-  operation to be inspected without inventing normalized facts.
+- The operation selector and endpoint-scoped example tasks are loaded from
+  `GET /providers/dataforseo/operations`, so the UI owns no second payload matrix. Selecting
+  an operation, workflow, or exact endpoint loads that endpoint's canonical backend example.
+- The task editor starts from that canonical example and remains editable. The client wraps
+  the one task object in the provider's task array and sends a `raw_provider` collection,
+  allowing every approved operation to be inspected without inventing normalized facts.
 - Every task, request, provider response, and evidence payload uses the canonical
   application-wide `JsonInspector`: formatted expand-depth controls, path explorer, tree,
   truncator, copy, and a linted CodeMirror editor for the task body.
@@ -49,6 +50,8 @@ organization comes from `selectEffectiveOrganizationId`.
 
 ## Change log
 
+- 2026-07-22 — Deleted heuristic task generation and made the backend's 51 endpoint-scoped
+  canonical examples the only initial-payload source for the operation/workflow/endpoint UI.
 - 2026-07-22 — Replaced every raw JSON textarea/pre block with the canonical JsonInspector
   and documented live versus standard execution and raw-evidence persistence in the lab.
 - 2026-07-22 — Removed the lab-specific server URL and routed it through the canonical

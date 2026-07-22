@@ -1,6 +1,6 @@
 # Media Capture — FEATURE.md
 
-**Status:** Built (P0 scaffold + Phases 2/3/4/5/7/8 shipped; TUS live E2E pending server deploy). Execution plan: [docs/media-capture-plan.md](../../docs/media-capture-plan.md). Cross-repo system of record: `/Users/armanisadeghi/code/common-docs/systems/media-capture/FEATURE.md` (metadata schema v1, TUS wire contract, server contracts) — read it before touching any cross-repo boundary.
+**Status:** Built (P0 scaffold + Phases 2/3/4/5/7/8 shipped; TUS live E2E pending server deploy). Execution plan: [docs/media-capture-plan.md](../../docs/media-capture-plan.md). Cross-repo system of record: `/Users/armanisadeghi/code/common-docs/media-capture/FEATURE.md` (metadata schema v1, TUS wire contract, server contracts) — read it before touching any cross-repo boundary.
 
 One platform capture system for **photos, video, and audio** from browser media devices, on desktop and mobile.
 

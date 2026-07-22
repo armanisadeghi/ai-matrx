@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * Access guard check — the enforcement piece of THE SECURITY PHILOSOPHY and
- * THE VIEW LAW (CLAUDE.md §Supabase, common-docs/systems/db-rules/FEATURE.md §6).
+ * THE VIEW LAW (CLAUDE.md §Supabase, common-docs/db-rules/FEATURE.md §6).
  *
  * The philosophy: real security = the right people get in without blinking AND
  * the wrong people can't get in at all. Over-tightening is a defect, not caution.
@@ -88,10 +88,14 @@ function isAllowed(entries: AllowEntry[], file: string, line: number): boolean {
 // ─── Repo file listing ──────────────────────────────────────────────────────
 
 const IGNORE_DIRS = new Set([
-  "node_modules", ".next", ".next-preview", ".git", "dist", "build",
-  "coverage", ".turbo", ".vercel",
+  "node_modules", "dist", "build", "coverage",
 ]);
 
+// Dot-dirs are ALWAYS skipped — .git, every .next* build dir (each parallel
+// agent dev server makes its own .next-agent-*), and above all .claude/worktrees,
+// which holds full repo copies. Scanning those reported hundreds of duplicate
+// findings against code that is not this checkout. Same rule as
+// scripts/check-ui-primitives.ts.
 function walk(dir: string, out: string[] = []): string[] {
   let entries: string[];
   try {
@@ -100,7 +104,7 @@ function walk(dir: string, out: string[] = []): string[] {
     return out;
   }
   for (const name of entries) {
-    if (IGNORE_DIRS.has(name)) continue;
+    if (name.startsWith(".") || IGNORE_DIRS.has(name)) continue;
     const full = join(dir, name);
     let st;
     try {
@@ -496,7 +500,7 @@ function main() {
   console.log("");
   console.log(`${BOLD}  ACCESS GUARD CHECK${RESET}`);
   console.log(
-    `  ${DIM}Enforcing THE SECURITY PHILOSOPHY + THE VIEW LAW (CLAUDE.md §Supabase, common-docs/systems/db-rules/FEATURE.md §6)${RESET}`
+    `  ${DIM}Enforcing THE SECURITY PHILOSOPHY + THE VIEW LAW (CLAUDE.md §Supabase, common-docs/db-rules/FEATURE.md §6)${RESET}`
   );
   console.log("");
 

@@ -1,7 +1,7 @@
 # Access Guards — FEATURE.md
 
 Enforcement piece of THE SECURITY PHILOSOPHY and THE VIEW LAW
-(`CLAUDE.md` §Supabase, `common-docs/systems/db-rules/FEATURE.md` §6).
+(`CLAUDE.md` §Supabase, `common-docs/db-rules/FEATURE.md` §6).
 
 Script: `scripts/check-access-guards.ts` · Command: `pnpm check:access-guards`
 (`:strict` variant exits 1 on FAIL findings). Wired into `pnpm check:release-gates`.
@@ -63,15 +63,14 @@ reviewed like code, and an unjustified entry should be rejected in review.
 
 ## Known current findings (informational, tracked here so a re-run isn't a surprise)
 
-As of 2026-07-22, a full-tree run reports **0 FAIL / 63 WARN**, no
-LOWEST-TIER DEFAULT or ACTIVE-ORG ACCESS findings on the live tree. The WARNs
-split: ~30 HAND-ROLLED LADDER (mostly `"viewer"|"editor"|"admin"` type unions
-and `<SelectItem>` labels — genuinely ambiguous between "cosmetic" and "should
-route through the canonical ladder", hence WARN not FAIL) and ~33 BARE-RLS
-LIST hits across `features/agents`, `features/scopes`, `features/surfaces`,
-`features/transcripts`, `features/transcript-studio`, `features/scheduling`,
-`features/code-files`, and `features/memory` — these correspond to the known
-concurrent bare-RLS fix wave (adds `applyListScope(...)` calls or
-`// VIEW LAW:` comments). Do not hardcode this count as a target — re-run the
-script for the live, exact list; the goal is 0 findings once that wave lands,
-and any *new* finding after that point is a real regression, not noise.
+As of 2026-07-22, a full-tree run reports **0 findings** — the bare-RLS fix wave
+landed and the hand-rolled-ladder hits are resolved. **Any finding from here on
+is a real regression, not known noise.** Do not hardcode a count as a target;
+re-run the script for the live list.
+
+**Scan scope (2026-07-22):** the walker skips every dot-dir. This matters more
+than it sounds — `.claude/worktrees/` holds *full repo copies* from parallel
+agent sessions, and scanning them reported 272 duplicate WARNs against code that
+is not this checkout, drowning the real signal (which was zero) and making the
+gate useless. Same rule as `scripts/check-ui-primitives.ts`. If you ever widen
+the walker, keep dot-dirs out.

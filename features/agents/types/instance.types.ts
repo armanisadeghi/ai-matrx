@@ -119,6 +119,8 @@ export type SourceFeature =
   | "code-editor"
   /** Context-menu behavior labs under `/demos/context-menu/*`. */
   | "context-menu-demo"
+  /** Launch-inspector lab under `/demos/context-menu/launch-inspector`. */
+  | "launch-inspector-demo"
 
   // ── Notes ────────────────────────────────────────────────────────────────
   | "notes"
@@ -307,6 +309,7 @@ export const SOURCE_FEATURES = [
   "research",
   "code-editor",
   "context-menu-demo",
+  "launch-inspector-demo",
   "agent-assignment-demo",
   "notes",
   "cms-hub",

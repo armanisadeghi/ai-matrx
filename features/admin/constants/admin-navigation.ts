@@ -471,6 +471,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Code2",
         destinations: [
           destination("/administration/all-routes"),
+          destination("/administration/capture-inspector"),
           destination("/administration/server-cache"),
           destination("/administration/typescript-errors"),
           destination("/administration/utils"),
