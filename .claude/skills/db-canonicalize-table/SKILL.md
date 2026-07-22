@@ -87,7 +87,11 @@ alter table <schema>.<table> add column if not exists updated_at timestamptz not
 alter table <schema>.<table> add column if not exists version int not null default 1;
 alter table <schema>.<table> add column if not exists deleted_at timestamptz;
 alter table <schema>.<table> add column if not exists metadata jsonb not null default '{}';
-alter table <schema>.<table> add column if not exists visibility platform.visibility not null default 'private';  -- entity/shareable only
+alter table <schema>.<table> add column if not exists visibility platform.visibility not null default '<TIER>';  -- entity/shareable only
+-- <TIER> is a DECISION, never a reflex (db-rules §6a): 'personal' ONLY for an individual
+-- person's own artifacts (chats, DMs — almost nothing qualifies); org work product → 'internal';
+-- scraped/derived/catalog content → 'public'. Defaulting to the lowest tier without a
+-- personal-artifact justification is the documented anti-pattern that locked out whole orgs.
 -- normalize legacy → canonical (guard each on IS NULL so re-runs are no-ops)
 update <schema>.<table> set created_by = coalesce(created_by, <owner_col>) where created_by is null;
 update <schema>.<table> set visibility = 'public' where <is_public_col> is true and visibility <> 'public';
@@ -127,7 +131,7 @@ end $$;
 ## Step 2 — Register the entity (idempotent)
 ```sql
 insert into platform.entity_types (token, schema_name, table_name, label, default_visibility, is_component, is_versioned, is_active)
-select '<token>','<schema>','<table>','<Label>','private', <is_component:false|true>, <is_versioned:true|false>, true
+select '<token>','<schema>','<table>','<Label>','<TIER>', <is_component:false|true>, <is_versioned:true|false>, true  -- <TIER>: same decision as Step 1 (db-rules §6a)
 where not exists (select 1 from platform.entity_types where token='<token>');
 ```
 If **component**, add the composition edge (required before `apply_rls`):
