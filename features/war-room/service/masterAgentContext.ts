@@ -52,6 +52,11 @@ import {
   type WarRoomResourceModel,
   type WarRoomRoomModel,
 } from "@/features/war-room/service/warRoomContextXml";
+import {
+  fetchWarRoomRecentActivity,
+  toActivityEvents,
+  type WarRoomActivityRow,
+} from "@/features/war-room/service/warRoomRecentActivity";
 
 /**
  * Index a flat list of thread assignment rows into the per-tile signals the
@@ -485,12 +490,29 @@ export async function buildMasterAgentContext(
     };
   });
 
+  // Global recent-activity feed across EVERY room, newest first. Fetch each
+  // room's rows in parallel, merge, sort by true timestamp (before relative-time
+  // collapses it), cap, then enrich thread labels from the full roster. A per-
+  // room failure just drops that room's rows. Never load-bearing.
+  const threadTitleById = new Map(
+    roomModels.flatMap((rm) => rm.threads.map((t) => [t.id, t.title] as const)),
+  );
+  const perRoomRows = await Promise.all(
+    sessions.map((s) => fetchWarRoomRecentActivity(s.id, 12)),
+  );
+  const mergedRows: WarRoomActivityRow[] = perRoomRows
+    .flat()
+    .sort((a, b) => (a.occurred_at < b.occurred_at ? 1 : -1))
+    .slice(0, 25);
+  const activity = toActivityEvents(mergedRows, threadTitleById, Date.now());
+
   return [
     buildWarRoomContextEntry({
       scope: "all",
       role: masterRole,
       howTo: masterHowTo,
       rooms: roomModels,
+      activity,
     }),
   ];
 }

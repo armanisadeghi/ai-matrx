@@ -32863,6 +32863,20 @@ export type Database = {
         Args: { p_id: string; p_token: string; p_version: number }
         Returns: Json
       }
+      war_room_recent_activity: {
+        Args: { p_limit?: number; p_since?: string; p_war_room_id: string }
+        Returns: {
+          action: string
+          actor_id: string
+          detail: string
+          entity_id: string
+          entity_type: string
+          label: string
+          occurred_at: string
+          thread_id: string
+          thread_title: string
+        }[]
+      }
       war_room_threads: {
         Args: { room_id: string }
         Returns: {
@@ -42468,10 +42482,86 @@ export type Database = {
         }
         Relationships: []
       }
+      user_secret_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: number
+          metadata: Json
+          organization_id: string | null
+          user_id: string | null
+          user_secret_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: number
+          metadata?: Json
+          organization_id?: string | null
+          user_id?: string | null
+          user_secret_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: number
+          metadata?: Json
+          organization_id?: string | null
+          user_id?: string | null
+          user_secret_id?: string | null
+        }
+        Relationships: []
+      }
+      user_secret_grants: {
+        Row: {
+          can_manage: boolean
+          can_use: boolean
+          created_at: string
+          granted_by: string | null
+          id: string
+          updated_at: string
+          user_id: string
+          user_secret_id: string
+        }
+        Insert: {
+          can_manage?: boolean
+          can_use?: boolean
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          user_secret_id: string
+        }
+        Update: {
+          can_manage?: boolean
+          can_use?: boolean
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          user_secret_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_secret_grants_user_secret_id_fkey"
+            columns: ["user_secret_id"]
+            isOneToOne: false
+            referencedRelation: "user_secrets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_secrets: {
         Row: {
+          access_mode: string
           category: string | null
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           description: string | null
           id: string
@@ -42479,15 +42569,21 @@ export type Database = {
           is_active: boolean
           key: string
           last_used_at: string | null
+          organization_id: string | null
+          source_user_secret_id: string | null
+          source_user_secret_version: number | null
           updated_at: string
-          user_id: string
+          updated_by: string | null
+          user_id: string | null
           value_encrypted: string
           value_hint: string | null
           value_version: number
         }
         Insert: {
+          access_mode?: string
           category?: string | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           description?: string | null
           id?: string
@@ -42495,15 +42591,21 @@ export type Database = {
           is_active?: boolean
           key: string
           last_used_at?: string | null
+          organization_id?: string | null
+          source_user_secret_id?: string | null
+          source_user_secret_version?: number | null
           updated_at?: string
-          user_id: string
+          updated_by?: string | null
+          user_id?: string | null
           value_encrypted: string
           value_hint?: string | null
           value_version?: number
         }
         Update: {
+          access_mode?: string
           category?: string | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           description?: string | null
           id?: string
@@ -42511,8 +42613,12 @@ export type Database = {
           is_active?: boolean
           key?: string
           last_used_at?: string | null
+          organization_id?: string | null
+          source_user_secret_id?: string | null
+          source_user_secret_version?: number | null
           updated_at?: string
-          user_id?: string
+          updated_by?: string | null
+          user_id?: string | null
           value_encrypted?: string
           value_hint?: string | null
           value_version?: number

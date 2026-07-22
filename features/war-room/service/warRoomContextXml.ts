@@ -141,6 +141,27 @@ export interface WarRoomRoomModel {
   threads: WarRoomThreadModel[];
 }
 
+/**
+ * One recent-activity event — the VS-Code-style "recently touched" signal that
+ * tells the agent WHAT changed lately across the room's relationships, not the
+ * static roster. Built from `war_room_recent_activity` (the RPC), one row per
+ * entity's latest touch. `when` is a pre-formatted relative label ("2h", "3d")
+ * computed at build time (the renderer stays pure — no clock).
+ */
+export interface WarRoomActivityEvent {
+  /** Relative age label, e.g. "just now", "2h", "3d". */
+  when: string;
+  /** Resolved thread label (the builder enriches from its roster). */
+  threadTitle?: string;
+  entityType: string;
+  /** `chat_message` | `note_edited` | `audio_activity` | `task_updated` | … */
+  action: string;
+  /** Entity title / edge label. */
+  label?: string;
+  /** Extra hint (message count, task/project name). */
+  detail?: string;
+}
+
 export interface WarRoomContextModel {
   scope: WarRoomScope;
   /** A line or two of framing — the "system-message-like" steer. */
@@ -153,6 +174,12 @@ export interface WarRoomContextModel {
   currentThreadId?: string;
   /** Every room (master scope only). */
   rooms?: WarRoomRoomModel[];
+  /**
+   * Recent activity across the room's relationships, newest first — the "what
+   * just happened" signal (invaluable when a room has many threads and dozens
+   * of resources). Rendered as `<recent>`; omitted when empty.
+   */
+  activity?: WarRoomActivityEvent[];
 }
 
 // ── XML helpers ───────────────────────────────────────────────────────────
@@ -367,9 +394,41 @@ function roomPinnedCount(room: WarRoomRoomModel): number {
 }
 
 /** Serialize the model to the concise `<war_room>` XML block. */
+/** Max activity rows rendered into `<recent>` (budgeted; newest first). */
+const MAX_RECENT_EVENTS = 20;
+
+/**
+ * The `<recent>` block — a compact "what changed lately" timeline. One line per
+ * event: relative age + which thread + what kind of change. Deliberately terse
+ * (attributes, clipped labels) so it stays cheap even at the cap.
+ */
+function recentBlock(events: WarRoomActivityEvent[]): string {
+  const shown = events.slice(0, MAX_RECENT_EVENTS);
+  const lines = [`  <recent count="${shown.length}">`];
+  for (const e of shown) {
+    lines.push(
+      "    <event" +
+        attr("when", e.when) +
+        attr("thread", e.threadTitle ? clipTitle(e.threadTitle) : undefined) +
+        attr("type", e.entityType) +
+        attr("action", e.action) +
+        attr("label", e.label ? clipTitle(e.label) : undefined) +
+        attr("detail", e.detail) +
+        "/>",
+    );
+  }
+  lines.push("  </recent>");
+  return lines.join("\n");
+}
+
 export function renderWarRoomXml(model: WarRoomContextModel): string {
   const lines: string[] = [`<war_room scope="${model.scope}">`];
   lines.push(textElement("role", model.role, 1));
+  // "What just happened" goes high — right after the role framing — so the
+  // agent orients on recent activity before wading through the full roster.
+  if (model.activity && model.activity.length > 0) {
+    lines.push(recentBlock(model.activity));
+  }
 
   if (model.scope === "all") {
     const rooms = model.rooms ?? [];

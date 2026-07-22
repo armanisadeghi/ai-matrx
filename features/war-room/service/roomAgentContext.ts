@@ -64,8 +64,13 @@ import {
 export type { ThreadStatusResolver } from "@/features/war-room/service/masterAgentContext";
 import {
   buildWarRoomContextEntry,
+  type WarRoomActivityEvent,
   type WarRoomThreadModel,
 } from "@/features/war-room/service/warRoomContextXml";
+import {
+  fetchWarRoomRecentActivity,
+  toActivityEvents,
+} from "@/features/war-room/service/warRoomRecentActivity";
 
 // ── Read-only roster value shapes (plain data — no `mutable`/`source` ⇒ ctx_get) ──
 // A thread carries the SAME shape the master roster uses (`MasterThreadEntry`),
@@ -155,7 +160,10 @@ export async function buildRoomAgentContext(
     "thread's agent with war_room_message_thread(thread_id). Rename this room " +
     "with war_room_rename_room. Read or edit any task / note / project by id " +
     "with the data / data_action tools.";
-  const toEntry = (threadModels: WarRoomThreadModel[]): AssistantContextEntry =>
+  const toEntry = (
+    threadModels: WarRoomThreadModel[],
+    activity?: WarRoomActivityEvent[],
+  ): AssistantContextEntry =>
     buildWarRoomContextEntry({
       scope: "room",
       role: roomRole,
@@ -167,6 +175,7 @@ export async function buildRoomAgentContext(
         projectId,
         threads: threadModels,
       },
+      activity,
     });
 
   // Tiles for THIS room only (the master builder fans out across every room; the
@@ -328,5 +337,13 @@ export async function buildRoomAgentContext(
     resourceCounts: e.resourceCounts,
     pinnedResources: e.pinnedResources,
   }));
-  return [toEntry(threadModels)];
+
+  // Recent-activity feed — enrich each row's thread label from the roster we
+  // just resolved (threads have no title column, so the RPC's fallback is weak).
+  // Tolerant: activity is a context enhancement, never load-bearing.
+  const threadTitleById = new Map(roster.map((e) => [e.threadId, e.threadTitle]));
+  const activityRows = await fetchWarRoomRecentActivity(sessionId);
+  const activity = toActivityEvents(activityRows, threadTitleById, Date.now());
+
+  return [toEntry(threadModels, activity)];
 }
