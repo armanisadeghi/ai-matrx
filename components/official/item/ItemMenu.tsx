@@ -4,19 +4,18 @@
  * ItemMenu / ItemContextMenu — schema-driven menus rendered three ways from one
  * ItemMenuConfig:
  *   - desktop dropdown  (kebab trigger)      → Radix DropdownMenu, modal={false}
- *   - right-click       (wraps a surface)    → Radix ContextMenu, modal={false}
- *   - mobile            (either trigger)     → Vaul bottom drawer w/ drill-in
+ *   - right-click       (wraps a surface)    → the UNIVERSAL v3 context menu
+ *                                              (config converted to
+ *                                              extraSections via itemMenuToV3)
+ *   - mobile            (kebab trigger)      → Vaul bottom drawer w/ drill-in
  *
- * There is NO dimming backdrop, ever (modal={false} on both desktop roots).
- * Desktop dropdown + context-menu share ONE recursive renderer over a Radix
- * "family" adapter, so the two presentations cannot drift. Async command
- * actions run synchronously in the select handler (preserving the user-gesture
- * needed for clipboard), then sonner carries any feedback via `toast.promise`.
+ * No dimming backdrop on the dropdown (modal={false}). Command/toggle
+ * execution is shared across ALL presentations via run-entry.ts (sync-in-
+ * gesture for clipboard, sonner toast.promise), so semantics cannot drift.
  */
 
 import { Fragment, useState, type ReactNode } from "react";
 import { Slot } from "@radix-ui/react-slot";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -32,20 +31,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
-import {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuCheckboxItem,
-  ContextMenuSub,
-  ContextMenuSubTrigger,
-  ContextMenuSubContent,
-  ContextMenuSeparator,
-  ContextMenuLabel,
-  ContextMenuShortcut,
-} from "@/components/ui/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ItemMenuDrawer } from "./ItemMenuDrawer";
+import { itemMenuConfigToExtraSections } from "./itemMenuToV3";
+import { runCommand, runToggle } from "./run-entry";
 import {
   isCheckbox,
   isCommand,
@@ -104,49 +93,12 @@ const dropdownFamily: MenuFamily = {
   Shortcut: DropdownMenuShortcut,
 };
 
-// Context submenu content defaults to z-50 in the ui wrapper — force z-[9999]
-// so submenus opened inside floating WindowPanels (z >= 1000) layer above.
-const ContextSubContentZ: MenuFamily["SubContent"] = ({ className, ...props }) => (
-  <ContextMenuSubContent className={cn("z-[9999]", className)} {...props} />
-);
-
-const contextFamily: MenuFamily = {
-  Item: ContextMenuItem,
-  CheckboxItem: ContextMenuCheckboxItem,
-  Sub: ContextMenuSub,
-  SubTrigger: ContextMenuSubTrigger,
-  SubContent: ContextSubContentZ,
-  Separator: ContextMenuSeparator,
-  Label: ContextMenuLabel,
-  Shortcut: ContextMenuShortcut,
-};
-
 const DESTRUCTIVE_ITEM_CLASS =
   "text-destructive focus:bg-destructive/10 focus:text-destructive [&_svg]:text-destructive";
 
-// ── Action dispatch ─────────────────────────────────────────────────────────
-
-function runCommand(entry: ItemMenuCommand) {
-  const result = entry.onSelect();
-  if (result instanceof Promise) {
-    if (entry.toast) {
-      const { loading, success, error } = entry.toast;
-      toast.promise(result, {
-        loading,
-        success,
-        error: (e) =>
-          typeof error === "function" ? error(e) : (error ?? "Something went wrong"),
-      });
-    } else {
-      result.catch(() => {});
-    }
-  }
-}
-
-function runToggle(entry: ItemMenuCheckbox, next: boolean) {
-  const result = entry.onCheckedChange(next);
-  if (result instanceof Promise) result.catch(() => {});
-}
+// ── Action dispatch — shared with the v3 converter (itemMenuToV3.ts) ────────
+// Lives in run-entry.ts so toast.promise / fire-and-forget semantics cannot
+// drift between the kebab dropdown and the universal right-click menu.
 
 // ── Shared leaf content ─────────────────────────────────────────────────────
 
@@ -411,6 +363,12 @@ export function ItemMenu({
 }
 
 // ── ItemContextMenu (right-click anchored) ──────────────────────────────────
+// Renders the ONE universal context menu (v3): the schema-driven config rides
+// in as extraSections (converted lazily at open — resolveContextOnOpen fires
+// before the menu mounts, matching the old resolve-on-open behavior), and the
+// row inherits the standard extras (Copy, agents, Quick Actions, admin).
+// Deliberate delta vs the old bespoke tree: in-menu single-key shortcut
+// EXECUTION is gone (hints still display) — see FEATURE.md backlog note.
 
 export function ItemContextMenu({
   config,
@@ -419,43 +377,26 @@ export function ItemContextMenu({
   onCloseAutoFocus,
   enabled = true,
 }: ItemContextMenuProps) {
-  const [open, setOpen] = useState(false);
   const [resolved, setResolved] = useState<ItemMenuConfig | null>(null);
 
   if (!enabled) return <>{children}</>;
 
-  const handleOpenChange = (next: boolean) => {
-    if (next) setResolved(resolveItemMenuConfig(config));
-    setOpen(next);
-    onOpenChange?.(next);
-  };
-
   return (
-    <ContextMenu modal={false} onOpenChange={handleOpenChange}>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      {resolved && (
-        <ContextMenuContent
-          className="z-[9999]"
-          onCloseAutoFocus={onCloseAutoFocus}
-          onKeyDown={makeShortcutHandler(resolved, () => setOpen(false))}
-        >
-          {resolved.header?.title && (
-            <ContextMenuLabel>
-              {resolved.header.title}
-              {resolved.header.description && (
-                <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground/70">
-                  {resolved.header.description}
-                </span>
-              )}
-            </ContextMenuLabel>
-          )}
-          <MenuSections
-            family={contextFamily}
-            sections={resolved.sections}
-            onCloseRequest={() => setOpen(false)}
-          />
-        </ContextMenuContent>
-      )}
-    </ContextMenu>
+    <NonEditableContextMenu
+      sourceFeature="item-context-menu"
+      resolveContextOnOpen={() => {
+        // Re-resolve on every open so lazy configs stay live (parity with the
+        // old handleOpenChange). The resolved config feeds extraSections on
+        // the re-render this setState triggers, before MenuContent mounts.
+        setResolved(resolveItemMenuConfig(config));
+        return null;
+      }}
+      extraSections={resolved ? itemMenuConfigToExtraSections(resolved) : []}
+      onMenuOpenChange={onOpenChange}
+      onCloseAutoFocus={onCloseAutoFocus}
+      enableFloatingIcon={false}
+    >
+      {children}
+    </NonEditableContextMenu>
   );
 }

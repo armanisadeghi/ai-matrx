@@ -156,6 +156,8 @@ export type SourceFeature =
 
   // ── Files ────────────────────────────────────────────────────────────────
   | "files"
+  /** Generic ItemRow/ItemMenu right-click host (schema-driven row menus). */
+  | "item-context-menu"
 
   // ── Documents & conversation scratch surfaces ────────────────────────────
   | "documents"
@@ -294,6 +296,7 @@ export const SOURCE_FEATURES = [
   "transcripts",
   "transcript-studio",
   "transcription-cleanup",
+  "item-context-menu",
   "dictionary",
   "tasks",
   "task-create",

@@ -113,6 +113,8 @@ export function ContextMenuV3({
   scopeId = null,
   enableFloatingIcon = true,
   className,
+  onMenuOpenChange,
+  onCloseAutoFocus,
   isEditable,
   editorId,
   getTextarea,
@@ -395,6 +397,7 @@ export function ContextMenuV3({
   };
 
   const handleDropdownClose = (open: boolean) => {
+    onMenuOpenChange?.(open);
     setDropdownOpen(open);
     if (!open) {
       selectionLocked.current = false;
@@ -483,6 +486,7 @@ export function ContextMenuV3({
   };
 
   const handleSheetOpenChange = (open: boolean) => {
+    onMenuOpenChange?.(open);
     setSheetOpen(open);
     if (!open) {
       selectionLocked.current = false;
@@ -602,6 +606,7 @@ export function ContextMenuV3({
     <>
       <ContextMenu
         onOpenChange={(open) => {
+          onMenuOpenChange?.(open);
           if (!open) handleMenuClose();
         }}
       >
@@ -613,7 +618,10 @@ export function ContextMenuV3({
         >
           {children}
         </ContextMenuTrigger>
-        <ContextMenuContent className={`w-64 ${className ?? ""}`}>
+        <ContextMenuContent
+          className={`w-64 ${className ?? ""}`}
+          onCloseAutoFocus={onCloseAutoFocus}
+        >
           <MenuContent variant="context" {...menuContentProps} />
           {footer}
         </ContextMenuContent>
@@ -643,6 +651,7 @@ export function ContextMenuV3({
             align="center"
             side="bottom"
             sideOffset={5}
+            onCloseAutoFocus={onCloseAutoFocus}
           >
             <MenuContent variant="dropdown" {...menuContentProps} />
             {footer}

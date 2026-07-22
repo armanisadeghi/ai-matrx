@@ -240,6 +240,17 @@ export interface ContextMenuV3CoreProps {
   // ── Presentation ────────────────────────────────────────────────────────
   enableFloatingIcon?: boolean;
   className?: string;
+
+  // ── Shell lifecycle (surface-facing) ────────────────────────────────────
+  /** Fires when the menu (right-click, floating dropdown, or mobile sheet)
+   *  opens/closes. For row-highlight or lazy-config invalidation. */
+  onMenuOpenChange?: (open: boolean) => void;
+  /**
+   * Radix close-focus interception on the DESKTOP menus: preventDefault to
+   * stop focus returning to the trigger (e.g. a Rename command that must
+   * move focus into an inline input). No-op on the mobile sheet.
+   */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 // ---------------------------------------------------------------------------
