@@ -1,0 +1,774 @@
+./.agent/ai_settings_comparison.md	2026-07-13	AI Settings Comparison Report
+./.agent/docs/google_endpoint_config_fix.md	2026-07-13	Google Endpoint Configuration Fix
+./.agent/docs/google_function_calling_alignment.md	2026-07-13	Google Function Calling Alignment - Implementation Summary
+./.agent/error_handling_implementation.md	2026-07-13	Error Handling Implementation Summary
+./.agent/google_internal_tools_fix.md	2026-07-13	Google Internal Tools Fix
+./.agent/google_streaming_fix.md	2026-07-13	Google Endpoint Streaming Fix
+./.agent/include_thoughts_implementation.md	2026-07-13	include_thoughts Implementation Summary
+./.agent/model_modifier_vs_extractor_comparison.md	2026-07-13	Model Parameter Modifier vs AI Settings Extractor Comparison
+./.agent/provider_error_handling_audit.md	2026-07-13	Provider Error Handling Audit & Implementation Plan
+./.agent/pydantic-update-summary.md	2026-07-13	Pydantic Update Summary
+./.agent/supabase-pool-runbook.md	2026-07-13	Supabase Pool Runbook (matrx-orm)
+./.arman/analysis/packages/not-used.md	2026-07-13	Confirmed truly unused (no imports, no indirect usage):
+./.arman/junk/PACKAGE_SIZE_ANALYSIS.md	2026-07-13	Package Size Analysis — AI Dream
+./.arman/junk/SCRAPER_FIX_SUMMARY.md	2026-07-13	Web Scraper Fix Summary
+./.arman/junk/WARNING_RESOLUTION_GUIDE.md	2026-07-13	Application Startup Warnings - Resolution Guide
+./.arman/notes/agent-question-protocol.md	2026-07-13	AI Agent Question Protocol
+./.arman/notes/discovery-scraper-microservice.md	2026-07-13	Discovery: Standalone Scraper Microservice
+./.arman/pending/FULL_MIGRATION_TASKS.md	2026-07-13	Tasks to Complete Before Full Frontend Migration
+./.arman/pending/error_handling_enhancement/README.md	2026-07-13	Error Handling Enhancement Task
+./.arman/pending/error_handling_enhancement/REFERENCE.md	2026-07-13	Error Handling Flow Diagram
+./.arman/pending/error_handling_enhancement/TASK.md	2026-07-13	Error Handling Enhancement Task
+./.arman/pending/global-rls-system/rls-rollout-playbook.md	2026-07-13	RLS Centralized Permissions -- Per-Feature Rollout Playbook
+./.arman/pending/global-rls-system/table-inventory.md	2026-07-13	AI Matrx Database Table Inventory
+./.arman/pending/scraper/ANALYSIS.md	2026-07-13	1. Session-like behavior for same-site multi-page scraping
+./.arman/pending/scraper/IMPLEMENTATION_SUMMARY.md	2026-07-13	Web Scraping Enhancement Implementation Summary
+./.arman/pending/server-readiness-checks/TASKS.md	2026-07-13	Server Readiness Checks — Master Plan
+./.arman/rules/python_testing_guidelines.md	2026-07-13	Python Testing Guidelines — AI Matrx Development Standard
+./.claude/skills/accurate-download-progress.md	2026-07-13	Accurate download/upload progress reporting
+./.claude/skills/build-matrx-workflow.md	2026-07-13	Build a matrx workflow
+./.claude/skills/build-sub-feature/SKILL.md	2026-07-13	Build a Sub-Feature
+./.claude/skills/connect-matrx-extend/SKILL.md	2026-07-13	aidream ↔ matrx-extend Connection
+./.claude/skills/context-docs/SKILL.md	2026-07-13	context-docs — keep aidream's docs alive, not rotting
+./.claude/skills/db-manager-pattern/SKILL.md	2026-07-13	Database Manager Pattern
+./.claude/skills/eliminate-raw-sql/SKILL.md	2026-07-21	Eliminate raw SQL — the ORM grows, the code stays clean
+./.claude/skills/error-capture/SKILL.md	2026-07-13	error-capture — never lose a failure or a dollar to silence
+./.claude/skills/feature-deep-dive/SKILL.md	2026-07-13	Feature Deep-Dive: Audit, Plan & Build
+./.claude/skills/feature-docs/SKILL.md	2026-07-13	Feature Docs & the Truth Doc
+./.claude/skills/feature-visibility-surface.md	2026-07-13	Ship a visibility surface with every feature
+./.claude/skills/handoff-cleanup/SKILL.md	2026-07-13	handoff-cleanup — pointer stub
+./.claude/skills/handoffs/SKILL.md	2026-07-13	Handoffs — pointer stub
+./.claude/skills/inspect-call.md	2026-07-13	Inspect-call — forensic deep-dive for one call_id
+./.claude/skills/managed-write-enforcement/SKILL.md	2026-07-15	managed-write-enforcement — the all-or-none guard runbook + ORM/pers
+./.claude/skills/matrx-action-author.md	2026-07-13	Matrx Graph — Action Authoring
+./.claude/skills/matrx-action-testing.md	2026-07-13	Matrx Graph — Action Testing
+./.claude/skills/matrx-node-author.md	2026-07-13	Matrx Graph — Node Authoring (beyond `@action`)
+./.claude/skills/matrx-persistence/SKILL.md	2026-07-13	matrx-persistence — the fire-and-verify write path and the rules aro
+./.claude/skills/matrx-workflow-channels.md	2026-07-13	Workflow channels
+./.claude/skills/matrx-workflow-data-flow.md	2026-07-13	Workflow data flow
+./.claude/skills/matrx-workflow-validation.md	2026-07-13	Workflow validation & gotchas
+./.claude/skills/stream-everything/SKILL.md	2026-07-13	Stream Everything — conversion playbook
+./.claude/skills/triage-tool-traces.md	2026-07-13	Triage tool-call debug logs
+./.claude/skills/workflow-io-kinds/SKILL.md	2026-07-15	workflow-io-kinds — convert workflow I/O to platform kinds
+./.claude/skills/workflow-module/SKILL.md	2026-07-13	Workflow Module — Matrx Graph + Studio
+./.cursor/plans/agentic_code_editor_roadmap_d80f9b5c.plan.md	2026-07-21	Agentic Code Editor Roadmap
+./.cursor/plans/rag_orm_ownership_and_raw_sql_eradication.plan.md	2026-07-13	matrx-rag → ORM ownership + raw-`rag.*`-SQL eradication
+./.cursor/skills/add-ai-provider/SKILL.md	2026-07-17	Add AI Provider
+./.cursor/skills/add-ai-provider/references/provider-onboarding-failure-modes.md	2026-07-17	Provider Onboarding Failure Modes
+./.cursor/skills/copy-for-ai/SKILL.md	2026-07-13	Copy for AI — AI context extraction across the UI
+./.cursor/skills/expert-treasure-map-docs/SKILL.md	2026-07-13	Treasure Map Documentation
+./.cursor/skills/expert-treasure-map-docs/examples.md	2026-07-13	Treasure Map — Examples
+./.cursor/skills/fastapi-endpoint-creation/SKILL.md	2026-07-13	Creating FastAPI Endpoints
+./.cursor/skills/fix-model-pricing/SKILL.md	2026-07-17	Fix Model Pricing
+./.cursor/skills/forcing-function-tests/SKILL.md	2026-07-13	Forcing-Function Tests
+./.cursor/skills/matrx-agents/SKILL.md	2026-07-13	Matrx Agents — discover, build, update, run
+./.cursor/skills/matrx-agents/authoring-guide.md	2026-07-13	Authoring Guide — Specifying an Agent
+./.cursor/skills/matrx-oauth/SKILL.md	2026-07-13	Matrx OAuth — Full A-to-Z
+./.cursor/skills/matrx-oauth/architecture.md	2026-07-13	Matrx OAuth — Architecture Decision Record
+./.cursor/skills/matrx-oauth/gotchas.md	2026-07-13	Matrx OAuth — Gotchas Playbook
+./.cursor/skills/mcp-tool-creation/SKILL.md	2026-07-13	MCP Tool Creation
+./.cursor/skills/mcp-tool-creation/migration-guide.md	2026-07-13	Migrating Old Tools to V2
+./.cursor/skills/mcp-tool-creation/reference.md	2026-07-13	Tool System V2 — Reference
+./.cursor/skills/reconcile-model-capabilities/SKILL.md	2026-07-17	Reconcile Model Capabilities (one model)
+./.matrx/AGENT_INSTRUCTIONS.md	2026-07-13	Matrx Task System — Agent Instructions
+./.matrx/AGENT_TASKS.md	2026-07-17	Agent Tasks
+./.matrx/ARMAN_TASKS.md	2026-07-13	Arman Tasks — Aidream
+./.matrx/TASKS_FROM_USER.md	2026-07-13	Tasks from User
+./.pytest_cache/README.md	2026-07-15	pytest cache directory #
+./.treasure-maps/ai-routes-treasure-map.md	2026-07-13	AI Routes — Treasure Map
+./ACCEPTANCE_DEV_SERVER.md	2026-07-13	Acceptance dev server — the live target for the blind corpus
+./AGENTS.md	2026-07-21	CLAUDE.md — AI Dream Monorepo
+./AUDIO_STREAMING.md	2026-07-13	Streaming TTS audio to the client — wire protocol
+./CLAUDE.md	2026-07-21	CLAUDE.md — AI Dream Monorepo
+./ENV_FLAG_ERADICATION.md	2026-07-13	ENV Flag Eradication — 2026-06-11
+./FOUND_DEFECTS.md	2026-07-21	FOUND_DEFECTS.md — standing, unacknowledged defects
+./KNOWN_ISSUES_AND_GAPS.md	2026-07-15	Scraper — Known Issues and Gaps
+./LOCAL_DEV.md	2026-07-13	Local development — running the full stack
+./PERSISTENCE_AND_ERROR_HANDLING_BUGS.md	2026-07-15	Persistence & Error-Handling Bugs — 2026-05-23 user-message-loss inc
+./PRINCIPLES.md	2026-07-13	Operating Principle: Infrastructure-First, Workflow-As-Probe
+./PYTHON_STANDARDS.md	2026-07-13	AI Matrx — Python Code Standards
+./README.md	2026-07-13	aidream
+./TASK-systemwide-error-tracking.md	2026-07-13	TASK — System-wide Error Tracking (unified human-review error queue)
+./aidream/_generated/FEATURE.md	2026-07-13	Declarative package DB wiring
+./aidream/api/FEATURE.md	2026-07-21	aidream API layer — conventions
+./aidream/api/QUICKSTART.md	2026-07-21	FastAPI Quick Start Guide
+./aidream/api/README.md	2026-07-13	FastAPI Setup - AI Dream
+./aidream/api/REQUEST_SYSTEM_OVERHAUL.md	2026-07-13	Request System Overhaul — Final Architecture
+./aidream/api/context_objects_FE_GUIDE.md	2026-07-13	`context_slots` — Frontend / agent-builder guide
+./aidream/api/docs/CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md	2026-07-13	Conversation Failure & Retry — Frontend Guide
+./aidream/api/docs/TODO_tier2_durable_tool_calls_requirements.md	2026-07-13	Tier 2 — Durable Client-Delegated Tool Calls & Resumable AI Loops
+./aidream/api/docs/agents-route-flow.md	2026-07-13	POST `/ai/agents/{agent_id}` — file flow, DB writes, and stream even
+./aidream/api/docs/agents_first_prompt_resolution_review.md	2026-07-13	Agents-first resolution — API & modification map
+./aidream/api/docs/ai_core_request_response.md	2026-07-19	AI core API — request / response shape
+./aidream/api/docs/api_migration_guide.md	2026-07-13	API Migration Guide — Frontend Changes Required
+./aidream/api/docs/chat-conversation-route-flow.md	2026-07-19	POST `/ai/chat` and POST `/ai/conversations/{conversation_id}` — flo
+./aidream/api/docs/conversation_id_guide.md	2026-07-13	Conversation ID & `is_new` Guide
+./aidream/api/docs/cx_ids_streaming_timeline.md	2026-07-13	CX table IDs: when the client sees them (chat / agent / conversation)
+./aidream/api/docs/durable_tool_calls_manual_test.md	2026-07-13	Manual Test Playbook — Durable Client-Delegated Tool Calls
+./aidream/api/docs/frontend_stream_migration.md	2026-07-13	Frontend Stream Event Migration Guide
+./aidream/api/docs/legal_wc_ratings_frontend_guide.md	2026-07-13	Legal · WC Ratings — Frontend Integration Guide
+./aidream/api/docs/observational_memory_frontend_guide.md	2026-07-13	Observational Memory — Frontend Integration Guide
+./aidream/api/docs/record_reservation_frontend_guide.md	2026-07-13	Streaming Events V2 — Frontend Integration Guide
+./aidream/api/docs/request_snapshot_viewer_requirements.md	2026-07-13	Request Snapshot Viewer — UI Requirements
+./aidream/api/docs/socket_migration_guide.md	2026-07-17	Socket.IO → FastAPI Migration Guide
+./aidream/api/docs/socketio_migration_plan.md	2026-07-13	Socket.IO to FastAPI Migration Plan
+./aidream/api/docs/streaming_events_v2_design.md	2026-07-13	Streaming Events V2 — Design Specification
+./aidream/api/docs/streaming_events_v2_updates_needed.md	2026-07-21	Streaming Events V2 — Additional update checklist
+./aidream/api/docs/tool_testing_frontend_guide.md	2026-07-13	Tool Testing UI — Frontend Integration Guide
+./aidream/api/docs/tool_testing_session_update.md	2026-07-13	Tool Testing UI — Session & Conversation Update
+./aidream/api/generated/SYNC_GUIDE.md	2026-07-13	Syncing TypeScript Types from the Python Backend
+./aidream/api/middleware/FILE_SHADOW_FEATURE.md	2026-07-13	FILE_SHADOW — the matrx-files cutover tattler
+./aidream/api/routers/PODCAST_MEDIA_SPEC.md	2026-07-21	Podcast Media Router — Compatibility Shim (DEPRECATED for new code)
+./aidream/observability/FEATURE.md	2026-07-13	Log Management System — durable structured app logs
+./aidream/services/FEATURE.md	2026-07-19	aidream/services — the service layer contract
+./aidream/services/action_apply/FEATURE.md	2026-07-13	Action Apply — the Plane-1 writer (`create:`/`update:`/`delete:` <no
+./aidream/services/action_catalog/FEATURE.md	2026-07-13	Action Catalog — the noun × verb capability grid
+./aidream/services/action_catalog/GAP_REPORT.generated.md	2026-07-13	Action Catalog Gap Report
+./aidream/services/admin_ops/FEATURE.md	2026-07-13	admin_ops — long-tail admin dashboard services
+./aidream/services/admin_persistence/FEATURE.md	2026-07-13	admin_persistence — the `system_write_failure` / watched-lifecycle a
+./aidream/services/agent_data/FEATURE.md	2026-07-15	Agent data access — RLS-enforced, generic, not per-table
+./aidream/services/agent_fs/FEATURE.md	2026-07-13	Agent filesystem — a durable, code_files-backed VFS for non-sandbox 
+./aidream/services/agent_handoff/FEATURE.md	2026-07-13	Agent Handoff — the terminal agent-to-agent call (Pattern 1)
+./aidream/services/agent_plans/FEATURE.md	2026-07-13	Agent-plan runs — `aidream/services/agent_plans`
+./aidream/services/agent_self_prompt/FEATURE.md	2026-07-13	Agent self-prompt — an agent edits its OWN core instructions
+./aidream/services/agent_service/FEATURE.md	2026-07-15	Agent Service — "agents as a service"
+./aidream/services/agent_sets/FEATURE.md	2026-07-15	FEATURE — `agent_sets` (runtime delegation for Agent Sets)
+./aidream/services/ai_catalog/FEATURE.md	2026-07-13	AI Catalog admin service
+./aidream/services/app_config/FEATURE.md	2026-07-15	App Config — aidream's slice of the remote runtime config system
+./aidream/services/assets/FEATURE.md	2026-07-13	Assets — the canonical media pipeline
+./aidream/services/assignment_engine/FEATURE.md	2026-07-19	Assignment engine host adapter
+./aidream/services/audio/FEATURE.md	2026-07-21	Audio utility service
+./aidream/services/auth_oauth/FEATURE.md	2026-07-13	auth_oauth — the aimatrx.com OAuth PKCE flow
+./aidream/services/auto_ingest/CANONICALIZER_LIVE.md	2026-07-13	Entity Canonicalizer — LIVE (promoted from shadow 2026-06-08)
+./aidream/services/auto_ingest/FEATURE.md	2026-07-15	Auto-Ingest — the producer-side cost + policy shield for RAG
+./aidream/services/auto_ingest/FILE_RAG_JOBS.md	2026-07-15	Scheduled auto-RAG on file upload — `cld_file_rag_jobs`
+./aidream/services/catalogs/FEATURE.md	2026-07-19	Remote Catalogs — aidream's slice of the catalog system
+./aidream/services/cms/CONTRACT.md	2026-07-15	CMS Service Layer — CONTRACT (P1)
+./aidream/services/cms/FEATURE.md	2026-07-15	FEATURE.md — CMS Data Layer & Core Services (P1)
+./aidream/services/cms_assets/FEATURE.md	2026-07-15	cms_assets — the CMS asset library (W2-B)
+./aidream/services/cms_introspect/FEATURE.md	2026-07-13	FEATURE.md — CMS introspection (P2)
+./aidream/services/cms_verify/FEATURE.md	2026-07-21	FEATURE.md — cms_verify (P4: the verification loop)
+./aidream/services/cms_verify/VERIFY.md	2026-07-21	VERIFY.md — the cms_verify loop
+./aidream/services/content_processing/FEATURE.md	2026-07-15	Content-processing orchestrator
+./aidream/services/conversation_context/FEATURE.md	2026-07-21	aidream/services/conversation_context — per-turn context assembly
+./aidream/services/conversation_values/FEATURE.md	2026-07-13	Conversation Value Store — pass-by-reference between agent calls
+./aidream/services/datasets/FEATURE.md	2026-07-13	datasets — user-owned tabular datasets (`udt_datasets`)
+./aidream/services/db_grants/FEATURE.md	2026-07-13	Scoped DB access — context-driven table grants
+./aidream/services/db_grants/SOFT_DELETE_INITIATIVE.md	2026-07-13	Initiative: system-wide soft delete (NOTATED — build later)
+./aidream/services/dictionary/FEATURE.md	2026-07-13	Dictionary publication & locators — FEATURE
+./aidream/services/documents/FEATURE.md	2026-07-19	aidream/services/documents — the Document Evidence System
+./aidream/services/education_compliance/FEATURE.md	2026-07-15	FEATURE.md — `education_compliance` (server-side COPPA enforcement)
+./aidream/services/file_access/FEATURE.md	2026-07-21	File access — ONE policy, in the database
+./aidream/services/google_integrations/FEATURE.md	2026-07-21	Google Integration Connections
+./aidream/services/image/FEATURE.md	2026-07-13	aidream/services/image — Image Studio + Edit pipelines
+./aidream/services/knowledge_graph/FEATURE.md	2026-07-13	knowledge_graph — KG graph traversal + cost aggregation service
+./aidream/services/matrx_envelope/AGENT_SKILL.md	2026-07-13	Skill: Matrx Envelope — emit actions & references
+./aidream/services/matrx_envelope/FEATURE.md	2026-07-13	Matrx Envelope — generic core
+./aidream/services/media/FEATURE.md	2026-07-21	aidream/services/media — vision-class master+variant upload pipeline
+./aidream/services/organization_secrets/FEATURE.md	2026-07-19	Organization secret vault
+./aidream/services/organizations/FEATURE.md	2026-07-13	aidream/services/organizations — org resolution, tenant settings, ca
+./aidream/services/output_directives/FEATURE.md	2026-07-13	Output Directives — the `output_directive` kind
+./aidream/services/page_extraction/FEATURE.md	2026-07-17	aidream/services/page_extraction — per-page AI extraction pipeline
+./aidream/services/podcast/FEATURE.md	2026-07-15	aidream/services/podcast — podcast generation + studio asset pipelin
+./aidream/services/prompts/FEATURE.md	2026-07-13	prompts — standalone prompt execution
+./aidream/services/references/FEATURE.md	2026-07-21	References — the `reference` kind
+./aidream/services/research/FEATURE.md	2026-07-21	aidream/services/research — the research pipeline's service layer
+./aidream/services/runtime/FEATURE.md	2026-07-17	Runtime spine glue — aidream's wiring to matrx-runtime
+./aidream/services/sandboxes/FEATURE.md	2026-07-13	aidream/services/sandboxes — sandbox provisioning + binding resoluti
+./aidream/services/scope_system/FEATURE.md	2026-07-15	Scope-system automation
+./aidream/services/secret_refs/FEATURE.md	2026-07-13	Secret references — the `secret` kind
+./aidream/services/seo/FEATURE.md	2026-07-21	SEO — aidream as a THIN consumer of the matrx-seo vertical
+./aidream/services/suggestion_sweeps/FEATURE.md	2026-07-13	Post-Processing Suggestion Sweeps
+./aidream/services/token_broker/FEATURE.md	2026-07-13	Token Broker — scoped, short-lived credentials for clients & desktop
+./aidream/services/tooling/FEATURE.md	2026-07-19	aidream/services/tooling — per-request tool/skill/action resolution
+./aidream/services/udt_content/FEATURE.md	2026-07-15	Workbook & document content — agent create/read/edit of Univer snaps
+./aidream/services/user_secrets/FEATURE.md	2026-07-21	User-secrets vault
+./aidream/services/validators/FEATURE.md	2026-07-13	Validators — the `validation` kind
+./aidream/startup/TOOL_DRIFT_GATE.md	2026-07-13	Tool Drift Gate
+./aidream/tools/KNOWLEDGE_TOOLS_FEATURE.md	2026-07-19	The `knowledge` tool family
+./apps/dashboard/AGENTS.md	2026-07-21	CLAUDE.md — Dashboard (Admin UI)
+./apps/dashboard/CLAUDE.md	2026-07-13	CLAUDE.md — Dashboard (Admin UI)
+./apps/dashboard/DASHBOARD_BACKLOG.md	2026-07-13	Dashboard — backlog (audit 2026-07-05)
+./apps/dashboard/ROUTING.md	2026-07-13	Dashboard App — Routing System
+./apps/dashboard/SCHEMA_TRUTH_CHECK.md	2026-07-13	Admin Dashboard — Schema Truth-Check Coverage (audit checklist)
+./apps/dashboard/src/features/scraper/UI_DESIGN.md	2026-07-21	Scraper Admin — UI Design Spec
+./apps/shared/README.md	2026-07-13	apps/shared — shared frontend packages
+./apps/shared/content-ir-core/FEATURE.md	2026-07-15	@matrx-ui/content-ir-core — the Content IR kernel twin
+./apps/workflow-studio/AGENTS.md	2026-07-21	CLAUDE.md — Workflow Studio
+./apps/workflow-studio/CLAUDE.md	2026-07-13	CLAUDE.md — Workflow Studio
+./apps/workflow-studio/src/features/canvas/form/FEATURE.md	2026-07-13	Friendly builder views — Form & Wizard
+./audit_api_types.md	2026-07-21	API Type-Safety Audit
+./common/code_standards/docs/TASKS.md	2026-07-13	Comprehensive Directory Structure and Plan
+./common/code_standards/docs/TESTING_GUIDELINES.md	2026-07-13	`TESTING_GUIDELINES.md`
+./common/utils/code_from_markdown/code.md	2026-07-13	Updated Project Structure
+./common/utils/code_from_markdown/code_2.md	2026-07-13	Testing
+./common/utils/code_from_markdown/code_3.md	2026-07-13	Testing
+./config/server-troubleshooting-commands.md	2026-07-13	Server Troubleshooting Commands
+./db/MIGRATIONS_STATUS.md	2026-07-21	Migration Status
+./db/UPDATES.md	2026-07-13	Recent changes
+./db/canonical_db.md	2026-07-13	Canonical Entity — Checklist & Access Model
+./db/current_analysis.md	2026-07-13	`public` cleanup triage
+./db/migrations/0070_0079_README.md	2026-07-13	Tool Schema Migration — File Index
+./db/migrations/README.md	2026-07-13	db/migrations
+./db/migrations/TOOL_DESC_DRIFT_REVIEW.md	2026-07-13	Tool arg-description drift — review
+./db/migrations/TOOL_REFACTOR_PLAN.md	2026-07-13	Tool System Refactor — `tl_*` → `tool_*`
+./db/migrations/UNRESOLVED_TOOL_UUIDS.md	2026-07-13	Purged-tool UUID reconciliation — RESOLVED ✅ (2026-05-24)
+./db/migrations/_TOOL_RESTORE_SCOPE.md	2026-07-13	Tool restoration scope — full code↔DB reconciliation (2026-05-23)
+./db/migrations/dropped_tl_gate.md	2026-07-13	`tl_gate` rows — preserved as documentation
+./db/schema_analysis/FEATURE.md	2026-07-21	Schema-drift orchestrator
+./db/schema_analysis/activity.md	2026-07-13	SQL
+./db/schema_analysis/current_schema.md	2026-07-13	Raw SQL Used:
+./docs/ENV_VARS.md	2026-07-21	Environment variables — the registry
+./docs/TASKS/TASK-auto-injest-mess.md	2026-07-13	System-wide — should load once at process start, never per call
+./docs/TOOLS.generated.md	2026-07-21	Tool Catalogue (generated from the database)
+./docs/access/CONTEXTUAL_ACCESS.md	2026-07-21	Contextual / provenance access — the reusable pattern
+./docs/agent_data_tools/HANDOFF.md	2026-07-13	Handoff — RLS-enforced agent data access
+./docs/agent_fs/00_DESIGN.md	2026-07-21	Agent Filesystem — a durable, code_files-backed VFS for non-sandbox 
+./docs/agent_plans/NEXT_TASKS.md	2026-07-13	Agent-plans — remaining work (handoff, 2026-07-07)
+./docs/agent_plans/WORKFLOW_WORKER_DEPLOY.md	2026-07-13	Deploy the workflow worker on Coolify — end-to-end runbook
+./docs/agent_to_agent/a2a_plan.md	2026-07-13	Subagent Foundations
+./docs/agents_service/00_truth.md	2026-07-13	Official Truth
+./docs/agents_service/01_arman_decisions.md	2026-07-13	Arman's Decisions
+./docs/agents_service/02_initial_concept.md	2026-07-13	Basics for some parts of our system:
+./docs/agents_service/03_initial_agent_feedback.md	2026-07-13	The headline: the auth question has a clean answer
+./docs/agents_service/04_approved_plan.md	2026-07-13	Approved Plan & Build Status
+./docs/agents_service/AGENT_DB_STRUCTURE.md	2026-07-13	Agent Database Structure — reference for managing agents
+./docs/agents_service/USING_THE_MCP.md	2026-07-13	Using the AI Dream MCP (for coding agents)
+./docs/api/MEANINGFUL_ERRORS.md	2026-07-13	Meaningful API errors — audit & upgrade guide
+./docs/auto_ingest/AUTO_INGEST_COST_INCIDENT.md	2026-07-13	Auto-Ingest Cost Incident — Non-PDF NER Orchestrator Disproportion
+./docs/cld_files/CLOUD_FILES_DEPLOY_HANDOFF.md	2026-07-13	Cloud Files — Deploy handoff (2026-05-05)
+./docs/cld_files/FE_STORAGE_URI_REMOVAL_HANDOFF.md	2026-07-13	Frontend handoff — remove `storage_uri` from the file model (and unb
+./docs/cld_files/IMAGE_EDIT_API.md	2026-07-21	Image edit API — frontend integration guide
+./docs/cld_files/IMAGE_OPS.md	2026-07-21	Image editing & enhancement APIs
+./docs/cld_files/PDF_API_FRONTEND_SUMMARY.md	2026-07-13	PDF API Frontend Handoff
+./docs/cld_files/PDF_HANDLING_SYSTEM_PLAN.md	2026-07-13	PDF Handling System — Stage 2 Plan
+./docs/cld_files/PDF_LARGE_DOCUMENT_PIPELINE.md	2026-07-13	PDF Large Document Pipeline
+./docs/cld_files/README.md	2026-07-13	cld_files docs
+./docs/cld_files/cloud_files_changes_for_react_team.md	2026-07-21	Cloud Files — Changes for the React team
+./docs/cld_files/cloud_files_frontend.md	2026-07-21	Cloud Files — React Integration Guide
+./docs/cld_files/cloud_files_quality_assessment.md	2026-07-13	Cloud Files — Quality Assessment & Rebuild Plan
+./docs/cld_files/cloud_files_roadmap.md	2026-07-21	Cloud Files System — Roadmap & Known Limitations
+./docs/cld_files/cloud_files_s3_cors.md	2026-07-13	Cloud Files — S3 bucket CORS policy
+./docs/cld_files/persistence_dedup_phase_2_0c_frontend_handoff.md	2026-07-13	Phase 2.0c — `persist_processed_document` content-hash dedup (fronte
+./docs/cms_agent_authoring/ASSIGN.md	2026-07-15	ASSIGN — CMS Agent Authoring Layer
+./docs/cms_agent_authoring/CONTRACTS-tools.md	2026-07-13	CONTRACTS-tools.md — P2's day-1 contracts (C5, C7)
+./docs/cms_agent_authoring/CONVERGENCE.md	2026-07-15	CONVERGENCE.md — Convergence A/B execution evidence (README §7)
+./docs/cms_agent_authoring/P1-data-layer-services.md	2026-07-13	P1 — CMS Data Layer & Core Services (FOUNDATIONAL CONTRACT — publi
+./docs/cms_agent_authoring/P2-tool-surface.md	2026-07-13	P2 — Tool Surface, Introspection & Registration
+./docs/cms_agent_authoring/P3-safety-patch-engine.md	2026-07-13	P3 — Content Safety & Patch Engine (FOUNDATIONAL CONTRACT — publis
+./docs/cms_agent_authoring/P4-verification-loop.md	2026-07-13	P4 — Verification Loop: Draft → Preview → Screenshot → Self-Ch
+./docs/cms_agent_authoring/P5-admin-parity-visibility.md	2026-07-13	P5 — Admin Parity Closure & Agent Visibility Surface
+./docs/cms_agent_authoring/README.md	2026-07-15	CMS Agent Authoring Layer — MASTER PLAN (single source of truth for 
+./docs/cms_agent_authoring/W2-fanout.md	2026-07-21	W2 — Wave-2 Fan-out (documented so it is not forgotten — do NOT as
+./docs/cms_agent_authoring/W2C-briefs.md	2026-07-15	W2C-briefs — Per-client-site data persistence: project decomposition
+./docs/cms_agent_authoring/W2C-design.md	2026-07-15	W2C-design — Per-client-site data persistence: proposed design
+./docs/cms_agent_authoring/W2C-vision.md	2026-07-15	W2C-vision — Per-client-site data persistence
+./docs/cms_agent_authoring/W2D-site-editor.md	2026-07-15	W2-D — The "Site Editor" platform agent (SHIPPED 2026-07-14)
+./docs/content_processing/HANDOFF.md	2026-07-15	Content Processing — Handoff & Gap Analysis
+./docs/ctx_context/CONTEXT_INLINE_RENDERING.md	2026-07-13	Context inline rendering — design + decisions (2026-05-18)
+./docs/ctx_context/CONTEXT_SYSTEM_HANDOFF.md	2026-07-13	Context System — Session Handoff (2026-06-16)
+./docs/ctx_context/TODO-context_plan.md	2026-07-13	The Matrx Execution Context Architecture — Total Redesign
+./docs/ctx_context/agent-context-serialization-spec.md	2026-07-17	Agent Context Serialization Spec
+./docs/ctx_context/ctx-write-tools.md	2026-07-13	`ctx_patch` & `ctx_create` — Server-Side Context Mutation
+./docs/ctx_context/deferred-context-system.md	2026-07-21	Deferred Context System — Internal Architecture
+./docs/ctx_context/scope-to-agent-binding-design.md	2026-07-13	Scope → Agent Binding — Design
+./docs/cx_chat/AGENT_SKILLS_HANDOFF.md	2026-07-13	Agent Skills — Handoff Brief
+./docs/cx_chat/AUDIT_cx_user_request_conversation_drop.md	2026-07-13	AUDIT SCRIPT — hunt for fallout from dropping `cx_user_request.conve
+./docs/cx_chat/CLIENT_REGISTRATION_GUIDE.md	2026-07-13	Client Registration Guide
+./docs/cx_chat/CROSS_TEAM_TOOL_REFACTOR.md	2026-07-13	Tool System Refactor — Cross-Team Communication
+./docs/cx_chat/CX_MESSAGE_CALL_RECORD.md	2026-07-13	cx_message — the per-turn "exact call" record (tools + context)
+./docs/cx_chat/FE_CONVERSATION_API_CHANGES.md	2026-07-13	Conversation API — New Endpoints
+./docs/cx_chat/FE_DROP_USER_REQUEST_CONVERSATION.md	2026-07-13	FE Handoff — `cx_user_request.conversation_id` is being removed
+./docs/cx_chat/FE_FILE_STORAGE_CHANGES.md	2026-07-13	Frontend impact: file-storage changes (May 2026)
+./docs/cx_chat/FE_HANDOFF_AGENT_PATTERNS.md	2026-07-13	FE Handoff — Agent Handoff (Pattern 1) + Conversation Value Store (P
+./docs/cx_chat/FE_MEDIA_BLOCK_CONTRACT.md	2026-07-21	FE Media Block Contract — Phase 0 Changes
+./docs/cx_chat/FE_SUBAGENT_STREAMING_CONTRACT.md	2026-07-13	FE Streaming Contract — Subagent attribution
+./docs/cx_chat/FRONTEND_TOOL_INJECTION_NOTES.md	2026-07-13	Frontend notes — unified tool injection rollout
+./docs/cx_chat/HANDOFF_REMAINING_WORK.md	2026-07-13	Handoff — finish the Agent Handoff + Value Store patterns
+./docs/cx_chat/MCP_DEBUG_TRACES.md	2026-07-13	Debug-traces MCP server
+./docs/cx_chat/REACTIVE_INJECTION_ARCHITECTURE.md	2026-07-13	Reactive Injection — state listeners that auto-provision tools, skil
+./docs/cx_chat/REALTIME_TOOL_BRIDGE_CONTRACT.md	2026-07-13	Realtime Tool Bridge — Cross-Repo Contract (authoritative)
+./docs/cx_chat/RESOURCE_EDITABILITY.md	2026-07-13	Resource editability — wire contract (frontend ⇄ backend)
+./docs/cx_chat/TASK_persistence_lifecycle_audit.md	2026-07-13	Persistence Lifecycle Doctrine + Audit Plan
+./docs/cx_chat/TASK_proper_token_tracking.md	2026-07-13	Proper Token Counting Research
+./docs/cx_chat/TODO-URGENT-scope_system_final_execution_plan.md	2026-07-13	AI Matrx Scope System — Final Execution Plan
+./docs/cx_chat/TODO-core-system-gaps.md	2026-07-13	The Big Picture
+./docs/cx_chat/TOOL_INJECTION_REFACTOR.md	2026-07-13	Client tools & capability injection — working design notes
+./docs/cx_chat/TOOL_REFACTOR_HANDOFF.md	2026-07-13	Tool System Refactor — Handoff Document
+./docs/cx_chat/TOOL_REGISTRY_REDESIGN.md	2026-07-13	Tool Registry Redesign — Decision Log
+./docs/cx_chat/TOOL_REGISTRY_RENAME_BREAKAGE.md	2026-07-13	Tool Registry Rename — Expected Breakage & Audit Targets
+./docs/cx_chat/TOOL_ROUTING_RULES.md	2026-07-19	Tool Routing Rules
+./docs/cx_chat/TOOL_SOURCE_OF_TRUTH.md	2026-07-13	Tools: The Database Is the Source of Truth — Rules & Open Gaps
+./docs/cx_chat/TURN_BOUNDARY_INBOX.md	2026-07-13	Turn-Boundary Inbox — consumer guide
+./docs/cx_chat/cx-db-detailed.md	2026-07-13	Agent Route — DB Quick Reference
+./docs/cx_chat/cx-db-overview.md	2026-07-13	Agent Route — DB Reference
+./docs/cx_chat/cx_message_visibility_rfc.md	2026-07-13	RFC: cx_message Visibility Architecture
+./docs/cx_chat/name-collision.md	2026-07-13	There are three completely separate systems that all use the word "blo
+./docs/cx_chat/tool_schema_design.md	2026-07-13	AI Matrx Tool System — Schema Design
+./docs/cx_chat/write-coordinator.md	2026-07-13	Context
+./docs/database/HANDWRITTEN_SQL_INVENTORY.md	2026-07-13	Hand-Written SQL Inventory — SUPERSEDED
+./docs/dictionary/00_PRONUNCIATION_DICTIONARY.md	2026-07-13	Custom Dictionary & TTS Pronunciation — Design / Truth
+./docs/dictionary/FRONTEND_HANDOFF.md	2026-07-13	Frontend Handoff — Custom Dictionary Admin & Org Management
+./docs/dictionary/providers/README.md	2026-07-13	TTS Provider Pronunciation — Capability Matrix
+./docs/dictionary/providers/cartesia.md	2026-07-13	Cartesia — TTS Pronunciation Reference
+./docs/dictionary/providers/elevenlabs.md	2026-07-13	ElevenLabs — TTS Pronunciation Reference
+./docs/dictionary/providers/google.md	2026-07-13	Google — TTS Pronunciation Reference
+./docs/dictionary/providers/groq.md	2026-07-13	Groq — TTS Pronunciation Reference
+./docs/dictionary/providers/openai.md	2026-07-13	OpenAI — TTS Pronunciation Reference
+./docs/dictionary/providers/xai.md	2026-07-13	xAI (Grok) — TTS & Realtime Voice Pronunciation Reference
+./docs/feedback/AGENT_FEEDBACK_SUBMISSION.md	2026-07-13	Agent feedback submission — the working channel
+./docs/handoffs/2026-07-13-request-management-layer-spine.md	2026-07-13	The Request Management Layer — finish the single-request system
+./docs/handoffs/README.md	2026-07-13	Handoffs
+./docs/handoffs/attached-documents.md	2026-07-19	Canonical file-family context
+./docs/handoffs/auto-rag.md	2026-07-13	Auto-RAG on file upload — residue after the build
+./docs/handoffs/kind-bound-dynamic-contracts.md	2026-07-15	Kind-bound contracts for dynamic-output nodes
+./docs/handoffs/matrx-ai-client-host-completion.md	2026-07-15	matrx-ai client-host completion — handoff
+./docs/handoffs/matrx-files-cutover.md	2026-07-13	matrx-files traffic cutover — get 100% of file traffic onto the serv
+./docs/handoffs/matrx-files-split.md	2026-07-13	matrx-files split + package-independence template
+./docs/handoffs/matrx-files-wider-parity.md	2026-07-13	matrx-files wider parity — grow the service to serve the FULL file s
+./docs/handoffs/media-capture-bounded-processing.md	2026-07-21	Handoff: Bounded-memory large-media processing (media capture Phase 6b
+./docs/handoffs/media-capture-transcription-and-derivatives.md	2026-07-21	Handoff: MediaRef transcription + audio_extracted derivative + standal
+./docs/handoffs/media-capture-tus-browser-wire.md	2026-07-21	Handoff: TUS browser-wire hardening (media capture Phase 6a)
+./docs/handoffs/node-result-followup-tail.md	2026-07-13	Node Result System — follow-up tail
+./docs/handoffs/package-independence-microservices.md	2026-07-13	Package independence → microservices — the big vision
+./docs/handoffs/persisted-shape-fidelity.md	2026-07-19	Persisted-shape fidelity + guard doctrine — handoff
+./docs/handoffs/schema-drift-and-file-layer.md	2026-07-13	Schema Drift, PostgREST Routing & the File-Layer `owner_id` Annihilati
+./docs/handoffs/seo-vertical.md	2026-07-21	SEO vertical — the platform's first domain vertical
+./docs/knowledge/00_MASTER_TASKLIST.md	2026-07-13	Knowledge System — Master Tasklist (the road to reality)
+./docs/knowledge/01_KNOWLEDGE_OVERVIEW.md	2026-07-13	Matrx Knowledge System Concept
+./docs/knowledge/02_KNOWLEDGE_ARCHITECTURE.md	2026-07-13	Matrx Knowledge System — Master Architecture
+./docs/knowledge/03_KNOWLEDGE_MODULE.md	2026-07-13	Phase 6 · Knowledge Module — the NER pipeline (zoom-in)
+./docs/knowledge/04_matrx_quality_model.md	2026-07-13	Matrx Quality Model
+./docs/knowledge/99_EXAMPLE_LEGAL.md	2026-07-13	WC Law as Stress Test
+./docs/knowledge/GAP_ANALYSIS_2026-06-08.md	2026-07-13	Knowledge System — Gap Analysis & Handoff (2026-06-08)
+./docs/knowledge/GAP_ANALYSIS_2026-06-08_SYSTEM.md	2026-07-13	Knowledge System — Full-System Gap Analysis & Handoff (2026-06-08)
+./docs/knowledge/NOT-VERIFIED-UNOFFICIAL/05_AUTO_INGEST_AGENTS.md	2026-07-13	Auto-Ingest Agents — Wish List & Specs
+./docs/knowledge/NOT-VERIFIED-UNOFFICIAL/current_auto_flow.md	2026-07-13	Are your defaults on the latest path?
+./docs/knowledge/NOT-VERIFIED-UNOFFICIAL/possible_naming.md	2026-07-13	Recommended umbrella name: **Knowledge Engine**
+./docs/knowledge/agent-knowledge-access.md	2026-07-13	Agent Knowledge Access & Retrieval
+./docs/knowledge/knowledge_provenance_model.md	2026-07-13	Knowledge Provenance & Truth Model
+./docs/knowledge/resources.md	2026-07-13	AI Matrx Knowledge System
+./docs/knowledge/scope-association-pipeline.md	2026-07-13	Scope Association Pipeline — auto-assigning content to scopes & fill
+./docs/knowledge/scope-model.md	2026-07-13	Scopes — What They Are
+./docs/knowledge/scopeable_entities.md	2026-07-15	Scopeable Entities — Canonical List (working draft)
+./docs/matrx_extend/BROWSER_AGENT_CLOUDFLARE_S3.md	2026-07-13	Runbook: purge Cloudflare + validate S3 after the Content-Type re-stam
+./docs/matrx_extend/MATRX_EXTEND_CONNECTION.md	2026-07-13	aidream ↔ matrx-extend Connection
+./docs/matrx_extend/MATRX_EXTEND_MIGRATION_GUIDE.md	2026-07-13	matrx-extend Migration Guide — Tool Registry Redesign
+./docs/matrx_frontend/MATRX_FRONTEND_MIGRATION_GUIDE.md	2026-07-13	matrx-frontend Migration Guide — Tool Registry Redesign
+./docs/matrx_local/MATRX_LOCAL_MIGRATION_GUIDE.md	2026-07-19	matrx-local Migration Guide — Tool Registry Redesign
+./docs/model_capabilities/AI_CATALOG_HANDOFF.md	2026-07-13	AI Catalog Reshape — Design of Record + Build Ledger
+./docs/model_capabilities/CAPABILITY_SYSTEM.md	2026-07-13	Model capability system — inputs, outputs, and how they're decided
+./docs/model_capabilities/CATALOG_FINAL_STRUCTURE.md	2026-07-13	AI Catalog — Final Structure & Transition (sign-off)
+./docs/model_capabilities/CONFIG_TRANSLATION_DESIGN.md	2026-07-13	DB-Driven Config Translation — Design of Record
+./docs/model_capabilities/EXPANSION_ROADMAP.md	2026-07-15	Expansion Roadmap — new endpoints, new audio providers, new services
+./docs/model_capabilities/KILL_LIST.md	2026-07-13	api_class Annihilation — the kill list
+./docs/model_capabilities/RECONCILIATION_LEDGER.md	2026-07-13	Model Capability Reconciliation — shared ledger
+./docs/model_capabilities/SSOT_COLUMN_AUDIT.md	2026-07-13	AI Catalog — SSOT / Column Audit (red-line me)
+./docs/model_capabilities/UI_VOCABULARY_AUDIT.md	2026-07-13	UI Vocabulary Audit — native enum options + the house auto/none stan
+./docs/new_skills/picklist_actions_skill.md	2026-07-15	Picklists — agent skill
+./docs/official/db-rules.md	2026-07-15	AI Matrx — Canonical Database System
+./docs/official/tool_system_rules.md	2026-07-13	Tool System — Rules, Definitions, and Operating Principles
+./docs/ops/OFF_BOX_VISIBILITY.md	2026-07-13	Off-box visibility — observing the live Matrx server without SSH
+./docs/orm/MULTI_SCHEMA_DESIGN.md	2026-07-13	Multi-Schema ORM — Design & Findings
+./docs/orm/OPINIONATED_ENTITY_ORM.md	2026-07-13	Plan — Bake the platform's core primitives into matrx-orm
+./docs/orm/ORM_GAP_ANALYSIS.md	2026-07-13	matrx-orm — Gap Analysis & Catch-Up Backlog vs Django / SQLAlchemy /
+./docs/orm/ORM_VS_SQLALCHEMY.md	2026-07-13	matrx-orm vs. SQLAlchemy + Alembic — strategic comparison & keep/swi
+./docs/orm/README.md	2026-07-13	ORM docs
+./docs/orm_bypass/REMAINING.md	2026-07-15	ORM-bypass sites remaining — THE managed list (generated; never hand
+./docs/packages/CANONICAL_PRIMITIVES.md	2026-07-13	Canonical primitives — hashing / ids / timeutils / http
+./docs/packages/EPIC1_SCHEMA_OWNERSHIP_RUNBOOK.md	2026-07-13	Epic 1 — Schema-Ownership Rollout Runbook
+./docs/packages/MATRX_SCRAPER_SCHEMA_OWNERSHIP.md	2026-07-13	matrx-scraper schema ownership — current map + staged plan
+./docs/packages/ORM_RAWSQL_ERADICATION.md	2026-07-13	ORM Raw-SQL Eradication — SUPERSEDED (campaign complete)
+./docs/packages/PACKAGES_MIGRATION_PLAN.md	2026-07-13	PACKAGES_MIGRATION_PLAN.md
+./docs/packages/PACKAGE_BOUNDARIES.md	2026-07-13	Package boundaries — what makes a `matrx-*` package real
+./docs/packages/PACKAGE_DOCTRINE.md	2026-07-21	MATRX PACKAGE & SERVICE DOCTRINE
+./docs/packages/PACKAGE_INDEPENDENCE_AUDIT.md	2026-07-13	Package Independence Audit — `packages/matrx-*`
+./docs/pdf-extraction/current-ai-integrations.md	2026-07-13	1. OpenAI Chat — PDF page cleanup (`gpt-4o-mini`, 59 calls)
+./docs/persistence/DOCTRINE.md	2026-07-13	The Persistence Doctrine
+./docs/persistence/EXPANSION_ROADMAP.md	2026-07-13	Persistence — Expansion Roadmap
+./docs/persistence/ORM_SESSION_VISION.md	2026-07-13	matrx-orm Session — Vision and Migration Plan
+./docs/persistence/PHASE_1_DEDUP_FOLLOWUP.md	2026-07-13	Phase 1 dedup — followup work
+./docs/persistence/PHASE_1_LESSONS_LEARNED.md	2026-07-13	Persistence Phase 1 — Lessons Learned (Read Before Phase 2)
+./docs/persistence/PHASE_2_LESSONS_LEARNED.md	2026-07-13	Persistence Phase 2 — Lessons Learned
+./docs/persistence/PHASE_2_PLAN.md	2026-07-13	Persistence Phase 2 — Comprehensive Plan Across All Packages
+./docs/persistence/SESSION_ARCHITECTURE.md	2026-07-13	Session Architecture — the canonical persistence stack
+./docs/persistence/STATUS_AND_ERROR_FIELDS.md	2026-07-13	Status, Lifecycle & Error Fields — the app-wide table standard
+./docs/persistence/WRITE_COORDINATOR.md	2026-07-13	WriteCoordinator — Operator Reference
+./docs/podcast/PODCAST_FLOW.md	2026-07-13	Podcast System — Flow & Path Map (simple)
+./docs/podcast/PODCAST_GAPS_AND_ROADMAP.md	2026-07-13	Podcast — Gaps, Weaknesses & Roadmap
+./docs/podcast/PODCAST_TEST_UI_GUIDE.md	2026-07-13	Podcast Generator — End‑to‑End Test UI Guide
+./docs/protocol/MATRX_ACTIONS.md	2026-07-15	Matrx Actions — the verb × noun model + custom functions
+./docs/protocol/MATRX_ENVELOPE.md	2026-07-13	Matrx Envelope — the GOLD STANDARD encoding
+./docs/protocol/MATRX_REFERENCES.md	2026-07-13	Matrx References — the `reference` kind & the `matrx` fence
+./docs/rag_and_ner/00_CLEANUP.md	2026-07-13	RAG + NER legacy docs — cleanup inventory
+./docs/rag_and_ner/EXPANSION_ROADMAP.md	2026-07-13	RAG/NER Suggestion Engine — Expansion Roadmap
+./docs/rag_and_ner/KNOWN_ISSUES.md	2026-07-13	Knowledge System — KNOWN ISSUES (for human review)
+./docs/rag_and_ner/RAG_LLM_JOBS_EXPLAINER.md	2026-07-13	The four RAG LLM jobs — what each really does, and what ON/OFF means
+./docs/rag_and_ner/README.md	2026-07-13	Knowledge system — RAG + NER documentation hub
+./docs/rag_and_ner/SECTION_SUBTYPE.md	2026-07-13	`section_subtype` — specific document type (paired with `section_kin
+./docs/rag_and_ner/SOFT_DELETE_SYMMETRY.md	2026-07-13	Soft-delete symmetry — RAG/NER artifacts must trash + restore like f
+./docs/rag_and_ner/handoffs/2026-06-10_audit_fixes_fe_handoff.md	2026-07-13	2026-06-10 RAG/NER audit fixes — FE handoff
+./docs/rag_and_ner/handoffs/2026-06-14_rag_agents_phase4_and_suggestions.md	2026-07-13	Handoff — RAG LLM→Agents migration (Phase 4 complete) + suggestion
+./docs/rag_and_ner/handoffs/2026-06-15_rag_soft_delete_fe_handoff.md	2026-07-13	FE handoff — RAG/NER soft-delete symmetry (2026-06-15)
+./docs/rag_and_ner/handoffs/extraction_indexing_phase_2_0a.md	2026-07-13	Phase 2.0a — Agent-extraction → RAG bridge (frontend handoff)
+./docs/rag_and_ner/handoffs/scope_suggestions_direct_supabase.md	2026-07-13	Scope & item-value suggestions — direct-Supabase contract (frontend 
+./docs/rag_and_ner/reality/00_REALITY_MAP.md	2026-07-13	RAG + NER — Reality Map (ground truth, not concept)
+./docs/rag_and_ner/reality/01_RAG_REALITY.md	2026-07-13	RAG Reality — Ingestion + Retrieval (as coded)
+./docs/rag_and_ner/reality/02_NER_KG_REALITY.md	2026-07-13	NER + Knowledge-Graph Reality (as coded)
+./docs/rag_and_ner/reality/03_CONNECTION_REALITY.md	2026-07-13	The RAG ↔ NER Connection Reality (the crux)
+./docs/rag_and_ner/reality/04_ORM_AND_SCHEMA.md	2026-07-13	ORM schema reach, the `rag` namespace, and the pgvector codec — revi
+./docs/raw_sql_census/DEFERRED_FINDINGS.md	2026-07-13	Deferred findings — surfaced during the raw-SQL elimination campaign
+./docs/raw_sql_census/README.md	2026-07-13	Raw-SQL census
+./docs/raw_sql_census/REMAINING_SQL.md	2026-07-13	Raw SQL remaining — THE managed list (generated; never hand-maintain
+./docs/raw_sql_census/aidream-db-core.md	2026-07-13	Raw-SQL census — aidream/db · startup · graph_actions · top-level
+./docs/raw_sql_census/aidream-services-1.md	2026-07-13	Raw-SQL census — aidream/services (scraper · auto_ingest · suggest
+./docs/raw_sql_census/aidream-services-2.md	2026-07-13	Raw-SQL census — aidream/services (rag · user_secrets · documents 
+./docs/raw_sql_census/matrx-ai-graph.md	2026-07-13	Raw-SQL census — packages/matrx-ai · matrx-graph
+./docs/raw_sql_census/matrx-rag.md	2026-07-13	Raw-SQL census — packages/matrx-rag (mid-conversion)
+./docs/raw_sql_census/matrx-scraper.md	2026-07-13	Raw-SQL census — packages/matrx-scraper · research/
+./docs/research/DOMAIN_RULES.md	2026-07-13	Research Domain Rules — categorize known sites
+./docs/runtime/AGENT_EXECUTOR_V2.md	2026-07-13	Agent executor on the spine — the matrx-ai `TurnRunner` + `/v2` rout
+./docs/runtime/EXECUTION_SPINE.md	2026-07-13	The Execution Spine — `matrx-runtime` and the unified durable-run su
+./docs/runtime/REQUEST_MANAGEMENT_LAYER.md	2026-07-13	matrx-runtime — the Request Management Layer (canonical design)
+./docs/runtime/SPINE_ADOPTION_GAP_ANALYSIS.md	2026-07-13	Spine adoption — gap analysis (record-everything · delete `cx_user_
+./docs/runtime/STANDALONE_SUBSTRATE.md	2026-07-21	matrx-runtime — the standalone substrate (bootstrap)
+./docs/runtime/V2_FRONTEND_MIGRATION.md	2026-07-13	`/v2` API — Next.js Migration Instructions
+./docs/runtime/WAVE_FEEDBACK.md	2026-07-13	matrx-runtime — wave feedback (running log)
+./docs/rx_research/EXTENSION_TOPIC_PICKER_API.md	2026-07-13	Extension Topic Picker API
+./docs/sandbox/COMPUTE_TARGETS.md	2026-07-13	Compute Targets — operator + integration notes
+./docs/sandbox/EC2_LIGHTWEIGHT_BOX.md	2026-07-13	EC2 Lightweight Coding Box — Spec
+./docs/sandbox/aidream_ec2_server.md	2026-07-13	AIDream EC2 Server
+./docs/scraper/README.md	2026-07-13	Scraper documentation (aidream monorepo)
+./docs/scraper/SCRAPER_CONSOLIDATION_PLAN.md	2026-07-13	Scraper Consolidation — MERGED into the master plan
+./docs/scraper/SCRAPER_SECURITY_BUGS.md	2026-07-15	Scraper feature — known security & access-scope bugs
+./docs/scraper/SCRAPER_UNIFICATION_PLAN.md	2026-07-13	Scraper + Web-Crawler Unification Plan (MASTER)
+./docs/scraper/SCREAMING_FROG_GAP_ANALYSIS.md	2026-07-13	Crawler — Screaming Frog Gap Analysis
+./docs/scraper/db-workorder-scraper-codegen.md	2026-07-13	Work order — scraper schema codegen + ownership (DB-egress steps)
+./docs/seo/BING_WEBMASTER_ENDPOINT_INVENTORY.md	2026-07-21	Bing Webmaster endpoint inventory
+./docs/seo/DATAFORSEO_CAPABILITY_AND_COST_AUDIT.md	2026-07-21	DataForSEO capability and cost audit
+./docs/seo/SEO_CREDENTIAL_CUTOVER_INVENTORY.md	2026-07-21	SEO credential dependency map and cutover runbook
+./docs/seo/SEO_DATA_PLATFORM_MULTI_AGENT_PLAN.md	2026-07-21	SEO Data Aggregation & Persistence Platform — Delivery Plan
+./docs/streaming/FE_STREAMING_MIGRATIONS.md	2026-07-13	FE Streaming Migrations — implementation instructions per converted 
+./docs/streaming/STREAM_EVERYTHING.md	2026-07-13	Mandate: Stream EVERYTHING, in real time. No polling. No blind loaders
+./docs/streaming/fe_migrations/file_analysis.md	2026-07-13	FE migration — file analysis refresh + extraction-run RAG indexing n
+./docs/streaming/fe_migrations/legal_image_misc.md	2026-07-13	FE migration — legal syncs typed, file search / image ops / image st
+./docs/streaming/fe_migrations/pdf_analyzers.md	2026-07-13	FE migration — PDF analyzer endpoints now stream (2026-07-06)
+./docs/streaming/fe_migrations/podcasts.md	2026-07-13	FE migration — Podcast per-asset endpoints now STREAM (+ all podcast
+./docs/streaming/fe_migrations/workflow_test_node.md	2026-07-13	FE migration — workflow single-node test now STREAMS
+./docs/streaming/fe_migrations/workflow_tokens.md	2026-07-13	FE migration — workflow LLM tokens now PUSH over the run event strea
+./docs/tasks-from-outside/2026-05-08-file-handler-refactor-frontend-needs-REPLY.md	2026-07-21	2026-05-08 — Reply: File-handler refactor, Python-side confirmations
+./docs/tasks-from-outside/2026-05-08-file-handler-refactor-frontend-needs.md	2026-07-21	2026-05-08 — File-handler refactor: frontend needs from Python
+./docs/tasks-from-outside/2026-05-08-image-studio-python-handoff.md	2026-07-21	2026-05-08 — Image Studio: Sharp → Python migration (handoff)
+./docs/tasks-from-outside/2026-05-09-wc-pd-ratings-impairments-source-of-truth.md	2026-07-13	WC PD Ratings — `GET /impairments` is now DB-backed (single source o
+./docs/tasks-from-outside/2026-05-10-wc-pd-ratings-complete-state.md	2026-07-13	WC PD Ratings — Complete State + Handoff (2026-05-10)
+./docs/tasks-from-outside/wc-impairment-aliases-review.md	2026-07-13	WC Impairment Search Aliases — Low-confidence Review
+./docs/tool_delegation/DELEGATION_LOOP_BUGS.md	2026-07-19	Client-delegated tool calls — the orchestrator loop bugs
+./docs/tool_delegation/MATRX_FRONTEND_HANDOFF.md	2026-07-13	Handoff: apply the 2026-06-09 client-tool resume fixes to matrx-fronte
+./docs/udt_user_data_and_lists/UDT_API_REFERENCE.md	2026-07-15	UDT REST API Reference — `/datasets` and `/picklists`
+./docs/udt_user_data_and_lists/UDT_MIGRATION_FOR_FRONTENDS.md	2026-07-15	UDT Migration — Frontend & Chrome Plugin team guide
+./docs/voices/VOICE_GENDERS.md	2026-07-13	Voice Catalog — Gender / Quality / Tags Worksheet
+./docs/vsc_extention/ai-matrx-vscode-extension-plan.md	2026-07-21	AI Matrx VS Code Extension — Master Plan
+./docs/workflow/AGENT_NODE_HANDOFF.md	2026-07-13	Handoff — The Agent Node & Canonical Typed‑I/O ("Shapes/Kinds")
+./docs/workflow/ARCHITECTURE.md	2026-07-13	Workflow Module Architecture
+./docs/workflow/AUDIT_2026_07_08.md	2026-07-13	Workflow System Audit — 2026-07-08
+./docs/workflow/CONTENT_IR_STUDIO_SPEC.md	2026-07-15	Content IR in Workflow Studio — replication spec
+./docs/workflow/DETECTOR_TOKEN_CLASSIFICATION.md	2026-07-15	Detector token classification — the 13 unregistered tokens (W1-DB, 2
+./docs/workflow/ENGINE_SPEC.md	2026-07-13	Matrx Workflow Engine Specification
+./docs/workflow/EXPANSION.md	2026-07-13	Workflow Module — Expansion Opportunities
+./docs/workflow/KINDS_ROLLOUT.md	2026-07-15	Kinds rollout — sweeping existing workflow definitions
+./docs/workflow/NODE_RESULT_CONTRACT.md	2026-07-13	Node Result Contract — the Standardized Node Result System
+./docs/workflow/NODE_RESULT_MIGRATION.md	2026-07-13	NodeResult migration tracker
+./docs/workflow/OPERATING_PRIORITIES.md	2026-07-13	Operating Priorities for the Workflow Module
+./docs/workflow/README.md	2026-07-13	Workflow Module Documentation
+./docs/workflow/RUN_LIFECYCLE.md	2026-07-13	Run Lifecycle, Events, and Recovery
+./docs/workflow/TEST_DRIVE_HANDOFF.md	2026-07-13	Workflow System — Test-Drive Handoff
+./docs/workflow/WORKFLOW_HANDOFF.md	2026-07-21	Matrx Workflow System — Feature Handoff
+./docs/workflow/sweep/F2_files_upload.md	2026-07-13	Sweep manifest — F2 (files.upload follow-up fix, 2026-07-09)
+./docs/workflow/sweep/P1_builtins.md	2026-07-13	Sweep manifest — P1 (matrx-graph builtin nodes)
+./docs/workflow/sweep/P2_matrx_ai.md	2026-07-13	Wave-1 sweep manifest — P2 (packages/matrx-ai/matrx_ai/graph_nodes/)
+./docs/workflow/sweep/P3_aidream_actions.md	2026-07-21	Sweep manifest — P3 (aidream/graph_actions/)
+./docs/workflow/sweep/P4_scraper.md	2026-07-13	Sweep manifest — P4 (matrx-scraper graph nodes)
+./docs/workflow_studio/UI_GAP_ANALYSIS_2026-06-14.md	2026-07-13	Workflow Studio — UI/UX Gap Analysis & World-Class Target
+./internal_agents/README.md	2026-07-19	Internal Agents
+./internal_agents/TEMPLATE.md	2026-07-13	<Suggested Agent Name>
+./internal_agents/agent_iteration_architect.md	2026-07-13	Agent Iteration — Architect ("validate the diagnosis and rebuild the
+./internal_agents/agent_iteration_diagnostic.md	2026-07-13	Agent Iteration — Diagnostic ("what went wrong?")
+./internal_agents/agent_iteration_root_cause.md	2026-07-13	Agent Iteration — Root Cause ("which part of the config caused it?")
+./internal_agents/agent_iteration_thinking_display.md	2026-07-13	Agent Iteration — Thinking Display (UX-only "thinking" stream)
+./internal_agents/dictionary_assistant.md	2026-07-13	Dictionary Assistant
+./internal_agents/document_verifier.md	2026-07-17	Document Verifier
+./internal_agents/kind_creator.md	2026-07-19	Kind Creator
+./internal_agents/ner_deep_chunk_extractor.md	2026-07-13	NER Deep Chunk Extractor
+./internal_agents/ner_document_orienter.md	2026-07-13	NER Document Orienter
+./internal_agents/ner_entity_canonicalizer.md	2026-07-13	NER Entity Canonicalizer
+./internal_agents/ner_item_proposer.md	2026-07-13	NER Item Proposer
+./internal_agents/ner_magic_moment_detector.md	2026-07-13	NER Magic Moment Detector
+./internal_agents/ner_scope_proposer.md	2026-07-13	NER Scope Proposer
+./internal_agents/ner_scope_slot_filler.md	2026-07-13	NER Scope Slot Filler
+./internal_agents/ner_suggestion_reviewer.md	2026-07-13	NER Suggestion Reviewer
+./internal_agents/ner_sweep_scope_discoverer.md	2026-07-13	NER Sweep — Scope Instance Discoverer
+./internal_agents/ner_sweep_scope_reference_finder.md	2026-07-13	NER Sweep — Scope Reference Finder
+./internal_agents/ner_sweep_value_miner.md	2026-07-13	NER Sweep — Context-Item Value Miner
+./internal_agents/podcast_audience_adapter.md	2026-07-13	Podcast Audience Adapter
+./internal_agents/podcast_blog_writer.md	2026-07-13	Podcast Blog Writer
+./internal_agents/podcast_chapter_marker.md	2026-07-13	Podcast Chapter Marker
+./internal_agents/podcast_live_rewrite.md	2026-07-13	Podcast Live Rewrite
+./internal_agents/podcast_multihost_script.md	2026-07-13	Podcast Multi-Host Script
+./internal_agents/podcast_post_prep_expansion.md	2026-07-13	Podcast Post-Prep — Expansion
+./internal_agents/podcast_post_prep_fact_checking.md	2026-07-13	Podcast Post-Prep — Fact-Checking
+./internal_agents/podcast_post_prep_summarization.md	2026-07-13	Podcast Post-Prep — Summarization
+./internal_agents/podcast_post_prep_translation.md	2026-07-13	Podcast Post-Prep — Translation
+./internal_agents/podcast_relevance_gate.md	2026-07-13	Podcast Relevance Gate
+./internal_agents/podcast_roundtable_script.md	2026-07-13	Podcast Roundtable Script
+./internal_agents/podcast_show_notes_generator.md	2026-07-13	Podcast Show Notes Generator
+./internal_agents/podcast_solo_script.md	2026-07-13	Podcast Solo Script
+./internal_agents/podcast_title_optimizer.md	2026-07-13	Podcast Title Optimizer
+./internal_agents/rag_chunk_contextualizer.md	2026-07-13	RAG Chunk Contextualizer
+./internal_agents/rag_hyde_generator.md	2026-07-13	RAG HyDE Generator
+./internal_agents/rag_pdf_page_cleaner.md	2026-07-13	RAG PDF Page Cleaner
+./internal_agents/rag_query_expander.md	2026-07-13	RAG Query Expander
+./knowledgebase/utils/doc_manipulation/text_classification/documentation.md	2026-07-13	Technical Documentation on Metrics, Identifiers, Find Operations, and 
+./knowledgebase/utils/doc_manipulation/text_classification/task objects.md	2026-07-13	Task Objects for Find and Line Operations
+./matrx_cms/FEATURE.md	2026-07-13	FEATURE.md — CMS second database (My Matrx / HTML CMS)
+./microservices/README.md	2026-07-13	Components
+./packages/matrx-ai/.pytest_cache/README.md	2026-07-17	pytest cache directory #
+./packages/matrx-ai/AGENTS.md	2026-07-21	CLAUDE.md — matrx-ai
+./packages/matrx-ai/CLAUDE.md	2026-07-21	CLAUDE.md — matrx-ai
+./packages/matrx-ai/MEDIA_VARIABLES_AND_HANDOFF.md	2026-07-21	Media Variables — Backend Implementation + FE/Translator Handoff
+./packages/matrx-ai/README.md	2026-07-21	matrx-ai
+./packages/matrx-ai/REMAINING_TASKS.md	2026-07-13	Matrx AI: Remaining Implementation Tasks
+./packages/matrx-ai/TEST_HEALTH_HANDOFF.md	2026-07-13	matrx-ai test-health — RESOLVED 2026-07-07 (record + residual)
+./packages/matrx-ai/matrx_ai/MODULE_README.md	2026-07-13	`ai` — Module Overview
+./packages/matrx-ai/matrx_ai/agent_runners/MODULE_README.md	2026-07-13	matrx_ai.agent_runners — Module Overview
+./packages/matrx-ai/matrx_ai/agent_runners/PODCAST_PIPELINE.md	2026-07-13	Podcast Generation Pipeline — Canonical Flow & Gate Contract
+./packages/matrx-ai/matrx_ai/agents/FEATURE.md	2026-07-19	matrx-ai agents — JSON parsing & structured output
+./packages/matrx-ai/matrx_ai/agents/MODULE_README.md	2026-07-13	`ai.agents` — Module Overview
+./packages/matrx-ai/matrx_ai/concepts/ai_matrx_context_engine_complete.md	2026-07-21	AI Matrx Context Engine — Complete System Reference
+./packages/matrx-ai/matrx_ai/concepts/ai_matrx_context_engine_v2.md	2026-07-21	AI Matrx Context Engine — v2 Specification
+./packages/matrx-ai/matrx_ai/config/AGENTS_API.md	2026-07-13	Agents API — Frontend Reference
+./packages/matrx-ai/matrx_ai/config/CONTENT_TYPES.md	2026-07-13	Content Types Reference
+./packages/matrx-ai/matrx_ai/config/FEATURE.md	2026-07-19	FEATURE.md — Content serialization: ONE shape, ONE deserializer
+./packages/matrx-ai/matrx_ai/config/MEDIA_BILLING.md	2026-07-13	Media & non-text billing — usage-basis taxonomy
+./packages/matrx-ai/matrx_ai/config/MODULE_README.md	2026-07-13	`ai.config` — Module Overview
+./packages/matrx-ai/matrx_ai/config/TABLE_REFERENCE_FETCH.md	2026-07-13	User Data Bookmarks
+./packages/matrx-ai/matrx_ai/config/tool_config_image_processing_spec.md	2026-07-13	Python team — screenshot processing spec
+./packages/matrx-ai/matrx_ai/db/FEATURE.md	2026-07-13	Conversation Gate & `conversation_type`
+./packages/matrx-ai/matrx_ai/db/MODULE_README.md	2026-07-13	`ai.db` — Module Overview
+./packages/matrx-ai/matrx_ai/db/ai_models/MODULE_README.md	2026-07-13	matrx_ai.db.ai_models — Module Overview
+./packages/matrx-ai/matrx_ai/db/content_types/DATA_REF.md	2026-07-13	DataRef — Attaching Live Data to AI Messages
+./packages/matrx-ai/matrx_ai/db/content_types/MODULE_README.md	2026-07-13	matrx_ai.db.content_types — Module Overview
+./packages/matrx-ai/matrx_ai/db/migrations/TOOL_CALL_OUTPUT_METADATA.md	2026-07-13	Tool Call Output Metadata — Implementation Guide
+./packages/matrx-ai/matrx_ai/docs/AUDIO_AUTOMATIC_FALLBACK.md	2026-07-13	Audio Automatic Fallback to Transcription
+./packages/matrx-ai/matrx_ai/docs/AUDIO_HANDLING_COMPARISON.md	2026-07-13	Audio Handling: Two Approaches Compared
+./packages/matrx-ai/matrx_ai/docs/GROQ_TRANSCRIPTION.md	2026-07-15	Groq transcription adapter
+./packages/matrx-ai/matrx_ai/docs/GROQ_TRANSCRIPTION_QUICK_START.md	2026-07-15	Speech-to-text quick start
+./packages/matrx-ai/matrx_ai/docs/GROQ_TRANSCRIPTION_SUMMARY.md	2026-07-15	Speech-to-text architecture summary
+./packages/matrx-ai/matrx_ai/docs/GROQ_TRANSCRIPTION_USAGE_TRACKING.md	2026-07-15	Speech-to-text usage tracking
+./packages/matrx-ai/matrx_ai/docs/STT_CATALOG.md	2026-07-15	Catalog-dispatched speech-to-text
+./packages/matrx-ai/matrx_ai/docs/SUBAGENTS.md	2026-07-13	Subagents — Agents Calling Agents
+./packages/matrx-ai/matrx_ai/docs/TRANSCRIPTION_CACHING.md	2026-07-13	Transcription Caching
+./packages/matrx-ai/matrx_ai/docs/YOUTUBE_URL_HANDLING.md	2026-07-13	YouTube URL Handling in Unified Config
+./packages/matrx-ai/matrx_ai/instructions/MODULE_README.md	2026-07-13	`ai.instructions` — Module Overview
+./packages/matrx-ai/matrx_ai/instructions/docs/MATRX_PATTERNS_FRONTEND_GUIDE.md	2026-07-13	MATRX Pattern System - Frontend Integration Guide
+./packages/matrx-ai/matrx_ai/instructions/docs/QUICK_REFERENCE.md	2026-07-13	MATRX Pattern System - Quick Reference
+./packages/matrx-ai/matrx_ai/instructions/docs/README.md	2026-07-13	MATRX Pattern System
+./packages/matrx-ai/matrx_ai/instructions/tests/MODULE_README.md	2026-07-13	matrx_ai.instructions.tests — Module Overview
+./packages/matrx-ai/matrx_ai/memory/INTEGRATION_GUIDE.md	2026-07-13	Mastra Observational Memory (OM) Integration Guide
+./packages/matrx-ai/matrx_ai/orchestrator/MODULE_README.md	2026-07-13	`ai.orchestrator` — Module Overview
+./packages/matrx-ai/matrx_ai/plans/FEATURE.md	2026-07-13	Agent-designed mini workflows — `matrx_ai.plans`
+./packages/matrx-ai/matrx_ai/processing/MODULE_README.md	2026-07-15	matrx_ai.processing — Module Overview
+./packages/matrx-ai/matrx_ai/processing/PROCESSING_TASKS.md	2026-07-13	Block Processing — Open Tasks
+./packages/matrx-ai/matrx_ai/processing/audio/MODULE_README.md	2026-07-15	matrx_ai.processing.audio — Module Overview
+./packages/matrx-ai/matrx_ai/processing/blocks/MODULE_README.md	2026-07-13	matrx_ai.processing.blocks — Module Overview
+./packages/matrx-ai/matrx_ai/processing/blocks/TODO-artifact-backend-integration.md	2026-07-13	TODO: Artifact Backend Integration (aidream / Python Server)
+./packages/matrx-ai/matrx_ai/processing/blocks/models/MODULE_README.md	2026-07-13	matrx_ai.processing.blocks.models — Module Overview
+./packages/matrx-ai/matrx_ai/processing/blocks/parsers/MODULE_README.md	2026-07-13	matrx_ai.processing.blocks.parsers — Module Overview
+./packages/matrx-ai/matrx_ai/processing/blocks/tests/MODULE_README.md	2026-07-13	matrx_ai.processing.blocks.tests — Module Overview
+./packages/matrx-ai/matrx_ai/processing/blocks/tests/test_content.md	2026-07-13	Block Testing Corpus
+./packages/matrx-ai/matrx_ai/processing/streaming-constitution.md	2026-07-17	AI Matrx Streaming Constitution
+./packages/matrx-ai/matrx_ai/providers/MODULE_README.md	2026-07-13	`ai.providers` — Module Overview
+./packages/matrx-ai/matrx_ai/providers/data_sync/MODULE_README.md	2026-07-13	matrx_ai.providers.data_sync — Module Overview
+./packages/matrx-ai/matrx_ai/providers/eleven_labs/MODULE_README.md	2026-07-13	matrx_ai.providers.eleven_labs — Module Overview
+./packages/matrx-ai/matrx_ai/providers/eleven_labs/TASK-Update-elevent-api.md	2026-07-13	Summary: 5 API Classes across 4 distinct APIs
+./packages/matrx-ai/matrx_ai/providers/generic_openai/MODULE_README.md	2026-07-13	matrx_ai.providers.generic_openai — Module Overview
+./packages/matrx-ai/matrx_ai/providers/google/MODULE_README.md	2026-07-13	matrx_ai.providers.google — Module Overview
+./packages/matrx-ai/matrx_ai/skills/MODULE_README.md	2026-07-13	matrx-ai skills
+./packages/matrx-ai/matrx_ai/tests/MODULE_README.md	2026-07-13	`ai.tests` — Module Overview
+./packages/matrx-ai/matrx_ai/tests/openai/MODULE_README.md	2026-07-13	matrx_ai.tests.openai — Module Overview
+./packages/matrx-ai/matrx_ai/tools/ARG_RECOVERY.md	2026-07-15	Arg recovery — recover when we can, scream clearly when we can't
+./packages/matrx-ai/matrx_ai/tools/EXTENSION_INLINE_CONTEXT.md	2026-07-13	Inline Context Rendering — what changes for matrx-extend
+./packages/matrx-ai/matrx_ai/tools/MODULE_README.md	2026-07-17	`ai.tools` — Module Overview
+./packages/matrx-ai/matrx_ai/tools/TOOLS_AUDIT_REPORT.md	2026-07-13	Tool System Audit Report — Final Pass
+./packages/matrx-ai/matrx_ai/tools/TOOL_OUTPUT_VALIDATION_GATE.md	2026-07-13	`ToolResult.output` validation gate
+./packages/matrx-ai/matrx_ai/tools/TOOL_RESULT_SIZE_GATE.md	2026-07-15	Tool-result size gate
+./packages/matrx-ai/matrx_ai/tools/USER_TOOL_WIRE_CONTRACT.md	2026-07-13	The `user` tool — wire contract
+./packages/matrx-ai/matrx_ai/tools/arg_models/MODULE_README.md	2026-07-13	matrx_ai.tools.arg_models — Module Overview
+./packages/matrx-ai/matrx_ai/tools/docs/FRONTEND_AND_EXTERNAL_TOOLS.md	2026-07-13	Frontend-Owned and External-App Tools
+./packages/matrx-ai/matrx_ai/tools/docs/FRONTEND_MIGRATION_NOTES.md	2026-07-13	Frontend Migration Notes: Tool System V2
+./packages/matrx-ai/matrx_ai/tools/docs/ROLLOUT_CHECKLIST.md	2026-07-13	Tool System V2 — Rollout Checklist & Integration Guide
+./packages/matrx-ai/matrx_ai/tools/docs/TOOL_NAMING.md	2026-07-13	Tool Naming Best Practices
+./packages/matrx-ai/matrx_ai/tools/docs/TOOL_OVERHAUL_PLAN.md	2026-07-21	Tool System Overhaul — Complete Architecture Plan
+./packages/matrx-ai/matrx_ai/tools/docs/browser_tools_final.md	2026-07-13	Browser tools — final canonical set
+./packages/matrx-ai/matrx_ai/tools/docs/browser_tools_unification.md	2026-07-13	Browser tools — unification gap analysis
+./packages/matrx-ai/matrx_ai/tools/implementations/MODULE_README.md	2026-07-13	matrx_ai.tools.implementations — Module Overview
+./packages/matrx-ai/matrx_ai/tools/implementations/STORE_HTML_SERVICE.md	2026-07-13	store_html Tool — Service Investigation
+./packages/matrx-ai/matrx_ai/tools/implementations/TOOLS_README.md	2026-07-13	Tools Module
+./packages/matrx-ai/matrx_ai/tools/tests/MODULE_README.md	2026-07-13	matrx_ai.tools.tests — Module Overview
+./packages/matrx-ai/matrx_ai/tools/vfs/EXTRACTION.md	2026-07-13	Extracting the VFS into another codebase
+./packages/matrx-ai/matrx_ai/tools/vfs/README.md	2026-07-13	Virtual Filesystem (VFS)
+./packages/matrx-ai/matrx_ai_implementation_master_plan.md	2026-07-13	Matrx AI: Pi-Mono Integration Master Plan
+./packages/matrx-assignment/AGENTS.md	2026-07-21	CLAUDE.md — matrx-assignment
+./packages/matrx-assignment/CLAUDE.md	2026-07-19	CLAUDE.md — matrx-assignment
+./packages/matrx-assignment/FEATURE.md	2026-07-19	Coordinated assignment engine
+./packages/matrx-assignment/README.md	2026-07-19	matrx-assignment
+./packages/matrx-batch/AGENTS.md	2026-07-21	CLAUDE.md — matrx-batch
+./packages/matrx-batch/CLAUDE.md	2026-07-13	CLAUDE.md — matrx-batch
+./packages/matrx-batch/README.md	2026-07-13	matrx-batch
+./packages/matrx-connect/AGENTS.md	2026-07-21	CLAUDE.md — matrx-connect
+./packages/matrx-connect/CLAUDE.md	2026-07-17	CLAUDE.md — matrx-connect
+./packages/matrx-connect/README.md	2026-07-13	matrx-connect
+./packages/matrx-content-guard/AUDIT_RESULTS.md	2026-07-13	matrx-content-guard — live audit results
+./packages/matrx-content-guard/CONTRACT.md	2026-07-21	CONTRACT — matrx-content-guard (C3)
+./packages/matrx-content-guard/FEATURE.md	2026-07-21	FEATURE.md — matrx-content-guard
+./packages/matrx-content-guard/README.md	2026-07-13	matrx-content-guard
+./packages/matrx-files/.pytest_cache/README.md	2026-07-15	pytest cache directory #
+./packages/matrx-files/AGENTS.md	2026-07-21	CLAUDE.md — matrx-files (development)
+./packages/matrx-files/CLAUDE.md	2026-07-21	CLAUDE.md — matrx-files (development)
+./packages/matrx-files/DEPLOY.md	2026-07-21	Deploying the Matrx Files microservice (EC2 us-east-1)
+./packages/matrx-files/DEPLOY_AGENT_PROMPT.md	2026-07-13	Copy-paste prompt for the AWS browser agent (deploy Matrx Files)
+./packages/matrx-files/DNS_SETUP.md	2026-07-13	DNS + HTTPS — DONE (2026-07-13). Live at https://files.matrxserver.c
+./packages/matrx-files/EPHEMERAL_OBJECT_LIFECYCLE.md	2026-07-15	Ephemeral object lifecycle
+./packages/matrx-files/INDEPENDENCE.md	2026-07-13	INDEPENDENCE.md — the contract every Matrx package signs
+./packages/matrx-files/LOCAL_DEV.md	2026-07-13	Run matrx-files locally (and test the FE against it)
+./packages/matrx-files/README.md	2026-07-13	Matrx Files
+./packages/matrx-files/TEMPORARY_FILE_RETENTION.md	2026-07-15	Temporary file retention
+./packages/matrx-files/matrx_files/FEATURE.md	2026-07-21	FEATURE — Client-facing file references (the OUT contract)
+./packages/matrx-files/matrx_files/MODULE_README.md	2026-07-13	`src.matrx_files` — Module Overview
+./packages/matrx-files/matrx_files/specific_handlers/MODULE_README.md	2026-07-13	`src.matrx_files.specific_handlers` — Module Overview
+./packages/matrx-files/matrx_files/specific_handlers/office/FEATURE.md	2026-07-19	Office (OpenXML) codec — `specific_handlers/office/`
+./packages/matrx-graph/AGENTS.md	2026-07-21	CLAUDE.md — matrx-graph
+./packages/matrx-graph/CLAUDE.md	2026-07-15	CLAUDE.md — matrx-graph
+./packages/matrx-graph/README.md	2026-07-13	matrx-graph
+./packages/matrx-graph/docs/GAPS_AND_ROADMAP.md	2026-07-13	Matrx Graph — Functional Gap Analysis
+./packages/matrx-graph/docs/README.md	2026-07-13	matrx-graph docs
+./packages/matrx-graph/docs/action-authoring.md	2026-07-13	Authoring an `@action`
+./packages/matrx-graph/docs/architecture.md	2026-07-13	matrx-graph — Architecture
+./packages/matrx-graph/docs/node-authoring.md	2026-07-13	Authoring a custom `NodeExecutor`
+./packages/matrx-graph/docs/study-pack-workflow.md	2026-07-13	Study Pack v1 — the canonical end-to-end workflow
+./packages/matrx-graph/docs/testing.md	2026-07-15	Testing — three tiers, one philosophy
+./packages/matrx-graph/matrx_graph/actions/ACTION_STANDARDS.md	2026-07-13	Action / Node Standards — the contract every `@action` and `NodeExec
+./packages/matrx-graph/matrx_graph/db/migrations/README.md	2026-07-13	matrx-graph migrations
+./packages/matrx-graph/matrx_graph/db/migrations/legacy_pre_reorg/README.md	2026-07-13	legacy_pre_reorg — HISTORICAL. Do NOT apply to fresh installs.
+./packages/matrx-legal/AGENTS.md	2026-07-21	CLAUDE.md — matrx-legal
+./packages/matrx-legal/CLAUDE.md	2026-07-13	CLAUDE.md — matrx-legal
+./packages/matrx-legal/README.md	2026-07-13	matrx-legal
+./packages/matrx-legal/matrx_legal/migrations/README.md	2026-07-13	matrx-legal migrations — the `legal.*` schema
+./packages/matrx-orm/AGENTS.md	2026-07-21	CLAUDE.md — matrx-orm
+./packages/matrx-orm/BASE_CLASS_METHODS.md	2026-07-13	ORM Manager Base Class Methods
+./packages/matrx-orm/CLAUDE.md	2026-07-21	CLAUDE.md — matrx-orm
+./packages/matrx-orm/MODEL_API.md	2026-07-13	Matrx ORM — `Model` API
+./packages/matrx-orm/README.md	2026-07-21	matrx-orm
+./packages/matrx-orm/docs/migrations.md	2026-07-13	Matrx ORM Migration System
+./packages/matrx-orm/matrx_orm/MODULE_README.md	2026-07-13	`src.matrx_orm` — Module Overview
+./packages/matrx-orm/matrx_orm/adapters/MODULE_README.md	2026-07-13	`src.matrx_orm.adapters` — Module Overview
+./packages/matrx-orm/matrx_orm/client/MODULE_README.md	2026-07-13	`src.matrx_orm.client` — Module Overview
+./packages/matrx-orm/matrx_orm/core/EXTENDED-TASK.md	2026-07-13	TASK: Extended Base Class — Eliminate Tuple-Returning Relation Metho
+./packages/matrx-orm/matrx_orm/core/MODULE_README.md	2026-07-13	`src.matrx_orm.core` — Module Overview
+./packages/matrx-orm/matrx_orm/core/RELATIONS-TASKS.md	2026-07-13	TASK: Relations Performance & Architecture Improvements
+./packages/matrx-orm/matrx_orm/core/TASKS.md	2026-07-13	matrx-orm Typing & Quality Tasks
+./packages/matrx-orm/matrx_orm/migrations/MODULE_README.md	2026-07-13	`src.matrx_orm.migrations` — Module Overview
+./packages/matrx-orm/matrx_orm/operations/MODULE_README.md	2026-07-13	`src.matrx_orm.operations` — Module Overview
+./packages/matrx-orm/matrx_orm/python_sql/MODULE_README.md	2026-07-13	`src.matrx_orm.python_sql` — Module Overview
+./packages/matrx-orm/matrx_orm/query/MODULE_README.md	2026-07-13	`src.matrx_orm.query` — Module Overview
+./packages/matrx-orm/matrx_orm/schema_builder/MODULE_README.md	2026-07-13	`src.matrx_orm.schema_builder` — Module Overview
+./packages/matrx-orm/matrx_orm/secrets_battery/FEATURE.md	2026-07-21	matrx-orm secrets battery — the ONE credential vault
+./packages/matrx-orm/matrx_orm/session/README.md	2026-07-13	matrx-orm Session
+./packages/matrx-orm/matrx_orm/sql_executor/MODULE_README.md	2026-07-13	`src.matrx_orm.sql_executor` — Module Overview
+./packages/matrx-orm/tests/MODULE_README.md	2026-07-13	`tests` — Module Overview
+./packages/matrx-orm/tests/level1/MODULE_README.md	2026-07-13	`tests.level1` — Module Overview
+./packages/matrx-orm/tests/level2/MODULE_README.md	2026-07-13	`tests.level2` — Module Overview
+./packages/matrx-orm/tests/sample_project/README.md	2026-07-13	matrx-orm — Sample Project
+./packages/matrx-orm/tests/sample_project_desktop/README.md	2026-07-13	Sample Desktop App + matrx-orm API Server
+./packages/matrx-rag/AGENTS.md	2026-07-21	matrx-rag — agent guide
+./packages/matrx-rag/CLAUDE.md	2026-07-13	matrx-rag — agent guide
+./packages/matrx-rag/README.md	2026-07-13	matrx-rag
+./packages/matrx-rag/matrx_rag/FEATURE.md	2026-07-13	Matrx RAG — Retrieval FEATURE.md
+./packages/matrx-rag/matrx_rag/migrations/README.md	2026-07-13	matrx-rag migrations
+./packages/matrx-runtime/AGENTS.md	2026-07-21	CLAUDE.md — matrx-runtime
+./packages/matrx-runtime/CLAUDE.md	2026-07-13	CLAUDE.md — matrx-runtime
+./packages/matrx-runtime/README.md	2026-07-13	matrx-runtime
+./packages/matrx-scheduler/AGENTS.md	2026-07-21	matrx-scheduler — CLAUDE.md
+./packages/matrx-scheduler/CLAUDE.md	2026-07-13	matrx-scheduler — CLAUDE.md
+./packages/matrx-scheduler/README.md	2026-07-13	matrx-scheduler
+./packages/matrx-scraper/AGENTS.md	2026-07-21	CLAUDE.md — matrx-scraper
+./packages/matrx-scraper/CLAUDE.md	2026-07-21	CLAUDE.md — matrx-scraper
+./packages/matrx-scraper/DEVELOPER_GUIDE.md	2026-07-21	Matrx Scraper — Developer Guide (Server Setup, API, and Database)
+./packages/matrx-scraper/GAPS_TO_FIX.md	2026-07-13	Gaps to Fix Before Switching the Router to `matrx-scraper`
+./packages/matrx-scraper/LEGACY_AUDIT.md	2026-07-13	Legacy Scraper Audit — Final Status
+./packages/matrx-scraper/MIGRATION_GUIDE.md	2026-07-13	Migration Guide: scraper-service → matrx-scraper
+./packages/matrx-scraper/MIGRATION_STATUS.md	2026-07-13	matrx-scraper Migration Status
+./packages/matrx-scraper/README.md	2026-07-19	matrx-scraper
+./packages/matrx-scraper/SCHEMA.md	2026-07-15	matrx-scraper — Postgres schema reference
+./packages/matrx-scraper/SCRAPER_SERVICE_GAPS.md	2026-07-13	Gaps: `scraper-service` vs `matrx_scraper` Package
+./packages/matrx-scraper/STANDALONE_USAGE.md	2026-07-21	matrx-scraper — Standalone Usage & Host Integration Guide
+./packages/matrx-scraper/matrx_scraper/FEATURE.md	2026-07-21	Performance provider clients
+./packages/matrx-scraper/matrx_scraper/web_crawl/FEATURE.md	2026-07-21	Direct canonical site crawler
+./packages/matrx-seo/CLAUDE.md	2026-07-21	CLAUDE.md — matrx-seo
+./packages/matrx-seo/DEPLOY.md	2026-07-21	Deploying matrx-seo (the SEO vertical service)
+./packages/matrx-seo/INDEPENDENCE.md	2026-07-21	Package independence
+./packages/matrx-seo/README.md	2026-07-21	matrx-seo
+./packages/matrx-seo/matrx_seo/FEATURE.md	2026-07-21	SEO provider library + canonical persistence
+./packages/matrx-seo/matrx_seo/providers/FEATURE.md	2026-07-21	SEO provider adapters
+./packages/matrx-utils/AGENTS.md	2026-07-21	CLAUDE.md — matrx-utils
+./packages/matrx-utils/CLAUDE.md	2026-07-21	CLAUDE.md — matrx-utils
+./packages/matrx-utils/README.md	2026-07-21	matrx-utils
+./packages/matrx-utils/matrx_utils/MODULE_README.md	2026-07-13	`src.matrx_utils` — Module Overview
+./packages/matrx-utils/matrx_utils/RENDEZVOUS_FEATURE.md	2026-07-13	FEATURE — Rendezvous (order-independent commit ↔ consumer meeting 
+./packages/matrx-utils/matrx_utils/code_context/MODULE_README.md	2026-07-13	`utils.code_context` — Module Overview
+./packages/matrx-utils/matrx_utils/code_context/docs/AST_UPGRADE_TASK.md	2026-07-13	AST Upgrades — Completed
+./packages/matrx-utils/matrx_utils/code_context/docs/LANGUAGE_COVERAGE.md	2026-07-13	Language Coverage
+./packages/matrx-utils/matrx_utils/code_context/docs/MODULE_README_SPEC.md	2026-07-13	Module README Spec
+./packages/matrx-utils/matrx_utils/code_context/docs/MULTI_MODULE_TASK.md	2026-07-13	Multi-Module README Generation — Next Level Task
+./packages/matrx-utils/matrx_utils/code_context/docs/README.md	2026-07-13	code_context
+./packages/matrx-utils/matrx_utils/code_context/docs/ROADMAP.md	2026-07-13	MODULE_README Generator — Roadmap
+./packages/matrx-utils/matrx_utils/code_context/tests/MODULE_README.md	2026-07-13	`utils.code_context.tests` — Module Overview
+./packages/matrx-utils/matrx_utils/data_handling/MODULE_README.md	2026-07-13	`src.matrx_utils.data_handling` — Module Overview
+./packages/matrx-utils/matrx_utils/fancy_prints/MODULE_README.md	2026-07-13	`src.matrx_utils.fancy_prints` — Module Overview
+./packages/matrx-utils/matrx_utils/react_analysis/MODULE_README.md	2026-07-13	`utils.react_analysis` — Module Overview
+./packages/matrx-utils/tests/MODULE_README.md	2026-07-13	`tests` — Module Overview
+./research/FEATURE.md	2026-07-21	FEATURE.md — Research pipeline
+./research/docs/AGENT_SPECS.md	2026-07-13	Research System — Agent Specifications
+./research/docs/DATABASE_PROPOSAL.md	2026-07-21	Research System — Database Proposal
+./research/docs/EXTENSION_API.md	2026-07-21	Chrome Extension ↔ Research API
+./research/docs/FRONTEND_MIGRATION.md	2026-07-21	Frontend Migration Guide: Research System Routes
+./research/docs/FRONTEND_SPEC.md	2026-07-21	Research System — Frontend Specification
+./research/docs/GOAL.md	2026-07-13	Research System — Core Goal & Requirements
+./research/docs/PHASES.md	2026-07-13	Research System — Big Picture Phases
+./research/docs/PLANNING.md	2026-07-21	Research System — Planning & Considerations
+./research/docs/PROMPT_SETUP_GUIDE.md	2026-07-21	Research System — Agent Setup Guide
+./research/docs/QUOTA_LADDER.md	2026-07-21	Research Topic — Quota Ladder
+./research/docs/SCHEMA_REFERENCE.md	2026-07-21	Research System — Schema Reference
+./research/media/FEATURE.md	2026-07-21	research/media — rs_media ingest (images + files/resources)
+./scripts/MODULE_README.md	2026-07-13	`scripts` — Module Overview
+./scripts/RELEASE_OUTPUT_STYLE.md	2026-07-13	Release-check output style
+./scripts/canon_eval/README.md	2026-07-13	canon_eval — evaluate & compare NER entity-canonicalizer outputs
+./tests/acceptance/FINDINGS.md	2026-07-13	Acceptance-compiler findings — capability gaps in the workflow syste
+./tests/acceptance/blind_corpus/README.md	2026-07-13	Blind Acceptance Corpus — DO NOT EDIT SCENARIOS
+./tests_trials/rag_tests/RUN_HANDOFF_a68cd492_20260610.md	2026-07-13	Auto-Ingest Run — Data Location & Handoff
+./utils/MODULE_README.md	2026-07-13	`utils` — Module Overview
+./utils/api_tests/MODULE_README.md	2026-07-13	`utils.api_tests` — Module Overview
+./utils/api_tests/auth/auth_info.md	2026-07-13	GOOGLE AUTHENTICATION
+./utils/api_tests/youtube_api/MODULE_README.md	2026-07-13	`utils.api_tests.youtube_api` — Module Overview
+./utils/api_tests/youtube_api/youtube_api_guidelines.md	2026-07-13	Module Breakdown:
+./utils/code_context/MODULE_README.md	2026-07-13	`utils.code_context` — Module Overview
+./utils/code_context/docs/AST_UPGRADE_TASK.md	2026-07-13	AST Upgrades — Completed
+./utils/code_context/docs/LANGUAGE_COVERAGE.md	2026-07-13	Language Coverage
+./utils/code_context/docs/MODULE_README_SPEC.md	2026-07-13	Module README Spec
+./utils/code_context/docs/MULTI_MODULE_TASK.md	2026-07-13	Multi-Module README Generation — Next Level Task
+./utils/code_context/docs/README.md	2026-07-13	code_context
+./utils/code_context/docs/ROADMAP.md	2026-07-13	MODULE_README Generator — Roadmap
+./utils/code_context/tests/MODULE_README.md	2026-07-13	`utils.code_context.tests` — Module Overview
+./utils/label_maker/MODULE_README.md	2026-07-13	`utils.label_maker` — Module Overview
+./utils/local_dev_utils/MODULE_README.md	2026-07-13	`utils.local_dev_utils` — Module Overview
+./utils/local_dev_utils/UTILITY_LOCATIONS.md	2026-07-13	Utility Locations:
+./utils/react_analysis/MODULE_README.md	2026-07-13	`utils.react_analysis` — Module Overview
