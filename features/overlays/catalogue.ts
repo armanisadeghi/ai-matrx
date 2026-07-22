@@ -705,6 +705,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  captureInspectorWindow: {
+    label: "Capture Inspector",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   tableViewerWindow: {
     label: "Table Viewer Window",
     instanceMode: "singleton",

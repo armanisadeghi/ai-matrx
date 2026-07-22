@@ -1087,6 +1087,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "card",
   },
 
+  // ── Capture Inspector ─────────────────────────────────────────────────────
+  {
+    slug: "capture-inspector",
+    overlayId: "captureInspectorWindow",
+    kind: "window",
+    label: "Capture Inspector",
+    defaultData: { initialExchangeId: null },
+    // Ephemeral: this is a view onto a live in-memory buffer. Restoring it on
+    // reload would reopen a window onto data that no longer exists.
+    ephemeral: true,
+    mobilePresentation: "card",
+  },
+
   // ── Stream Debug History ──────────────────────────────────────────────────
   {
     slug: "stream-debug-history",

@@ -53,6 +53,7 @@ import {
   KeyRound,
   LayoutDashboard,
   Layers,
+  ArrowUpDown,
   List,
   ListFilter,
   Mail,
@@ -798,6 +799,15 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     gate: "admin",
     overlayId: "streamDebug",
     seedData: () => ({ conversationId: "default" }),
+  },
+  {
+    id: "tile.capture-inspector",
+    label: "Capture Inspector",
+    icon: ArrowUpDown,
+    category: "admin",
+    gate: "admin",
+    overlayId: "captureInspectorWindow",
+    seedData: () => ({ initialExchangeId: null }),
   },
   {
     id: "tile.stream-history",

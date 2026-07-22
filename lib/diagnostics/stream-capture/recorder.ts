@@ -136,6 +136,7 @@ export function beginExchange(init: {
   requestHeaders: Record<string, string>;
   requestBody: string | null;
   requestBodyTruncated: boolean;
+  transport?: "http" | "websocket";
 }): string {
   const state = getState();
   const id = `xchg_${++state.seq}`;
@@ -152,7 +153,8 @@ export function beginExchange(init: {
     responseHeaders: {},
     requestId: null,
     conversationId: null,
-    isStream: false,
+    transport: init.transport ?? "http",
+    isStream: init.transport === "websocket",
     events: [],
     responseBody: null,
     responseBodyTruncated: false,

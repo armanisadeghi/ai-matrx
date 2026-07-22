@@ -24,6 +24,12 @@ export interface CapturedStreamEvent {
    * envelope shapes. Recording NEVER depends on this succeeding.
    */
   eventType: string;
+  /**
+   * Which way the event travelled. HTTP stream events are always `in`;
+   * WebSocket connections interleave both directions on one exchange, and
+   * losing that distinction would make the sequence unreadable.
+   */
+  direction: "in" | "out";
   /** The parsed JSON payload, untouched. */
   data: unknown;
   /** Present only when the line was NOT valid JSON, so nothing is ever lost. */
@@ -56,6 +62,8 @@ export interface CapturedExchange {
   requestId: string | null;
   conversationId: string | null;
 
+  /** Transport this exchange rode on. */
+  transport: "http" | "websocket";
   /** True when the response carried an event stream rather than a single body. */
   isStream: boolean;
   /** Ordered events — populated only when `isStream`. */

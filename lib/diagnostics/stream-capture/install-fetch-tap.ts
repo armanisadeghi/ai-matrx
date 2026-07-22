@@ -24,10 +24,9 @@
  * never throw into the caller's path. Every failure here degrades to
  * "no capture", never to "broken request".
  *
- * KNOWN COVERAGE BOUNDARY: WebSocket transports (sandbox adapters, voice
- * agent, Cartesia TTS, Supabase Realtime) are a different substrate and are
- * NOT covered by this tap. They need an equivalent tap on the WebSocket
- * constructor. Do not describe capture as total until that exists.
+ * WebSocket transports are a different substrate and are covered by the
+ * companion tap in `install-websocket-tap.ts`. Both must be installed for
+ * coverage to be complete.
  */
 
 import {
@@ -120,6 +119,7 @@ async function drainStream(
       const parsed: unknown = JSON.parse(trimmed);
       recordEvent(id, {
         ts: Date.now(),
+        direction: "in",
         eventType: deriveEventType(parsed),
         data: parsed,
       });
@@ -129,6 +129,7 @@ async function drainStream(
       // is worse than no record, because it looks complete.
       recordEvent(id, {
         ts: Date.now(),
+        direction: "in",
         eventType: "unparsed",
         data: null,
         unparsed: trimmed.slice(0, MAX_UNPARSED_CHARS),

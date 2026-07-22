@@ -47,13 +47,25 @@ function Json({ value }: { value: unknown }) {
 
 export default function CaptureInspectorPanel({
   isAdmin,
+  selectedId: controlledId,
+  onSelect,
 }: {
   isAdmin: boolean;
+  /** Controlled selection. Omit to let the panel own it (route usage). */
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
 }) {
   const exchanges = useCapturedExchanges();
   const mode = useCaptureMode();
   const { enabled, setEnabled } = useCaptureEnabled(isAdmin);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [uncontrolledId, setUncontrolledId] = useState<string | null>(null);
+
+  const isControlled = onSelect !== undefined;
+  const selectedId = isControlled ? (controlledId ?? null) : uncontrolledId;
+  const select = (id: string) => {
+    if (isControlled) onSelect(id);
+    else setUncontrolledId(id);
+  };
 
   const selected =
     exchanges.find((e) => e.id === selectedId) ?? exchanges[0] ?? null;
@@ -84,7 +96,7 @@ export default function CaptureInspectorPanel({
             size="sm"
             onClick={() => {
               clearCapturedExchanges();
-              setSelectedId(null);
+              setUncontrolledId(null);
             }}
           >
             <Trash2 className="mr-1.5 h-3.5 w-3.5" />
@@ -111,7 +123,7 @@ export default function CaptureInspectorPanel({
             <li key={exchange.id}>
               <button
                 type="button"
-                onClick={() => setSelectedId(exchange.id)}
+                onClick={() => select(exchange.id)}
                 className={cn(
                   "flex w-full items-center gap-2 border-b border-border/60 px-3 py-1.5 text-left text-xs hover:bg-accent",
                   selected?.id === exchange.id && "bg-accent",
@@ -182,6 +194,20 @@ export default function CaptureInspectorPanel({
                       >
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                           <span className="tabular-nums">#{event.idx}</span>
+                          {/* Direction only carries information on a duplex
+                              transport; on HTTP every event is inbound. */}
+                          {selected.transport === "websocket" && (
+                            <span
+                              className={cn(
+                                "rounded px-1 font-medium",
+                                event.direction === "out"
+                                  ? "bg-sky-500/15 text-sky-600"
+                                  : "bg-emerald-500/15 text-emerald-600",
+                              )}
+                            >
+                              {event.direction === "out" ? "OUT" : "IN"}
+                            </span>
+                          )}
                           <span className="font-medium text-foreground">
                             {event.eventType}
                           </span>

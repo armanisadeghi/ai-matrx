@@ -811,6 +811,11 @@ const StreamDebugFloating = lazyOverlay(
     ),
   { ssr: false },
 );
+const CaptureInspectorWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/admin/CaptureInspectorWindow"),
+);
+
 const StreamDebugHistoryWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/admin/StreamDebugHistoryWindow"),
@@ -1178,6 +1183,9 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "shareModalWindow"),
     ),
     streamDebug: useAppSelector((s) => selectIsOverlayOpen(s, "streamDebug")),
+    captureInspectorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "captureInspectorWindow"),
+    ),
     streamDebugHistoryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "streamDebugHistoryWindow"),
     ),
@@ -1492,6 +1500,9 @@ export default function OverlayController() {
     streamDebug: useAppSelector((s) =>
       selectOverlayData(s, "streamDebug"),
     ) as Record<string, unknown> | null,
+    captureInspectorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "captureInspectorWindow"),
+    ),
     streamDebugHistoryWindow: useAppSelector((s) =>
       selectOverlayData(s, "streamDebugHistoryWindow"),
     ) as Record<string, unknown> | null,
@@ -5203,6 +5214,27 @@ export default function OverlayController() {
               typeof data?.requestIdOverride === "string"
                 ? data.requestIdOverride
                 : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* captureInspectorWindow */}
+      {(() => {
+        const isOpen = isOpenById.captureInspectorWindow;
+        const data = dataById.captureInspectorWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <CaptureInspectorWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "captureInspectorWindow" }))
+            }
+            initialExchangeId={
+              typeof data?.initialExchangeId === "string"
+                ? data.initialExchangeId
+                : null
             }
           />
         );
