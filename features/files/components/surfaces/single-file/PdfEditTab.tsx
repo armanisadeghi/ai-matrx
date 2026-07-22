@@ -58,6 +58,7 @@ import {
   type StudioInspectorTab,
 } from "@/features/file-analysis/studio/InspectorRail";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
+import { PdfRegionContextMenu } from "@/features/file-analysis/components/RegionContextMenu";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
 import type { AnnotationLayerMode, PdfRegion } from "@/features/files";
@@ -82,7 +83,12 @@ const DEFAULT_PANEL: StudioInspectorTab = "annotations";
 
 export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
   const file = useAppSelector((s) => selectFileById(s, fileId));
-  const { annotations, create: createAnnotation } = useAnnotations(fileId);
+  const {
+    annotations,
+    create: createAnnotation,
+    update: updateAnnotation,
+    remove: removeAnnotation,
+  } = useAnnotations(fileId);
   const { pages } = usePages(fileId);
   // Warm the analysis cache so the inspector's Findings / Redact panels
   // have data the moment the user clicks them.
@@ -240,27 +246,35 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
 
         {/* Center canvas. Mode banner floats so it doesn't eat layout. */}
         <main className="relative min-w-0 overflow-hidden border-r border-border">
-          <AnnotatablePdfCanvas
+          <PdfRegionContextMenu
             fileId={fileId}
-            pageNumber={pageNumber}
-            onPageChange={handlePageChange}
-            regions={regions}
-            selectedId={selectedAnnotationId}
-            categoryOf={categoryOf}
-            mode={mode}
-            createAnnotation={createAnnotation}
-            onAnnotationCreated={(a) => {
-              handleSelectAnnotation(a.id);
-              if (a.page_number !== pageNumber) {
-                handlePageChange(a.page_number);
-              }
-              // Surface the new note in the Notes panel by default so the
-              // user can label / categorize / promote it without hunting.
-              setActivePanel("annotations");
-            }}
-            onRegionClick={(id) => handleSelectAnnotation(id)}
-            onBackgroundClick={() => handleSelectAnnotation(null)}
-          />
+            annotations={annotations}
+            updateAnnotation={updateAnnotation}
+            removeAnnotation={removeAnnotation}
+            onSelectAnnotation={handleSelectAnnotation}
+          >
+            <AnnotatablePdfCanvas
+              fileId={fileId}
+              pageNumber={pageNumber}
+              onPageChange={handlePageChange}
+              regions={regions}
+              selectedId={selectedAnnotationId}
+              categoryOf={categoryOf}
+              mode={mode}
+              createAnnotation={createAnnotation}
+              onAnnotationCreated={(a) => {
+                handleSelectAnnotation(a.id);
+                if (a.page_number !== pageNumber) {
+                  handlePageChange(a.page_number);
+                }
+                // Surface the new note in the Notes panel by default so the
+                // user can label / categorize / promote it without hunting.
+                setActivePanel("annotations");
+              }}
+              onRegionClick={(id) => handleSelectAnnotation(id)}
+              onBackgroundClick={() => handleSelectAnnotation(null)}
+            />
+          </PdfRegionContextMenu>
           {/* Interaction hint — only shown in the modes that change how
            * clicking the page behaves. View mode needs no banner (the
            * toolbar already shows the active mode, and the document should

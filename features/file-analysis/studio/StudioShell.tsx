@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { cn } from "@/lib/utils";
 import { AnnotatablePdfCanvas } from "@/features/file-analysis/components/AnnotatablePdfCanvas";
+import { PdfRegionContextMenu } from "@/features/file-analysis/components/RegionContextMenu";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
@@ -36,7 +37,12 @@ export function StudioShell({ fileId }: StudioShellProps) {
   const searchParams = useSearchParams();
 
   const { file } = useFile({ kind: "file_id", fileId });
-  const { annotations, create: createAnnotation } = useAnnotations(fileId);
+  const {
+    annotations,
+    create: createAnnotation,
+    update: updateAnnotation,
+    remove: removeAnnotation,
+  } = useAnnotations(fileId);
   const { pages } = usePages(fileId);
   useFileAnalysis(fileId); // warm the cache for the inspector panels
 
@@ -237,26 +243,34 @@ export function StudioShell({ fileId }: StudioShellProps) {
 
         {/* Center canvas */}
         <main className="relative h-[55dvh] shrink-0 min-w-0 overflow-hidden border-b border-border md:h-auto md:shrink md:border-b-0 md:border-r">
-          <AnnotatablePdfCanvas
+          <PdfRegionContextMenu
             fileId={fileId}
-            pageNumber={pageNumber}
-            onPageChange={handlePageChange}
-            regions={regions}
-            selectedId={selectedAnnotationId}
-            categoryOf={categoryOf}
-            mode={mode}
-            createAnnotation={createAnnotation}
-            onAnnotationCreated={(a) => {
-              handleSelectAnnotation(a.id);
-              // Jump to the annotation's page so the user always sees
-              // their just-created rectangle on screen.
-              if (a.page_number !== pageNumber) {
-                handlePageChange(a.page_number);
-              }
-            }}
-            onRegionClick={(id) => handleSelectAnnotation(id)}
-            onBackgroundClick={() => handleSelectAnnotation(null)}
-          />
+            annotations={annotations}
+            updateAnnotation={updateAnnotation}
+            removeAnnotation={removeAnnotation}
+            onSelectAnnotation={handleSelectAnnotation}
+          >
+            <AnnotatablePdfCanvas
+              fileId={fileId}
+              pageNumber={pageNumber}
+              onPageChange={handlePageChange}
+              regions={regions}
+              selectedId={selectedAnnotationId}
+              categoryOf={categoryOf}
+              mode={mode}
+              createAnnotation={createAnnotation}
+              onAnnotationCreated={(a) => {
+                handleSelectAnnotation(a.id);
+                // Jump to the annotation's page so the user always sees
+                // their just-created rectangle on screen.
+                if (a.page_number !== pageNumber) {
+                  handlePageChange(a.page_number);
+                }
+              }}
+              onRegionClick={(id) => handleSelectAnnotation(id)}
+              onBackgroundClick={() => handleSelectAnnotation(null)}
+            />
+          </PdfRegionContextMenu>
           {/* Active-mode banner — concrete instructions so the user always
            * knows what's clickable. Floats inside the canvas so it doesn't
            * eat layout space. */}
