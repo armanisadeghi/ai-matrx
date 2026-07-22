@@ -1517,7 +1517,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                     type="button"
                     disabled
                     aria-label="Run PageSpeed Insights for this page"
-                    title="The page-scoped collection exists server-side but has no frontend read contract yet"
+                    title="Page-specific PageSpeed collection is not connected to this screen yet"
                     className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground opacity-40"
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
@@ -1567,9 +1567,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                       </Badge>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Desktop/mobile storage exists in the SEO service, but this
-                      frontend cannot read it until that schema gets a supported
-                      page-evidence endpoint.
+                      Page-specific desktop and mobile collection is not
+                      connected to this screen yet.
                     </p>
                   </div>
                 </div>
@@ -1582,7 +1581,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                     type="button"
                     disabled
                     aria-label="Refresh Google Analytics data for this page"
-                    title="The page-scoped collection exists server-side but has no frontend read contract yet"
+                    title="Page-specific Google Analytics collection is not connected to this screen yet"
                     className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground opacity-40"
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
@@ -1632,9 +1631,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                       </Badge>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      GA4 landing-page storage exists in the SEO service, but
-                      this frontend cannot read it until that schema gets a
-                      supported page-evidence endpoint.
+                      Page-specific GA4 landing-page collection is not connected
+                      to this screen yet.
                     </p>
                   </div>
                 </div>

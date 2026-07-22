@@ -36,13 +36,29 @@ const STATUS_OPTIONS = [
   { value: "archived", label: "Archived" },
 ];
 
-// web.* holds scraped PUBLIC data — every brand/site is public, enforced by a
-// DB trigger that coerces any other value (Arman ruling 2026-07-21). Offering
-// Private here would be a lie the database silently corrects.
+// Visibility is a read/manage grant, not a sharing-link state. Canonical share
+// links are separate token records and never change the brand's visibility.
 const VISIBILITY_OPTIONS: Array<{
   value: MarketingBrand["visibility"];
   label: string;
-}> = [{ value: "public", label: "Public (all marketing data is public)" }];
+  description: string;
+}> = [
+  {
+    value: "internal",
+    label: "Internal (default)",
+    description: "Everyone in your organization can view and manage this brand.",
+  },
+  {
+    value: "personal",
+    label: "Private",
+    description: "Only you can access this brand unless you share it explicitly.",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Anyone can view this brand; only your organization can manage it.",
+  },
+];
 
 interface BrandDraft {
   name: string;
@@ -321,14 +337,30 @@ function BrandEditorDialogBody({
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  align="end"
+                  className="max-w-[calc(100vw-2rem)] sm:w-[28rem]"
+                >
                   {VISIBILITY_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      textValue={option.label}
+                      className="items-start py-2"
+                    >
+                      <span className="block pr-2">
+                        <span className="block font-medium">{option.label}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {option.description}
+                        </span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Share links are managed separately and do not change visibility.
+              </p>
             </div>
           </div>
 

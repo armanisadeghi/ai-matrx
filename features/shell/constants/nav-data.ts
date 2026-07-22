@@ -1171,6 +1171,15 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "green",
     children: [
       {
+        label: "Brands",
+        href: "/marketing/brands",
+        iconName: "Landmark",
+        description: "Manage brand identity, properties, assets, and facts",
+        color: "green",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "Marketing Sites",
         href: "/marketing/sites",
         iconName: "TrendingUp",

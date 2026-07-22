@@ -11,9 +11,10 @@
 // breakpoints, so it adapts to the real leftover width AND the item count):
 //
 //   full  → icon + text pill          (everything fits)
-//   icons → icon-only pill            (text wouldn't fit; requires every item
-//                                       to have an icon, else this stage is
-//                                       skipped)
+//   icons → icon-focused pill         (inactive items are icon-only; the
+//                                       active item keeps icon + text; requires
+//                                       every item to have an icon, else this
+//                                       stage is skipped)
 //   menu  → single dropdown trigger   (not even icons fit)
 //
 // It measures the BOUNDED center slot from RouteHeader (viewport-centered,
@@ -36,9 +37,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+} from "@/components/official/bottom-sheet/BottomSheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
 } from "@/features/shell/components/header/navItemClasses";
+import { centerSlotWidth } from "@/features/shell/components/header/RouteHeader";
 
 export interface RouteNavItem {
   name: string;
@@ -81,10 +89,12 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [variant, setVariant] = useState<Variant>("full");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const cellRef = useRef<HTMLDivElement>(null);
   const fullRef = useRef<HTMLDivElement>(null);
-  const iconsRef = useRef<HTMLDivElement>(null);
+  const compactRef = useRef<HTMLDivElement>(null);
 
   const canIcons = items.every((i) => i.icon);
   const current = activeHref
@@ -99,21 +109,45 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
   useLayoutEffect(() => {
     const cell = cellRef.current;
     if (!cell) return;
+    const routeHeader = cell.closest<HTMLElement>("[data-route-header-root]");
+    const routeHeaderLeft = routeHeader?.querySelector<HTMLElement>(
+      "[data-route-header-left]",
+    );
+    const routeHeaderRight = routeHeader?.querySelector<HTMLElement>(
+      "[data-route-header-right]",
+    );
 
     const compute = () => {
-      const avail = cell.clientWidth - FLANK_GUTTER;
+      // RouteHeader normally writes this bound onto the absolute center. Read
+      // the same geometry here as well so portal-mount timing can never make
+      // the nav mistake its own compact intrinsic width for all available
+      // space (or treat the full header width as safe around unequal flanks).
+      const boundedWidth = routeHeader
+        ? centerSlotWidth(
+            routeHeader.clientWidth,
+            routeHeaderLeft?.offsetWidth ?? 0,
+            routeHeaderRight?.offsetWidth ?? 0,
+          )
+        : cell.clientWidth;
+      const avail = Math.min(cell.clientWidth, boundedWidth) - FLANK_GUTTER;
       const fullW = fullRef.current?.scrollWidth ?? 0;
-      const iconsW = iconsRef.current?.scrollWidth ?? 0;
+      const compactW = compactRef.current?.scrollWidth ?? 0;
       if (fullW <= avail) setVariant("full");
-      else if (canIcons && iconsW > 0 && iconsW <= avail) setVariant("icons");
+      else if (canIcons && compactW > 0 && compactW <= avail)
+        setVariant("icons");
       else setVariant("menu");
     };
 
     compute();
     const ro = new ResizeObserver(compute);
     ro.observe(cell);
+    if (fullRef.current) ro.observe(fullRef.current);
+    if (compactRef.current) ro.observe(compactRef.current);
+    if (routeHeader) ro.observe(routeHeader);
+    if (routeHeaderLeft) ro.observe(routeHeaderLeft);
+    if (routeHeaderRight) ro.observe(routeHeaderRight);
     return () => ro.disconnect();
-  }, [items, canIcons]);
+  }, [items, canIcons, current?.href]);
 
   const renderItem = (item: RouteNavItem, showLabel: boolean) => {
     const Icon = item.icon;
@@ -148,7 +182,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
       {/* Hidden measurers — always at natural width, never affect layout.
           `w-max` on EACH measurer is load-bearing: they are block-level
           siblings inside one shrink-to-fit absolute box, so without it both
-          stretch to the widest sibling and the icons measurer reports the
+          stretch to the widest sibling and the compact measurer reports the
           FULL width. That made `iconsW <= avail` unreachable whenever
           `fullW > avail`, so the "icons" stage was dead code and every nav
           jumped full → menu. (Fixed 2026-07-20; do not regress.) */}
@@ -160,65 +194,126 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
           {items.map((i) => renderItem(i, true))}
         </div>
         {canIcons && (
-          <div ref={iconsRef} className={cn(PILL, "w-max")}>
-            {items.map((i) => renderItem(i, false))}
+          <div ref={compactRef} className={cn(PILL, "w-max")}>
+            {items.map((i) => renderItem(i, i.href === current?.href))}
           </div>
         )}
       </div>
 
       {/* Visible variant */}
       {variant === "menu" ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        isMobile ? (
+          <>
             <button
               type="button"
               className={cn(PILL, "px-1")}
               aria-label="Switch view"
+              onClick={() => setMobileMenuOpen(true)}
             >
               <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
                 {ActiveIcon && <ActiveIcon />}
-                {/* Phones: icon-only trigger — the label would overflow the
-                    tiny center cell into the shell's right icons. */}
                 <span className={cn(ActiveIcon && "hidden sm:inline")}>
                   {current?.name ?? "Menu"}
                 </span>
                 <ChevronDown className="opacity-60" />
               </span>
             </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-52">
-            {items.map((item) => {
-              const Icon = item.icon;
-              const isActive = item.href === current?.href;
-              return (
-                <DropdownMenuItem
-                  key={item.href}
-                  asChild
-                  className={cn(
-                    "gap-2",
-                    isActive &&
-                      "font-semibold bg-accent text-accent-foreground focus:bg-accent",
-                  )}
-                >
-                  <Link
-                    href={item.href}
-                    onClick={(e) => {
-                      if (allowNativeNewTab(e)) return;
-                      e.preventDefault();
-                      navigate(item.href);
-                    }}
+            <BottomSheet
+              open={mobileMenuOpen}
+              onOpenChange={setMobileMenuOpen}
+              title="Switch view"
+            >
+              <BottomSheetHeader
+                title="Switch view"
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
                   >
-                    {Icon && <Icon className="w-4 h-4 shrink-0" />}
-                    {item.name}
-                  </Link>
-                </DropdownMenuItem>
-              );
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                    Done
+                  </button>
+                }
+              />
+              <BottomSheetBody>
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.href === current?.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={(event) => {
+                        setMobileMenuOpen(false);
+                        if (allowNativeNewTab(event)) return;
+                        event.preventDefault();
+                        navigate(item.href);
+                      }}
+                      aria-current={isActive ? "page" : undefined}
+                      className={cn(
+                        "flex min-h-[52px] w-full items-center border-b border-white/[0.06] px-5 text-[15px] transition-colors active:bg-white/5",
+                        isActive && "font-medium text-primary",
+                      )}
+                    >
+                      {Icon && <Icon className="mr-3 h-4 w-4 shrink-0" />}
+                      <span className="flex-1 text-left">{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </BottomSheetBody>
+            </BottomSheet>
+          </>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(PILL, "px-1")}
+                aria-label="Switch view"
+              >
+                <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
+                  {ActiveIcon && <ActiveIcon />}
+                  <span>{current?.name ?? "Menu"}</span>
+                  <ChevronDown className="opacity-60" />
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-52">
+              {items.map((item) => {
+                const Icon = item.icon;
+                const isActive = item.href === current?.href;
+                return (
+                  <DropdownMenuItem
+                    key={item.href}
+                    asChild
+                    className={cn(
+                      "gap-2",
+                      isActive &&
+                        "bg-accent font-semibold text-accent-foreground focus:bg-accent",
+                    )}
+                  >
+                    <Link
+                      href={item.href}
+                      onClick={(event) => {
+                        if (allowNativeNewTab(event)) return;
+                        event.preventDefault();
+                        navigate(item.href);
+                      }}
+                    >
+                      {Icon && <Icon className="h-4 w-4 shrink-0" />}
+                      {item.name}
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
       ) : (
-        <div className={PILL}>
-          {items.map((i) => renderItem(i, variant === "full"))}
+        <div className={PILL} data-route-nav-variant={variant}>
+          {items.map((item) =>
+            renderItem(item, variant === "full" || item.href === current?.href),
+          )}
         </div>
       )}
     </div>

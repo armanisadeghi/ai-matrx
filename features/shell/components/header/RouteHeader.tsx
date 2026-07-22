@@ -41,7 +41,7 @@ interface RouteHeaderProps {
   right?: React.ReactNode;
 }
 
-function centerSlotWidth(
+export function centerSlotWidth(
   total: number,
   leftWidth: number,
   rightWidth: number,
@@ -72,24 +72,38 @@ export default function RouteHeader({ left, center, right }: RouteHeaderProps) {
     };
 
     measure();
+    // PageHeader mounts through a portal. Its first layout pass can happen
+    // before the injection slot has its final width, so measure once more on
+    // the next frame instead of leaving the absolute center at auto width.
+    const frame = requestAnimationFrame(measure);
     const ro = new ResizeObserver(measure);
     ro.observe(root);
+    if (root.parentElement) ro.observe(root.parentElement);
     if (leftRef.current) ro.observe(leftRef.current);
     if (rightRef.current) ro.observe(rightRef.current);
-    return () => ro.disconnect();
-  }, [left, center, right]);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
+  }, []);
 
   return (
     <PageHeader>
       <div
         ref={rootRef}
+        data-route-header-root
         className="relative flex w-full min-w-0 items-center justify-between"
       >
-        <div ref={leftRef} className="relative z-10 flex min-w-0 items-center">
+        <div
+          ref={leftRef}
+          data-route-header-left
+          className="relative z-10 flex min-w-0 items-center"
+        >
           {left}
         </div>
         <div
           ref={rightRef}
+          data-route-header-right
           className="relative z-10 flex min-w-0 items-center justify-end"
         >
           {right}
@@ -97,9 +111,13 @@ export default function RouteHeader({ left, center, right }: RouteHeaderProps) {
         {center ? (
           <div
             className="pointer-events-none absolute left-1/2 top-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-hidden"
-            style={
-              boundedCenterWidth > 0 ? { width: boundedCenterWidth } : undefined
-            }
+            // `width: 100%` is the safe portal-mount fallback. An auto-width
+            // absolute child shrink-wraps the currently rendered nav variant;
+            // once that variant becomes the menu, the measurement can never
+            // grow again to discover that the full or compact nav fits.
+            style={{
+              width: boundedCenterWidth > 0 ? boundedCenterWidth : "100%",
+            }}
           >
             <div className="pointer-events-auto w-full min-w-0">{center}</div>
           </div>

@@ -13,6 +13,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { ONBOARDING_METADATA_KEY } from "@/utils/onboarding";
 import type { AdminUserRow } from "@/features/admin/users/types";
+import { loadAdminOrganizationDirectory } from "@/features/admin/users/server/organizationMembershipAdmin";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50; // hard ceiling: 50k users
@@ -76,7 +77,37 @@ export async function GET() {
     (profiles ?? []).map((p) => [p.id as string, p]),
   );
 
-  // 3. admin levels — admin_list() runs SECURITY DEFINER gated on the caller's
+  // 3. Organization memberships — canonical iam.organization_member view,
+  // joined here so the account roster shows the user's organizations without
+  // inventing a second membership query path.
+  const organizationDirectory = await loadAdminOrganizationDirectory();
+  const organizationById = new Map(
+    organizationDirectory.organizations.map((organization) => [
+      organization.id,
+      organization,
+    ]),
+  );
+  const organizationsByUserId = new Map<
+    string,
+    AdminUserRow["organizations"]
+  >();
+  for (const membership of organizationDirectory.memberships) {
+    const organization = organizationById.get(membership.organization_id);
+    if (!organization) continue;
+    const userOrganizations =
+      organizationsByUserId.get(membership.user_id) ?? [];
+    userOrganizations.push({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      role: membership.role,
+      is_personal: organization.is_personal,
+      is_system: organization.is_system,
+    });
+    organizationsByUserId.set(membership.user_id, userOrganizations);
+  }
+
+  // 4. admin levels — admin_list() runs SECURITY DEFINER gated on the caller's
   // super-admin session, so call it with the session client (auth.uid()), not
   // the service-role client (which has no uid).
   const session = await createClient();
@@ -118,6 +149,7 @@ export async function GET() {
       onboarding_completed: meta[ONBOARDING_METADATA_KEY] === true,
       created_at: u.created_at ?? null,
       last_sign_in_at: u.last_sign_in_at ?? null,
+      organizations: organizationsByUserId.get(u.id) ?? [],
     };
   });
 

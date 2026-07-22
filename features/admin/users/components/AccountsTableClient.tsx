@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
+  Building2,
   Gauge,
   KeyRound,
   Loader2,
@@ -218,6 +219,44 @@ export function AccountsTableClient() {
       },
       { id: "email", accessorKey: "email", header: "Email", width: 220 },
       {
+        id: "organizations",
+        header: "Organizations",
+        accessorFn: (row) =>
+          row.organizations
+            .map((organization) => `${organization.name} ${organization.role}`)
+            .join(" "),
+        cell: (row) => (
+          <button
+            type="button"
+            className="flex max-w-[280px] items-center gap-1.5 text-left hover:text-primary"
+            onClick={(event) => {
+              event.stopPropagation();
+              router.push(
+                `/administration/users/organizations?user=${row.id}`,
+              );
+            }}
+          >
+            <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate text-xs">
+              {row.organizations.length > 0
+                ? row.organizations
+                    .map((organization) => organization.name)
+                    .join(", ")
+                : "No organizations"}
+            </span>
+            {row.organizations.length > 1 ? (
+              <Badge
+                variant="secondary"
+                className="h-5 shrink-0 px-1.5 text-[10px]"
+              >
+                {row.organizations.length}
+              </Badge>
+            ) : null}
+          </button>
+        ),
+        width: 280,
+      },
+      {
         id: "admin_level",
         accessorKey: "admin_level",
         header: "Admin",
@@ -307,7 +346,7 @@ export function AccountsTableClient() {
         width: 120,
       },
     ];
-  }, []);
+  }, [router]);
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">
@@ -348,6 +387,7 @@ export function AccountsTableClient() {
                 r.admin_level ? `admin=${r.admin_level}` : null,
                 `providers=${r.providers.join("/") || "none"} confirmed=${r.email_confirmed} onboarded=${r.onboarding_completed}`,
                 `created=${r.created_at ?? "?"} last_sign_in=${r.last_sign_in_at ?? "never"}`,
+                `organizations=${r.organizations.map((organization) => `${organization.name}:${organization.role}`).join(",") || "none"}`,
               ]
                 .filter(Boolean)
                 .join("\n"),
@@ -379,6 +419,15 @@ export function AccountsTableClient() {
                   {row.email ?? row.id}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() =>
+                    router.push(
+                      `/administration/users/organizations?user=${row.id}`,
+                    )
+                  }
+                >
+                  <Building2 className="mr-2 h-4 w-4" /> Organizations
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => void sendAuthLink(row, "magiclink")}
                   disabled={!row.email}
