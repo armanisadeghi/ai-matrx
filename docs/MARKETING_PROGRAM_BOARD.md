@@ -15,6 +15,7 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 | Need                                               | Go to                                                                                                                            |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Access model, RLS, visibility — read before touching any of it** | [docs/handoffs/marketing-access-and-rls-performance.md](handoffs/marketing-access-and-rls-performance.md) |
 | Full work order, remaining items, decisions needed | [docs/handoffs/marketing-brand-coverage-program.md](handoffs/marketing-brand-coverage-program.md)                                |
 | Feature truth (invariants, CRUD map, data model)   | [features/marketing/FEATURE.md](../features/marketing/FEATURE.md)                                                                |
 | Scraper twin (commands, contracts, deployment env) | aidream `packages/matrx-scraper/matrx_scraper/web_crawl/FEATURE.md`                                                              |

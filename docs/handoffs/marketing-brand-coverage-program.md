@@ -19,6 +19,7 @@ vision: []
 
 ## Resources
 
+- **Access model + RLS performance (READ FIRST before any web.* policy or visibility change):** [marketing-access-and-rls-performance.md](marketing-access-and-rls-performance.md) — the canonical rules, the incident that proved them, and the open platform decision.
 - **Live coordination board (start here for status + parking lot):** [docs/MARKETING_PROGRAM_BOARD.md](../MARKETING_PROGRAM_BOARD.md) — agents claim work and log found issues there; this handoff stays the detailed work order.
 - [features/marketing/FEATURE.md](../../features/marketing/FEATURE.md) — authoritative; read before any code. Invariants: routes only via `lib/routes.ts`, statuses only via `lib/site-status.ts`, toast only via `@/lib/toast`, machine writes → `discovered_item` only, no hover-underline name-links (whole-row click).
 - Data layer: `features/marketing/data/service.ts` (+hooks.ts) — follow its exact patterns (column-list constants, bounded ranges, id tie-breaks, batched `.in()` enrichment).
