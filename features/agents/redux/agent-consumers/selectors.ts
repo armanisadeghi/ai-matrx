@@ -40,55 +40,15 @@ export const AGENT_LIST_ITEMS_PER_PAGE = 20;
 // ── Pure scoring / filtering helpers ──────────────────────────────────────────
 // Pure functions — no Redux dependency. Components should never reimplement these.
 
-/**
- * Compute a relevance score for an agent against a lower-cased query.
- * Higher = more relevant.
- *
- * Only searches fields returned by agx_get_list():
- *   name, description, category, tags, modelId, id, agentType
- *
- * Does NOT search messages or variableDefinitions — those are not loaded
- * from the list fetch and would produce false positives if they were.
- * Use an advanced search thunk to search message content.
- */
-export function computeAgentSearchScore(
-  agent: AgentDefinitionRecord,
-  query: string,
-): number {
-  const q = query.toLowerCase();
-  let score = 0;
+// Scoring lives in `features/agents/search/score.ts` — ONE implementation for
+// every agent surface. Imported for local use and re-exported so existing
+// importers keep working; do not reintroduce a local copy.
+import {
+  computeAgentSearchScore,
+  agentMatchesSearch,
+} from "@/features/agents/search/score";
 
-  const name = (agent.name ?? "").toLowerCase();
-  const desc = (agent.description ?? "").toLowerCase();
-
-  if (name === q) score += 10000;
-  else if (name.startsWith(q)) score += 5000;
-  else if (name.includes(q)) score += 2000;
-
-  if (desc === q) score += 1000;
-  else if (desc.includes(q)) score += 500;
-
-  if (agent.category?.toLowerCase().includes(q)) score += 300;
-  if (agent.tags?.some((t) => t.toLowerCase().includes(q))) score += 300;
-  if (agent.modelId?.toLowerCase().includes(q)) score += 100;
-  if (agent.agentType?.toLowerCase().includes(q)) score += 100;
-
-  // ID search — exact UUID match ranks highest so you can always find an agent by its id
-  if (agent.id?.toLowerCase() === q) score += 100000;
-  else if (agent.id?.toLowerCase().includes(q)) score += 5000;
-
-  // shared_by_email — helps find agents shared by a specific person
-  if (agent.sharedByEmail?.toLowerCase().includes(q)) score += 200;
-
-  return score;
-}
-
-export function agentMatchesSearch(
-  agent: AgentDefinitionRecord,
-  query: string,
-): boolean {
-  return computeAgentSearchScore(agent, query) > 0;
-}
+export { computeAgentSearchScore, agentMatchesSearch };
 
 export function applyAgentSortComparator(
   a: AgentDefinitionRecord,

@@ -40,37 +40,17 @@ export const AGENTS_PER_PAGE = 24;
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
-/**
- * Relevance score for an AgentRecord against a lower-cased search query.
- * Higher = more relevant. Returns 0 if no match.
- */
-export function computeAgentSearchScore(
-  agent: AgentRecord,
-  query: string,
-): number {
-  const q = query.toLowerCase();
-  let score = 0;
-  const name = agent.name.toLowerCase();
-  const desc = (agent.description ?? "").toLowerCase();
+// Scoring lives in `features/agents/search/score.ts` — ONE implementation for
+// every agent surface. This file used to carry a drifted copy that scored an id
+// match at 50 with no exact-id bonus, which made UUID search useless in every
+// chat-side picker. Imported for local use and re-exported so existing
+// importers keep working; do not reintroduce a local copy.
+import {
+  computeAgentSearchScore,
+  agentMatchesSearch,
+} from "@/features/agents/search/score";
 
-  if (name === q) score += 10000;
-  else if (name.startsWith(q)) score += 5000;
-  else if (name.includes(q)) score += 2000;
-
-  if (desc === q) score += 1000;
-  else if (desc.includes(q)) score += 500;
-
-  if (agent.category?.toLowerCase().includes(q)) score += 300;
-  if (agent.tags?.some((t) => t.toLowerCase().includes(q))) score += 300;
-  if (agent.outputFormat?.toLowerCase().includes(q)) score += 100;
-  if (agent.id.toLowerCase().includes(q)) score += 50;
-
-  return score;
-}
-
-export function agentMatchesSearch(agent: AgentRecord, query: string): boolean {
-  return computeAgentSearchScore(agent, query) > 0;
-}
+export { computeAgentSearchScore, agentMatchesSearch };
 
 export function applyAgentSort(
   a: AgentRecord,

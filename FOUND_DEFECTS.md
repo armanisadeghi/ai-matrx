@@ -13,6 +13,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D82 — three unrelated DB-function defects found while auditing paginated RPCs (2026-07-22)
+
+Surfaced by the `agx_get_list` unstable-pagination audit (that class was fixed; these are separate and were NOT touched):
+
+1. **`public.get_user_table_data_paginated` (v1) has a live SQL-injection hole.** `p_search_term` and `v_field_name` are concatenated into dynamic SQL with no `replace(…, '''', '''''')` escaping — v2 added exactly that escaping, v1 never got it. It is `SECURITY INVOKER`, so blast radius is the caller's own rights, but it is a real injection vector. Fix: port v2's escaping into v1, or retire v1 if every consumer is on v2 (check callers first).
+2. **`public.get_user_feed` is `SECURITY INVOKER`, takes `p_user_id` as a parameter, and has no auth check** — any caller can pass any user id and read that user's follow-graph feed. Siblings `list_trash` / `search_files` / `get_user_file_tree` all guard with `auth.uid() <> p_user_id → raise 42501`; this one is missing the same guard. Fix: add the identical guard.
+3. **`public.get_version_history` has three dead branches.** `p_entity_type` of `'prompt'`, `'builtin'`, `'prompt_app'` reference `public.prompt_versions`, `public.prompt_builtin_versions`, `public.prompt_app_versions` — all three tables are gone (`to_regclass` → null), so those branches raise `relation does not exist` at runtime. The `'tool'`, `'tool_ui_component'`, `'agent'`, `'code_file'` branches are live and fine. Fix: delete the three dead branches (they are unreachable-by-design remnants of the deleted prompts system) after confirming no caller passes those entity types.
+
 ### D81 — five inline copies of the mic level-meter analyser (2026-07-22)
 
 `features/audio/useStreamAudioLevel.ts` is now THE hook for a 0-100 input level (shared `AudioContext`, analyser + rAF, disconnect on every exit). Five modules still grow their own inline copy of the same graph, each re-deriving the same `(avg/255)*150` scaling and its own teardown: `features/audio/hooks/useSimpleRecorder.ts`, `features/audio/hooks/useChunkedRecordAndTranscribe.ts`, `features/audio/components/devices/MediaDevicesPanel.tsx`, `features/voice-agent/audio/audioCapture.ts`, `features/flashcards/fast-fire/audio/continuousCapture.ts`. Risk is a missed teardown leaking a rAF loop + graph node for the tab's life, and drift in what "level" means between meters. Not fixed here because `useSimpleRecorder` and the voice-agent capture entangle the analyser lifecycle with their recording teardown, and both are hot paths under concurrent edits — a blind swap during this task would have been the riskier move. Fix: port each onto the hook (or, for the framework-free modules, extract the same core as a non-React `createStreamLevelMeter`), one module per change, verifying the meter still moves.
