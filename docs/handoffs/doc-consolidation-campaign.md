@@ -69,7 +69,9 @@ All HISTORY-class: ai-matrx `docs/type-drift/` (34), `docs/SWEEP_*` + `docs/IMPA
 
 - [x] Full inventory (4 agents, 2026-07-22)
 - [x] Skill stale-fixes (canonical-associations, db-canonicalize-table)
-- [ ] Arman sign-off on Wave 1 kill list
-- [ ] Waves 1-2 execution
-- [ ] Wave 3 rulings (8 proposed winners + 3 needs-Arman)
+- [x] Arman sign-off on Wave 1 (2026-07-22, this chat)
+- [x] Wave 1 executed (2026-07-22): aidream `d46106df7`, ai-matrx `cee3e5494`, common-docs `84160a8`. Two deviations: `utils/code_context` NOT deleted (inventory wrong — files differ from package copy AND live imports exist, e.g. `aidream/graph_actions/admin/dev.py`; needs real dedup); `.arman/junk` deferred (Arman: `.arman`/`.matrx` are not the problem — stay out for now).
+- [x] Core structure created (2026-07-22): common-docs restructured by lifecycle (`systems/` `projects/` `policies/` `meta/`), new `policies/document-types.md` taxonomy + authority ladder, all ~65 cross-repo pointer paths rewritten (aidream `e263b9b2a`, ai-matrx `e4b1288e9`).
+- [ ] Wave 2 (archive sweep) — next; start with the in-your-face targets (loose `docs/` root files, repo-root strays), per Arman's priority
+- [ ] Wave 3 rulings (12 proposed winners + needs-Arman: testing standards, context-engine spec; secrets cluster reassigned to the security session)
 - [ ] Waves 4-5
