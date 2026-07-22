@@ -15,11 +15,13 @@ import {
   findTakenSlugs,
   isShapePlanFailure,
   isValidKindSlug,
-  updateShapeExampleSample,
   validateSampleAgainstPlan,
   type ShapePlan,
-  type ShapeWriteClient,
 } from "../create-shape";
+import {
+  updateShapeExampleSample,
+  type ShapeWriteClient,
+} from "@/features/content-ir/studio/shape-authoring-service";
 
 const ORG_ID = "11111111-1111-1111-1111-111111111111";
 
@@ -82,7 +84,6 @@ describe("deriveKindSlug", () => {
     expect(isValidKindSlug("")).toBe(false);
   });
 });
-
 // ---------------------------------------------------------------------------
 // Plan building
 // ---------------------------------------------------------------------------

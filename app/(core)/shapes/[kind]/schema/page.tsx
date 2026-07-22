@@ -17,7 +17,11 @@ export default async function ShapeSchemaPage({ params }: PageProps) {
 
   return (
     <>
-      <ShapeDetailHeader kind={detail.kind} label={detail.label} />
+      <ShapeDetailHeader
+        kind={detail.kind}
+        label={detail.label}
+        isOwnedByViewer={detail.isOwnedByViewer}
+      />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mt-3">
           <KindSchemaTab

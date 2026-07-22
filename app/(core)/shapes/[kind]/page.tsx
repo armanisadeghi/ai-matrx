@@ -17,10 +17,23 @@ export default async function ShapePreviewPage({ params }: PageProps) {
 
   return (
     <>
-      <ShapeDetailHeader kind={detail.kind} label={detail.label} />
+      <ShapeDetailHeader
+        kind={detail.kind}
+        label={detail.label}
+        isOwnedByViewer={detail.isOwnedByViewer}
+      />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mt-3">
-          <ShapePreviewTab kind={detail.kind} kindDefinitionId={detail.id} />
+          <ShapePreviewTab
+            kind={detail.kind}
+            kindDefinitionId={detail.id}
+            label={detail.label}
+            visibility={detail.visibility}
+            titleKey={detail.titleKey}
+            loadingComponent={detail.loadingComponent}
+            emittedJsonSchema={detail.emittedJsonSchema}
+            isOwnedByViewer={detail.isOwnedByViewer}
+          />
         </div>
       </div>
     </>

@@ -21,7 +21,10 @@ export type ExamplesState =
  * Load a kind's `content_ir.kind_example` rows (canonical first, newest
  * next). One fetch per kind_definition id; errors surface loudly in state.
  */
-export function useKindExamples(kindDefinitionId: string): ExamplesState {
+export function useKindExamples(
+  kindDefinitionId: string,
+  refreshKey = 0,
+): ExamplesState {
   // Keyed by definition id so a kind switch derives "loading" instead of a
   // synchronous reset-in-effect (react-hooks/set-state-in-effect).
   const [loaded, setLoaded] = useState<{
@@ -54,25 +57,23 @@ export function useKindExamples(kindDefinitionId: string): ExamplesState {
       }
       setExamples({
         status: "ready",
-        rows: (data ?? []).map(
-          (r): KindExampleListItem => ({
-            id: r.id,
-            label: r.label,
-            description: r.description,
-            isCanonical: r.is_canonical,
-            source: r.source,
-            validationStatus: r.validation_status,
-            kindVersion: r.kind_version,
-            data: r.data,
-            updatedAt: r.updated_at,
-          }),
-        ),
+        rows: (data ?? []).map((r): KindExampleListItem => ({
+          id: r.id,
+          label: r.label,
+          description: r.description,
+          isCanonical: r.is_canonical,
+          source: r.source,
+          validationStatus: r.validation_status,
+          kindVersion: r.kind_version,
+          data: r.data,
+          updatedAt: r.updated_at,
+        })),
       });
     })();
     return () => {
       cancelled = true;
     };
-  }, [kindDefinitionId]);
+  }, [kindDefinitionId, refreshKey]);
 
   return loaded && loaded.id === kindDefinitionId
     ? loaded.value

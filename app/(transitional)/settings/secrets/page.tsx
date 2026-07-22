@@ -65,6 +65,7 @@ import {
   VALID_KEY_RE,
   type SecretCategory,
 } from "@/features/secrets/types";
+import { parseEnvAssignment } from "@/features/secrets/utils";
 
 export default function SecretsSettingsPage() {
   const { secrets, loading, error, refresh } = useSecrets();
@@ -166,6 +167,16 @@ function AddSecretCard({
               placeholder="GITHUB_TOKEN"
               value={key}
               onChange={(e) => setKey(e.target.value)}
+              onPaste={(event) => {
+                const assignment = parseEnvAssignment(
+                  event.clipboardData.getData("text"),
+                );
+                if (!assignment) return;
+
+                event.preventDefault();
+                setKey(assignment.key);
+                setValue(assignment.value);
+              }}
               className="font-mono"
               aria-invalid={!keyValid}
             />
@@ -174,6 +185,9 @@ function AddSecretCard({
                 Letters/digits/underscore only; cannot start with a digit.
               </p>
             )}
+            <p className="text-xs text-muted-foreground">
+              Paste KEY=value here to fill both fields.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="new-category">Category</Label>

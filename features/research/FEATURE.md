@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-07-21`
+**Last updated:** `2026-07-22`
 
 ---
 
@@ -68,7 +68,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
   wizardId `research-init`) and survives refresh/idle/step-nav; it clears on
   successful creation. Wizard Back is deterministic: previous step, never
   `router.back()`; the header "Back to Topics" link is the only exit.
-- **Run pipeline** — overview `Run pipeline` → `api.runPipeline` (empty body) → `useResearchStream.startStream` → events `dispatch`ed into `usePipelineProgress`. `onEnd` calls `pipeline.finalize()` + `refresh()`. Document is NOT produced here.
+- **Run pipeline** — overview `Run pipeline` → `api.runPipeline(topicId, topic.organization_id)` → `useResearchStream.startStream` → events `dispatch`ed into `usePipelineProgress`. The organization is an assertion copied from the loaded topic, never the active sidebar organization; the backend reloads the topic as authority and rejects a mismatch before paid work. `onEnd` calls `pipeline.finalize()` + `refresh()`. Document is NOT produced here.
 - **Live render** — `PipelineOrchestra` (graph) + `LivePipelineActivity`: finished stages → `StageStatSquare` rail (click to expand inline detail; external-link opens results route), active stage(s) → large card, writing streams via `StreamingTextPanel` (MarkdownStream). Completed keywords / scrape+analyze item batches / source feed auto-fold via `FoldableSection`; when the run finishes the whole drawer (metrics + stages + activity log) collapses together — user can reopen.
 - **Live cost** — each `analysis_complete` / `synthesis_complete` event carries the backend's catalog-priced `cost_usd`; `usePipelineProgress` sums only those authoritative values. If any completed AI operation has unknown pricing, the live metric shows unknown instead of guessing from provider/model names. The persisted `cost_summary` replaces the live total after completion.
 - **Document** — `/document` → `DocumentViewer` auto-generates (`api.generateDocument`, streams `chunk`+`document_complete`) when report-ready and none exists; persists to `rs_document`.
@@ -105,7 +105,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Doctrine compliance
 
-**Primitives reused** — `MarkdownStream` (rich-document engine); `ContentActionBar`; `components/ui` (Badge, Skeleton, DropdownMenu, Progress); `hierarchy-filter`; `sonner` toast; `useServiceQuery` pattern; the Surface Values system (the v3 context menu + `buildApplicationScopeFromMenuContext` + `createResearchScope`), `ProTextarea`/`ProInput`.
+**Primitives reused** — `MarkdownStream` (rich-document engine); `ContentActionBar`; `components/ui` (Badge, Skeleton, DropdownMenu, Progress); `hierarchy-filter`; `EntityTargetPicker` (compact optional project selection in the creation wizard); `sonner` toast; `useServiceQuery` pattern; the Surface Values system (the v3 context menu + `buildApplicationScopeFromMenuContext` + `createResearchScope`), `ProTextarea`/`ProInput`.
 
 **Primitives introduced**
 - `LivePipelineActivity` + `StageStatSquare` + `stageMeta` (`components/overview/live-pipeline/`) — compact finished-stage stat tile + shared per-stage display data. No existing primitive renders a stage outcome as a docking rail square; `stageMeta` canonicalizes icon/label/route/duration/square-data (replaced `CompletedStageStrip`'s private copies).
@@ -116,6 +116,11 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
+- `2026-07-22` — **Compact canonical project selection.** The topic creation wizard now uses the shared `EntityTargetPicker` scoped to the active organization instead of rendering a bespoke all-organization wall of large project cards. The project association remains optional and controlled by the wizard; selecting it never mutates global app context.
+- `2026-07-22` — **Existing-topic execution scope anchored to the topic.**
+  Pipeline launch now sends the loaded topic's `organization_id` as a
+  consistency assertion instead of relying on ambient active-org state; the
+  backend remains authoritative and rejects a mismatch before starting work.
 - `2026-07-21` — **Research project decoupling — frontend cutover (Phase 2).**
   Project is now OPTIONAL and association-backed end to end: `createTopic(organizationId, input, { projectId? })` returns `{ topic, projectLink }` (edge failure = loud retryable warning, topic survives); `getTopicsForProject(s)` reimplemented over `associationsService.listForTargets` + one batched read; new `getTopicProjectLinks` / `setTopicProject`; `TopicList` project labels from edges; duplicated settings forms consolidated into `settings/TopicSettingsForm` (used by page + panel); admin `ProjectsOverview` re-keyed on edges; `updateTopic` no longer writes `project_id`. Vocabulary renamed to topic-wide synthesis (`scope:'topic'`, `max_topic_syntheses`, `topic_syntheses`) with explicit `PHASE-4 COMPAT` boundary translation. Wizard: org from canonical active-org context, durable draft via new generic `wizardDraftSlice`, deterministic Back, `enableTextStats={false}` on the description, `[suggest-stream]` debug logs removed. DB types regenerated (nullable `project_id`; stale quota-field casts repaid via `rowToResearchTopic`). Error rules: `_mirror_fk_to_assoc` pinned critical + 23503 association-registration translation in `lib/diagnostics/errorTierRules.ts`. Tests: `__tests__/serviceTopics.test.ts`. System of record: `common-docs/research-project-decoupling/FEATURE.md`.
 - `2026-07-21` — **Topic initialization moved to canonical DB-direct CRUD.**

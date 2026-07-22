@@ -4,8 +4,8 @@ import type { components } from "@/types/python-generated/api-types";
  * User-secrets vault — public wire shapes.
  *
  * Source of truth: `aidream/aidream/api/schemas/user_secrets.py` +
- * `users.user_secrets` table. These mirror the aidream Pydantic shapes
- * one-for-one; if they drift, fix it here AND in Python.
+ * `users.user_secrets` table. Write categories use the curated choices below;
+ * read categories stay open so integration-defined stored values remain visible.
  *
  * Plaintext `value` is NEVER on a `UserSecretSummary` — that field is
  * write-only (request) for safety: the listing endpoint deliberately
@@ -33,7 +33,7 @@ export interface UserSecretSummary {
   key: string;
   value_hint: string;
   description: string | null;
-  category: SecretCategory | null;
+  category: string | null;
   is_active: boolean;
   inject_into_sandbox: boolean;
   value_version: number;

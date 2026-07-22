@@ -1,6 +1,6 @@
 # Secrets
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-07-19
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-07-21
 
 User and organization vaults for env vars, API keys, OAuth material, service-account JSON, and other reusable secret strings. Values are write-only in browser APIs: members see masked metadata and can use permitted values in server-side executions and sandboxes, but cannot reveal plaintext.
 
@@ -38,6 +38,7 @@ This resolver hydrates normal AI execution contexts and sandbox environments. Or
 | File | Role |
 |---|---|
 | [`types.ts`](./types.ts) | User types plus organization aliases from generated aidream OpenAPI contracts. |
+| [`utils.ts`](./utils.ts) | Pure single-line dotenv assignment parser used by paste-to-fill inputs. |
 | [`service.ts`](./service.ts), [`hooks.ts`](./hooks.ts) | Personal-vault browser service/hooks. |
 | [`organization-service.ts`](./organization-service.ts), [`organization-hooks.ts`](./organization-hooks.ts) | Organization API client and state mutations. |
 | [`components/OrganizationVaultSection.tsx`](./components/OrganizationVaultSection.tsx) | Org Manage UI: add, contribute, rotate, sync, restrict, sandbox toggle, and delete. |
@@ -67,9 +68,13 @@ Database migrations:
 5. A personal value with the same key overrides the organization value for that user; an explicit request value overrides both.
 6. Contributions are independent copies. Only an explicit sync changes the org copy from its source.
 7. New consumers call the effective server-side resolver; they do not add reveal APIs or query Vault directly.
+8. Stored category strings are forward-compatible on reads; curated category choices constrain browser writes but cannot make an integration-defined existing row unreadable.
+9. Pasting one valid `KEY=value` assignment into the personal-vault Key field fills both Key and Value; normal key-only and multiline pastes are left untouched.
 
 ## Change Log
 
+- **2026-07-21** — Added paste-to-fill for single dotenv assignments in the personal secret form, backed by a reusable parser with parity for `export`, quotes, whitespace, and embedded equals signs.
+- **2026-07-21** — Made personal-vault read categories forward-compatible so integration-defined values cannot crash the full secrets listing; curated create/update choices remain unchanged.
 - **2026-07-20** — New consumer: Marketing Google integration connections. aidream's `/api/google-integrations/*` stores each connection's Google OAuth refresh token in the canonical vault (personal → user vault, organization → org vault) under `GOOGLE_OAUTH_REFRESH_TOKEN_<connection-id-hex>`, referenced by `users.integration_connections.vault_secret_key`; the scraper resolves it via a service-token internal endpoint. This replaced (annihilated) the bespoke AES-256-GCM Google-credential pathway.
 - **2026-07-19** — Added the organization vault, all-member/restricted use permissions, private Supabase Vault storage, member contributions with version-based drift/manual sync, Org Manage UI, AI/sandbox resolution, generated API/DB contracts, audit metadata, GSC vault fallback, and grant cleanup on soft delete.
 - **2026-05-28** — Initial personal vault implementation: user DB table, Fernet service, REST endpoints, sandbox injection, agent tool, and settings UI.

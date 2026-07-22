@@ -49,8 +49,16 @@ export function useResearchApi() {
         api.get(endpoints(topicId).state, signal),
 
       // --- Pipeline ---
-      runPipeline: (topicId: string, signal?: AbortSignal) =>
-        api.post(endpoints(topicId).run, {}, signal),
+      runPipeline: (
+        topicId: string,
+        topicOrganizationId: string,
+        signal?: AbortSignal,
+      ) =>
+        api.post(
+          endpoints(topicId).run,
+          { organization_id: topicOrganizationId },
+          signal,
+        ),
 
       triggerSearch: (topicId: string, signal?: AbortSignal) =>
         api.post(endpoints(topicId).search, {}, signal),

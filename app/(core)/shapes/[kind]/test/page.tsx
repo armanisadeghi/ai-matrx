@@ -17,7 +17,11 @@ export default async function ShapeTestPage({ params }: PageProps) {
 
   return (
     <>
-      <ShapeDetailHeader kind={detail.kind} label={detail.label} />
+      <ShapeDetailHeader
+        kind={detail.kind}
+        label={detail.label}
+        isOwnedByViewer={detail.isOwnedByViewer}
+      />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mx-auto mt-3 max-w-6xl">
           <ShapeTestTabLoader

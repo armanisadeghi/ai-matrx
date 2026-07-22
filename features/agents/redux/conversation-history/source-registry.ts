@@ -26,6 +26,7 @@ import {
   Bot,
   Boxes,
   CalendarClock,
+  Camera,
   Code2,
   FileText,
   Globe,
@@ -38,9 +39,11 @@ import {
   PencilRuler,
   Play,
   Puzzle,
+  ScanLine,
   Server,
   StickyNote,
   Tag,
+  Video,
   Webhook,
 } from "lucide-react";
 
@@ -234,6 +237,18 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   // PDF Extractor runs (studio shortcuts, the chunker) are one-shot background
   // runs on a document, not user chats — classified as automation.
   "pdf-extractor": { label: "PDF Extractor", icon: FileText, system: true },
+  // Media capture — file/conversation provenance for /camera + PDF scanner.
+  camera: { label: "Camera", icon: Camera },
+  "pdf-scanner": { label: "PDF Scanner", icon: ScanLine },
+  "media-capture-demo": {
+    label: "Media Capture Demo",
+    icon: Camera,
+    system: true,
+  },
+  "video-prompt-options": {
+    label: "Video Prompt Options",
+    icon: Video,
+  },
   "pro-textarea": { label: "ProTextarea", icon: PencilRuler },
   "surface-chrome": { label: "Surface Agents", icon: Bot },
   "tool-call-visualization": {
@@ -455,7 +470,9 @@ export function isAutoSource(
   app: string | null | undefined,
   feature: string | null | undefined,
 ): boolean {
-  return !!appMeta(sourceKey(app)).system || !!featureMeta(sourceKey(feature)).system;
+  return (
+    !!appMeta(sourceKey(app)).system || !!featureMeta(sourceKey(feature)).system
+  );
 }
 
 /**

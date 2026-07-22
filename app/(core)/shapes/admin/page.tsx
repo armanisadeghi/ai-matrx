@@ -48,7 +48,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       url: `${SHAPES_ROUTE_BASE}/[kind]`,
       label: "Shape preview",
       description:
-        "Canonical kind_example rows rendered through the production applyIrKindRoute path.",
+        "Canonical kind_example rows rendered through the production applyIrKindRoute path; owners also get definition settings + sample CRUD.",
       filePath: "app/(core)/shapes/[kind]/page.tsx",
       status: "Live",
     },
@@ -103,6 +103,14 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
+      name: "ShapeOwnerEditor",
+      filePath:
+        "features/content-ir/studio/components/ShapeOwnerEditor.tsx",
+      description:
+        "Owner-only definition settings + canonical kind_example CRUD embedded on the Preview page.",
+      tier: "internal",
+    },
+    {
       name: "KindInstanceRender",
       filePath: "features/content-ir/studio/components/KindInstanceRender.tsx",
       description:
@@ -142,6 +150,14 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/content-ir/studio/instance-service.ts",
       description:
         "The ONE browser write/read path for content_ir.kind_instance (save / list / update / repin / soft delete; server-toolset parity).",
+      tier: "internal",
+    },
+    {
+      name: "shape-authoring-service",
+      filePath:
+        "features/content-ir/studio/shape-authoring-service.ts",
+      description:
+        "The ONE browser mutation path for an existing owned kind_definition and its kind_example rows; version re-pin + trigger-verdict contracts included.",
       tier: "internal",
     },
     {

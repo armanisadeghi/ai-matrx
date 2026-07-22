@@ -50,10 +50,10 @@ import {
   findTakenSlugs,
   isShapePlanFailure,
   isValidKindSlug,
-  updateShapeExampleSample,
   validateSampleAgainstPlan,
   type CreateShapeResult,
 } from "./create-shape";
+import { updateShapeExampleSample } from "@/features/content-ir/studio/shape-authoring-service";
 
 // The Shapes studio detail route (/shapes/[kind]) — the user-facing home of
 // the created kind (the admin kind-registry page stays the diagnostics view).

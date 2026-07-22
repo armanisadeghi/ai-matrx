@@ -22,6 +22,24 @@ export interface ShapeDetail {
   emittedJsonSchema: Json | null;
   /** `metadata.title_key` — the per-kind instance-title override (or null). */
   titleKey: string | null;
+  /** `metadata.loading_component` — loading-library slug (or null/generic). */
+  loadingComponent: string | null;
+  /** True only when `created_by` is the viewer; grants do not imply ownership. */
+  isOwnedByViewer: boolean;
+}
+
+function metadataString(metadata: Json, key: string): string | null {
+  const record =
+    typeof metadata === "object" &&
+    metadata !== null &&
+    !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>)
+      : null;
+  if (!record) return null;
+  const value = record[key];
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
 }
 
 /** Null on missing / RLS-denied — the route 404s. Throws on a real DB error. */
@@ -29,17 +47,25 @@ export async function getShapeDetail(
   kindSlug: string,
 ): Promise<ShapeDetail | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("content_ir")
-    .from("kind_definition")
-    .select(
-      "id,kind,label,is_active,visibility,version,updated_at,data,emitted_json_schema,metadata",
-    )
-    .eq("kind", kindSlug)
-    .is("deleted_at", null)
-    .maybeSingle();
+  const [{ data, error }, { data: auth, error: authError }] = await Promise.all(
+    [
+      supabase
+        .schema("content_ir")
+        .from("kind_definition")
+        .select(
+          "id,kind,label,is_active,visibility,version,updated_at,data,emitted_json_schema,metadata,created_by",
+        )
+        .eq("kind", kindSlug)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      supabase.auth.getUser(),
+    ],
+  );
   if (error) {
     throw new Error(`Failed to load shape "${kindSlug}": ${error.message}`);
+  }
+  if (authError) {
+    throw new Error(`Failed to verify the Shape viewer: ${authError.message}`);
   }
   if (!data) return null;
   return {
@@ -53,5 +79,7 @@ export async function getShapeDetail(
     fieldData: data.data,
     emittedJsonSchema: data.emitted_json_schema,
     titleKey: kindTitleKeyFromMetadata(data.metadata),
+    loadingComponent: metadataString(data.metadata, "loading_component"),
+    isOwnedByViewer: Boolean(auth.user && data.created_by === auth.user.id),
   };
 }

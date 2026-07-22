@@ -198,6 +198,18 @@ export type SourceFeature =
   /** AI Describe runs from the Image Studio (`/image-studio/convert`). */
   | "image-studio"
 
+  // ── Media capture (`features/media-capture/`) ─────────────────────────────
+  /** Camera / mic capture surface (`/camera`, CaptureStudio default). */
+  | "camera"
+  /** PDF-scanner capture path (document photos → upload pipeline). */
+  | "pdf-scanner"
+  /** Dev demo mount (`/demos/media-capture`). */
+  | "media-capture-demo"
+
+  // ── Markdown blocks ──────────────────────────────────────────────────────
+  /** Video-prompt-options custom markdown block (agent-driven option picker). */
+  | "video-prompt-options"
+
   // ── RAG ──────────────────────────────────────────────────────────────────
   /** "Agent Chat" tab of the RAG Search Lab (`/rag/search`, `RagSearchExperience`). */
   | "rag-search"
@@ -323,6 +335,10 @@ export const SOURCE_FEATURES = [
   "scanner",
   "pdf-extractor",
   "image-studio",
+  "camera",
+  "pdf-scanner",
+  "media-capture-demo",
+  "video-prompt-options",
   "rag-search",
   "pro-textarea",
   "surface-chrome",

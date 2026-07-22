@@ -162,7 +162,15 @@ export default function NavFlyoutGroup({
     const el = triggerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    setCoords({ top: rect.top, left: rect.right + 6 });
+    const panelHeight = panelRef.current?.getBoundingClientRect().height;
+    const margin = 8;
+    const top = panelHeight
+      ? Math.max(
+          margin,
+          Math.min(rect.top, window.innerHeight - panelHeight - margin),
+        )
+      : rect.top;
+    setCoords({ top, left: rect.right + 6 });
   }, []);
 
   const scheduleOpen = useCallback(() => {

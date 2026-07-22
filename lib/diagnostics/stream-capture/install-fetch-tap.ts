@@ -1,17 +1,20 @@
 /**
- * The universal stream tap.
+ * The universal exchange tap.
  *
- * Wraps `globalThis.fetch` exactly once. For any response carrying an event
- * stream, the body is `tee()`d: one branch goes to the caller completely
- * untouched, the other is drained here and recorded.
+ * Wraps `globalThis.fetch` exactly once and records BOTH directions:
+ *   • outbound — method, url, headers (credentials redacted), request body
+ *   • inbound  — status, headers, and either the ordered stream events or the
+ *                whole response body
+ *
+ * For streaming responses the body is `tee()`d: one branch goes to the caller
+ * completely untouched, the other is drained here.
  *
  * WHY HERE AND NOT IN `parseNdjsonStream`:
  * a parser-level tap records only the callers that choose to use the parser.
  * Roughly nine call sites read `response.body.getReader()` directly, and
- * nothing stops the next one from being written. Every HTTP stream in the
- * application — every client, every feature, every future one — bottoms out
- * at `fetch`. This is the only place coverage is structural rather than
- * a convention someone has to remember.
+ * nothing stops the next one from being written. Every HTTP call in the
+ * application bottoms out at `fetch`. This is the only place where coverage is
+ * structural rather than a convention someone has to remember.
  *
  * NON-NEGOTIABLE: this must never change what the caller receives, and must
  * never throw into the caller's path. Every failure here degrades to
@@ -24,14 +27,22 @@
  */
 
 import {
-  beginStream,
-  endStream,
+  attachResponse,
+  beginExchange,
+  endExchange,
+  getCaptureMode,
   recordBytes,
   recordEvent,
+  recordResponseBody,
 } from "./recorder";
-import { CAPTURE_LIMITS, isStreamingContentType } from "./types";
+import {
+  CAPTURE_LIMITS,
+  MAX_UNPARSED_CHARS,
+  isStreamingContentType,
+  redactHeaders,
+} from "./types";
 
-const INSTALL_FLAG = "__matrxStreamTapInstalled" as const;
+const INSTALL_FLAG = "__matrxCaptureTapInstalled" as const;
 
 /**
  * Derive a filterable label from the wire envelope. Mirrors the envelope
@@ -53,10 +64,40 @@ function deriveEventType(payload: unknown): string {
   return "unknown";
 }
 
-/** Drain the capture branch, splitting NDJSON lines in wire order. */
-async function drain(
+/**
+ * Read the outbound body without consuming it for the caller.
+ *
+ * A `Request` body can only be read once, so we clone first. A plain
+ * string/URLSearchParams init body is already in hand and needs no clone.
+ */
+async function readRequestBody(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+): Promise<{ body: string | null; truncated: boolean }> {
+  const max = CAPTURE_LIMITS[getCaptureMode()].maxBodyChars;
+  const clamp = (text: string) => ({
+    body: text.slice(0, max),
+    truncated: text.length > max,
+  });
+
+  try {
+    if (typeof init?.body === "string") return clamp(init.body);
+    if (init?.body instanceof URLSearchParams) return clamp(init.body.toString());
+    if (init?.body) return { body: "[non-text body]", truncated: false };
+    if (input instanceof Request && input.body) {
+      return clamp(await input.clone().text());
+    }
+  } catch {
+    // A body we cannot read is not a reason to fail the request.
+    return { body: "[unreadable body]", truncated: false };
+  }
+  return { body: null, truncated: false };
+}
+
+/** Drain the capture branch of a stream, splitting NDJSON lines in wire order. */
+async function drainStream(
   body: ReadableStream<Uint8Array>,
-  streamId: string,
+  id: string,
 ): Promise<void> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -67,7 +108,7 @@ async function drain(
     if (!trimmed) return;
     try {
       const parsed: unknown = JSON.parse(trimmed);
-      recordEvent(streamId, {
+      recordEvent(id, {
         ts: Date.now(),
         eventType: deriveEventType(parsed),
         data: parsed,
@@ -76,11 +117,11 @@ async function drain(
       // Not JSON (SSE framing, a proxy error page, a truncated line). Keep the
       // raw text — a forensic record that silently drops what it cannot parse
       // is worse than no record, because it looks complete.
-      recordEvent(streamId, {
+      recordEvent(id, {
         ts: Date.now(),
         eventType: "unparsed",
         data: null,
-        unparsed: trimmed.slice(0, CAPTURE_LIMITS.maxUnparsedChars),
+        unparsed: trimmed.slice(0, MAX_UNPARSED_CHARS),
       });
     }
   };
@@ -89,7 +130,7 @@ async function drain(
     for (;;) {
       const { value, done } = await reader.read();
       if (done) break;
-      if (value) recordBytes(streamId, value.byteLength);
+      if (value) recordBytes(id, value.byteLength);
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
@@ -102,21 +143,39 @@ async function drain(
     buffer += decoder.decode();
     recordLine(buffer);
 
-    endStream(streamId, "closed");
+    endExchange(id, "closed");
   } catch (err) {
-    // The caller aborting is normal, not a fault in the stream.
     const name = (err as { name?: string } | null)?.name;
     if (name === "AbortError") {
-      endStream(streamId, "aborted");
+      endExchange(id, "aborted");
     } else {
-      endStream(streamId, "errored", err instanceof Error ? err.message : String(err));
+      endExchange(
+        id,
+        "errored",
+        err instanceof Error ? err.message : String(err),
+      );
     }
   } finally {
     reader.releaseLock();
   }
 }
 
-export function installStreamTap(): void {
+/** Drain the capture branch of a non-streaming response as a single body. */
+async function drainBody(
+  body: ReadableStream<Uint8Array>,
+  id: string,
+): Promise<void> {
+  try {
+    const text = await new Response(body).text();
+    recordBytes(id, text.length);
+    recordResponseBody(id, text);
+    endExchange(id, "closed");
+  } catch (err) {
+    endExchange(id, "errored", err instanceof Error ? err.message : String(err));
+  }
+}
+
+export function installCaptureTap(): void {
   if (typeof window === "undefined") return;
 
   const g = globalThis as typeof globalThis & { [INSTALL_FLAG]?: boolean };
@@ -129,16 +188,10 @@ export function installStreamTap(): void {
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> {
-    const response = await originalFetch(input, init);
+    let id: string | null = null;
 
+    // ── Outbound ──────────────────────────────────────────────────────────
     try {
-      if (!response.body) return response;
-      if (!isStreamingContentType(response.headers.get("content-type"))) {
-        return response;
-      }
-
-      const [callerBranch, captureBranch] = response.body.tee();
-
       const url =
         typeof input === "string"
           ? input
@@ -146,17 +199,72 @@ export function installStreamTap(): void {
             ? input.toString()
             : input.url;
 
-      const streamId = beginStream({
+      const headers = new Headers(
+        init?.headers ?? (input instanceof Request ? input.headers : undefined),
+      );
+      const { body, truncated } = await readRequestBody(input, init);
+
+      id = beginExchange({
         url,
-        method: init?.method ?? (input instanceof Request ? input.method : "GET"),
+        method:
+          init?.method ?? (input instanceof Request ? input.method : "GET"),
+        requestHeaders: redactHeaders(headers),
+        requestBody: body,
+        requestBodyTruncated: truncated,
+      });
+    } catch (err) {
+      console.error("[capture] outbound capture failed", err);
+      id = null;
+    }
+
+    // ── The actual request — never wrapped in capture's failure modes ─────
+    let response: Response;
+    try {
+      response = await originalFetch(input, init);
+    } catch (err) {
+      if (id) {
+        endExchange(
+          id,
+          (err as { name?: string } | null)?.name === "AbortError"
+            ? "aborted"
+            : "errored",
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+      throw err;
+    }
+
+    // ── Inbound ───────────────────────────────────────────────────────────
+    try {
+      if (!id) return response;
+
+      const isStream = isStreamingContentType(
+        response.headers.get("content-type"),
+      );
+
+      attachResponse(id, {
+        httpStatus: response.status,
+        statusText: response.statusText,
+        responseHeaders: redactHeaders(response.headers),
         requestId: response.headers.get("X-Request-ID"),
         conversationId: response.headers.get("X-Conversation-ID"),
-        httpStatus: response.status,
+        isStream,
       });
+
+      if (!response.body) {
+        endExchange(id, "closed");
+        return response;
+      }
+
+      const [callerBranch, captureBranch] = response.body.tee();
 
       // Fire-and-forget. Drained eagerly so the tee buffer cannot grow
       // unbounded when the caller consumes slower than the server sends.
-      void drain(captureBranch, streamId);
+      if (isStream) {
+        void drainStream(captureBranch, id);
+      } else {
+        void drainBody(captureBranch, id);
+      }
 
       const tapped = new Response(callerBranch, {
         status: response.status,
@@ -174,7 +282,7 @@ export function installStreamTap(): void {
       return tapped;
     } catch (err) {
       // Capture is never worth a failed request.
-      console.error("[stream-capture] tap failed; passing response through", err);
+      console.error("[capture] tap failed; passing response through", err);
       return response;
     }
   };

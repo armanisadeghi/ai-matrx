@@ -30,7 +30,6 @@
  *      broken kind).
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database.types";
 import {
   KIND_KEY,
@@ -50,8 +49,7 @@ import {
 } from "@/features/content-ir/registry/kind-dual-gate";
 import { RESERVED_SHAPE_SLUGS } from "@/features/content-ir/studio/constants";
 
-/** The minimal client contract (the browser `supabase` singleton satisfies it). */
-export type ShapeWriteClient = SupabaseClient<Database>;
+import type { ShapeWriteClient } from "@/features/content-ir/studio/shape-authoring-service";
 
 /** The proposal envelope the schema_proposal block carries. */
 export interface ShapeProposalInput {
@@ -546,26 +544,4 @@ export async function createShapeFromPlan(
     exampleId: example.id,
     validationStatus: example.validation_status,
   };
-}
-
-/**
- * Fix-the-sample retry: update the example's data — the DB trigger
- * recomputes `validation_status` on the same write; return the new verdict.
- */
-export async function updateShapeExampleSample(
-  client: ShapeWriteClient,
-  exampleId: string,
-  sample: unknown,
-): Promise<string> {
-  const { data, error } = await client
-    .schema("content_ir")
-    .from("kind_example")
-    .update({ data: sample as Json })
-    .eq("id", exampleId)
-    .select("validation_status")
-    .single();
-  if (error) {
-    throw new Error(`Failed to update the example: ${error.message}`);
-  }
-  return data.validation_status;
 }

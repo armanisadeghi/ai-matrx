@@ -254,9 +254,15 @@ export function PipelineOrchestra() {
   );
 
   const handleRunAll = useCallback(async () => {
-    const response = await api.runPipeline(topicId);
+    if (!topic) {
+      toast.error(
+        "The research topic has not loaded. Reload before running it.",
+      );
+      return;
+    }
+    const response = await api.runPipeline(topicId, topic.organization_id);
     await startStream(response, "pipeline");
-  }, [api, topicId, startStream]);
+  }, [api, topicId, topic, startStream]);
 
   const handleSearch = useCallback(async () => {
     const response = await api.triggerSearch(topicId);
