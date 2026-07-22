@@ -40,6 +40,7 @@ import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { RunTruthInspector } from "@/features/podcasts/studio/components/RunTruthInspector";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
+import { ResearchActivityFeed } from "@/features/podcasts/studio/components/ResearchActivityFeed";
 
 export function StudioRunView({ runId }: { runId: string }) {
   const {
@@ -62,6 +63,7 @@ export function StudioRunView({ runId }: { runId: string }) {
     selectedCoverUrl,
     selectCover,
     livePlayer,
+    researchActivity,
   } = useStudioRun(runId);
 
   // When the canonical audio URL lands while the user is listening live, carry
@@ -252,6 +254,10 @@ export function StudioRunView({ runId }: { runId: string }) {
         {/* RIGHT — status & steps on top, then the script, source, and resources. */}
         <div className="order-2 space-y-4">
           {hasStages && <LiveProgressRail state={state} startedAt={startedAt} />}
+
+          {/* Real backend tool activity, layered on top of the rail's synthetic
+              steps — self-hides when the stream sends none. */}
+          <ResearchActivityFeed entries={researchActivity} streaming={streaming} />
 
           <RunRecoveryBanner
             status={state.status}

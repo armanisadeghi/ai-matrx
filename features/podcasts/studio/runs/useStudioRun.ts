@@ -60,6 +60,18 @@ import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 // silently dead. Mark stalled + settle "queued" assets. 5+ missed ticks.
 const STALL_MS = 20_000;
 
+/** One real line of tool activity from the live stream (search queries, URLs
+ *  being read, scrape tallies). Purely ADDITIVE: the stage rail's synthetic
+ *  steps remain the guaranteed floor — this feed is extra truth layered on top,
+ *  and is simply empty when the backend sends nothing. */
+export interface ResearchActivityEntry {
+  id: string;
+  toolName: string;
+  event: string;
+  message: string;
+  at: number;
+}
+
 export interface UseStudioRun {
   state: PodcastRunState;
   startedAt: number | null;
@@ -102,6 +114,9 @@ export interface UseStudioRun {
   /** Live in-flight TTS audio (listen while it renders). Non-null only while a
    *  live stream is delivering audio chunks and the canonical file isn't ready. */
   livePlayer: StreamingPcmPlayer | null;
+  /** Real tool activity from the live stream. Empty when the backend sends
+   *  none — consumers must degrade to nothing, never assume it's populated. */
+  researchActivity: ResearchActivityEntry[];
 }
 
 export function useStudioRun(runId: string): UseStudioRun {
@@ -119,6 +134,9 @@ export function useStudioRun(runId: string): UseStudioRun {
   const [recovery, setRecovery] = useState<RecoveryState>(() =>
     deriveRecoveryState(null),
   );
+  const [researchActivity, setResearchActivity] = useState<
+    ResearchActivityEntry[]
+  >([]);
   const [assetBusy, setAssetBusy] = useState<Record<string, boolean>>({});
   const [livePlayer, setLivePlayer] = useState<StreamingPcmPlayer | null>(null);
 
@@ -166,6 +184,7 @@ export function useStudioRun(runId: string): UseStudioRun {
     completedRef.current = false;
     imgUrlsRef.current = [];
     vidUrlsRef.current = [];
+    setResearchActivity([]);
 
     function onData(raw: PodcastDataEvent) {
       // Any event is a sign of life — feed the heartbeat watchdog. Resetting
@@ -403,6 +422,51 @@ export function useStudioRun(runId: string): UseStudioRun {
                 liveText: next.length > 24_000 ? next.slice(-24_000) : next,
               };
             });
+            return;
+          }
+          if (event.event === "heartbeat") {
+            // Transport-level pulse (~5s), independent of the podcast ticker.
+            // Counting it means a single stalled producer can no longer fake a
+            // dead stream: BOTH signals must go silent before we cry stall.
+            lastHeartbeatRef.current = Date.now();
+            setStalled(false);
+            // The server self-reports its own event-loop starvation. Surface it
+            // loudly — a late heartbeat means synchronous work is blocking a
+            // worker, which is a real backend defect, not a client problem.
+            const lateBy = event.data.late_by_seconds ?? 0;
+            if (lateBy >= 2) {
+              console.warn(
+                `[studio-run] server heartbeat ${lateBy}s late — backend event-loop starvation (synchronous work blocking the worker)`,
+              );
+            }
+            return;
+          }
+          if (event.event === "tool_event") {
+            // Tool lifecycle from nested agents (the research child streams on
+            // the parent emitter). Two jobs: feed the watchdog, and record the
+            // real activity so the UI can show what's genuinely happening.
+            lastHeartbeatRef.current = Date.now();
+            setStalled(false);
+            const t = event.data;
+            if (t.message) {
+              setResearchActivity((prev) => {
+                // Collapse consecutive duplicates (retries re-emit the same
+                // line); cap the tail so a long run can't grow state unbounded.
+                const last = prev[prev.length - 1];
+                if (last && last.message === t.message) return prev;
+                const next = [
+                  ...prev,
+                  {
+                    id: `${t.call_id}:${prev.length}`,
+                    toolName: t.tool_name,
+                    event: t.event,
+                    message: t.message as string,
+                    at: Date.now(),
+                  },
+                ];
+                return next.length > 200 ? next.slice(-200) : next;
+              });
+            }
             return;
           }
           if (event.event === "error") {
@@ -819,6 +883,7 @@ export function useStudioRun(runId: string): UseStudioRun {
     notFound,
     streaming,
     stalled,
+    researchActivity,
     backgroundWorking,
     canReconnect,
     reconnect,

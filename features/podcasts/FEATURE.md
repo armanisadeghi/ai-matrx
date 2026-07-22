@@ -95,6 +95,25 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-07-22 — **False "connection went quiet" stall during research + real
+  activity feed.** Root cause was server-side: `scrape_url_core`
+  (`matrx-scraper/features/mcp_tool_helpers.py`) ran `extract_text_from_pdf_bytes`
+  / `extract_text_from_image_bytes` **synchronously on the event loop** — 300 DPI
+  pdfium render + pytesseract OCR per page. That starves the 3s podcast ticker
+  AND the 5s stream heartbeat simultaneously, so the client's 20s watchdog fired
+  on a run that was working fine (proof: run `e64b4691…` showed the stall banner
+  and still completed with audio). Both now go through `asyncio.to_thread`;
+  `extract_text_content` was deliberately left on the loop (linear string work,
+  tens of ms). Client: `useStudioRun` now feeds the watchdog from `heartbeat`
+  and `tool_event` too — previously ONLY `podcast_tick`/chunks counted, so a
+  single stalled producer could fake a dead stream; a late heartbeat
+  (`late_by_seconds`) is now logged loudly as backend starvation. Banner copy no
+  longer asserts failure. **Added `ResearchActivityFeed`** — the real search
+  queries / URLs / scrape tallies the research child agent already streamed on
+  the parent emitter and the client was discarding wholesale.
+  **`useStageDisplay`'s synthetic sub-steps are UNCHANGED and remain the
+  guaranteed floor** — the feed is strictly additive and self-hides when the
+  stream sends no tool events. NOT yet verified against a live research run.
 - 2026-07-22 — Podcast generation and resume migrated from the legacy
   `useBackendApi` stream path to canonical `callApi`, restoring automatic active
   organization/project/task injection while preserving NDJSON event handling.

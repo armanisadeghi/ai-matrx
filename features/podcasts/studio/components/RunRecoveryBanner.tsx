@@ -101,8 +101,9 @@ export function RunRecoveryBanner({
         <span className="flex min-w-0 items-start gap-2.5">
           <WifiOff className="mt-0.5 h-5 w-5 shrink-0" />
           <span className="min-w-0 break-words">
-            The connection went quiet — we&apos;ve stopped waiting on stalled
-            steps. Everything finished so far is saved; resume to pick it back up.
+            This step is taking a while and the live updates have gone quiet. It
+            may still be working in the background — everything finished so far
+            is saved. Give it a moment, or resume to pick it back up.
           </span>
         </span>
         <Actions
