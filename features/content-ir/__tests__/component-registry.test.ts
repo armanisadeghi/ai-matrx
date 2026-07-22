@@ -108,6 +108,7 @@ describe("compiled bootstrap (system-components)", () => {
       cooking_recipe: "cooking_recipe",
       research_report: "research",
       questionnaire: "questionnaire",
+      video_prompt_options: "video_prompt_options",
     });
   });
 });

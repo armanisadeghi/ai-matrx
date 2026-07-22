@@ -36,6 +36,7 @@ import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
 import { validateStructuralLeg } from "@/features/content-ir/registry/kind-dual-gate";
 import { KIND_LOADING_COMPONENTS } from "@/features/content-ir/react/loading/kind-loading-registry";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
+import ShapeActivationControl from "@/features/content-ir/studio/components/ShapeActivationControl";
 import {
   createOwnedShapeExample,
   makeOwnedShapeExampleCanonical,
@@ -93,6 +94,8 @@ interface ShapeOwnerEditorProps {
   titleKey: string | null;
   loadingComponent: string | null;
   emittedJsonSchema: Json | null;
+  /** The live dual-gate verdict — drives the activation control's state. */
+  isActive: boolean;
   examples: ExamplesState;
   onExamplesChanged: () => void;
 }
@@ -131,6 +134,7 @@ export default function ShapeOwnerEditor({
   titleKey: initialTitleKey,
   loadingComponent: initialLoadingComponent,
   emittedJsonSchema,
+  isActive,
   examples,
   onExamplesChanged,
 }: ShapeOwnerEditorProps) {
@@ -281,6 +285,18 @@ export default function ShapeOwnerEditor({
             details and sample data here; platform Shapes remain read-only.
           </p>
         </div>
+      </div>
+
+      {/* Activation sits ABOVE the tabs: it is the one control whose state the
+          owner must see without hunting, and its blockers point at the very
+          assets the tabs below manage. */}
+      <div className="px-4 pt-4">
+        <ShapeActivationControl
+          kind={kind}
+          kindDefinitionId={kindDefinitionId}
+          isActive={isActive}
+          onActivationChanged={() => router.refresh()}
+        />
       </div>
 
       <Tabs defaultValue="examples" className="p-4">

@@ -161,6 +161,7 @@ export default function KindDetailClient({
             kind={detail.kind}
             emittedJsonSchema={detail.emittedJsonSchema}
             examples={examples}
+            family={detail.doctorRow.family}
           />
         )}
         {tab === "schema" && (

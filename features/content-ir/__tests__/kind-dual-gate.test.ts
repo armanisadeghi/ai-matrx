@@ -256,3 +256,113 @@ describe("dual gate — render leg keeps real serverData passing", () => {
     expect(gateWithBridgeOutput({ theme: { preset: "dark" } }).render.ok).toBe(true);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render-leg satisfier PRECEDENCE.
+//
+// The leg gained two satisfiers (a resolved `kind_component` row, and the
+// data-only n/a rule) so agent-authored kinds whose renderer is a
+// `source='db'` row could pass at all. Every compiled kind ALSO owns a
+// `source='bundled'` component row, so if the resolved-component check ran
+// first it would short-circuit past the bridge check for exactly the kinds
+// that guard protects — silently re-opening the "No <kind> available" class.
+// These tests pin the ordering.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("dual gate — render-leg satisfier precedence", () => {
+  const activeComponent = {
+    componentKey: "flashcards",
+    isActive: true,
+    source: "bundled",
+  };
+
+  it("STILL FAILS a broken compiled bridge even when an active component row exists", () => {
+    const result = runKindDualGate({
+      kind: "flashcard_set",
+      sample: goodSample,
+      emittedJsonSchema,
+      definition: bridgeReturning({ language: "json" }), // junk annotation
+      resolvedComponent: activeComponent,
+    });
+    expect(result.render.ok).toBe(false);
+    expect(result.isActive).toBe(false);
+    expect(result.render.detail).toContain("No flashcard_set available");
+  });
+
+  it("STILL FAILS when the compiled bridge throws, component row notwithstanding", () => {
+    const result = runKindDualGate({
+      kind: "flashcard_set",
+      sample: goodSample,
+      emittedJsonSchema,
+      definition: {
+        legacyBlockType: "flashcards",
+        toLegacyServerData: () => {
+          throw new Error("bridge exploded");
+        },
+      },
+      resolvedComponent: activeComponent,
+    });
+    expect(result.render.ok).toBe(false);
+    expect(result.render.detail).toContain("bridge exploded");
+  });
+
+  it("PASSES a DB-component kind that has no compiled registry entry at all", () => {
+    // The agent-authored case: definition is null (not compiled), renderer is
+    // a source='db' row. This is what was structurally impossible before.
+    const result = runKindDualGate({
+      kind: "wine_tasting",
+      sample: goodSample,
+      emittedJsonSchema,
+      definition: null,
+      resolvedComponent: {
+        componentKey: "wine_tasting_card",
+        isActive: true,
+        source: "db",
+      },
+    });
+    expect(result.render.ok).toBe(true);
+    expect(result.render.detail).toContain("wine_tasting_card");
+  });
+
+  it("FAILS a kind with no compiled entry and an INACTIVE component row", () => {
+    const result = runKindDualGate({
+      kind: "wine_tasting",
+      sample: goodSample,
+      emittedJsonSchema,
+      definition: null,
+      resolvedComponent: {
+        componentKey: "wine_tasting_card",
+        isActive: false,
+        source: "db",
+      },
+    });
+    expect(result.render.ok).toBe(false);
+    expect(result.render.detail).toContain("nothing to render");
+  });
+
+  it("FAILS a kind with neither a compiled entry nor any component row", () => {
+    const result = runKindDualGate({
+      kind: "chart",
+      sample: goodSample,
+      emittedJsonSchema,
+      definition: null,
+      resolvedComponent: null,
+    });
+    expect(result.render.ok).toBe(false);
+    expect(result.isActive).toBe(false);
+  });
+
+  it("treats the render leg as n/a for data-only contract kinds", () => {
+    const result = runKindDualGate({
+      kind: "workflow_io_thing",
+      sample: goodSample,
+      emittedJsonSchema,
+      definition: null,
+      resolvedComponent: null,
+      dataOnly: true,
+    });
+    expect(result.render.ok).toBe(true);
+    expect(result.render.detail).toContain("n/a");
+    expect(result.isActive).toBe(true);
+  });
+});

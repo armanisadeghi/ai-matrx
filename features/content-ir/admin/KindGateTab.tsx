@@ -6,14 +6,21 @@
  * pasted sample, and shows both legs with their failure detail:
  *
  *   structural — ajv over `emitted_json_schema` (Pydantic-parity leg)
- *   render     — the legacy bridge must produce real serverData (UI leg)
+ *   render     — an active `role='output'` component must exist, and a compiled
+ *                bridge (when the kind has one) must produce real serverData.
+ *                Satisfied by EITHER tier: a compiled `legacyBlockType` bridge
+ *                or a `source='db'` `kind_component` row. n/a for data-only
+ *                contract families.
  *
- * READ-ONLY by design (v1): this page never writes `is_active` — it shows
- * what the gate WOULD decide. Loaded via next/dynamic({ ssr:false }) behind
- * its tab so ajv stays out of the page's initial chunk.
+ * READ-ONLY by design: this page never writes `is_active` — it shows what the
+ * gate WOULD decide, which is what makes it trustworthy as the thing you check
+ * after a change. The write path is `content_ir.set_kind_activation`, surfaced
+ * on the owner's studio page (`/shapes/[kind]`). Loaded via
+ * next/dynamic({ ssr:false }) behind its tab so ajv stays out of the initial
+ * chunk.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, CircleAlert, Info, Play, X } from "lucide-react";
 import {
   describeDualGateFailure,
@@ -23,6 +30,11 @@ import {
   type LegResult,
 } from "@/features/content-ir/registry/kind-dual-gate";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
+import {
+  componentRegistry,
+  resolveComponent,
+} from "@/features/content-ir/registry/component-registry";
+import { GENERATED_CONTRACT_FAMILY_VALUES } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { Json } from "@/types/database.types";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 
@@ -49,6 +61,7 @@ function computeGateRun(
   sample: unknown,
   ranAgainst: string,
   emittedJsonSchema: Json | null,
+  family: string | null,
 ): GateRun {
   const def = kindRegistry.getDefinition(kind);
   const gateDefinition: DualGateDefinition | null = def
@@ -59,12 +72,30 @@ function computeGateRun(
       }
     : null;
 
+  // The resolver answers for BOTH tiers, so an agent-authored kind whose
+  // renderer is a `source='db'` row satisfies the render leg the same way a
+  // compiled one does. Without this the gate reports "no component" about
+  // kinds that have a live, working component.
+  const resolution = resolveComponent(kind, "web", "output");
+  // Data-only contract families are never rendered — the render leg is n/a
+  // (shape-doctor's `data_only` rule, mirrored by
+  // `content_ir.evaluate_kind_activation`).
+  const dataOnly = family !== null && GENERATED_CONTRACT_FAMILY_VALUES.has(family);
+
   if (isRecord(sample)) {
     const result = runKindDualGate({
       kind,
       sample,
       emittedJsonSchema,
       definition: gateDefinition,
+      resolvedComponent: resolution
+        ? {
+            componentKey: resolution.componentKey,
+            isActive: resolution.isActive,
+            source: resolution.source,
+          }
+        : null,
+      dataOnly,
     });
     return {
       ranAgainst,
@@ -93,17 +124,39 @@ interface KindGateTabProps {
   kind: string;
   emittedJsonSchema: Json | null;
   examples: ExamplesState;
+  /** `kind_definition.metadata.family` — drives the render leg's n/a doctrine. */
+  family?: string | null;
 }
 
 export default function KindGateTab({
   kind,
   emittedJsonSchema,
   examples,
+  family = null,
 }: KindGateTabProps) {
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [pasted, setPasted] = useState("");
   const [manualRun, setManualRun] = useState<GateRun | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
+
+  // `resolveComponent` is SYNCHRONOUS and answers from the compiled floor until
+  // the DB tier warms. Running the gate before that resolves a `source='db'`
+  // component to nothing and reports "no component" about a kind that has a
+  // live one — a false negative that depends purely on timing. Gate the whole
+  // verdict on the warm tick rather than publishing a wrong answer first.
+  const [componentsWarm, setComponentsWarm] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void componentRegistry
+      .ensureWarm()
+      .catch(() => undefined)
+      .then(() => {
+        if (!cancelled) setComponentsWarm(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const rows = examples.status === "ready" ? examples.rows : [];
   const selectedId = sourceId ?? rows[0]?.id ?? PASTED;
@@ -111,7 +164,7 @@ export default function KindGateTab({
   // The canonical example's verdict, computed during render (rows come
   // canonical-first from the shell's fetch). A manual run supersedes it.
   const autoRun =
-    rows.length > 0
+    rows.length > 0 && componentsWarm
       ? computeGateRun(
           kind,
           rows[0].data,
@@ -119,6 +172,7 @@ export default function KindGateTab({
             ? "canonical example"
             : `example ${rows[0].id.slice(0, 8)}`,
           emittedJsonSchema,
+          family,
         )
       : null;
   const run = manualRun ?? autoRun;
@@ -139,7 +193,9 @@ export default function KindGateTab({
         );
         return;
       }
-      setManualRun(computeGateRun(kind, parsed, "pasted sample", emittedJsonSchema));
+      setManualRun(
+        computeGateRun(kind, parsed, "pasted sample", emittedJsonSchema, family),
+      );
       return;
     }
     const row = rows.find((r) => r.id === selectedId);
@@ -153,6 +209,7 @@ export default function KindGateTab({
         row.data,
         row.isCanonical ? "canonical example" : `example ${row.id.slice(0, 8)}`,
         emittedJsonSchema,
+        family,
       ),
     );
   }

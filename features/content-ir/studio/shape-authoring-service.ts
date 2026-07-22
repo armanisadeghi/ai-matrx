@@ -409,3 +409,127 @@ export async function updateShapeExampleSample(
   if (error) throw new Error(`Failed to update the example: ${error.message}`);
   return data.validation_status;
 }
+
+// ─── Activation ────────────────────────────────────────────────────────────
+//
+// `is_active` is the dual-gate verdict, and it is NOT written directly here.
+// Both functions below call `content_ir.set_kind_activation` /
+// `content_ir.evaluate_kind_activation`, which run the gate server-side and
+// raise with specific reasons rather than silently refusing. Routing through
+// the RPC is what keeps ONE activation authority across the browser, the
+// agent toolset, and any future surface — a direct `.update({is_active})`
+// from here would be a second, ungated path.
+
+/** One leg's verdict as the RPC reports it. */
+export interface ShapeActivationVerdict {
+  wouldActivate: boolean;
+  kind: string;
+  currentlyActive: boolean;
+  /** False for generated data-only contract families — the leg is n/a. */
+  renderLegApplicable: boolean;
+  structuralOk: boolean;
+  renderOk: boolean;
+  /** Platforms with an active output component (e.g. ["web"]). */
+  componentPlatforms: string[];
+  /** Human-readable blockers, empty when `wouldActivate`. */
+  reasons: string[];
+}
+
+/** The RPC's not-found branch returns a SHORT payload (would_activate, id,
+ * reasons, checked_at) — the leg booleans are absent. Reading them unguarded
+ * turned `undefined` into a falsy `renderLegApplicable` and rendered the
+ * "data-only contract kind" banner for a kind that does not exist. Every field
+ * is therefore parsed defensively from `unknown`; no double-cast. */
+function boolAt(source: Record<string, unknown>, key: string): boolean {
+  return source[key] === true;
+}
+
+function toVerdict(raw: unknown): ShapeActivationVerdict {
+  const source: Record<string, unknown> =
+    typeof raw === "object" && raw !== null && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
+  const reasons = Array.isArray(source.reasons)
+    ? source.reasons.filter((entry): entry is string => typeof entry === "string")
+    : [];
+  const platforms = Array.isArray(source.component_platforms)
+    ? source.component_platforms.filter(
+        (entry): entry is string => typeof entry === "string",
+      )
+    : [];
+  return {
+    wouldActivate: boolAt(source, "would_activate"),
+    kind: typeof source.kind === "string" ? source.kind : "",
+    currentlyActive: boolAt(source, "currently_active"),
+    // Absent => treat the render leg as APPLICABLE. The n/a banner is the
+    // claim that needs evidence; defaulting it on would assert n/a about an
+    // unknown kind.
+    renderLegApplicable:
+      "render_leg_applicable" in source
+        ? boolAt(source, "render_leg_applicable")
+        : true,
+    structuralOk: boolAt(source, "structural_ok"),
+    renderOk: boolAt(source, "render_ok"),
+    componentPlatforms: platforms,
+    reasons:
+      reasons.length > 0
+        ? reasons
+        : boolAt(source, "would_activate")
+          ? []
+          : ["the activation gate returned no verdict for this Shape"],
+  };
+}
+
+/**
+ * Read-only "would this activate, and if not why?" — safe to call on render.
+ * Drives the disabled state and the blocker list on the activation control.
+ */
+export async function evaluateShapeActivation(
+  client: ShapeWriteClient,
+  definitionId: string,
+): Promise<ShapeActivationVerdict> {
+  const { data, error } = await client
+    .schema("content_ir")
+    .rpc("evaluate_kind_activation", { p_kind_definition_id: definitionId });
+  if (error) {
+    throw new Error(`Failed to evaluate activation: ${error.message}`);
+  }
+  return toVerdict(data);
+}
+
+/**
+ * Flip `is_active`. Activation runs the dual gate server-side and throws with
+ * the gate's own reasons when it fails; deactivation is never gated, so a kind
+ * whose component has started misbehaving can always be turned off.
+ */
+export async function setShapeActivation(
+  client: ShapeWriteClient,
+  definitionId: string,
+  active: boolean,
+  note?: string,
+): Promise<{ isActive: boolean; wasActive: boolean; gated: boolean }> {
+  const { data, error } = await client
+    .schema("content_ir")
+    .rpc("set_kind_activation", {
+      p_kind_definition_id: definitionId,
+      p_active: active,
+      // Omit rather than pass null — the arg has a SQL default, and the
+      // generated type models that as optional, not nullable.
+      ...(note ? { p_note: note } : {}),
+    });
+  if (error) {
+    // The RPC raises with the gate's specific blockers; surface them verbatim
+    // rather than a generic "activation failed" the user cannot act on.
+    throw new Error(error.message);
+  }
+  const row = data as unknown as {
+    is_active: boolean;
+    was_active: boolean;
+    gated: boolean;
+  };
+  return {
+    isActive: row.is_active,
+    wasActive: row.was_active,
+    gated: row.gated,
+  };
+}

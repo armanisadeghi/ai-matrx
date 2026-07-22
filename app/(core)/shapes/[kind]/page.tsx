@@ -32,6 +32,7 @@ export default async function ShapePreviewPage({ params }: PageProps) {
             titleKey={detail.titleKey}
             loadingComponent={detail.loadingComponent}
             emittedJsonSchema={detail.emittedJsonSchema}
+            isActive={detail.isActive}
             isOwnedByViewer={detail.isOwnedByViewer}
           />
         </div>

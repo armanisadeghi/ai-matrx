@@ -54,6 +54,41 @@ export interface DualGateDefinition {
   component?: { load: () => Promise<unknown> };
 }
 
+/**
+ * The render leg's second satisfier: an ACTIVE `role='output'` component
+ * resolved from `content_ir.kind_component`. Feed this from
+ * `resolveComponent(kind, "web", "output")`.
+ *
+ * Why this exists: the render leg originally consulted only the compiled TS
+ * registry, so an agent-authored kind whose renderer is a `source='db'` row was
+ * structurally unable to pass — `definition` came back null and the gate said
+ * "no component" about a kind that had a live, working one. Six authored kinds
+ * (wine_tasting, employee_card, employee_roster, employee_of_the_week,
+ * flashcard_deck, arman_video_prompt) sat permanently inactive because of it.
+ *
+ * NOT a mirror of `content_ir.evaluate_kind_activation`. The SQL render leg is
+ * presence-only — it checks that an active `role='output'` row exists, because
+ * SQL cannot execute a TypeScript bridge. THIS leg is strictly stronger: for a
+ * compiled kind it also runs `toLegacyServerData` and rejects semantically
+ * empty output (the "No <kind> available" class).
+ *
+ * The asymmetry is deliberate and bounded: SQL is the FLOOR (necessary, and
+ * sufficient for DB-authored components, which own no bridge), while this leg
+ * is the CEILING for compiled kinds. Consequence to know: activating a COMPILED
+ * kind whose bridge is broken would pass the RPC and fail here. Compiled kinds
+ * are activated by developers through `scripts/shape/activate-kinds.ts`, which
+ * runs this leg — the studio control only ever reaches owner-authored kinds.
+ * If that ever stops being true, the browser control must run this gate before
+ * enabling its button.
+ */
+export interface DualGateResolvedComponent {
+  componentKey: string;
+  /** The row's own render-trust verdict (R6). Inactive rows do not satisfy. */
+  isActive: boolean;
+  /** "bundled" | "db" — reported in the leg detail, never gates the verdict. */
+  source: string;
+}
+
 export interface DualGateInput {
   kind: string;
   /** The canonical instance (kind_definition.sample_data). */
@@ -62,6 +97,19 @@ export interface DualGateInput {
   emittedJsonSchema: unknown;
   /** The registry definition for the kind (or null when unregistered). */
   definition: DualGateDefinition | null;
+  /**
+   * The resolver's `(kind, web, output)` answer, when the caller has one.
+   * Omit (or pass null) to check the compiled registry alone.
+   */
+  resolvedComponent?: DualGateResolvedComponent | null;
+  /**
+   * True when the kind is a generated data-only contract
+   * (`metadata.family` ∈ workflow_io | tool_io | action_io | agent_io).
+   * Those are passed between nodes and never rendered, so the render leg is
+   * structurally inapplicable — the same `n/a` doctrine the shape doctor uses.
+   * Failing them would be noise, and noise erodes the gate.
+   */
+  dataOnly?: boolean;
 }
 
 export interface LegResult {
@@ -227,16 +275,47 @@ function validateRender(
   kind: string,
   sample: Record<string, unknown>,
   definition: DualGateDefinition | null,
+  resolvedComponent?: DualGateResolvedComponent | null,
+  dataOnly?: boolean,
 ): LegResult {
-  if (!definition || (!definition.legacyBlockType && !definition.component)) {
+  // Data-only contract kinds are never rendered — the leg is n/a, not failed.
+  if (dataOnly) {
+    return {
+      ok: true,
+      detail:
+        "data-only contract kind — render leg is structurally inapplicable (n/a)",
+    };
+  }
+
+  // ORDER IS LOAD-BEARING. The compiled-bridge check below is the STRONGEST
+  // satisfier — it actually exercises the bridge and catches the
+  // "No <kind> available" class (the 2026-07-04 flashcards regression). Every
+  // compiled kind also owns a `source='bundled'` kind_component row, so
+  // checking `resolvedComponent` first would short-circuit past the bridge for
+  // exactly the kinds that guard protects, silently disabling it. The resolved
+  // component is therefore the LAST resort, not the first.
+  if (!definition && !resolvedComponent?.isActive) {
     return {
       ok: false,
-      detail: `kind "${kind}" has no component (no legacyBlockType or component facet) — nothing to render`,
+      detail: `kind "${kind}" has no component (not in the compiled registry, and no active role='output' kind_component row) — nothing to render`,
+    };
+  }
+
+  if (
+    definition &&
+    !definition.legacyBlockType &&
+    !definition.component &&
+    !definition.toLegacyServerData &&
+    !resolvedComponent?.isActive
+  ) {
+    return {
+      ok: false,
+      detail: `kind "${kind}" has no component (no compiled legacyBlockType/component facet, and no active role='output' kind_component row) — nothing to render`,
     };
   }
 
   // Bridged kinds: the bridge MUST derive real serverData from the sample.
-  if (definition.toLegacyServerData) {
+  if (definition?.toLegacyServerData) {
     let serverData: Record<string, unknown> | undefined;
     try {
       serverData = definition.toLegacyServerData(
@@ -262,17 +341,31 @@ function validateRender(
 
   // Bridgeless kinds parse their own content — the bridge-data proxy can't
   // verify them; a full DOM render check is the deeper leg (deferred to an RTL
-  // harness). Pass with a recorded caveat so it's never silently "fully gated".
+  // harness). Pass with a recorded caveat so it's never silently "fully gated",
+  // and name the satisfier so a reader can tell a compiled bridgeless component
+  // from a DB-authored one without re-deriving it.
+  const satisfier = definition?.legacyBlockType
+    ? `compiled component "${definition.legacyBlockType}"`
+    : definition?.component
+      ? "compiled component facet"
+      : resolvedComponent
+        ? `resolved ${resolvedComponent.source} component "${resolvedComponent.componentKey}"`
+        : "component";
   return {
     ok: true,
-    detail:
-      "bridgeless kind — component parses content itself; full DOM render check deferred to an RTL harness",
+    detail: `bridgeless kind — ${satisfier} parses content itself; full DOM render check deferred to an RTL harness`,
   };
 }
 
 export function runKindDualGate(input: DualGateInput): DualGateResult {
   const structural = validateStructuralLeg(input.sample, input.emittedJsonSchema);
-  const render = validateRender(input.kind, input.sample, input.definition);
+  const render = validateRender(
+    input.kind,
+    input.sample,
+    input.definition,
+    input.resolvedComponent,
+    input.dataOnly,
+  );
   return { isActive: structural.ok && render.ok, structural, render };
 }
 

@@ -1,5 +1,5 @@
 {
-  "generated_for": "764-kinds+53b24a9280b6",
+  "generated_for": "850-kinds+9d38738444d0",
   "columns": [
     "definition",
     "example",
@@ -3455,6 +3455,20 @@
       }
     },
     {
+      "kind": "arman_video_prompt",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "basic_card",
       "is_active": false,
       "family": null,
@@ -3665,7 +3679,35 @@
       }
     },
     {
+      "kind": "employee_card",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "employee_of_the_week",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "employee_roster",
       "is_active": false,
       "family": "user_authored",
       "assets": {
@@ -9615,8 +9657,1170 @@
       }
     },
     {
-      "kind": "wine_tasting",
+      "kind": "video_prompt_options",
+      "is_active": true,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "video_prompt_variation",
       "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "web_a11y_lab_basics_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_anchor_text_descriptiveness_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_asset_delivery_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_broken_images_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_broken_internal_links_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_broken_page_4xx_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_caching_policy_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_canonical_conflicts_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_canonical_presence_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_content_depth_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_content_freshness_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_content_quality_eeat_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_crawl_depth_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_cwv_cls_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_cwv_inp_tbt_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_cwv_lcp_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_duplicate_content_exact_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_excessive_outlinks_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_grammar_spelling_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_gsc_ctr_opportunity_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_gsc_index_coverage_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_gsc_keyword_cannibalization_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_gsc_performance_decay_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_h1_presence_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_heading_hierarchy_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_host_protocol_consistency_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_hreflang_reciprocity_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_hreflang_validity_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_hsts_policy_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_html_lang_validity_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_https_enforcement_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_image_alt_presence_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_image_alt_quality_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_image_dimension_attrs_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_image_lazy_loading_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_image_modern_format_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_image_oversized_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_internal_inlink_coverage_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_internal_link_equity_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_internal_redirect_links_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_intrusive_interstitials_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_keyword_topical_coverage_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_local_business_markup_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_meta_description_duplication_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_meta_description_length_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_meta_description_presence_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_meta_refresh_redirect_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_meta_robots_conflicts_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_mixed_content_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_mobile_render_quality_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_mobile_usability_lab_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_near_duplicate_content_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_nofollow_internal_links_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_og_image_validity_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_orphan_pages_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_page_weight_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_readability_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_redirect_chain_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_redirect_loop_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_robots_txt_health_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_search_intent_alignment_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_security_headers_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_serp_snippet_quality_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_server_error_5xx_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_sitemap_coverage_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_sitemap_health_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_social_meta_completeness_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_soft_404_detection_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_structured_data_coverage_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_structured_data_validity_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_temporary_redirect_usage_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_text_html_ratio_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_thin_content_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_title_duplication_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_title_keyword_alignment_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_title_length_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_title_presence_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_tls_certificate_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_ttfb_server_response_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_url_design_quality_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "web_viewport_meta_v1",
+      "is_active": true,
+      "family": "web_analysis_item",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "wine_tasting",
+      "is_active": true,
       "family": "user_authored",
       "assets": {
         "definition": "ok",
@@ -10751,6 +11955,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "arman_video_prompt",
+      "message": "kind \"arman_video_prompt\" has no content block referencing \"__kind\": \"arman_video_prompt\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "categorization_result",
       "message": "kind \"categorization_result\" has no content block referencing \"__kind\": \"categorization_result\""
     },
@@ -10798,9 +12008,987 @@
     },
     {
       "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_a11y_lab_basics_v1",
+      "message": "kind \"web_a11y_lab_basics_v1\" has no content block referencing \"__kind\": \"web_a11y_lab_basics_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_anchor_text_descriptiveness_v1",
+      "message": "kind \"web_anchor_text_descriptiveness_v1\" has no content block referencing \"__kind\": \"web_anchor_text_descriptiveness_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_asset_delivery_v1",
+      "message": "kind \"web_asset_delivery_v1\" has no content block referencing \"__kind\": \"web_asset_delivery_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_broken_images_v1",
+      "message": "kind \"web_broken_images_v1\" has no content block referencing \"__kind\": \"web_broken_images_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_broken_internal_links_v1",
+      "message": "kind \"web_broken_internal_links_v1\" has no content block referencing \"__kind\": \"web_broken_internal_links_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_broken_page_4xx_v1",
+      "message": "kind \"web_broken_page_4xx_v1\" has no content block referencing \"__kind\": \"web_broken_page_4xx_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_caching_policy_v1",
+      "message": "kind \"web_caching_policy_v1\" has no content block referencing \"__kind\": \"web_caching_policy_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_canonical_conflicts_v1",
+      "message": "kind \"web_canonical_conflicts_v1\" has no content block referencing \"__kind\": \"web_canonical_conflicts_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_canonical_presence_v1",
+      "message": "kind \"web_canonical_presence_v1\" has no content block referencing \"__kind\": \"web_canonical_presence_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_content_depth_v1",
+      "message": "kind \"web_content_depth_v1\" has no content block referencing \"__kind\": \"web_content_depth_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_content_freshness_v1",
+      "message": "kind \"web_content_freshness_v1\" has no content block referencing \"__kind\": \"web_content_freshness_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_content_quality_eeat_v1",
+      "message": "kind \"web_content_quality_eeat_v1\" has no content block referencing \"__kind\": \"web_content_quality_eeat_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_crawl_depth_v1",
+      "message": "kind \"web_crawl_depth_v1\" has no content block referencing \"__kind\": \"web_crawl_depth_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_cwv_cls_v1",
+      "message": "kind \"web_cwv_cls_v1\" has no content block referencing \"__kind\": \"web_cwv_cls_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_cwv_inp_tbt_v1",
+      "message": "kind \"web_cwv_inp_tbt_v1\" has no content block referencing \"__kind\": \"web_cwv_inp_tbt_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_cwv_lcp_v1",
+      "message": "kind \"web_cwv_lcp_v1\" has no content block referencing \"__kind\": \"web_cwv_lcp_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_duplicate_content_exact_v1",
+      "message": "kind \"web_duplicate_content_exact_v1\" has no content block referencing \"__kind\": \"web_duplicate_content_exact_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_excessive_outlinks_v1",
+      "message": "kind \"web_excessive_outlinks_v1\" has no content block referencing \"__kind\": \"web_excessive_outlinks_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_grammar_spelling_v1",
+      "message": "kind \"web_grammar_spelling_v1\" has no content block referencing \"__kind\": \"web_grammar_spelling_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_gsc_ctr_opportunity_v1",
+      "message": "kind \"web_gsc_ctr_opportunity_v1\" has no content block referencing \"__kind\": \"web_gsc_ctr_opportunity_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_gsc_index_coverage_v1",
+      "message": "kind \"web_gsc_index_coverage_v1\" has no content block referencing \"__kind\": \"web_gsc_index_coverage_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_gsc_keyword_cannibalization_v1",
+      "message": "kind \"web_gsc_keyword_cannibalization_v1\" has no content block referencing \"__kind\": \"web_gsc_keyword_cannibalization_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_gsc_performance_decay_v1",
+      "message": "kind \"web_gsc_performance_decay_v1\" has no content block referencing \"__kind\": \"web_gsc_performance_decay_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_h1_presence_v1",
+      "message": "kind \"web_h1_presence_v1\" has no content block referencing \"__kind\": \"web_h1_presence_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_heading_hierarchy_v1",
+      "message": "kind \"web_heading_hierarchy_v1\" has no content block referencing \"__kind\": \"web_heading_hierarchy_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_host_protocol_consistency_v1",
+      "message": "kind \"web_host_protocol_consistency_v1\" has no content block referencing \"__kind\": \"web_host_protocol_consistency_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_hreflang_reciprocity_v1",
+      "message": "kind \"web_hreflang_reciprocity_v1\" has no content block referencing \"__kind\": \"web_hreflang_reciprocity_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_hreflang_validity_v1",
+      "message": "kind \"web_hreflang_validity_v1\" has no content block referencing \"__kind\": \"web_hreflang_validity_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_hsts_policy_v1",
+      "message": "kind \"web_hsts_policy_v1\" has no content block referencing \"__kind\": \"web_hsts_policy_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_html_lang_validity_v1",
+      "message": "kind \"web_html_lang_validity_v1\" has no content block referencing \"__kind\": \"web_html_lang_validity_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_https_enforcement_v1",
+      "message": "kind \"web_https_enforcement_v1\" has no content block referencing \"__kind\": \"web_https_enforcement_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_image_alt_presence_v1",
+      "message": "kind \"web_image_alt_presence_v1\" has no content block referencing \"__kind\": \"web_image_alt_presence_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_image_alt_quality_v1",
+      "message": "kind \"web_image_alt_quality_v1\" has no content block referencing \"__kind\": \"web_image_alt_quality_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_image_dimension_attrs_v1",
+      "message": "kind \"web_image_dimension_attrs_v1\" has no content block referencing \"__kind\": \"web_image_dimension_attrs_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_image_lazy_loading_v1",
+      "message": "kind \"web_image_lazy_loading_v1\" has no content block referencing \"__kind\": \"web_image_lazy_loading_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_image_modern_format_v1",
+      "message": "kind \"web_image_modern_format_v1\" has no content block referencing \"__kind\": \"web_image_modern_format_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_image_oversized_v1",
+      "message": "kind \"web_image_oversized_v1\" has no content block referencing \"__kind\": \"web_image_oversized_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_internal_inlink_coverage_v1",
+      "message": "kind \"web_internal_inlink_coverage_v1\" has no content block referencing \"__kind\": \"web_internal_inlink_coverage_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_internal_link_equity_v1",
+      "message": "kind \"web_internal_link_equity_v1\" has no content block referencing \"__kind\": \"web_internal_link_equity_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_internal_redirect_links_v1",
+      "message": "kind \"web_internal_redirect_links_v1\" has no content block referencing \"__kind\": \"web_internal_redirect_links_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_intrusive_interstitials_v1",
+      "message": "kind \"web_intrusive_interstitials_v1\" has no content block referencing \"__kind\": \"web_intrusive_interstitials_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_keyword_topical_coverage_v1",
+      "message": "kind \"web_keyword_topical_coverage_v1\" has no content block referencing \"__kind\": \"web_keyword_topical_coverage_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_local_business_markup_v1",
+      "message": "kind \"web_local_business_markup_v1\" has no content block referencing \"__kind\": \"web_local_business_markup_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_meta_description_duplication_v1",
+      "message": "kind \"web_meta_description_duplication_v1\" has no content block referencing \"__kind\": \"web_meta_description_duplication_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_meta_description_length_v1",
+      "message": "kind \"web_meta_description_length_v1\" has no content block referencing \"__kind\": \"web_meta_description_length_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_meta_description_presence_v1",
+      "message": "kind \"web_meta_description_presence_v1\" has no content block referencing \"__kind\": \"web_meta_description_presence_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_meta_refresh_redirect_v1",
+      "message": "kind \"web_meta_refresh_redirect_v1\" has no content block referencing \"__kind\": \"web_meta_refresh_redirect_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_meta_robots_conflicts_v1",
+      "message": "kind \"web_meta_robots_conflicts_v1\" has no content block referencing \"__kind\": \"web_meta_robots_conflicts_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_mixed_content_v1",
+      "message": "kind \"web_mixed_content_v1\" has no content block referencing \"__kind\": \"web_mixed_content_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_mobile_render_quality_v1",
+      "message": "kind \"web_mobile_render_quality_v1\" has no content block referencing \"__kind\": \"web_mobile_render_quality_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_mobile_usability_lab_v1",
+      "message": "kind \"web_mobile_usability_lab_v1\" has no content block referencing \"__kind\": \"web_mobile_usability_lab_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_near_duplicate_content_v1",
+      "message": "kind \"web_near_duplicate_content_v1\" has no content block referencing \"__kind\": \"web_near_duplicate_content_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_nofollow_internal_links_v1",
+      "message": "kind \"web_nofollow_internal_links_v1\" has no content block referencing \"__kind\": \"web_nofollow_internal_links_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_og_image_validity_v1",
+      "message": "kind \"web_og_image_validity_v1\" has no content block referencing \"__kind\": \"web_og_image_validity_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_orphan_pages_v1",
+      "message": "kind \"web_orphan_pages_v1\" has no content block referencing \"__kind\": \"web_orphan_pages_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_page_weight_v1",
+      "message": "kind \"web_page_weight_v1\" has no content block referencing \"__kind\": \"web_page_weight_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_readability_v1",
+      "message": "kind \"web_readability_v1\" has no content block referencing \"__kind\": \"web_readability_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_redirect_chain_v1",
+      "message": "kind \"web_redirect_chain_v1\" has no content block referencing \"__kind\": \"web_redirect_chain_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_redirect_loop_v1",
+      "message": "kind \"web_redirect_loop_v1\" has no content block referencing \"__kind\": \"web_redirect_loop_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_robots_txt_health_v1",
+      "message": "kind \"web_robots_txt_health_v1\" has no content block referencing \"__kind\": \"web_robots_txt_health_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_search_intent_alignment_v1",
+      "message": "kind \"web_search_intent_alignment_v1\" has no content block referencing \"__kind\": \"web_search_intent_alignment_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_security_headers_v1",
+      "message": "kind \"web_security_headers_v1\" has no content block referencing \"__kind\": \"web_security_headers_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_serp_snippet_quality_v1",
+      "message": "kind \"web_serp_snippet_quality_v1\" has no content block referencing \"__kind\": \"web_serp_snippet_quality_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_server_error_5xx_v1",
+      "message": "kind \"web_server_error_5xx_v1\" has no content block referencing \"__kind\": \"web_server_error_5xx_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_sitemap_coverage_v1",
+      "message": "kind \"web_sitemap_coverage_v1\" has no content block referencing \"__kind\": \"web_sitemap_coverage_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_sitemap_health_v1",
+      "message": "kind \"web_sitemap_health_v1\" has no content block referencing \"__kind\": \"web_sitemap_health_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_social_meta_completeness_v1",
+      "message": "kind \"web_social_meta_completeness_v1\" has no content block referencing \"__kind\": \"web_social_meta_completeness_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_soft_404_detection_v1",
+      "message": "kind \"web_soft_404_detection_v1\" has no content block referencing \"__kind\": \"web_soft_404_detection_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_structured_data_coverage_v1",
+      "message": "kind \"web_structured_data_coverage_v1\" has no content block referencing \"__kind\": \"web_structured_data_coverage_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_structured_data_validity_v1",
+      "message": "kind \"web_structured_data_validity_v1\" has no content block referencing \"__kind\": \"web_structured_data_validity_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_temporary_redirect_usage_v1",
+      "message": "kind \"web_temporary_redirect_usage_v1\" has no content block referencing \"__kind\": \"web_temporary_redirect_usage_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_text_html_ratio_v1",
+      "message": "kind \"web_text_html_ratio_v1\" has no content block referencing \"__kind\": \"web_text_html_ratio_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_thin_content_v1",
+      "message": "kind \"web_thin_content_v1\" has no content block referencing \"__kind\": \"web_thin_content_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_title_duplication_v1",
+      "message": "kind \"web_title_duplication_v1\" has no content block referencing \"__kind\": \"web_title_duplication_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_title_keyword_alignment_v1",
+      "message": "kind \"web_title_keyword_alignment_v1\" has no content block referencing \"__kind\": \"web_title_keyword_alignment_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_title_length_v1",
+      "message": "kind \"web_title_length_v1\" has no content block referencing \"__kind\": \"web_title_length_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_title_presence_v1",
+      "message": "kind \"web_title_presence_v1\" has no content block referencing \"__kind\": \"web_title_presence_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_tls_certificate_v1",
+      "message": "kind \"web_tls_certificate_v1\" has no content block referencing \"__kind\": \"web_tls_certificate_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_ttfb_server_response_v1",
+      "message": "kind \"web_ttfb_server_response_v1\" has no content block referencing \"__kind\": \"web_ttfb_server_response_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_url_design_quality_v1",
+      "message": "kind \"web_url_design_quality_v1\" has no content block referencing \"__kind\": \"web_url_design_quality_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "web_viewport_meta_v1",
+      "message": "kind \"web_viewport_meta_v1\" has no content block referencing \"__kind\": \"web_viewport_meta_v1\""
+    },
+    {
+      "severity": "yellow",
       "code": "no-example",
       "kind": "action_io_action_ai_agent_assignment_batch_5f89e4a3_input",
       "message": "kind \"action_io_action_ai_agent_assignment_batch_5f89e4a3_input\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_a11y_lab_basics_v1",
+      "message": "kind \"web_a11y_lab_basics_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_anchor_text_descriptiveness_v1",
+      "message": "kind \"web_anchor_text_descriptiveness_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_asset_delivery_v1",
+      "message": "kind \"web_asset_delivery_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_broken_images_v1",
+      "message": "kind \"web_broken_images_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_broken_internal_links_v1",
+      "message": "kind \"web_broken_internal_links_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_broken_page_4xx_v1",
+      "message": "kind \"web_broken_page_4xx_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_caching_policy_v1",
+      "message": "kind \"web_caching_policy_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_canonical_conflicts_v1",
+      "message": "kind \"web_canonical_conflicts_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_canonical_presence_v1",
+      "message": "kind \"web_canonical_presence_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_content_depth_v1",
+      "message": "kind \"web_content_depth_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_content_freshness_v1",
+      "message": "kind \"web_content_freshness_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_content_quality_eeat_v1",
+      "message": "kind \"web_content_quality_eeat_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_crawl_depth_v1",
+      "message": "kind \"web_crawl_depth_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_cwv_cls_v1",
+      "message": "kind \"web_cwv_cls_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_cwv_inp_tbt_v1",
+      "message": "kind \"web_cwv_inp_tbt_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_cwv_lcp_v1",
+      "message": "kind \"web_cwv_lcp_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_duplicate_content_exact_v1",
+      "message": "kind \"web_duplicate_content_exact_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_excessive_outlinks_v1",
+      "message": "kind \"web_excessive_outlinks_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_grammar_spelling_v1",
+      "message": "kind \"web_grammar_spelling_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_gsc_ctr_opportunity_v1",
+      "message": "kind \"web_gsc_ctr_opportunity_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_gsc_index_coverage_v1",
+      "message": "kind \"web_gsc_index_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_gsc_keyword_cannibalization_v1",
+      "message": "kind \"web_gsc_keyword_cannibalization_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_gsc_performance_decay_v1",
+      "message": "kind \"web_gsc_performance_decay_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_h1_presence_v1",
+      "message": "kind \"web_h1_presence_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_heading_hierarchy_v1",
+      "message": "kind \"web_heading_hierarchy_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_host_protocol_consistency_v1",
+      "message": "kind \"web_host_protocol_consistency_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_hreflang_reciprocity_v1",
+      "message": "kind \"web_hreflang_reciprocity_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_hreflang_validity_v1",
+      "message": "kind \"web_hreflang_validity_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_hsts_policy_v1",
+      "message": "kind \"web_hsts_policy_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_html_lang_validity_v1",
+      "message": "kind \"web_html_lang_validity_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_https_enforcement_v1",
+      "message": "kind \"web_https_enforcement_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_image_alt_presence_v1",
+      "message": "kind \"web_image_alt_presence_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_image_alt_quality_v1",
+      "message": "kind \"web_image_alt_quality_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_image_dimension_attrs_v1",
+      "message": "kind \"web_image_dimension_attrs_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_image_lazy_loading_v1",
+      "message": "kind \"web_image_lazy_loading_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_image_modern_format_v1",
+      "message": "kind \"web_image_modern_format_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_image_oversized_v1",
+      "message": "kind \"web_image_oversized_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_internal_inlink_coverage_v1",
+      "message": "kind \"web_internal_inlink_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_internal_link_equity_v1",
+      "message": "kind \"web_internal_link_equity_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_internal_redirect_links_v1",
+      "message": "kind \"web_internal_redirect_links_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_intrusive_interstitials_v1",
+      "message": "kind \"web_intrusive_interstitials_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_keyword_topical_coverage_v1",
+      "message": "kind \"web_keyword_topical_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_local_business_markup_v1",
+      "message": "kind \"web_local_business_markup_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_meta_description_duplication_v1",
+      "message": "kind \"web_meta_description_duplication_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_meta_description_length_v1",
+      "message": "kind \"web_meta_description_length_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_meta_description_presence_v1",
+      "message": "kind \"web_meta_description_presence_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_meta_refresh_redirect_v1",
+      "message": "kind \"web_meta_refresh_redirect_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_meta_robots_conflicts_v1",
+      "message": "kind \"web_meta_robots_conflicts_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_mixed_content_v1",
+      "message": "kind \"web_mixed_content_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_mobile_render_quality_v1",
+      "message": "kind \"web_mobile_render_quality_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_mobile_usability_lab_v1",
+      "message": "kind \"web_mobile_usability_lab_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_near_duplicate_content_v1",
+      "message": "kind \"web_near_duplicate_content_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_nofollow_internal_links_v1",
+      "message": "kind \"web_nofollow_internal_links_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_og_image_validity_v1",
+      "message": "kind \"web_og_image_validity_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_orphan_pages_v1",
+      "message": "kind \"web_orphan_pages_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_page_weight_v1",
+      "message": "kind \"web_page_weight_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_readability_v1",
+      "message": "kind \"web_readability_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_redirect_chain_v1",
+      "message": "kind \"web_redirect_chain_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_redirect_loop_v1",
+      "message": "kind \"web_redirect_loop_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_robots_txt_health_v1",
+      "message": "kind \"web_robots_txt_health_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_search_intent_alignment_v1",
+      "message": "kind \"web_search_intent_alignment_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_security_headers_v1",
+      "message": "kind \"web_security_headers_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_serp_snippet_quality_v1",
+      "message": "kind \"web_serp_snippet_quality_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_server_error_5xx_v1",
+      "message": "kind \"web_server_error_5xx_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_sitemap_coverage_v1",
+      "message": "kind \"web_sitemap_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_sitemap_health_v1",
+      "message": "kind \"web_sitemap_health_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_social_meta_completeness_v1",
+      "message": "kind \"web_social_meta_completeness_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_soft_404_detection_v1",
+      "message": "kind \"web_soft_404_detection_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_structured_data_coverage_v1",
+      "message": "kind \"web_structured_data_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_structured_data_validity_v1",
+      "message": "kind \"web_structured_data_validity_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_temporary_redirect_usage_v1",
+      "message": "kind \"web_temporary_redirect_usage_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_text_html_ratio_v1",
+      "message": "kind \"web_text_html_ratio_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_thin_content_v1",
+      "message": "kind \"web_thin_content_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_title_duplication_v1",
+      "message": "kind \"web_title_duplication_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_title_keyword_alignment_v1",
+      "message": "kind \"web_title_keyword_alignment_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_title_length_v1",
+      "message": "kind \"web_title_length_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_title_presence_v1",
+      "message": "kind \"web_title_presence_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_tls_certificate_v1",
+      "message": "kind \"web_tls_certificate_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_ttfb_server_response_v1",
+      "message": "kind \"web_ttfb_server_response_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_url_design_quality_v1",
+      "message": "kind \"web_url_design_quality_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "web_viewport_meta_v1",
+      "message": "kind \"web_viewport_meta_v1\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "arman_video_prompt",
+      "message": "kind \"arman_video_prompt\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -10849,6 +13037,522 @@
       "code": "no-skill",
       "kind": "stats",
       "message": "kind \"stats\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_a11y_lab_basics_v1",
+      "message": "kind \"web_a11y_lab_basics_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_anchor_text_descriptiveness_v1",
+      "message": "kind \"web_anchor_text_descriptiveness_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_asset_delivery_v1",
+      "message": "kind \"web_asset_delivery_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_broken_images_v1",
+      "message": "kind \"web_broken_images_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_broken_internal_links_v1",
+      "message": "kind \"web_broken_internal_links_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_broken_page_4xx_v1",
+      "message": "kind \"web_broken_page_4xx_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_caching_policy_v1",
+      "message": "kind \"web_caching_policy_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_canonical_conflicts_v1",
+      "message": "kind \"web_canonical_conflicts_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_canonical_presence_v1",
+      "message": "kind \"web_canonical_presence_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_content_depth_v1",
+      "message": "kind \"web_content_depth_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_content_freshness_v1",
+      "message": "kind \"web_content_freshness_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_content_quality_eeat_v1",
+      "message": "kind \"web_content_quality_eeat_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_crawl_depth_v1",
+      "message": "kind \"web_crawl_depth_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_cwv_cls_v1",
+      "message": "kind \"web_cwv_cls_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_cwv_inp_tbt_v1",
+      "message": "kind \"web_cwv_inp_tbt_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_cwv_lcp_v1",
+      "message": "kind \"web_cwv_lcp_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_duplicate_content_exact_v1",
+      "message": "kind \"web_duplicate_content_exact_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_excessive_outlinks_v1",
+      "message": "kind \"web_excessive_outlinks_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_grammar_spelling_v1",
+      "message": "kind \"web_grammar_spelling_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_gsc_ctr_opportunity_v1",
+      "message": "kind \"web_gsc_ctr_opportunity_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_gsc_index_coverage_v1",
+      "message": "kind \"web_gsc_index_coverage_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_gsc_keyword_cannibalization_v1",
+      "message": "kind \"web_gsc_keyword_cannibalization_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_gsc_performance_decay_v1",
+      "message": "kind \"web_gsc_performance_decay_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_h1_presence_v1",
+      "message": "kind \"web_h1_presence_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_heading_hierarchy_v1",
+      "message": "kind \"web_heading_hierarchy_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_host_protocol_consistency_v1",
+      "message": "kind \"web_host_protocol_consistency_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_hreflang_reciprocity_v1",
+      "message": "kind \"web_hreflang_reciprocity_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_hreflang_validity_v1",
+      "message": "kind \"web_hreflang_validity_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_hsts_policy_v1",
+      "message": "kind \"web_hsts_policy_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_html_lang_validity_v1",
+      "message": "kind \"web_html_lang_validity_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_https_enforcement_v1",
+      "message": "kind \"web_https_enforcement_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_image_alt_presence_v1",
+      "message": "kind \"web_image_alt_presence_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_image_alt_quality_v1",
+      "message": "kind \"web_image_alt_quality_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_image_dimension_attrs_v1",
+      "message": "kind \"web_image_dimension_attrs_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_image_lazy_loading_v1",
+      "message": "kind \"web_image_lazy_loading_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_image_modern_format_v1",
+      "message": "kind \"web_image_modern_format_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_image_oversized_v1",
+      "message": "kind \"web_image_oversized_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_internal_inlink_coverage_v1",
+      "message": "kind \"web_internal_inlink_coverage_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_internal_link_equity_v1",
+      "message": "kind \"web_internal_link_equity_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_internal_redirect_links_v1",
+      "message": "kind \"web_internal_redirect_links_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_intrusive_interstitials_v1",
+      "message": "kind \"web_intrusive_interstitials_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_keyword_topical_coverage_v1",
+      "message": "kind \"web_keyword_topical_coverage_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_local_business_markup_v1",
+      "message": "kind \"web_local_business_markup_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_meta_description_duplication_v1",
+      "message": "kind \"web_meta_description_duplication_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_meta_description_length_v1",
+      "message": "kind \"web_meta_description_length_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_meta_description_presence_v1",
+      "message": "kind \"web_meta_description_presence_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_meta_refresh_redirect_v1",
+      "message": "kind \"web_meta_refresh_redirect_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_meta_robots_conflicts_v1",
+      "message": "kind \"web_meta_robots_conflicts_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_mixed_content_v1",
+      "message": "kind \"web_mixed_content_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_mobile_render_quality_v1",
+      "message": "kind \"web_mobile_render_quality_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_mobile_usability_lab_v1",
+      "message": "kind \"web_mobile_usability_lab_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_near_duplicate_content_v1",
+      "message": "kind \"web_near_duplicate_content_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_nofollow_internal_links_v1",
+      "message": "kind \"web_nofollow_internal_links_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_og_image_validity_v1",
+      "message": "kind \"web_og_image_validity_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_orphan_pages_v1",
+      "message": "kind \"web_orphan_pages_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_page_weight_v1",
+      "message": "kind \"web_page_weight_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_readability_v1",
+      "message": "kind \"web_readability_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_redirect_chain_v1",
+      "message": "kind \"web_redirect_chain_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_redirect_loop_v1",
+      "message": "kind \"web_redirect_loop_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_robots_txt_health_v1",
+      "message": "kind \"web_robots_txt_health_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_search_intent_alignment_v1",
+      "message": "kind \"web_search_intent_alignment_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_security_headers_v1",
+      "message": "kind \"web_security_headers_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_serp_snippet_quality_v1",
+      "message": "kind \"web_serp_snippet_quality_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_server_error_5xx_v1",
+      "message": "kind \"web_server_error_5xx_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_sitemap_coverage_v1",
+      "message": "kind \"web_sitemap_coverage_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_sitemap_health_v1",
+      "message": "kind \"web_sitemap_health_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_social_meta_completeness_v1",
+      "message": "kind \"web_social_meta_completeness_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_soft_404_detection_v1",
+      "message": "kind \"web_soft_404_detection_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_structured_data_coverage_v1",
+      "message": "kind \"web_structured_data_coverage_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_structured_data_validity_v1",
+      "message": "kind \"web_structured_data_validity_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_temporary_redirect_usage_v1",
+      "message": "kind \"web_temporary_redirect_usage_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_text_html_ratio_v1",
+      "message": "kind \"web_text_html_ratio_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_thin_content_v1",
+      "message": "kind \"web_thin_content_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_title_duplication_v1",
+      "message": "kind \"web_title_duplication_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_title_keyword_alignment_v1",
+      "message": "kind \"web_title_keyword_alignment_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_title_length_v1",
+      "message": "kind \"web_title_length_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_title_presence_v1",
+      "message": "kind \"web_title_presence_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_tls_certificate_v1",
+      "message": "kind \"web_tls_certificate_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_ttfb_server_response_v1",
+      "message": "kind \"web_ttfb_server_response_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_url_design_quality_v1",
+      "message": "kind \"web_url_design_quality_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "web_viewport_meta_v1",
+      "message": "kind \"web_viewport_meta_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "arman_video_prompt",
+      "message": "kind \"arman_video_prompt\" example is older than the kind definition (example 2026-07-22T02:57:08.898046+00:00 < kind 2026-07-22T17:20:02.949294+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "employee_card",
+      "message": "kind \"employee_card\" example is older than the kind definition (example 2026-07-19T00:33:30.271683+00:00 < kind 2026-07-22T17:20:02.949294+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "employee_of_the_week",
+      "message": "kind \"employee_of_the_week\" example is older than the kind definition (example 2026-07-18T08:56:50.244071+00:00 < kind 2026-07-22T17:20:02.949294+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "employee_roster",
+      "message": "kind \"employee_roster\" example is older than the kind definition (example 2026-07-19T01:00:02.510649+00:00 < kind 2026-07-22T17:20:02.949294+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "flashcard_deck",
+      "message": "kind \"flashcard_deck\" example is older than the kind definition (example 2026-07-18T09:07:02.085947+00:00 < kind 2026-07-22T17:20:02.949294+00:00) — revalidate/recapture"
     },
     {
       "severity": "yellow",
@@ -10903,6 +13607,12 @@
       "code": "stale-example",
       "kind": "tool_io_bundle_list_desktop_windows_a5d87063_9aa7_4fcb_a842_1fafeb42ef94_65481f4b_input",
       "message": "kind \"tool_io_bundle_list_desktop_windows_a5d87063_9aa7_4fcb_a842_1fafeb42ef94_65481f4b_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "wine_tasting",
+      "message": "kind \"wine_tasting\" example is older than the kind definition (example 2026-07-18T19:50:14.196138+00:00 < kind 2026-07-22T22:54:27.486323+00:00) — revalidate/recapture"
     }
   ]
 }

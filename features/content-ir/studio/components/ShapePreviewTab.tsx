@@ -20,6 +20,7 @@ interface ShapePreviewTabProps {
   titleKey: string | null;
   loadingComponent: string | null;
   emittedJsonSchema: Json | null;
+  isActive: boolean;
   isOwnedByViewer: boolean;
 }
 
@@ -31,6 +32,7 @@ export default function ShapePreviewTab({
   titleKey,
   loadingComponent,
   emittedJsonSchema,
+  isActive,
   isOwnedByViewer,
 }: ShapePreviewTabProps) {
   const [examplesRevision, setExamplesRevision] = useState(0);
@@ -46,6 +48,7 @@ export default function ShapePreviewTab({
           titleKey={titleKey}
           loadingComponent={loadingComponent}
           emittedJsonSchema={emittedJsonSchema}
+          isActive={isActive}
           examples={examples}
           onExamplesChanged={() =>
             setExamplesRevision((revision) => revision + 1)
