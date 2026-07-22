@@ -29,9 +29,12 @@ files, with a live-streaming studio, resumable runs, and public share pages.
    defaults. If preview loading fails, it omits `speakers` and generation uses
    the same server-owned defaults.
 2. A `pc_studio_runs` row is created (`studio/runs/service.ts`); route → run page.
-3. `useStudioRun` POSTs to **`{base}/podcast/generate`** (NDJSON stream; NOT
-   under `/api/`), folds events via `generator/reduce.ts`, persists milestones to
-   `pc_studio_runs`. Resume → `{base}/podcast/resume/{backend_run_id}`.
+3. `usePodcastRun` and `useStudioRun` use the canonical Redux `callApi` transport
+   to POST **`{base}/podcast/generate`** (NDJSON stream; NOT under `/api/`), so
+   active organization/project/task scope is injected like every other mutating
+   API call. Studio folds events via `generator/reduce.ts` and persists
+   milestones to `pc_studio_runs`. Resume →
+   `{base}/podcast/resume/{backend_run_id}` through the same transport.
 4. Backend (aidream `podcast_generator`) routes the script agent by host count
    (1 → solo · 2 → proven pinned agents · 2–4 custom → multihost · 5–20 →
    roundtable) and audio by provider band (≤2 → Gemini TTS, 3–20 → ElevenLabs
@@ -91,6 +94,10 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+
+- 2026-07-22 — Podcast generation and resume migrated from the legacy
+  `useBackendApi` stream path to canonical `callApi`, restoring automatic active
+  organization/project/task injection while preserving NDJSON event handling.
 - 2026-07-22 — **Show/episode page conformance + legibility + data cleanup.** Header: `/podcast/[slug]` moved from `<PageHeader>` (centre slot — the back chevron floated mid-header) to `RouteHeader left={…}`, so back + episode/show title sit at the left edge; `CreateView` was double-portalling (`<PageHeader><RouteHeader/></PageHeader>` — `RouteHeader` already renders its own) and now renders it once. Legibility: the video-mode scrim's `via-transparent` left the vertical middle — exactly where the title/description sit — unscrimmed, so copy landed on raw cover art; replaced with a ramped multi-stop gradient plus a text shadow, and the show hero's scrim grew `h-24 → h-48` (mobile text blocks exceed 96px) with the same shadow. Player: `PodcastAudioPlayer` now adopts a duration the `<audio>` element already knows (`durationchange` + mount sync) — `onLoadedMetadata` alone missed the cached/pre-loaded case and every episode showed `--:--` despite a known duration. Index: dropped the `<h1>Podcasts</h1>` that duplicated the shell header title, and the hero now clears the glass header via `pt-[calc(var(--shell-header-h)+1.25rem)]`. Data: 15 episodes soft-deleted (2 untitled, 4 with dead audio, 9 duplicate test runs) + the empty AP Bio show → 33 episodes / 3 shows, zero dead media refs. Generator bug behind the untitled episodes is aidream-side (D82); missing `duration_seconds` is D83.
 - 2026-07-22 — THE VIEW LAW: `podcastService.fetchAllShows()` now `.eq("created_by", userId)` explicitly instead of bare RLS.
 - 2026-07-20 — **`/podcast` index theme + interaction + broken-art cleanup.** Hero and cards moved off hardcoded dark (`bg-zinc-900`/white text) onto semantic tokens — the index now reads correctly in light AND dark (the shell header title was dark-on-dark before). Card click target fixed: the whole-card overlay link now sits above the artwork (`z-[15]`, artwork z-10, Manage/Draft z-20), so cursor + click are uniform across the full card. Consumer-surface fallback doctrine: grid + show-page episode thumbs pass `errorFallback="icon"` with the mic/music placeholder — a dead URL degrades to the same quiet tile as "no artwork", never the red debug panel (the `InlineMediaRef` "info" default stays for internal surfaces). Data heal: the `podcast-assets` storage bucket was deleted (all URLs 400) — Phoenix Echo's cover re-pointed to its surviving CDN episode image, AP Bio's + 4 episodes' dead image refs nulled; 4 published episodes still have unrecoverable dead audio (D77, decision pending).

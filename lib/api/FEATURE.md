@@ -16,6 +16,25 @@ Inspector capture. Feature-owned raw `fetch`, `useBackendApi`, and raw
 > against itself — nothing linked it to the real contract. Users hit
 > `invalid_variant_spec: preset_id Field required` (Image Studio → Convert).
 
+## Multi-service environment routing
+
+The shell API environment control owns four independently deployed Python targets:
+`aidream`, `scraper`, `files`, and `seo`. A normal click switches every target between
+Production and Localhost and clears old exceptions. The adjacent detail menu can pin one
+service to Production or Localhost while the remaining services follow the global choice;
+both the global choice and pins persist in `matrx.apiConfig.v1`.
+
+- `lib/api/service-routing.ts` is the one service/origin map and exact file-route ownership map.
+- `apiConfigSlice.ts` resolves the global environment plus per-service exceptions.
+- React code reads `selectApiServiceTargets` / `selectResolvedServiceBaseUrl`; imperative
+  clients use `resolveServiceBaseUrl(service)`. Feature-local server URLs are forbidden.
+- Environment overrides are `NEXT_PUBLIC_SCRAPER_URL(_LOCAL)`,
+  `NEXT_PUBLIC_FILES_URL(_LOCAL)`, and `NEXT_PUBLIC_SEO_URL(_LOCAL)`; aidream keeps its
+  existing `NEXT_PUBLIC_BACKEND_URL_*` family.
+- Files retain one deliberate production nuance: default browser traffic remains on aidream
+  until `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`, while global localhost or an explicit Files
+  pin routes only the paths that the standalone service actually owns.
+
 ## The two rules
 
 **1. Types are DERIVED from the generated contract, never hand-mirrored.**
@@ -124,6 +143,8 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-07-22 — Added canonical global and per-service Production/Localhost routing for
+  aidream, scraper, files, and SEO; moved scraper commands and the DataForSEO lab onto it.
 - 2026-07-21 — Added the site-wide backend-boundary approval gate. Existing
   bypasses are now a live, failing inventory rather than an implicit backlog;
   no exception is approved by default. Added `requestRaw` as the centralized

@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-07
+updated: 2026-07-22
 repos: [matrx-frontend, aidream]
 vision: [/Users/armanisadeghi/code/aidream/packages/matrx-ai/matrx_ai/agent_runners/PODCAST_PIPELINE.md]
 ---
@@ -51,6 +51,9 @@ system (through 2026-07-06, incl. the runs/recovery/per-asset-regen subsystem) i
 
 ## Done
 
+- Podcast generate/resume streams use canonical `callApi`, so active scope is
+  injected; aidream applies it on generate and restores the stored run org on
+  resume.
 - Server gate enforcement deployed — aidream `b3e3dfc40`; gate tests in `scripts/podcast_gate_tests.py`.
 - ElevenLabs streaming shipped, incl. `text_to_dialogue/stream` — aidream ElevenLabs provider.
 - `<speaker_settings>` now emitted by script agents (name + gender) — aidream `d18b531cd`.

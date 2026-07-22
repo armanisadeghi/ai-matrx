@@ -42,7 +42,7 @@ describe("isStandaloneFileServiceRoute", () => {
   });
 });
 
-describe("shouldRouteBrowserRequestToStandaloneFiles", () => {
+describe("multi-service file routing", () => {
   const originalCutover = process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
 
   afterEach(() => {
@@ -53,31 +53,29 @@ describe("shouldRouteBrowserRequestToStandaloneFiles", () => {
     }
   });
 
-  it("keeps browser file uploads on aidream before cutover", () => {
+  it("preserves the aidream production fallback until the default cutover", () => {
     delete process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
-
     expect(
-      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST"),
+      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST", {
+        environment: "production",
+        override: null,
+      }),
     ).toBe(false);
   });
 
-  it("routes owned file endpoints after the explicit browser cutover", () => {
-    process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER = "true";
-
+  it("uses matrx-files for a global localhost target or an individual pin", () => {
+    delete process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
     expect(
-      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST"),
+      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST", {
+        environment: "localhost",
+        override: null,
+      }),
     ).toBe(true);
     expect(
-      shouldRouteBrowserRequestToStandaloneFiles(
-        `/files/${FILE_ID}/pdf-pages`,
-        "POST",
-      ),
+      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST", {
+        environment: "production",
+        override: "production",
+      }),
     ).toBe(true);
-    expect(
-      shouldRouteBrowserRequestToStandaloneFiles(
-        `/files/${FILE_ID}/ingest`,
-        "POST",
-      ),
-    ).toBe(false);
   });
 });

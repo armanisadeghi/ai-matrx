@@ -40,7 +40,7 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
 - `features/marketing/data/analysis-service.ts` and `analysis-hooks.ts` — isolated direct-Supabase priority, finding, and result reads.
 - `features/marketing/data/inspection-*` and `operations-*` — isolated direct-Supabase media, link, batch, and cost reads.
 - `features/marketing/lib/discovery-promotion.ts` — canonical social-URL-to-property-type classifier used by review promotion.
-- `features/marketing/crawler/direct-client.ts` — direct authenticated scraper commands and transient NDJSON only.
+- `features/marketing/crawler/direct-client.ts` — direct authenticated scraper commands and transient NDJSON only; its origin comes from the canonical scraper service target, never a feature-local constant.
 - Persisted Marketing reads never use Next.js, Python history routes, or AI Dream intermediaries. Google authorization reuses the canonical `GoogleAPIProvider` and Google Identity Services popup; the one-time code exchange and disconnect are aidream endpoints (`/api/google-integrations/exchange|disconnect`, called directly from the browser with the caller's JWT) because client secrets and refresh tokens cannot run in the browser. There are no Next.js OAuth routes.
 
 ## Data model
@@ -215,3 +215,4 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 - 2026-07-21 — Claude: URL-quality evaluator (4th, warnings-only `audit_metrics` section; TS↔Python parity; excluded from overall_ok; rendered live in the page-workspace Indexability card) and the new site `.../audit` rollup dashboard (verdict tiles, pass-rate bars, top issues, worst pages; Audit mode in the site nav).
 - 2026-07-22 — Claude: site overview hero right column now surfaces Review inbox + Quick work directly under the KPI strip (removed the duplicate cards from the page bottom).
 - 2026-07-22 — Codex: corrected Add Brand visibility to the live access model: Internal is the default, Private maps to owner-scoped `personal`, Public grants outside read access, and canonical share links remain a separate mechanism rather than a visibility option.
+- 2026-07-22 — Codex: moved every direct scraper command onto the canonical multi-service API target so the shell Production/Localhost switch and an individual scraper pin control crawling without a page-local URL.

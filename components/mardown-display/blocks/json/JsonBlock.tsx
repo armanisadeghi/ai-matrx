@@ -132,19 +132,22 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   const effectiveContent = formatOverride ?? content;
 
   // Clear the local override whenever the parent ships fresh content so
-  // we don't show stale reformatted text on top of a real update.
-  const lastSeenContentRef = useRef(content);
-  if (lastSeenContentRef.current !== content) {
-    lastSeenContentRef.current = content;
-    if (formatOverride !== null) setFormatOverride(null);
+  // we don't show stale reformatted text on top of a real update. React
+  // immediately retries this render before committing the children.
+  const [previousContent, setPreviousContent] = useState(content);
+  if (previousContent !== content) {
+    setPreviousContent(content);
+    setFormatOverride(null);
   }
 
-  // One-shot parse + tabular detection per content change. Skipped during
-  // streaming since the content is by definition incomplete.
+  // One-shot parse + tabular detection per content change. A streaming JSON
+  // region can become valid before the surrounding response finishes, so do
+  // not hide the JSON tools merely because the host stream is still active.
+  // While the current buffer is incomplete the canonical toolbar stays
+  // mounted with its structure-dependent actions disabled.
   const parsed = useMemo(() => {
-    if (isStreamActive) return { ok: false as const };
     return parseJsonSafe(effectiveContent);
-  }, [effectiveContent, isStreamActive]);
+  }, [effectiveContent]);
 
   const tabular = useMemo(() => {
     if (!parsed.ok) {
@@ -316,8 +319,6 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
       });
     }
     return items;
-    // applyFormat closes over the latest values via the deps above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compactForm, expandedForm, isCompactFormatted, effectiveContent]);
 
   const fullMenuItems = useMemo(
@@ -325,7 +326,38 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
     [formatMenuItems, jsonMenuItems],
   );
 
-  // Fallback: streaming or unparseable → original CodeBlock with no extras.
+  const canInspect = parsed.ok;
+  const activeMode = canInspect ? mode : "code";
+
+  const toggleFormat = () => {
+    if (isCompactFormatted) {
+      if (expandedForm) applyFormat(expandedForm);
+    } else {
+      if (compactForm) applyFormat(compactForm);
+    }
+  };
+
+  const viewToggle = (
+    <div className="flex items-center gap-1">
+      <ViewToggle
+        mode={activeMode}
+        onChange={setMode}
+        inspectAvailable={canInspect}
+        tabularAvailable={tabular.isTabular}
+      />
+      {activeMode === "code" && (
+        <FormatToggleButton
+          isCompact={isCompactFormatted}
+          disabled={!compactForm || !expandedForm}
+          onToggle={toggleFormat}
+        />
+      )}
+    </div>
+  );
+
+  // Incomplete or invalid JSON still uses the same canonical shell. Keeping
+  // the toolbar mounted prevents a streaming block from changing identity and
+  // losing controls as its buffer moves between invalid and valid JSON.
   if (!parsed.ok) {
     return (
       <div
@@ -341,6 +373,8 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
             allowEdit={allowEdit}
             customBuiltinKeys={customBuiltinKeys}
             onCodeChange={onCodeChange}
+            headerLeftSlot={viewToggle}
+            extraMenuItems={fullMenuItems}
             conversationId={conversationId}
             messageId={messageId}
           />
@@ -350,30 +384,6 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   }
 
   const data = parsed.value;
-
-  const toggleFormat = () => {
-    if (isCompactFormatted) {
-      if (expandedForm) applyFormat(expandedForm);
-    } else {
-      if (compactForm) applyFormat(compactForm);
-    }
-  };
-
-  const viewToggle = (
-    <div className="flex items-center gap-1">
-      <ViewToggle
-        mode={mode}
-        onChange={setMode}
-        tabularAvailable={tabular.isTabular}
-      />
-      {mode === "code" && compactForm && expandedForm && (
-        <FormatToggleButton
-          isCompact={isCompactFormatted}
-          onToggle={toggleFormat}
-        />
-      )}
-    </div>
-  );
 
   const tabularCaption =
     tabular.isTabular &&
@@ -474,6 +484,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
 
 interface FormatToggleButtonProps {
   isCompact: boolean;
+  disabled: boolean;
   onToggle: () => void;
 }
 
@@ -489,6 +500,7 @@ interface FormatToggleButtonProps {
  */
 const FormatToggleButton: React.FC<FormatToggleButtonProps> = ({
   isCompact,
+  disabled,
   onToggle,
 }) => {
   return (
@@ -500,22 +512,33 @@ const FormatToggleButton: React.FC<FormatToggleButtonProps> = ({
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              onToggle();
+              if (!disabled) onToggle();
             }}
+            disabled={disabled}
+            title={
+              disabled
+                ? "Available when the JSON is valid"
+                : isCompact
+                  ? "Expand JSON"
+                  : "Compact JSON"
+            }
             aria-label={isCompact ? "Expand JSON" : "Compact JSON"}
             className={cn(
-              "h-6 w-6 flex items-center justify-center rounded transition-colors",
+              "h-5 w-5 flex items-center justify-center rounded transition-colors",
               "text-muted-foreground hover:text-foreground hover:bg-muted",
               "border border-border/50 bg-background/50",
+              disabled && "cursor-not-allowed opacity-40",
             )}
           >
             <AlignJustify className="h-3 w-3" />
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
-          {isCompact
-            ? "Reformat to standard pretty-print (updates the text)"
-            : "Reformat to compact (inlines leaf objects, updates the text)"}
+          {disabled
+            ? "Available when the JSON is valid"
+            : isCompact
+              ? "Reformat to standard pretty-print (updates the text)"
+              : "Reformat to compact (inlines leaf objects, updates the text)"}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -525,16 +548,19 @@ const FormatToggleButton: React.FC<FormatToggleButtonProps> = ({
 interface ViewToggleProps {
   mode: ViewMode;
   onChange: (mode: ViewMode) => void;
+  inspectAvailable: boolean;
   tabularAvailable: boolean;
 }
 
-// Compact on mobile (icon only), label visible from `sm:` upward.
+// The JSON block header is frequently rendered in a narrow split pane. Keep
+// every mode as a uniform icon cell and put the full label in the tooltip.
 const VIEW_BUTTON =
-  "h-6 px-1.5 sm:px-2 flex items-center gap-1 rounded text-xs font-medium transition-colors";
+  "h-5 w-5 flex items-center justify-center rounded transition-colors";
 
 const ViewToggle: React.FC<ViewToggleProps> = ({
   mode,
   onChange,
+  inspectAvailable,
   tabularAvailable,
 }) => {
   const items: Array<{
@@ -544,18 +570,34 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
     disabled?: boolean;
     tooltip?: string;
   }> = [
-    { id: "code", label: "Code", icon: Code2 },
-    { id: "tree", label: "Tree", icon: ListTree },
+    { id: "code", label: "Code", icon: Code2, tooltip: "Code" },
+    {
+      id: "tree",
+      label: "Tree",
+      icon: ListTree,
+      disabled: !inspectAvailable,
+      tooltip: inspectAvailable ? "Tree" : "Available when the JSON is valid",
+    },
     {
       id: "table",
       label: "Table",
       icon: StretchHorizontal,
-      disabled: !tabularAvailable,
+      disabled: !inspectAvailable || !tabularAvailable,
       tooltip: tabularAvailable
-        ? "View as a table"
-        : "Table view available when JSON is an array of objects",
+        ? "Table"
+        : inspectAvailable
+          ? "Table view available when JSON is an array of objects"
+          : "Available when the JSON is valid",
     },
-    { id: "explorer", label: "Path", icon: Compass },
+    {
+      id: "explorer",
+      label: "Path",
+      icon: Compass,
+      disabled: !inspectAvailable,
+      tooltip: inspectAvailable
+        ? "Path explorer"
+        : "Available when the JSON is valid",
+    },
   ];
 
   return (
@@ -573,6 +615,9 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
                 if (!item.disabled) onChange(item.id);
               }}
               disabled={item.disabled}
+              title={item.tooltip ?? item.label}
+              aria-label={`${item.label} view`}
+              aria-pressed={active}
               className={cn(
                 VIEW_BUTTON,
                 active
@@ -582,10 +627,8 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
               )}
             >
               <Icon className="h-3 w-3" />
-              <span className="hidden sm:inline">{item.label}</span>
             </button>
           );
-          if (!item.tooltip) return button;
           return (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>{button}</TooltipTrigger>

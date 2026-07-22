@@ -2,6 +2,7 @@ import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { supabase } from "@/utils/supabase/client";
+import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 
 /** Feed every scraper-boundary failure to the admin Error Inspector. */
 function captureCrawlerError(input: {
@@ -24,8 +25,6 @@ function captureCrawlerError(input: {
     /* capture must never break the caller */
   }
 }
-
-const DEFAULT_SCRAPER_ORIGIN = "https://scraper.app.matrxserver.com";
 
 export interface CrawlStartOptions {
   max_pages: number;
@@ -179,12 +178,7 @@ export const defaultCrawlOptions: CrawlStartOptions = {
 };
 
 export function scraperOrigin(): string {
-  const configured = process.env.NEXT_PUBLIC_SCRAPER_URL?.trim();
-  if (configured) return configured.replace(/\/+$/, "");
-  if (process.env.NODE_ENV === "production") return DEFAULT_SCRAPER_ORIGIN;
-  throw new Error(
-    "NEXT_PUBLIC_SCRAPER_URL is required outside production; refusing to fall back to the production scraper.",
-  );
+  return resolveServiceBaseUrl("scraper");
 }
 
 export function crawlerCommandUrl(path: string): string {

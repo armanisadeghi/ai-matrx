@@ -1,6 +1,6 @@
 # Arman Tasks — Matrx Frontend
 
-_Last updated: 2026-07-15_
+_Last updated: 2026-07-22_
 
 > Secrets, accounts, CDN, OS-only steps. Agents **ask you** when blocked here.
 > Code work → `.matrx/AGENT_TASKS.md`. Discoveries → `FOUND_DEFECTS.md`.
@@ -30,13 +30,10 @@ Wave 1 shipped 2026-07-15 (see `common-docs/systems/content-ir-system/OWNER_BRIE
 - **(e) Approve the small `media_block` crosswalk row** (W1-C follow-up — the one token missing a row; an agent adds it to the generator inputs and regenerates).
 - **(f) Post-soak cleanup**: say when soak is done to drop `content_ir._backup_kind_example_20260715` + `_backup_kind_surface_20260715` and remove their two lines from aidream `db/matrx_orm.yaml` (~504-505).
 
-### 5. Decide: aidream B4 Gemini TTS regression (blocks D40 end-to-end)
-aidream feedback `e89a15cb` (critical): the in-flight B4 param-shaping work makes `GenerateContentConfig` reject `tts_voice`/`audio_format`, breaking ALL Gemini TTS. The stall fix (`83a94245d`) is already on origin/main. Decide the B4 fix approach before B4 ships; then any agent re-runs `/podcast/generate` and confirms a `study_media` audio row reaches `status='ready'`.
-
-### 6. Authorize the Supabase MCP for Claude Code (one-time, ~30s)
+### 5. Authorize the Supabase MCP for Claude Code (one-time, ~30s)
 The Supabase MCP now requires OAuth and non-interactive sessions can't complete it — DB verification steps silently degrade without it. In an interactive Claude Code session in this repo, run `/mcp` and complete the Supabase auth flow.
 
-### 7. COPPA verifiable parental consent — legal + Stripe webhook + vendor pick
+### 6. COPPA verifiable parental consent — legal + Stripe webhook + vendor pick
 The **code is built and live-verified** (card auth-and-void via Stripe test). To turn it on for real families, complete the runbook: `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`. Quick wins: (1) set `STRIPE_WEBHOOK_SECRET` in prod + register the `/api/stripe/webhook` endpoint (the card method needs it); (2) legal: which method(s) to require + auth-and-void vs charge+refund; (3) pick the gov-ID/KBA vendor (Stripe Identity / PRIVO / Persona). Then agents wire the vendor + signed-form upload.
 
 ## Pending Arman review
@@ -49,4 +46,4 @@ _(none)_
 
 ## Done
 
-_(none yet)_
+- Gemini TTS B4 regression resolved and live-verified; see `FOUND_DEFECTS.md` D40.

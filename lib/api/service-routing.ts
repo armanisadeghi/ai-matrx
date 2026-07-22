@@ -7,6 +7,61 @@
  * moved merely because their path starts with `/files`.
  */
 
+import { BACKEND_URLS } from "@/lib/api/endpoints";
+
+export const API_SERVICES = ["aidream", "scraper", "files", "seo"] as const;
+
+export type ApiService = (typeof API_SERVICES)[number];
+export type ServiceEnvironment = "production" | "localhost";
+
+export const API_SERVICE_LABELS: Record<ApiService, string> = {
+  aidream: "AI / aidream",
+  scraper: "Scraper",
+  files: "Files",
+  seo: "SEO",
+};
+
+/**
+ * The one browser-visible origin map for independently deployed Python services.
+ * Production origins can be replaced per deployment; loopback defaults match each
+ * package's supported local launcher.
+ */
+export const API_SERVICE_URLS: Record<
+  ApiService,
+  Record<ServiceEnvironment, string | undefined>
+> = {
+  aidream: {
+    production: BACKEND_URLS.production,
+    localhost: BACKEND_URLS.localhost,
+  },
+  scraper: {
+    production:
+      process.env.NEXT_PUBLIC_SCRAPER_URL ??
+      "https://scraper.app.matrxserver.com",
+    localhost:
+      process.env.NEXT_PUBLIC_SCRAPER_URL_LOCAL ?? "http://localhost:8001",
+  },
+  files: {
+    production:
+      process.env.NEXT_PUBLIC_FILES_URL ?? "https://files.matrxserver.com",
+    localhost:
+      process.env.NEXT_PUBLIC_FILES_URL_LOCAL ?? "http://127.0.0.1:8090",
+  },
+  seo: {
+    production:
+      process.env.NEXT_PUBLIC_SEO_URL ?? "https://seo.matrxserver.com",
+    localhost:
+      process.env.NEXT_PUBLIC_SEO_URL_LOCAL ?? "http://127.0.0.1:8081",
+  },
+};
+
+export function configuredServiceUrl(
+  service: ApiService,
+  environment: ServiceEnvironment,
+): string | undefined {
+  return API_SERVICE_URLS[service][environment]?.replace(/\/+$/, "");
+}
+
 const UUID_SEGMENT =
   "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
@@ -83,29 +138,28 @@ export function isStandaloneFileServiceRoute(
   );
 }
 
-/**
- * Direct browser traffic to the standalone service is a separate rollout
- * decision from configuring its URL for server-side callers and public share
- * links. Keep it opt-in until the service passes authenticated CORS preflight
- * from every deployed frontend origin.
- */
+/** Default-production file cutover gate; admin local/individual pins can override it. */
 export function isStandaloneFilesBrowserCutoverEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER === "true";
 }
 
-/** Route a browser request to matrx-files only after the explicit cutover gate. */
 export function shouldRouteBrowserRequestToStandaloneFiles(
   path: string,
-  method?: string,
+  method: string | undefined,
+  target?: {
+    environment: ServiceEnvironment;
+    override: ServiceEnvironment | null;
+  },
 ): boolean {
   return (
-    isStandaloneFilesBrowserCutoverEnabled() &&
-    isStandaloneFileServiceRoute(path, method)
+    isStandaloneFileServiceRoute(path, method) &&
+    (isStandaloneFilesBrowserCutoverEnabled() ||
+      target?.override != null ||
+      target?.environment === "localhost")
   );
 }
 
 /** Resolve and normalize the optional public files-service origin. */
 export function configuredFilesServiceUrl(): string | undefined {
-  const configured = process.env.NEXT_PUBLIC_FILES_URL;
-  return configured ? configured.replace(/\/$/, "") : undefined;
+  return configuredServiceUrl("files", "production");
 }

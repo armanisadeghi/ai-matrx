@@ -86,34 +86,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   const monacoFileExtension = getMonacoFileExtension(rawLanguage);
 
   const [editedCode, setEditedCode] = useState<string | null>(null);
+  const [previousInitialCode, setPreviousInitialCode] = useState(initialCode);
+  if (previousInitialCode !== initialCode) {
+    setPreviousInitialCode(initialCode);
+    setEditedCode(initialCode);
+  }
   const [isCopied, setIsCopied] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // TEMP DIAGNOSTIC — remove once the edit-mode-flip bug is fully understood.
-  // Logs mount/unmount and every transition of isEditing so we can tell
-  // whether edit mode is lost via a remount (ids differ) or a state flip
-  // (ids match, isEditing: true→false).
-  const _cbInstanceIdRef = useRef<string>(
-    `cb-${Math.random().toString(36).slice(2, 8)}`,
-  );
-  useEffect(() => {
-    console.log(
-      `[CodeBlock] MOUNT   id=${_cbInstanceIdRef.current} lang=${rawLanguage}`,
-    );
-    return () => {
-      console.log(
-        `[CodeBlock] UNMOUNT id=${_cbInstanceIdRef.current} lang=${rawLanguage}`,
-      );
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => {
-    console.log(
-      `[CodeBlock] isEditing=${isEditing} id=${_cbInstanceIdRef.current}`,
-    );
-  }, [isEditing]);
   const [lineNumbers, setLineNumbers] = useState(showLineNumbers);
   const [showWrapLines, setShowWrapLines] = useState(wrapLines);
   const [minimapEnabled, setMinimapEnabled] = useState(false);
@@ -459,6 +441,33 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                   showLineNumbers={lineNumbers}
                   wrapLines={showWrapLines}
                   wrapLongLines={showWrapLines}
+                  codeTagProps={{
+                    className: `language-${prismLanguage}`,
+                    style: showWrapLines
+                      ? {
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
+                        }
+                      : {
+                          whiteSpace: "pre",
+                          overflowWrap: "normal",
+                          wordBreak: "normal",
+                        },
+                  }}
+                  lineProps={{
+                    style: showWrapLines
+                      ? {
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
+                        }
+                      : {
+                          whiteSpace: "pre",
+                          overflowWrap: "normal",
+                          wordBreak: "normal",
+                        },
+                  }}
                   customStyle={{
                     paddingTop: "1rem",
                     paddingRight: "1rem",

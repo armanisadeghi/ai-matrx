@@ -2,7 +2,7 @@
 
 **Status:** `active` — **major upgrade incoming:** file-system + git repository integration + full agentic coding system
 **Tier:** `1`
-**Last updated:** `2026-04-28`
+**Last updated:** `2026-07-22`
 
 > This is the **embedded** code-editor surface — the one consumed by the agent builder, prompt-app editor, notes, and the V2 / V3 / Compact code editor variants. Its agent integration runs through the legacy widget-tool + Shortcuts pipeline.
 >
@@ -63,6 +63,12 @@ These keys are the **contract** between the editor and Shortcuts running inside 
 - Agents call `widget_text_replace`, `widget_text_insert_before/after/prepend/append`, `widget_text_patch` to mutate file content
 - Widget handles dispatch these via `dispatchWidgetAction` — stream does NOT pause
 - See [`../agents/docs/WIDGET_HANDLE_SYSTEM.md`](../agents/docs/WIDGET_HANDLE_SYSTEM.md) for the canonical contract
+
+### Embedded markdown code blocks
+
+- `components/mardown-display/blocks/json/JsonBlock.tsx` is the canonical JSON shell for rich markdown: Code, Tree, Table (when tabular), and Path views; compact/standard formatting; fullscreen, collapse, copy, edit, downloads, table persistence, and conversation-context attachment.
+- The JSON toolbar stays mounted while a response streams. Structure-dependent actions disable while the buffer is incomplete and enable as soon as it parses, so a block never swaps to a reduced generic-code UI.
+- Prism view mode and Monaco edit mode both honor the same wrap setting. View mode pins wrapping on the generated code and line elements so syntax-theme whitespace styles cannot override it.
 
 ---
 
@@ -131,6 +137,7 @@ This section is **explicitly forward-looking**. Treat everything in it as planne
 - **Widget actions do NOT pause the stream** — fire-and-forget. If you need the agent to see the result of an edit, use a durable delegated tool, not a widget tool.
 - **The legacy `features/rich-text-editor/` is deprecated** — do not integrate the code-editor with it.
 - **The old `features/code-files/` is deprecated** — replacement file-management lands as part of the file-system integration upgrade.
+- **JSON blocks have one persistent shell.** Do not branch on stream activity or parse completeness into a second toolbar. Keep Code/Tree/Table/Path and compact-format controls present; disable only the actions that require a currently valid structure.
 
 ---
 
@@ -144,6 +151,7 @@ This section is **explicitly forward-looking**. Treat everything in it as planne
 
 ## Change log
 
+- `2026-07-22` — codex: unified streamed and static markdown JSON blocks onto one persistent capability shell, reduced the four view selectors to compact icon controls, and made Prism view-mode wrapping resistant to syntax-theme overrides.
 - `2026-06-23` — claude: rebuilt `CodeEditorContextMenu` onto the shared `buildCodeWorkspaceContextData` (manifest SurfaceValues + baselines + `vsc_*`), added `getApplicationScope` + typed Monaco `executeEdits` apply, removed the hand-rolled `any` scope.
 - `2026-04-22` — claude: initial FEATURE.md; documents current state + flags upcoming file-system / git / agentic-coding upgrade.
 - `2026-04-28` — claude: clarified scope vs the new `features/code/` workspace at `/code`; added cross-reference table for chat-binding split (legacy `cx-conversation` + Shortcuts here vs new agents system + `AgentRunnerPage` there).

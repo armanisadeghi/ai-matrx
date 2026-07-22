@@ -5,23 +5,25 @@ import {
   defaultCrawlOptions,
 } from "@/features/marketing/crawler/direct-client";
 import type { TypedStreamEvent } from "@/lib/api/types";
+import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
+
+jest.mock("@/lib/api/resolve-service-url", () => ({
+  resolveServiceBaseUrl: jest.fn(),
+}));
+
+const mockedResolveServiceBaseUrl = jest.mocked(resolveServiceBaseUrl);
 
 describe("direct marketing crawler transport", () => {
-  const originalUrl = process.env.NEXT_PUBLIC_SCRAPER_URL;
-
   afterEach(() => {
-    if (originalUrl === undefined) {
-      delete process.env.NEXT_PUBLIC_SCRAPER_URL;
-    } else {
-      process.env.NEXT_PUBLIC_SCRAPER_URL = originalUrl;
-    }
+    mockedResolveServiceBaseUrl.mockReset();
   });
 
   it("builds commands against the standalone scraper origin", () => {
-    process.env.NEXT_PUBLIC_SCRAPER_URL = "https://scraper.example.test/";
+    mockedResolveServiceBaseUrl.mockReturnValue("https://scraper.example.test");
     expect(crawlerCommandUrl("sites/site-1/sessions")).toBe(
       "https://scraper.example.test/api/scraper/crawler/sites/site-1/sessions",
     );
+    expect(mockedResolveServiceBaseUrl).toHaveBeenCalledWith("scraper");
   });
 
   it("defaults first-party crawls to ignore robots without removing the switch", () => {

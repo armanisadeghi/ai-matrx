@@ -10,8 +10,8 @@
 // instead of hand-rolling a fetch/reader loop.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useBackendApi } from "@/hooks/useBackendApi";
-import { consumeStream } from "@/lib/api/stream-parser";
+import { callApi } from "@/lib/api/call-api";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { reduce } from "./reduce";
 import {
   INITIAL_RUN_STATE,
@@ -19,8 +19,6 @@ import {
   type PodcastRunState,
   type PodcastDataEvent,
 } from "./types";
-
-const PODCAST_GENERATE_PATH = "/podcast/generate";
 
 export interface UsePodcastRun {
   state: PodcastRunState;
@@ -34,7 +32,7 @@ export interface UsePodcastRun {
 }
 
 export function usePodcastRun(): UsePodcastRun {
-  const api = useBackendApi();
+  const dispatch = useAppDispatch();
   const [state, setState] = useState<PodcastRunState>(INITIAL_RUN_STATE);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -71,45 +69,57 @@ export function usePodcastRun(): UsePodcastRun {
       setStartedAt(Date.now());
 
       try {
-        const response = await api.post(
-          PODCAST_GENERATE_PATH,
-          body,
-          controller.signal,
+        const result = await dispatch(
+          callApi({
+            path: "/podcast/generate",
+            method: "POST",
+            body,
+            stream: true,
+            signal: controller.signal,
+            onStreamEvent: (event) => {
+              if (event.event === "data") {
+                setState((s) => reduce(s, event.data as PodcastDataEvent));
+                return;
+              }
+              if (event.event === "chunk") {
+                // The pipeline may stream token-level text (research / script).
+                // Keep a bounded rolling buffer for the live "studio feed" teaser.
+                const text = event.data.text ?? "";
+                if (!text) return;
+                setState((s) => ({
+                  ...s,
+                  liveText: (s.liveText + text).slice(-2000),
+                }));
+                return;
+              }
+              if (event.event === "error") {
+                setState((s) => ({
+                  ...s,
+                  status: "error",
+                  error:
+                    event.data.user_message ??
+                    event.data.message ??
+                    "Stream error",
+                }));
+                return;
+              }
+              if (event.event === "end") {
+                setState((s) =>
+                  s.status === "running"
+                    ? { ...s, status: "done", progress: 100 }
+                    : s,
+                );
+              }
+            },
+          }),
         );
-
-        await consumeStream(
-          response,
-          {
-            onData: (data) => {
-              setState((s) => reduce(s, data as PodcastDataEvent));
-            },
-            onChunk: (chunk) => {
-              // The pipeline may stream token-level text (research / script).
-              // Keep a bounded rolling buffer for the live "studio feed" teaser.
-              const text = chunk?.text ?? "";
-              if (!text) return;
-              setState((s) => ({
-                ...s,
-                liveText: (s.liveText + text).slice(-2000),
-              }));
-            },
-            onError: (data) => {
-              setState((s) => ({
-                ...s,
-                status: "error",
-                error: data.user_message ?? data.message ?? "Stream error",
-              }));
-            },
-            onEnd: () => {
-              setState((s) =>
-                s.status === "running"
-                  ? { ...s, status: "done", progress: 100 }
-                  : s,
-              );
-            },
-          },
-          controller.signal,
-        );
+        if (result.error && !controller.signal.aborted) {
+          setState((s) => ({
+            ...s,
+            status: "error",
+            error: result.error?.message ?? "Podcast request failed",
+          }));
+        }
       } catch (e) {
         // Aborts are the normal cancellation path — don't surface them.
         if (controller.signal.aborted) return;
@@ -120,7 +130,7 @@ export function usePodcastRun(): UsePodcastRun {
         }));
       }
     },
-    [api],
+    [dispatch],
   );
 
   return { state, startedAt, start, cancel, patch, reset };

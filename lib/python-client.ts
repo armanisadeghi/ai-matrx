@@ -28,7 +28,10 @@ import { parseHttpError, BackendApiError } from "@/lib/api/errors";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import {
+  selectApiServiceTargets,
+  selectResolvedBaseUrl,
+} from "@/lib/redux/slices/apiConfigSlice";
 import { extractErrorMessage } from "@/utils/errors";
 import { getCachedFingerprint } from "@/lib/services/fingerprint-service";
 import { logApiTarget } from "@/lib/api/log-api-target";
@@ -36,6 +39,7 @@ import {
   configuredFilesServiceUrl,
   shouldRouteBrowserRequestToStandaloneFiles,
 } from "@/lib/api/service-routing";
+import { resolveServiceBaseUrl as resolveCanonicalServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import {
   capturePythonClientError,
   relationPathFromUrl,
@@ -123,7 +127,11 @@ export function resolveBaseUrl(override?: string): string {
  */
 export function resolveFilesBaseUrl(override?: string): string {
   if (override) return override.replace(/\/$/, "");
-  return configuredFilesServiceUrl() ?? resolveBaseUrl();
+  try {
+    return resolveCanonicalServiceBaseUrl("files");
+  } catch {
+    return configuredFilesServiceUrl() ?? resolveBaseUrl();
+  }
 }
 
 /** Route each request to the service that owns its exact API path. */
@@ -133,7 +141,13 @@ export function resolveBaseUrlForPath(
   method?: string,
 ): string {
   if (override) return override.replace(/\/$/, "");
-  if (shouldRouteBrowserRequestToStandaloneFiles(path, method)) {
+  const store = getStore();
+  const filesTarget = store
+    ? selectApiServiceTargets(
+        store.getState() as Parameters<typeof selectApiServiceTargets>[0],
+      ).find((target) => target.service === "files")
+    : undefined;
+  if (shouldRouteBrowserRequestToStandaloneFiles(path, method, filesTarget)) {
     return resolveFilesBaseUrl();
   }
   return resolveBaseUrl();

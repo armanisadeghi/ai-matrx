@@ -1,17 +1,19 @@
 // lib/redux/slices/apiConfigSlice.ts
 //
-// Single source of truth for the active backend server, per-environment health,
-// and API call log. Applies to ALL users — not admin-only.
+// Single source of truth for the active API environment, per-service overrides,
+// aidream health, and API call log. Applies to ALL users — not admin-only.
 //
-// Every code path that makes a backend call reads selectResolvedBaseUrl from
-// this slice. Changing the active server here guarantees every call in the
-// entire app immediately routes to the new server.
+// aidream calls read selectResolvedBaseUrl; independently deployed services
+// read selectResolvedServiceBaseUrl. The main environment switch updates all
+// four unless an admin deliberately pins an individual service.
 //
 // ─── Public API ───────────────────────────────────────────────────────────────
 //
 // Actions (for direct dispatch):
 //   setActiveServer(env)          — low-level; prefer switchServer thunk
 //   setCustomUrl(url)             — low-level; prefer switchServer thunk
+//   setServiceOverride(...)       — pin one service to production/localhost
+//   clearServiceOverrides()       — make every service follow the global switch
 //
 // Thunks (prefer these):
 //   switchServer(env, customUrl?) — sets server + triggers health check
@@ -21,6 +23,7 @@
 // Selectors:
 //   selectActiveServer            — current ServerEnvironment key
 //   selectResolvedBaseUrl         — actual URL string ready to prepend to paths
+//   selectResolvedServiceBaseUrl  — URL for aidream/scraper/files/seo
 //   selectCustomUrl               — the custom URL (when env === 'custom')
 //   selectServerHealth(env)       — health record for one environment
 //   selectActiveServerHealth      — health for the currently active environment
@@ -40,6 +43,12 @@ import {
   aiVersionPathOverrides,
   type AiApiVersion,
 } from "@/lib/api/ai-api-version";
+import {
+  API_SERVICES,
+  configuredServiceUrl,
+  type ApiService,
+  type ServiceEnvironment,
+} from "@/lib/api/service-routing";
 
 // ============================================================================
 // TYPES
@@ -112,6 +121,8 @@ function buildDefaultHealth(): Record<ServerEnvironment, ServerHealthRecord> {
 interface ApiConfigState {
   activeServer: ServerEnvironment;
   customUrl: string | null;
+  /** Per-service production/localhost exceptions; absent means follow activeServer. */
+  serviceOverrides: Partial<Record<ApiService, ServiceEnvironment>>;
   health: Record<ServerEnvironment, ServerHealthRecord>;
   recentCalls: ApiCallLogEntry[];
 
@@ -152,6 +163,7 @@ const PERSIST_KEY = "matrx.apiConfig.v1";
 interface PersistedApiConfig {
   activeServer: ServerEnvironment;
   customUrl: string | null;
+  serviceOverrides: Partial<Record<ApiService, ServiceEnvironment>>;
   apiVersion: string | null;
   pathOverrides: Record<string, string>;
   aiApiVersionOverride: AiApiVersion | null;
@@ -161,6 +173,7 @@ function loadPersistedServer(): PersistedApiConfig {
   const fallback: PersistedApiConfig = {
     activeServer: "production",
     customUrl: null,
+    serviceOverrides: {},
     apiVersion: null,
     pathOverrides: {},
     aiApiVersionOverride: null,
@@ -185,6 +198,14 @@ function loadPersistedServer(): PersistedApiConfig {
           ? parsed.activeServer
           : "production",
       customUrl: typeof parsed.customUrl === "string" ? parsed.customUrl : null,
+      serviceOverrides: Object.fromEntries(
+        API_SERVICES.flatMap((service) => {
+          const value = parsed.serviceOverrides?.[service];
+          return value === "production" || value === "localhost"
+            ? [[service, value]]
+            : [];
+        }),
+      ),
       apiVersion:
         typeof parsed.apiVersion === "string" && parsed.apiVersion.trim()
           ? parsed.apiVersion
@@ -210,6 +231,7 @@ function persistServer(state: ApiConfigState): void {
     const payload: PersistedApiConfig = {
       activeServer: state.activeServer,
       customUrl: state.customUrl,
+      serviceOverrides: state.serviceOverrides,
       apiVersion: state.apiVersion,
       pathOverrides: state.pathOverrides,
       aiApiVersionOverride: state.aiApiVersionOverride,
@@ -225,6 +247,7 @@ const _persisted = loadPersistedServer();
 const initialState: ApiConfigState = {
   activeServer: _persisted.activeServer,
   customUrl: _persisted.customUrl,
+  serviceOverrides: _persisted.serviceOverrides,
   health: buildDefaultHealth(),
   recentCalls: [],
   apiVersion: _persisted.apiVersion,
@@ -394,6 +417,29 @@ const apiConfigSlice = createSlice({
       persistServer(state);
     },
 
+    /** Pin one service independently; null removes the pin and follows global. */
+    setServiceOverride: (
+      state,
+      action: PayloadAction<{
+        service: ApiService;
+        environment: ServiceEnvironment | null;
+      }>,
+    ) => {
+      const { service, environment } = action.payload;
+      if (environment === null) {
+        delete state.serviceOverrides[service];
+      } else {
+        state.serviceOverrides[service] = environment;
+      }
+      persistServer(state);
+    },
+
+    /** A global environment click means every service follows it again. */
+    clearServiceOverrides: (state) => {
+      state.serviceOverrides = {};
+      persistServer(state);
+    },
+
     /**
      * Set (or clear, with null/"") the global API version segment applied to
      * every backend path. Persisted across reloads. Does NOT touch the base
@@ -503,6 +549,8 @@ const apiConfigSlice = createSlice({
 export const {
   setActiveServer,
   setCustomUrl,
+  setServiceOverride,
+  clearServiceOverrides,
   setApiVersion,
   setPathOverride,
   clearPathOverride,
@@ -530,6 +578,71 @@ export const selectActiveServer = (
 /** The custom URL (only meaningful when activeServer === 'custom') */
 export const selectCustomUrl = (state: StateWithApiConfig): string | null =>
   state.apiConfig.customUrl;
+
+export const selectServiceOverrides = (
+  state: StateWithApiConfig,
+): Partial<Record<ApiService, ServiceEnvironment>> =>
+  state.apiConfig.serviceOverrides;
+
+export function selectGlobalServiceEnvironment(
+  state: StateWithApiConfig,
+): ServiceEnvironment {
+  return state.apiConfig.activeServer === "localhost"
+    ? "localhost"
+    : "production";
+}
+
+export function selectResolvedServiceEnvironment(
+  state: StateWithApiConfig,
+  service: ApiService,
+): ServiceEnvironment {
+  return (
+    state.apiConfig.serviceOverrides[service] ??
+    selectGlobalServiceEnvironment(state)
+  );
+}
+
+export function selectResolvedServiceBaseUrl(
+  state: StateWithApiConfig,
+  service: ApiService,
+): string | undefined {
+  if (
+    service === "aidream" &&
+    !state.apiConfig.serviceOverrides.aidream &&
+    state.apiConfig.activeServer !== "production" &&
+    state.apiConfig.activeServer !== "localhost"
+  ) {
+    return state.apiConfig.activeServer === "custom"
+      ? state.apiConfig.customUrl ?? undefined
+      : BACKEND_URLS[state.apiConfig.activeServer];
+  }
+  return configuredServiceUrl(
+    service,
+    selectResolvedServiceEnvironment(state, service),
+  );
+}
+
+export const selectApiServiceTargets = createSelector(
+  (state: StateWithApiConfig) => state.apiConfig,
+  (apiConfig) => {
+    const globalEnvironment: ServiceEnvironment =
+      apiConfig.activeServer === "localhost" ? "localhost" : "production";
+    return API_SERVICES.map((service) => {
+      const override = apiConfig.serviceOverrides[service] ?? null;
+      const environment = override ?? globalEnvironment;
+      const url =
+        service === "aidream" &&
+        override === null &&
+        apiConfig.activeServer !== "production" &&
+        apiConfig.activeServer !== "localhost"
+          ? apiConfig.activeServer === "custom"
+            ? apiConfig.customUrl ?? undefined
+            : BACKEND_URLS[apiConfig.activeServer]
+          : configuredServiceUrl(service, environment);
+      return { service, environment, override, url };
+    });
+  },
+);
 
 /** The global API version segment (null = no version transform applied). */
 export const selectApiVersion = (state: StateWithApiConfig): string | null =>
@@ -600,13 +713,7 @@ export const selectHasActiveApiOverrides = (
  */
 export const selectResolvedBaseUrl = (
   state: StateWithApiConfig,
-): string | undefined => {
-  const env = state.apiConfig.activeServer;
-  if (env === "custom") {
-    return state.apiConfig.customUrl ?? undefined;
-  }
-  return BACKEND_URLS[env];
-};
+): string | undefined => selectResolvedServiceBaseUrl(state, "aidream");
 
 /** Health record for a specific environment */
 export const selectServerHealth = (
@@ -617,7 +724,10 @@ export const selectServerHealth = (
 /** Health record for the currently active server */
 export const selectActiveServerHealth = (
   state: StateWithApiConfig,
-): ServerHealthRecord => state.apiConfig.health[state.apiConfig.activeServer];
+): ServerHealthRecord => {
+  const override = state.apiConfig.serviceOverrides.aidream;
+  return state.apiConfig.health[override ?? state.apiConfig.activeServer];
+};
 
 /** All environments with their resolved URL and health record, for UI lists */
 export const selectAllServerHealth = createSelector(
@@ -642,5 +752,4 @@ export const selectRecentApiCalls = (
 /** Convenience: whether the active server is known healthy */
 export const selectIsActiveServerHealthy = (
   state: StateWithApiConfig,
-): boolean =>
-  state.apiConfig.health[state.apiConfig.activeServer].status === "healthy";
+): boolean => selectActiveServerHealth(state).status === "healthy";

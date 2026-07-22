@@ -19,8 +19,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { useBackendApi } from "@/hooks/useBackendApi";
-import { consumeStream } from "@/lib/api/stream-parser";
+import { callApi } from "@/lib/api/call-api";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   reduce,
   settleStaleAssets,
@@ -54,9 +54,8 @@ import {
 import { fetchPodcastRunDetail } from "./runsRepository";
 import { deriveRecoveryState, type RecoveryState } from "./recovery";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
+import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 
-const GENERATE_PATH = "/podcast/generate";
-const resumePath = (backendRunId: string) => `/podcast/resume/${backendRunId}`;
 // No live event (podcast_tick fires ~every 3s) for this long ⇒ the stream is
 // silently dead. Mark stalled + settle "queued" assets. 5+ missed ticks.
 const STALL_MS = 20_000;
@@ -106,7 +105,7 @@ export interface UseStudioRun {
 }
 
 export function useStudioRun(runId: string): UseStudioRun {
-  const api = useBackendApi();
+  const dispatch = useAppDispatch();
   const [state, setState] = useState<PodcastRunState>(INITIAL_RUN_STATE);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -345,6 +344,15 @@ export function useStudioRun(runId: string): UseStudioRun {
       kind: "generate" | "resume",
       body?: PodcastGenerateRequest,
     ) {
+      const resumeRunId = backendRunIdRef.current;
+      if (kind === "resume" && !resumeRunId) {
+        setState((current) => ({
+          ...current,
+          status: "error",
+          error: "Cannot resume before a backend run has been created.",
+        }));
+        return;
+      }
       const controller = new AbortController();
       abortRef.current = controller;
       streamingRef.current = true;
@@ -376,60 +384,82 @@ export function useStudioRun(runId: string): UseStudioRun {
       }
 
       try {
-        const response =
-          kind === "generate"
-            ? await api.post(GENERATE_PATH, body, controller.signal)
-            : await api.post(
-                resumePath(backendRunIdRef.current!),
-                {},
-                controller.signal,
-              );
-
-        await consumeStream(
-          response,
-          {
-            onData: (d) => onData(d as PodcastDataEvent),
+        const onStreamEvent = (event: TypedStreamEvent) => {
+          if (event.event === "data") {
+            onData(event.data as PodcastDataEvent);
+            return;
+          }
+          if (event.event === "chunk") {
             // Token-level text from the in-flight stages (script writing) —
             // feeds the ProductionTeaser's live sneak peek. Tail-capped so a
             // long run never grows unbounded state.
-            onChunk: (d) => {
-              const delta = d.text ?? "";
-              if (!delta) return;
-              lastHeartbeatRef.current = Date.now();
-              setState((s) => {
-                const next = s.liveText + delta;
-                return {
-                  ...s,
-                  liveText: next.length > 24_000 ? next.slice(-24_000) : next,
-                };
-              });
-            },
-            onError: (d) => {
-              // A real backend error event — not a transient drop. Stop, but the
-              // run is still RESUMABLE: /resume re-runs the failed stage.
-              completedRef.current = true;
-              const message = d.user_message ?? d.message ?? "Stream error";
-              setState((s) => ({ ...s, status: "error", error: message }));
-              persist({ status: "failed", error: message });
-              setCanReconnect(!!backendRunIdRef.current);
-            },
-            onEnd: () => {
-              if (completedRef.current) {
-                setState((s) =>
-                  s.status === "running"
-                    ? { ...s, status: "done", progress: 100 }
-                    : s,
-                );
-              } else {
-                // Stream closed without a complete event → the backend is most
-                // likely still generating (detach_on_disconnect). Observe the
-                // durable record instead of re-driving the pipeline.
-                void watchInBackground();
-              }
-            },
-          },
-          controller.signal,
-        );
+            const delta = event.data.text ?? "";
+            if (!delta) return;
+            lastHeartbeatRef.current = Date.now();
+            setState((s) => {
+              const next = s.liveText + delta;
+              return {
+                ...s,
+                liveText: next.length > 24_000 ? next.slice(-24_000) : next,
+              };
+            });
+            return;
+          }
+          if (event.event === "error") {
+            // A real backend error event — not a transient drop. Stop, but the
+            // run is still RESUMABLE: /resume re-runs the failed stage.
+            completedRef.current = true;
+            const message =
+              event.data.user_message ?? event.data.message ?? "Stream error";
+            setState((s) => ({ ...s, status: "error", error: message }));
+            persist({ status: "failed", error: message });
+            setCanReconnect(!!backendRunIdRef.current);
+            return;
+          }
+          if (event.event === "end") {
+            if (completedRef.current) {
+              setState((s) =>
+                s.status === "running"
+                  ? { ...s, status: "done", progress: 100 }
+                  : s,
+              );
+            } else {
+              // Stream closed without a complete event → the backend is most
+              // likely still generating (detach_on_disconnect). Observe the
+              // durable record instead of re-driving the pipeline.
+              void watchInBackground();
+            }
+          }
+        };
+        const result =
+          kind === "generate"
+            ? await dispatch(
+                callApi({
+                  path: "/podcast/generate",
+                  method: "POST",
+                  body,
+                  stream: true,
+                  signal: controller.signal,
+                  onStreamEvent,
+                }),
+              )
+            : await dispatch(
+                callApi({
+                  path: "/podcast/resume/{run_id}",
+                  method: "POST",
+                  pathParams: { run_id: resumeRunId },
+                  stream: true,
+                  signal: controller.signal,
+                  onStreamEvent,
+                }),
+              );
+        if (result.error && !controller.signal.aborted) {
+          console.warn(
+            "[studio-run] stream dropped; watching durable record:",
+            result.error,
+          );
+          void watchInBackground();
+        }
       } catch (e) {
         if (controller.signal.aborted) return; // navigation/cancel — not a failure
         // Network drop (TypeError "network error", reset, etc.). The backend
@@ -615,7 +645,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       livePlayerRef.current?.destroy();
       livePlayerRef.current = null;
     };
-  }, [runId, api, persist]);
+  }, [runId, dispatch, persist]);
 
   // Heartbeat watchdog: while a stream is open but silent past STALL_MS, mark
   // the run stalled and settle lingering "queued" assets to failed.

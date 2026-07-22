@@ -525,6 +525,38 @@ button.shell-nav-item {
   text-align: left;
 }
 
+.shell-env-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  width: 100%;
+}
+
+.shell-env-primary {
+  min-width: 0;
+  flex: 1;
+}
+
+.shell-env-details {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--shell-nav-icon);
+  cursor: pointer;
+}
+
+.shell-env-details:hover,
+.shell-env-details[data-state="open"] {
+  background: var(--matrx-glass-bg-hover);
+  color: var(--shell-nav-icon-hover);
+}
+
 .shell-nav-icon svg {
   color: inherit;
 }
@@ -614,6 +646,10 @@ button.shell-nav-item {
 
 .shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-label {
   width: 0;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-env-details {
+  display: none;
 }
 
 /* Nav item badges — trailing count when expanded, icon-overlay when collapsed.

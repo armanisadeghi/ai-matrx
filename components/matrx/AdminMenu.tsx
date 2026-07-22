@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
+    clearServiceOverrides,
     selectActiveServer,
     selectActiveServerHealth,
     selectResolvedBaseUrl,
@@ -38,6 +39,7 @@ export function AdminMenu() {
     const handleServerChange = async (value: string) => {
         const env = (value === 'default' ? 'production' : value) as ServerEnvironment;
 
+        dispatch(clearServiceOverrides());
         const result = await dispatch(switchServer({ env }));
 
         if (switchServer.fulfilled.match(result)) {
