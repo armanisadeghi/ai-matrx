@@ -15,6 +15,7 @@ import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlic
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
 import { createClient } from "@/utils/supabase/client";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
   checkSeoHealth,
   createDataForSeoCollection,
@@ -54,76 +55,32 @@ function endpointOptions(
   });
 }
 
-function exampleTask(operationName: string): Record<string, JsonValue> {
-  if (operationName.startsWith("serp.")) {
-    return {
-      keyword: "ai workflow automation",
-      location_code: 2840,
-      language_code: "en",
-      device: "desktop",
-      os: "windows",
-      depth: 10,
-      tag: "matrx-seo-api-lab",
-    };
+function endpointExampleTask(
+  operation: DataForSeoOperation,
+  workflow: "live" | "standard",
+  endpoint: string,
+): Record<string, JsonValue> {
+  const example = operation.endpoint_examples.find(
+    (item) => item.workflow === workflow && item.endpoint === endpoint,
+  );
+  if (!example) {
+    throw new Error(
+      `The SEO catalog has no canonical ${workflow} example for ${endpoint}.`,
+    );
   }
-  if (operationName === "keywords.google_ads.search_volume") {
-    return {
-      keywords: ["ai workflow automation"],
-      location_code: 2840,
-      language_code: "en",
-      tag: "matrx-seo-api-lab",
-    };
-  }
-  if (operationName.includes("keywords_for_site")) {
-    return {
-      target: "aimatrx.com",
-      location_code: 2840,
-      language_code: "en",
-      limit: 10,
-      tag: "matrx-seo-api-lab",
-    };
-  }
-  if (operationName.startsWith("backlinks.")) {
-    return { target: "aimatrx.com", limit: 10, tag: "matrx-seo-api-lab" };
-  }
-  if (operationName.startsWith("on_page.")) {
-    return {
-      target: "https://aimatrx.com",
-      max_crawl_pages: 10,
-      tag: "matrx-seo-api-lab",
-    };
-  }
-  if (
-    operationName.includes("domain") ||
-    operationName.includes("ranked_keywords") ||
-    operationName.includes("relevant_pages")
-  ) {
-    return {
-      target: "aimatrx.com",
-      location_code: 2840,
-      language_code: "en",
-      limit: 10,
-      tag: "matrx-seo-api-lab",
-    };
-  }
-  return {
-    keywords: ["ai workflow automation"],
-    location_code: 2840,
-    language_code: "en",
-    limit: 10,
-    tag: "matrx-seo-api-lab",
-  };
+  return example.task;
 }
 
 function JsonPanel({ title, value }: { title: string; value: unknown }) {
   return (
-    <section className="min-w-0 rounded-lg border border-border bg-card">
-      <div className="border-b border-border px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </div>
-      <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words p-3 font-mono text-xs text-foreground">
-        {pretty(value)}
-      </pre>
+    <section className="h-[32rem] min-w-0 overflow-hidden rounded-lg border border-border bg-card">
+      <JsonInspector
+        data={value}
+        label={title}
+        defaultView="json"
+        defaultExpandDepth={2}
+        className="rounded-none"
+      />
     </section>
   );
 }
@@ -139,7 +96,7 @@ export function DataForSeoLab() {
   const [operationName, setOperationName] = useState("");
   const [workflow, setWorkflow] = useState<"live" | "standard">("live");
   const [endpoint, setEndpoint] = useState("");
-  const [taskJson, setTaskJson] = useState("{}");
+  const [task, setTask] = useState<Record<string, JsonValue>>({});
   const [targetRef, setTargetRef] = useState("dataforseo-api-lab");
   const [freshRequest, setFreshRequest] = useState(false);
   const [health, setHealth] = useState<JsonValue | null>(null);
@@ -190,8 +147,9 @@ export function DataForSeoLab() {
         const firstEndpoints = endpointOptions(first, firstWorkflow);
         setOperationName(first.name);
         setWorkflow(firstWorkflow);
-        setEndpoint(firstEndpoints.length === 1 ? firstEndpoints[0] : "");
-        setTaskJson(pretty(exampleTask(first.name)));
+        const firstEndpoint = firstEndpoints[0] ?? "";
+        setEndpoint(firstEndpoint);
+        setTask(endpointExampleTask(first, firstWorkflow, firstEndpoint));
       }
     } catch (loadError) {
       setError(errorText(loadError));
@@ -211,14 +169,26 @@ export function DataForSeoLab() {
         : (next.workflows[0] ?? "live");
     const nextEndpoints = endpointOptions(next, nextWorkflow);
     setWorkflow(nextWorkflow);
-    setEndpoint(nextEndpoints.length === 1 ? nextEndpoints[0] : "");
-    setTaskJson(pretty(exampleTask(next.name)));
+    const nextEndpoint = nextEndpoints[0] ?? "";
+    setEndpoint(nextEndpoint);
+    setTask(endpointExampleTask(next, nextWorkflow, nextEndpoint));
   };
 
   const selectWorkflow = (nextWorkflow: "live" | "standard") => {
     setWorkflow(nextWorkflow);
     const nextEndpoints = endpointOptions(operation, nextWorkflow);
-    setEndpoint(nextEndpoints.length === 1 ? nextEndpoints[0] : "");
+    const nextEndpoint = nextEndpoints[0] ?? "";
+    setEndpoint(nextEndpoint);
+    if (operation && nextEndpoint) {
+      setTask(endpointExampleTask(operation, nextWorkflow, nextEndpoint));
+    }
+  };
+
+  const selectEndpoint = (nextEndpoint: string) => {
+    setEndpoint(nextEndpoint);
+    if (operation && nextEndpoint) {
+      setTask(endpointExampleTask(operation, workflow, nextEndpoint));
+    }
   };
 
   const run = async () => {
@@ -244,17 +214,8 @@ export function DataForSeoLab() {
       );
       return;
     }
-    let task: Record<string, JsonValue>;
-    try {
-      const parsed: unknown = JSON.parse(taskJson);
-      if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
-        throw new Error(
-          "Task JSON must be one object. The API wraps it in the task array.",
-        );
-      }
-      task = parsed as Record<string, JsonValue>;
-    } catch (parseError) {
-      setError(errorText(parseError));
+    if (!task || Array.isArray(task) || typeof task !== "object") {
+      setError("Task JSON must be one object. The API wraps it in the task array.");
       return;
     }
 
@@ -419,12 +380,9 @@ export function DataForSeoLab() {
             Exact endpoint
             <select
               value={endpoint}
-              onChange={(event) => setEndpoint(event.target.value)}
+              onChange={(event) => selectEndpoint(event.target.value)}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
             >
-              {endpoints.length > 1 ? (
-                <option value="">Select an endpoint</option>
-              ) : null}
               {endpoints.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -432,15 +390,52 @@ export function DataForSeoLab() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-muted-foreground xl:col-span-4">
-            DataForSEO task object
-            <textarea
-              value={taskJson}
-              onChange={(event) => setTaskJson(event.target.value)}
-              spellCheck={false}
-              className="mt-1 min-h-64 w-full resize-y rounded-md border border-border bg-background p-3 font-mono text-xs text-foreground"
+          <div className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs xl:col-span-4 md:grid-cols-3">
+            <div>
+              <div className="font-semibold text-foreground">Live</div>
+              <p className="mt-1 text-muted-foreground">
+                One synchronous provider POST. DataForSEO returns the finished
+                result in that response, and live accepts exactly one task.
+              </p>
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">Standard</div>
+              <p className="mt-1 text-muted-foreground">
+                Submit with task_post, persist the external task ID, then poll
+                task_get until completion. This request stays open while the
+                SEO server polls and can take minutes.
+              </p>
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">Persistence</div>
+              <p className="mt-1 text-muted-foreground">
+                Both modes persist the run, request, raw response, provider
+                calls, and costs. Standard additionally checkpoints submission
+                and every poll. This lab uses raw_provider, so it does not write
+                normalized SEO fact rows.
+              </p>
+            </div>
+          </div>
+          <div className="h-80 min-w-0 overflow-hidden rounded-md border border-border xl:col-span-4">
+            <JsonInspector
+              data={task}
+              label="DataForSEO task object"
+              defaultView="edit"
+              defaultExpandDepth={2}
+              editorReadOnly={false}
+              onUpdate={(next) => {
+                if (!next || Array.isArray(next) || typeof next !== "object") {
+                  setError(
+                    "Task JSON must be one object. The API wraps it in the task array.",
+                  );
+                  return;
+                }
+                setError("");
+                setTask(next as Record<string, JsonValue>);
+              }}
+              className="rounded-none"
             />
-          </label>
+          </div>
           <div className="flex flex-wrap items-center gap-3 xl:col-span-4">
             <button
               type="button"

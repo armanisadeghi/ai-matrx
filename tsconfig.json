@@ -237,7 +237,9 @@
     ".next-agent-eaa7e9fe6a55/types/**/*.ts",
     ".next-agent-eaa7e9fe6a55/dev/types/**/*.ts",
     ".next-agent-ac465ddcc27f/types/**/*.ts",
-    ".next-agent-ac465ddcc27f/dev/types/**/*.ts"
+    ".next-agent-ac465ddcc27f/dev/types/**/*.ts",
+    ".next-agent-ef2e5edeb373/types/**/*.ts",
+    ".next-agent-ef2e5edeb373/dev/types/**/*.ts"
   ],
   "exclude": [
     ".next*/**",

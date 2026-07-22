@@ -21,6 +21,17 @@ organization comes from `selectEffectiveOrganizationId`.
 - The task editor accepts one exact DataForSEO task object. The client wraps it in the
   provider's task array and sends a `raw_provider` collection, allowing every approved
   operation to be inspected without inventing normalized facts.
+- Every task, request, provider response, and evidence payload uses the canonical
+  application-wide `JsonInspector`: formatted expand-depth controls, path explorer, tree,
+  truncator, copy, and a linted CodeMirror editor for the task body.
+- Live performs one synchronous provider POST and accepts one task. Standard submits with
+  `task_post`, durably checkpoints the external task and each poll, then holds the request
+  open while polling `task_get` to completion.
+- Both workflows persist the collection run and request, raw payload, provider-call/cost
+  evidence, and failures when available. Standard additionally persists task checkpoints.
+  This lab deliberately requests `raw_provider`, so it writes no normalized SEO fact rows;
+  normalization is a separate capability (currently canonical only for Google Ads search
+  volume). A cache hit reuses the existing completed run and makes no paid provider call.
 - Normal runs are cache-first using the operation TTL returned by the server. “Force fresh”
   sends `force_refresh=true` and can spend provider credits.
 - After collection, the lab loads `GET /collections/{run_id}/evidence`. Super admins see the
@@ -38,6 +49,8 @@ organization comes from `selectEffectiveOrganizationId`.
 
 ## Change log
 
+- 2026-07-22 — Replaced every raw JSON textarea/pre block with the canonical JsonInspector
+  and documented live versus standard execution and raw-evidence persistence in the lab.
 - 2026-07-22 — Removed the lab-specific server URL and routed it through the canonical
   multi-service Production/Localhost selection with optional per-service SEO pinning.
 - 2026-07-22 — Added the first full DataForSEO lab with operation discovery, editable task

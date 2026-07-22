@@ -6,6 +6,12 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+export interface DataForSeoEndpointExample {
+  endpoint: string;
+  workflow: "live" | "standard";
+  task: Record<string, JsonValue>;
+}
+
 export interface DataForSeoOperation {
   name: string;
   family: string;
@@ -16,6 +22,7 @@ export interface DataForSeoOperation {
   raw_only: boolean;
   canonical_normalizer: boolean;
   freshness_ttl_seconds: number;
+  endpoint_examples: DataForSeoEndpointExample[];
 }
 
 export interface DataForSeoOperationsResponse {
