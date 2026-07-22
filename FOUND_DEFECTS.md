@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D81 — five inline copies of the mic level-meter analyser (2026-07-22)
+
+`features/audio/useStreamAudioLevel.ts` is now THE hook for a 0-100 input level (shared `AudioContext`, analyser + rAF, disconnect on every exit). Five modules still grow their own inline copy of the same graph, each re-deriving the same `(avg/255)*150` scaling and its own teardown: `features/audio/hooks/useSimpleRecorder.ts`, `features/audio/hooks/useChunkedRecordAndTranscribe.ts`, `features/audio/components/devices/MediaDevicesPanel.tsx`, `features/voice-agent/audio/audioCapture.ts`, `features/flashcards/fast-fire/audio/continuousCapture.ts`. Risk is a missed teardown leaking a rAF loop + graph node for the tab's life, and drift in what "level" means between meters. Not fixed here because `useSimpleRecorder` and the voice-agent capture entangle the analyser lifecycle with their recording teardown, and both are hot paths under concurrent edits — a blind swap during this task would have been the riskier move. Fix: port each onto the hook (or, for the framework-free modules, extract the same core as a non-React `createStreamLevelMeter`), one module per change, verifying the meter still moves.
+
 ### D80 — stale agent records report full `_loadedFields` with EMPTY `variableDefinitions` (2026-07-22)
 
 Launching agent `04b7c631` (Veo Video Generator, live row has 1 variable definition) via `launchAgentExecution`'s raw-agentId path produced an instance with `definitions: []` — Step 0.5's `selectAgentCustomExecutionPayload.isReady` was true (all required `_loadedFields` present, likely from persisted/rehydrated state predating the agent's v3 edit), so `fetchAgentExecutionFull` was skipped and the stale empty `variableDefinitions` snapshot seeded the instance. Downstream effect (now mitigated): `selectVariablesForRequest` iterated zero definitions and DROPPED caller-injected `runtime.variables`, so the server silently used the agent's defaults — the fix in `instance-variable-values.selectors.ts` (2026-07-22) passes explicit userValues through unconditionally, but the staleness itself remains: model settings, context slots, and the variable PANEL still render from the stale record until something forces a refetch. Fix candidates: (a) treat a rehydrated-from-persistence record as never `isReady` (require a fresh fetch per session), (b) stamp `_loadedFields` with `updatedAt` and refetch when the live row is newer, (c) always `fetchAgentExecutionFull` on launch (cheap RPC, correctness-first). Who decides: Arman (touches persistence strategy for the agentDefinition slice).
@@ -69,9 +73,18 @@ Fix: change the outer row wrapper from `<button>` to a `<div role="button" tabIn
 
 Not attributed to a specific file — needs a live repro with the React DevTools/error-overlay component stack (this session did not open a browser per its assignment) to name the exact hook/component. Candidates worth checking first: any shared auth/session hook, analytics/telemetry init, or a `useEffect` with an async fetch lacking an `isMounted`/`AbortController` guard that runs on most/all routes via a top-level provider in `app/layout.tsx` or `features/shell/`. Cross-reference D61 before fixing — if the root cause is the same shared pattern, fix once and close both.
 
-### D77 — the `podcast-assets` Supabase storage bucket was DELETED; 4 published episodes have unrecoverable dead AUDIO (2026-07-20)
+### D82 — CROSS-REPO (aidream): podcast runs from the education/flashcard path return an EMPTY title, so episodes publish as "Untitled Episode" with no description and no art (2026-07-22)
 
-**Decides: Arman.** The `podcast-assets` bucket no longer exists in `storage.buckets` (all its URLs 400), so every asset that lived there is gone. Image refs are healed (2026-07-20): Phoenix Echo's show cover was re-pointed to its one surviving `cdn.matrxserver.com` episode image; AP Bio's show + all dead episode image refs were nulled (UI renders the designed mic placeholder). **Open remainder — 4 published `pc_episodes` rows whose `audio_url` points at the deleted bucket, i.e. episodes that cannot play:** AP Bio `4b73f075` + `edfac55d` (duplicate "Why You're One in 70 Trillion"), Phoenix Echo `f28644b9` + `a91a31af` (two Farsi episodes). Options: unpublish/soft-delete them, or regenerate audio from the stored `script`. Also worth asking why the durability system never flagged these: `mtx_public_url_guard` guards *writes* of non-durable URLs, but nothing sweeps for refs that *become* dead when a bucket is dropped — a periodic dead-ref audit (HEAD-check distinct hosts/prefixes in media columns) would have caught this in March.
+**Owner: aidream.** Root cause of "the last few podcasts are missing their core items". `podcast.pc_studio_runs` row `7d0d5433-e087-42db-a360-71773affce7d` completed with `status='completed'`, a full `script` and working `audio_url`, but `title=''` (empty string, not null), `description=null`, `image_urls='{}'`. aidream then created the episode with its `"Untitled Episode"` fallback. Two separate misses:
+
+1. **Empty title is treated as success.** The script agent returned no title for `input_data_type='full_content'` (a serialized flashcard study deck). aidream must derive a title when the agent omits one (from the deck/source name or the first script beat) and must never persist `title=''` — an untitled episode is a failed run, not a completed one.
+2. **The caller asks for zero art.** `features/flashcards/data/podcastOverview.ts#buildDeckOverviewRequest` sends `max_images: 0, max_videos: 0` deliberately ("fast and cheap per-set audio overview"). That is defensible for an in-app audio overview, but those episodes are still published to the public show, where a card with no art is indistinguishable from broken. **Decides: Arman** — either give deck overviews at least one cover image, or keep them out of the public show list.
+
+The two affected episodes were soft-deleted 2026-07-22 during cleanup; the generator bug is NOT fixed and will reproduce on the next flashcard→podcast run.
+
+### D83 — `pc_episodes.duration_seconds` is null on 44 of 48 episodes; nothing ever writes it (2026-07-22)
+
+aidream's podcast generator persists `audio_url` but not the rendered duration, so every server-rendered surface (episode lists, cards, RSS `<itunes:duration>`) has no length to show. The player now recovers a duration client-side from the audio element (see the `durationchange` sync in `PodcastAudioPlayer`), but that only helps once the file has been fetched — a list of 31 episodes still cannot show per-episode runtimes without downloading 31 audio files. Fix belongs in aidream: write `duration_seconds` at publish time. Frontend backfill for existing rows would require probing each file.
 
 ### D64 — nothing is enforced automatically: no pre-commit hook, no CI (2026-07-18)
 
@@ -194,6 +207,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D77 — `podcast-assets` storage bucket deleted, all its URLs 400 (2026-07-20 → resolved 2026-07-22).** Dead image refs healed (Phoenix Echo cover re-pointed to its surviving CDN image; the rest nulled to the designed placeholder); the 4 episodes with unrecoverable dead audio, 2 untitled episodes, and 9 duplicate test runs were soft-deleted, and the empty `The AP Bio Podcast` show with them. Live podcast data is now 33 episodes / 3 shows, zero dead media refs. Standing gap it exposed — nothing re-audits media refs that go dead after a write — remains untracked; `mtx_public_url_guard` only checks URLs at write time.
 
 One line per fix — title, date, pointer. History lives in git.
 

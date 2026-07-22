@@ -14,6 +14,12 @@ The top row is **shared space**: the shell owns the edges; the route owns the ce
 
 `<PageHeader>` (Server Component) portals children into `#shell-header-center` via `PageHeaderPortal`. Injected content is **one flat row** — transparent root, no `bg-card`, no `border-b`. Use `ChevronLeftTapButton` / `TapTargetButton` for icons.
 
+**`<PageHeader>` injects into the CENTER only — it has no left slot.** A back chevron passed as its child renders mid-header, floating over the page. For anything with a back affordance or edge-anchored actions use **`RouteHeader`** (`left` / `center` / `right`), which renders its own `<PageHeader>` internally — **never nest the two** (`<PageHeader><RouteHeader/></PageHeader>` portals twice into the same slot).
+
+**The header is legible over ANY page content.** `.shell-header::before` paints a scrim in the page's own `--background` colour, so it is invisible on flat routes and becomes the substrate wherever hero art/video scrolls under the glass (before it, a bright cover made the back button and the avatar disappear). It sits at `z-index:-1` inside the header's stacking context — below the header's own children, above the page. Don't add per-route header backgrounds to compensate.
+
+**The shell's width is the viewport's, never its content's.** `.shell-header` carries `min-width: 0` because a grid item otherwise refuses to shrink below its content's min-content width — one long `truncate` (i.e. `white-space: nowrap`) title injected by a route stretched the entire header to 528px on a 375px phone and pushed the avatar off-screen. Injected text still needs `min-w-0 truncate`; do not rely on `max-w-*` for this (see the mobile-CSS note in `app/globals.css`: blanket `@media (max-width: 768px)` element defaults live in `@layer base` precisely so utilities win — they used to be unlayered and silently beat every `max-w-*` and every `h-*` on media).
+
 **Never render a page-level toolbar in the body** (`<header border-b bg-card>` with title + refresh + New). That duplicates the shell row, pushes actions behind the avatar (hence `pr-12` hacks), and leaves a dead band at the bottom when combined with header-height subtraction.
 
 Reference routes: `/chat/[conversationId]`, `/tasks`, `/agents/[id]/build`.

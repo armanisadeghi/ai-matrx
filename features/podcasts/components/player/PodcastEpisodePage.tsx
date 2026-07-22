@@ -95,17 +95,27 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                     onError={() => setVideoFailed(true)}
                     className="absolute inset-0"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/95 pointer-events-none" />
+                {/* Legibility scrim. The old `via-transparent` left the vertical
+                    MIDDLE of the frame unscrimmed — which is exactly where the
+                    title/description block sits, so white text landed on raw
+                    artwork (unreadable on any busy cover). Ramp up from ~40%
+                    instead, so the art still breathes at the top but everything
+                    behind the text and the player has a guaranteed substrate. */}
+                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_bottom,rgb(0_0_0/0.35)_0%,rgb(0_0_0/0.12)_20%,rgb(0_0_0/0.36)_38%,rgb(0_0_0/0.64)_50%,rgb(0_0_0/0.84)_62%,rgb(0_0_0/0.93)_78%,rgb(0_0_0/0.97)_100%)]" />
 
                 <div className="relative z-10 h-full flex flex-col justify-end px-4 sm:px-6 pb-6 w-full">
                     <div className="mb-3 flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
+                        {/* Text over live video: cap the measure (full-bleed lines
+                            are unreadable over moving art) and carry a text shadow
+                            so a bright frame can never wash the copy out — the
+                            gradient alone can't cover every frame of every cover. */}
+                        <div className="min-w-0 flex-1 max-w-3xl [text-shadow:0_1px_3px_rgb(0_0_0/0.85)]">
                             {episode.show?.title && (
-                                <p className="text-white/50 text-xs font-medium uppercase tracking-widest mb-1 truncate">{episode.show.title}</p>
+                                <p className="text-white/70 text-xs font-medium uppercase tracking-widest mb-1 truncate">{episode.show.title}</p>
                             )}
                             <h1 className="text-white font-bold text-lg sm:text-2xl leading-tight line-clamp-2 break-words">{episode.title}</h1>
                             {episode.description && (
-                                <p className="text-white/60 text-sm mt-1.5 leading-relaxed line-clamp-2">{episode.description}</p>
+                                <p className="text-white/80 text-sm mt-1.5 leading-relaxed line-clamp-2">{episode.description}</p>
                             )}
                         </div>
                         <div className="shrink-0 pt-1">

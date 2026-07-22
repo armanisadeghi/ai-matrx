@@ -29,15 +29,19 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
     <div className="h-full w-full overflow-y-auto overscroll-contain bg-background">
       {/* Hero — semantic tokens only, so it reads correctly in both themes
           (a hardcoded dark slab here was invisible-text city in light mode). */}
-      <div className="relative overflow-hidden border-b border-border px-4 pt-10 pb-12">
+      {/* No <h1>Podcasts</h1> here — the shell header already names the route,
+          and a second giant title ate half the mobile viewport before the user
+          reached any content. The hero earns its space with the CTAs. */}
+      {/* Static top content must CLEAR the transparent header rather than
+          scroll behind it — hence the token, never a hardcoded pt-*. */}
+      <div className="relative overflow-hidden border-b border-border px-4 pb-7 pt-[calc(var(--shell-header-h)+1.25rem)]">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent pointer-events-none" />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
-          <h1 className="text-foreground font-bold text-4xl">Podcasts</h1>
-          <p className="text-muted-foreground text-sm mt-2">
+          <p className="text-muted-foreground text-sm">
             Listen to shows on the platform — or generate a fully produced
             episode of your own in minutes.
           </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <Button asChild className="gap-2 shadow-md">
               <Link href="/podcast/studio/create">
                 <AudioLines className="h-4 w-4" />

@@ -4,7 +4,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { PodcastEpisodePage } from "@/features/podcasts/components/player/PodcastEpisodePage";
 import { PodcastShowPage } from "@/features/podcasts/components/player/PodcastShowPage";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import type {
   PcArticle,
@@ -162,13 +162,24 @@ export default async function PodcastPage({
       .eq("status", "published");
     return (
       <>
-        <PageHeader>
-          <ChevronLeftTapButton
-            href={result.data.show ? `/podcast/${result.data.show.slug}` : "/podcast"}
-            variant="glass"
-            ariaLabel="Back"
-          />
-        </PageHeader>
+        <RouteHeader
+          left={
+            <>
+              <ChevronLeftTapButton
+                href={
+                  result.data.show
+                    ? `/podcast/${result.data.show.slug}`
+                    : "/podcast"
+                }
+                variant="glass"
+                ariaLabel="Back"
+              />
+              <span className="ml-2 min-w-0 truncate text-sm font-medium text-foreground">
+                {result.data.title}
+              </span>
+            </>
+          }
+        />
         <PodcastEpisodePage
           episode={result.data}
           articles={(articles ?? []) as PcArticle[]}
@@ -189,9 +200,20 @@ export default async function PodcastPage({
 
   return (
     <>
-      <PageHeader>
-        <ChevronLeftTapButton href="/podcast" variant="glass" ariaLabel="Back" />
-      </PageHeader>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton
+              href="/podcast"
+              variant="glass"
+              ariaLabel="Back"
+            />
+            <span className="ml-2 max-w-[45vw] truncate text-sm font-medium text-foreground">
+              {result.data.title}
+            </span>
+          </>
+        }
+      />
       <PodcastShowPage
         show={result.data}
         episodes={(episodes ?? []) as PcEpisode[]}

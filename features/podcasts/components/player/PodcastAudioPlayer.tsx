@@ -293,6 +293,29 @@ export function PodcastAudioPlayer({
   // Cancel any pending retry when the component unmounts.
   useEffect(() => clearRetryTimer, [clearRetryTimer]);
 
+  // Adopt a duration the element already knows about.
+  //
+  // `onLoadedMetadata` only helps if the event fires AFTER React wires the
+  // handler. With `preload="metadata"` (and especially a cached audio file, or
+  // a re-mount onto an already-loaded element) the browser can reach
+  // readyState >= HAVE_METADATA first, the event is never re-fired, and the UI
+  // sits on "--:--" forever while `audio.duration` is perfectly well known.
+  // That was live on every episode page. Poll-free: just read it on mount and
+  // whenever the source changes, and keep the `durationchange` listener for
+  // streams whose length is revised later.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+    const syncDuration = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+      }
+    };
+    syncDuration();
+    audio.addEventListener("durationchange", syncDuration);
+    return () => audio.removeEventListener("durationchange", syncDuration);
+  }, [audioUrl]);
+
   // Apply playback speed AND preserve pitch — this is the YouTube/Spotify
   // technique that keeps voices natural-sounding at higher speeds (no chipmunk
   // effect). `preservesPitch` is standard in modern browsers (defaults to true)

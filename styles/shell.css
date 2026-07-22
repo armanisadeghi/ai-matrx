@@ -1016,12 +1016,58 @@ button.shell-nav-flyout-item {
   align-items: center;
   justify-content: space-between;
   height: var(--shell-header-h);
+  /* A grid item defaults to min-width:auto, i.e. it refuses to shrink below its
+     content's min-content width. Injected route content with `white-space:nowrap`
+     (any truncating header title) therefore STRETCHED THE WHOLE SHELL past the
+     viewport — a long podcast title made the header 528px wide on a 375px phone
+     and pushed the title off-screen instead of ellipsing. The shell's width is
+     the viewport's, never its content's: no route may resize it. */
+  min-width: 0;
   /* Padding is handled by the layout */
   padding: 0 0 0 0;
   padding-top: var(--shell-safe-area-top);
   /* Completely transparent — no bg, no border, no blur */
   background: transparent;
   pointer-events: none;
+}
+
+/* Header legibility scrim.
+   The header is transparent glass and page content scrolls UNDER it, so the
+   shell's own chrome (hamburger, avatar) and the route's injected glass tap
+   buttons sit on whatever the page happens to put there. Over a hero image or
+   video that meant invisible controls (the podcast show page's purple cover ate
+   the back button and the avatar). This is the substrate that makes the glass
+   pattern safe on ANY background instead of only on flat ones.
+
+   It is painted in the PAGE'S OWN background colour, so on a normal
+   `bg-background` / `bg-textured` route it is invisible — it only becomes
+   visible where something bright/busy scrolls beneath the glass, which is
+   exactly where contrast is needed.
+
+   z-index:-1 keeps it inside .shell-header's stacking context (created by
+   position:sticky + z-index:40) but BELOW the header's own in-flow children —
+   without it, an absolutely-positioned pseudo paints ABOVE non-positioned
+   siblings and would wash out the very buttons it exists to protect. */
+.shell-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Long fade tail past the header's edge. A short tail reads as a hard band
+     across hero art — the extra stops below approximate an ease-out so the
+     scrim dissolves instead of ending. */
+  bottom: -2.5rem;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.92) 0%,
+    hsl(var(--background) / 0.86) 22%,
+    hsl(var(--background) / 0.7) 40%,
+    hsl(var(--background) / 0.48) 56%,
+    hsl(var(--background) / 0.27) 71%,
+    hsl(var(--background) / 0.12) 85%,
+    hsl(var(--background) / 0) 100%
+  );
 }
 
 .shell-header > * {

@@ -98,27 +98,32 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
             <Mic className="h-16 w-16 text-white/20" />
           </div>
         )}
-        <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-zinc-900 via-zinc-900/70 to-transparent pointer-events-none z-20" />
+        {/* Taller than the old h-24: on mobile the title + byline + 2-line
+            description stack past 96px, so the top of the block used to sit on
+            raw cover art. The scrim must outlast the tallest text block. */}
+        <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-zinc-900 via-zinc-900/75 to-transparent pointer-events-none z-20" />
 
-        {/* Info + share row — overlaid on the bottom of the hero */}
-        <div className="absolute bottom-0 inset-x-0 z-30 px-4 pb-3 pt-8 flex items-end gap-3">
+        {/* Info + share row — overlaid on the bottom of the hero. Text shadow
+            is the belt to the gradient's braces: cover art is user-supplied and
+            can be bright anywhere, so the copy can never rely on it alone. */}
+        <div className="absolute bottom-0 inset-x-0 z-30 px-4 pb-3 pt-8 flex items-end gap-3 [text-shadow:0_1px_3px_rgb(0_0_0/0.85)]">
           <div className="min-w-0 flex-1">
             <h1 className="text-white font-bold text-lg sm:text-2xl leading-tight line-clamp-2 break-words">
               {show.title}
             </h1>
             <div className="flex items-center gap-2 mt-0.5">
               {show.author && (
-                <p className="text-white/60 text-xs truncate">
+                <p className="text-white/75 text-xs truncate">
                   by {show.author}
                 </p>
               )}
-              <p className="text-white/40 text-xs shrink-0">
+              <p className="text-white/60 text-xs shrink-0">
                 · {publishedEpisodes.length}{" "}
                 {publishedEpisodes.length === 1 ? "episode" : "episodes"}
               </p>
             </div>
             {show.description && (
-              <p className="text-white/65 text-xs mt-1 line-clamp-2 leading-relaxed">
+              <p className="text-white/80 text-xs mt-1 line-clamp-2 leading-relaxed">
                 {show.description}
               </p>
             )}

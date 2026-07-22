@@ -22,7 +22,6 @@ import type {
 } from "@/features/podcasts/generator/types";
 import { studioRunsService } from "@/features/podcasts/studio/runs/service";
 import { stashPendingStart } from "@/features/podcasts/studio/runs/pendingStart";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
@@ -51,18 +50,16 @@ export function CreateView() {
   if (!isAuthenticated) {
     return (
       <>
-        <PageHeader>
-          <RouteHeader
-            left={
-              <>
-                <ChevronLeftTapButton href="/podcast/studio" ariaLabel="Back" />
-                <span className="ml-2 text-sm font-medium text-foreground truncate">
-                  Create an episode
-                </span>
-              </>
-            }
-          />
-        </PageHeader>
+        <RouteHeader
+          left={
+            <>
+              <ChevronLeftTapButton href="/podcast/studio" ariaLabel="Back" />
+              <span className="ml-2 text-sm font-medium text-foreground truncate">
+                Create an episode
+              </span>
+            </>
+          }
+        />
         <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Mic className="h-7 w-7" />
@@ -108,18 +105,16 @@ export function CreateView() {
 
   return (
     <>
-      <PageHeader>
-        <RouteHeader
-          left={
-            <>
-              <ChevronLeftTapButton href="/podcast/studio" ariaLabel="Back" />
-              <span className="ml-2 text-sm font-medium text-foreground truncate">
-                Create an episode
-              </span>
-            </>
-          }
-        />
-      </PageHeader>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton href="/podcast/studio" ariaLabel="Back" />
+            <span className="ml-2 text-sm font-medium text-foreground truncate">
+              Create an episode
+            </span>
+          </>
+        }
+      />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
           <GeneratorForm
