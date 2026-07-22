@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-07-21`
+**Last updated:** `2026-07-22`
 
 ---
 
@@ -31,6 +31,7 @@ product feature that does not already have one.
 
 - `features/admin/constants/admin-navigation.ts` — the one placement and route-ownership registry.
 - `features/admin/constants/admin-categories.ts` — destination display metadata only: title, description, link, icon, and optional flags.
+- `features/admin/users/FEATURE.md` — Users & Access route family, including reciprocal organization membership management.
 
 **Shell navigation**
 
@@ -130,5 +131,5 @@ navigation placement and exact route ownership have moved to
 
 ## Change log
 
+- `2026-07-22` — Codex: registered the Organizations & Memberships destination inside Users & Access.
 - `2026-07-21` — Codex: introduced the canonical three-level registry, migrated all admin navigation surfaces, added AppShell route-menu injection, and made exact non-blocking release drift detection loud.
-

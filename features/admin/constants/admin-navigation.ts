@@ -402,6 +402,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Users",
         destinations: [
           destination("/administration/users"),
+          destination("/administration/users/organizations"),
           destination("/administration/users/preferences"),
           destination("/administration/users/admins"),
           destination("/administration/users/invitations"),

@@ -27104,6 +27104,15 @@ export type Database = {
           table_schema: string
         }[]
       }
+      admin_manage_organization_membership: {
+        Args: {
+          p_action: string
+          p_org_id: string
+          p_role?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_model_catalog: {
         Args: never
         Returns: Database["ai"]["Views"]["model_admin"]["Row"][]

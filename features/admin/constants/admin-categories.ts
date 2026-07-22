@@ -738,9 +738,17 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Users & Access Hub",
         description:
-          "Consolidated control plane for everything about a user — accounts, preferences health, admin privileges, invitations, entitlements, per-user usage & cost, and email — each a tab. Also the Accounts list: view every account and flip the onboarding flag.",
+          "Consolidated control plane for everything about a user — accounts, organization memberships, preferences health, admin privileges, invitations, entitlements, per-user usage & cost, and email — each a tab. Also the Accounts list: view every account and flip the onboarding flag.",
         iconName: "Users",
         link: "/administration/users",
+        isNew: true,
+      },
+      {
+        title: "Organizations & Memberships",
+        description:
+          "View every organization, see its users, pivot from any user to their organizations, and manage canonical owner/admin/member relationships.",
+        iconName: "Building2",
+        link: "/administration/users/organizations",
         isNew: true,
       },
       {

@@ -80,25 +80,33 @@ export function AccountsTableClient() {
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/users", { cache: "no-store" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to load users");
-      setRows(json.users as AdminUserRow[]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/admin/users", { cache: "no-store" });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? "Failed to load users");
+        if (!cancelled) setRows(json.users as AdminUserRow[]);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
     void load();
-  }, [load]);
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
 
   const sendAuthLink = useCallback(
     async (row: AdminUserRow, type: "magiclink" | "recovery") => {
@@ -367,7 +375,11 @@ export function AccountsTableClient() {
             search: true,
             searchPlaceholder: "Search name, email, id…",
             actions: (
-              <Button size="sm" variant="outline" onClick={() => void load()}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setRefreshKey((current) => current + 1)}
+              >
                 Refresh
               </Button>
             ),

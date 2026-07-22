@@ -41,11 +41,24 @@ begin
     raise exception 'Organization not found' using errcode = 'P0002';
   end if;
 
-  -- A personal organization belongs to exactly one person. Admin tooling may
-  -- inspect it, but membership mutation must not turn it into a shared org.
+  -- A personal organization belongs to its creator. Super-admin repair may
+  -- restore that creator as owner or remove legacy extra members, but it may
+  -- never turn the personal org into a shared org or remove its person.
   if coalesce(v_org.is_personal, false) then
-    raise exception 'Personal organization membership cannot be changed'
-      using errcode = '23514';
+    if p_action = 'add'
+       and (p_user_id is distinct from v_org.created_by or p_role <> 'owner') then
+      raise exception 'A personal organization may only add its creator as owner'
+        using errcode = '23514';
+    end if;
+    if p_action = 'set_role'
+       and (p_user_id is distinct from v_org.created_by or p_role <> 'owner') then
+      raise exception 'A personal organization creator may only be restored to owner'
+        using errcode = '23514';
+    end if;
+    if p_action = 'remove' and p_user_id is not distinct from v_org.created_by then
+      raise exception 'Cannot remove the person from their personal organization'
+        using errcode = '23514';
+    end if;
   end if;
 
   if p_action in ('add', 'set_role') and p_role not in ('owner', 'admin', 'member') then
@@ -153,7 +166,6 @@ begin
 
     update iam.memberships
     set deleted_at = now(),
-        status = 'removed',
         updated_by = v_actor,
         updated_at = now()
     where id = v_membership.id

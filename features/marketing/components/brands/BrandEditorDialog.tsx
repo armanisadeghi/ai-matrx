@@ -335,7 +335,13 @@ function BrandEditorDialogBody({
                 }
               >
                 <SelectTrigger className="h-9">
-                  <SelectValue />
+                  <SelectValue>
+                    {
+                      VISIBILITY_OPTIONS.find(
+                        (option) => option.value === draft.visibility,
+                      )?.label
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent
                   align="end"

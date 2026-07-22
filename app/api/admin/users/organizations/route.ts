@@ -16,7 +16,15 @@ function errorResponse(error: unknown) {
   return NextResponse.json({ error: message }, { status });
 }
 
-async function parseMembershipRequest(request: Request) {
+interface MembershipRequestBody {
+  organizationId: string;
+  userId: string;
+  role?: unknown;
+}
+
+async function parseMembershipRequest(
+  request: Request,
+): Promise<MembershipRequestBody> {
   const body = (await request.json().catch(() => null)) as {
     organizationId?: unknown;
     userId?: unknown;
@@ -31,7 +39,11 @@ async function parseMembershipRequest(request: Request) {
     throw new Error("organizationId and userId are required");
   }
 
-  return body;
+  return {
+    organizationId: body.organizationId,
+    userId: body.userId,
+    role: body.role,
+  };
 }
 
 export async function GET() {
@@ -54,8 +66,8 @@ export async function POST(request: Request) {
     }
     const result = await manageAdminOrganizationMembership({
       action: "add",
-      organizationId: body.organizationId as string,
-      userId: body.userId as string,
+      organizationId: body.organizationId,
+      userId: body.userId,
       role: body.role,
     });
     return NextResponse.json({ result });
@@ -73,8 +85,8 @@ export async function PATCH(request: Request) {
     }
     const result = await manageAdminOrganizationMembership({
       action: "set_role",
-      organizationId: body.organizationId as string,
-      userId: body.userId as string,
+      organizationId: body.organizationId,
+      userId: body.userId,
       role: body.role,
     });
     return NextResponse.json({ result });
@@ -89,8 +101,8 @@ export async function DELETE(request: Request) {
     const body = await parseMembershipRequest(request);
     const result = await manageAdminOrganizationMembership({
       action: "remove",
-      organizationId: body.organizationId as string,
-      userId: body.userId as string,
+      organizationId: body.organizationId,
+      userId: body.userId,
     });
     return NextResponse.json({ result });
   } catch (error) {

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Building2,
   DollarSign,
   Gauge,
   Loader2,
@@ -25,6 +26,11 @@ const NAV_ITEMS = [
     href: "/administration/users",
     icon: Users,
     exact: true,
+  },
+  {
+    label: "Organizations",
+    href: "/administration/users/organizations",
+    icon: Building2,
   },
   {
     label: "Preferences",

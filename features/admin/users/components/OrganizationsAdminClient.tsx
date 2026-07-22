@@ -165,11 +165,19 @@ export function OrganizationsAdminClient() {
     selectedMemberships.map((membership) => membership.user_id),
   );
   const availableUserOptions: Option[] = users
-    .filter((user) => !currentMemberIds.has(user.id))
+    .filter(
+      (user) =>
+        !currentMemberIds.has(user.id) &&
+        (!selectedOrganization?.is_personal ||
+          user.id === selectedOrganization.created_by),
+    )
     .map((user) => ({
       value: user.id,
       label: `${user.display_name ?? user.full_name ?? "Unnamed user"} — ${user.email ?? user.id}`,
     }));
+  const editableRoleOptions: OrgRole[] = selectedOrganization?.is_personal
+    ? ["owner"]
+    : ROLE_OPTIONS;
 
   function setOrganizationFocus(organization: AdminOrganizationRow) {
     setSelectedOrganizationId(organization.id);
@@ -214,7 +222,7 @@ export function OrganizationsAdminClient() {
       await mutateMembership("POST", {
         organizationId: selectedOrganization.id,
         userId: addUserId,
-        role: addRole,
+        role: selectedOrganization.is_personal ? "owner" : addRole,
       });
       toast.success("Organization member added");
       setAddOpen(false);
@@ -376,7 +384,9 @@ export function OrganizationsAdminClient() {
           value={member.role}
           onValueChange={(value) => void changeRole(member, value)}
           disabled={
-            selectedOrganization?.is_personal ||
+            (selectedOrganization?.is_personal &&
+              (member.user_id !== selectedOrganization.created_by ||
+                member.role === "owner")) ||
             savingMembershipId === member.id
           }
         >
@@ -384,7 +394,7 @@ export function OrganizationsAdminClient() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {ROLE_OPTIONS.map((role) => (
+            {editableRoleOptions.map((role) => (
               <SelectItem key={role} value={role}>
                 {getRoleLabel(role)}
               </SelectItem>
@@ -473,6 +483,7 @@ export function OrganizationsAdminClient() {
               pageSize={50}
               selectedId={effectiveSelectedOrganizationId}
               onRowOpen={setOrganizationFocus}
+              detail={{ enabled: false }}
               toolbar={{
                 search: true,
                 searchPlaceholder: "Search organizations…",
@@ -509,7 +520,7 @@ export function OrganizationsAdminClient() {
                   <span>{members.length} members</span>
                   {selectedOrganization.is_personal ? (
                     <Badge variant="outline" className="h-5 text-[10px]">
-                      Personal — membership locked
+                      Personal — repair only
                     </Badge>
                   ) : null}
                 </div>
@@ -518,7 +529,12 @@ export function OrganizationsAdminClient() {
             <Button
               size="sm"
               onClick={() => setAddOpen(true)}
-              disabled={!selectedOrganization || selectedOrganization.is_personal}
+              disabled={
+                !selectedOrganization ||
+                (selectedOrganization.is_personal &&
+                  (selectedOrganization.member_count > 0 ||
+                    !selectedOrganization.created_by))
+              }
             >
               <Plus className="mr-1 h-4 w-4" /> Add member
             </Button>
@@ -529,6 +545,7 @@ export function OrganizationsAdminClient() {
               columns={memberColumns}
               getRowId={(member) => member.id}
               isLoading={loading}
+              detail={{ enabled: false }}
               pageSize={50}
               toolbar={{
                 search: true,
@@ -564,7 +581,8 @@ export function OrganizationsAdminClient() {
                     className="h-7 w-7 text-destructive hover:text-destructive"
                     title="Remove member"
                     disabled={
-                      selectedOrganization?.is_personal ||
+                      (selectedOrganization?.is_personal &&
+                        member.user_id === selectedOrganization.created_by) ||
                       savingMembershipId === member.id
                     }
                     onClick={() => void removeMember(member)}
@@ -596,7 +614,8 @@ export function OrganizationsAdminClient() {
             <DialogTitle>Add organization member</DialogTitle>
             <DialogDescription>
               Add an existing account to {selectedOrganization?.name}. New-user
-              invitations remain in the Invitations tab.
+              invitations remain in the Invitations tab. Personal organizations
+              can only restore their creator as owner.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -614,10 +633,11 @@ export function OrganizationsAdminClient() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Role</label>
               <Select
-                value={addRole}
+                value={selectedOrganization?.is_personal ? "owner" : addRole}
                 onValueChange={(role) => {
                   if (isOrgRole(role)) setAddRole(role);
                 }}
+                disabled={selectedOrganization?.is_personal}
               >
                 <SelectTrigger>
                   <SelectValue />
