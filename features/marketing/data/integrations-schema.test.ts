@@ -15,7 +15,34 @@ describe("marketing site integration JSON", () => {
     const draft = parseSiteIntegrations({});
     expect(draft.googleSearchConsole.enabled).toBe(false);
     expect(draft.googleAnalytics4.credentialRef).toBe("");
+    expect(draft.dataForSeo).toEqual({
+      enabled: false,
+      cadence: "monthly",
+      detailLimit: 1000,
+    });
     expect(draft.customProviders).toEqual([]);
+  });
+
+  it("stores secret-free DataForSEO scheduling configuration", () => {
+    const draft = parseSiteIntegrations({});
+    draft.dataForSeo = {
+      enabled: true,
+      cadence: "weekly",
+      detailLimit: 250,
+    };
+    const result = buildSiteIntegrations({}, draft);
+    expect(parseSiteIntegrations(result).dataForSeo).toEqual(draft.dataForSeo);
+    expect(result).toMatchObject({
+      marketing: {
+        providers: {
+          dataforseo: {
+            enabled: true,
+            cadence: "weekly",
+            detail_limit: 250,
+          },
+        },
+      },
+    });
   });
 
   it("writes only references in a namespaced document and preserves unrelated keys", () => {

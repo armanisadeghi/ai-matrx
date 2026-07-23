@@ -96,9 +96,12 @@ export interface RunEvidence {
 export interface CollectionCreateBody {
   provider: "dataforseo";
   organization_id: string;
-  capability: "raw_provider" | "keyword_metrics";
+  capability: "raw_provider" | "keyword_metrics" | "backlinks";
   operation: string;
   target_ref: string;
+  site_id?: string;
+  page_id?: string;
+  source_crawl_session_id?: string;
   observation_period: string;
   settings: {
     tasks: Array<Record<string, JsonValue>>;
@@ -107,4 +110,29 @@ export interface CollectionCreateBody {
   };
   request_id: string;
   force_refresh: boolean;
+}
+
+export type BacklinkRefreshProfile = "weekly" | "monthly" | "bootstrap";
+
+export interface BacklinkRefreshBody {
+  organization_id: string;
+  profile: BacklinkRefreshProfile;
+  detail_limit: number;
+  force_refresh: boolean;
+  request_id?: string;
+  source_crawl_session_id?: string;
+}
+
+export interface BacklinkDatasetReceipt {
+  dataset: string;
+  operation: string;
+  endpoint: string;
+  receipt: CollectionReceipt;
+}
+
+export interface BacklinkRefreshReceipt {
+  site_id: string;
+  target: string;
+  profile: BacklinkRefreshProfile;
+  datasets: BacklinkDatasetReceipt[];
 }

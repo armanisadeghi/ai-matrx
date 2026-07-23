@@ -8078,6 +8078,7 @@ export type Database = {
       set_kind_activation: {
         Args: {
           p_active: boolean
+          p_actor?: string
           p_kind_definition_id: string
           p_note?: string
         }
@@ -39204,6 +39205,308 @@ export type Database = {
   }
   seo: {
     Tables: {
+      backlink_dimension_snapshot: {
+        Row: {
+          backlinks: number | null
+          created_at: string
+          created_by: string
+          dedup_key: string
+          dimension_key: string
+          dimension_kind: string
+          extras: Json
+          first_seen_at: string | null
+          id: string
+          label: string | null
+          last_seen_at: string | null
+          organization_id: string
+          provider: string
+          rank_score: number | null
+          raw_payload_id: string | null
+          referring_domains: number | null
+          run_id: string
+          site_id: string
+          snapshot_id: string
+          spam_score: number | null
+          url: string | null
+        }
+        Insert: {
+          backlinks?: number | null
+          created_at?: string
+          created_by: string
+          dedup_key: string
+          dimension_key: string
+          dimension_kind: string
+          extras?: Json
+          first_seen_at?: string | null
+          id?: string
+          label?: string | null
+          last_seen_at?: string | null
+          organization_id: string
+          provider: string
+          rank_score?: number | null
+          raw_payload_id?: string | null
+          referring_domains?: number | null
+          run_id: string
+          site_id: string
+          snapshot_id: string
+          spam_score?: number | null
+          url?: string | null
+        }
+        Update: {
+          backlinks?: number | null
+          created_at?: string
+          created_by?: string
+          dedup_key?: string
+          dimension_key?: string
+          dimension_kind?: string
+          extras?: Json
+          first_seen_at?: string | null
+          id?: string
+          label?: string | null
+          last_seen_at?: string | null
+          organization_id?: string
+          provider?: string
+          rank_score?: number | null
+          raw_payload_id?: string | null
+          referring_domains?: number | null
+          run_id?: string
+          site_id?: string
+          snapshot_id?: string
+          spam_score?: number | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backlink_dimension_snapshot_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlink_dimension_snapshot_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlink_dimension_snapshot_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "backlink_snapshot"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backlink_observation: {
+        Row: {
+          anchor_text: string | null
+          created_at: string
+          created_by: string
+          dedup_key: string
+          domain_rank: number | null
+          extras: Json
+          first_seen_at: string | null
+          id: string
+          is_dofollow: boolean | null
+          last_seen_at: string | null
+          link_type: string | null
+          lost_at: string | null
+          organization_id: string
+          page_id: string | null
+          provider: string
+          raw_payload_id: string | null
+          run_id: string
+          site_id: string
+          snapshot_id: string
+          source_domain: string | null
+          source_rank: number | null
+          source_url: string
+          spam_score: number | null
+          state: string
+          target_url: string
+        }
+        Insert: {
+          anchor_text?: string | null
+          created_at?: string
+          created_by: string
+          dedup_key: string
+          domain_rank?: number | null
+          extras?: Json
+          first_seen_at?: string | null
+          id?: string
+          is_dofollow?: boolean | null
+          last_seen_at?: string | null
+          link_type?: string | null
+          lost_at?: string | null
+          organization_id: string
+          page_id?: string | null
+          provider: string
+          raw_payload_id?: string | null
+          run_id: string
+          site_id: string
+          snapshot_id: string
+          source_domain?: string | null
+          source_rank?: number | null
+          source_url: string
+          spam_score?: number | null
+          state?: string
+          target_url: string
+        }
+        Update: {
+          anchor_text?: string | null
+          created_at?: string
+          created_by?: string
+          dedup_key?: string
+          domain_rank?: number | null
+          extras?: Json
+          first_seen_at?: string | null
+          id?: string
+          is_dofollow?: boolean | null
+          last_seen_at?: string | null
+          link_type?: string | null
+          lost_at?: string | null
+          organization_id?: string
+          page_id?: string | null
+          provider?: string
+          raw_payload_id?: string | null
+          run_id?: string
+          site_id?: string
+          snapshot_id?: string
+          source_domain?: string | null
+          source_rank?: number | null
+          source_url?: string
+          spam_score?: number | null
+          state?: string
+          target_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backlink_observation_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlink_observation_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlink_observation_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "backlink_snapshot"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backlink_snapshot: {
+        Row: {
+          broken_backlinks: number | null
+          created_at: string
+          created_by: string
+          dataset: string
+          dedup_key: string
+          dofollow_backlinks: number | null
+          extras: Json
+          id: string
+          lost_backlinks: number | null
+          new_backlinks: number | null
+          nofollow_backlinks: number | null
+          observed_at: string
+          organization_id: string
+          page_id: string | null
+          provider: string
+          rank_score: number | null
+          raw_payload_id: string | null
+          referring_domains: number | null
+          referring_ips: number | null
+          referring_subnets: number | null
+          run_id: string
+          site_id: string
+          spam_score: number | null
+          target: string
+          target_type: string
+          total_backlinks: number | null
+        }
+        Insert: {
+          broken_backlinks?: number | null
+          created_at?: string
+          created_by: string
+          dataset: string
+          dedup_key: string
+          dofollow_backlinks?: number | null
+          extras?: Json
+          id?: string
+          lost_backlinks?: number | null
+          new_backlinks?: number | null
+          nofollow_backlinks?: number | null
+          observed_at: string
+          organization_id: string
+          page_id?: string | null
+          provider: string
+          rank_score?: number | null
+          raw_payload_id?: string | null
+          referring_domains?: number | null
+          referring_ips?: number | null
+          referring_subnets?: number | null
+          run_id: string
+          site_id: string
+          spam_score?: number | null
+          target: string
+          target_type?: string
+          total_backlinks?: number | null
+        }
+        Update: {
+          broken_backlinks?: number | null
+          created_at?: string
+          created_by?: string
+          dataset?: string
+          dedup_key?: string
+          dofollow_backlinks?: number | null
+          extras?: Json
+          id?: string
+          lost_backlinks?: number | null
+          new_backlinks?: number | null
+          nofollow_backlinks?: number | null
+          observed_at?: string
+          organization_id?: string
+          page_id?: string | null
+          provider?: string
+          rank_score?: number | null
+          raw_payload_id?: string | null
+          referring_domains?: number | null
+          referring_ips?: number | null
+          referring_subnets?: number | null
+          run_id?: string
+          site_id?: string
+          spam_score?: number | null
+          target?: string
+          target_type?: string
+          total_backlinks?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backlink_snapshot_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlink_snapshot_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_run: {
         Row: {
           attempt_count: number
@@ -39224,6 +39527,7 @@ export type Database = {
           observation_period: string
           operation: string
           organization_id: string
+          page_id: string | null
           provider: string
           reported_cost: number | null
           request_count: number
@@ -39231,6 +39535,8 @@ export type Database = {
           requested_at: string
           settings: Json
           settings_hash: string
+          site_id: string | null
+          source_crawl_session_id: string | null
           started_at: string | null
           status: string
           target_ref: string
@@ -39256,6 +39562,7 @@ export type Database = {
           observation_period: string
           operation: string
           organization_id: string
+          page_id?: string | null
           provider: string
           reported_cost?: number | null
           request_count?: number
@@ -39263,6 +39570,8 @@ export type Database = {
           requested_at?: string
           settings?: Json
           settings_hash: string
+          site_id?: string | null
+          source_crawl_session_id?: string | null
           started_at?: string | null
           status?: string
           target_ref: string
@@ -39288,6 +39597,7 @@ export type Database = {
           observation_period?: string
           operation?: string
           organization_id?: string
+          page_id?: string | null
           provider?: string
           reported_cost?: number | null
           request_count?: number
@@ -39295,6 +39605,8 @@ export type Database = {
           requested_at?: string
           settings?: Json
           settings_hash?: string
+          site_id?: string | null
+          source_crawl_session_id?: string | null
           started_at?: string | null
           status?: string
           target_ref?: string
@@ -39305,166 +39617,341 @@ export type Database = {
       }
       keyword: {
         Row: {
-          category: string | null
+          audience_type: string | null
+          brand_presence: string | null
+          classification_confidence: number | null
+          classification_detail: Json
+          classified_at: string | null
+          classifier_version: string | null
+          comparison_intent: string | null
+          compliance_framing: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          fulfillment_mode: string | null
+          funnel_stage: string | null
           id: string
-          intent: string | null
+          intent_class: string | null
           language: string
+          local_intent: string | null
           metadata: Json
           normalized_phrase: string
           organization_id: string
           phrase: string
+          price_sensitivity: string | null
+          query_form: string | null
+          specificity: string | null
+          transaction_direction: string | null
           updated_at: string
           updated_by: string | null
+          urgency: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          category?: string | null
+          audience_type?: string | null
+          brand_presence?: string | null
+          classification_confidence?: number | null
+          classification_detail?: Json
+          classified_at?: string | null
+          classifier_version?: string | null
+          comparison_intent?: string | null
+          compliance_framing?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          fulfillment_mode?: string | null
+          funnel_stage?: string | null
           id?: string
-          intent?: string | null
+          intent_class?: string | null
           language?: string
+          local_intent?: string | null
           metadata?: Json
           normalized_phrase: string
-          organization_id: string
+          organization_id?: string
           phrase: string
+          price_sensitivity?: string | null
+          query_form?: string | null
+          specificity?: string | null
+          transaction_direction?: string | null
           updated_at?: string
           updated_by?: string | null
+          urgency?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          category?: string | null
+          audience_type?: string | null
+          brand_presence?: string | null
+          classification_confidence?: number | null
+          classification_detail?: Json
+          classified_at?: string | null
+          classifier_version?: string | null
+          comparison_intent?: string | null
+          compliance_framing?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          fulfillment_mode?: string | null
+          funnel_stage?: string | null
           id?: string
-          intent?: string | null
+          intent_class?: string | null
           language?: string
+          local_intent?: string | null
           metadata?: Json
           normalized_phrase?: string
           organization_id?: string
           phrase?: string
+          price_sensitivity?: string | null
+          query_form?: string | null
+          specificity?: string | null
+          transaction_direction?: string | null
           updated_at?: string
           updated_by?: string | null
+          urgency?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
-      keyword_metric: {
+      keyword_edge: {
         Row: {
-          competition: number | null
-          cpc: number | null
+          confidence: number | null
           created_at: string
-          created_by: string
-          dedup_key: string
-          difficulty: number | null
-          extras: Json
+          created_by: string | null
+          deleted_at: string | null
+          detail: Json
+          edge_type: string
           id: string
-          intent: string | null
-          keyword_id: string
-          location_id: string | null
-          observed_at: string
+          metadata: Json
           organization_id: string
-          provider: string
-          raw_payload_id: string | null
-          run_id: string
-          search_volume: number | null
+          origin: string
+          serp_overlap: number | null
+          source_keyword_id: string
+          status: string
+          target_keyword_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          competition?: number | null
-          cpc?: number | null
+          confidence?: number | null
           created_at?: string
-          created_by: string
-          dedup_key: string
-          difficulty?: number | null
-          extras?: Json
+          created_by?: string | null
+          deleted_at?: string | null
+          detail?: Json
+          edge_type: string
           id?: string
-          intent?: string | null
-          keyword_id: string
-          location_id?: string | null
-          observed_at: string
-          organization_id: string
-          provider: string
-          raw_payload_id?: string | null
-          run_id: string
-          search_volume?: number | null
+          metadata?: Json
+          organization_id?: string
+          origin?: string
+          serp_overlap?: number | null
+          source_keyword_id: string
+          status?: string
+          target_keyword_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          competition?: number | null
-          cpc?: number | null
+          confidence?: number | null
           created_at?: string
-          created_by?: string
-          dedup_key?: string
-          difficulty?: number | null
-          extras?: Json
+          created_by?: string | null
+          deleted_at?: string | null
+          detail?: Json
+          edge_type?: string
           id?: string
-          intent?: string | null
-          keyword_id?: string
-          location_id?: string | null
-          observed_at?: string
+          metadata?: Json
           organization_id?: string
-          provider?: string
-          raw_payload_id?: string | null
-          run_id?: string
-          search_volume?: number | null
+          origin?: string
+          serp_overlap?: number | null
+          source_keyword_id?: string
+          status?: string
+          target_keyword_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
-            foreignKeyName: "keyword_metric_keyword_id_fkey"
+            foreignKeyName: "keyword_edge_source_keyword_id_fkey"
+            columns: ["source_keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keyword_edge_target_keyword_id_fkey"
+            columns: ["target_keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keyword_market: {
+        Row: {
+          competition: string | null
+          competition_index: number | null
+          cpc: number | null
+          created_at: string
+          created_by: string | null
+          data_months: number | null
+          deleted_at: string | null
+          demand_trajectory: string | null
+          growth_rate: number | null
+          high_top_of_page_bid: number | null
+          id: string
+          keyword_id: string
+          location_code: number
+          low_top_of_page_bid: number | null
+          metadata: Json
+          metrics_fetched_at: string | null
+          metrics_task_id: string | null
+          monthly_searches: Json
+          organization_id: string
+          raw: Json | null
+          search_volume: number | null
+          seasonality_index: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          competition?: string | null
+          competition_index?: number | null
+          cpc?: number | null
+          created_at?: string
+          created_by?: string | null
+          data_months?: number | null
+          deleted_at?: string | null
+          demand_trajectory?: string | null
+          growth_rate?: number | null
+          high_top_of_page_bid?: number | null
+          id?: string
+          keyword_id: string
+          location_code?: number
+          low_top_of_page_bid?: number | null
+          metadata?: Json
+          metrics_fetched_at?: string | null
+          metrics_task_id?: string | null
+          monthly_searches?: Json
+          organization_id?: string
+          raw?: Json | null
+          search_volume?: number | null
+          seasonality_index?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          competition?: string | null
+          competition_index?: number | null
+          cpc?: number | null
+          created_at?: string
+          created_by?: string | null
+          data_months?: number | null
+          deleted_at?: string | null
+          demand_trajectory?: string | null
+          growth_rate?: number | null
+          high_top_of_page_bid?: number | null
+          id?: string
+          keyword_id?: string
+          location_code?: number
+          low_top_of_page_bid?: number | null
+          metadata?: Json
+          metrics_fetched_at?: string | null
+          metrics_task_id?: string | null
+          monthly_searches?: Json
+          organization_id?: string
+          raw?: Json | null
+          search_volume?: number | null
+          seasonality_index?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_market_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keyword_topic: {
+        Row: {
+          assigned_by: string | null
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_primary: boolean
+          keyword_id: string
+          metadata: Json
+          organization_id: string
+          topic_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          assigned_by?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_primary?: boolean
+          keyword_id: string
+          metadata?: Json
+          organization_id?: string
+          topic_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          assigned_by?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_primary?: boolean
+          keyword_id?: string
+          metadata?: Json
+          organization_id?: string
+          topic_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_topic_keyword_id_fkey"
             columns: ["keyword_id"]
             isOneToOne: false
             referencedRelation: "keyword"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "keyword_metric_location_id_fkey"
-            columns: ["location_id"]
+            foreignKeyName: "keyword_topic_topic_id_fkey"
+            columns: ["topic_id"]
             isOneToOne: false
-            referencedRelation: "location"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "keyword_metric_raw_payload_id_fkey"
-            columns: ["raw_payload_id"]
-            isOneToOne: false
-            referencedRelation: "raw_payload"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "keyword_metric_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "collection_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      keyword_monthly_volume: {
-        Row: {
-          id: string
-          metric_id: string
-          period: string
-          search_volume: number
-        }
-        Insert: {
-          id?: string
-          metric_id: string
-          period: string
-          search_volume: number
-        }
-        Update: {
-          id?: string
-          metric_id?: string
-          period?: string
-          search_volume?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "keyword_monthly_volume_metric_id_fkey"
-            columns: ["metric_id"]
-            isOneToOne: false
-            referencedRelation: "keyword_metric"
+            referencedRelation: "topic"
             referencedColumns: ["id"]
           },
         ]
@@ -39629,41 +40116,6 @@ export type Database = {
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "collection_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      provider_location: {
-        Row: {
-          created_at: string
-          external_id: string
-          external_name: string | null
-          id: string
-          location_id: string
-          provider: string
-        }
-        Insert: {
-          created_at?: string
-          external_id: string
-          external_name?: string | null
-          id?: string
-          location_id: string
-          provider: string
-        }
-        Update: {
-          created_at?: string
-          external_id?: string
-          external_name?: string | null
-          id?: string
-          location_id?: string
-          provider?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "provider_location_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "location"
             referencedColumns: ["id"]
           },
         ]
@@ -40233,6 +40685,231 @@ export type Database = {
           },
         ]
       }
+      site_keyword_value: {
+        Row: {
+          audience_fit: string | null
+          brand_fit: string | null
+          capacity_appetite: string | null
+          competitive_position: string | null
+          content_role: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          keyword_id: string
+          lead_quality: string | null
+          metadata: Json
+          organization_id: string
+          priority_computed_at: string | null
+          priority_score: number | null
+          service_match: string | null
+          site_id: string
+          suppression_reason: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_status: string
+        }
+        Insert: {
+          audience_fit?: string | null
+          brand_fit?: string | null
+          capacity_appetite?: string | null
+          competitive_position?: string | null
+          content_role?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          keyword_id: string
+          lead_quality?: string | null
+          metadata?: Json
+          organization_id: string
+          priority_computed_at?: string | null
+          priority_score?: number | null
+          service_match?: string | null
+          site_id: string
+          suppression_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_status?: string
+        }
+        Update: {
+          audience_fit?: string | null
+          brand_fit?: string | null
+          capacity_appetite?: string | null
+          competitive_position?: string | null
+          content_role?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          keyword_id?: string
+          lead_quality?: string | null
+          metadata?: Json
+          organization_id?: string
+          priority_computed_at?: string | null
+          priority_score?: number | null
+          service_match?: string | null
+          site_id?: string
+          suppression_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_keyword_value_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_topic_value: {
+        Row: {
+          audience_fit: string | null
+          brand_fit: string | null
+          capacity_appetite: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          lead_quality: string | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          service_match: string | null
+          site_id: string
+          topic_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          weight: number | null
+        }
+        Insert: {
+          audience_fit?: string | null
+          brand_fit?: string | null
+          capacity_appetite?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          lead_quality?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          service_match?: string | null
+          site_id: string
+          topic_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          weight?: number | null
+        }
+        Update: {
+          audience_fit?: string | null
+          brand_fit?: string | null
+          capacity_appetite?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          lead_quality?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          service_match?: string | null
+          site_id?: string
+          topic_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_topic_value_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topic: {
+        Row: {
+          aliases: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_builtin: boolean
+          metadata: Json
+          name: string
+          node_type: string
+          organization_id: string
+          parent_id: string | null
+          slug: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          volatility: string
+        }
+        Insert: {
+          aliases?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          metadata?: Json
+          name: string
+          node_type: string
+          organization_id?: string
+          parent_id?: string | null
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          volatility?: string
+        }
+        Update: {
+          aliases?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          metadata?: Json
+          name?: string
+          node_type?: string
+          organization_id?: string
+          parent_id?: string | null
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          volatility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "topic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       web_analytics_daily: {
         Row: {
           campaign: string | null
@@ -40346,7 +41023,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      fn_ingest_keyword_research: {
+        Args: {
+          p_language?: string
+          p_research: Json
+          p_research_doc_id?: string
+        }
+        Returns: Json
+      }
+      fn_merge_monthly: { Args: { p_new: Json; p_old: Json }; Returns: Json }
+      fn_normalize_phrase: { Args: { p: string }; Returns: string }
+      fn_reject_keyword_edge: {
+        Args: { p_edge_id: string; p_reason: string }
+        Returns: undefined
+      }
+      fn_upsert_keyword: {
+        Args: { p_language?: string; p_phrase: string }
+        Returns: Record<string, unknown>
+      }
     }
     Enums: {
       [_ in never]: never

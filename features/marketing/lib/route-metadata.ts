@@ -85,6 +85,12 @@ const SITE_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Deterministic site-wide audit rollup: indexability, SERP metadata, social cards, headings, and URL quality.",
     letter: "Au",
   },
+  backlinks: {
+    titlePrefix: "Backlinks",
+    description:
+      "Inspect persisted backlink authority, referring domains, anchors, linked pages, and competitors.",
+    letter: "Bl",
+  },
   coverage: {
     titlePrefix: "Coverage",
     description: "Compare sitemap, crawl, and search coverage for this site.",

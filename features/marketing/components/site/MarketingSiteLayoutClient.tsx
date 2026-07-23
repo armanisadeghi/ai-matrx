@@ -5,6 +5,7 @@ import { useParams, usePathname } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
+  BadgeCheck,
   CircleDollarSign,
   ClipboardCheck,
   ExternalLink,
@@ -49,10 +50,12 @@ export function useMarketingSite() {
   return value;
 }
 
-function sectionSuffix(pathname: string, brandId: string, siteId: string): string {
-  const rest = pathname.slice(
-    marketingRoutes.site(brandId, siteId).length,
-  );
+function sectionSuffix(
+  pathname: string,
+  brandId: string,
+  siteId: string,
+): string {
+  const rest = pathname.slice(marketingRoutes.site(brandId, siteId).length);
   for (const section of [
     "discovery",
     "sitemaps",
@@ -63,6 +66,7 @@ function sectionSuffix(pathname: string, brandId: string, siteId: string): strin
     "analysis",
     "findings",
     "links",
+    "backlinks",
     "integrations",
     "cost",
     "access",
@@ -187,6 +191,11 @@ export function MarketingSiteLayoutClient({
             name: "Links",
             href: `${base}/links`,
             icon: Link2,
+          },
+          {
+            name: "Backlinks",
+            href: `${base}/backlinks`,
+            icon: BadgeCheck,
           },
           {
             name: "Integrations",

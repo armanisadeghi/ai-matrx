@@ -1,4 +1,6 @@
 import type {
+  BacklinkRefreshBody,
+  BacklinkRefreshReceipt,
   CollectionCreateBody,
   CollectionReceipt,
   DataForSeoOperationsResponse,
@@ -86,5 +88,23 @@ export function getCollectionEvidence(
     serverUrl,
     accessToken,
     `/collections/${encodeURIComponent(runId)}/evidence`,
+  );
+}
+
+/** Trigger the canonical multi-dataset backlink refresh for one managed site. */
+export function refreshSiteBacklinks(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: BacklinkRefreshBody,
+): Promise<BacklinkRefreshReceipt> {
+  return seoRequest(
+    serverUrl,
+    accessToken,
+    `/sites/${encodeURIComponent(siteId)}/backlinks/refresh`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
   );
 }

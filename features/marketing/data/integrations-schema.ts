@@ -21,6 +21,15 @@ export interface CustomProviderIntegrationDraft extends ProviderIntegrationDraft
   label: string;
 }
 
+export const dataForSeoCadences = ["weekly", "monthly"] as const;
+export type DataForSeoCadence = (typeof dataForSeoCadences)[number];
+
+export interface DataForSeoIntegrationDraft {
+  enabled: boolean;
+  cadence: DataForSeoCadence;
+  detailLimit: number;
+}
+
 export const cmsKinds = [
   "wordpress",
   "shopify",
@@ -39,6 +48,7 @@ export interface SiteIntegrationsDraft {
   googleSearchConsole: ProviderIntegrationDraft;
   googleAnalytics4: ProviderIntegrationDraft;
   pageSpeedInsights: ProviderIntegrationDraft;
+  dataForSeo: DataForSeoIntegrationDraft;
   cms: CmsIntegrationDraft;
   customProviders: CustomProviderIntegrationDraft[];
 }
@@ -111,6 +121,22 @@ function parseProvider(value: unknown): ProviderIntegrationDraft {
   };
 }
 
+function parseDataForSeo(value: unknown): DataForSeoIntegrationDraft {
+  const row = isRecord(value) ? value : {};
+  const cadence = stringValue(row.cadence);
+  const detailLimit =
+    typeof row.detail_limit === "number" && Number.isInteger(row.detail_limit)
+      ? row.detail_limit
+      : 1000;
+  return {
+    enabled: row.enabled === true,
+    cadence: dataForSeoCadences.includes(cadence as DataForSeoCadence)
+      ? (cadence as DataForSeoCadence)
+      : "monthly",
+    detailLimit,
+  };
+}
+
 export const emptyCmsIntegration = (): CmsIntegrationDraft => ({
   ...emptyProviderIntegration(),
   kind: "",
@@ -137,6 +163,7 @@ export function parseSiteIntegrations(value: Json): SiteIntegrationsDraft {
     googleSearchConsole: parseProvider(providers.google_search_console),
     googleAnalytics4: parseProvider(providers.google_analytics_4),
     pageSpeedInsights: parseProvider(providers.pagespeed_insights),
+    dataForSeo: parseDataForSeo(providers.dataforseo),
     cms: parseCms(providers.cms),
     customProviders: custom.flatMap((value, index) => {
       if (!isRecord(value)) return [];
@@ -207,6 +234,11 @@ export function buildSiteIntegrations(
         google_search_console: providerDocument(draft.googleSearchConsole),
         google_analytics_4: providerDocument(draft.googleAnalytics4),
         pagespeed_insights: providerDocument(draft.pageSpeedInsights),
+        dataforseo: {
+          enabled: draft.dataForSeo.enabled,
+          cadence: draft.dataForSeo.cadence,
+          detail_limit: draft.dataForSeo.detailLimit,
+        },
         cms: {
           ...providerDocument(draft.cms),
           kind: draft.cms.kind || null,
@@ -354,6 +386,16 @@ export function validateSiteIntegrations(
   draft: SiteIntegrationsDraft,
 ): IntegrationValidationIssue[] {
   const issues: IntegrationValidationIssue[] = [];
+  if (
+    !Number.isInteger(draft.dataForSeo.detailLimit) ||
+    draft.dataForSeo.detailLimit < 1 ||
+    draft.dataForSeo.detailLimit > 1000
+  ) {
+    issues.push({
+      field: "dataForSeo.detailLimit",
+      message: "DataForSEO detail limit must be an integer from 1 to 1000.",
+    });
+  }
   validateBuiltIn(
     draft.googleSearchConsole,
     "googleSearchConsole",

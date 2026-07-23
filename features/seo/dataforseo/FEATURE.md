@@ -46,11 +46,12 @@ organization comes from `selectEffectiveOrganizationId`.
 ## Files
 
 - `DataForSeoLab.tsx` — interactive test surface.
-- `client.ts` — typed direct REST client.
-- `types.ts` — API contracts mirrored from `matrx_seo.standalone.app`.
+- `client.ts` — typed direct REST client, including the canonical site backlink refresh command consumed by Marketing.
+- `types.ts` — API contracts mirrored from `matrx_seo.standalone.app`, including refresh profiles and receipts.
 
 ## Change log
 
+- 2026-07-22 — Added the typed `POST /sites/{site_id}/backlinks/refresh` client contract. The Marketing Backlinks workspace uses the same canonical SEO service target and Supabase JWT as this lab; neither surface hard-codes a server.
 - 2026-07-22 — Deleted heuristic task generation and made the backend's 51 endpoint-scoped
   canonical examples the only initial-payload source for the operation/workflow/endpoint UI.
 - 2026-07-22 — Replaced every raw JSON textarea/pre block with the canonical JsonInspector
