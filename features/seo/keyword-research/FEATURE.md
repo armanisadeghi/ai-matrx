@@ -5,6 +5,13 @@ Status: **live (2026-07-22).** Route: `app/(core)/seo/keyword-research/page.tsx`
 Relationships" card). Cross-repo contract of record:
 `/Users/armanisadeghi/code/common-docs/to-be-organized-NEW/seo-module/seo-keyword-agent-guide.md`.
 
+The site-scoped read surface is
+`/marketing/brands/[brandId]/sites/[siteId]/keywords` →
+`SiteKeywordPerformanceWorkspace`. It combines the latest persisted 28-day GSC
+query observations with canonical keyword-market and site-workflow values through
+`seo.v_site_keyword_performance`. This route is a read surface: GSC collection and
+market enrichment remain explicit compute operations.
+
 ## Data flow — the two-lane rule, exactly
 
 - **Reads go DIRECT to Supabase** (`data/queries.ts` — `supabase.schema("seo")` after
@@ -19,8 +26,8 @@ Relationships" card). Cross-repo contract of record:
     vertical's convention).
   - `POST /seo/keywords/volume-refresh` — market data for stale/missing rows only
     (30-day policy; `force_refresh` bypasses).
-  Backend contract: `aidream/services/seo/FEATURE.md` § Keyword pipeline. These
-  endpoints exist on local/dev aidream; prod gets them on its next deploy.
+    Backend contract: `aidream/services/seo/FEATURE.md` § Keyword pipeline. These
+    endpoints exist on local/dev aidream; prod gets them on its next deploy.
 
 ## Files
 
@@ -29,12 +36,18 @@ Relationships" card). Cross-repo contract of record:
 - `data/queries.ts` — `listKeywordsWithMarket` (ilike on `normalized_phrase`, market
   embedded, volume sort client-side), `listKeywordEdges` (both directions + partner
   phrases).
+- `data/site-performance.ts` + `useSiteKeywordPerformance.ts` — direct, authenticated
+  Supabase reads of `seo.v_site_keyword_performance` with server-side search,
+  filtering, sorting, and pagination for one site.
 - `useKeywordResearch.ts` — page state + the two `callApi` actions; debounced search,
   abort-safe reloads.
 - `components/KeywordResearchWorkbench.tsx` — research launcher, run-summary strip,
   explorer table (volume / trend sparkline / competition / CPC / trajectory / intent),
   expandable detail (monthly bars + relationship chips; rejected edges render
   struck-through — rejection is permanent memory, never deletion).
+- `components/SiteKeywordPerformanceWorkspace.tsx` — canonical MatrxDataTable view of
+  ranked queries, GSC performance, strongest matched page, market metrics, and
+  site-specific workflow state.
 
 ## Invariants
 
@@ -48,5 +61,7 @@ Relationships" card). Cross-repo contract of record:
 
 ## Change Log
 
+- 2026-07-22 — Added the site-scoped organic keyword performance workspace backed by
+  the live `seo.v_site_keyword_performance` read model.
 - 2026-07-22 — Initial build: research launcher + live explorer + relationship detail,
   wired to the new aidream keyword pipeline endpoints. Registered in agent.review_queue.

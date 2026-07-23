@@ -13,6 +13,7 @@ import {
   Gauge,
   Grid3x3,
   Inbox,
+  KeyRound,
   Link2,
   Map,
   Plug,
@@ -68,6 +69,7 @@ function sectionSuffix(
     "findings",
     "links",
     "backlinks",
+    "keywords",
     "integrations",
     "cost",
     "access",
@@ -199,6 +201,11 @@ export function MarketingSiteLayoutClient({
             icon: BadgeCheck,
           },
           {
+            name: "Keywords",
+            href: `${base}/keywords`,
+            icon: KeyRound,
+          },
+          {
             name: "Integrations",
             href: `${base}/integrations`,
             icon: Plug,
@@ -229,7 +236,9 @@ export function MarketingSiteLayoutClient({
       />
       <div className="flex h-full min-h-0 flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-hidden">
-          <MarketingSiteSurfaceProvider>{children}</MarketingSiteSurfaceProvider>
+          <MarketingSiteSurfaceProvider>
+            {children}
+          </MarketingSiteSurfaceProvider>
         </div>
       </div>
     </MarketingSiteContext.Provider>

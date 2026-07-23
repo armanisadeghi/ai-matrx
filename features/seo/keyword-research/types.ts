@@ -2,8 +2,16 @@ import type { Database } from "@/types/database.types";
 import type { components } from "@/types/python-generated/api-types";
 
 export type KeywordRow = Database["seo"]["Tables"]["keyword"]["Row"];
-export type KeywordMarketRow = Database["seo"]["Tables"]["keyword_market"]["Row"];
+export type KeywordMarketRow =
+  Database["seo"]["Tables"]["keyword_market"]["Row"];
 export type KeywordEdgeRow = Database["seo"]["Tables"]["keyword_edge"]["Row"];
+export type SiteKeywordPerformanceRow =
+  Database["seo"]["Views"]["v_site_keyword_performance"]["Row"];
+
+export interface SiteKeywordPerformancePage {
+  rows: SiteKeywordPerformanceRow[];
+  total: number;
+}
 
 /** One explorer row: the universal keyword plus its US market cache (if fetched). */
 export interface KeywordWithMarket extends KeywordRow {

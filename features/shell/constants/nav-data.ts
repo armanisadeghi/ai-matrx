@@ -620,7 +620,7 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       {
         label: "Podcasts",
-        href: "/podcast",
+        href: "/podcast/studio",
         iconName: "Radio",
         description: "Browse shows and manage podcast studio production",
         color: "violet",

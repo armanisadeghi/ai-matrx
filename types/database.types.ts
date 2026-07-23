@@ -41020,7 +41020,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_site_keyword_performance: {
+        Row: {
+          average_position: number | null
+          clicks: number | null
+          competition: string | null
+          competition_index: number | null
+          competitive_position: string | null
+          content_role: string | null
+          cpc: number | null
+          ctr: number | null
+          demand_trajectory: string | null
+          first_date: string | null
+          impressions: number | null
+          keyword_id: string | null
+          last_date: string | null
+          market_fetched_at: string | null
+          organization_id: string | null
+          priority_score: number | null
+          provider: string | null
+          query: string | null
+          search_volume: number | null
+          site_id: string | null
+          top_page_clicks: number | null
+          top_page_id: string | null
+          top_page_impressions: number | null
+          top_page_path: string | null
+          top_page_url: string | null
+          workflow_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_performance_daily_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       fn_ingest_keyword_research: {
