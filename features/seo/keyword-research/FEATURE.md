@@ -26,6 +26,11 @@ market enrichment remain explicit compute operations.
     vertical's convention).
   - `POST /seo/keywords/volume-refresh` — market data for stale/missing rows only
     (30-day policy; `force_refresh` bypasses).
+  - **Both calls MUST pass `connectTimeoutMs: 100_000, totalTimeoutMs: 110_000`** —
+    `callApi`'s JSON defaults (15s to headers / 30s total) abort every run over 15s as
+    a `network_error` while the server finishes (and bills) the pipeline anyway, and
+    the re-enabled button invites duplicate paid runs. Cloudflare's 100s cut is the
+    ceiling. This was the 2026-07-23 "Research does nothing" incident.
     Backend contract: `aidream/services/seo/FEATURE.md` § Keyword pipeline. These
     endpoints exist on local/dev aidream; prod gets them on its next deploy.
 
@@ -61,6 +66,8 @@ market enrichment remain explicit compute operations.
 
 ## Change Log
 
+- 2026-07-23 — Fixed research/volume-refresh timing out at 15s: added per-call
+  `connectTimeoutMs`/`totalTimeoutMs` overrides to `callApi` and pass 100s/110s here.
 - 2026-07-22 — Added the site-scoped organic keyword performance workspace backed by
   the live `seo.v_site_keyword_performance` read model.
 - 2026-07-22 — Initial build: research launcher + live explorer + relationship detail,

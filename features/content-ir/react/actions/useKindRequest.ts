@@ -17,7 +17,7 @@
  * to the right component. A skipped/failed run rejects — never a silent empty.
  */
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import {
@@ -48,6 +48,16 @@ export interface UseKindRequest {
   run: (input: KindRequestInput) => Promise<KindRequestResult>;
   isRunning: boolean;
   error: string | null;
+  /**
+   * The live request id for the in-flight (or last) run, set the instant the
+   * agent launches — BEFORE `run()` resolves. Consumers subscribe to the
+   * streaming selectors (accumulated text, incrementally-extracted objects)
+   * keyed by this id to render the result AS IT STREAMS instead of blocking on
+   * a spinner until the whole run finishes.
+   */
+  requestId: string | null;
+  /** Clear transient state (requestId/error) — call when the surface resets. */
+  reset: () => void;
 }
 
 // Generous ceiling — a flash model producing a handful of ideas is fast, but
@@ -68,6 +78,7 @@ export function useKindRequest(): UseKindRequest {
   const store = useAppStore();
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   async function waitForResult(
     requestId: string,
@@ -106,8 +117,9 @@ export function useKindRequest(): UseKindRequest {
   async function run(input: KindRequestInput): Promise<KindRequestResult> {
     setIsRunning(true);
     setError(null);
+    setRequestId(null);
     try {
-      const { requestId } = await dispatch(
+      const { requestId: launchedId } = await dispatch(
         launchAgentExecution({
           surfaceKey: `kind-request:${input.agentId}`,
           agentId: input.agentId,
@@ -120,10 +132,13 @@ export function useKindRequest(): UseKindRequest {
         }),
       ).unwrap();
 
-      if (!requestId) {
+      if (!launchedId) {
         throw new Error("The agent launch did not return a request id.");
       }
-      return await waitForResult(requestId, input.expectedKind);
+      // Publish the id BEFORE awaiting the result so the surface can subscribe
+      // to the live stream immediately (ideas render as they arrive).
+      setRequestId(launchedId);
+      return await waitForResult(launchedId, input.expectedKind);
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Failed to run the agent.";
@@ -134,5 +149,13 @@ export function useKindRequest(): UseKindRequest {
     }
   }
 
-  return { run, isRunning, error };
+  // Stable identity — consumers put `reset` in effect deps (e.g. the dialog's
+  // open/seed effect). A fresh function each render would make that effect
+  // re-run on every render, setState, re-render → "Maximum update depth".
+  const reset = useCallback(() => {
+    setError(null);
+    setRequestId(null);
+  }, []);
+
+  return { run, isRunning, error, requestId, reset };
 }

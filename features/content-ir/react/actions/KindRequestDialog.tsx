@@ -30,11 +30,99 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Input } from "@/components/ui/input";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAccumulatedText,
+  selectFirstExtractedObject,
+  selectJsonExtractionComplete,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { KIND_KEY } from "../../core/kind-schema.types";
 import { refreshKindComponents } from "../../registry/component-registry";
 import DbKindComponent from "../db-component/DbKindComponent";
 import type { KindComponentUiOptions } from "../db-component/dbKindComponentCache";
 import { useKindRequest } from "./useKindRequest";
+
+/**
+ * The result, rendered LIVE from the streaming request — the whole point of
+ * this dialog. As the agent streams, `selectFirstExtractedObject` yields an
+ * incrementally-growing object, so each option pops in the instant its JSON
+ * closes; the user can pick one the moment it appears, mid-stream. Before the
+ * first parseable object, the raw generated text shows so SOMETHING moves from
+ * the first token — never a dead spinner.
+ */
+function LiveKindResult({
+  requestId,
+  expectedKind,
+  uiOptions,
+  onPick,
+}: {
+  requestId: string;
+  expectedKind: string;
+  uiOptions?: KindComponentUiOptions;
+  onPick: (value: unknown) => void;
+}) {
+  const objectSel = useMemo(
+    () => selectFirstExtractedObject(requestId),
+    [requestId],
+  );
+  const completeSel = useMemo(
+    () => selectJsonExtractionComplete(requestId),
+    [requestId],
+  );
+  const textSel = useMemo(() => selectAccumulatedText(requestId), [requestId]);
+
+  const snapshot = useAppSelector(objectSel);
+  const complete = useAppSelector(completeSel);
+  const streamingText = useAppSelector(textSel);
+
+  const liveContent = useMemo(() => {
+    const value = snapshot?.value;
+    if (value === undefined || value === null) return null;
+    const stamped =
+      typeof value === "object" && !Array.isArray(value)
+        ? { [KIND_KEY]: expectedKind, ...(value as Record<string, unknown>) }
+        : value;
+    return JSON.stringify(stamped);
+  }, [snapshot, expectedKind]);
+
+  // First tokens are streaming but no option has closed yet — show the live
+  // text so the surface feels alive from the very first character.
+  if (!liveContent) {
+    return (
+      <div className="py-2">
+        <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+          Thinking…
+        </div>
+        {streamingText ? (
+          <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground/80">
+            {streamingText}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-1">
+      <DbKindComponent
+        content={liveContent}
+        onResolve={onPick}
+        uiOptions={uiOptions}
+      />
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground">
+        {complete ? (
+          "Pick one to use it."
+        ) : (
+          <>
+            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+            Generating more — pick one anytime.
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
 
 export interface KindRequestField {
   /** Agent variable name this field fills. */
@@ -64,7 +152,7 @@ export interface KindRequestDialogProps {
   onResolve: (value: unknown) => void;
 }
 
-type Phase = "input" | "running" | "result";
+type Phase = "input" | "running";
 
 export function KindRequestDialog({
   open,
@@ -78,10 +166,9 @@ export function KindRequestDialog({
   uiOptions,
   onResolve,
 }: KindRequestDialogProps) {
-  const { run, isRunning, error } = useKindRequest();
+  const { run, isRunning, error, requestId, reset } = useKindRequest();
   const [phase, setPhase] = useState<Phase>("input");
   const [values, setValues] = useState<Record<string, string>>({});
-  const [resultContent, setResultContent] = useState<string | null>(null);
 
   // Seed field defaults whenever the dialog opens; reset transient state.
   useEffect(() => {
@@ -90,8 +177,8 @@ export function KindRequestDialog({
     for (const f of fields) seeded[f.name] = f.defaultValue ?? "";
     setValues(seeded);
     setPhase("input");
-    setResultContent(null);
-  }, [open, fields]);
+    reset();
+  }, [open, fields, reset]);
 
   const canSubmit = useMemo(
     () =>
@@ -100,28 +187,23 @@ export function KindRequestDialog({
     [fields, values, isRunning],
   );
 
-  const submit = async () => {
+  const submit = () => {
     if (!canSubmit) return;
     setPhase("running");
-    try {
-      // Warm the component registry so the result routes to its real db
-      // component, not the generic viewer, on first render.
-      void refreshKindComponents();
-      const result = await run({
-        agentId,
-        variables: { ...(fixedVariables ?? {}), ...values },
-        expectedKind,
-      });
-      const value =
-        result.value && typeof result.value === "object" && !Array.isArray(result.value)
-          ? { [KIND_KEY]: expectedKind, ...(result.value as Record<string, unknown>) }
-          : result.value;
-      setResultContent(JSON.stringify(value));
-      setPhase("result");
-    } catch {
+    // Warm the component registry so the streamed result routes to its real db
+    // component, not the generic viewer, on first render.
+    void refreshKindComponents();
+    // Fire-and-observe: we do NOT await the whole run and then reveal — the
+    // running phase subscribes to the live stream and renders options as they
+    // arrive. `run()` still resolves/rejects for error handling.
+    void run({
+      agentId,
+      variables: { ...(fixedVariables ?? {}), ...values },
+      expectedKind,
+    }).catch(() => {
       // useKindRequest already captured the message into `error`.
       setPhase("input");
-    }
+    });
   };
 
   const handlePick = (value: unknown) => {
@@ -142,17 +224,21 @@ export function KindRequestDialog({
           ) : null}
         </DialogHeader>
 
-        {phase === "result" && resultContent ? (
-          <div className="py-1">
-            <DbKindComponent
-              content={resultContent}
-              onResolve={handlePick}
+        {phase === "running" ? (
+          requestId ? (
+            <LiveKindResult
+              requestId={requestId}
+              expectedKind={expectedKind}
               uiOptions={uiOptions}
+              onPick={handlePick}
             />
-            <p className="mt-3 text-center text-[11px] text-muted-foreground">
-              Pick one to use it.
-            </p>
-          </div>
+          ) : (
+            // Sub-second gap between submit and the launch returning an id.
+            <div className="flex items-center gap-1.5 py-4 text-xs font-medium text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+              Starting…
+            </div>
+          )
         ) : (
           <div className="space-y-3 py-1">
             {fields.map((f) => (

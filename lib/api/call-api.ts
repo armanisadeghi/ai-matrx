@@ -305,6 +305,24 @@ export interface ApiCallConfig<
   /** AbortController signal — pass to cancel mid-stream */
   signal?: AbortSignal;
 
+  // ── Timeouts ─────────────────────────────────────────────────────────────
+
+  /**
+   * Time allowed for response HEADERS to arrive, in ms (default 15_000).
+   * A non-streaming FastAPI handler sends nothing until it returns, so for
+   * JSON calls this is effectively time-to-full-response. Long synchronous
+   * compute endpoints (e.g. /seo/keywords/research, designed to run tens of
+   * seconds) MUST raise this or every run over 15s dies as a network_error.
+   * Ceiling: Cloudflare cuts the connection at 100s (524).
+   */
+  connectTimeoutMs?: number;
+
+  /**
+   * Hard cap on the whole request, in ms (default 30_000 for JSON calls;
+   * streaming calls are uncapped). `null` disables the cap.
+   */
+  totalTimeoutMs?: number | null;
+
   // ── Context scope overrides ───────────────────────────────────────────────
 
   /**
@@ -793,7 +811,7 @@ async function executeJsonRequest<T>(
   method: string,
   headers: Record<string, string>,
   body: unknown,
-  signal?: AbortSignal,
+  config: Pick<ApiCallConfig, "signal" | "connectTimeoutMs" | "totalTimeoutMs">,
 ): Promise<ApiCallResult<T>> {
   const hasBody = method !== "GET" && method !== "HEAD";
 
@@ -805,9 +823,10 @@ async function executeJsonRequest<T>(
       body: hasBody ? JSON.stringify(body) : undefined,
     },
     {
-      signal,
-      connectTimeoutMs: 15_000,
-      totalTimeoutMs: 30_000,
+      signal: config.signal,
+      connectTimeoutMs: config.connectTimeoutMs ?? 15_000,
+      totalTimeoutMs:
+        config.totalTimeoutMs === undefined ? 30_000 : config.totalTimeoutMs,
       throwOnHttpError: false,
     },
   );
@@ -848,6 +867,7 @@ async function executeStreamingRequest(
   config: Pick<
     ApiCallConfig,
     | "signal"
+    | "connectTimeoutMs"
     | "onStreamStart"
     | "onStreamEvent"
     | "onStreamComplete"
@@ -863,7 +883,7 @@ async function executeStreamingRequest(
     },
     {
       signal: config.signal,
-      connectTimeoutMs: 15_000,
+      connectTimeoutMs: config.connectTimeoutMs ?? 15_000,
       totalTimeoutMs: null,
       throwOnHttpError: false,
     },
@@ -1022,13 +1042,7 @@ export function callApi<
             body,
             config,
           )
-        : await executeJsonRequest(
-            url,
-            config.method,
-            headers,
-            body,
-            config.signal,
-          );
+        : await executeJsonRequest(url, config.method, headers, body, config);
       // Single capture chokepoint for backend failures that resolve with an
       // `{ error }` body (non-2xx). Feeds the systemwide Error Inspector.
       if (result.error) {

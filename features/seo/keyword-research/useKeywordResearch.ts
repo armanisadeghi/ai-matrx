@@ -73,6 +73,10 @@ export function useKeywordResearch() {
           path: "/seo/keywords/research",
           method: "POST",
           body: { primary_keyword: phrase },
+          // Synchronous compute pipeline (agent → ingest → volume → classify)
+          // that legitimately runs tens of seconds; Cloudflare cuts at 100s.
+          connectTimeoutMs: 100_000,
+          totalTimeoutMs: 110_000,
         }),
       );
       if (result.error) {
@@ -100,6 +104,9 @@ export function useKeywordResearch() {
           path: "/seo/keywords/volume-refresh",
           method: "POST",
           body: { phrases, force_refresh: forceRefresh },
+          // Synchronous provider fetch (DataForSEO) — can exceed 15s.
+          connectTimeoutMs: 100_000,
+          totalTimeoutMs: 110_000,
         }),
       );
       if (result.error) throw new Error(result.error.message);
