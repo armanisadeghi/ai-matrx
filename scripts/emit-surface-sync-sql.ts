@@ -1,34 +1,83 @@
 /**
- * One-off: emit the SQL to mirror ALL_MANIFESTS into ui.ui_surface_value.
+ * Emit the SQL to mirror ALL_MANIFESTS into the `ui` schema — the complete
+ * agent-shell twin of `manifest-sync.service.ts`'s upsert path.
  *
  * Prints, to stdout:
- *   1. A guard SELECT listing any manifest surfaces missing a ui_surface row.
- *   2. An upsert for every SurfaceValue across every registered manifest.
+ *   1. A guard SELECT listing any manifest surfaces missing a ui_surface row
+ *      (run it FIRST — seed missing rows before applying the upserts).
+ *   2. An upsert for every SurfaceValue (incl. auto_context).
+ *   3. An upsert for every SurfaceAgentRole.
+ *   4. Per-surface ui_surface updates for url_pattern / intro /
+ *      parent_surface_name — only for fields the manifest actually declares
+ *      (code-first ownership never clears a DB-authored value the manifest
+ *      doesn't claim).
  *
  * Used to sync the DB when the authenticated /api/admin/surfaces/sync-manifests
  * endpoint isn't reachable (e.g. from CI / an agent shell). The endpoint
  * remains the canonical path; this is a faithful SQL mirror of its upsert.
+ * NOTE: it does not mirror the endpoint's DELETE/drift half — stale rows are
+ * reported by the drift API, never silently purged here.
  */
 
-import { getAllManifests } from "@/features/surfaces/manifests/registry";
+import {
+  getAllManifests,
+  getRawManifest,
+} from "@/features/surfaces/manifests/registry";
+import { resolveSurfaceUrlPattern } from "@/features/surfaces/utils/surface-url-pattern";
 
 function sqlString(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
+}
+
+function sqlStringOrNull(s: string | null | undefined): string {
+  const trimmed = s?.trim();
+  return trimmed ? sqlString(trimmed) : "NULL";
 }
 
 function main() {
   const manifests = getAllManifests();
   const surfaceNames = manifests.map((m) => m.surfaceName);
 
-  const rows: string[] = [];
+  const valueRows: string[] = [];
+  const roleRows: string[] = [];
+  const surfaceUpdates: string[] = [];
+
   for (const m of manifests) {
     for (const v of m.values) {
-      rows.push(
+      valueRows.push(
         `(${sqlString(m.surfaceName)}, ${sqlString(v.name)}, ${sqlString(
           v.label,
         )}, ${sqlString(v.description)}, ${sqlString(v.valueType)}, ${
           v.alwaysAvailable
-        }, ${v.typicalCharCount}, ${v.sortOrder ?? 1000})`,
+        }, ${v.typicalCharCount}, ${v.sortOrder ?? 1000}, ${
+          v.autoContext ?? true
+        })`,
+      );
+    }
+    for (const r of m.agentRoles ?? []) {
+      roleRows.push(
+        `(${sqlString(m.surfaceName)}, ${sqlString(r.name)}, ${sqlString(
+          r.label,
+        )}, ${sqlString(r.description)}, ${sqlString(r.kind)}, ${
+          r.defaultAgentId ? sqlString(r.defaultAgentId) : "NULL"
+        }, ${r.maxAgents ?? 1}, ${r.allowCustom ?? true}, ${sqlString(
+          r.autoRun ?? "user-choice",
+        )}, ${r.sortOrder ?? 1000})`,
+      );
+    }
+
+    const urlPattern = resolveSurfaceUrlPattern(m);
+    const intro = m.intro?.trim() || null;
+    // inheritsFrom lives on the RAW manifest (inheritance resolution strips
+    // nothing, but read raw for provenance parity with the service).
+    const parent = getRawManifest(m.surfaceName)?.inheritsFrom ?? null;
+    const sets: string[] = [];
+    if (urlPattern) sets.push(`url_pattern = ${sqlString(urlPattern)}`);
+    if (intro) sets.push(`intro = ${sqlStringOrNull(intro)}`);
+    if (parent) sets.push(`parent_surface_name = ${sqlString(parent)}`);
+    if (sets.length > 0) {
+      surfaceUpdates.push(
+        `UPDATE ui.ui_surface SET ${sets.join(", ")}, updated_at = now() WHERE name = ${sqlString(m.surfaceName)};`,
       );
     }
   }
@@ -42,12 +91,30 @@ function main() {
   console.log("");
   console.log("-- Upsert all manifest values");
   console.log(
-    `INSERT INTO ui.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order) VALUES`,
+    `INSERT INTO ui.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order, auto_context) VALUES`,
   );
-  console.log(rows.join(",\n"));
+  console.log(valueRows.join(",\n"));
   console.log(
-    `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, always_available = EXCLUDED.always_available, typical_char_count = EXCLUDED.typical_char_count, sort_order = EXCLUDED.sort_order, updated_at = now();`,
+    `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, always_available = EXCLUDED.always_available, typical_char_count = EXCLUDED.typical_char_count, sort_order = EXCLUDED.sort_order, auto_context = EXCLUDED.auto_context, updated_at = now();`,
   );
+  if (roleRows.length > 0) {
+    console.log("");
+    console.log("-- Upsert all manifest agent roles");
+    console.log(
+      `INSERT INTO ui.ui_surface_agent_role (surface_name, name, label, description, kind, default_agent_id, max_agents, allow_custom, auto_run, sort_order) VALUES`,
+    );
+    console.log(roleRows.join(",\n"));
+    console.log(
+      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, kind = EXCLUDED.kind, default_agent_id = EXCLUDED.default_agent_id, max_agents = EXCLUDED.max_agents, allow_custom = EXCLUDED.allow_custom, auto_run = EXCLUDED.auto_run, sort_order = EXCLUDED.sort_order, updated_at = now();`,
+    );
+  }
+  if (surfaceUpdates.length > 0) {
+    console.log("");
+    console.log(
+      "-- Mirror url_pattern / intro / parent_surface_name (declared fields only)",
+    );
+    console.log(surfaceUpdates.join("\n"));
+  }
 }
 
 main();

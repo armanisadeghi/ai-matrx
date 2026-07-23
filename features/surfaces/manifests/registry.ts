@@ -55,7 +55,23 @@ import { cmsSiteManifest } from "./cms-site.manifest";
 import { cmsPageManifest } from "./cms-page.manifest";
 import { cmsComponentManifest } from "./cms-component.manifest";
 import { htmlPageManifest } from "./html-page.manifest";
+import { marketingManifest } from "./marketing.manifest";
+import { marketingBrandManifest } from "./marketing-brand.manifest";
+import { marketingSiteManifest } from "./marketing-site.manifest";
+import { marketingSitePagesManifest } from "./marketing-site-pages.manifest";
 import { marketingPageManifest } from "./marketing-page.manifest";
+import { marketingCrawlsManifest } from "./marketing-crawls.manifest";
+import { marketingCrawlManifest } from "./marketing-crawl.manifest";
+import { marketingAuditManifest } from "./marketing-audit.manifest";
+import { marketingAnalysisManifest } from "./marketing-analysis.manifest";
+import { marketingFindingsManifest } from "./marketing-findings.manifest";
+import { marketingLinksManifest } from "./marketing-links.manifest";
+import { marketingBacklinksManifest } from "./marketing-backlinks.manifest";
+import { marketingCoverageManifest } from "./marketing-coverage.manifest";
+import { marketingSitemapsManifest } from "./marketing-sitemaps.manifest";
+import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
+import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
+import { marketingBatchesManifest } from "./marketing-batches.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -98,7 +114,26 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   cmsPageManifest,
   cmsComponentManifest,
   htmlPageManifest,
+  // Marketing tree — parents BEFORE children is not required (inheritance
+  // resolves by name), but keeps the declaration readable: hub, brand root,
+  // site, then the site verticals, then cross-site ops.
+  marketingManifest,
+  marketingBrandManifest,
+  marketingSiteManifest,
+  marketingSitePagesManifest,
   marketingPageManifest,
+  marketingCrawlsManifest,
+  marketingCrawlManifest,
+  marketingAuditManifest,
+  marketingAnalysisManifest,
+  marketingFindingsManifest,
+  marketingLinksManifest,
+  marketingBacklinksManifest,
+  marketingCoverageManifest,
+  marketingSitemapsManifest,
+  marketingDiscoveryManifest,
+  marketingIntegrationsManifest,
+  marketingBatchesManifest,
 ];
 
 // ---------------------------------------------------------------------------

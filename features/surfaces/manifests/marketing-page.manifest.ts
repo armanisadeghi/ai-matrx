@@ -46,26 +46,9 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 36,
     sortOrder: 300,
   },
-  {
-    name: "site_id",
-    label: "Site ID",
-    description:
-      "UUID of the owning `web.site`. Always present — the route carries it.",
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 36,
-    sortOrder: 310,
-  },
-  {
-    name: "brand_id",
-    label: "Brand ID",
-    description:
-      "UUID of the owning `web.brand` (the anchor entity for this client/company). Always present — the route carries it.",
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 36,
-    sortOrder: 320,
-  },
+  // site_id / brand_id are inherited from matrx-user/marketing-site /
+  // matrx-user/marketing-brand (both alwaysAvailable — the route carries
+  // them), so the scope helper still requires them.
   {
     name: "page_url",
     label: "Page URL",
@@ -208,7 +191,9 @@ export const marketingPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-page",
   label: "Marketing Page Workspace",
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]",
+  inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
+The inherited brand_context and site_context values give you the client and website this page belongs to — read them for framing before working on the page itself.
 You are on the Marketing page workspace: one canonical URL of a managed website, with the evidence of what it currently serves and the user's editorial intent for what it should become.
 Two kinds of values live here and must never be confused: OBSERVED values (observed_title, observed_description, observed_seo_metrics) are immutable crawl evidence of the live site; DESIRED values (desired_title, desired_description, desired_seo_metrics) are the user's editorial targets stored on the page. When asked to improve metadata, you propose DESIRED values — you never alter or invent observed evidence.
 SEO metrics are deterministic (shared pixel-width table between browser and scraper): trust the provided pixel_width / ok flags instead of estimating lengths, and validate any candidate you generate with the seo tool before presenting it.
@@ -266,11 +251,19 @@ SEO metrics are deterministic (shared pixel-width table between browser and scra
  * Required keys ↔ every `alwaysAvailable: true` value above.
  */
 export function createMarketingPageScope(values: {
-  // alwaysAvailable: true → required
+  // alwaysAvailable: true → required (site_id / brand_id are inherited but
+  // still guaranteed — the route carries them)
   page_id: string;
   site_id: string;
   brand_id: string;
   page_url: string;
+  // inherited optionals (marketing-brand / marketing-site)
+  brand_name?: string;
+  brand_context?: string;
+  brand_profile?: Record<string, unknown>;
+  site_name?: string;
+  site_root_url?: string;
+  site_context?: string;
   // alwaysAvailable: false → optional
   target_keyword?: string;
   observed_title?: string;

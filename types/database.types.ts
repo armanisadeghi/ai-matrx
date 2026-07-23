@@ -41041,6 +41041,14 @@ export type Database = {
         Args: { p_language?: string; p_phrase: string }
         Returns: Record<string, unknown>
       }
+      fn_upsert_keywords: {
+        Args: { p_items: Json }
+        Returns: {
+          input_index: number
+          o_created: boolean
+          o_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -45146,6 +45154,7 @@ export type Database = {
           notes: string | null
           og_image_url: string | null
           organization_id: string
+          profile: Json
           settings: Json
           status: string
           updated_at: string
@@ -45168,6 +45177,7 @@ export type Database = {
           notes?: string | null
           og_image_url?: string | null
           organization_id: string
+          profile?: Json
           settings?: Json
           status?: string
           updated_at?: string
@@ -45190,6 +45200,7 @@ export type Database = {
           notes?: string | null
           og_image_url?: string | null
           organization_id?: string
+          profile?: Json
           settings?: Json
           status?: string
           updated_at?: string

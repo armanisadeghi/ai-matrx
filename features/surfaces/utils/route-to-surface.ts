@@ -87,6 +87,65 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
 ] as const;
 
 /**
+ * Marketing routes nest dynamic ids (`/marketing/brands/[brandId]/sites/
+ * [siteId]/<vertical>/...`), so plain prefix matching can't tell the site
+ * verticals apart. First path segment AFTER the site id → surface; the
+ * page/crawl detail branches are special-cased because their children
+ * (snapshots, reports, urls, logs) belong to the detail surface.
+ */
+const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
+  pages: "matrx-user/marketing-site-pages",
+  crawls: "matrx-user/marketing-crawls",
+  audit: "matrx-user/marketing-audit",
+  analysis: "matrx-user/marketing-analysis",
+  findings: "matrx-user/marketing-findings",
+  links: "matrx-user/marketing-links",
+  backlinks: "matrx-user/marketing-backlinks",
+  coverage: "matrx-user/marketing-coverage",
+  sitemaps: "matrx-user/marketing-sitemaps",
+  discovery: "matrx-user/marketing-discovery",
+  integrations: "matrx-user/marketing-integrations",
+  // access / settings / cost stay on the site surface — they configure the
+  // same entity and don't warrant their own agent bindings.
+};
+
+function resolveMarketingSurface(stripped: string): string | null {
+  if (stripped !== "/marketing" && !stripped.startsWith("/marketing/")) {
+    return null;
+  }
+  const segments = stripped.split("/").filter(Boolean); // ["marketing", ...]
+
+  // /marketing/batches[...]
+  if (segments[1] === "batches") return "matrx-user/marketing-batches";
+
+  // /marketing/brands/[brandId][...]
+  if (segments[1] === "brands" && segments.length >= 3) {
+    // /marketing/brands/[brandId]/sites/[siteId][...]
+    if (segments[3] === "sites" && segments.length >= 5) {
+      const vertical = segments[5];
+      if (!vertical) return "matrx-user/marketing-site";
+      // Page detail (+ snapshots subtree) is the page workspace surface.
+      if (vertical === "pages" && segments.length >= 7) {
+        return "matrx-user/marketing-page";
+      }
+      // Crawl detail (+ urls/logs/snapshots/links/reports subtree).
+      if (vertical === "crawls" && segments.length >= 7 && segments[6] !== "new") {
+        return "matrx-user/marketing-crawl";
+      }
+      return (
+        MARKETING_SITE_VERTICAL_SURFACES[vertical] ??
+        "matrx-user/marketing-site"
+      );
+    }
+    return "matrx-user/marketing-brand";
+  }
+
+  // Hub-level routes: /marketing, /brands list, /sites list + legacy shims,
+  // /connections, /cost, /admin.
+  return "matrx-user/marketing";
+}
+
+/**
  * Resolve the active surface name from a pathname. Returns null when no
  * mapping matches — callers omit `client.surface` in that case and the
  * server resolves tools without DB surface inheritance.
@@ -104,6 +163,9 @@ export function surfaceFromPathname(
   if (/^\/files\/f\/[^/]+\/studio(?:\/|$)/.test(stripped)) {
     return "matrx-user/analysis-studio";
   }
+
+  const marketing = resolveMarketingSurface(stripped);
+  if (marketing) return marketing;
 
   for (const { prefix, surface } of SURFACE_ROUTE_MAPPINGS) {
     if (
