@@ -13,13 +13,24 @@
 ## Purpose
 
 The agent calls a small set of "UI-first" tools (`user`, `update_plan`,
-`request_user_takeover`, `tasks`, `user_todos`, `scratchpad`, `storage`) that
+`request_user_takeover`, `user_todos`, `scratchpad`, `storage`) that
 have no server-side execution — the Next.js client validates the args,
 runs a handler (UI render or Supabase CRUD), and POSTs `tool_results`
 back so the model resumes. These tools come online via the request's
 **surface**: they're bound to `matrx-user/chat` in `public.tl_def_surface`
 and resolved server-side (most other surfaces carry none). Ambient context
 (user / route / scope) is seeded separately into the `context` payload.
+
+> **`tasks` moved server-side (2026-07-22).** It used to be in this set, but it
+> was a pure `chat.agent_task` write with no client-only work, so delegating it
+> hard-suspended the loop on every task update — a stall that became
+> deterministic whenever a desktop companion (`matrx-local`) was attached. It now
+> runs in-loop in aidream (`aidream/tools/agent_tasks_tool.py`, executor
+> `aidream`) with its two client `tool.binding` rows removed. The client keeps
+> only the *read* side — `TaskPanel` / the `agent-lists` slice / `agent-task.service.ts`
+> — kept fresh by the Supabase Realtime subscription on `chat.agent_task`. Rule of
+> thumb: a UI-first tool must do genuine client-only work (await a human, render
+> UI, touch browser-local state); a plain DB write belongs server-side.
 
 This feature exists because:
 
@@ -151,19 +162,26 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Key flows
 
-### Flow 1 — Agent calls `tasks({action:'add', items:[...]})`
+### Flow 1 — Agent calls `user_todos({action:'add', items:[...]})`
 
-1. Stream emits `tool_event{event:'tool_delegated', tool_name:'tasks', ...}`.
-2. `process-stream.ts` checks `isUiFirstToolName('tasks')` → true.
+> `tasks` used to be the canonical example here. It is server-executed in aidream
+> now (see Purpose) and never takes this delegated path. `user_todos` is the same
+> delegated Supabase-CRUD mechanic.
+
+1. Stream emits `tool_event{event:'tool_delegated', tool_name:'user_todos', ...}`.
+2. `process-stream.ts` checks `isUiFirstToolName('user_todos')` → true.
 3. Dispatches `dispatchUiFirstTool({ conversationId, callId, toolName, args })`.
 4. Dispatcher looks up registry → Zod-validates args → runs
-   `tasksHandler.run(args, { conversationId, userId, callId, ... })`.
+   `userTodosHandler.run(args, { conversationId, userId, callId, ... })`.
 5. Handler routes by `args.action`:
-   - `add` → service `addTasks(...)` → inserts rows into `cx_agent_task`
-     → returns updated task list summary.
+   - `add` → service `addUserTodo(...)` → inserts rows into `cx_user_todo`
+     → returns the open + recently-done summary.
 6. Supabase Realtime fires → `subscribeAgentLists` channel → dispatches
-   `upsertTask` for each new row → `<TaskPanelChip>` count updates.
+   `upsertUserTodo` for each new row → `<TaskPanelChip>` count updates.
 7. Dispatcher POSTs result via `submitToolResult` → stream resumes.
+
+The agent's own `tasks` writes, by contrast, land in `chat.agent_task`
+server-side; the same Realtime subscription updates the panel with no delegation.
 
 ### Flow 2 — Agent calls `user({type:'confirm', question:'...'})`
 
@@ -291,6 +309,16 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Change Log
 
+- `2026-07-22` — **`tasks` moved from client-delegated to server-executed.** It
+  was a pure `chat.agent_task` write with no client-only work; delegating it
+  hard-suspended the loop on every task update, stalling deterministically when a
+  desktop companion (`matrx-local`) was attached. Removed from `UI_FIRST_TOOL_NAMES`
+  / the registry / `check-tool-db-drift.ts`, and `tasks.handler.ts` +
+  `tasksArgsSchema` deleted. Now runs in-loop in aidream
+  (`aidream/tools/agent_tasks_tool.py`); the two client `tool.binding` rows are
+  dropped by `migrations/tasks_tool_server_side_unbind.sql`. The read-side layer
+  (`TaskPanel`, `agent-lists` slice, `agent-task.service.ts`, Realtime) is
+  unchanged. Rollout order: deploy aidream → apply migration → deploy frontend.
 - `2026-07-06` — **Fix ApprovalCard unreachable while awaiting user action.**
   `<ApprovalCard>` passed `pending={ask.status === "pending"}` to
   `<AgentCardShell>`, but that prop dims + disables once *resolved* (same contract

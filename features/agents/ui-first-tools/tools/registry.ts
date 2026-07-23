@@ -14,7 +14,6 @@ import {
   userArgsSchema,
   updatePlanArgsSchema,
   requestTakeoverArgsSchema,
-  tasksArgsSchema,
   userTodosArgsSchema,
   scratchpadArgsSchema,
   storageArgsSchema,
@@ -22,7 +21,8 @@ import {
 import { userHandler } from "../handlers/user.handler";
 import { updatePlanHandler } from "../handlers/update-plan.handler";
 import { requestTakeoverHandler } from "../handlers/request-takeover.handler";
-import { tasksHandler } from "../handlers/tasks.handler";
+// `tasks` is intentionally absent — it is server-executed in aidream now (see
+// names.ts). Do not re-add a client handler for it.
 import { userTodosHandler } from "../handlers/user-todos.handler";
 import { scratchpadHandler } from "../handlers/scratchpad.handler";
 import { storageHandler } from "../handlers/storage.handler";
@@ -41,7 +41,6 @@ const registry: Record<string, ToolRegistryEntry> = {
     schema: requestTakeoverArgsSchema,
     handler: requestTakeoverHandler,
   },
-  tasks: { schema: tasksArgsSchema, handler: tasksHandler },
   user_todos: { schema: userTodosArgsSchema, handler: userTodosHandler },
   scratchpad: { schema: scratchpadArgsSchema, handler: scratchpadHandler },
   storage: { schema: storageArgsSchema, handler: storageHandler },

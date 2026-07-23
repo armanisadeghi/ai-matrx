@@ -41,7 +41,6 @@ import {
   scratchpadArgsSchema,
   requestTakeoverArgsSchema,
   storageArgsSchema,
-  tasksArgsSchema,
   updatePlanArgsSchema,
   userArgsSchema,
   userTodosArgsSchema,
@@ -50,11 +49,12 @@ import {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 // name → the REAL Zod schema the dispatcher runs (from registry.ts / schemas.ts).
+// `tasks` is intentionally absent: it is server-executed in aidream now, so the
+// aidream drift gate (aidream/startup/tools_check.py) owns its code↔DB check.
 const SCHEMAS: Record<string, z.ZodTypeAny> = {
   user: userArgsSchema,
   update_plan: updatePlanArgsSchema,
   request_user_takeover: requestTakeoverArgsSchema,
-  tasks: tasksArgsSchema,
   user_todos: userTodosArgsSchema,
   scratchpad: scratchpadArgsSchema,
   storage: storageArgsSchema,

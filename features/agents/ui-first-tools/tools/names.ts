@@ -16,7 +16,11 @@ export const UI_FIRST_TOOL_NAMES = [
   "user",
   "update_plan",
   "request_user_takeover",
-  "tasks",
+  // NOTE: `tasks` was removed 2026-07-22 — it moved from client-delegated to
+  // server-executed in aidream (aidream/tools/agent_tasks_tool.py). It was a pure
+  // chat.agent_task write with no client-only work, and delegating it stalled the
+  // loop on every task update. The TaskPanel still renders the list via its
+  // Supabase Realtime subscription; the agent's writes now happen server-side.
   "user_todos",
   "scratchpad",
   "storage",

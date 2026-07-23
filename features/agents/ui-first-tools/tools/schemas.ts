@@ -11,7 +11,7 @@
  *   - userArgsSchema             — confirm | choice | choice_many | text | secret | notify
  *   - updatePlanArgsSchema       — title + steps[] + optional reasoning / domains
  *   - requestTakeoverArgsSchema  — reason + expected_action? + instructions?
- *   - tasksArgsSchema            — eight actions on cx_agent_task
+ *   (tasks is server-executed in aidream — no client args schema here)
  *   - userTodosArgsSchema        — six actions on cx_user_todo
  *   - scratchpadArgsSchema       — get | set | list | delete on cx_agent_memory (ephemeral)
  *   - storageArgsSchema          — get | set | list on agent_user_kv
@@ -226,6 +226,11 @@ export type RequestTakeoverArgs = z.infer<typeof requestTakeoverArgsSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // tasks — agent's own tasklist
+//
+// The `tasks` TOOL is server-executed in aidream now (2026-07-22), so its args
+// schema no longer lives here. `taskItemInputSchema` / `TaskStatus` remain: they
+// define the status vocabulary consumed by the surviving client tasklist layer
+// (agent-task.service.ts → CxAgentTaskStatus, TaskPanel, agent-lists slice).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const taskItemInputSchema = z.object({
@@ -236,30 +241,6 @@ const taskItemInputSchema = z.object({
   note: z.string().max(500).nullable().optional(),
 });
 
-export const tasksArgsSchema = z.object({
-  action: z.enum([
-    "add",
-    "list",
-    "set_status",
-    "update",
-    "remove",
-    "reorder",
-    "clear_completed",
-    "clear_all",
-  ]),
-  // add / update fields
-  title: z.string().min(1).max(200).optional(),
-  items: z.array(taskItemInputSchema).max(40).optional(),
-  id: z.string().optional(),
-  status: z
-    .enum(["pending", "in_progress", "done", "blocked", "skipped"])
-    .optional(),
-  note: z.string().max(500).nullable().optional(),
-  // reorder
-  ids: z.array(z.string()).optional(),
-});
-
-export type TasksArgs = z.infer<typeof tasksArgsSchema>;
 export type TaskStatus = z.infer<typeof taskItemInputSchema>["status"];
 
 // ─────────────────────────────────────────────────────────────────────────────
