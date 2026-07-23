@@ -161,6 +161,7 @@ is temporarily offline.
 
 ## Change log
 
+- `2026-07-23` — codex: **web and extension file attachments converge on one authorized edge.** The canonical record is the existing role-less `file → conversation` association. The shared frontend association service now routes that pair through `conversation_file_add/remove`, which requires editor authority over both resources before creating an access-conveying edge and preserves the full metadata object (including `resource_policy`). Existing `processed_document → conversation` rows remain read-only legacy inputs and convert through the established file-edge path when edited.
 - `2026-07-18` — codex: durable document attachments now always persist the
   canonical `file → conversation` reference and expose the shared dynamic
   resource-family inventory instead of fixed File/Clean/Raw choices. Writes

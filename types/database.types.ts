@@ -28507,6 +28507,28 @@ export type Database = {
           resource_key: string
         }[]
       }
+      conversation_file_add: {
+        Args: {
+          p_conversation_id: string
+          p_file_id: string
+          p_label?: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
+      conversation_file_remove: {
+        Args: { p_conversation_id: string; p_file_id: string }
+        Returns: undefined
+      }
+      conversation_files: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          created_at: string
+          file_id: string
+          label: string
+          metadata: Json
+        }[]
+      }
       conversations_exist: {
         Args: { p_ids: string[] }
         Returns: {

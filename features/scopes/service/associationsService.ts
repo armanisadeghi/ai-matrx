@@ -7,7 +7,8 @@
 // the old per-feature M2M tables. The client has NO direct grant on
 // `platform.associations`; every read/write goes through the four PUBLIC
 // SECURITY-DEFINER RPCs (assoc_for_entity / assoc_add / assoc_remove /
-// assoc_set_targets) — and every call to those RPCs goes through THIS file.
+// assoc_set_targets, plus the stricter conversation_file_* boundary for the
+// access-conveying file → conversation pair) — and every call goes through THIS file.
 // No other file is allowed to call them. Like `scopesService`, methods always
 // return a `ScopesRpcResult` and NEVER throw.
 //
@@ -324,6 +325,33 @@ export const associationsService = {
         args.orgId != null ? checkUuid("orgId", args.orgId) : null,
       );
       if (bad) return { ok: false, error: bad };
+      // A file attachment conveys viewer access through the conversation.
+      // Keep the shared association service as the frontend chokepoint, but
+      // route this one access-bearing pair through its stricter DB boundary.
+      if (sourceType === "file" && targetType === "conversation") {
+        if (
+          args.role != null ||
+          args.position != null ||
+          args.payloadKind != null ||
+          args.payload != null
+        ) {
+          return err(
+            "invalid_argument",
+            "File conversation attachments support only the canonical role-less edge",
+          );
+        }
+        const { data, error } = await supabase.rpc("conversation_file_add", {
+          p_conversation_id: args.targetId,
+          p_file_id: args.sourceId,
+          p_label: args.label,
+          p_metadata: args.metadata ?? {},
+        });
+        if (error) return err(...mapPgErrorPair(error));
+        if (!data || typeof data !== "string") {
+          return err("internal", "conversation_file_add returned no association id");
+        }
+        return ok({ id: data });
+      }
       const { data, error } = await supabase.rpc("assoc_add", {
         p_source_type: sourceType,
         p_source_id: args.sourceId,
@@ -375,6 +403,20 @@ export const associationsService = {
         checkUuid("targetId", args.targetId),
       );
       if (bad) return { ok: false, error: bad };
+      if (sourceType === "file" && targetType === "conversation") {
+        if (args.role != null) {
+          return err(
+            "invalid_argument",
+            "File conversation attachments support only the canonical role-less edge",
+          );
+        }
+        const { error } = await supabase.rpc("conversation_file_remove", {
+          p_conversation_id: args.targetId,
+          p_file_id: args.sourceId,
+        });
+        if (error) return err(...mapPgErrorPair(error));
+        return ok(null);
+      }
       const { error } = await supabase.rpc("assoc_remove", {
         p_source_type: sourceType,
         p_source_id: args.sourceId,
