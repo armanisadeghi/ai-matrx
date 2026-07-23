@@ -72,6 +72,7 @@ const ROUTES = [
   ["/marketing/brands/brand-1/sites/site-1/findings", "Fi"],
   ["/marketing/brands/brand-1/sites/site-1/findings/finding-1", "Fd"],
   ["/marketing/brands/brand-1/sites/site-1/integrations", "In"],
+  ["/marketing/brands/brand-1/sites/site-1/keywords", "Kw"],
   ["/marketing/brands/brand-1/sites/site-1/links", "Ln"],
   ["/marketing/brands/brand-1/sites/site-1/pages", "Pg"],
   ["/marketing/brands/brand-1/sites/site-1/pages/page-1", "Pd"],

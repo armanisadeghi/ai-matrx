@@ -82,7 +82,9 @@ export function SiteKeywordPerformanceWorkspace() {
       filter: "number",
       align: "right",
       cell: (row) => (
-        <span className="tabular-nums">{decimal((row.ctr ?? 0) * 100)}%</span>
+        <span className="tabular-nums">
+          {row.ctr === null ? "—" : `${decimal(row.ctr * 100)}%`}
+        </span>
       ),
     },
     {
@@ -158,11 +160,12 @@ export function SiteKeywordPerformanceWorkspace() {
       header: "Workflow",
       filter: "select",
       filterOptions: [
-        { value: "discovered", label: "Discovered" },
         { value: "candidate", label: "Candidate" },
-        { value: "approved", label: "Approved" },
         { value: "targeted", label: "Targeted" },
-        { value: "paused", label: "Paused" },
+        { value: "in_progress", label: "In progress" },
+        { value: "ranking", label: "Ranking" },
+        { value: "ignored", label: "Ignored" },
+        { value: "suppressed", label: "Suppressed" },
       ],
       cell: (row) =>
         row.workflow_status ? (
@@ -212,7 +215,7 @@ export function SiteKeywordPerformanceWorkspace() {
           data={performance.data?.rows ?? []}
           columns={columns}
           getRowId={(row) =>
-            `${row.provider ?? "gsc"}:${row.keyword_id ?? row.query ?? "unknown"}`
+            `${row.provider ?? "gsc"}:${row.keyword_id ?? "unmapped"}:${row.query ?? "unknown"}`
           }
           isLoading={performance.isLoading}
           isFetching={performance.isFetching}

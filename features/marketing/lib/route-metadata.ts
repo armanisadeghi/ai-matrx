@@ -116,6 +116,12 @@ const SITE_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     description: "Configure this site's marketing data providers.",
     letter: "In",
   },
+  keywords: {
+    titlePrefix: "Keywords",
+    description:
+      "Inspect persisted organic query performance and keyword-market intelligence.",
+    letter: "Kw",
+  },
   links: {
     titlePrefix: "Links",
     description: "Inspect accepted link evidence for this site.",

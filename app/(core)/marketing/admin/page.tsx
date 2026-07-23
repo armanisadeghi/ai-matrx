@@ -77,6 +77,24 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/backlinks",
+      label: "Backlink intelligence",
+      description:
+        "Persisted authority, referring-domain, anchor, linked-page, competitor, and backlink evidence.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/backlinks/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/keywords",
+      label: "Organic keywords",
+      description:
+        "Persisted 28-day GSC query performance with strongest-page and keyword-market enrichment.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/keywords/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/sites/[siteId]/pages",
       label: "Canonical pages",
       description:
