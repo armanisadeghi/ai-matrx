@@ -20,6 +20,7 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { MarketingSiteBaseValues } from "@/features/marketing/lib/scopes/site-surface-base";
 import { createMarketingPageScope } from "@/features/surfaces/manifests/marketing-page.manifest";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
+import { parseSnapshotHeadings } from "@/features/marketing/lib/snapshot-content";
 import { parseStoredSeoMetrics } from "@/features/seo/serp/metrics";
 import { parseStoredAuditMetrics } from "@/features/seo/audit/stored";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
@@ -33,13 +34,36 @@ export function buildMarketingPageScope(input: {
   openFindings?: number;
   selection?: string;
   /**
+   * The FULL extracted markdown of the latest snapshot (the page's actual
+   * body content). Pass whenever loaded — this is the primary payload for
+   * content agents (`page_content` + baseline `content`).
+   */
+  markdown?: string | null;
+  /** Rolling 28-day GSC evidence for this page, when loaded. */
+  gscMetrics?: {
+    clicks: number;
+    impressions: number;
+    ctr?: number | null;
+    position?: number | null;
+  } | null;
+  /**
    * Inherited site-level base values (brand/site identity + XML context) from
    * `useMarketingSiteSurfaceBase().getBaseValues()`. Spread first — the
    * page-specific values below always win on overlap (brand_id / site_id).
    */
   base?: MarketingSiteBaseValues;
 }): SurfaceScopePayload {
-  const { brandId, page, snapshot, openFindings, selection, base } = input;
+  const {
+    brandId,
+    page,
+    snapshot,
+    openFindings,
+    selection,
+    markdown,
+    gscMetrics,
+    base,
+  } = input;
+  const headings = snapshot ? parseSnapshotHeadings(snapshot.headings).all : [];
   const head = snapshot ? parseSnapshotHeadTags(snapshot.head_tags) : null;
   const observedMetrics = snapshot
     ? parseStoredSeoMetrics(snapshot.seo_metrics)
@@ -64,6 +88,10 @@ export function buildMarketingPageScope(input: {
     desired_title: page.meta_title_desired ?? undefined,
     desired_description: page.meta_description_desired ?? undefined,
     desired_seo_metrics: desiredMetrics ?? undefined,
+    page_content: markdown ?? undefined,
+    content: markdown ?? undefined,
+    headings_outline: headings.length > 0 ? headings : undefined,
+    gsc_metrics_28d: gscMetrics ?? undefined,
     open_findings: openFindings,
     http_status: page.http_status_last ?? undefined,
     selection,

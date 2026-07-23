@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useFileBlob } from "@/features/files";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -1036,6 +1037,27 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const openSocialCards = useOpenSocialCardWindow();
   const [serpDevice, setSerpDevice] = useState<SerpDevice>("desktop");
   const [socialPlatform, setSocialPlatform] = useState<SocialPlatform>("x");
+  // The extracted markdown IS the page_content surface value — decode it from
+  // the same module-level blob cache PageContentCard renders from (no
+  // duplicate fetch), so agents receive the full body at launch time.
+  const markdownBlob = useFileBlob(
+    workspace.data?.latestSnapshot?.markdown_file_id ?? null,
+  );
+  const [markdownText, setMarkdownText] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    const blob = markdownBlob.blob;
+    if (!blob) {
+      setMarkdownText(null);
+      return;
+    }
+    void blob.text().then((value) => {
+      if (active) setMarkdownText(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, [markdownBlob.blob]);
   if (workspace.isLoading)
     return <LoadingSurface label="Loading canonical page…" />;
   if (workspace.isError || !workspace.data) {
@@ -1068,6 +1090,15 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       page,
       snapshot,
       openFindings: data.openFindings,
+      markdown: markdownText,
+      gscMetrics: searchPerformance.in_gsc
+        ? {
+            clicks: searchPerformance.gsc_clicks_28d ?? 0,
+            impressions: searchPerformance.gsc_impressions_28d ?? 0,
+            ctr: searchCtr,
+            position: searchPerformance.gsc_position_28d,
+          }
+        : undefined,
       base: getBaseValues(),
     });
 

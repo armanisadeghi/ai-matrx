@@ -164,6 +164,48 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 520,
   },
 
+  // ── Captured content — the page itself (440-489) ──────────────────────
+  {
+    name: "page_content",
+    label: "Page content (markdown)",
+    description:
+      "The FULL extracted markdown of the page's latest accepted snapshot — the actual body content the live site serves. Empty when the page has never been captured. This is the primary payload for content analysis, keyword work, and rewriting.",
+    valueType: "document",
+    alwaysAvailable: false,
+    typicalCharCount: 12000,
+    sortOrder: 450,
+  },
+  {
+    name: "content",
+    label: "Page content (markdown)",
+    description:
+      "Alias of page_content for generic bindings: the full extracted markdown of the latest snapshot. Empty when uncrawled.",
+    valueType: "document",
+    alwaysAvailable: false,
+    typicalCharCount: 12000,
+    sortOrder: 455,
+  },
+  {
+    name: "headings_outline",
+    label: "Headings outline",
+    description:
+      "Ordered heading structure of the latest snapshot: one entry per heading with level (1-6) and text, exactly as the live page serves them. Empty when uncrawled or the page has no headings. Observed evidence — never invented.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 1500,
+    sortOrder: 460,
+  },
+  {
+    name: "gsc_metrics_28d",
+    label: "GSC metrics (28d)",
+    description:
+      "Rolling 28-day Google Search Console evidence for this page: clicks, impressions, ctr, position. Empty when GSC is not connected or never synced.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 470,
+  },
+
   // ── Workspace signals (600-649) ───────────────────────────────────────
   {
     name: "open_findings",
@@ -275,6 +317,10 @@ export function createMarketingPageScope(values: {
   desired_title?: string;
   desired_description?: string;
   desired_seo_metrics?: Record<string, unknown>;
+  page_content?: string;
+  content?: string;
+  headings_outline?: Array<{ level: number; text: string }>;
+  gsc_metrics_28d?: Record<string, unknown>;
   open_findings?: number;
   http_status?: number;
   selection?: string;
