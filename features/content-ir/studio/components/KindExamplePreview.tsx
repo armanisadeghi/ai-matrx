@@ -11,16 +11,23 @@
 
 import { useState, type ReactNode } from "react";
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  Copy,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import KindInstanceRender, {
   kindIsRoutable,
 } from "@/features/content-ir/studio/components/KindInstanceRender";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
+import {
+  emitPayloadFence,
+  emitPayloadJson,
+} from "@/features/content-ir/core/emit-payload";
 
 interface KindExamplePreviewProps {
   kind: string;
@@ -38,6 +45,24 @@ export default function KindExamplePreview({
   showPathFootnote = false,
 }: KindExamplePreviewProps) {
   const [index, setIndex] = useState(0);
+  const [copied, setCopied] = useState<"json" | "fence" | null>(null);
+
+  async function copy(kind: string, data: unknown, mode: "json" | "fence") {
+    const text =
+      mode === "fence" ? emitPayloadFence(kind, data) : emitPayloadJson(kind, data);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(mode);
+      toast.success(
+        mode === "fence"
+          ? "Render block copied — paste it into a chat to see it live"
+          : "Render payload copied (with __kind)",
+      );
+      window.setTimeout(() => setCopied(null), 1800);
+    } catch {
+      toast.error("Could not copy to clipboard");
+    }
+  }
 
   if (examples.status === "loading") {
     return (
@@ -119,15 +144,49 @@ export default function KindExamplePreview({
       {/* The real render path */}
       <KindInstanceRender kind={kind} value={current.data} />
 
-      {/* Raw example data */}
-      <details className="rounded-md border border-border bg-card">
-        <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
-          Raw example data
-        </summary>
-        <pre className="overflow-x-auto border-t border-border p-3 font-mono text-xs text-foreground">
-          {JSON.stringify(current.data, null, 2)}
+      {/* The render template — the emit shape WITH __kind, one-click copyable.
+          This is the thing to paste into an agent prompt or a chat to see the
+          component render; the stored example is source-shape (no __kind). */}
+      <div className="rounded-md border border-border bg-card">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+          <span className="text-xs font-medium text-foreground">
+            Render template
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            the emit shape — leads with{" "}
+            <code className="rounded bg-muted px-1 py-0.5">&quot;__kind&quot;</code>
+          </span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => copy(kind, current.data, "json")}
+              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {copied === "json" ? (
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              Copy JSON
+            </button>
+            <button
+              type="button"
+              onClick={() => copy(kind, current.data, "fence")}
+              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {copied === "fence" ? (
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              Copy as ```json block
+            </button>
+          </div>
+        </div>
+        <pre className="overflow-x-auto p-3 font-mono text-xs text-foreground">
+          {emitPayloadJson(kind, current.data)}
         </pre>
-      </details>
+      </div>
 
       {showPathFootnote && (
         <p className="text-[11px] text-muted-foreground">
