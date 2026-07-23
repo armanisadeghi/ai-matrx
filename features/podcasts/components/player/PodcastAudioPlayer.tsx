@@ -513,7 +513,12 @@ export function PodcastAudioPlayer({
               key={i}
               className="flex-1 rounded-sm transition-colors duration-150"
               style={{
-                height: `${h * 100}%`,
+                // Round to a fixed precision so the serialized string is
+                // byte-identical on server and client. Math.sin is not
+                // guaranteed bit-identical across Node (SSR) and the browser,
+                // so the raw float produced a hydration mismatch on every
+                // SSR-rendered player (e.g. the blog + episode pages).
+                height: `${(h * 100).toFixed(2)}%`,
                 backgroundColor:
                   (i / waveformData.length) * 100 < progressPercentage
                     ? "hsl(var(--primary))"
