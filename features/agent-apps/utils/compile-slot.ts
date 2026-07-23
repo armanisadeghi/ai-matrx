@@ -19,6 +19,7 @@ import {
   getScopeFunctionParameters,
   patchScopeForMissingIdentifiers,
 } from "./allowed-imports";
+import { collectTopLevelBindingsPlugin } from "./patch-scope-identifiers";
 import type { Json } from "@/types/database.types";
 
 export interface CompileSlotArgs {
@@ -62,9 +63,18 @@ export function compileSlotComponent({
   }
 
   try {
+    // Collect the author's top-level declarations during the transform so we can
+    // keep them OUT of the `new Function` parameter list — a param that collides
+    // with a top-level `const`/`let`/`class` of the same name is a hard
+    // SyntaxError ("Identifier 'X' has already been declared"). Runs in the same
+    // pass, before the export→return rewrite, so the AST is still valid.
+    const declaredTopLevel = new Set<string>();
     const babelResult = transform(code, {
       presets: ["react", "typescript"],
-      plugins: [stripImportDeclarationsPlugin],
+      plugins: [
+        stripImportDeclarationsPlugin,
+        collectTopLevelBindingsPlugin(declaredTopLevel),
+      ],
       filename: "slot.tsx",
     });
 
@@ -72,9 +82,13 @@ export function compileSlotComponent({
     transformed = transformed.replace(/export\s+default\s+/g, "return ");
 
     const scope = buildComponentScope(allowedImports ?? []);
-    if (transformed) patchScopeForMissingIdentifiers(transformed, scope);
+    if (transformed)
+      patchScopeForMissingIdentifiers(transformed, scope, declaredTopLevel);
 
-    const { paramNames, paramValues } = getScopeFunctionParameters(scope);
+    const { paramNames, paramValues } = getScopeFunctionParameters(
+      scope,
+      declaredTopLevel,
+    );
     const factory = new Function(...paramNames, transformed);
     const Component = factory(...paramValues) as React.ComponentType<
       Record<string, unknown>

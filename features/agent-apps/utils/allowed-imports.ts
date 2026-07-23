@@ -506,12 +506,18 @@ export function buildComponentScope(
 
 /**
  * Scans transformed JSX for component references missing from scope.
+ * `declaredIdentifiers` (author top-level bindings) are skipped so we never
+ * inject a fallback for something the author defined themselves.
  */
 export function patchScopeForMissingIdentifiers(
   code: string,
   scope: Record<string, any>,
+  declaredIdentifiers?: Set<string>,
 ): void {
-  patchScopeForMissingIdentifiersImpl(code, scope, { logPrefix: "[AgentApp]" });
+  patchScopeForMissingIdentifiersImpl(code, scope, {
+    logPrefix: "[AgentApp]",
+    declaredIdentifiers,
+  });
 }
 
 /**
@@ -521,12 +527,23 @@ export function patchScopeForMissingIdentifiers(
  * @param scope - The full scope object
  * @returns Object with parameter names and their corresponding values
  */
-export function getScopeFunctionParameters(scope: Record<string, any>): {
+export function getScopeFunctionParameters(
+  scope: Record<string, any>,
+  exclude?: Set<string>,
+): {
   paramNames: string[];
   paramValues: any[];
 } {
+  // `exclude` = identifiers the author declares at the top level of the sandbox
+  // body. A scope key that is also a top-level `const`/`let`/`class` in the body
+  // must NOT become a `new Function` parameter, or evaluation throws
+  // "Identifier 'X' has already been declared". Dropping it lets the author's own
+  // declaration shadow the injected scope — the correct, collision-free result.
   const paramNames = Object.keys(scope).filter(
-    (key) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) && !key.startsWith("__"),
+    (key) =>
+      /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) &&
+      !key.startsWith("__") &&
+      !exclude?.has(key),
   );
   const paramValues = paramNames.map((key) => scope[key]);
 
