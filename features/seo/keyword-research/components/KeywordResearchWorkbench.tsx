@@ -375,12 +375,13 @@ export default function KeywordResearchWorkbench() {
           </span>
         )}
         <div className="flex-1" />
+        {clusterPhrases && (
         <button
           type="button"
           onClick={() => void handleRefreshAll()}
           disabled={refreshing || sorted.length === 0}
           className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
-          title="Fetch market data for keywords with missing or stale volume (30-day policy)"
+          title="Fetch market data for THIS cluster\u2019s stale/missing keywords only (30-day policy; paid provider call)"
         >
           {refreshing ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -389,6 +390,7 @@ export default function KeywordResearchWorkbench() {
           )}
           Refresh volume
         </button>
+        )}
       </div>
 
       {/* Table */}
