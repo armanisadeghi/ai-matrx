@@ -33,6 +33,7 @@ vision: [.claude/skills/core-route-headers/SKILL.md, .claude/skills/ios-mobile-f
 5. **`/messages/[conversationId]` crashes on load** — realtime presence-callback error. Owned by the messaging refactor; invoke the `supabase-realtime` skill.
 6. **Defects D72–D76** are filed in `FOUND_DEFECTS.md` — **D72 is P0 data exposure** (a plain row click on the /files desktop table can create a real share link). Needs a live repro of the hover/click race in `features/files/components/surfaces/desktop/FileTableRow.tsx`.
 7. `app/(core)/education/**` — owned by the education session; leave alone.
+8. **Audit blind spot:** `pnpm check:page-headers` and the grep below scan `app/(core)` only — a route's `features/` half is invisible. Known offender: `features/war-room/components/room/WarRoomShell.tsx` (banned `h-[calc(100vh-2.5rem)]` + in-body header). Tracked in `docs/handoffs/war-room-list-and-room-conformance.md`. "Zero in (core)" below means zero in the `app/` tree, not in feature components.
 
 ## Done
 
