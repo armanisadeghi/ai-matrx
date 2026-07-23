@@ -39202,6 +39202,1159 @@ export type Database = {
       [_ in never]: never
     }
   }
+  seo: {
+    Tables: {
+      collection_run: {
+        Row: {
+          attempt_count: number
+          capability: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          credential_reference_id: string | null
+          credential_reference_kind: string | null
+          currency: string
+          error: Json | null
+          estimated_cost: number | null
+          execution_id: string | null
+          id: string
+          idempotency_key: string
+          lease_expires_at: string | null
+          lease_owner: string | null
+          observation_period: string
+          operation: string
+          organization_id: string
+          provider: string
+          reported_cost: number | null
+          request_count: number
+          request_id: string | null
+          requested_at: string
+          settings: Json
+          settings_hash: string
+          started_at: string | null
+          status: string
+          target_ref: string
+          trigger: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          capability: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          credential_reference_id?: string | null
+          credential_reference_kind?: string | null
+          currency?: string
+          error?: Json | null
+          estimated_cost?: number | null
+          execution_id?: string | null
+          id?: string
+          idempotency_key: string
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          observation_period: string
+          operation: string
+          organization_id: string
+          provider: string
+          reported_cost?: number | null
+          request_count?: number
+          request_id?: string | null
+          requested_at?: string
+          settings?: Json
+          settings_hash: string
+          started_at?: string | null
+          status?: string
+          target_ref: string
+          trigger?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          capability?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          credential_reference_id?: string | null
+          credential_reference_kind?: string | null
+          currency?: string
+          error?: Json | null
+          estimated_cost?: number | null
+          execution_id?: string | null
+          id?: string
+          idempotency_key?: string
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          observation_period?: string
+          operation?: string
+          organization_id?: string
+          provider?: string
+          reported_cost?: number | null
+          request_count?: number
+          request_id?: string | null
+          requested_at?: string
+          settings?: Json
+          settings_hash?: string
+          started_at?: string | null
+          status?: string
+          target_ref?: string
+          trigger?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      keyword: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          intent: string | null
+          language: string
+          metadata: Json
+          normalized_phrase: string
+          organization_id: string
+          phrase: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          intent?: string | null
+          language?: string
+          metadata?: Json
+          normalized_phrase: string
+          organization_id: string
+          phrase: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          intent?: string | null
+          language?: string
+          metadata?: Json
+          normalized_phrase?: string
+          organization_id?: string
+          phrase?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      keyword_metric: {
+        Row: {
+          competition: number | null
+          cpc: number | null
+          created_at: string
+          created_by: string
+          dedup_key: string
+          difficulty: number | null
+          extras: Json
+          id: string
+          intent: string | null
+          keyword_id: string
+          location_id: string | null
+          observed_at: string
+          organization_id: string
+          provider: string
+          raw_payload_id: string | null
+          run_id: string
+          search_volume: number | null
+        }
+        Insert: {
+          competition?: number | null
+          cpc?: number | null
+          created_at?: string
+          created_by: string
+          dedup_key: string
+          difficulty?: number | null
+          extras?: Json
+          id?: string
+          intent?: string | null
+          keyword_id: string
+          location_id?: string | null
+          observed_at: string
+          organization_id: string
+          provider: string
+          raw_payload_id?: string | null
+          run_id: string
+          search_volume?: number | null
+        }
+        Update: {
+          competition?: number | null
+          cpc?: number | null
+          created_at?: string
+          created_by?: string
+          dedup_key?: string
+          difficulty?: number | null
+          extras?: Json
+          id?: string
+          intent?: string | null
+          keyword_id?: string
+          location_id?: string | null
+          observed_at?: string
+          organization_id?: string
+          provider?: string
+          raw_payload_id?: string | null
+          run_id?: string
+          search_volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_metric_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keyword_metric_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keyword_metric_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keyword_metric_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keyword_monthly_volume: {
+        Row: {
+          id: string
+          metric_id: string
+          period: string
+          search_volume: number
+        }
+        Insert: {
+          id?: string
+          metric_id: string
+          period: string
+          search_volume: number
+        }
+        Update: {
+          id?: string
+          metric_id?: string
+          period?: string
+          search_volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_monthly_volume_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "keyword_metric"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location: {
+        Row: {
+          city: string | null
+          country_code: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          postal_code: string | null
+          region: string | null
+          timezone: string | null
+        }
+        Insert: {
+          city?: string | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          postal_code?: string | null
+          region?: string | null
+          timezone?: string | null
+        }
+        Update: {
+          city?: string | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          postal_code?: string | null
+          region?: string | null
+          timezone?: string | null
+        }
+        Relationships: []
+      }
+      page_performance: {
+        Row: {
+          accessibility_score: number | null
+          best_practices_score: number | null
+          created_at: string
+          created_by: string
+          crux: Json
+          dedup_key: string
+          diagnostics: Json
+          id: string
+          lighthouse: Json
+          observed_at: string
+          organization_id: string
+          page_id: string
+          performance_score: number | null
+          provider: string
+          raw_payload_id: string | null
+          run_id: string
+          seo_score: number | null
+          site_id: string | null
+          strategy: string
+        }
+        Insert: {
+          accessibility_score?: number | null
+          best_practices_score?: number | null
+          created_at?: string
+          created_by: string
+          crux?: Json
+          dedup_key: string
+          diagnostics?: Json
+          id?: string
+          lighthouse?: Json
+          observed_at: string
+          organization_id: string
+          page_id: string
+          performance_score?: number | null
+          provider: string
+          raw_payload_id?: string | null
+          run_id: string
+          seo_score?: number | null
+          site_id?: string | null
+          strategy: string
+        }
+        Update: {
+          accessibility_score?: number | null
+          best_practices_score?: number | null
+          created_at?: string
+          created_by?: string
+          crux?: Json
+          dedup_key?: string
+          diagnostics?: Json
+          id?: string
+          lighthouse?: Json
+          observed_at?: string
+          organization_id?: string
+          page_id?: string
+          performance_score?: number | null
+          provider?: string
+          raw_payload_id?: string | null
+          run_id?: string
+          seo_score?: number | null
+          site_id?: string | null
+          strategy?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_performance_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_performance_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_call: {
+        Row: {
+          currency: string
+          estimated_cost: number | null
+          external_task_id: string | null
+          fetched_at: string
+          id: string
+          metadata: Json
+          provider_call_key: string
+          reported_cost: number | null
+          request_count: number
+          run_id: string
+        }
+        Insert: {
+          currency?: string
+          estimated_cost?: number | null
+          external_task_id?: string | null
+          fetched_at?: string
+          id?: string
+          metadata?: Json
+          provider_call_key: string
+          reported_cost?: number | null
+          request_count?: number
+          run_id: string
+        }
+        Update: {
+          currency?: string
+          estimated_cost?: number | null
+          external_task_id?: string | null
+          fetched_at?: string
+          id?: string
+          metadata?: Json
+          provider_call_key?: string
+          reported_cost?: number | null
+          request_count?: number
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_call_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_location: {
+        Row: {
+          created_at: string
+          external_id: string
+          external_name: string | null
+          id: string
+          location_id: string
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          external_id: string
+          external_name?: string | null
+          id?: string
+          location_id: string
+          provider: string
+        }
+        Update: {
+          created_at?: string
+          external_id?: string
+          external_name?: string | null
+          id?: string
+          location_id?: string
+          provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_location_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_task: {
+        Row: {
+          completed_at: string | null
+          currency: string
+          endpoint: string | null
+          error: Json | null
+          estimated_cost: number | null
+          external_task_id: string
+          id: string
+          last_polled_at: string | null
+          provider_cost: number | null
+          request_count: number
+          request_payload: Json
+          response_payload: Json | null
+          run_id: string
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          currency?: string
+          endpoint?: string | null
+          error?: Json | null
+          estimated_cost?: number | null
+          external_task_id: string
+          id?: string
+          last_polled_at?: string | null
+          provider_cost?: number | null
+          request_count?: number
+          request_payload?: Json
+          response_payload?: Json | null
+          run_id: string
+          status: string
+          submitted_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          currency?: string
+          endpoint?: string | null
+          error?: Json | null
+          estimated_cost?: number | null
+          external_task_id?: string
+          id?: string
+          last_polled_at?: string | null
+          provider_cost?: number | null
+          request_count?: number
+          request_payload?: Json
+          response_payload?: Json | null
+          run_id?: string
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_task_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rank_observation: {
+        Row: {
+          absolute_rank: number | null
+          created_at: string
+          created_by: string
+          dedup_key: string
+          device: string
+          engine: string
+          extras: Json
+          id: string
+          keyword_id: string
+          language: string
+          location_id: string | null
+          match_rule: string
+          matched_domain: string | null
+          matched_url: string | null
+          observed_at: string
+          organic_rank: number | null
+          organization_id: string
+          provider: string
+          query_settings: Json
+          rank_target_id: string
+          raw_payload_id: string | null
+          result_type: string
+          run_id: string
+          search_type: string
+          serp_features: Json
+          snippet: string | null
+          title: string | null
+        }
+        Insert: {
+          absolute_rank?: number | null
+          created_at?: string
+          created_by: string
+          dedup_key: string
+          device?: string
+          engine: string
+          extras?: Json
+          id?: string
+          keyword_id: string
+          language?: string
+          location_id?: string | null
+          match_rule?: string
+          matched_domain?: string | null
+          matched_url?: string | null
+          observed_at: string
+          organic_rank?: number | null
+          organization_id: string
+          provider: string
+          query_settings?: Json
+          rank_target_id: string
+          raw_payload_id?: string | null
+          result_type?: string
+          run_id: string
+          search_type?: string
+          serp_features?: Json
+          snippet?: string | null
+          title?: string | null
+        }
+        Update: {
+          absolute_rank?: number | null
+          created_at?: string
+          created_by?: string
+          dedup_key?: string
+          device?: string
+          engine?: string
+          extras?: Json
+          id?: string
+          keyword_id?: string
+          language?: string
+          location_id?: string | null
+          match_rule?: string
+          matched_domain?: string | null
+          matched_url?: string | null
+          observed_at?: string
+          organic_rank?: number | null
+          organization_id?: string
+          provider?: string
+          query_settings?: Json
+          rank_target_id?: string
+          raw_payload_id?: string | null
+          result_type?: string
+          run_id?: string
+          search_type?: string
+          serp_features?: Json
+          snippet?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_observation_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_observation_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_observation_rank_target_id_fkey"
+            columns: ["rank_target_id"]
+            isOneToOne: false
+            referencedRelation: "rank_target"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_observation_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_observation_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rank_target: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          device: string
+          engine: string
+          id: string
+          is_active: boolean
+          keyword_id: string
+          language: string
+          location_id: string | null
+          metadata: Json
+          organization_id: string
+          search_type: string
+          settings: Json
+          site_id: string | null
+          target_domain: string | null
+          target_page_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          device?: string
+          engine: string
+          id?: string
+          is_active?: boolean
+          keyword_id: string
+          language?: string
+          location_id?: string | null
+          metadata?: Json
+          organization_id: string
+          search_type?: string
+          settings?: Json
+          site_id?: string | null
+          target_domain?: string | null
+          target_page_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          device?: string
+          engine?: string
+          id?: string
+          is_active?: boolean
+          keyword_id?: string
+          language?: string
+          location_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          search_type?: string
+          settings?: Json
+          site_id?: string | null
+          target_domain?: string | null
+          target_page_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_target_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_target_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raw_payload: {
+        Row: {
+          checksum: string
+          cloud_file_id: string | null
+          content_type: string
+          created_at: string
+          external_task_id: string | null
+          fetched_at: string
+          id: string
+          offload_error: Json | null
+          payload: Json | null
+          provider_schema_version: string | null
+          run_id: string
+          size_bytes: number
+        }
+        Insert: {
+          checksum: string
+          cloud_file_id?: string | null
+          content_type?: string
+          created_at?: string
+          external_task_id?: string | null
+          fetched_at?: string
+          id?: string
+          offload_error?: Json | null
+          payload?: Json | null
+          provider_schema_version?: string | null
+          run_id: string
+          size_bytes: number
+        }
+        Update: {
+          checksum?: string
+          cloud_file_id?: string | null
+          content_type?: string
+          created_at?: string
+          external_task_id?: string | null
+          fetched_at?: string
+          id?: string
+          offload_error?: Json | null
+          payload?: Json | null
+          provider_schema_version?: string | null
+          run_id?: string
+          size_bytes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_payload_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_performance_daily: {
+        Row: {
+          average_position: number | null
+          clicks: number
+          country: string | null
+          created_at: string
+          created_by: string
+          ctr: number | null
+          date: string
+          dedup_key: string
+          device: string | null
+          dimension_profile: string
+          extras: Json
+          id: string
+          impressions: number
+          keyword_id: string | null
+          organization_id: string
+          page_id: string | null
+          provider: string
+          query: string | null
+          raw_payload_id: string | null
+          run_id: string
+          search_appearance: string | null
+          site_id: string
+        }
+        Insert: {
+          average_position?: number | null
+          clicks?: number
+          country?: string | null
+          created_at?: string
+          created_by: string
+          ctr?: number | null
+          date: string
+          dedup_key: string
+          device?: string | null
+          dimension_profile?: string
+          extras?: Json
+          id?: string
+          impressions?: number
+          keyword_id?: string | null
+          organization_id: string
+          page_id?: string | null
+          provider: string
+          query?: string | null
+          raw_payload_id?: string | null
+          run_id: string
+          search_appearance?: string | null
+          site_id: string
+        }
+        Update: {
+          average_position?: number | null
+          clicks?: number
+          country?: string | null
+          created_at?: string
+          created_by?: string
+          ctr?: number | null
+          date?: string
+          dedup_key?: string
+          device?: string | null
+          dimension_profile?: string
+          extras?: Json
+          id?: string
+          impressions?: number
+          keyword_id?: string | null
+          organization_id?: string
+          page_id?: string | null
+          provider?: string
+          query?: string | null
+          raw_payload_id?: string | null
+          run_id?: string
+          search_appearance?: string | null
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_performance_daily_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "search_performance_daily_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "search_performance_daily_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      serp_result: {
+        Row: {
+          absolute_rank: number
+          domain: string | null
+          extras: Json
+          id: string
+          organic_rank: number | null
+          result_type: string
+          snapshot_id: string
+          snippet: string | null
+          title: string | null
+          url: string | null
+        }
+        Insert: {
+          absolute_rank: number
+          domain?: string | null
+          extras?: Json
+          id?: string
+          organic_rank?: number | null
+          result_type?: string
+          snapshot_id: string
+          snippet?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Update: {
+          absolute_rank?: number
+          domain?: string | null
+          extras?: Json
+          id?: string
+          organic_rank?: number | null
+          result_type?: string
+          snapshot_id?: string
+          snippet?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serp_result_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "serp_snapshot"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      serp_snapshot: {
+        Row: {
+          created_at: string
+          created_by: string
+          dedup_key: string
+          device: string
+          engine: string
+          id: string
+          keyword_id: string
+          language: string
+          location_id: string | null
+          observed_at: string
+          organization_id: string
+          provider: string
+          query_settings: Json
+          rank_target_id: string | null
+          raw_payload_id: string | null
+          run_id: string
+          search_type: string
+          serp_features: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          dedup_key: string
+          device?: string
+          engine: string
+          id?: string
+          keyword_id: string
+          language?: string
+          location_id?: string | null
+          observed_at: string
+          organization_id: string
+          provider: string
+          query_settings?: Json
+          rank_target_id?: string | null
+          raw_payload_id?: string | null
+          run_id: string
+          search_type?: string
+          serp_features?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          dedup_key?: string
+          device?: string
+          engine?: string
+          id?: string
+          keyword_id?: string
+          language?: string
+          location_id?: string | null
+          observed_at?: string
+          organization_id?: string
+          provider?: string
+          query_settings?: Json
+          rank_target_id?: string | null
+          raw_payload_id?: string | null
+          run_id?: string
+          search_type?: string
+          serp_features?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serp_snapshot_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "serp_snapshot_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "serp_snapshot_rank_target_id_fkey"
+            columns: ["rank_target_id"]
+            isOneToOne: false
+            referencedRelation: "rank_target"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "serp_snapshot_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "serp_snapshot_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      web_analytics_daily: {
+        Row: {
+          campaign: string | null
+          channel: string | null
+          conversions: number
+          created_at: string
+          created_by: string
+          currency_code: string | null
+          date: string
+          dedup_key: string
+          device: string | null
+          engaged_sessions: number
+          engagement_rate: number | null
+          extras: Json
+          id: string
+          key_events: number
+          landing_page: string | null
+          medium: string | null
+          organization_id: string
+          page_id: string | null
+          property_timezone: string | null
+          provider: string
+          raw_payload_id: string | null
+          revenue: number | null
+          run_id: string
+          sessions: number
+          site_id: string
+          source: string | null
+          users: number
+          views: number
+        }
+        Insert: {
+          campaign?: string | null
+          channel?: string | null
+          conversions?: number
+          created_at?: string
+          created_by: string
+          currency_code?: string | null
+          date: string
+          dedup_key: string
+          device?: string | null
+          engaged_sessions?: number
+          engagement_rate?: number | null
+          extras?: Json
+          id?: string
+          key_events?: number
+          landing_page?: string | null
+          medium?: string | null
+          organization_id: string
+          page_id?: string | null
+          property_timezone?: string | null
+          provider: string
+          raw_payload_id?: string | null
+          revenue?: number | null
+          run_id: string
+          sessions?: number
+          site_id: string
+          source?: string | null
+          users?: number
+          views?: number
+        }
+        Update: {
+          campaign?: string | null
+          channel?: string | null
+          conversions?: number
+          created_at?: string
+          created_by?: string
+          currency_code?: string | null
+          date?: string
+          dedup_key?: string
+          device?: string | null
+          engaged_sessions?: number
+          engagement_rate?: number | null
+          extras?: Json
+          id?: string
+          key_events?: number
+          landing_page?: string | null
+          medium?: string | null
+          organization_id?: string
+          page_id?: string | null
+          property_timezone?: string | null
+          provider?: string
+          raw_payload_id?: string | null
+          revenue?: number | null
+          run_id?: string
+          sessions?: number
+          site_id?: string
+          source?: string | null
+          users?: number
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_analytics_daily_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "web_analytics_daily_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   skill: {
     Tables: {
       definition: {
@@ -48676,6 +49829,9 @@ export const Constants = {
     Enums: {},
   },
   scraper: {
+    Enums: {},
+  },
+  seo: {
     Enums: {},
   },
   skill: {

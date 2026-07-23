@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D84 — live Supabase security-advisor baseline contains unrelated errors (2026-07-22)
+
+Running `supabase db advisors --linked --type security --level error` before exposing the RLS-protected `seo` schema reported pre-existing `security_definer_view` errors (including `public.category_items_view`, `agent.context_menu_view`, and `iam.organization_member`) plus RLS-disabled exposed tables (including `public.full_spectrum_positions`, `files.structure`, and `workflow.worker_heartbeat`). The SEO change added no view/table and all 16 `seo` tables have RLS; this baseline needs a separate owner-by-owner audit before the advisor can become a clean release gate.
+
 ### D82 — three unrelated DB-function defects found while auditing paginated RPCs (2026-07-22)
 
 Surfaced by the `agx_get_list` unstable-pagination audit (that class was fixed; these are separate and were NOT touched):
