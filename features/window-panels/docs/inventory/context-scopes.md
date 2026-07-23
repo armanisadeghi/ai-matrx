@@ -1,9 +1,9 @@
 # Inventory chunk — Context, Scopes & Projects
 
-> Panels: `contextSwitcherWindow`, `scopeEditWindow`, `hierarchyCreationWindow`, `contextAssignmentWindow`, `projectsWindow`, `createProjectWindow`, `creatorHub`, `resourcePickerWindow`, `itemDetailWindow`.
+> Panels: `contextSwitcherWindow`, `drillDeckContextWindow`, `scopeEditWindow`, `hierarchyCreationWindow`, `contextAssignmentWindow`, `projectsWindow`, `createProjectWindow`, `creatorHub`, `resourcePickerWindow`, `itemDetailWindow`.
 > Legend: ✓ present · ◑ partial · ✗ missing · — n/a. Priority P0/P1/P2 · Effort S/M/L.
 > Filled 2026-06-23. See master `PANEL_INVENTORY.md` for column contracts.
-> Updated 2026-07-17: `contextSwitcherWindow` now hosts the canonical full Miller Columns Surface-A picker; the old bare `HierarchyTree` assessment below is superseded.
+> Updated 2026-07-23: Miller Columns and Drill Deck are registered Surface-A WindowPanel siblings with adaptive popover hosts.
 
 ## Chunk-level findings (read first)
 
@@ -11,8 +11,8 @@
 - **`contextAssignmentWindow` is NOT a registered overlay.** It exists as `features/scopes/components/context-assignment/ContextAssignmentWindow.tsx` — an **inline-controlled** WindowPanel wrapper (`open`/`onClose` owned by the caller, **no `overlayId`**), its own doc-comment says overlay-catalogue registration "is the production follow-up… once the component set is approved." Only consumer: the context-lab demo. The chunk brief named it as an overlayId, but it has no registry/catalogue/controller/opener footprint. Treated below as a panel candidate, not a registered panel.
 - **`projectsWindow` Tools-Grid gap CONFIRMED.** Registered + opener (`useOpenProjectsWindow`) + controller branch exist, but **no Tools-Grid tile** and **zero bespoke callers** — effectively unreachable for users. Matches the master "genuine missing tiles" note.
 - **`createProjectWindow` = the Ref-system exemplar.** Callback-aware opener (`useOpenCreateProjectWindow` → `onCreated`/`onAiCreated`/`onWindowClose` through `callbackManager`, typed `callbacks.ts`), multi-instance, ephemeral. **3 real consumers** (War Room project picker, `ProjectsHub` "New project", sidebar nav "Add Project"). The pattern to copy for any "create X, hand it back to the opener" window.
-- **Scopes/context family** = `contextSwitcherWindow` + `scopeEditWindow` + `hierarchyCreationWindow` (+ the unregistered `contextAssignmentWindow`). They are **complementary, not duplicates**: switcher = read/select GLOBAL active context (Surface A → `appContextSlice`); scopeEdit = CRUD one scope; hierarchyCreation = create org/project/task; contextAssignment = tag a single entity to scopes (LOCAL, `ctx_scope_assignments`). Keep separate — but `hierarchyCreationWindow` (a 3rd creation path next to `createProjectWindow` and `scopeEditWindow`) is a soft consolidation candidate.
-- **Universal gaps (all 8):** none is a **registered surface**; none has the new **std header controls** (Agents/Help); none has **help-assistant context wiring**. These are S2/S3 system rollouts, not per-panel bugs.
+- **Scopes/context family** = `contextSwitcherWindow` (full Miller) + `drillDeckContextWindow` (narrow Drill Deck) + `scopeEditWindow` + `hierarchyCreationWindow` (+ the unregistered `contextAssignmentWindow`). The two picker windows are intentional presentation siblings over the same Surface-A engine; scopeEdit = CRUD one scope; hierarchyCreation = create org/project/task; contextAssignment = tag a single entity locally.
+- **Universal gaps:** none is a **registered surface**; none has the new **std header controls** (Agents/Help); none has **help-assistant context wiring**. These are S2/S3 system rollouts, not per-panel bugs.
 - **`creatorHub`** is the chunk's one true multi-tab **Manage hub** — a 17-tab consolidation of creator/debug panels (sidebar = tab list, footer = live active-agent/conversation status). Solid consolidation; only soft-bound to context/projects (it lives in this chunk by folder, not domain).
 
 ---
@@ -22,6 +22,7 @@
 | Panel | Domain | Purpose | Maturity | Create(M/I/AI) | Seed | Edit | Manage | Rel | Exec | Fidelity gap | Domain family (siblings) | Consolidation verdict | Action (P·E) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | contextSwitcherWindow | Scopes/Context | Read+select GLOBAL active context (org/type/scope/item/project/task) | Solid | ✗/✗/✗ | — | ✓ full Miller selection | ✗ | ✓ sets active ctx | — | full 4-column OR-merged browser; item checks are session-local by design | scopeEdit, hierarchyCreation, contextAssignment(unreg) | keep-separate-justified (Surface-A selector, distinct from CRUD) | add bespoke entry points (P2·S) |
+| drillDeckContextWindow | Scopes/Context | Read+select GLOBAL active context in one drill-down column | Solid | ✗/✗/✗ | — | ✓ Drill Deck selection | ✗ | ✓ sets active ctx | — | compact sequential navigation; item checks are session-local by design | contextSwitcher, scopeEdit, contextAssignment(unreg) | keep-sibling-justified (same engine, different geometry) | add bespoke entry points (P2·S) |
 | scopeEditWindow | Scopes | Create/edit ONE scope (canonical `ScopeForm`) | Solid | ✓/✗/✗ | ◑ parentScopeId preset | ✓ | ✗ | ◑ parent nesting | — | single-item only; no list/manage; opened from 1 site | contextSwitcher, hierarchyCreation, contextAssignment | keep-separate-justified (single-scope CRUD core) | add Tools-Grid tile + surface (P2·S) |
 | hierarchyCreationWindow | Scopes/Hierarchy | Create org / project / task (mode by `entityType`) | Partial | ✓/✗/✗ | ✓ presetContext + tile seed | ✗ | ✗ | ◑ creates under preset parent | — | thin name+desc form; overlaps `createProjectWindow` (richer, AI) for projects; no tasks-rich form | createProject, scopeEdit | **merge-candidate** (project branch duplicates createProjectWindow; route project→createProjectWindow, keep org/task) | consolidation review (P2·M) |
 | contextAssignmentWindow (UNREGISTERED) | Scopes/Context | Tag ONE entity to scopes (LOCAL, `ctx_scope_assignments`) | Solid (as component) | ✓ inline quick-add scopes/tasks | — | ✓ | ◑ multi-section | ✓ entity↔scope | — | not overlay-registered → not openable from anywhere; demo-only | contextSwitcher, scopeEdit | register as overlay OR keep inline-only (per scopes-team approval) | register overlay (P2·M) |
@@ -38,6 +39,7 @@
 | Panel | Header actions | Footer (+variant) | Sidebar | 2nd panel | Tabs | Persist (collect/urlSync/heavy/autosave) | Pop-out | Tray (snap/preview) | Ref/callback | Surface reg | Std ctrls (agents/help) | Help-assistant ctx | Canonical core | E2E state | Underused utilities | Action (P·E) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | contextSwitcherWindow | ✗ | ✓ core footer | ✗ | ✗ | — | ✗/✗/✗/✗ | default | default | opener (no cb) | ✗ | ✗ | ✗ | ✓ canonical `MillerColumnsCore` + `ActiveMillerColumns` | ✓ DB→Redux `appContextSlice` (Surface-A writer) | surface/help; urlSync | add surface+std-ctrls (P2·S) |
+| drillDeckContextWindow | ✗ | ✓ core footer | ✗ | ✗ | — | ✗/✗/✗/✗ | default | default | opener (no cb) | ✗ | ✗ | ✗ | ✓ canonical `DrillDeckCore` + `ActiveDrillDeck` | ✓ DB→Redux `appContextSlice` through shared engine | surface/help; urlSync | add surface+std-ctrls (P2·S) |
 | scopeEditWindow | ✗ | ✗ (form buttons in body) | ✗ | ✗ | — | ✗/✗/✗/✗ | default | default | opener (no cb) | ✗ | ✗ | ✗ | ✓ canonical `ScopeForm` (createScope/updateScope thunks) | ✓ DB→Redux scope slices (self-hydrates on open) | footerRight for actions; surface/help | move actions→footer; surface (P2·S) |
 | hierarchyCreationWindow | ✗ | ✓ bar (Cancel/Create) | ✗ | ✗ | — | ✗/✗/✗/✗ | default | default | opener (no cb) | ✗ | ✗ | ✗ | ◑ own form (NOT shared with createProject/scopeEdit) | ◑ writes via `useHierarchy` mutations (react-query, not slice) | surface/help; AI-create (has none) | merge project branch; surface (P2·M) |
 | contextAssignmentWindow (UNREG) | ✗ | ◑ field owns footer | ✗ | ✗ | — | ✗/✗/✗/✗ (inline-controlled) | default | default | ✗ (no opener) | ✗ | ✗ | ✗ | ✓ canonical `ContextAssignmentField` (setEntityScopes chokepoint) | ✓ DB→Redux scope tree + 60s TTL data cache | overlayId, opener, tray, surface | register overlay+opener (P2·M) |
@@ -54,6 +56,7 @@
 | Panel | Opener? | Ref wired (popout/cb) | Portable vs route-locked | Tools Grid (tile/category) | Placement issue | Bespoke call sites (count + surfaces) | Usage gap | Action (P·E) |
 |---|---|---|---|---|---|---|---|---|
 | contextSwitcherWindow | ✓ `useOpenContextSwitcherWindow` (+Controller) | ✗ | portable | ✓ `tile.context-switcher` / general | ok | 0 (Tools-Grid only) | under-surfaced; no in-context entry from scope/project UIs | add bespoke entries (P2·M) |
+| drillDeckContextWindow | ✓ `useOpenDrillDeckContextWindow` (+Controller) | ✗ | portable | ✓ `tile.drill-deck-context` / dupes (admin) | ok | 1 — official component catalogue | reviewable + Tools-grid; no production contextual launcher yet | add bespoke entries when a narrow Surface-A trigger needs it (P2·S) |
 | scopeEditWindow | ✓ `useOpenScopeEditWindow` (+Controller) | ✗ | portable | ✗ no tile | not in Tools Grid | 1 — `ContextAssignmentField` (inline scope create/edit) | thin reach; one caller | add tile (P2·S) |
 | hierarchyCreationWindow | ✓ `useOpenHierarchyCreationWindow` (data type still `unknown` — TODO in opener) | ✗ | portable | ✓ 2 tiles (`new-organization`, project seed) / general | opener `data` type is loose (`unknown`, TODO) | 0 bespoke (tiles only) | tighten opener type; project branch redundant w/ createProject | type opener + reroute project (P2·M) |
 | contextAssignmentWindow (UNREG) | ✗ no opener (inline `open`/`onClose`) | ✗ | route-locked (caller-rendered) | ✗ | not registered as overlay | 1 — context-lab demo only | can't be opened app-wide; production follow-up never done | register overlay+opener (P2·M) |
@@ -66,8 +69,8 @@
 ---
 
 ## Notes / evidence
-- Surface registration: grep of `features/surfaces` for all 8 overlayIds = **0 hits** → none is a registered surface (S3 rollout).
-- `contextSwitcherWindow` is a **Surface-A writer** — `ActiveMillerColumns` maps its controlled selection through `applyDenseSelectionToRedux` → `setFullContext` without touching `conversation_id` (the load-bearing global-context invariant). Correct, not a bug.
+- Surface registration: grep of `features/surfaces` for this panel family = **0 hits** → none is a registered surface (S3 rollout).
+- `contextSwitcherWindow` and `drillDeckContextWindow` are **Surface-A writers** — `ActiveMillerColumns` and `ActiveDrillDeck` share `useActiveContextSelectionEngine`, which maps selection through `setFullContext` without touching `conversation_id`.
 - `scopeEditWindow` self-hydrates the agent-context scope slices on open (`fetchScopeTypes`/`fetchScopes`) because it can be opened from a surface reading a different tree.
 - `createProjectWindow` callback contract mirrors curated-icon-picker / image-uploader; `callbacks.ts` documents the 4-step group/emit/dispose flow. War-room picker auto-selects the created project via `onCreated`.
 - `creatorHub` footer uses self-reading status units (mirror `NoteMetadataBar`) — a good footer-status pattern, but it is hand-rolled, not the S2 help-assistant KV wiring.

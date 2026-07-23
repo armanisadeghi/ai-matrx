@@ -305,6 +305,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  drillDeckContextWindow: {
+    label: "Drill Deck Context Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   createProjectWindow: {
     label: "Create Project",
     instanceMode: "multi",

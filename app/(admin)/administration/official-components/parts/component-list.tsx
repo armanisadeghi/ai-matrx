@@ -171,8 +171,8 @@ export const componentList: ComponentEntry[] = [
     name: "Drill Deck Context Picker",
     path: "features/scopes/components/active-context/drill-deck/DrillDeck.tsx",
     description:
-      "Canonical one-column context navigator for narrow rails, drawers, and resource-selection flows.",
-    categories: ["selectors", "navigation", "containers"],
+      "Canonical one-column context navigator for narrow rails and resource-selection flows, with popover and WindowPanel hosts.",
+    categories: ["selectors", "navigation", "containers", "modals"],
     tags: [
       "context",
       "scope",
@@ -180,6 +180,8 @@ export const componentList: ComponentEntry[] = [
       "resource picker",
       "smart input",
       "drawer",
+      "popover",
+      "window panel",
     ],
   },
   {

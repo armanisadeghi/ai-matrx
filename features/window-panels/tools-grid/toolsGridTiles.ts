@@ -53,6 +53,7 @@ import {
   KeyRound,
   LayoutDashboard,
   Layers,
+  ListTree,
   ArrowUpDown,
   List,
   ListFilter,
@@ -609,6 +610,14 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     category: "dupes",
     gate: "admin",
     overlayId: "contextSwitcherWindow",
+  },
+  {
+    id: "tile.drill-deck-context",
+    label: "Drill Deck Context",
+    icon: ListTree,
+    category: "dupes",
+    gate: "admin",
+    overlayId: "drillDeckContextWindow",
   },
   {
     id: "tile.quick-data",

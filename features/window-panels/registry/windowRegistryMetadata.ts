@@ -675,6 +675,16 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
+  // ── Drill Deck Context ────────────────────────────────────────────────────
+  {
+    slug: "drill-deck-context-window",
+    overlayId: "drillDeckContextWindow",
+    kind: "window",
+    label: "Drill Deck Context",
+    defaultData: {},
+    mobilePresentation: "drawer",
+  },
+
   // ── Hierarchy Creation ────────────────────────────────────────────────────
   {
     slug: "hierarchy-creation-window",

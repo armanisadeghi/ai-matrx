@@ -176,7 +176,7 @@ A third guard backs both: the public `openOverlay` / `toggleOverlay` wrappers in
 
 ## Adding a new overlay
 
-A new overlay is a 3-file change:
+A new overlay uses one explicit registration flow:
 
 1. **Add the overlayId** to [`features/window-panels/registry/overlay-ids.ts`](../window-panels/registry/overlay-ids.ts). The `OverlayId` string-literal union narrows every dispatch site at compile time.
 
@@ -323,6 +323,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-07-23** — **New `drillDeckContextWindow` overlay.** The compact Drill Deck Surface-A picker is a singleton WindowPanel with mobile drawer presentation, registered across the typed overlay ID, catalogue, static WindowPanel metadata, `lazyOverlay` controller import/selectors/gated render block, typed opener, and admin Tools-grid launcher. The official Drill Deck component page opens the real registered window.
 - **2026-07-17** — **New `contextPreviewPanel` overlay — server-truth "what the agent receives".** Singleton, `isWindow:false`, opened by `useOpenContextPreviewPanel({ conversationId?, agentId? })` from the composer's `ContextLensBar` "Context" segment. Renders `ContextPreviewPanel` (`features/agents/components/context-preview/`) in `SidePanelSurface`: the aidream `POST /ai/context/preview` response (exact injected context block + tiered variables, same code path as a real run) + an "Attached this turn" tab. Replaces + deletes the blocking `AgentSeesSheet`. Registered across all sites (overlay-ids, catalogue, controller selectors + gated block, opener).
 - **2026-07-16** — **Dynamic panel no longer buries the shell avatar.** `MatrxDynamicPanel` auto-claims a glass-layer elevated user menu (`ElevatedShellUserMenuRoot` in AppShell) when docked right/top or fullscreen/mobile — the shell header stacking context cannot win against `#glass-layer` `z-[100]`. See `components/matrx/resizable/FEATURE.md`.
 - **2026-07-15** — **Shared dynamic panels now have predictable keyboard entry and return.** `MatrxDynamicPanelHost` can opt user-invoked forms and pickers into initial focus, exposes the surface as a labelled non-modal dialog, and restores focus to the opener when it closes. The shared panel chrome also gives its position, full-screen, and collapse icon controls explicit accessible names.

@@ -421,6 +421,13 @@ const ContextSwitcherWindow = lazyOverlay(
     ),
   { ssr: false },
 );
+const DrillDeckContextWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/context-scopes/DrillDeckContextWindow").then(
+      (m) => ({ default: m.DrillDeckContextWindow }),
+    ),
+  { ssr: false },
+);
 const CropStudioWindow = lazyOverlay(
   () => import("@/features/image-studio/components/CropStudioWindow"),
   { ssr: false },
@@ -1023,6 +1030,9 @@ export default function OverlayController() {
     contextSwitcherWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "contextSwitcherWindow"),
     ),
+    drillDeckContextWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "drillDeckContextWindow"),
+    ),
     creatorHub: useAppSelector((s) => selectIsOverlayOpen(s, "creatorHub")),
     cropStudioWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "cropStudioWindow"),
@@ -1331,6 +1341,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     contextSwitcherWindow: useAppSelector((s) =>
       selectOverlayData(s, "contextSwitcherWindow"),
+    ) as Record<string, unknown> | null,
+    drillDeckContextWindow: useAppSelector((s) =>
+      selectOverlayData(s, "drillDeckContextWindow"),
     ) as Record<string, unknown> | null,
     creatorHub: useAppSelector((s) =>
       selectOverlayData(s, "creatorHub"),
@@ -3126,6 +3139,20 @@ export default function OverlayController() {
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "contextSwitcherWindow" }))
+            }
+          />
+        );
+      })()}
+
+      {/* drillDeckContextWindow */}
+      {(() => {
+        const isOpen = isOpenById.drillDeckContextWindow;
+        if (!isOpen) return null;
+        return (
+          <DrillDeckContextWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "drillDeckContextWindow" }))
             }
           />
         );

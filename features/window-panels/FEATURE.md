@@ -40,6 +40,7 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-07-23 — Added `drillDeckContextWindow`, the compact Surface-A sibling to the full Miller `contextSwitcherWindow`. Both canonical context selectors now have standard WindowPanel and adaptive popover hosts; the Drill Deck window uses the shared active-context engine, canonical content-only body slot, mobile drawer metadata, typed opener, lazy controller block, and Tools-grid launcher.
 - 2026-07-20 — Reconnected refresh preservation as a local-first, tab-scoped workspace cache. Exact `(overlayId, instanceId)` identity, staged lazy restores, close tombstones, serialized writes, viewport/tray normalization, account isolation, bounded JSON allowlists, and synchronous pagehide/close mirrors replace the disconnected `window_sessions` manager. Preservation is default-deny per audited registry entry; screenshots remain memory-only.
 - 2026-07-20 — Rebuilt the minimized-window contract: desktop cards are 240×160, tray geometry is centralized and every slot release/reorder moves both slot numbers and rectangles, the 32px minimized header ignores rich `titleNode` content, and audited windows use inexpensive semantic previews. Raster capture is explicit opt-in only, memory-only, bounded, and never uploaded or persisted.
 - 2026-07-19 — Added `surfaceContextWindow` to the universal Agents header for real-time surface variable inspection, and expanded the admin-gated `surfaceContextInspector` into a two-view WindowPanel (live values + embedded manifest/settings editor). Both use mobile drawer presentation and the canonical overlay controller. Their title bars follow the thin chrome contract: friendly surface labels, 24px icon-only actions, canonical compact Copy for AI, and status metadata in the footer instead of oversized header controls.
@@ -54,7 +55,7 @@ lib/redux/slices/
 
 Static metadata declares identity, presentation, preservation policy, and labels without importing component code. The canonical overlay controller owns typed lazy render mappings. The Tools grid independently declares placement. Runtime overlay state lives in `overlaySlice`; mounted geometry and staged preservation live in `windowManagerSlice`.
 
-Adding an overlay is a **2-file change**: add its static metadata and typed lazy render block, then write the component. Add Tools-grid placement only when the window belongs there. Never seed `overlaySlice`.
+Adding an overlay requires **explicit registration at every boundary**: typed overlay ID, component, static metadata, lazy controller import/selectors/gated render block, typed opener, and catalogue entry. Add Tools-grid placement only when the window belongs there. Never seed `overlaySlice`.
 
 ---
 
