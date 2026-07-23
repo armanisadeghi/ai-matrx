@@ -26,6 +26,9 @@ import { PropertyEditorDialog } from "@/features/marketing/components/brands/Pro
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingBrandScope } from "@/features/surfaces/manifests/marketing-brand.manifest";
+import { buildBrandContextXml } from "@/features/marketing/lib/surface-context";
 import {
   useBrand,
   useBrandAssets,
@@ -50,7 +53,7 @@ import {
   SiteIdentityMark,
 } from "@/features/marketing/components/shared/SiteConnectionChips";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { isJsonRecord } from "@/features/marketing/types";
+import { isJsonRecord, parseBrandProfile } from "@/features/marketing/types";
 import type {
   BrandAsset,
   BrandProperty,
@@ -185,6 +188,49 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const factRows = facts.data ?? [];
   const assetRows = assets.data ?? [];
 
+  // Surface scope — assembled at trigger time from what the cockpit already
+  // loaded. No fetching; keys are omitted when their data is not loaded yet.
+  const getBrandScope = () => {
+    const profile = parseBrandProfile(current.profile);
+    return createMarketingBrandScope({
+      brand_id: brandId,
+      brand_name: current.name,
+      brand_context: buildBrandContextXml({
+        brand: current,
+        properties: properties.data ?? [],
+        facts: factRows,
+        assets: assetRows,
+        sites: websiteSites,
+      }),
+      ...(Object.keys(profile).length > 0
+        ? { brand_profile: profile as Record<string, unknown> }
+        : {}),
+      ...(typeof pending.data === "number"
+        ? { pending_review_count: pending.data }
+        : {}),
+      ...(websiteSites.length > 0
+        ? {
+            sites_summary: websiteSites.map((site) => ({
+              id: site.id,
+              name: site.name,
+              root_url: site.root_url,
+              status: site.status,
+            })),
+          }
+        : {}),
+      ...(socialProperties.length > 0
+        ? {
+            properties_summary: socialProperties.map((property) => ({
+              kind: property.kind,
+              url: property.url,
+              handle: property.handle,
+              status: property.status,
+            })),
+          }
+        : {}),
+    });
+  };
+
   const brandCopy = webCopy({
     kind: "web-brand",
     label: `Brand ${current.name}`,
@@ -291,7 +337,11 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   });
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-brand"
+      surfaceLabel="Brand"
+      getScope={getBrandScope}
+    >
       <RouteHeader
         left={
           <div className="flex items-center gap-2">
@@ -749,6 +799,6 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           }
         }}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

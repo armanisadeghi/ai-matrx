@@ -17,6 +17,7 @@
  */
 
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { MarketingSiteBaseValues } from "@/features/marketing/lib/scopes/site-surface-base";
 import { createMarketingPageScope } from "@/features/surfaces/manifests/marketing-page.manifest";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { parseStoredSeoMetrics } from "@/features/seo/serp/metrics";
@@ -31,8 +32,14 @@ export function buildMarketingPageScope(input: {
   snapshot: PageSnapshot | null;
   openFindings?: number;
   selection?: string;
+  /**
+   * Inherited site-level base values (brand/site identity + XML context) from
+   * `useMarketingSiteSurfaceBase().getBaseValues()`. Spread first — the
+   * page-specific values below always win on overlap (brand_id / site_id).
+   */
+  base?: MarketingSiteBaseValues;
 }): SurfaceScopePayload {
-  const { brandId, page, snapshot, openFindings, selection } = input;
+  const { brandId, page, snapshot, openFindings, selection, base } = input;
   const head = snapshot ? parseSnapshotHeadTags(snapshot.head_tags) : null;
   const observedMetrics = snapshot
     ? parseStoredSeoMetrics(snapshot.seo_metrics)
@@ -40,6 +47,7 @@ export function buildMarketingPageScope(input: {
   const desiredMetrics = parseStoredSeoMetrics(page.seo_metrics_desired);
 
   return createMarketingPageScope({
+    ...base,
     page_id: page.id,
     site_id: page.site_id,
     brand_id: brandId,

@@ -9,6 +9,8 @@ import {
   RefreshCwTapButton,
 } from "@/components/icons/tap-buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingBatchesScope } from "@/features/surfaces/manifests/marketing-batches.manifest";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   humanLines,
@@ -235,6 +237,26 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
   }
 
   const job = batch.data;
+
+  // Surface scope — assembled at trigger time from the already-loaded batch
+  // row (plus the loaded item total). No fetching happens here.
+  const getBatchScope = () =>
+    createMarketingBatchesScope({
+      batch_id: batchId,
+      batch_summary: {
+        status: job.status,
+        kind: job.kind,
+        provider: job.provider?.label ?? job.provider_id,
+        site: job.site?.domain ?? job.site_id,
+        created_at: job.created_at,
+        submitted_at: job.submitted_at,
+        completed_at: job.completed_at,
+        external_ref: job.external_ref,
+        error: job.error,
+        items_total: items.data?.total ?? null,
+      },
+    });
+
   const jobCopy = webCopy({
     kind: "web-batch-job",
     label: `Batch ${job.id.slice(0, 12)}`,
@@ -257,7 +279,11 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
     attributes: { batch_id: job.id, site_id: job.site_id, status: job.status },
   });
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-batches"
+      surfaceLabel="Batches"
+      getScope={getBatchScope}
+    >
       <RouteHeader
         left={
           <div className="flex min-w-0 items-center gap-1">
@@ -411,6 +437,6 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
           )}
         </div>
       </main>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

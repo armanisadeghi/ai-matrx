@@ -8,6 +8,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingBatchesScope } from "@/features/surfaces/manifests/marketing-batches.manifest";
 import {
   formatCompactDate,
   QueryError,
@@ -168,8 +170,31 @@ export function BatchesTable() {
     startNavigation(() => router.push(`/marketing/batches/${row.id}`));
   };
 
+  // Surface scope — assembled at trigger time from the already-loaded list
+  // rows (respecting search/filters/sort/page), capped at 20.
+  const getBatchesScope = () => {
+    const rows = batches.data?.rows ?? [];
+    return createMarketingBatchesScope(
+      rows.length > 0
+        ? {
+            recent_batches: rows.slice(0, 20).map((row) => ({
+              id: row.id,
+              status: row.status,
+              kind: row.kind,
+              site: row.site?.domain ?? row.site_id,
+              error: row.error,
+            })),
+          }
+        : {},
+    );
+  };
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-batches"
+      surfaceLabel="Batches"
+      getScope={getBatchesScope}
+    >
       <RouteHeader
         left={
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
@@ -261,6 +286,6 @@ export function BatchesTable() {
           />
         )}
       </main>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

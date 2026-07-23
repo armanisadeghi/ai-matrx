@@ -30,6 +30,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { MarketingSiteSurfaceProvider } from "@/features/marketing/lib/scopes/site-surface-base";
 
 interface MarketingSiteContextValue {
   site: MarketingSite;
@@ -227,7 +228,9 @@ export function MarketingSiteLayoutClient({
         ]}
       />
       <div className="flex h-full min-h-0 flex-col overflow-hidden pt-[var(--shell-header-h)]">
-        <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <MarketingSiteSurfaceProvider>{children}</MarketingSiteSurfaceProvider>
+        </div>
       </div>
     </MarketingSiteContext.Provider>
   );

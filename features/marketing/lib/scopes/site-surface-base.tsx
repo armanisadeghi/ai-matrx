@@ -24,7 +24,7 @@
  */
 
 import { useCallback, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { surfaceFromPathname } from "@/features/surfaces/utils/route-to-surface";
 import { createMarketingSiteScope } from "@/features/surfaces/manifests/marketing-site.manifest";
@@ -61,14 +61,19 @@ export function useMarketingSiteSurfaceBase(): {
   getBaseValues: () => MarketingSiteBaseValues;
 } {
   const { site } = useMarketingSite();
-  const brand = useBrand(site.brand_id);
+  // The layout guarantees the URL brand owns this site (cross-brand URLs are
+  // rejected before children render), so the route param IS the brand id —
+  // and unlike `site.brand_id` it is never null.
+  const params = useParams<{ brandId: string }>();
+  const brandId = params.brandId;
+  const brand = useBrand(brandId);
   const brandRow = brand.data ?? null;
 
   const getBaseValues = useCallback((): MarketingSiteBaseValues => {
     const profile = brandRow ? parseBrandProfile(brandRow.profile) : {};
     const hasProfile = Object.keys(profile).length > 0;
     return {
-      brand_id: site.brand_id,
+      brand_id: brandId,
       site_id: site.id,
       brand_name: brandRow?.name ?? undefined,
       brand_context: brandRow
@@ -84,9 +89,9 @@ export function useMarketingSiteSurfaceBase(): {
         statuses: siteConnectionStatuses(site),
       }),
     };
-  }, [site, brandRow]);
+  }, [site, brandRow, brandId]);
 
-  return { brandId: site.brand_id, siteId: site.id, getBaseValues };
+  return { brandId, siteId: site.id, getBaseValues };
 }
 
 /**

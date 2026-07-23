@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   useDeleteSite,
@@ -104,6 +106,17 @@ export function SitesPortfolio() {
     });
 
   const listRows = sites.data?.rows ?? [];
+
+  // Surface scope — assembled at trigger time from already-loaded queries.
+  // Brand totals and the per-brand portfolio rollup are not loaded on this
+  // view, so brand_count and portfolio_summary are honestly omitted.
+  const getHubScope = () =>
+    createMarketingScope({
+      ...(typeof siteCount.data === "number"
+        ? { site_count: siteCount.data }
+        : {}),
+    });
+
   const sitesListCopy = webCopy({
     kind: "web-sites-list",
     label: "Managed sites",
@@ -198,7 +211,11 @@ export function SitesPortfolio() {
   ];
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing"
+      surfaceLabel="Marketing"
+      getScope={getHubScope}
+    >
       <RouteHeader
         left={
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
@@ -379,7 +396,7 @@ export function SitesPortfolio() {
         busy={deleteMutation.isPending}
         onConfirm={() => void confirmDelete()}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 

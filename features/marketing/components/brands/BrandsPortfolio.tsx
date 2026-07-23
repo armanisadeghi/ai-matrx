@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useBrands, useDeleteBrand } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -113,6 +115,28 @@ export function BrandsPortfolio() {
     });
 
   const listRows = brands.data?.rows ?? [];
+
+  // Surface scope — assembled at trigger time from the already-loaded
+  // portfolio query. Site totals are not loaded on this view, so site_count
+  // is honestly omitted.
+  const getHubScope = () =>
+    createMarketingScope({
+      ...(typeof brands.data?.total === "number"
+        ? { brand_count: brands.data.total }
+        : {}),
+      ...(listRows.length > 0
+        ? {
+            portfolio_summary: listRows.map((row) => ({
+              brand_id: row.id,
+              brand: row.name,
+              status: row.status,
+              sites: row.sites.map((site) => site.domain),
+              pending_review: row.pending_discovered,
+            })),
+          }
+        : {}),
+    });
+
   const listCopy = webCopy({
     kind: "web-brands-list",
     label: "Brand portfolio",
@@ -253,7 +277,11 @@ export function BrandsPortfolio() {
   ];
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing"
+      surfaceLabel="Marketing"
+      getScope={getHubScope}
+    >
       <RouteHeader
         left={
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
@@ -367,6 +395,6 @@ export function BrandsPortfolio() {
         busy={deleteMutation.isPending}
         onConfirm={() => void confirmDelete()}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

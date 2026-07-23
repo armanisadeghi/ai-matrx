@@ -52,6 +52,12 @@ import type {
   SiteScreenshot,
 } from "@/features/marketing/types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import {
+  buildMarketingPageScope,
+  MARKETING_PAGE_SURFACE_NAME,
+} from "@/features/marketing/lib/marketing-page-scope";
 import { SerpResult, type SerpDevice } from "@/features/seo/serp/SerpResult";
 import { SerpFieldChips } from "@/features/seo/serp/SerpValidation";
 import { MetaRecommendations } from "@/features/seo/serp/MetaRecommendations";
@@ -1024,6 +1030,7 @@ function PageCapturesCard({ page }: { page: MarketingPage }) {
 
 export function PageWorkspace({ pageId }: { pageId: string }) {
   const { site, sitePath } = useMarketingSite();
+  const { brandId, getBaseValues } = useMarketingSiteSurfaceBase();
   const workspace = usePageWorkspace(site.id, pageId);
   const openSerpAnalyzer = useOpenSerpAnalyzerWindow();
   const openSocialCards = useOpenSocialCardWindow();
@@ -1052,6 +1059,18 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       searchPerformance.gsc_impressions_28d
     : null;
 
+  // Live surface-scope builder — called only at agent-launch / menu-open time,
+  // never on render. Emits the inherited site base + this page's loaded values
+  // (no fetching; everything is already in the workspace query result).
+  const getScope = () =>
+    buildMarketingPageScope({
+      brandId,
+      page,
+      snapshot,
+      openFindings: data.openFindings,
+      base: getBaseValues(),
+    });
+
   const pageCopy = webCopy({
     kind: "web-page",
     label: `Page ${page.path || "/"}`,
@@ -1075,7 +1094,13 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   });
 
   return (
-    <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
+    <SurfaceRuntimeProvider
+      surfaceName={MARKETING_PAGE_SURFACE_NAME}
+      surfaceLabel="Page"
+      isEditable={false}
+      getScope={getScope}
+    >
+      <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
         <section className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
@@ -1696,6 +1721,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               <PageContentCard
                 page={page}
                 markdownFileId={snapshot.markdown_file_id}
+                getPageScope={getScope}
               />
             ) : null}
           </>
@@ -1713,8 +1739,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
 
         <SitemapMembershipsCard page={page} />
 
-        <PageCapturesCard page={page} />
-      </div>
-    </main>
+          <PageCapturesCard page={page} />
+        </div>
+      </main>
+    </SurfaceRuntimeProvider>
   );
 }

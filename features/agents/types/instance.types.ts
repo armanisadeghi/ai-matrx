@@ -156,6 +156,10 @@ export type SourceFeature =
   // ── Scraper ──────────────────────────────────────────────────────────────
   | "scraper"
 
+  // ── Marketing (client-website workspaces, `features/marketing/`) ─────────
+  /** Marketing brand/site/page workspaces (`/marketing/brands/...`). */
+  | "marketing"
+
   // ── Files ────────────────────────────────────────────────────────────────
   | "files"
   /** Generic ItemRow/ItemMenu right-click host (schema-driven row menus). */
@@ -329,6 +333,7 @@ export const SOURCE_FEATURES = [
   "projects",
   "project-create",
   "scraper",
+  "marketing",
   "files",
   "documents",
   "working-document",
