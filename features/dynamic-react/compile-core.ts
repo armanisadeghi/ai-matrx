@@ -116,9 +116,11 @@ export function babelTransform(
   // Callers pass Babel plugin factories (e.g. collectTopLevelBindingsPlugin) to
   // observe the AST in the same pass. `extraPlugins` is `unknown[]` so this core
   // stays free of a @babel/core type dependency; Babel validates them at runtime.
-  const options: Parameters<BabelTransform>[1] = { presets, filename };
+  type BabelOptions = NonNullable<Parameters<BabelTransform>[1]>;
+  type BabelPlugins = BabelOptions["plugins"];
+  const options: BabelOptions = { presets, filename };
   if (extraPlugins.length) {
-    (options as { plugins?: unknown[] }).plugins = extraPlugins;
+    options.plugins = extraPlugins as unknown as BabelPlugins;
   }
 
   const result = cachedBabelTransform(code, options);
