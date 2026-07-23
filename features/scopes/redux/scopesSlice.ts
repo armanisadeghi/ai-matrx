@@ -382,7 +382,10 @@ const scopesSlice = createSlice({
         status: "loading",
         edges: prev?.edges ?? [],
         fetchedAt: prev?.fetchedAt ?? null,
-        error: null,
+        // Retain the visible failure while a retry is pending. Consumers use
+        // status to disable/spin the same retry control; clearing here makes
+        // that control disappear before the authoritative read settles.
+        error: prev?.error ?? null,
       };
     },
     associationsFetchFulfilled(
