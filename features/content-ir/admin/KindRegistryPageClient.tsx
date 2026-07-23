@@ -17,8 +17,9 @@
  */
 
 import { useState } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Boxes, CircleAlert, Loader2 } from "lucide-react";
+import { Boxes, CircleAlert, Hammer, Loader2 } from "lucide-react";
 import type { KindStatusBoardModel } from "@/features/content-ir/admin/kind-detail-types";
 import KindStatusBoard from "@/features/content-ir/admin/KindStatusBoard";
 import KindCatalogTable from "@/features/content-ir/admin/KindCatalogTable";
@@ -97,6 +98,13 @@ export default function KindRegistryPageClient({
           </span>
         )}
         <nav className="ml-auto flex items-end gap-1">
+          <Link
+            href="/administration/kind-registry/build"
+            className="mb-0.5 mr-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Hammer className="h-4 w-4" />
+            Build a kind
+          </Link>
           {TABS.map((id) => (
             <button
               key={id}
