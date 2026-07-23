@@ -113,6 +113,7 @@ export function useContainerLinks(
     key: string;
     files: ContainerLink[];
     error: string | null;
+    loading: boolean;
   } | null>(null);
 
   useLayoutEffect(() => {
@@ -127,6 +128,12 @@ export function useContainerLinks(
     // It must not clear or overwrite the current conversation's inventory.
     if (activeConversationKey.current !== key) return;
     const generation = ++conversationGeneration.current;
+    setConversationResult((current) => ({
+      key,
+      files: current?.key === key ? current.files : [],
+      error: null,
+      loading: true,
+    }));
     const result = await associationsService.listConversationFiles(containerId);
     if (
       generation !== conversationGeneration.current ||
@@ -139,6 +146,7 @@ export function useContainerLinks(
         key,
         files: current?.key === key ? current.files : [],
         error: result.error.message,
+        loading: false,
       }));
       return;
     }
@@ -153,6 +161,7 @@ export function useContainerLinks(
         metadata: file.metadata,
       })),
       error: null,
+      loading: false,
     });
   }, [containerId, conversationKey]);
 
@@ -172,6 +181,8 @@ export function useContainerLinks(
       ? "idle"
       : conversationResult?.key !== conversationKey
         ? "loading"
+        : conversationResult.loading
+          ? "loading"
         : conversationFileError
           ? "error"
           : "ready";
