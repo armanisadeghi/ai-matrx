@@ -117,7 +117,7 @@ export default function SurfaceAgentsPanelImpl({
         surfaceKey: `surface-chrome:${surfaceName}:${agentId}`,
         sourceFeature: "surface-chrome",
         config: {
-          displayMode: "modal-full",
+          displayMode: "flexible-panel",
           allowChat: true,
           showVariablePanel: true,
         },

@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAccumulatedText,
+  selectConversationRequestIds,
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -51,16 +52,26 @@ import { useKindRequest } from "./useKindRequest";
  * the first token — never a dead spinner.
  */
 function LiveKindResult({
-  requestId,
+  conversationId,
   expectedKind,
   uiOptions,
   onPick,
 }: {
-  requestId: string;
+  conversationId: string;
   expectedKind: string;
   uiOptions?: KindComponentUiOptions;
   onPick: (value: unknown) => void;
 }) {
+  // Resolve the live request from the conversation. `createRequest` dispatches
+  // early inside execution — so this id appears WHILE the agent is streaming,
+  // not when the run resolves.
+  const idsSel = useMemo(
+    () => selectConversationRequestIds(conversationId),
+    [conversationId],
+  );
+  const requestIds = useAppSelector(idsSel);
+  const requestId = requestIds.length ? requestIds[requestIds.length - 1] : "";
+
   const objectSel = useMemo(
     () => selectFirstExtractedObject(requestId),
     [requestId],
@@ -166,7 +177,7 @@ export function KindRequestDialog({
   uiOptions,
   onResolve,
 }: KindRequestDialogProps) {
-  const { run, isRunning, error, requestId, reset } = useKindRequest();
+  const { run, isRunning, error, conversationId, reset } = useKindRequest();
   const [phase, setPhase] = useState<Phase>("input");
   const [values, setValues] = useState<Record<string, string>>({});
 
@@ -225,9 +236,9 @@ export function KindRequestDialog({
         </DialogHeader>
 
         {phase === "running" ? (
-          requestId ? (
+          conversationId ? (
             <LiveKindResult
-              requestId={requestId}
+              conversationId={conversationId}
               expectedKind={expectedKind}
               uiOptions={uiOptions}
               onPick={handlePick}

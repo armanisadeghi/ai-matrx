@@ -49,14 +49,16 @@ export interface UseKindRequest {
   isRunning: boolean;
   error: string | null;
   /**
-   * The live request id for the in-flight (or last) run, set the instant the
-   * agent launches — BEFORE `run()` resolves. Consumers subscribe to the
-   * streaming selectors (accumulated text, incrementally-extracted objects)
-   * keyed by this id to render the result AS IT STREAMS instead of blocking on
-   * a spinner until the whole run finishes.
+   * The live conversation id, set the instant the run's conversation is created
+   * — EARLY, while the agent is still streaming (long before `run()` resolves,
+   * which only happens when the whole run finishes). Consumers resolve the live
+   * request from it (`selectConversationRequestIds`) and subscribe to the
+   * streaming selectors, so the result renders AS IT STREAMS instead of
+   * blocking on a spinner. `run()`'s late-resolving requestId is useless for
+   * streaming — by the time it returns, the run is already done.
    */
-  requestId: string | null;
-  /** Clear transient state (requestId/error) — call when the surface resets. */
+  conversationId: string | null;
+  /** Clear transient state — call when the surface resets. */
   reset: () => void;
 }
 
@@ -78,7 +80,7 @@ export function useKindRequest(): UseKindRequest {
   const store = useAppStore();
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [requestId, setRequestId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   async function waitForResult(
     requestId: string,
@@ -117,7 +119,7 @@ export function useKindRequest(): UseKindRequest {
   async function run(input: KindRequestInput): Promise<KindRequestResult> {
     setIsRunning(true);
     setError(null);
-    setRequestId(null);
+    setConversationId(null);
     try {
       const { requestId: launchedId } = await dispatch(
         launchAgentExecution({
@@ -129,15 +131,17 @@ export function useKindRequest(): UseKindRequest {
           jsonExtraction: { enabled: true },
           runtime: { variables: input.variables },
           config: { autoRun: true, displayMode: "direct" },
+          // Fires EARLY — before the stream is awaited — so the surface gets a
+          // live handle mid-run to render the stream. The thunk's own
+          // resolution (below) is too late: it only settles once the whole run
+          // has finished.
+          onConversationCreated: (cid) => setConversationId(cid),
         }),
       ).unwrap();
 
       if (!launchedId) {
         throw new Error("The agent launch did not return a request id.");
       }
-      // Publish the id BEFORE awaiting the result so the surface can subscribe
-      // to the live stream immediately (ideas render as they arrive).
-      setRequestId(launchedId);
       return await waitForResult(launchedId, input.expectedKind);
     } catch (e) {
       const message =
@@ -154,8 +158,8 @@ export function useKindRequest(): UseKindRequest {
   // re-run on every render, setState, re-render → "Maximum update depth".
   const reset = useCallback(() => {
     setError(null);
-    setRequestId(null);
+    setConversationId(null);
   }, []);
 
-  return { run, isRunning, error, requestId, reset };
+  return { run, isRunning, error, conversationId, reset };
 }
