@@ -32,6 +32,7 @@ import {
   replaceExportDefault,
   babelTransform,
 } from "./compile-core";
+import { collectTopLevelBindingsPlugin } from "@/features/agent-apps/utils/patch-scope-identifiers";
 import { createMatrxSdk } from "./sdk/matrxSdk";
 
 /**
@@ -83,16 +84,27 @@ export async function compileReactComponent({
   // only chunk-in — when the block actually references them.
   const neededImports = detectReactCapabilities(code);
 
+  // Collect the author's top-level declarations during the transform so they are
+  // kept OUT of the `new Function` parameter list — a param colliding with a
+  // top-level `const`/`let`/`class` of the same name is a hard SyntaxError
+  // ("Identifier 'X' has already been declared"). Must run before the
+  // export→return rewrite (`replaceExportDefault`), while the AST is still valid.
+  const declaredTopLevel = new Set<string>();
   let processed = stripImports(code);
-  processed = babelTransform(processed, language, `react-block.${language}`);
+  processed = babelTransform(processed, language, `react-block.${language}`, [
+    collectTopLevelBindingsPlugin(declaredTopLevel),
+  ]);
   processed = replaceExportDefault(processed);
   processed = ensureComponentReturn(processed);
 
   const scope = await buildToolRendererScope(neededImports);
   // Expose the curated, RLS-safe data SDK to generated code as `matrx`.
   scope.matrx = createMatrxSdk();
-  patchScopeForMissingIdentifiers(processed, scope);
-  const { paramNames, paramValues } = getScopeFunctionParameters(scope);
+  patchScopeForMissingIdentifiers(processed, scope, declaredTopLevel);
+  const { paramNames, paramValues } = getScopeFunctionParameters(
+    scope,
+    declaredTopLevel,
+  );
 
   // eslint-disable-next-line no-new-func
   const factory = new Function(...paramNames, processed);

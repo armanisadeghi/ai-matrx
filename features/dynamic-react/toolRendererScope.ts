@@ -587,13 +587,17 @@ export async function buildToolRendererScope(
 
 /**
  * Scans transformed JSX for component references missing from scope.
+ * `declaredIdentifiers` (author top-level bindings) are skipped so we never
+ * inject a fallback for something the author defined themselves.
  */
 export function patchScopeForMissingIdentifiers(
   code: string,
   scope: Record<string, any>,
+  declaredIdentifiers?: Set<string>,
 ): void {
   patchScopeForMissingIdentifiersImpl(code, scope, {
     logPrefix: "[DynamicReact]",
+    declaredIdentifiers,
   });
 }
 
@@ -603,13 +607,22 @@ export function patchScopeForMissingIdentifiers(
 
 /**
  * Filters scope to valid JS identifiers that can be used as function params.
+ * `exclude` = author top-level bindings; dropping them prevents a param colliding
+ * with a top-level `const`/`let`/`class` of the same name (a hard SyntaxError),
+ * letting the author's declaration shadow the injected scope instead.
  */
-export function getScopeFunctionParameters(scope: Record<string, any>): {
+export function getScopeFunctionParameters(
+  scope: Record<string, any>,
+  exclude?: Set<string>,
+): {
   paramNames: string[];
   paramValues: any[];
 } {
   const paramNames = Object.keys(scope).filter(
-    (key) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) && !key.startsWith("__"),
+    (key) =>
+      /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) &&
+      !key.startsWith("__") &&
+      !exclude?.has(key),
   );
   const paramValues = paramNames.map((key) => scope[key]);
   return { paramNames, paramValues };
