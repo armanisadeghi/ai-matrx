@@ -25,6 +25,7 @@
  */
 
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { EyeOff, Network, ScanText, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -207,7 +208,14 @@ export function PdfRegionContextMenu({
         const region = regionId
           ? (annotations.find((a) => a.id === regionId) ?? null)
           : null;
-        setActiveRegion(region);
+        // `resolveContextOnOpen` runs inside the menu's open handler, BEFORE
+        // it renders its content — but `extraSections` is derived from
+        // `activeRegion` during render. A plain `setActiveRegion` is one tick
+        // too late: the menu opens showing the PREVIOUS region (null on the
+        // first right-click), so the region actions were always one click
+        // behind and looked broken. `flushSync` commits the state now, so the
+        // menu renders with this region's actions on the very first open.
+        flushSync(() => setActiveRegion(region));
         if (!region) return null;
         onSelectAnnotation?.(region.id);
         return {

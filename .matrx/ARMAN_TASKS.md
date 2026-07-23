@@ -36,6 +36,9 @@ The Supabase MCP now requires OAuth and non-interactive sessions can't complete 
 ### 6. COPPA verifiable parental consent — legal + Stripe webhook + vendor pick
 The **code is built and live-verified** (card auth-and-void via Stripe test). To turn it on for real families, complete the runbook: `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`. Quick wins: (1) set `STRIPE_WEBHOOK_SECRET` in prod + register the `/api/stripe/webhook` endpoint (the card method needs it); (2) legal: which method(s) to require + auth-and-void vs charge+refund; (3) pick the gov-ID/KBA vendor (Stripe Identity / PRIVO / Persona). Then agents wire the vendor + signed-form upload.
 
+### 7. SMS integration — Twilio console setup (manual, ~15 min)
+The SMS code is in place; the remaining steps are dashboard/console work only you can do (Messaging Service creation, phone-number config, env vars, webhooks). Full runbook: `.matrx/arman-sms-setup.md` (moved from the repo root 2026-07-22).
+
 ## Pending Arman review
 
 _(none — current asks are all in Active)_

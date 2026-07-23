@@ -1,6 +1,8 @@
 # Item Registry
 
-Central map of major subsystems: **path** + **one-line purpose**. Paths are repo-root relative.
+Supplementary map of major subsystems: **path** + **one-line purpose**. Paths are repo-root relative.
+Subordinate to `CLAUDE.md` (the router) and each feature's `FEATURE.md` — on any conflict, those win.
+Moved from the repo root 2026-07-22 (doc-consolidation campaign).
 
 ---
 

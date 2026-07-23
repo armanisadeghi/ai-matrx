@@ -23,19 +23,25 @@ This doc is the PREP for that session — the agent running it works interactive
 
 ## Session state (2026-07-22, in flight)
 
-- Demo-vs-real decision: `/demos/pdf-processing/components` mounts the IDENTICAL production components (PdfEditTab, AnalysisTab, PdfPreview — verified imports) so it's a valid isolation bench; StudioShell is NOT in the bench, so Studio testing happens on the real route. Primary surface = real UI, bench = fallback.
-- Test file: Bio-Chapter-9.pdf `7e59da76-0548-4f4f-b645-10bb391d48fc` (admin@admin.com, 4MB multi-page). More PDF ids obtainable via `files.files` join `auth.users` on `created_by`.
-- Backend: prod aidream healthy (200); NEXT_PUBLIC_BACKEND_URL → server.app.matrxserver.com.
-- Dev-env hazards hit: routes take 3-9 min cold compile on this machine; the dev server silently died twice under compile load — check `curl localhost:3001` before trusting a stuck browser pane.
+- Test surface: real UI on `/files/f/[fileId]` → Edit tab (`PdfEditTab`). Bench `/demos/pdf-processing/components` mounts the same production components (verified) as fallback; StudioShell not in the bench.
+- Test file: Bio-Chapter-9.pdf `7e59da76-0548-4f4f-b645-10bb391d48fc` (admin@admin.com). Canva/PowerPoint-style slides with outlined title text — relevant to the text-dup bug below.
+- Backend: prod aidream healthy; NEXT_PUBLIC_BACKEND_URL → server.app.matrxserver.com. aidream network calls are cross-origin so they DON'T appear in the browser network panel — verify server results via the DB (`files.page_annotations`) or the rendered preview instead.
+- **Dev-env hazards (the session's biggest time sink):** routes cold-compile 3-9 min on this low-RAM machine; the dev server OOM-crashed ~4× under compile load and once left a corrupted `.next-preview` (caused a 1s reload loop on every `/files/*` load — fixed by `pnpm clean:next`). RULE: exactly ONE server (the box crashes with two); pre-warm each route via background `curl` BEFORE driving the UI so no compile happens under interactive load; `curl localhost:3001` before trusting a stuck pane.
+- **Verified WORKING** (contradicts "nothing works" — these are solid): draw-to-annotate → snap-bbox → extract-at-bbox → label picker (category chips + search + custom) → Save → persist → renders on page + Notes panel + green thumbnail badge. Full round-trip confirmed against the DB.
+- **Automation limit:** the embedded browser can't reliably pop a Radix context menu on a nested region div — region-menu open needs a HUMAN right-click to final-verify.
 
 ## Remaining work (the session's agenda — verify each WITH Arman, fix live)
 
-1. Ask Arman to demonstrate each broken flow on the Studio, in his order — capture the exact failure (console, network, server response) per feature before fixing. Candidates from his "none working" report: draw-to-annotate, label picker, extract-at-bbox, region right-click actions (extract / promote / redact / delete), annotations panel, thumbnails/page jumps, redact flow, entities panel.
-2. Server-side suspects live in aidream (extract/snap/promote endpoints) — if a failure is a 4xx/5xx from `server.app.matrxserver.com`, write the exact repro + hand Arman the prompt for the aidream agent rather than patching around it client-side.
-3. Region resize/move after creation — likely wanted; `useAnnotations.update` + bbox is ready, the layer needs drag handles.
-4. When flows work: update `features/pdf/FEATURE.md` gaps section, archive the review-queue row `2ea43c94-46fc-4c8a-877d-d1da3e85b44a`, and delete this doc.
+1. **Confirmed bugs still open (fix these first):**
+   - **Text extraction duplicates glyphs.** Drawing over "CHAPTER 9" stored `extracted_text = "CHAPTERCHAPTER 99"` in `files.page_annotations`. Almost certainly aidream extract-at-bbox reading an outlined/shadowed text layer twice (Canva/PPT export draws each glyph 2×). Server-side fix (dedup overlapping glyph runs) — write the aidream prompt, don't patch client-side.
+   - **Region overlay is nearly invisible.** The `structure` category renders a 1px slate border + 12% slate fill — unreadable over content. Needs stronger default stroke/fill or a per-category high-contrast palette (`features/pdf/components/viewer/annotation-layer/colors.ts`).
+   - **Label picker popover clips at viewport bottom.** Anchored at window-center but renders low; on shorter viewports the Save button/list get cut off. Anchor near the drawn rect + flip when it would overflow.
+   - **Thumbnails show `p1/p2/p3` text placeholders** for several seconds (sometimes persist) instead of rendered page images (`features/file-analysis/studio/ThumbnailStrip.tsx`).
+2. Still UNVERIFIED (test next, WITH Arman): Redact panel + redact flow, Doc Ops, Pages ops, Findings, Search, promote-to-entity result, Analysis tab entities/PII/tables panels, page-jump from thumbnails.
+3. Region resize/move after creation — no UI yet; `useAnnotations.update` + bbox ready, layer needs drag handles.
+4. When flows work: update `features/pdf/FEATURE.md` gaps section, archive review-queue row `2ea43c94-46fc-4c8a-877d-d1da3e85b44a`, delete this doc.
 
 ## Done
 
-- Region right-click menu built on v3 with the 4 backend actions (2026-07-21) — unverified by Arman; treat as suspect until the session proves it.
-- `/files/all` infinite redirect loop (URL grew `/files/all/all/all/…`, one segment ~1s, full reload each — files list unusable in dev) root-caused to the unguarded legacy catch-all `app/(core)/files/[...path]/page.tsx` being matched for URLs owned by static siblings while routes compile; self-heal guard added there (strips `all` prefixes, routes static-section heads back to their canonical URL) — verify in browser + confirm whether prod ever hit it.
+- **Region right-click menu was one click behind — FIXED** (`RegionContextMenu.tsx`). The "Region — <label>" section (Extract text / Promote / Redact / Delete) was absent on the FIRST right-click of any region and only appeared on the 2nd — this is why the menu looked dead. Cause: `extraSections` derived from `activeRegion` state set inside `resolveContextOnOpen`, which the v3 menu reads in the same render tick → always stale by one open. Fix: `flushSync(() => setActiveRegion(region))` so the state commits before the menu renders. Safe — every `resolveContextOnOpen` call site in `ContextMenuV3` is an event handler, never render/effect. NEEDS human right-click to final-verify (automation can't pop Radix on nested divs).
+- `/files/all` infinite redirect loop (`/files/all/all/all/…`, files list unusable in dev) — self-heal guard added to legacy catch-all `app/(core)/files/[...path]/page.tsx` (strips `all` prefixes, routes static-section heads back to canonical). Also root-caused to a corrupted `.next-preview` cache; `pnpm clean:next` clears it. Verify whether prod ever hit it.
