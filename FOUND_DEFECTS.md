@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D85 — CROSS-REPO (aidream): concurrent podcast media sub-agents share one request_id + emitter (2026-07-23)
+
+**Owner: aidream. Partially mitigated.** A child-agent fork keeps the parent `request_id` and aliases the parent emitter (`fork_for_child_agent`), so all concurrent podcast sub-agents (5 metadata images, videos, the feature-image prompt+render) stream into ONE shared sink. When two run at once their captured `.output` can cross-contaminate. This is the root cause of the "Style 5 = Image unavailable" bug (a metadata image's stored output was verbatim `feature_prompt[788:1576]` — a window of the concurrent TEXT prompt agent's stream). **Fixed for the feature agents** (2026-07-23): they now run `suppress_stream=True` + `independent_request=True`, and a `_is_media_url` guard rejects any non-URL image/video output. **Still open:** the metadata image/video agents share the same state among themselves — two URL-outputting agents could swap slots invisibly (both valid URLs, so the guard can't catch it; cosmetic wrong-image-in-slot). Fix = give the metadata image/video runs the same `independent_request=True` isolation (matches the research pipeline's concurrent fan-out precedent). Deferred as a working path; the reported user-visible bug is fully fixed.
+
 ### D84 — live Supabase security-advisor baseline contains unrelated errors (2026-07-22)
 
 Running `supabase db advisors --linked --type security --level error` before exposing the RLS-protected `seo` schema reported pre-existing `security_definer_view` errors (including `public.category_items_view`, `agent.context_menu_view`, and `iam.organization_member`) plus RLS-disabled exposed tables (including `public.full_spectrum_positions`, `files.structure`, and `workflow.worker_heartbeat`). The SEO change added no view/table and all 16 `seo` tables have RLS; this baseline needs a separate owner-by-owner audit before the advisor can become a clean release gate.

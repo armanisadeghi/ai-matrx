@@ -95,6 +95,7 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-07-23 — **Feature image never hidden; "Image unavailable" root-caused.** `MediaOptionsGrid` capped the editable grid at `VISIBLE_IMAGES = 5`, so once the run produced 6 images (5 metadata + the feature image) the 6th was hidden behind a "See all 6 images" link — the feature image looked missing. Raised to 6 (videos 2→4); the collapse now only triggers when the user ADDS images beyond the default set. The "Style 5 = Image unavailable" case was a backend concurrency leak (a metadata image slot captured a window of the feature-prompt text agent's stream) — fixed in aidream (`suppress_stream`+`independent_request` on the feature agents, plus a non-URL-output guard); see D85 + aidream `services/podcast/FEATURE.md`. One corrupt studio-run row healed in place.
 - 2026-07-22 — **Feature image style picker (the transcript-derived sixth image).**
   aidream now renders an extra image per run from the FULL transcript via a
   two-step agent chain (prompt generator → Matrx Image Ultra / gpt-image-2). The

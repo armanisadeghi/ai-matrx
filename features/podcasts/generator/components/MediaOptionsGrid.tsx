@@ -14,8 +14,14 @@ import type { AssetRegenerateOpts } from "./AssetActionsMenu";
 import type { MediaSlot, PodcastRunState } from "../types";
 import type { RunAssetKind } from "@/features/podcasts/studio/runs/run-types";
 
-const VISIBLE_IMAGES = 5;
-const VISIBLE_VIDEOS = 2;
+// Collapse thresholds for the editable (post-run) view. These must never hide
+// part of the DEFAULT generated set — the run now produces up to 6 images (5
+// metadata + 1 transcript-derived feature image), and hiding the 6th behind a
+// "See all" link (the old value was 5) made the feature image look missing.
+// The grid is 3-wide, so 6 is two clean rows. Collapse only kicks in once the
+// user has ADDED images beyond the default set.
+const VISIBLE_IMAGES = 6;
+const VISIBLE_VIDEOS = 4;
 
 interface MediaOptionsGridProps {
   state: PodcastRunState;
