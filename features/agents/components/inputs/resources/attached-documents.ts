@@ -21,7 +21,6 @@ import { useFile } from "@/features/files";
  * thunks / `useContainerLinks` — never a bespoke edge write.
  */
 
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import type { Json } from "@/types/database.types";
@@ -166,28 +165,4 @@ export function useAttachedDocumentDisplayName(
     fileName: file?.meta.fileName,
     edgeLabel,
   });
-}
-
-/**
- * The org a new attachment edge is stamped with: the conversation's org first,
- * then the user's EFFECTIVE org (`selectEffectiveOrganizationId` — the explicitly
- * selected org, else the never-empty personal org). This is the SAME selector the
- * execution thunks use, so the write org MATCHES the org the backend reads the
- * conversation's edges under (`resolve_effective_organization_id`, which also
- * falls back to the personal org). On a personal chat both resolve to the user's
- * personal-org UUID, so the edge is written where the backend will look for it.
- *
- * `assoc_add` will NOT auto-derive org for a `conversation` target, so this must
- * resolve — callers report loudly on null. It can still be null before the
- * active-org bootstrap hydrates `personal_organization_id`; that pre-boot window
- * is the only remaining gap and surfaces loudly via the caller's toast.
- */
-export function resolveConversationOrgId(
-  state: RootState,
-  conversationId: string,
-): string | null {
-  return (
-    state.conversations.byConversationId[conversationId]?.organizationId ??
-    selectEffectiveOrganizationId(state)
-  );
 }

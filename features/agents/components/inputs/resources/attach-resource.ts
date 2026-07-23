@@ -39,9 +39,7 @@ import {
 import {
   cleanDocumentLabel,
   documentAttachLabelFromState,
-  resolveConversationOrgId,
   type AttachedDocumentMetadata,
-  type AttachedDocumentToken,
 } from "@/features/agents/components/inputs/resources/attached-documents";
 import type { Resource } from "@/features/agents/resources/types";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
@@ -176,25 +174,18 @@ function edgeMetadata(fileId: string | null, existing?: Json): Json {
 /** Create a `token → conversation` attachment edge (idempotent). */
 async function attachDocumentEdge(
   dispatch: AppDispatch,
-  getState: () => RootState,
   conversationId: string,
-  token: AttachedDocumentToken,
   sourceId: string,
   fileId: string | null,
   label: string,
   existingMetadata?: Json,
 ): Promise<AssociationWriteResult> {
-  const orgId = resolveConversationOrgId(getState(), conversationId);
-  if (!orgId) {
-    return { ok: false, error: "No organization for this conversation" };
-  }
   return dispatch(
     addAssociation({
-      sourceType: token,
+      sourceType: "file",
       sourceId,
       targetType: "conversation",
       targetId: conversationId,
-      orgId,
       label,
       metadata: edgeMetadata(fileId, existingMetadata),
     }),
@@ -260,9 +251,7 @@ export function useAttachResource(
         if (existingEdge) return true;
         const result = await attachDocumentEdge(
           dispatch,
-          getState,
           conversationId,
-          "file",
           fileId,
           fileId,
           label,
