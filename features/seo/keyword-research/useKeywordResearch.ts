@@ -35,6 +35,9 @@ export function useKeywordResearch() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [run, setRun] = useState<ResearchRunState>({ status: "idle" });
+  // The phrases of the last research run — when set, the explorer scopes to
+  // this cluster instead of the whole universal library.
+  const [clusterPhrases, setClusterPhrases] = useState<string[] | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const reload = useCallback(async (searchValue: string) => {
@@ -87,11 +90,19 @@ export function useKeywordResearch() {
         });
         return;
       }
-      setRun({
-        status: "done",
-        primaryKeyword: phrase,
-        result: result.data as KeywordResearchResponse,
-      });
+      const data = result.data as KeywordResearchResponse;
+      setRun({ status: "done", primaryKeyword: phrase, result: data });
+      const artifact = data.artifact as {
+        primary_keyword?: string;
+        keyword_lists?: { keywords?: string[] }[];
+      };
+      const phrases = [
+        artifact.primary_keyword ?? phrase,
+        ...(artifact.keyword_lists ?? []).flatMap((list) => list.keywords ?? []),
+      ]
+        .map((keyword) => keyword.trim().toLowerCase())
+        .filter(Boolean);
+      setClusterPhrases(Array.from(new Set(phrases)));
       void reload(search);
     },
     [dispatch, reload, search],
@@ -121,7 +132,11 @@ export function useKeywordResearch() {
     [],
   );
 
+  const clearCluster = useCallback(() => setClusterPhrases(null), []);
+
   return {
+    clusterPhrases,
+    clearCluster,
     keywords,
     loading,
     loadError,

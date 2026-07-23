@@ -17,6 +17,7 @@ import {
   Loader2,
   RefreshCw,
   Search,
+  X,
   SearchCheck,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -238,6 +239,8 @@ function KeywordDetail({
 
 export default function KeywordResearchWorkbench() {
   const {
+    clusterPhrases,
+    clearCluster,
     keywords,
     loading,
     loadError,
@@ -252,13 +255,14 @@ export default function KeywordResearchWorkbench() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const sorted = useMemo(
-    () =>
-      [...keywords].sort(
+  const sorted = useMemo(() => {
+    const cluster = clusterPhrases ? new Set(clusterPhrases) : null;
+    return keywords
+      .filter((row) => !cluster || cluster.has(row.normalized_phrase))
+      .sort(
         (a, b) => (usMarket(b)?.search_volume ?? -1) - (usMarket(a)?.search_volume ?? -1),
-      ),
-    [keywords],
-  );
+      );
+  }, [keywords, clusterPhrases]);
 
   const handleRun = useCallback(() => {
     if (!primaryInput.trim() || run.status === "running") return;
@@ -353,9 +357,23 @@ export default function KeywordResearchWorkbench() {
             style={{ fontSize: "16px" }}
           />
         </div>
-        <span className="text-xs text-muted-foreground">
-          {loading ? "Loading…" : `${sorted.length} keywords`}
-        </span>
+        {clusterPhrases && run.primaryKeyword ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-2.5 py-1 text-xs text-foreground">
+            Cluster: “{run.primaryKeyword}” · {sorted.length}
+            <button
+              type="button"
+              onClick={clearCluster}
+              aria-label="Show the full keyword library"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            {loading ? "Loading…" : `${sorted.length} keywords in the library`}
+          </span>
+        )}
         <div className="flex-1" />
         <button
           type="button"
