@@ -247,6 +247,7 @@ export default function KeywordResearchWorkbench() {
     search,
     setSearch,
     run,
+    volumeStage,
     runResearch,
     refreshVolume,
     loadEdges,
@@ -318,10 +319,16 @@ export default function KeywordResearchWorkbench() {
           </button>
         </div>
         {run.status === "running" && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Running the research agent for “{run.primaryKeyword}” — mapping parents, children,
-            variants and related keywords, then fetching market volume. Usually 20–60 seconds.
-          </p>
+          <div className="mt-2 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {run.stage ?? `Running research for “${run.primaryKeyword}”`}
+            </p>
+            {run.streamingOutput && (
+              <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+                {run.streamingOutput}
+              </pre>
+            )}
+          </div>
         )}
         {run.status === "error" && (
           <p className="mt-2 text-xs text-destructive">{run.error}</p>
@@ -375,6 +382,9 @@ export default function KeywordResearchWorkbench() {
           </span>
         )}
         <div className="flex-1" />
+        {volumeStage && (
+          <span className="text-xs text-muted-foreground">{volumeStage}</span>
+        )}
         {clusterPhrases && (
         <button
           type="button"
