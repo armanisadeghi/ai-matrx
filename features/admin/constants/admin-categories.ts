@@ -604,6 +604,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Build a Kind",
+        description:
+          "Hand the admin builder agent a data structure; it builds and activates the whole content-ir kind end to end (schema, live component, skill, content blocks, activation) in one pass.",
+        iconName: "Boxes",
+        link: "/administration/kind-registry/build",
+        isNew: true,
+      },
+      {
         title: "Feature Docs Hub",
         description:
           "Browse synced FEATURE.md and README docs from the repo (admin.feature_docs).",
