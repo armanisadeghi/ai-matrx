@@ -70,6 +70,77 @@ export interface BrandListRow extends MarketingBrand {
   fact_count: number;
 }
 
+/**
+ * The human-authored editorial brand profile stored in `web.brand.profile`
+ * (jsonb, default `{}`). Flat by design: every field is an optional string or
+ * string array. This is the voice-of-the-client document downstream agents
+ * rely on — humans author it; agents only propose changes.
+ */
+export interface BrandProfile {
+  audience?: string;
+  voice_tone?: string;
+  positioning?: string;
+  value_props?: string[];
+  offerings?: string[];
+  service_area?: string;
+  competitors?: string[];
+  target_keywords?: string[];
+  content_guidelines?: string;
+  notes?: string;
+}
+
+const BRAND_PROFILE_STRING_FIELDS = [
+  "audience",
+  "voice_tone",
+  "positioning",
+  "service_area",
+  "content_guidelines",
+  "notes",
+] as const;
+
+const BRAND_PROFILE_LIST_FIELDS = [
+  "value_props",
+  "offerings",
+  "competitors",
+  "target_keywords",
+] as const;
+
+/**
+ * Safely narrow raw `web.brand.profile` jsonb into a `BrandProfile`. Never
+ * throws; non-conforming fields are dropped, empty strings/lists omitted.
+ */
+export function parseBrandProfile(raw: Json | null | undefined): BrandProfile {
+  if (raw === null || raw === undefined || !isJsonRecord(raw)) return {};
+  const profile: BrandProfile = {};
+  for (const key of BRAND_PROFILE_STRING_FIELDS) {
+    const value = raw[key];
+    if (typeof value === "string" && value.trim()) profile[key] = value.trim();
+  }
+  for (const key of BRAND_PROFILE_LIST_FIELDS) {
+    const value = raw[key];
+    if (!Array.isArray(value)) continue;
+    const items = value.flatMap((entry) =>
+      typeof entry === "string" && entry.trim() ? [entry.trim()] : [],
+    );
+    if (items.length) profile[key] = items;
+  }
+  return profile;
+}
+
+/** Serialize a `BrandProfile` for the `web.brand.profile` jsonb column. */
+export function brandProfileToJson(profile: BrandProfile): Json {
+  const record: { [key: string]: Json } = {};
+  for (const key of BRAND_PROFILE_STRING_FIELDS) {
+    const value = profile[key];
+    if (typeof value === "string" && value.trim()) record[key] = value.trim();
+  }
+  for (const key of BRAND_PROFILE_LIST_FIELDS) {
+    const value = profile[key];
+    if (Array.isArray(value) && value.length) record[key] = value;
+  }
+  return record;
+}
+
 /** Every user-editable brand field. If it's editable, it's HERE and in the editor. */
 export interface CreateBrandInput {
   organizationId: string;
@@ -83,6 +154,8 @@ export interface CreateBrandInput {
   notes: string | null;
   status: string;
   visibility: MarketingBrand["visibility"];
+  /** Serialized `BrandProfile` (via `brandProfileToJson`); omit for `{}`. */
+  profile?: Json;
 }
 
 export interface UpdateBrandInput {
@@ -101,6 +174,7 @@ export interface UpdateBrandInput {
       | "notes"
       | "status"
       | "visibility"
+      | "profile"
     >
   >;
 }

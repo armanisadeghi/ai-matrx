@@ -1547,7 +1547,7 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
 // ============================================================================
 
 const BRAND_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, profile";
 
 export async function listBrands(
   state: MatrxDataTableQueryState,
@@ -1956,6 +1956,7 @@ export async function createBrand(
       notes: input.notes,
       status: input.status,
       visibility: input.visibility,
+      ...(input.profile !== undefined ? { profile: input.profile } : {}),
     })
     .select(BRAND_COLUMNS)
     .single();

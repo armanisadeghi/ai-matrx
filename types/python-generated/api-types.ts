@@ -3228,6 +3228,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/keywords/research": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keyword Relationship Research
+         * @description Run the LSI research agent for one primary keyword, store the artifact,
+         *     ingest keywords + edges, and (by default) batch-fetch market volume.
+         */
+        post: operations["keyword_relationship_research_seo_keywords_research_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/keywords/volume-refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keyword Volume Refresh
+         * @description Fetch DataForSEO market data for phrases with a missing/stale
+         *     keyword_market row (30-day TTL); force_refresh bypasses the TTL.
+         */
+        post: operations["keyword_volume_refresh_seo_keywords_volume_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/collections": {
         parameters: {
             query?: never;
@@ -24066,6 +24108,135 @@ export interface components {
             is_default?: boolean;
         };
         /** HTTPValidationError */
+        /** KeywordResearchBody */
+        KeywordResearchBody: {
+            /** Primary Keyword */
+            primary_keyword: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Language
+             * @default en
+             */
+            language?: string;
+            /**
+             * Refresh Volume
+             * @default true
+             */
+            refresh_volume?: boolean;
+            /**
+             * Location Code
+             * @default 2840
+             */
+            location_code?: number;
+        };
+        /** KeywordResearchIngestSummary */
+        KeywordResearchIngestSummary: {
+            /** Primary Keyword Ids */
+            primary_keyword_ids?: string[];
+            /**
+             * Keywords Created
+             * @default 0
+             */
+            keywords_created?: number;
+            /**
+             * Keywords Already Existed
+             * @default 0
+             */
+            keywords_already_existed?: number;
+            /**
+             * Edges Written
+             * @default 0
+             */
+            edges_written?: number;
+            /**
+             * Edges Skipped Rejected
+             * @default 0
+             */
+            edges_skipped_rejected?: number;
+            /**
+             * Edges Skipped Self
+             * @default 0
+             */
+            edges_skipped_self?: number;
+        };
+        /** KeywordResearchResult */
+        KeywordResearchResult: {
+            /** Primary Keyword */
+            primary_keyword: string;
+            /** Research Doc Id */
+            research_doc_id: string;
+            /** Artifact */
+            artifact: {
+                [key: string]: unknown;
+            };
+            ingest: components["schemas"]["KeywordResearchIngestSummary"];
+            volume?: components["schemas"]["KeywordVolumeRefreshResult"] | null;
+        };
+        /** KeywordVolumeBatchReceipt */
+        KeywordVolumeBatchReceipt: {
+            /** Run Id */
+            run_id: string;
+            /** Keyword Count */
+            keyword_count: number;
+            /**
+             * Created Observations
+             * @default 0
+             */
+            created_observations?: number;
+            /**
+             * Existing Observations
+             * @default 0
+             */
+            existing_observations?: number;
+            /**
+             * From Cache
+             * @default false
+             */
+            from_cache?: boolean;
+        };
+        /** KeywordVolumeRefreshBody */
+        KeywordVolumeRefreshBody: {
+            /** Phrases */
+            phrases: string[];
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Language
+             * @default en
+             */
+            language?: string;
+            /**
+             * Location Code
+             * @default 2840
+             */
+            location_code?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
+        /** KeywordVolumeRefreshResult */
+        KeywordVolumeRefreshResult: {
+            /**
+             * Requested Phrases
+             * @default 0
+             */
+            requested_phrases?: number;
+            /**
+             * Skipped Fresh
+             * @default 0
+             */
+            skipped_fresh?: number;
+            /**
+             * Fetched Phrases
+             * @default 0
+             */
+            fetched_phrases?: number;
+            /** Batches */
+            batches?: components["schemas"]["KeywordVolumeBatchReceipt"][];
+        };
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
@@ -40978,6 +41149,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["matrx_seo__standalone__app__RunListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    keyword_relationship_research_seo_keywords_research_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordResearchBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordResearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    keyword_volume_refresh_seo_keywords_volume_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordVolumeRefreshBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordVolumeRefreshResult"];
                 };
             };
             /** @description Validation Error */

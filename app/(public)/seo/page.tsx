@@ -219,12 +219,12 @@ const categories: Category[] = [
       },
       {
         id: "lsi-keywords",
-        title: "LSI & Entity Finder",
+        title: "Keyword Research & Relationships",
         description:
-          "AI extracts the semantic entities and latent terms from top-ranking pages so your content covers the full topic graph.",
+          "AI maps a keyword's parents, children, variants and related terms, then pulls live search volume, CPC and demand trends.",
         icon: TrendingUp,
-        href: "/seo/lsi-keywords",
-        status: "coming-soon",
+        href: "/seo/keyword-research",
+        status: "live",
       },
       {
         id: "title-optimizer",
