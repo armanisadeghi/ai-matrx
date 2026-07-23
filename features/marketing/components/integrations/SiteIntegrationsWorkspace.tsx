@@ -389,6 +389,16 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               enabled: draft.pageSpeedInsights.enabled,
               status: providerStatusLabel("pageSpeedInsights"),
             },
+            cms: {
+              enabled: draft.cms.enabled,
+              // Same requiresResource/requiresCredential shape as the site
+              // status card (lib/site-status.ts): a CMS binding needs a
+              // resource reference but no credential UUID.
+              status: providerReferenceStatus(draft.cms, true, false).replace(
+                /_/g,
+                " ",
+              ),
+            },
             custom_providers: draft.customProviders.map((provider) => ({
               key: provider.key,
               label: provider.label,

@@ -27,11 +27,11 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "brand_context",
     label: "Brand context (XML)",
     description:
-      "Compact XML snapshot of the brand this work belongs to: identity (name, industry, description, website), the editorial brand profile (audience, voice, positioning, offerings, competitors, content guidelines — when the user has authored one), confirmed business facts, brand assets, social properties, and every managed site. Built by buildBrandContextXml (features/marketing/lib/surface-context.ts). Read this FIRST — it is the ground truth about the client. Empty during initial load.",
+      "Compact XML snapshot of the brand this work belongs to: identity (name, industry, description, website) and the editorial brand profile (audience, voice, positioning, offerings, competitors, content guidelines — when the user has authored one) are always embedded once loaded; confirmed business facts, brand assets, social properties, and the managed-site list are included when their data is loaded (always on the brand cockpit; on site pages, when previously fetched). A missing section means NOT LOADED HERE, never that the brand has none. Built by buildBrandContextXml (features/marketing/lib/surface-context.ts). Read this FIRST — it is the ground truth about the client. Empty during initial load.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 2500,
-    sortOrder: 200,
+    sortOrder: 205,
   },
   {
     name: "brand_profile",
@@ -42,7 +42,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 800,
     autoContext: false,
-    sortOrder: 210,
+    sortOrder: 215,
   },
 
   // ── Identity (300-349) ────────────────────────────────────────────────
@@ -76,7 +76,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
-    sortOrder: 600,
+    sortOrder: 605,
   },
   {
     name: "sites_summary",
@@ -87,7 +87,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 600,
     autoContext: false,
-    sortOrder: 610,
+    sortOrder: 615,
   },
   {
     name: "properties_summary",
@@ -98,7 +98,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 600,
     autoContext: false,
-    sortOrder: 620,
+    sortOrder: 625,
   },
 ];
 

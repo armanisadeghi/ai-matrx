@@ -28,6 +28,7 @@ import {
 } from "@/features/marketing/lib/crawl-reports";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 
 const REPORT_ICONS: Record<CrawlReportKey, LucideIcon> = {
   "response-codes": Route,
@@ -77,6 +78,7 @@ export function CrawlReportsIndex({ crawlId }: { crawlId: string }) {
   });
 
   return (
+    <CrawlSurfaceProvider crawlId={crawlId} crawl={crawl.data}>
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <CrawlSubnav crawl={crawl.data} />
       <section className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
@@ -167,5 +169,6 @@ export function CrawlReportsIndex({ crawlId }: { crawlId: string }) {
         </div>
       </div>
     </main>
+    </CrawlSurfaceProvider>
   );
 }

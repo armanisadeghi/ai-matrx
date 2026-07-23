@@ -378,7 +378,11 @@ export function PagesTable() {
             serp_ok: row.serp_ok,
             social_ok: row.social_ok,
             indexability_verdict: row.indexability_verdict,
+            sitemap_count: row.sitemap_count,
+            word_count: row.word_count,
             gsc_clicks_28d: row.gsc_clicks_28d,
+            gsc_impressions_28d: row.gsc_impressions_28d,
+            gsc_position_28d: row.gsc_position_28d,
           })),
         })
       }

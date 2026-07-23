@@ -24,7 +24,7 @@
  * Nested providers (e.g. split-pane notes) stack — the topmost wins.
  */
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import { useSyncExternalStore } from "react";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
@@ -42,7 +42,7 @@ export interface SurfaceRuntimeValue {
   isEditable?: boolean;
 }
 
-type RegistryEntry = { id: number; value: SurfaceRuntimeValue };
+type RegistryEntry = { id: number; depth: number; value: SurfaceRuntimeValue };
 
 let nextId = 0;
 let stack: RegistryEntry[] = [];
@@ -59,9 +59,26 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/** Imperative read — latest registered runtime, or null. */
+/**
+ * Imperative read — the DEEPEST registered runtime wins (registration
+ * recency breaks ties). Depth, not recency, decides: React fires passive
+ * effects child-first, so on any commit where a page-level provider and an
+ * ancestor layout provider both (re)register, the ancestor registers LAST —
+ * pure "latest wins" would let the layout's generic scope shadow the page's
+ * rich one (the exact inversion of the nested-provider contract).
+ */
 export function getSurfaceRuntime(): SurfaceRuntimeValue | null {
-  return stack.length > 0 ? stack[stack.length - 1]!.value : null;
+  let winner: RegistryEntry | null = null;
+  for (const entry of stack) {
+    if (
+      !winner ||
+      entry.depth > winner.depth ||
+      (entry.depth === winner.depth && entry.id > winner.id)
+    ) {
+      winner = entry;
+    }
+  }
+  return winner?.value ?? null;
 }
 
 function getServerSnapshot(): SurfaceRuntimeValue | null {
@@ -70,11 +87,15 @@ function getServerSnapshot(): SurfaceRuntimeValue | null {
 
 /**
  * Register a live runtime. Returns an unregister that only clears this entry
- * (safe under nested providers / remounts).
+ * (safe under nested providers / remounts). `depth` is the provider's nesting
+ * depth in the React tree (see `SurfaceRuntimeDepthContext`); deeper wins.
  */
-export function registerSurfaceRuntime(value: SurfaceRuntimeValue): () => void {
+export function registerSurfaceRuntime(
+  value: SurfaceRuntimeValue,
+  depth = 0,
+): () => void {
   const id = ++nextId;
-  stack = [...stack, { id, value }];
+  stack = [...stack, { id, depth, value }];
   emit();
   return () => {
     stack = stack.filter((e) => e.id !== id);
@@ -88,8 +109,17 @@ export function useSurfaceRuntime(): SurfaceRuntimeValue | null {
 }
 
 /**
- * Page-tree registration. Renders children unchanged; side-effect only.
- * `getScope` is held in a ref so identity churn does not thrash the registry.
+ * Nesting depth of the current provider subtree. Each SurfaceRuntimeProvider
+ * publishes `ownDepth = parentDepth + 1` so nested providers always register
+ * DEEPER than their ancestors — the registry resolves by depth, immune to
+ * effect-firing order (child effects run before parent effects).
+ */
+const SurfaceRuntimeDepthContext = createContext(0);
+
+/**
+ * Page-tree registration. Renders children unchanged aside from the depth
+ * context; `getScope` is held in a ref so identity churn does not thrash the
+ * registry.
  */
 export function SurfaceRuntimeProvider({
   children,
@@ -98,17 +128,27 @@ export function SurfaceRuntimeProvider({
   getScope,
   isEditable,
 }: SurfaceRuntimeValue & { children: ReactNode }) {
+  const depth = useContext(SurfaceRuntimeDepthContext) + 1;
   const getScopeRef = useRef(getScope);
-  getScopeRef.current = getScope;
+  useEffect(() => {
+    getScopeRef.current = getScope;
+  });
 
   useEffect(() => {
-    return registerSurfaceRuntime({
-      surfaceName,
-      surfaceLabel,
-      isEditable,
-      getScope: () => getScopeRef.current(),
-    });
-  }, [surfaceName, surfaceLabel, isEditable]);
+    return registerSurfaceRuntime(
+      {
+        surfaceName,
+        surfaceLabel,
+        isEditable,
+        getScope: () => getScopeRef.current(),
+      },
+      depth,
+    );
+  }, [surfaceName, surfaceLabel, isEditable, depth]);
 
-  return <>{children}</>;
+  return (
+    <SurfaceRuntimeDepthContext.Provider value={depth}>
+      {children}
+    </SurfaceRuntimeDepthContext.Provider>
+  );
 }

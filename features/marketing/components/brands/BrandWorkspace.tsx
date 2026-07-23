@@ -623,7 +623,6 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                       <div className="relative flex aspect-square items-center justify-center bg-card p-2">
                         {preview ? (
                           // Confirmed assets reference the brand's own public URLs.
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={preview}
                             alt={asset.title ?? asset.kind}

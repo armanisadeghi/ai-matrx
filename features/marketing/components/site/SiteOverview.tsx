@@ -59,6 +59,10 @@ import {
 import { InitializeProgress } from "@/features/marketing/components/site/InitializeProgress";
 import { getSite } from "@/features/marketing/data/service";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingSiteScope } from "@/features/surfaces/manifests/marketing-site.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import { buildSiteContextXml } from "@/features/marketing/lib/surface-context";
 import {
   parseInitialization,
   siteConnectionStatuses,
@@ -84,6 +88,7 @@ export function SiteOverview() {
   const overview = useSiteOverview(site.id);
   const hero = useSiteHeroScreenshot(site.id, site.homepage_screenshot_id);
   const pendingDiscovered = usePendingDiscoveredCount(site.brand_id);
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const [initPhase, setInitPhase] = useState<InitPhase>("idle");
   const [initError, setInitError] = useState<string | null>(null);
@@ -292,7 +297,55 @@ export function SiteOverview() {
     attributes: { site_id: site.id, failed_steps: init.stepErrors.length },
   });
 
+  // Overview is where the five site-level manifest values actually load, so
+  // this provider (deeper than the layout fallback) emits them. site_context
+  // is rebuilt WITH counts + crawl freshness — richer than the base version.
+  const getOverviewScope = () => {
+    const liveMetrics = overview.data;
+    const liveStatuses = siteConnectionStatuses(site);
+    const liveInit = parseInitialization(site);
+    const lastCrawlAt = liveMetrics?.latestCrawl?.started_at ?? undefined;
+    return createMarketingSiteScope({
+      ...getBaseValues(),
+      site_context: buildSiteContextXml({
+        site,
+        statuses: liveStatuses,
+        counts: liveMetrics
+          ? {
+              pages_total: liveMetrics.canonicalPages,
+              open_findings: liveMetrics.openFindings,
+            }
+          : undefined,
+        lastCrawlAt: lastCrawlAt ?? null,
+      }),
+      connection_statuses: Object.fromEntries(
+        liveStatuses.map((status) => [
+          status.key,
+          { state: status.state, detail: status.detail },
+        ]),
+      ),
+      initialization_state: site.initialized_at
+        ? {
+            initialized_at: site.initialized_at,
+            homepage_ok: liveInit.homepageOk,
+            sitemaps_found: liveInit.sitemapsFound,
+            screenshots_captured: liveInit.screenshotsCaptured,
+            discovered_total: liveInit.discoveredTotal,
+            step_errors: liveInit.stepErrors,
+          }
+        : undefined,
+      open_findings_total: liveMetrics?.openFindings,
+      pages_total: liveMetrics?.canonicalPages,
+      last_crawl_at: lastCrawlAt,
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-site"
+      surfaceLabel="Site overview"
+      getScope={getOverviewScope}
+    >
     <main className="h-full overflow-y-auto bg-textured px-3 pb-24 pt-3 sm:px-4 sm:pb-32 sm:pt-4">
       <div className="grid w-full gap-3">
         <SiteHero
@@ -436,6 +489,7 @@ export function SiteOverview() {
         </section>
       </div>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -481,7 +535,6 @@ function SiteHero({
               />
             ) : site.og_image_url ? (
               // The brand's own public social image is the fallback hero.
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={site.og_image_url}
                 alt=""

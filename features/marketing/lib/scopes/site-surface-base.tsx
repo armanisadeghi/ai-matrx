@@ -11,11 +11,10 @@
  *
  * Two consumers:
  *  - `MarketingSiteSurfaceProvider` (mounted by `MarketingSiteLayoutClient`)
- *    registers a route-accurate default provider for every site route, so
- *    the header Agents chrome resolves the right surface with the base
- *    scope even before a vertical wires richer values.
+ *    registers the honest `matrx-user/marketing-site` fallback for every
+ *    site route — never a vertical's surface name (see its doc comment).
  *  - Vertical workspaces mount their OWN nested `SurfaceRuntimeProvider`
- *    (topmost wins) and spread `getBaseValues()` into their surface's
+ *    (deeper wins) and spread `getBaseValues()` into their surface's
  *    typed scope helper alongside their surface-specific values.
  *
  * At trigger time only loaded data is emitted — the XML context values are
@@ -24,18 +23,24 @@
  */
 
 import { useCallback, type ReactNode } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { surfaceFromPathname } from "@/features/surfaces/utils/route-to-surface";
 import { createMarketingSiteScope } from "@/features/surfaces/manifests/marketing-site.manifest";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
-import { useBrand } from "@/features/marketing/data/hooks";
+import { marketingKeys, useBrand } from "@/features/marketing/data/hooks";
 import {
   buildBrandContextXml,
   buildSiteContextXml,
 } from "@/features/marketing/lib/surface-context";
 import { siteConnectionStatuses } from "@/features/marketing/lib/site-status";
-import { parseBrandProfile } from "@/features/marketing/types";
+import {
+  parseBrandProfile,
+  type BrandAsset,
+  type BrandProperty,
+  type BusinessFact,
+  type MarketingSite,
+} from "@/features/marketing/types";
 
 const MARKETING_SITE_SURFACE_NAME = "matrx-user/marketing-site" as const;
 
@@ -68,16 +73,45 @@ export function useMarketingSiteSurfaceBase(): {
   const brandId = params.brandId;
   const brand = useBrand(brandId);
   const brandRow = brand.data ?? null;
+  const queryClient = useQueryClient();
 
   const getBaseValues = useCallback((): MarketingSiteBaseValues => {
     const profile = brandRow ? parseBrandProfile(brandRow.profile) : {};
     const hasProfile = Object.keys(profile).length > 0;
+    // Opportunistic enrichment: the brand's confirmed truth (facts, assets,
+    // properties, sibling sites) rides along whenever the React Query cache
+    // already holds it (always after visiting the brand cockpit). Cache reads
+    // only — getScope must never fetch. The manifest description matches this
+    // contract: identity + profile always; confirmed truth when loaded.
+    const brandKey = [...marketingKeys.root, "brand", brandId] as const;
+    const facts = queryClient.getQueryData<BusinessFact[]>([
+      ...brandKey,
+      "facts",
+    ]);
+    const assets = queryClient.getQueryData<BrandAsset[]>([
+      ...brandKey,
+      "assets",
+    ]);
+    const properties = queryClient.getQueryData<BrandProperty[]>([
+      ...brandKey,
+      "properties",
+    ]);
+    const brandSites = queryClient.getQueryData<MarketingSite[]>([
+      ...brandKey,
+      "sites",
+    ]);
     return {
       brand_id: brandId,
       site_id: site.id,
       brand_name: brandRow?.name ?? undefined,
       brand_context: brandRow
-        ? buildBrandContextXml({ brand: brandRow, sites: [site] })
+        ? buildBrandContextXml({
+            brand: brandRow,
+            facts,
+            assets,
+            properties,
+            sites: brandSites?.length ? brandSites : [site],
+          })
         : undefined,
       brand_profile: hasProfile
         ? (profile as Record<string, unknown>)
@@ -89,32 +123,34 @@ export function useMarketingSiteSurfaceBase(): {
         statuses: siteConnectionStatuses(site),
       }),
     };
-  }, [site, brandRow, brandId]);
+  }, [site, brandRow, brandId, queryClient]);
 
   return { brandId, siteId: site.id, getBaseValues };
 }
 
 /**
  * Default provider for every route under
- * `/marketing/brands/[brandId]/sites/[siteId]`. Resolves the route-accurate
- * surface name (audit → marketing-audit, findings → marketing-findings, …)
- * so header bindings land on the right surface, while emitting the honest
- * base scope. Vertical workspaces override it by nesting their own provider.
+ * `/marketing/brands/[brandId]/sites/[siteId]`. Registers as
+ * `matrx-user/marketing-site` ONLY — the one surface whose contract the base
+ * scope actually fulfills. It must never claim a vertical's surface name: a
+ * child surface can carry required values (crawl_id, page_id, page_url) the
+ * base cannot supply, and "right name, thinned scope" is the silent-miss bug
+ * class this system exists to kill. Verticals mount their own nested provider
+ * (deeper wins in the registry) to claim their surface with a full scope;
+ * until one does, agents get the honest site surface — whose bindings still
+ * apply on every child via launch-time inheritance.
  */
 export function MarketingSiteSurfaceProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const pathname = usePathname();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
-  const surfaceName =
-    surfaceFromPathname(pathname) ?? MARKETING_SITE_SURFACE_NAME;
 
   return (
     <SurfaceRuntimeProvider
-      surfaceName={surfaceName}
-      surfaceLabel="Marketing"
+      surfaceName={MARKETING_SITE_SURFACE_NAME}
+      surfaceLabel="Marketing site"
       getScope={() => createMarketingSiteScope(getBaseValues())}
     >
       {children}

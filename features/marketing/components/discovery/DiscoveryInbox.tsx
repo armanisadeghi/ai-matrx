@@ -40,6 +40,7 @@ import {
   useDeleteDiscoveredItem,
   useDiscoveredItems,
   useDismissDiscoveredItem,
+  usePendingDiscoveredCount,
   useUndismissDiscoveredItem,
 } from "@/features/marketing/data/hooks";
 import {
@@ -136,6 +137,7 @@ export function DiscoveryInbox() {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const [status, setStatus] = useState<DiscoveredItemStatus>("pending");
   const items = useDiscoveredItems(site.brand_id, status);
+  const pendingCount = usePendingDiscoveredCount(site.brand_id);
 
   const grouped = useMemo(() => {
     const groups = new Map<string, DiscoveredItem[]>();
@@ -197,12 +199,15 @@ export function DiscoveryInbox() {
       surfaceName="matrx-user/marketing-discovery"
       surfaceLabel="Discovery"
       getScope={() => {
-        // Pending values are honest only when the Pending tab's data is the
-        // data actually loaded — other tabs load different rows.
+        // pending_count comes from the dedicated brand-scoped count query —
+        // never the loaded rows' length, which caps at the list query's
+        // limit and would lie above it. pending_items stays honest only when
+        // the Pending tab's data is the data actually loaded — other tabs
+        // load different rows.
         const pendingLoaded = status === "pending" && items.data !== undefined;
         return createMarketingDiscoveryScope({
           ...getBaseValues(),
-          pending_count: pendingLoaded ? rows.length : undefined,
+          pending_count: pendingCount.data,
           pending_items: pendingLoaded
             ? rows.slice(0, 30).map((item) => ({
                 guessed_kind: item.guessed_kind,

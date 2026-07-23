@@ -36,7 +36,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 2000,
-    sortOrder: 220,
+    sortOrder: 225,
   },
 
   // ── Identity (300-349) ────────────────────────────────────────────────
@@ -80,7 +80,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 600,
-    sortOrder: 400,
+    sortOrder: 405,
   },
   {
     name: "initialization_state",
@@ -90,7 +90,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 500,
-    sortOrder: 410,
+    sortOrder: 415,
     autoContext: false,
   },
 
@@ -103,7 +103,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
-    sortOrder: 600,
+    sortOrder: 635,
   },
   {
     name: "pages_total",
@@ -113,7 +113,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 5,
-    sortOrder: 610,
+    sortOrder: 645,
   },
   {
     name: "last_crawl_at",
@@ -123,7 +123,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 25,
-    sortOrder: 620,
+    sortOrder: 655,
   },
 ];
 

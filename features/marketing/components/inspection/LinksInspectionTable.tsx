@@ -13,6 +13,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { createMarketingLinksScope } from "@/features/surfaces/manifests/marketing-links.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
@@ -417,9 +418,15 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
     </main>
   );
 
-  // Crawl-scoped links stay on the authoritative `matrx-user/marketing-crawl`
-  // surface (registered by the crawl routes) — mount NO provider here.
-  if (crawlId) return content;
+  // Crawl-scoped links belong to the `matrx-user/marketing-crawl` surface —
+  // register it here (this page IS a crawl route), never marketing-links.
+  if (crawlId) {
+    return (
+      <CrawlSurfaceProvider crawlId={crawlId} crawl={crawl.data ?? null}>
+        {content}
+      </CrawlSurfaceProvider>
+    );
+  }
 
   return (
     <SurfaceRuntimeProvider

@@ -182,6 +182,9 @@ export function BatchesTable() {
               status: row.status,
               kind: row.kind,
               site: row.site?.domain ?? row.site_id,
+              provider: row.provider?.label ?? row.provider?.key ?? row.provider_id,
+              created_at: row.created_at,
+              completed_at: row.completed_at,
               error: row.error,
             })),
           }
