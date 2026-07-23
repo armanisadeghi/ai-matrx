@@ -36,6 +36,10 @@ import {
 import { DbKindComponentErrorBoundary } from "./DbKindComponentErrorBoundary";
 import { KindHtmlFrame } from "./KindHtmlFrame";
 import type { RunKindAction } from "../actions/useKindActionRunner";
+import type {
+  KindComponentUiOptions,
+  ResolveKindValue,
+} from "./dbKindComponentCache";
 
 /**
  * Safe fallback when no runner is supplied (bare test/SSR render): the action
@@ -58,6 +62,10 @@ export interface DbKindComponentImplProps {
    * "unavailable" runner so a bare render (tests/SSR) never needs a store.
    */
   runAction?: RunKindAction;
+  /** Return channel — set when mounted inside a Kind Request. */
+  onResolve?: ResolveKindValue;
+  /** Settings dictated by the mounting surface (e.g. selectionMode). */
+  uiOptions?: KindComponentUiOptions;
 }
 
 const screamedDefects = new Set<string>();
@@ -104,6 +112,8 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
   metadata,
   className,
   runAction = noopRunAction,
+  onResolve,
+  uiOptions,
 }) => {
   const generic = (
     <GenericStructuredBlock
@@ -164,6 +174,8 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
         kind={kind}
         config={resolution.config}
         runAction={runAction}
+        onResolve={onResolve}
+        uiOptions={uiOptions}
       />
     </DbKindComponentErrorBoundary>
   );

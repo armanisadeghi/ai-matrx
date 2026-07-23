@@ -75,6 +75,7 @@ import {
   type FeatureImageStyleValue,
 } from "../featureImageStyles";
 import { SourceResolverPanel } from "./SourceResolverPanel";
+import { TopicIdeaHelper } from "./TopicIdeaHelper";
 import {
   SOURCE_OPTIONS,
   LANGUAGE_OPTIONS,
@@ -457,6 +458,12 @@ export function GeneratorForm({
             />
           ) : null}
         </div>
+
+        {/* Topic-only: agent-assisted idea picker. Fills the topic field via
+            the existing setText; zero footprint for every other source. */}
+        {sourceKind === "topic" && (
+          <TopicIdeaHelper seedConcept={text} onPick={setText} />
+        )}
       </section>
 
       {/* ── 2. PROCESSING ─────────────────────────────────────────────── */}

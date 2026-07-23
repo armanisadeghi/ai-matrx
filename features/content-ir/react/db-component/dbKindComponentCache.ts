@@ -34,6 +34,26 @@ import type { JsonObject } from "@/types/json";
 import type { ComponentResolution } from "../../registry/component-registry";
 import type { RunKindAction } from "../actions/useKindActionRunner";
 
+/**
+ * Settings the MOUNTING UI dictates to a kind component — the standard,
+ * growing arg list every component honors (Arman, 2026-07-23). `selectionMode`
+ * is the first: it tells a component whether the surface wants the user to pick
+ * one value, many, or none (pure display). A component reads what it
+ * understands and ignores the rest; absent = its own default (usually display).
+ */
+export interface KindComponentUiOptions {
+  selectionMode?: "single" | "multiple" | "none";
+  [key: string]: unknown;
+}
+
+/**
+ * The return channel: how a kind component hands a chosen value back to the
+ * surface that mounted it (a Kind Request). The mirror of `runAction`
+ * (surface → agent); this is component → surface. Undefined in normal render
+ * (chat/notes) — the component simply doesn't offer selection there.
+ */
+export type ResolveKindValue = (value: unknown) => void;
+
 /** Props every compiled DB kind component receives. */
 export interface DbKindComponentRenderProps {
   /** The kind instance value — post-`props_transform` when one exists. */
@@ -49,6 +69,14 @@ export interface DbKindComponentRenderProps {
    * side-effect channel a sandboxed component gets; it reaches no data directly.
    */
   runAction: RunKindAction;
+  /**
+   * Present only when the component is mounted inside a Kind Request. Call it
+   * with the user's chosen value to hand that value back to the requesting
+   * surface (which resolves its promise). Undefined in normal render.
+   */
+  onResolve?: ResolveKindValue;
+  /** Settings the mounting surface dictates (e.g. `{ selectionMode: "single" }`). */
+  uiOptions?: KindComponentUiOptions;
 }
 
 export interface CompiledDbKindComponent {
