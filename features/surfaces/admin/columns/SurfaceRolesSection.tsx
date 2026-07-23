@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2, Users } from "lucide-react";
+import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
 import {
   Select,
@@ -59,6 +60,7 @@ export function SurfaceRolesSection({
   const { status, roles, refresh } = useSurfaceAgentRoles(surfaceName);
   const [agentNames, setAgentNames] = useState<Record<string, string>>({});
   const [busyRole, setBusyRole] = useState<string | null>(null);
+  const [open, setOpen] = useState(true);
 
   const roleList = Object.values(roles).sort(
     (a, b) => (a.role.sortOrder ?? 0) - (b.role.sortOrder ?? 0),
@@ -139,17 +141,45 @@ export function SurfaceRolesSection({
   if (roleList.length === 0) return null;
 
   return (
-    <div className="shrink-0 mx-3 mt-3 space-y-2">
-      {roleList.map((view) => (
-        <RoleCard
-          key={view.role.name}
-          view={view}
-          agent={agent}
-          names={agentNames}
-          busy={busyRole === view.role.name}
-          onMeModeChange={(mode) => void handleMeModeChange(view, mode)}
+    <div className="shrink-0 mx-3 mt-3 rounded-xl border border-border bg-card/60 shadow-sm overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-accent/30 transition-colors"
+      >
+        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+          <Users className="h-3.5 w-3.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+            Agent roles
+          </div>
+        </div>
+        <span className="shrink-0 text-xs font-medium text-foreground tabular-nums">
+          {roleList.length}
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0",
+            !open && "-rotate-90",
+          )}
         />
-      ))}
+      </button>
+
+      {open && (
+        <div className="max-h-[38vh] overflow-auto border-t border-border p-2.5 space-y-2">
+          {roleList.map((view) => (
+            <RoleCard
+              key={view.role.name}
+              view={view}
+              agent={agent}
+              names={agentNames}
+              busy={busyRole === view.role.name}
+              onMeModeChange={(mode) => void handleMeModeChange(view, mode)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
