@@ -131,7 +131,9 @@ export function useContainerLinks(
     setConversationResult((current) => ({
       key,
       files: current?.key === key ? current.files : [],
-      error: null,
+      // Keep the visible failure context while retrying so the same control
+      // can disable itself and show progress instead of disappearing.
+      error: current?.key === key ? current.error : null,
       loading: true,
     }));
     const result = await associationsService.listConversationFiles(containerId);
