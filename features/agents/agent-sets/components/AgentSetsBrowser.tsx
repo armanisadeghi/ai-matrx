@@ -7,11 +7,15 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Network, Plus, Search, Workflow } from "lucide-react";
+import { Network, Plus, Search, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import { useAgentSetsList } from "../hooks/useAgentSetsList";
 import { AgentSetCard } from "./AgentSetCard";
 import { CreateSetDialog } from "./CreateSetDialog";
@@ -39,52 +43,51 @@ export function AgentSetsBrowser() {
   const loading = status === "loading" && sets.length === 0;
   const empty = status === "ready" && sets.length === 0;
 
+  const headerActions: HeaderAction[] = [
+    { icon: "Plus", label: "New set", onPress: () => setCreateOpen(true) },
+    {
+      icon: "Workflow",
+      label: "Generate orchestrator",
+      onPress: () => setGenerateOpen(true),
+    },
+  ];
+
   return (
-    <div className="bg-textured flex h-[calc(100vh-2.5rem)] flex-col overflow-hidden">
-      {/* header */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3 pr-14">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/agents/all")}
-          aria-label="Back to agents"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Network className="h-4 w-4" />
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold text-foreground">Agent Sets</h1>
-            <p className="text-[11px] text-muted-foreground">
-              Orchestrators presiding over teams of agents
-            </p>
-          </div>
-        </div>
-
-        <div className="relative ml-auto hidden sm:block">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search sets…"
-            className="h-9 w-56 pl-8"
+    <>
+      <PageHeader>
+        <div className="flex w-full min-w-0 items-center">
+          <ChevronLeftTapButton
+            onClick={() => router.back()}
+            variant="transparent"
+            ariaLabel="Back"
           />
+          <Network className="ml-1 h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="ml-2 truncate text-sm font-semibold text-foreground">
+            Agent Sets
+          </span>
+          <div className="ml-auto flex items-center">
+            <HeaderActions actions={headerActions} sheetTitle="Agent sets" />
+          </div>
         </div>
-        <Button variant="outline" onClick={() => setCreateOpen(true)} className="gap-1.5">
-          <Plus className="h-4 w-4" />
-          New set
-        </Button>
-        <Button onClick={() => setGenerateOpen(true)} className="gap-1.5">
-          <Workflow className="h-4 w-4" />
-          Generate orchestrator
-        </Button>
-      </div>
+      </PageHeader>
 
-      {/* body */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {loading && (
+      <div className="bg-textured flex h-full flex-col overflow-hidden">
+        {/* search sub-toolbar — cleared below the transparent glass header */}
+        <div className="shrink-0 px-4 pb-3 pt-[var(--shell-header-h)]">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search sets…"
+              className="h-9 w-full pl-8"
+            />
+          </div>
+        </div>
+
+        {/* body */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {loading && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-44 rounded-xl" />
@@ -130,6 +133,7 @@ export function AgentSetsBrowser() {
             )}
           </div>
         )}
+        </div>
       </div>
 
       <CreateSetDialog
@@ -141,6 +145,6 @@ export function AgentSetsBrowser() {
         }}
       />
       <GenerateOrchestratorDialog open={generateOpen} onOpenChange={setGenerateOpen} />
-    </div>
+    </>
   );
 }
