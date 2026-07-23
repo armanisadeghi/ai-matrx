@@ -137,7 +137,11 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
   const Component = compiled.compiled.Component;
 
   return (
-    <DbKindComponentErrorBoundary kind={kind} fallback={generic}>
+    <DbKindComponentErrorBoundary
+      kind={kind}
+      resetSignal={resolution.updatedAt}
+      fallback={generic}
+    >
       <Component data={data} kind={kind} config={resolution.config} />
     </DbKindComponentErrorBoundary>
   );

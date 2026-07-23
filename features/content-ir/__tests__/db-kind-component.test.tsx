@@ -284,6 +284,64 @@ describe("DbKindComponentImpl — compile + render + error boundary", () => {
     consoleError.mockRestore();
   });
 
+  it("un-latches the error boundary when a NEW component version arrives (broke-then-fixed heals on re-render, not only on unmount)", () => {
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    // v1: a throwing component. updatedAt is the version signal.
+    componentRegistry.replaceDbRows([
+      dbRow({
+        kind: "k1_heal",
+        componentKey: "k1_heal_view",
+        isActive: true,
+        componentSource: THROWING_SOURCE,
+        updatedAt: "2026-01-01T00:00:00Z",
+      }),
+    ]);
+
+    const block = kindBlock("k1_heal", { title: "Heal" });
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let root: Root | null = null;
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <DbKindComponentImpl
+          content={block.content}
+          metadata={block.metadata}
+        />,
+      );
+    });
+    // Latched: fallback rendered, no working component marker.
+    expect(host.textContent).not.toContain("db-kind-demo");
+
+    // v2: the author fixes it — a working component under a NEW updatedAt.
+    componentRegistry.replaceDbRows([
+      dbRow({
+        kind: "k1_heal",
+        componentKey: "k1_heal_view",
+        isActive: true,
+        componentSource: REACT_SOURCE,
+        updatedAt: "2026-01-01T00:05:00Z",
+      }),
+    ]);
+    act(() => {
+      root?.render(
+        <DbKindComponentImpl
+          content={block.content}
+          metadata={block.metadata}
+        />,
+      );
+    });
+
+    // Healed on re-render alone — the boundary un-latched on the version change.
+    expect(host.querySelector('[data-testid="db-kind-demo"]')).not.toBeNull();
+
+    act(() => root?.unmount());
+    host.remove();
+    consoleError.mockRestore();
+  });
+
   it("config.flavor='html' renders the sandboxed iframe with the kind-data slot and NO allow-same-origin", () => {
     componentRegistry.ingestDbRows([
       dbRow({
