@@ -9,6 +9,8 @@ vision: [/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md, /Us
 
 The system-of-record (evidence, counts, acceptance) is `common-docs/content-ir-system/FEATURE.md`. THIS doc is the working handoff. **Read the Vision section before touching anything** — it is the ground truth and outranks every summary, including this one.
 
+> Sibling handoff: `docs/handoffs/kind-authoring-and-interactivity.md` owns the **authoring experience** (admin builder, alive/interactive components, the action registry, Kind Request). THIS doc owns the **platform rollout** (enforcement flips, tool_ui subsumption, workflows, bulk-bind). Keep them non-overlapping.
+
 ## Vision — Arman's words (verbatim; never paraphrase these into agent-speak)
 
 - **What this system IS:** "THE ONLY reason we have built all of this content_ir stuff is so that users can create whatever they want for inputs, outputs, streaming, tools, workflows, and more and have it all instantly render for them in react, our extension, matrx local, and our soon to come mobile app. **THIS IS the system. It's not a feature, it is it!**"
