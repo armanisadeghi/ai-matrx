@@ -20,7 +20,8 @@
  * yourself (insert/update _schema_migrations with source='matrx-frontend', the
  * filename, and the SHA-256 of the file), or from the aidream repo run:
  *     python db/apply_migrations.py --source matrx-frontend
- * (which applies and records in one step). See the finalize-and-ship skill.
+ * (which applies and records in one step). `./scripts/release.sh` runs that
+ * applier automatically before bumping — see the finalize-and-ship skill.
  *
  *   pnpm check:migrations            # loud, non-blocking (exit 0) — for hooks
  *   pnpm check:migrations --strict   # exit 1 when anything is unapplied — for CI

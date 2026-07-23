@@ -17,7 +17,7 @@ export async function loadAdminOrganizationDirectory(): Promise<AdminOrganizatio
       .schema("iam")
       .from("organizations")
       .select(
-        "id, name, slug, description, website, created_at, created_by, is_personal, is_system",
+        "id, name, abbreviation, slug, description, website, created_at, created_by, is_personal, is_system",
       )
       .order("is_personal", { ascending: true })
       .order("name", { ascending: true }),
@@ -89,6 +89,7 @@ export async function loadAdminOrganizationDirectory(): Promise<AdminOrganizatio
     return {
       id: row.id,
       name: row.name,
+      abbreviation: row.abbreviation,
       slug: row.slug,
       description: row.description ?? null,
       website: row.website ?? null,

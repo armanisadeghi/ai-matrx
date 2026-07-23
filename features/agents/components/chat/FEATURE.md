@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-07-14`
+**Last updated:** `2026-07-23`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -98,6 +98,12 @@ A failed turn is **kept in history** (never deleted) and recovered with a non-de
    - last user message **optimistic** (immediate "Failed to fetch", never persisted) → re-send: drop the optimistic bubble, re-seed input, `executeInstance()` (routes turn-1/turn-2+ correctly).
 4. **Edit a previous message + resubmit** is a separate, existing path (`UserActionBar` "Edit & resubmit" → fork or `overwriteAndResend`); it re-runs with `user_input`, so it is unaffected by the retry contract.
 
+High-severity non-fatal stream warnings are also user-visible.
+`AgentAssistantMessage` reads `selectHighWarnings(requestId)` and renders each
+one as an `AssistantWarning` below the turn, including an optional technical
+details disclosure. A recoverable mirror failure therefore never exists only
+in Redux/devtools while the assistant appears to stop.
+
 > **Backend dependency (as of 2026-05-24):** production aidream does NOT yet accept `retry:true` (it 422s `user_input` required) and persists failed turns without `metadata.error` / with `is_visible_to_model=true`. The FE is built to the guide and degrades gracefully; end-to-end retry needs the aidream deploy. See the `project_retry_backend_gap` memory.
 
 ### Flow 5 — Client-tool suspend → submit → resume
@@ -132,6 +138,7 @@ is temporarily offline.
 - **Chat does NOT own a sidebar or header — the app shell does, exactly like `/agents/[id]/run`.** History is a Large-Route menu (`ChatSidebarMenu`) in `route-menu-registry`; controls (compact picker + `+`) are injected into `#shell-header-center` via `ChatRunHeader` + `<PageHeader>`. The shell's `RouteMenuSlot` auto-switches the sidebar to the chat-history ("local") view and renders the **switch button to the Main Menu** — on desktop and in the mobile drawer (so the picker/`+` sit between the app hamburger and the avatar, never overlapping). **Never** rebuild a bespoke chat sidebar/header: the old `ChatPageShell` did, which overlapped the global header on mobile and created a 768–1023px dead zone (both gone). To change chat sidebar/header behavior, edit `ChatSidebarMenu` / `ChatRunHeader`, or the shell (`features/shell/components/sidebar/`).
 - **The agent picker is COMPACT (`AgentListDropdown compact`), never full-width.**
 - **Never send while the mic is recording or finishing transcription.** Mid-voice submit drops the trailing audio and leaves the recorder running. `SmartAgentInput*` + `NewChatLandingInput` disable the send button and Enter while `isRecording || isTranscribing` (`AgentMicrophoneButton.onRecordingStateChange` → `voiceBusy`). Stop recording first; send re-enables when the final transcript lands.
+- **Local file feedback precedes network work.** Paste and drag/drop both route through `useUploadAgentResources`: every file inserts a pending resource synchronously, images use a bounded local object-URL preview with a visible loader, and successful uploads hand off to the canonical `useAttachResource` mapping. Drag handling lives on the shared `SmartInputFileDropTarget` used by the standard stacked/single-row inputs, `/chat/new`, and the compact assistant; do not add a textarea-only drop path.
 - **A reachable Local engine is not automatically a saved-agent runtime.** Direct local-PC agent routing requires the engine health payload to advertise `agent_execution_v1`; older/incomplete builds fall back to AIDream. This gate prevents picker metadata from ever being mistaken for an executable agent definition. HTTP 422 labels also follow the structured server code: only `invalid_uuid` says “Invalid conversation ID”; agent-definition/model failures say “Agent execution failed.”
 
 ---
@@ -161,6 +168,8 @@ is temporarily offline.
 
 ## Change log
 
+- `2026-07-23` — codex: **high-severity stream warnings are no longer silent.** `AgentAssistantMessage` now renders the request's high warnings with a compact amber `AssistantWarning` and expandable code/system detail. This covers recoverable post-turn failures such as `chat_mirror_flush_failed`; fatal reasoning-only model stops arrive through the existing `AssistantError` path.
+- `2026-07-23` — codex: **Smart input file paste/drop now acknowledges files instantly.** The shared `useUploadAgentResources` lifecycle stages every dropped or pasted file before the first upload await; images render their local pixels under a loader, other files render pending attachment tiles, and successful uploads hand off to the existing canonical `useAttachResource` mapping (including durable document associations). All active Smart input composer shells use the same react-dropzone wrapper, including drag-active chrome and removal-during-upload protection.
 - `2026-07-23` — codex: **web and extension file attachments converge on one authorized edge.** The canonical record is the existing role-less `file → conversation` association. The shared frontend association service now routes that pair through `conversation_file_add/remove`, which requires editor authority over both resources before creating an access-conveying edge and preserves the full metadata object (including `resource_policy`). Existing `processed_document → conversation` rows remain read-only legacy inputs and convert through the established file-edge path when edited.
 - `2026-07-18` — codex: durable document attachments now always persist the
   canonical `file → conversation` reference and expose the shared dynamic

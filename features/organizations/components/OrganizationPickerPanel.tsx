@@ -7,10 +7,11 @@
 // sanctioned switcher (chooseActiveOrganization); the default switch persists
 // the preference. Active org = Check; default org = Star badge.
 
-import { Building2, Check, Star } from "lucide-react";
+import { Check, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { DefaultOrgSwitch } from "./DefaultOrgSwitch";
+import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 
 export function OrganizationPickerPanel() {
   const {
@@ -56,11 +57,10 @@ export function OrganizationPickerPanel() {
                     isActive && "bg-primary/10 font-medium text-primary",
                   )}
                 >
-                  <Building2
-                    size={15}
-                    strokeWidth={1.75}
+                  <OrganizationAbbreviation
+                    abbreviation={org.abbreviation}
                     className={cn(
-                      "shrink-0",
+                      "h-5 min-w-8 rounded border px-1 text-[9px]",
                       isActive ? "text-primary" : "text-muted-foreground",
                     )}
                   />

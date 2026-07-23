@@ -14,6 +14,7 @@ import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useA
 import { DefaultOrgSwitch } from "@/features/organizations/components/DefaultOrgSwitch";
 import { MenuGroup } from "./MenuGroup";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
+import { OrganizationAbbreviation } from "@/features/organizations/components/OrganizationAbbreviation";
 
 export default function UserMenuOrgSection() {
   const isMounted = useIsMounted();
@@ -65,6 +66,10 @@ export default function UserMenuOrgSection() {
                     "bg-primary/10 font-medium text-primary [&>svg:last-child]:text-primary",
                 )}
               >
+                <OrganizationAbbreviation
+                  abbreviation={org.abbreviation}
+                  className="h-5 min-w-8 rounded border border-border bg-muted px-1 text-[9px] text-muted-foreground"
+                />
                 <span className="min-w-0 flex-1 truncate text-left">
                   {org.name}
                 </span>

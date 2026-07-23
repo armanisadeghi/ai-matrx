@@ -83,5 +83,5 @@ Halt and ask the user instead of pushing through when:
 | Migration verify + apply/record | `pnpm check:migrations`; CLAUDE.md → "Database migrations" |
 | Type-fix rules | `type-safety` skill (`.claude/skills/type-safety/`) |
 | Doctrine (new primitives) | `pnpm check:doctrine`; `PRINCIPLES.md` |
-| Pre-release gates | `pnpm check:release-gates` or `./scripts/release.sh` (strict; spinner + step labels) |
+| Pre-release gates | `pnpm check:release-gates` or `./scripts/release.sh` (each gate announces itself; advisory by default) |
 | Versioned release | `pnpm ship "msg"` |

@@ -9,14 +9,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { updateOrganization } from "../service";
-import { validateOrgName, type Organization, type OrgRole } from "../types";
+import {
+  validateOrganizationAbbreviation,
+  validateOrgName,
+  type Organization,
+  type OrgRole,
+} from "../types";
 import { InlineMediaRef, useFileAsset } from "@/features/files";
 import { format } from "date-fns";
 import { ImageCropModal } from "@/components/official/ImageCropModal";
 import { folderForOrg } from "@/features/files";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useOrgSettingsLayoutRefresh } from "./OrgSettingsLayoutContext";
+import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 
 interface GeneralSettingsProps {
   organization: Organization;
@@ -54,6 +61,7 @@ export function GeneralSettings({
 
   // Form state
   const [name, setName] = useState(organization.name);
+  const [abbreviation, setAbbreviation] = useState(organization.abbreviation);
   const [description, setDescription] = useState(
     organization.description || "",
   );
@@ -62,16 +70,24 @@ export function GeneralSettings({
   // Durable reference to the backing cld_files row. Source of truth for
   // rendering; logoUrl is the back-compat fallback for legacy / external URLs.
   const [logoFileId, setLogoFileId] = useState(organization.logoFileId || "");
+  const organizationVersion = `${organization.id}:${organization.updatedAt}`;
+  const [formOrganizationVersion, setFormOrganizationVersion] = useState(
+    organizationVersion,
+  );
 
-  // Reset form when organization changes
-  useEffect(() => {
+  // Reset local edits when the parent swaps in a freshly loaded organization.
+  // React permits this guarded render-time adjustment and restarts the render
+  // before children observe stale values.
+  if (formOrganizationVersion !== organizationVersion) {
+    setFormOrganizationVersion(organizationVersion);
     setName(organization.name);
+    setAbbreviation(organization.abbreviation);
     setDescription(organization.description || "");
     setWebsite(organization.website || "");
     setLogoUrl(organization.logoUrl || "");
     setLogoFileId(organization.logoFileId || "");
     setIsEditing(false);
-  }, [organization]);
+  }
 
   useEffect(() => {
     if (isEditing) {
@@ -85,6 +101,7 @@ export function GeneralSettings({
   // Check if form has changes
   const hasChanges =
     name !== organization.name ||
+    abbreviation !== organization.abbreviation ||
     description !== (organization.description || "") ||
     website !== (organization.website || "") ||
     logoUrl !== (organization.logoUrl || "") ||
@@ -94,7 +111,10 @@ export function GeneralSettings({
   const nameValidation = name
     ? validateOrgName(name)
     : { valid: false, error: "Name is required" };
-  const isFormValid = nameValidation.valid;
+  const abbreviationValidation =
+    validateOrganizationAbbreviation(abbreviation);
+  const isFormValid =
+    nameValidation.valid && abbreviationValidation.valid;
 
   // Prefer the durable file_id (re-resolved fresh through the file handler)
   // over the frozen logoUrl. Falls back to logoUrl for legacy / external URLs.
@@ -114,6 +134,7 @@ export function GeneralSettings({
     try {
       const result = await updateOrganization(organization.id, {
         name,
+        abbreviation,
         description,
         website: website || undefined,
         logoUrl: logoUrl || undefined,
@@ -126,6 +147,7 @@ export function GeneralSettings({
         }
         try {
           await dispatchThunk(invalidateAndRefetchFullContext());
+          await dispatchThunk(ensureScopeTree({ refresh: true }));
         } catch {
           // Hierarchy refresh is best-effort; org UI already updated from API row
         }
@@ -148,6 +170,7 @@ export function GeneralSettings({
   // Handle cancel
   const handleCancel = () => {
     setName(organization.name);
+    setAbbreviation(organization.abbreviation);
     setDescription(organization.description || "");
     setWebsite(organization.website || "");
     setLogoUrl(organization.logoUrl || "");
@@ -210,6 +233,67 @@ export function GeneralSettings({
           ) : (
             <p className="text-sm font-medium">{name}</p>
           )}
+        </div>
+
+        {/* Abbreviation */}
+        <div className="space-y-2">
+          <Label
+            htmlFor={
+              isEditing && !organization.isPersonal
+                ? `${fieldId}-abbreviation`
+                : undefined
+            }
+          >
+            Abbreviation *
+          </Label>
+          {isEditing && !organization.isPersonal ? (
+            <>
+              <Input
+                id={`${fieldId}-abbreviation`}
+                aria-invalid={!abbreviationValidation.valid}
+                aria-describedby={`${fieldId}-abbreviation-help${
+                  abbreviationValidation.valid
+                    ? ""
+                    : ` ${fieldId}-abbreviation-error`
+                }`}
+                value={abbreviation}
+                onChange={(event) =>
+                  setAbbreviation(
+                    event.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z]/g, "")
+                      .slice(0, 3),
+                  )
+                }
+                required
+                minLength={2}
+                maxLength={3}
+                disabled={isSaving}
+                className="w-24 font-semibold uppercase tracking-wider"
+              />
+              {!abbreviationValidation.valid && (
+                <p
+                  id={`${fieldId}-abbreviation-error`}
+                  className="text-xs text-red-600 dark:text-red-400"
+                >
+                  {abbreviationValidation.error}
+                </p>
+              )}
+            </>
+          ) : (
+            <OrganizationAbbreviation
+              abbreviation={abbreviation}
+              className="h-7 min-w-10 rounded-md border border-border bg-muted px-2 text-xs"
+            />
+          )}
+          <p
+            id={`${fieldId}-abbreviation-help`}
+            className="text-xs text-muted-foreground"
+          >
+            {organization.isPersonal
+              ? "Personal workspaces always use ME."
+              : "2–3 letters used anywhere the full organization name will not fit."}
+          </p>
         </div>
 
         {/* Slug (Read-only) */}
@@ -326,7 +410,10 @@ export function GeneralSettings({
               />
             ) : (
               <div className="h-16 w-16 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
-                <span className="text-xs text-muted-foreground">No logo</span>
+                <OrganizationAbbreviation
+                  abbreviation={abbreviation}
+                  className="text-sm text-muted-foreground"
+                />
               </div>
             )}
             {isEditing && (

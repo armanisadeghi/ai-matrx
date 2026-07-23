@@ -15,9 +15,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { createOrganization } from "../service";
-import { generateSlug, validateOrgName, validateOrgSlug } from "../types";
+import {
+  generateOrganizationAbbreviation,
+  generateSlug,
+  validateOrganizationAbbreviation,
+  validateOrgName,
+  validateOrgSlug,
+} from "../types";
 import { useSlugAvailability } from "../hooks";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { CloudFolders } from "@/features/files";
@@ -50,6 +57,7 @@ export function CreateOrgModal({
 
   // Form state
   const [name, setName] = useState("");
+  const [abbreviation, setAbbreviation] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
@@ -58,18 +66,12 @@ export function CreateOrgModal({
 
   // Manual slug edit tracking
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
+  const [isAbbreviationManuallyEdited, setIsAbbreviationManuallyEdited] =
+    useState(false);
 
   // Slug availability check with debouncing
   const { available: slugAvailable, checking: checkingSlug } =
     useSlugAvailability(slug, 500);
-
-  // Auto-generate slug from name when name changes (if not manually edited)
-  useEffect(() => {
-    if (name && !isSlugManuallyEdited) {
-      const generatedSlug = generateSlug(name);
-      setSlug(generatedSlug);
-    }
-  }, [name, isSlugManuallyEdited]);
 
   // Validation
   const nameValidation = name
@@ -78,11 +80,16 @@ export function CreateOrgModal({
   const slugValidation = slug
     ? validateOrgSlug(slug)
     : { valid: true, error: "" };
+  const abbreviationValidation = abbreviation
+    ? validateOrganizationAbbreviation(abbreviation)
+    : { valid: false, error: "Abbreviation is required" };
 
   const isFormValid =
     name &&
+    abbreviation &&
     slug &&
     nameValidation.valid &&
+    abbreviationValidation.valid &&
     slugValidation.valid &&
     slugAvailable &&
     !checkingSlug;
@@ -92,12 +99,14 @@ export function CreateOrgModal({
     if (!isOpen) {
       setTimeout(() => {
         setName("");
+        setAbbreviation("");
         setSlug("");
         setDescription("");
         setWebsite("");
         setLogoUrl("");
         setLogoFileId("");
         setIsSlugManuallyEdited(false);
+        setIsAbbreviationManuallyEdited(false);
       }, 200);
     }
   }, [isOpen]);
@@ -116,6 +125,7 @@ export function CreateOrgModal({
     try {
       const result = await createOrganization({
         name,
+        abbreviation,
         slug,
         description,
         website: website || undefined,
@@ -208,7 +218,18 @@ export function CreateOrgModal({
                 !nameValidation.valid ? `${fieldId}-name-error` : undefined
               }
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                const nextName = e.target.value;
+                setName(nextName);
+                if (!isSlugManuallyEdited) {
+                  setSlug(generateSlug(nextName));
+                }
+                if (!isAbbreviationManuallyEdited) {
+                  setAbbreviation(
+                    generateOrganizationAbbreviation(nextName),
+                  );
+                }
+              }}
               placeholder="e.g., Acme Corporation"
               required
               autoComplete="organization"
@@ -227,6 +248,55 @@ export function CreateOrgModal({
             )}
             <p className="text-xs text-muted-foreground">
               {name.length}/50 characters
+            </p>
+          </div>
+
+          {/* Abbreviation */}
+          <div className="space-y-2">
+            <Label htmlFor={`${fieldId}-abbreviation`} className="required">
+              Abbreviation *
+            </Label>
+            <Input
+              id={`${fieldId}-abbreviation`}
+              aria-invalid={!abbreviationValidation.valid}
+              aria-describedby={`${fieldId}-abbreviation-help${
+                abbreviationValidation.valid
+                  ? ""
+                  : ` ${fieldId}-abbreviation-error`
+              }`}
+              value={abbreviation}
+              onChange={(event) => {
+                setAbbreviation(
+                  event.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z]/g, "")
+                    .slice(0, 3),
+                );
+                setIsAbbreviationManuallyEdited(true);
+              }}
+              placeholder="ACM"
+              required
+              minLength={2}
+              maxLength={3}
+              disabled={isSubmitting}
+              className="w-24 font-semibold uppercase tracking-wider"
+            />
+            {!abbreviationValidation.valid && (
+              <p
+                id={`${fieldId}-abbreviation-error`}
+                className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400"
+              >
+                <AlertCircle className="h-3 w-3" />
+                {abbreviationValidation.error}
+              </p>
+            )}
+            <p
+              id={`${fieldId}-abbreviation-help`}
+              className="text-xs text-muted-foreground"
+            >
+              2–3 letters used anywhere the full organization name will not
+              fit.
+              {!isAbbreviationManuallyEdited && " Auto-generated from name."}
             </p>
           </div>
 
@@ -369,6 +439,3 @@ export function CreateOrgModal({
     </Dialog>
   );
 }
-
-// Helper to add cn utility
-import { cn } from "@/lib/utils";

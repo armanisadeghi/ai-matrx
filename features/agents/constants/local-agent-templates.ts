@@ -9,7 +9,7 @@ export const TEMPLATE_DATA: Omit<Partial<AgentDefinition>, "id"> = {
       role: "system",
       content: [
         {
-          text: "You're a very helpful assistant.\n\nMake sure you understand the user's request and then generate a {{response_format}} response.\n\nYou have the ability to search the web, but only use it when necessary.",
+          text: "You're a very helpful assistant.\n\nMake sure you understand the user's request and then generate a {{response_format}} response.",
           type: "text",
         },
       ],
@@ -59,7 +59,10 @@ export const TEMPLATE_DATA: Omit<Partial<AgentDefinition>, "id"> = {
     reasoning_effort: "minimal",
     reasoning_summary: "always",
   },
-  tools: ["b61e7926-2067-4936-94f7-799045d5d26e"],
+  // Keep the starter tool-free. Catalog tools can be added in the builder;
+  // pinning a registry UUID here makes agent creation fail if that tool is
+  // retired or removed.
+  tools: [],
   customTools: [],
   contextSlots: [],
   category: null,

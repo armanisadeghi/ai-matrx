@@ -26,6 +26,7 @@ function toTaskPriority(
 export type HierarchyOrg = {
   id: string;
   name: string;
+  abbreviation: string;
   slug: string;
   description: string | null;
   logo_url: string | null;
@@ -122,7 +123,7 @@ export const hierarchyService = {
       .schema("iam")
       .from("organizations")
       .select(
-        "id, name, slug, description, logo_url, is_personal, settings, created_at",
+        "id, name, abbreviation, slug, description, logo_url, is_personal, settings, created_at",
       )
       .in("id", orgIds);
     if (error) throw error;
@@ -252,6 +253,7 @@ export const hierarchyService = {
         childCount: 0,
         meta: {
           slug: org.slug,
+          abbreviation: org.abbreviation,
           is_personal: org.is_personal,
           role: org.role,
           created_at: org.created_at,

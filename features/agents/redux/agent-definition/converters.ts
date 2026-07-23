@@ -22,6 +22,7 @@
 
 import type { Database } from "@/types/database.types";
 import { parseCustomTools } from "@/features/agents/redux/agent-definition/parse-custom-tools";
+import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
 import { stripNullish } from "@/utils/supabase/payload";
 import type { SkillConfig } from "@/features/skills/types";
 import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
@@ -269,7 +270,7 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     settings: sanitizeServerSettings(
       agent.settings,
     ) as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["settings"],
-    tools: agent.tools,
+    tools: sanitizeAgentToolIds(agent.tools, "agentDefinitionToInsert"),
 
     ui_gates:
       agent.uiGates as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["ui_gates"],
@@ -339,7 +340,12 @@ export function agentDefinitionToUpdate(
     update.settings = sanitizeServerSettings(
       partial.settings,
     ) as unknown as Database["agent"]["Tables"]["definition"]["Update"]["settings"];
-  if (partial.tools !== undefined) update.tools = partial.tools;
+  if (partial.tools !== undefined) {
+    update.tools = sanitizeAgentToolIds(
+      partial.tools,
+      "agentDefinitionToUpdate",
+    );
+  }
 
   if (partial.uiGates !== undefined)
     update.ui_gates =

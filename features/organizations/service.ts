@@ -37,6 +37,7 @@ import {
   OperationResult,
   validateOrgName,
   validateOrgSlug,
+  validateOrganizationAbbreviation,
   validateEmail,
   generateSlug,
   toOrgRole,
@@ -55,8 +56,16 @@ export async function createOrganization(
   options: CreateOrganizationOptions,
 ): Promise<OrganizationResult> {
   try {
-    const { name, slug, description, logoUrl, logoFileId, website, settings } =
-      options;
+    const {
+      name,
+      abbreviation,
+      slug,
+      description,
+      logoUrl,
+      logoFileId,
+      website,
+      settings,
+    } = options;
 
     // Validate
     const nameValidation = validateOrgName(name);
@@ -67,6 +76,12 @@ export async function createOrganization(
     const slugValidation = validateOrgSlug(slug);
     if (!slugValidation.valid) {
       return { success: false, error: slugValidation.error };
+    }
+
+    const abbreviationValidation =
+      validateOrganizationAbbreviation(abbreviation);
+    if (!abbreviationValidation.valid) {
+      return { success: false, error: abbreviationValidation.error };
     }
 
     // Check slug availability
@@ -80,6 +95,7 @@ export async function createOrganization(
     // create an ownerless organization or name a different initial owner.
     const { data: org, error: orgError } = await supabase.rpc("org_create", {
       p_name: name,
+      p_abbreviation: abbreviation,
       p_slug: slug,
       p_description: description,
       p_logo_url: logoUrl,
@@ -149,6 +165,16 @@ export async function updateOrganization(
         return { success: false, error: validation.error };
       }
       updateData.name = updates.name;
+    }
+
+    if (updates.abbreviation !== undefined) {
+      const validation = validateOrganizationAbbreviation(
+        updates.abbreviation,
+      );
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
+      }
+      updateData.abbreviation = updates.abbreviation;
     }
 
     if (updates.description !== undefined)
@@ -847,6 +873,7 @@ function transformOrganizationFromDb(dbRecord: OrganizationRow): Organization {
   return {
     id: dbRecord.id,
     name: dbRecord.name,
+    abbreviation: dbRecord.abbreviation,
     slug: dbRecord.slug,
     description: dbRecord.description,
     logoUrl: dbRecord.logo_url,

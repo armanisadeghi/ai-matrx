@@ -20,6 +20,7 @@ import { AgentTextarea } from "./AgentTextarea";
 import { InputActionButtons } from "./InputActionButtons";
 import { ConversationContextRail } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
+import { SmartInputFileDropTarget } from "./SmartInputFileDropTarget";
 import {
   smartExecute,
   cancelExecution,
@@ -147,9 +148,11 @@ export function SmartAgentInputStacked({
   }
 
   return (
-    <div
+    <SmartInputFileDropTarget
+      conversationId={conversationId}
+      uploadRoot={uploadRoot}
+      uploadPath={uploadPath}
       className={cn(shellClassName, "px-2.5 pt-2 pb-1.5 gap-1")}
-      data-agent-input-shell
     >
       {/* Conversation context rail — surfaces the working document, scratchpad,
           agent lists, and active context so they're openable without scrolling
@@ -194,6 +197,6 @@ export function SmartAgentInputStacked({
         onVoiceBusyChange={setVoiceBusy}
         extraRightControls={extraRightControls}
       />
-    </div>
+    </SmartInputFileDropTarget>
   );
 }

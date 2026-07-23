@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-07-22`
+**Last updated:** `2026-07-23`
 
 ---
 
@@ -54,7 +54,7 @@ No new table or Redux slice is owned by this feature.
 
 ### Organization → users
 
-1. The Organizations tab lists every shared, personal, and system organization, including organizations with zero memberships.
+1. The Organizations tab lists every shared, personal, and system organization, including organizations with zero memberships; each row carries the canonical 2–3 letter abbreviation from `iam.organizations`.
 2. Selecting an organization shows every active member with role and join date.
 3. A member action pivots back to every organization for that user.
 
@@ -98,4 +98,5 @@ No new table or Redux slice is owned by this feature.
 
 ## Change log
 
+- `2026-07-23` — Codex: organization projections and the directory table now include the canonical compact abbreviation alongside name and slug.
 - `2026-07-22` — Codex: added the reciprocal user ↔ organization admin directory, inline account membership visibility, guarded membership management, and audited super-admin database mutation path.

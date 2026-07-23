@@ -302,10 +302,20 @@ export function OrganizationsAdminClient() {
       accessorKey: "name",
       header: "Organization",
       cell: (organization) => (
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium">{organization.name}</div>
-          <div className="truncate text-[11px] text-muted-foreground">
-            {organization.slug}
+        <div className="flex min-w-0 items-center gap-2">
+          <Badge
+            variant="secondary"
+            className="min-w-9 justify-center px-1.5 font-mono text-[10px]"
+          >
+            {organization.abbreviation}
+          </Badge>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium">
+              {organization.name}
+            </div>
+            <div className="truncate text-[11px] text-muted-foreground">
+              {organization.slug}
+            </div>
           </div>
         </div>
       ),

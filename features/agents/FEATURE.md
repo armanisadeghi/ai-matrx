@@ -2,7 +2,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-07-18`
+**Last updated:** `2026-07-23`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -147,6 +147,15 @@ All state lives under `features/agents/redux/`. The four layers:
 
 A write-time sanitizer in `agent-definition/converters.ts` **strips** those keys from `settings` on every save (loud `console.warn` if it fires — a writer is mis-routing). `voice_id` / `realtime_tools` / `tts_voice` / `multi_speaker` / `audio_format` / `output_format` are real params and **stay** in `settings`. **Both tables move together** — `agx_version` runs most executions and loads through the same backend loader; every column add + backfill + the snapshot **triggers** + the **RPCs** (`agx_get_version_snapshot` / `agx_promote_version` / `agx_duplicate_agent` / `agx_duplicate_version` / `agx_get_execution_full`) hardcode the column list, so update all of them or a column silently won't version.
 
+Tool assignment is fail-safe at both write boundaries. The shared frontend
+`sanitizeAgentToolIds` guard removes malformed UUIDs before PostgREST can cast
+the `uuid[]`. The database `_sanitize_definition_tool_references` trigger then
+removes well-formed IDs whose `tool.definition` row is missing, inactive, or
+deleted, emitting a warning whenever it repairs a write. It runs before the
+version snapshot trigger. Invalid tool input therefore creates/saves the agent
+without that tool; it must never fail the surrounding route or preserve the bad
+assignment in a new version.
+
 ### Layer 2 — App Context (external)
 
 | Redux key    | Location                              | Role                                                                              |
@@ -229,6 +238,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-23` — **Invalid agent tools became non-fatal at every write boundary.** The manual starter no longer pins a retired tool UUID; shared frontend conversion strips malformed UUID syntax before PostgREST casts `uuid[]`; and the live `agent.definition` trigger now removes missing, inactive, or deleted tool references with a loud warning instead of raising `23503`. The sanitizer runs before version snapshots, covering manual creation, imports, saves, templates, duplicates, promotions, and server/admin writers. Also retired the focused table's forbidden project/task association-mirror triggers and project FK after confirming/backfilling canonical edges.
 - `2026-07-23` — **Durable document chips now use viewer-aware attachment reads and explicit policy replacement.** Cross-org viewers of an explicitly shared conversation receive its canonical file attachments through `conversation_files`, while legacy processed-document edges remain visible through the general association inventory. Re-attaching a file no longer erases a concurrent `resource_policy`; only the policy editor and its rollback path opt into full metadata replacement. Transient inventory failures keep last-known chips visible and render an explicit retry control, so active server context never disappears silently from the composer.
 - `2026-07-22` — **Two-tier server-side agent search (`agx_search`).** Paginated data REQUIRES a server search: filtering only what the client happened to load answers "no results" for agents that were merely never fetched — a wrong answer, not a missing feature. One RPC, two tiers: **tier 1** (default) matches name / description / category / tags / model / type / id / shared-by email; **tier 2** (`p_deep`, opt-in via the "Prompts" toggle) adds the agent's own `messages` prompt content. Tier 2 is a strict superset and a prompt hit scores **50** — below every tier-1 field — so deep results can only ever append BELOW the obvious matches, never bury a name match. SQL weights **mirror `features/agents/search/score.ts`; change one, change both** or the list reshuffles when the server responds. Results merge **additively** through the same `mergeAgentListRows` path as a list fetch (`searchAgentsServer` thunk) — nothing is replaced or evicted, local matches keep rendering throughout. Wired into `useAgentConsumer`, so **every** agent surface gets it, not just the gallery. Because the local scorer cannot see prompt content, `serverMatchedIds` on the consumer lets a server hit survive the local filter — without it the server would return tier-2 matches and the UI would filter them straight back out. `ORDER BY` ends in `id` (total order) so paging search results cannot drop rows either. Verified live: exact UUID → the agent; "mitochondria" → 0 tier-1, 2 tier-2, ids matching the DB exactly. `migrations/agx_search_two_tier.sql`.
 - `2026-07-22` — **`agx_get_list` unstable pagination fixed (agents were missing from search).** The RPC ordered by `is_favorite DESC, updated_at DESC` — not a total order — so each `LIMIT/OFFSET` page re-sorted independently and rows were duplicated onto one page and skipped from another. Paging a 365-agent account 100-at-a-time yielded only **306 distinct ids**; the ~59 dropped agents never entered Redux, so the client-side search could not find them while `/agents/[id]/build` (a direct `agent.definition` read) worked normally. Fix: append `id` as a unique tiebreaker (`migrations/agx_get_list_stable_pagination.sql`) — **do not remove it**. Only bites above one page, so it scaled with agent count. Same defect class audited across all paginated RPCs; see FOUND_DEFECTS D82 for the unrelated findings that audit surfaced.

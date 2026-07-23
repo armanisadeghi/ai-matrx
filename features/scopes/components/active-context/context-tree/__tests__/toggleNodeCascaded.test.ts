@@ -14,6 +14,7 @@ const orgs: OrgNode[] = [
   {
     id: "org-1",
     name: "Acme",
+    abbreviation: "ACM",
     slug: "acme",
     is_personal: false,
     role: "member",
@@ -56,6 +57,7 @@ const orgs: OrgNode[] = [
   {
     id: "org-2",
     name: "Other",
+    abbreviation: "OTH",
     slug: "other",
     is_personal: false,
     role: "member",

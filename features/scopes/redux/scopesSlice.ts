@@ -644,7 +644,7 @@ export default scopesSlice.reducer;
 export const scopesTreePolicy = definePolicy<ScopesState>({
   sliceName: "scopesTree",
   preset: "warm-cache",
-  version: 1, // Bump destroys client caches (no migration hooks yet).
+  version: 2, // v2 adds the required organization abbreviation field.
   broadcast: {
     actions: ["scopesTree/treeFetchFulfilled", "scopesTree/scopesReset"],
   },

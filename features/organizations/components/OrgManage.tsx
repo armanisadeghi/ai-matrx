@@ -52,6 +52,7 @@ import { OrgScopeTree } from "./OrgScopeTree";
 import { OrgModuleSettings } from "./OrgModuleSettings";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 import { OrganizationVaultSection } from "@/features/secrets/components/OrganizationVaultSection";
+import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 
 interface OrgManageProps {
   organization: Organization;
@@ -168,7 +169,10 @@ export function OrgManage({
                   rounded="lg"
                   fallbackIcon={
                     <div className="w-full h-full bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center text-white text-xl font-bold">
-                      {displayOrganization.name?.[0]?.toUpperCase() ?? "?"}
+                      <OrganizationAbbreviation
+                        abbreviation={displayOrganization.abbreviation}
+                        className="text-sm"
+                      />
                     </div>
                   }
                   alt={displayOrganization.name}
@@ -179,6 +183,10 @@ export function OrgManage({
                   <h1 className="text-xl font-bold text-foreground truncate">
                     {displayOrganization.name}
                   </h1>
+                  <OrganizationAbbreviation
+                    abbreviation={displayOrganization.abbreviation}
+                    className="h-5 min-w-8 rounded border border-border bg-muted px-1.5 text-[10px] text-muted-foreground"
+                  />
                   {displayOrganization.isPersonal && (
                     <Badge variant="secondary">Personal</Badge>
                   )}

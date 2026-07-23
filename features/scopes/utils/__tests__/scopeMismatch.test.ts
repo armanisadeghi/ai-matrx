@@ -122,6 +122,7 @@ describe("buildScopeDisplayItems", () => {
     org1: {
       id: "org1",
       name: "Org",
+      abbreviation: "ORG",
       slug: "org",
       is_personal: false,
       role: "owner",

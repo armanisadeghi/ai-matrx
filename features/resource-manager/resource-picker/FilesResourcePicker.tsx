@@ -46,6 +46,7 @@ import {
   getFilePreviewProfile,
   useCloudTree,
   useFileMutation,
+  useInfiniteWindow,
 } from "@/features/files";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
@@ -97,6 +98,7 @@ type FileSort = "updated" | "name" | "size";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const SEARCH_RESULT_LIMIT = 20;
+const PICKER_PAGE_SIZE = 12;
 
 /** Empty set reused when the PDF Extractor filter is inactive. */
 const EMPTY_PROCESSED_FILE_IDS = new Set<string>();
@@ -237,7 +239,6 @@ function FileRow({ file, onSelect }: FileRowProps) {
         iconSize={14}
         rounded="rounded-md"
         preferAssetThumbnail={false}
-        allowSourceFallback={false}
         className="h-10 w-10 shrink-0 border border-border/50"
       />
       <div className="flex-1 min-w-0">
@@ -277,7 +278,6 @@ function FileGridTile({ file, onSelect }: FileGridTileProps) {
           iconSize={24}
           rounded="rounded-none"
           preferAssetThumbnail={false}
-          allowSourceFallback={false}
           className="absolute inset-0 h-full w-full"
         />
       </div>
@@ -303,23 +303,53 @@ function FileListOrGrid({
   onSelect,
   className,
 }: FileListOrGridProps) {
+  const { visibleCount, hasMore, sentinelRef, loadMore } = useInfiniteWindow({
+    total: files.length,
+    initial: PICKER_PAGE_SIZE,
+    pageSize: PICKER_PAGE_SIZE,
+    resetKey: files,
+  });
+  const visibleFiles = files.slice(0, visibleCount);
+
   if (files.length === 0) return null;
 
   if (viewMode === "grid") {
     return (
-      <div className={cn("grid grid-cols-3 gap-1.5 px-1", className)}>
-        {files.map((file) => (
-          <FileGridTile key={file.id} file={file} onSelect={onSelect} />
-        ))}
+      <div className={className}>
+        <div className="grid grid-cols-3 gap-1.5 px-1">
+          {visibleFiles.map((file) => (
+            <FileGridTile key={file.id} file={file} onSelect={onSelect} />
+          ))}
+        </div>
+        {hasMore ? (
+          <button
+            ref={sentinelRef}
+            type="button"
+            onClick={loadMore}
+            className="mt-1.5 w-full rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            Show more files
+          </button>
+        ) : null}
       </div>
     );
   }
 
   return (
     <div className={className}>
-      {files.map((file) => (
+      {visibleFiles.map((file) => (
         <FileRow key={file.id} file={file} onSelect={onSelect} />
       ))}
+      {hasMore ? (
+        <button
+          ref={sentinelRef}
+          type="button"
+          onClick={loadMore}
+          className="w-full rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          Show more files
+        </button>
+      ) : null}
     </div>
   );
 }

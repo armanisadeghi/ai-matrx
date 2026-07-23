@@ -27,6 +27,7 @@ import type {
   OrganizationInvitationWithOrg,
   OrgRole,
 } from "@/features/organizations/types";
+import { generateOrganizationAbbreviation } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
 import { InlineMediaRef, fileIdToMediaRef } from "@/features/files";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -56,15 +57,7 @@ export default function AcceptInvitationPage() {
     useState<OrganizationInvitationWithOrg | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Load invitation details
-  useEffect(() => {
-    loadInvitation();
-  }, [token]);
-
   const loadInvitation = async () => {
-    setLoading(true);
-    setError(null);
-
     try {
       const {
         data: { user },
@@ -123,6 +116,9 @@ export default function AcceptInvitationPage() {
         ? {
             id: invitationData.targetId,
             name: invitationData.targetName,
+            abbreviation: generateOrganizationAbbreviation(
+              invitationData.targetName,
+            ),
             slug: "",
             createdAt: "",
             updatedAt: "",
@@ -152,6 +148,13 @@ export default function AcceptInvitationPage() {
       setLoading(false);
     }
   };
+
+  // Load invitation details
+  useEffect(() => {
+    // The loader's state updates occur only after async auth/database reads.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadInvitation();
+  }, [token]);
 
   // Handle accept invitation
   const handleAccept = async () => {

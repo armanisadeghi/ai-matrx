@@ -44,8 +44,9 @@ export function OrganizationList() {
 
   // Filter organizations based on search
   const filteredOrgs = searchTerm
-    ? filterAndSortBySearch(organizations, searchTerm, [
+      ? filterAndSortBySearch(organizations, searchTerm, [
         { get: (o) => o.name, weight: "title" },
+        { get: (o) => o.abbreviation, weight: "title" },
         { get: (o) => o.slug, weight: "subtitle" },
         { get: (o) => o.description, weight: "body" },
       ])

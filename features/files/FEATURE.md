@@ -2,13 +2,13 @@
 
 **Status:** ✅ Phase 11 complete. Legacy system deleted, cloud-files is the only file system in the app.
 **Owner:** Files migration team.
-**Last updated:** 2026-07-22.
+**Last updated:** 2026-07-23.
 
 This is the live architecture doc for the canonical file management system under `features/files/`. File bytes live in S3 and metadata lives in Postgres; the browser never talks to an object-store SDK.
 
 > **Cross-repo system-of-record — the file BACKEND is now a standalone service:** `/Users/armanisadeghi/code/common-docs/matrx-files-service/FEATURE.md`. The aidream file layer was extracted into the independent `matrx-files` microservice (deployed to EC2 2026-07-13). Default production browser traffic remains on aidream unless `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`. The canonical API selector may route exact standalone-owned paths to `matrx-files` when an admin switches all services to localhost or explicitly pins Files; broader file-adjacent routes remain on aidream. Read the system-of-record before any file-backend-facing change.
 
-If you're modifying anything in this feature, **also update this doc and [migration/INVENTORY.md](migration/INVENTORY.md) in the same change.** Stale docs cascade across parallel agents.
+If you're modifying anything in this feature, **also update this doc in the same change.** Stale docs cascade across parallel agents.
 
 ---
 
@@ -189,10 +189,16 @@ components/
 │   ├── DialogShell.tsx
 │   └── DrawerShell.tsx
 │
-└── pickers/              # opinionated reusable dialogs
-    ├── FilePicker.tsx
+└── pickers/              # shared imperative hosts + folder/save destinations
+    ├── CloudFilesPickerHost.tsx
     ├── FolderPicker.tsx
     └── SaveAsDialog.tsx
+
+The one file-selection UI is
+[`FilesResourcePicker`](../resource-manager/resource-picker/FilesResourcePicker.tsx).
+It is embedded directly in compact surfaces and hosted by
+`CloudFilesPickerHost` for imperative/window use; never create another file
+picker beside it.
 
 agent-context/            # surface wiring for matrx-user/files (agent context system)
 └── buildFilesContextData.ts  # PURE: live browser state → createFilesScope() + FILES_CONTEXT_MENU_PROPS
@@ -454,6 +460,7 @@ Do not violate. If you're tempted, update this doc first with the reasoning.
 10. **Renderable image/file URLs are centrally cached** — use `useFileSrc` (or `fileHandler.use(...).as({ kind: "html_src" })` from non-React code), which routes through the handler's resolver + expiry-wheel. Do not call `/files/{id}/url` directly from image or thumbnail UI; signed URLs must be reused while valid and refreshed when expired.
 11. **Reads hit Supabase directly, never Python** — `processed_documents`, `cld_*`, and other RLS-protected tables are read with supabase-js (RLS is the boundary). Python is reserved for compute / file bytes / the non-PostgREST `rag` schema / cross-service work — never a proxy for a row the browser can read. Adding a `getJson('/files/...')` for plain table data is a regression. See [docs/SERVER_SIDE_REQUESTS.md](../../docs/SERVER_SIDE_REQUESTS.md).
 12. **Docs updated in the same change as code.**
+13. **A file picker must show selectable image pixels, with bounded work.** `FilesResourcePicker` renders through `MediaThumbnail` (which resolves owned image bytes through the handler when no backend thumbnail is already present) and windows every list/grid segment in 12-item pages via `useInfiniteWindow`. Never fix request volume by replacing image thumbnails with generic icons; lower the mounted page size instead.
 
 ---
 
@@ -479,6 +486,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-07-23 — Cloud file picker thumbnails restored with bounded pagination.** The Smart Agent / canonical `FilesResourcePicker` had explicitly disabled both asset and source fallback, forcing image files to generic icons in list and grid view. It now renders owned images through `MediaThumbnail`'s handler-backed, self-healing source fallback and mounts only 12 files per segment at a time through the existing `useInfiniteWindow` primitive. The sentinel/button reveals another 12 on demand, so image selection is visual without triggering signing work for the full tree.
 - **2026-07-22 — Canonical multi-service environment selection.** The shell's main
   Production/Localhost action now moves file-byte requests together with aidream, scraper,
   and SEO. Exact standalone-owned routes use the local files target during a global-local
@@ -493,7 +501,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 - **2026-07-18 — Public image links are directly embeddable.** The canonical copied file URL is now the clean `https://files.matrxserver.com/share/{token}` route. It serves safe media inline, so the exact same string works in Markdown (`![alt](url)`), `<img src>`, browser navigation, and third-party unfurls. Explicit download controls use `/share/{token}/download?inline=false`; old `/download` links stay compatible. The standalone `matrx-files` package gained the missing byte route and regression tests.
 
-- **2026-07-16 — Smart Agent Cloud Files picker search and browse reliability.** `FilesResourcePicker` debounces and cancels a metadata-only, RLS-protected Supabase query against `files.files` instead of filtering the hydrated Recents/tree cache or calling the Python `/files/search` endpoint. The initial recent/search window is capped at 20 records, and its compact filter row has the canonical PDF Extractor predicate (`application/pdf` or `image/*`) plus PDFs, text, markdown, code, photos, videos, audio, data, and other. Dense picker rows do not invoke the asset or signed-URL resolvers: they render only an already-known thumbnail URL or the canonical file icon, avoiding an asset/signing request per row and never fetching file bytes. Expanding a folder whose children have not yet been cached dispatches `loadFolderContents`, so the picker no longer presents unloaded folders as empty. `MediaThumbnail` also no longer attempts to render `Asset.primary_url` / `original` as an image when no thumbnail variant exists; those source URLs can be non-image bytes, so the canonical file icon fallback remains error-free.
+- **2026-07-16 — Smart Agent Cloud Files picker search and browse reliability.** `FilesResourcePicker` debounces and cancels a metadata-only, RLS-protected Supabase query against `files.files` instead of filtering the hydrated Recents/tree cache or calling the Python `/files/search` endpoint. The initial recent/search result set is capped at 20 records, and its compact filter row has the canonical PDF Extractor predicate (`application/pdf` or `image/*`) plus PDFs, text, markdown, code, photos, videos, audio, data, and other. Expanding a folder whose children have not yet been cached dispatches `loadFolderContents`, so the picker no longer presents unloaded folders as empty. `MediaThumbnail` also no longer attempts to render `Asset.primary_url` / `original` as an image when no thumbnail variant exists; those source URLs can be non-image bytes, so the canonical file icon fallback remains error-free. The former rule suppressing source thumbnail resolution was superseded on 2026-07-23 by bounded 12-item render pagination.
 
 - **2026-07-15 — Wave F: share links unified onto the canonical system.** `features/files/api/share-links.ts` (legacy `files.fn_*_share_link` RPCs) deleted; the `createShareLink` / `loadShareLinks` / `revokeShareLink` (renamed from `deactivateShareLink`) thunks now use `utils/permissions/shareLinks.ts` over `platform.share_links`; `CloudShareLink.permissionLevel` is `viewer|editor`; realtime repointed to `platform.share_links`; landing pages are `/s/{token}` (legacy `/share/[token]` + `/files/share/[token]` routes deleted); `files.share_links` graveyarded. Full detail: [handler/FEATURE.md](handler/FEATURE.md) Change log + `features/sharing/FEATURE.md`.
 

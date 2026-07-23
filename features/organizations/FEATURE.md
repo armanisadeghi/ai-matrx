@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-07-19`
+**Last updated:** `2026-07-23`
 
 > Combined doc for `features/organizations/` and `features/invitations/`. Orgs are the multi-tenant primitive; invitations are the flow that admits users to orgs (and, in mirrored form, to projects). Architecture mirrors `features/projects/`.
 
@@ -37,7 +37,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 **Hooks** (`features/organizations/hooks.ts`)
 
 - `useUserOrganizations()` — current user's orgs with role + member counts; sorted personal-first
-- `useActiveOrganizationPicker()` — canonical hook for global active-org switchers (user menu, header reminder); reads `appContextSlice`, lists orgs from the scope tree, writes via `chooseActiveOrganization`
+- `useActiveOrganizationPicker()` — canonical hook for global active-org switchers (user menu, header reminder); reads `appContextSlice`, lists orgs (including their compact abbreviation) from the scope tree, writes via `chooseActiveOrganization`
 - `useOrganization(orgId)` — single org by id
 - `useOrganizationOperations()` — `create`, `update`, `remove`
 - `useOrganizationMembers(orgId)` — members with user profile
@@ -65,6 +65,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `features/organizations/components/OrgResourceDetail.tsx` — the per-resource page body (team view + your-own).
 - `features/organizations/components/OrgManage.tsx` — the single-page Manage shell (replaced tabbed `OrgSettings`); identity header + sticky jump-nav + sections, including the shared-secret `OrganizationVaultSection`. Owns its single scroll container (the settings layout is now a passthrough provider — see `OrgSettingsLayoutClient`).
 - `features/organizations/components/OrgScopeTree.tsx` — read-only scope-type→scope tree (no items) for the Manage Scopes section, with edit links.
+- `features/organizations/components/OrganizationAbbreviation.tsx` — canonical compact org identity mark. Renders the database-backed 2–3 letter value in cards, pickers, headers, and logo fallbacks instead of recalculating initials at each callsite.
 - `features/organizations/components/OrgModuleSettings.tsx` — **live** per-module org-rule matrix (members-can-add, needs-approval, scopeable, auto-ingest, default access). Loads/saves via `features/organizations/orgModuleSettings.ts` → `org_module_settings` (admin-gated `set_org_module_setting` RPC). Members-can-add + needs-approval are enforced server-side in `share_resource_with_org`; the rest are saved for upcoming enforcement.
 - `features/industries/components/OrgIndustriesSection.tsx` (rendered in `OrgManage.tsx`) — manage the org's **industry** memberships (`public.org_industries`). Industry is a platform taxonomy that gates [Shared Knowledge Resources](../rag/FEATURE.md#shared-knowledge-resources) and (later) seeds scope templates; **org owner/admin** (or Matrx super-admin) edits via `industry_assign_org` / `industry_unassign_org`; members see read-only. See [`features/industries/FEATURE.md`](../industries/FEATURE.md).
 - `components/ui/context-menu.tsx` — radix right-click menu primitive (added for resource rows; reusable app-wide).
@@ -94,7 +95,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 
 **Database tables** (Supabase)
 
-- `iam.organizations` — `id, name, slug (unique), description, logo_url, website, created_by, is_personal, settings, created_at, updated_at`. RLS: members can SELECT; owners/admins can UPDATE; only owners DELETE.
+- `iam.organizations` — `id, name, abbreviation, slug (unique), description, logo_url, website, created_by, is_personal, settings, created_at, updated_at`. `abbreviation` is 2–3 uppercase ASCII letters, intentionally non-unique; personal orgs are always `ME`. RLS: members can SELECT; owners/admins can UPDATE; only owners DELETE.
 - `iam.memberships` — canonical membership for orgs + projects (`container_type` / `container_id`). Sole chokepoint: `membershipsService` → `mbr_*` RPCs. **No direct client grant.**
 - `iam.invitations` — canonical invitations for orgs + projects (`target_type` / `target_id`). Sole chokepoint: `invitationsService` → `inv_*` RPCs. **No direct client grant** — every read/write goes through `inv_list` / `inv_create` / `inv_accept` / `inv_revoke` / `inv_resend` / `inv_for_me` / `inv_get_by_token`; server email routes use manager-guarded `inv_get_managed`.
 - `workspace.projects` — project rows, scoped by `organization_id`
@@ -107,6 +108,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `OrganizationMember`, `OrganizationMemberWithUser`
 - `OrganizationInvitation`, `OrganizationInvitationWithOrg`
 - `CreateOrganizationOptions`, `UpdateOrganizationOptions`, `InviteMemberOptions`
+- `generateOrganizationAbbreviation()` / `validateOrganizationAbbreviation()` — shared derivation + validation; the database trigger is the final authority
 
 **Permission helpers** (pure, in `types.ts`)
 
@@ -121,10 +123,10 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 
 ### (a) Create an org — creator becomes owner
 
-1. UI: `CreateOrgModal` collects name + slug. `validateOrgName`, `validateOrgSlug` run client-side; `useSlugAvailability` debounces server check.
+1. UI: `CreateOrgModal` collects name + abbreviation + slug. The abbreviation is derived from meaningful name words but remains editable; `validateOrgName`, `validateOrganizationAbbreviation`, and `validateOrgSlug` run client-side; `useSlugAvailability` debounces server check.
 2. `createOrganization()` in `service.ts`:
    - Validates + checks `isSlugAvailable(slug)`.
-   - Calls `org_create`, which derives `created_by` from `auth.uid()`.
+   - Calls `org_create`, which derives `created_by` from `auth.uid()` and inserts the abbreviation atomically with the row.
    - The RPC inserts the non-personal `iam.organizations` row and canonical
      `iam.memberships` owner row in one transaction.
 3. Returns `OrganizationResult`. Caller refreshes `useUserOrganizations`.
@@ -185,6 +187,7 @@ The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer aga
 ## Invariants & gotchas
 
 - **Slug is globally unique, URL-safe, and lowercase.** `isSlugAvailable()` runs before insert; DB also has a unique constraint. Slug is not in `UpdateOrganizationOptions` — treat as immutable.
+- **Abbreviation is compact identity, not a key.** It is always 2–3 uppercase ASCII letters and is deliberately not unique. Shared/system orgs start with deterministic initials and owners/admins may edit them. Personal organizations are fixed to `ME`; the database trigger normalizes every insert/update path and constraints enforce both rules.
 - **Every org must have at least one owner.** `updateMemberRole` and `removeMember` block the last-owner case explicitly (pre-check + select-count of `role = 'owner'`). `leaveOrganization` just calls `removeMember(self)` so the same guard applies — a sole owner cannot leave their own org.
 - **Personal orgs (`is_personal = true`) cannot be deleted.** `deleteOrganization` pre-checks and returns `error: 'Cannot delete personal organization'`. Every user gets a personal org at signup via the `on_auth_user_created` trigger on `auth.users`, which calls `public.create_personal_organization()`, which delegates to the idempotent `public.ensure_personal_organization(uuid)` RPC. The trigger does NOT block user creation on failure — failures land in `public.system_personal_org_failures` (super-admin readable) for detection + repair. The `ensure_personal_organization(uuid)` RPC is callable by `authenticated` and `service_role`; the frontend may call it defensively if a missing personal org is ever detected.
 - **Invitation tokens expire in 7 days.** Minted by `inv_create` / refreshed by `inv_resend`. Expiry is enforced in the accept RPC and checked client-side on the accept page.
@@ -238,6 +241,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-07-23` — **Canonical organization abbreviations shipped end-to-end.** Added required `iam.organizations.abbreviation` with deterministic backfill for all 162 live organizations; all 154 personal workspaces use the fixed contextual label `ME`, while shared/system orgs derive meaningful 2–3 letter initials (editable by owner/admin). A trigger protects every insert path, format/personal checks enforce the invariant, and `org_create` accepts the value atomically. Generated types, CRUD forms/services, scope-tree org nodes/cache, route metadata, search, cards, workspace/settings logo fallbacks, active-org pickers, and the super-admin directory now carry/render it through the shared `OrganizationAbbreviation` primitive. Migration: `migrations/20260723220951_organization_abbreviation.sql`.
 - `2026-07-19` — **Invitation reads now match the manager-only DB boundary.** `useUserConnections` no longer scans invitations by default: pending-invite contact discovery requires one exact organization id and checks owner/admin + non-personal eligibility before calling `inv_list`. The three general contact consumers (messaging, task assignee, sharing) now load members/conversations only; only `InvitationManager` opts into its current org. Personal orgs no longer render the forbidden Invitations section. Removed the hidden list hook inside both org/project invitation mutation hooks, eliminating the second mount-time query and the duplicate/triple post-mutation refreshes. Added a permission-matrix regression test.
 - `2026-07-19` — **Resource surfaces unified on ONE colored, role-grouped visual language; org page keeps a single grid.** The canonical `AssociationCardGrid` (`features/scopes/components/associations/`) now groups its cards by **content role** (Utilities / Sources / Outputs / Sources & Outputs / Workspaces) with the same `CONTENT_ROLES` accents the org `OrgResourceRoleSection` tiles use — role dot + title + tagline per section, and every `AssociationCard` gets the role accent bar + tinted icon chip (card size unchanged). The grid was **removed from `OrgWorkspace`** — the org home showed both it and the Resources tile grid, two competing answers to the same question; the association grid now lives only where attaching is the job (scope type + scope). See `features/scopes/FEATURE.md` (§Association cards).
 - `2026-07-19` — Added Organization Vault to Manage: default all-member use access without reveal, optional per-member restrictions, admin rotation/deletion/sandbox controls, and member contribution with drift detection/manual sync. See [`features/secrets/FEATURE.md`](../secrets/FEATURE.md).

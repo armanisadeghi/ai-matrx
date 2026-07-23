@@ -46,7 +46,7 @@ product feature that does not already have one.
 
 - `scripts/check-admin-catalog.ts` — compares every discovered page pattern to an exact registry declaration.
 - `features/admin/utils/admin-route-catalog-server.ts` — filesystem discovery and comparison.
-- `scripts/run-release-gates.sh --advisory` — runs the audit during `release.sh`, surfaces its alarm, and continues the release.
+- `scripts/run-release-gates.sh --advisory` — runs the audit during `release.sh` (each gate announces itself before starting), surfaces its alarm, and continues the release.
 
 ---
 

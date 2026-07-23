@@ -28,6 +28,7 @@ export interface AdminUserRow {
 export interface AdminUserOrganizationMembership {
   id: string;
   name: string;
+  abbreviation: string;
   slug: string;
   role: string;
   is_personal: boolean;
@@ -38,6 +39,7 @@ export interface AdminUserOrganizationMembership {
 export interface AdminOrganizationRow {
   id: string;
   name: string;
+  abbreviation: string;
   slug: string;
   description: string | null;
   website: string | null;

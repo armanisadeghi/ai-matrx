@@ -72,7 +72,9 @@ export function ContextSummaryChips({
     ? organizations.find((o) => o.id === value.organizationId)
     : undefined;
   const orgName = orgRecord
-    ? formatOrgDisplayName(orgRecord)
+    ? size === "sm"
+      ? orgRecord.abbreviation
+      : formatOrgDisplayName(orgRecord)
     : value.organizationId
       ? (value.organizationName ?? "Organization")
       : null;

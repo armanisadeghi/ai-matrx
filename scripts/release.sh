@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
-# release.sh — Bump version, commit, tag, and push.
+# release.sh — Apply pending FE migrations, bump version, commit, tag, and push.
 #
 # Source of truth: package.json
+#
+# Migrations (like aidream's release.sh):
+#   Before bumping, applies any pending `migrations/*.sql` via the co-located
+#   aidream applier (`python db/apply_migrations.py --source matrx-frontend`).
+#   This repo has no DDL path of its own — aidream holds the Postgres creds.
+#   Override checkout with AIDREAM_DIR; skip with --no-migrate.
 #
 # Remote sync is handled automatically and safely:
 #   - Before anything is changed, it fetches origin/main and either fast-forwards
@@ -20,12 +26,12 @@
 #   ./scripts/release.sh --message "feat: something"   # custom commit message
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --monitor    # poll Vercel deployment status after push
+#   ./scripts/release.sh --no-migrate # skip applying FE migrations
+#   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
 #
-# NOTHING in this script blocks a release except git itself. All quality
-# gates (CX source-attribution, doctrine, UI primitives, migration ledger,
-# dead-relations) run in ADVISORY mode — they scream loudly, repeat at the
-# end, and always let the ship proceed.
-# Manual hard-fail: pnpm check:release-gates:strict
+# Quality gates (doctrine, UI primitives, migration ledger, …) stay ADVISORY —
+# they scream loudly and never block the ship. Only git (and a failed migration
+# apply) can stop a release. Manual hard-fail: pnpm check:release-gates:strict
 #
 # --monitor requires either:
 #   - VERCEL_TOKEN env var (personal access token from vercel.com/account/tokens)
@@ -99,6 +105,8 @@ BUMP_TYPE="patch"
 CUSTOM_MESSAGE=""
 DRY_RUN=false
 MONITOR=false
+NO_MIGRATE=false
+NO_GATES=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -110,10 +118,12 @@ while [[ $# -gt 0 ]]; do
             CUSTOM_MESSAGE="$2"; shift 2 ;;
         --dry-run) DRY_RUN=true; shift ;;
         --monitor) MONITOR=true; shift ;;
+        --no-migrate) NO_MIGRATE=true; shift ;;
+        --no-gates) NO_GATES=true; shift ;;
         -h|--help)
-            grep '^#' "$0" | head -25 | sed 's/^# \?//'
+            grep '^#' "$0" | head -40 | sed 's/^# \?//'
             exit 0 ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --dry-run, or --monitor." ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --dry-run, --monitor, --no-migrate, or --no-gates." ;;
     esac
 done
 
@@ -192,9 +202,79 @@ EOF
     fi
 fi
 
+# ── Apply pending matrx-frontend migrations (via aidream applier) ─────────────
+# Same shared DB + ledger as aidream. This repo cannot run DDL itself (PostgREST
+# only); the co-located aidream checkout owns the Postgres write path.
+# Mirrors aidream's release.sh reconcile: apply pending/drifted, then verify.
+apply_frontend_migrations() {
+    local aidream_dir="${AIDREAM_DIR:-$REPO_ROOT/../aidream}"
+    local applier="$aidream_dir/db/apply_migrations.py"
+
+    if $NO_MIGRATE; then
+        warn "Skipping migration apply (--no-migrate)."
+        return 0
+    fi
+
+    if [[ ! -f "$applier" ]]; then
+        fail "aidream migration applier not found at $applier.
+Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
+(not recommended — pending FE migrations will not reach Supabase)."
+    fi
+
+    if [[ ! -x "$(command -v uv)" ]] && [[ ! -x "$(command -v python3)" ]]; then
+        fail "Migration apply needs 'uv' or 'python3'."
+    fi
+
+    # Run from the aidream checkout so its .env + uv workspace resolve.
+    # MATRX_FRONTEND_DIR pins THIS repo's migrations/ (worktrees / renames).
+    _run_applier() {
+        local mode="$1"  # apply | dry-run
+        (
+            cd "$aidream_dir"
+            export MATRX_FRONTEND_DIR="$REPO_ROOT"
+            if [[ -x "$(command -v uv)" ]]; then
+                if [[ "$mode" == "dry-run" ]]; then
+                    uv run python db/apply_migrations.py --source matrx-frontend --dry-run
+                else
+                    uv run python db/apply_migrations.py --source matrx-frontend --no-generate
+                fi
+            else
+                if [[ "$mode" == "dry-run" ]]; then
+                    python3 db/apply_migrations.py --source matrx-frontend --dry-run
+                else
+                    python3 db/apply_migrations.py --source matrx-frontend --no-generate
+                fi
+            fi
+        )
+    }
+
+    if $DRY_RUN; then
+        info "Checking pending matrx-frontend migrations (dry-run — read-only)..."
+        _run_applier dry-run
+        ok "Migration dry-run complete."
+        return 0
+    fi
+
+    info "Applying pending matrx-frontend migrations (idempotent; no-op if current)..."
+    _run_applier apply
+    ok "Migration apply finished."
+
+    info "Verifying FE migration ledger (pnpm check:migrations:strict)..."
+    if pnpm check:migrations:strict; then
+        ok "Migration ledger matches migrations/*.sql."
+    else
+        fail "Migration ledger still has unapplied/drifted files after apply.
+Fix the failures above (or re-run from aidream:
+  MATRX_FRONTEND_DIR=$REPO_ROOT uv run python db/apply_migrations.py --source matrx-frontend --no-generate
+), then re-run this release."
+    fi
+}
+
+apply_frontend_migrations
+
 # A source_app/source_feature typo is persisted permanently and corrupts every
 # attribution view downstream. ADVISORY ONLY — no check ever blocks a release;
-# only git can stop the ship. It screams loudly and prints the exact fix.
+# only git (and a failed migration apply above) can stop the ship.
 info "Validating CX source attribution (advisory, never blocking)..."
 if ! pnpm check:source-attribution; then
     echo "" >&2
@@ -360,13 +440,17 @@ echo -e "  GitHub:  ${CYAN}https://github.com/${GITHUB_REPO}/actions${NC}"
 echo -e "  Vercel:  ${CYAN}https://vercel.com/dashboard${NC}"
 echo ""
 
-# ── Advisory quality gates (post-push — never block or delay the ship) ───────
-# Only git may stop a release. These scream loudly if something is wrong, then
-# always continue. Failures here are for humans to fix on the next pass.
-echo ""
-info "Running advisory release quality gates (post-push, non-blocking)..."
-# Explicit --advisory + || true so a future strict default cannot abort release.
-bash "$SCRIPT_DIR/run-release-gates.sh" --advisory || true
+# ── Advisory quality gates (post-push — never block the ship) ────────────────
+# Only git may stop a release. Each gate announces itself before it starts so
+# a slow check never looks hung. Failures scream; the ship already sailed.
+if $NO_GATES; then
+    warn "Skipping advisory quality gates (--no-gates)."
+else
+    echo ""
+    info "Running advisory release quality gates (post-push, non-blocking)..."
+    # Explicit --advisory + || true so a future strict default cannot abort release.
+    bash "$SCRIPT_DIR/run-release-gates.sh" --advisory || true
+fi
 
 # Re-nag at the very end so an attribution failure is the last thing on screen.
 if [[ "${SOURCE_ATTRIBUTION_FAILED:-false}" == "true" ]]; then

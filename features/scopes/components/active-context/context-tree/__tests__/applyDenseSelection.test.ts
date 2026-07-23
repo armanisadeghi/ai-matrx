@@ -23,6 +23,7 @@ const orgs: OrgNode[] = [
   {
     id: "org-1",
     name: "Acme",
+    abbreviation: "ACM",
     slug: "acme",
     is_personal: false,
     role: "member",

@@ -8,6 +8,7 @@ import type { AgentDefinition } from "@/features/agents/types/agent-definition.t
 import type { Database } from "@/types/database.types";
 import { stripNullish } from "@/utils/supabase/payload";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
 
 type AgentInsert = Omit<
   Database["agent"]["Tables"]["definition"]["Insert"],
@@ -40,7 +41,10 @@ function seedToInsertPayload(
     messages: seed.messages,
     variable_definitions: seed.variableDefinitions,
     settings: seed.settings,
-    tools: seed.tools,
+    tools:
+      seed.tools === undefined
+        ? undefined
+        : sanitizeAgentToolIds(seed.tools, "createAgentFromSeed"),
     context_slots: seed.contextSlots,
     model_tiers: seed.modelTiers,
     output_schema: seed.outputSchema,

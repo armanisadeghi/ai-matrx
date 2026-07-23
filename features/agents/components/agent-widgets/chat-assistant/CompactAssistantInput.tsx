@@ -38,6 +38,7 @@ import { SmartAgentResourcePickerButton } from "../../inputs/resources/SmartAgen
 import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResourceChips";
 import { AttachedDocumentChips } from "../../inputs/resources/AttachedDocumentChips";
 import { usePasteImageResource } from "../../inputs/resources/usePasteImageResource";
+import { SmartInputFileDropTarget } from "../../inputs/smart-input/SmartInputFileDropTarget";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 
 import { toast } from "@/lib/toast";
@@ -142,7 +143,10 @@ export function CompactAssistantInput({
   useClipboardPaste({ textareaRef, onPasteImage: handlePasteImage });
 
   return (
-    <div className="shrink-0 border-t border-border/40 bg-muted/10">
+    <SmartInputFileDropTarget
+      conversationId={conversationId}
+      className="shrink-0 border-t border-border/40 bg-muted/10"
+    >
       {/* Resource chips */}
       <SmartAgentResourceChips conversationId={conversationId} />
       {/* Durable document attachments (association edges) — persist across turns/reloads */}
@@ -255,7 +259,7 @@ export function CompactAssistantInput({
           </Button>
         </div>
       </div>
-    </div>
+    </SmartInputFileDropTarget>
   );
 }
 

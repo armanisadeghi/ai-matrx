@@ -40,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
+import { OrganizationAbbreviation } from "@/features/organizations/components/OrganizationAbbreviation";
 import { OrgScopeTree } from "@/features/organizations/components/OrgScopeTree";
 import type {
   OrganizationWithRole,
@@ -140,7 +141,10 @@ function OrgCard({
                 <span
                   className={`w-full h-full flex items-center justify-center ${meta.bg}`}
                 >
-                  <Building2 className={`h-6 w-6 ${meta.text}`} />
+                  <OrganizationAbbreviation
+                    abbreviation={org.abbreviation}
+                    className={`text-sm ${meta.text}`}
+                  />
                 </span>
               }
               alt={org.name}
@@ -149,6 +153,10 @@ function OrgCard({
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-lg truncate">{org.name}</h3>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
+              <OrganizationAbbreviation
+                abbreviation={org.abbreviation}
+                className="h-5 min-w-8 rounded border border-border bg-muted px-1.5 text-[10px] text-muted-foreground"
+              />
               <Badge
                 variant="outline"
                 className={`text-[10px] gap-1 ${meta.text}`}
@@ -280,6 +288,7 @@ export default function OrganizationsPage() {
   const filtered = query
     ? filterAndSortBySearch(organizations, query, [
         { get: (o) => o.name, weight: "title" },
+        { get: (o) => o.abbreviation, weight: "title" },
         { get: (o) => o.slug, weight: "subtitle" },
         { get: (o) => o.description ?? "", weight: "body" },
       ])

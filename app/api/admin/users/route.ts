@@ -99,6 +99,7 @@ export async function GET() {
     userOrganizations.push({
       id: organization.id,
       name: organization.name,
+      abbreviation: organization.abbreviation,
       slug: organization.slug,
       role: membership.role,
       is_personal: organization.is_personal,

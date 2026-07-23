@@ -34,6 +34,7 @@ export function toOrgRole(value: string): OrgRole {
 export interface Organization {
   id: string;
   name: string;
+  abbreviation: string;
   slug: string;
   description?: string | null;
   logoUrl?: string | null;
@@ -109,6 +110,7 @@ export interface OrganizationInvitationWithOrg extends OrganizationInvitation {
  */
 export interface CreateOrganizationOptions {
   name: string;
+  abbreviation: string;
   slug: string;
   description?: string;
   logoUrl?: string;
@@ -122,6 +124,7 @@ export interface CreateOrganizationOptions {
  */
 export interface UpdateOrganizationOptions {
   name?: string;
+  abbreviation?: string;
   description?: string;
   logoUrl?: string;
   logoFileId?: string;
@@ -273,6 +276,73 @@ export function validateOrgSlug(slug: string): {
     return { valid: false, error: "Slug must be less than 50 characters" };
   }
 
+  return { valid: true };
+}
+
+/** The fixed compact label for a user's personal organization. */
+export const PERSONAL_ORG_ABBREVIATION = "ME";
+
+const ABBREVIATION_IGNORED_WORDS = new Set([
+  "A",
+  "AN",
+  "AND",
+  "AT",
+  "BY",
+  "FOR",
+  "OF",
+  "THE",
+  "CO",
+  "COMPANY",
+  "CORP",
+  "CORPORATION",
+  "INC",
+  "INCORPORATED",
+  "LLC",
+  "LLP",
+  "LTD",
+  "LIMITED",
+  "LP",
+  "PLC",
+]);
+
+/**
+ * Generate the canonical 2-3 letter starting value for an organization.
+ * Personal organizations are always ME. Shared organizations use meaningful
+ * word initials, preserving a short leading initialism (AI Matrx -> AIM).
+ */
+export function generateOrganizationAbbreviation(
+  name: string,
+  isPersonal = false,
+): string {
+  if (isPersonal) return PERSONAL_ORG_ABBREVIATION;
+
+  const words = (name.toUpperCase().match(/[A-Z]+/g) ?? []).filter(
+    (word) => !ABBREVIATION_IGNORED_WORDS.has(word),
+  );
+  if (words.length === 0) return "ORG";
+  if (words.length === 1) {
+    return words[0].slice(0, 3).padEnd(2, "X");
+  }
+
+  let abbreviation = words[0].length === 2 ? words[0] : words[0][0];
+  for (const word of words.slice(1)) {
+    if (abbreviation.length >= 3) break;
+    abbreviation += word[0];
+  }
+  return abbreviation.slice(0, 3).padEnd(2, "X");
+}
+
+/** Validate the database-backed compact organization label. */
+export function validateOrganizationAbbreviation(abbreviation: string): {
+  valid: boolean;
+  error?: string;
+} {
+  if (!/^[A-Z]{2,3}$/.test(abbreviation)) {
+    return {
+      valid: false,
+      error: "Abbreviation must be 2–3 uppercase letters",
+    };
+  }
   return { valid: true };
 }
 

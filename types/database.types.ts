@@ -19603,6 +19603,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          abbreviation: string
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -19618,6 +19619,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          abbreviation: string
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -19633,6 +19635,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          abbreviation?: string
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -19969,6 +19972,10 @@ export type Database = {
       canonical_certify_ok: {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: boolean
+      }
+      derive_organization_abbreviation: {
+        Args: { p_is_personal?: boolean; p_name: string }
+        Returns: string
       }
       fn_grant_resource_permission: {
         Args: {
@@ -31630,6 +31637,7 @@ export type Database = {
       }
       org_create: {
         Args: {
+          p_abbreviation?: string
           p_description?: string
           p_logo_file_id?: string
           p_logo_url?: string

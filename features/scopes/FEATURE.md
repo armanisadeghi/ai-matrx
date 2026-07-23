@@ -2,7 +2,7 @@
 
 **Status:** `scaffolded` — module being built ground-up to replace the sprawling scope/context layer across `features/agent-context/` and `features/scope-system/`. Code lands in phases; this doc is the canonical model from day one.
 **Tier:** `1` — foundational for every agent invocation and every feature that filters, tags, or resolves by user-defined dimensions.
-**Last updated:** `2026-07-15`
+**Last updated:** `2026-07-23`
 
 > **The cross-repo canonical model lives in `common-docs/scope-context-system/FEATURE.md`** — built strictly from the product owner's own statements; read it FIRST. This doc is the frontend source of truth for **scopes**. If something contradicts it (an existing slice, an old hook, a stale README), the doc wins and the code is wrong. Read this end-to-end before touching anything in `features/scopes/`, `features/agent-context/`, `features/scope-system/`, `app/(authenticated)/scopes/`, or any consumer that picks/tags/filters by scope.
 
@@ -522,6 +522,7 @@ interface ScopesState {
 interface OrgNode {
   id;
   name;
+  abbreviation; // canonical 2-3 letter compact identity from iam.organizations
   slug;
   is_personal;
   role;
@@ -838,6 +839,7 @@ Still open: whether to merge the two **scope** pickers `<ActiveScopePicker />` (
 - **Templates are read-only catalog.** Mutations on `ctx_templates` happen elsewhere (seed scripts, admin-only).
 - **`max_assignments_per_entity` is a hint, not a hard limit at the DB layer.** Surface B enforces in UI; the server validates in RPCs.
 - **Personal organization is a real org row.** Personal workspace context uses the user's `organizations.is_personal = true` row and real org id. Do not synthesize or persist a fake personal org id in Redux, routes, RPC args, or association edges.
+- **Organization abbreviations come from the org row.** `getScopeTree` selects `iam.organizations.abbreviation` into every `OrgNode`; compact scope/context surfaces render that value and never recalculate initials from `name`. The warm-cache policy version must bump whenever this required node shape changes.
 - **One entity vocabulary — `EntityType`.** Both `ctx_scope_assignments.entity_type` and `platform.associations.source_type` are free-text DB columns; the single `EntityType` union (`features/scopes/types.ts`) is the app-side guard that stops callers inventing tokens. There is NO separate `ScopeAssignmentEntityType` (deleted). New entity types are added to `platform.entity_types` FIRST, then mirrored into `EntityType` — never the reverse.
 
 ---
@@ -980,6 +982,7 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 
 ## Change log
 
+- `2026-07-23` — **Scope-tree organizations now carry canonical abbreviations.** `OrgNode` and `scopesService.getScopeTree` include `iam.organizations.abbreviation`, compact active-org pickers render the shared organization mark, and the `scopesTree` warm-cache policy moved to v2 so pre-field cached nodes cannot hydrate without it.
 - `2026-07-23` — **File → conversation attachments now keep the association-service chokepoint while using their stricter authorization RPCs.** `associationsService.add/remove` routes exactly this access-conveying pair through `conversation_file_add/remove`; every other edge stays on generic `assoc_add/remove`. The canonical edge remains role-less and preserves full attachment metadata, so web chips, policy edits, extension attachments, and backend context all see one record rather than parallel role families. The DB compatibility route for already-deployed generic callers performs the same editor checks over both the file and conversation.
 - `2026-07-23` — **Shared-conversation attachment reads and metadata updates now honor their exact contracts.** `useContainerLinks` replaces only the conversation's generic org-filtered file rows with the viewer-aware `conversation_files` inventory, so explicitly shared cross-org viewers see the same file chips as the extension while legacy processed-document edges still use the generic reader. Ordinary idempotent attaches preserve existing edge metadata; policy edits and rollback restoration pass an explicit `replaceMetadata` intent. A failed refresh preserves the last-known attachment inventory and exposes a visible retry state instead of silently hiding durable agent context; both the dedicated file read and generic processed-document read keep that control visible and turn its icon into progress until the request settles.
 - `2026-07-23` — **Miller Columns and Drill Deck now expose the same canonical hosts.** Drill Deck gained an adaptive popover, an `appContextSlice` Surface-A adapter, and the registered `drillDeckContextWindow`; both active faces now share `useActiveContextSelectionEngine` instead of duplicating Redux selection logic. The official catalogue exposes both the popover and WindowPanel while Smart Input retains the item-only Context Values face.

@@ -20,6 +20,7 @@ import { AgentTextarea } from "./AgentTextarea";
 import { SingleRowActionButtons } from "./SingleRowActionButtons";
 import { ConversationContextRail } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
+import { SmartInputFileDropTarget } from "./SmartInputFileDropTarget";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
@@ -72,7 +73,12 @@ export function SmartAgentInputSingleRow({
   };
 
   return (
-    <div className="flex flex-col gap-1 w-full" data-agent-input-shell>
+    <SmartInputFileDropTarget
+      conversationId={conversationId}
+      uploadRoot={uploadRoot}
+      uploadPath={uploadPath}
+      className="flex w-full flex-col gap-1"
+    >
       {/* Conversation context rail (working doc, scratchpad, lists, context) */}
       <ConversationContextRail conversationId={conversationId} />
 
@@ -119,6 +125,6 @@ export function SmartAgentInputSingleRow({
           extraRightControls={extraRightControls}
         />
       </div>
-    </div>
+    </SmartInputFileDropTarget>
   );
 }

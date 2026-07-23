@@ -332,6 +332,7 @@ export type OrgRole = "owner" | "admin" | "member";
 export interface OrgNode {
   id: string;
   name: string;
+  abbreviation: string;
   slug: string;
   is_personal: boolean;
   role: OrgRole;

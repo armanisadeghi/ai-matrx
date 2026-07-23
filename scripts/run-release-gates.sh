@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # run-release-gates.sh — Quality checks around a release (formerly pre-commit).
 #
-# Runs doctrine, UI primitives, migration ledger, and dead-relations checks
-# with a visible spinner so a long run never looks hung.
+# Runs doctrine, UI primitives, migration ledger, and dead-relations checks.
+# Each gate announces itself before it starts — no silent spinner hiding a
+# 60s+ wait. On pass: one OK line. On warn/fail: the check's own report.
 #
 # DEFAULT IS ADVISORY — loud findings, exit 0 always. Ship/release must never
-# be blocked or delayed by these checks; only git itself may stop a push.
+# be blocked by these checks; only git itself may stop a push.
 # Use --strict for CI / manual hard-fail.
 #
 # Usage:
@@ -65,7 +66,7 @@ fi
 
 echo ""
 echo -e "${BOLD}  Release quality gates${NC}"
-echo -e "  ${DIM}${#GATES[@]} checks — live schema checks may take several minutes${NC}"
+echo -e "  ${DIM}${#GATES[@]} checks — each prints its name before it starts${NC}"
 if $STRICT; then
     echo -e "  ${CYAN}Mode: strict (blocks on failure)${NC}"
 else
@@ -73,12 +74,13 @@ else
 fi
 echo ""
 
-_spinner_frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+# Heartbeat so a long gate never looks hung — one line every HEARTBEAT_SECS.
+HEARTBEAT_SECS=15
 
 print_gate_details() {
     local output_file="$1"
 
-    echo -e "      ${DIM}Details from this check:${NC}"
+    echo -e "      ${DIM}Details:${NC}"
     awk '
         NF { last_nonblank = NR }
         { lines[NR] = $0 }
@@ -104,24 +106,26 @@ run_gate() {
     local tmp
     tmp="$(mktemp "${TMPDIR:-/tmp}/release-gate.XXXXXX")"
 
+    echo -e "${CYAN}[INFO]${NC}  [$step/$total] ${label}..."
+
     bash -c "$cmd" >"$tmp" 2>&1 &
     local pid=$!
-    local frame_i=0
     local start=$SECONDS
+    local last_beat=0
 
     while kill -0 "$pid" 2>/dev/null; do
         local elapsed=$(( SECONDS - start ))
-        printf "\r  ${_spinner_frames[$frame_i]}  [%s/%s] %s… %ss" \
-            "$step" "$total" "$label" "$elapsed"
-        frame_i=$(( (frame_i + 1) % ${#_spinner_frames[@]} ))
-        sleep 0.12
+        if [[ $elapsed -ge $(( last_beat + HEARTBEAT_SECS )) ]]; then
+            echo -e "  ${DIM}… still ${label} (${elapsed}s)${NC}"
+            last_beat=$elapsed
+        fi
+        sleep 1
     done
 
     local exit_code=0
     wait "$pid" || exit_code=$?
 
     local elapsed=$(( SECONDS - start ))
-    printf "\r%80s\r" ""
 
     # Always surface the check's own report when it wrote anything — advisory
     # mode exits 0 with a loud red box; hiding that would defeat the point.
@@ -145,7 +149,7 @@ run_gate() {
     fi
 
     echo -e "${GREEN}[OK]${NC}    [$step/$total] ${label} (${elapsed}s)"
-    $has_output && print_gate_details "$tmp"
+    # Pass: keep quiet — don't dump the check's healthy chatter.
     rm -f "$tmp"
     return 0
 }

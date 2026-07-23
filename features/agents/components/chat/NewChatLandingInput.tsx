@@ -8,6 +8,7 @@ import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
 import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
+import { SmartInputFileDropTarget } from "@/features/agents/components/inputs/smart-input/SmartInputFileDropTarget";
 import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
 import { AttachedDocumentChips } from "@/features/agents/components/inputs/resources/AttachedDocumentChips";
 import {
@@ -222,7 +223,10 @@ export function NewChatLandingInput({
   };
 
   return (
-    <div
+    <SmartInputFileDropTarget
+      conversationId={conversationId}
+      uploadRoot={uploadRoot}
+      uploadPath={uploadPath}
       onClick={() => textareaRef.current?.focus()}
       className={cn(
         "w-full rounded-[28px] border border-border bg-card cursor-text",
@@ -349,6 +353,6 @@ export function NewChatLandingInput({
           </Button>
         </div>
       </div>
-    </div>
+    </SmartInputFileDropTarget>
   );
 }

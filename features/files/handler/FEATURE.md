@@ -2,7 +2,7 @@
 
 **Status:** `canonical`
 **Tier:** `1`
-**Last updated:** `2026-07-21`
+**Last updated:** `2026-07-23`
 
 ---
 
@@ -66,12 +66,11 @@ This feature is the **single source of resistance** for file flows: direct const
 
 ### Flow 2 — submit a freshly-pasted image to the agent
 
-1. Paste handler builds `{ kind: "file", file }` and stores it in component state.
-2. On send, `useFileUpload().upload(source, opts)` is called.
-3. `uploadInternal` coerces source → `File`, stamps `metadata.scope = { organization_id, project_id, task_id }` from `appContext`, posts to `/files/upload`.
-4. Returns a `NormalizedFile` pointing at the new `cld_files` row.
-5. The agent input layer calls `fileHandler.toMediaBlock(normalized)` to produce an `ImageBlock { file_id, mime_type }`.
-6. The block goes into `user_input` on the agent request body.
+1. The paste/drop handler synchronously inserts a pending agent resource. Images get a bounded tracked `blob:` preview; that URL is UI-only and never becomes a ready payload.
+2. `useFileUpload().upload({ kind: "file", file }, opts)` starts immediately. The pending resource blocks send and renders a loader over the local image (or a pending file tile).
+3. `uploadInternal` coerces source → `File`, stamps `metadata.scope = { organization_id, project_id, task_id }` from `appContext`, and posts to `/files/upload`.
+4. The returned `NormalizedFile` points at the new `cld_files` row. The shared agent `useAttachResource` mapping converts it to the canonical media resource or durable `file → conversation` document association.
+5. Only after the durable attachment exists is the staging resource removed and its local object URL revoked. If the user removed the pending resource while upload was running, the completed cloud file is not re-attached.
 
 ### Flow 3 — signed URL expires while user is browsing
 
@@ -187,6 +186,7 @@ The previous parallel object-store path is fully removed. Compatibility readers,
 
 ## Change log
 
+- **2026-07-23 — Agent paste/drop staging is immediate and canonical.** `useUploadAgentResources` now owns the shared stage → upload → attach lifecycle for every Smart input composer. It creates bounded local image previews and pending file tiles synchronously, uploads through `useFileUpload`, hands ready payloads to `useAttachResource`, and revokes the preview on completion/removal.
 - **2026-07-21 — Signed playback URLs can no longer escape through media actions.** All chat video inputs (`media_block`, legacy `video_output`, and markdown video links) now converge on `UnifiedVideoBlockRenderer`, preserving or recovering `file_id` before rendering actions; the two legacy video components that copied/shared raw `src` values were deleted. `shareableMediaUrl` now fails closed on both AWS signing dialects, image/video share menus no longer offer “Copy temporary link,” misclassified signed “CDN” or external URLs are rejected, and owned Copy/Open actions use the auth-gated file viewer while public sharing continues through durable CDN or canonical `/share/{token}` URLs.
 - **2026-07-21 — TUS transport landed (media-capture Phase 7).** `tusUpload.ts` + the 80 MB transport policy in `cloudUpload` (`resolveUploadTransport`); `UploadOpts` gained `signal` + `transport`; shared `buildUploadMetadataEnvelope` guarantees buffered↔TUS `metadata_json` parity. Live E2E pending aidream deploy (see § Transport policy).
 - **2026-07-20 — Ephemeral object URLs promoted to a shared browser primitive.** The bounded create/revoke registry moved from handler internals to `lib/media/object-url-registry.ts` so the file normalizer and local-only UI thumbnails share one leak-resistant object-URL lifecycle without importing private handler paths.

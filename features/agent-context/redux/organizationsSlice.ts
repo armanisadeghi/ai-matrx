@@ -36,6 +36,7 @@ export function isStale(meta: DataLevelMeta): boolean {
 export interface OrgRecord {
   id: string;
   name: string;
+  abbreviation?: string;
   slug: string;
   is_personal: boolean;
   role: string;
@@ -80,7 +81,7 @@ export const fetchOrg = createAsyncThunk(
     const { data, error } = await supabase
       .schema("iam").from("organizations")
       .select(
-        "id, name, slug, description, logo_url, is_personal, settings, created_at",
+        "id, name, abbreviation, slug, description, logo_url, is_personal, settings, created_at",
       )
       .eq("id", orgId)
       .single();
@@ -150,6 +151,7 @@ const organizationsSlice = createSlice({
       const records: OrgRecord[] = action.payload.map((org) => ({
         id: org.id,
         name: org.name,
+        abbreviation: org.abbreviation,
         slug: org.slug,
         is_personal: org.is_personal,
         role: org.role,

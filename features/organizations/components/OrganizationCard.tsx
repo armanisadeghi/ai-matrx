@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  Building2,
   Users,
   Settings,
   Crown,
@@ -19,6 +18,7 @@ import type { OrganizationWithRole } from "../types";
 import { cn } from "@/lib/utils";
 import { InlineMediaRef } from "@/features/files";
 import { useSettingsNavigate } from "@/features/settings/components/SettingsPresentationContext";
+import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 
 interface OrganizationCardProps {
   organization: OrganizationWithRole;
@@ -133,9 +133,10 @@ export function OrganizationCard({ organization }: OrganizationCardProps) {
                 fit="cover"
                 rounded="lg"
                 fallbackIcon={
-                  <Building2
+                  <OrganizationAbbreviation
+                    abbreviation={organization.abbreviation}
                     className={cn(
-                      "h-6 w-6",
+                      "text-sm",
                       isPersonal
                         ? "text-purple-600 dark:text-purple-400"
                         : "text-blue-600 dark:text-blue-400",
@@ -152,6 +153,10 @@ export function OrganizationCard({ organization }: OrganizationCardProps) {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                   {organization.name}
                 </h3>
+                <OrganizationAbbreviation
+                  abbreviation={organization.abbreviation}
+                  className="h-5 min-w-8 rounded border border-border bg-muted px-1.5 text-[10px] text-muted-foreground"
+                />
                 <Badge
                   className={cn(
                     "flex items-center gap-1 text-xs",

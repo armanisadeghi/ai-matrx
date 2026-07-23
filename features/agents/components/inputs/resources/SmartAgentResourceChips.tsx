@@ -61,6 +61,7 @@ import type { ContextDrawerItem } from "@/features/agents/components/context-ite
 import type { DataRef } from "@/features/agents/types/message-types";
 import { InlineMediaRef } from "@/features/files";
 import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
+import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
 
 function getBlockTypeDisplay(blockType: ResourceBlockType) {
   const map: Record<
@@ -166,7 +167,9 @@ function isContextValueResource(resource: ManagedResource): boolean {
   if (resource.blockType !== "text" || typeof resource.source !== "string") {
     return false;
   }
-  return parseReferenceFence(resource.source)?.envelope.type === "context_value";
+  return (
+    parseReferenceFence(resource.source)?.envelope.type === "context_value"
+  );
 }
 
 function basename(path: string): string {
@@ -264,7 +267,9 @@ function ImageResourceThumbnail({
   const isPending =
     resource.status === "pending" || resource.status === "resolving";
   const isError = resource.status === "error";
-  const imageRef = getImageRef(resource.source);
+  const imageRef = isPending
+    ? getImageRef(resource.source)
+    : (getImageRef(resource.finalPayload) ?? getImageRef(resource.source));
 
   return (
     <motion.div
@@ -279,11 +284,7 @@ function ImageResourceThumbnail({
         aria-label={`View image: ${title}`}
         className="flex h-full w-full items-center justify-center"
       >
-        {isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : isError ? (
-          <AlertCircle className="h-4 w-4 text-destructive" />
-        ) : imageRef ? (
+        {imageRef ? (
           <>
             <InlineMediaRef
               ref={imageRef}
@@ -295,10 +296,24 @@ function ImageResourceThumbnail({
               alt={title}
               className="transition-[filter] group-hover:brightness-90"
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-              <ImageIcon className="h-4 w-4 text-white drop-shadow" />
-            </div>
+            {isPending ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Loader2 className="h-5 w-5 animate-spin text-white drop-shadow" />
+              </div>
+            ) : isError ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-destructive/30">
+                <AlertCircle className="h-5 w-5 text-white drop-shadow" />
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
+                <ImageIcon className="h-4 w-4 text-white drop-shadow" />
+              </div>
+            )}
           </>
+        ) : isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : isError ? (
+          <AlertCircle className="h-4 w-4 text-destructive" />
         ) : (
           <ImageIcon className="h-5 w-5 text-muted-foreground" />
         )}
@@ -488,9 +503,13 @@ export function SmartAgentResourceChips({
 
   const handleRemove = useCallback(
     (resourceId: string) => {
+      const resource = resources.find(
+        (candidate) => candidate.resourceId === resourceId,
+      );
+      revokeTrackedObjectUrl(getImageRef(resource?.source));
       dispatch(removeResource({ conversationId, resourceId }));
     },
-    [conversationId, dispatch],
+    [conversationId, dispatch, resources],
   );
 
   const handleToggleEditable = useCallback(

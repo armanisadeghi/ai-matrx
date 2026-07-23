@@ -83,6 +83,7 @@ export interface NavProject {
 export interface NavOrganization {
   id: string;
   name: string;
+  abbreviation?: string;
   slug: string;
   is_personal: boolean;
   role: string;

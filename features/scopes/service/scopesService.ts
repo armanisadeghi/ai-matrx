@@ -173,12 +173,13 @@ export const scopesService = {
           ? supabase
               .schema("iam")
               .from("organizations")
-              .select("id, name, slug, is_personal")
+              .select("id, name, abbreviation, slug, is_personal")
               .in("id", orgIds)
           : Promise.resolve({
               data: [] as Array<{
                 id: string;
                 name: string;
+                abbreviation: string;
                 slug: string;
                 is_personal: boolean | null;
               }>,
@@ -281,6 +282,7 @@ export const scopesService = {
       const organizations: OrgNode[] = (orgsRes.data ?? []).map((row) => ({
         id: row.id,
         name: row.name,
+        abbreviation: row.abbreviation,
         slug: row.slug,
         is_personal: !!row.is_personal,
         role: (roleByOrgId.get(row.id) ?? "member") as OrgNode["role"],
