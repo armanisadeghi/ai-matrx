@@ -18,6 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingSitemapsScope } from "@/features/surfaces/manifests/marketing-sitemaps.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   marketingKeys,
@@ -41,6 +44,7 @@ import { cn } from "@/lib/utils";
 
 export function SitemapsWorkspace() {
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const router = useRouter();
   const queryClient = useQueryClient();
   const sitemaps = useSitemaps(site.id);
@@ -141,6 +145,26 @@ export function SitemapsWorkspace() {
   });
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-sitemaps"
+      surfaceLabel="Sitemaps"
+      getScope={() =>
+        createMarketingSitemapsScope({
+          ...getBaseValues(),
+          sitemaps_summary: rows.slice(0, 30).map((sitemap) => ({
+            url: sitemap.url,
+            kind: sitemap.kind,
+            http_status: sitemap.status_code,
+            url_count: sitemap.url_count,
+            child_count: sitemap.child_count,
+            is_active: sitemap.is_active,
+            fetch_error: sitemap.fetch_error,
+            last_fetched_at: sitemap.last_fetched_at,
+          })),
+          sitemap_pages_total: coverage.data?.pagesInSitemaps,
+        })
+      }
+    >
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
         <header className="flex flex-wrap items-center justify-between gap-2">
@@ -256,6 +280,7 @@ export function SitemapsWorkspace() {
         onConfirm={() => void confirmDelete()}
       />
     </main>
+    </SurfaceRuntimeProvider>
   );
 }
 

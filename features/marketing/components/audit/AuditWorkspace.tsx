@@ -12,6 +12,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingAuditScope } from "@/features/surfaces/manifests/marketing-audit.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useSiteAuditRollup } from "@/features/marketing/data/hooks";
 import {
   LoadingSurface,
@@ -299,6 +302,7 @@ function AuditBody({
 
 export function AuditWorkspace() {
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const rollup = useSiteAuditRollup(site.id);
   if (rollup.isLoading)
     return <LoadingSurface label="Aggregating site audit…" />;
@@ -310,5 +314,20 @@ export function AuditWorkspace() {
       />
     );
   }
-  return <AuditBody rollup={rollup.data} sitePath={sitePath} />;
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-audit"
+      surfaceLabel="Audit"
+      getScope={() => {
+        const data = rollup.data;
+        return createMarketingAuditScope({
+          ...getBaseValues(),
+          audit_rollup: data ? { ...data } : undefined,
+          pages_audited: data?.auditedPages,
+        });
+      }}
+    >
+      <AuditBody rollup={rollup.data} sitePath={sitePath} />
+    </SurfaceRuntimeProvider>
+  );
 }

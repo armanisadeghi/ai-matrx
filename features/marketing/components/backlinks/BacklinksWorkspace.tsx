@@ -30,6 +30,9 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingBacklinksScope } from "@/features/surfaces/manifests/marketing-backlinks.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   backlinkKeys,
@@ -142,6 +145,7 @@ function DimensionList({
 
 export function BacklinksWorkspace() {
   const { site } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const serviceTargets = useAppSelector(selectApiServiceTargets);
   const seoTarget = serviceTargets.find((target) => target.service === "seo");
@@ -342,6 +346,37 @@ export function BacklinksWorkspace() {
   ];
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-backlinks"
+      surfaceLabel="Backlinks"
+      getScope={() =>
+        createMarketingBacklinksScope({
+          ...getBaseValues(),
+          // Explicit KPI object — never the raw provider payload.
+          backlink_summary: summary
+            ? {
+                total_backlinks: summary.total_backlinks,
+                referring_domains: summary.referring_domains,
+                dofollow_backlinks: summary.dofollow_backlinks,
+                nofollow_backlinks: summary.nofollow_backlinks,
+                rank_score: summary.rank_score,
+                collected_at: summary.created_at,
+              }
+            : undefined,
+          top_referring_domains: data?.referringDomains
+            .slice(0, 15)
+            .map((row) => ({
+              domain: row.label ?? row.dimension_key,
+              backlinks: row.backlinks,
+              referring_domains: row.referring_domains,
+            })),
+          top_anchors: data?.anchors.slice(0, 15).map((row) => ({
+            anchor: row.label ?? row.dimension_key,
+            backlinks: row.backlinks,
+          })),
+        })
+      }
+    >
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3 sm:p-4">
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
         <div className="min-w-0">
@@ -540,5 +575,6 @@ export function BacklinksWorkspace() {
         />
       </section>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

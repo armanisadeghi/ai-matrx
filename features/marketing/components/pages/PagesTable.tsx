@@ -18,6 +18,9 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingSitePagesScope } from "@/features/surfaces/manifests/marketing-site-pages.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
@@ -179,6 +182,7 @@ export function PagesTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const coverageRaw = searchParams.get("coverage");
   const coverage = isPageCoverageFilter(coverageRaw) ? coverageRaw : null;
   const table = useMarketingTableState({
@@ -360,6 +364,25 @@ export function PagesTable() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-site-pages"
+      surfaceLabel="Pages"
+      getScope={() =>
+        createMarketingSitePagesScope({
+          ...getBaseValues(),
+          pages_total: pages.data?.total,
+          coverage_filter: coverage ?? undefined,
+          visible_pages: pages.data?.rows.map((row) => ({
+            url: row.url,
+            title: row.observed_title,
+            serp_ok: row.serp_ok,
+            social_ok: row.social_ok,
+            indexability_verdict: row.indexability_verdict,
+            gsc_clicks_28d: row.gsc_clicks_28d,
+          })),
+        })
+      }
+    >
     <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured p-3 sm:p-4">
       <CoverageChips />
       <div className="min-h-0 flex-1 overflow-hidden">
@@ -539,5 +562,6 @@ export function PagesTable() {
         onConfirm={() => void confirmDelete()}
       />
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

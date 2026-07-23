@@ -15,6 +15,9 @@ import {
   SUBJECT_TYPE_OPTIONS,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingFindingsScope } from "@/features/surfaces/manifests/marketing-findings.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import {
   formatCompactDate,
   QueryError,
@@ -31,10 +34,26 @@ export function FindingsTable() {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const table = useMarketingTableState({
     defaultSort: { id: "last_detected_at", direction: "desc" },
   });
   const findings = useSiteFindings(site.id, table.queryState);
+
+  const buildActiveFilters = (): Record<string, unknown> | undefined => {
+    const current = table.state;
+    const filters: Record<string, unknown> = {};
+    if (current.search) filters.search = current.search;
+    if (current.anyOf) filters.any_of = current.anyOf;
+    for (const [column, filter] of Object.entries(current.columnFilters)) {
+      if (!filter) continue;
+      filters[column] =
+        filter.kind === "number"
+          ? { min: filter.min ?? null, max: filter.max ?? null }
+          : filter.value;
+    }
+    return Object.keys(filters).length > 0 ? filters : undefined;
+  };
   const columns: MatrxColumnDef<FindingListRow>[] = [
     {
       id: "item_key",
@@ -140,6 +159,17 @@ export function FindingsTable() {
   };
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-findings"
+      surfaceLabel="Findings"
+      getScope={() =>
+        createMarketingFindingsScope({
+          ...getBaseValues(),
+          findings_total: findings.data?.total,
+          active_filters: buildActiveFilters(),
+        })
+      }
+    >
     <main className="h-full overflow-hidden bg-textured p-3 sm:p-4">
       <MatrxDataTable<FindingListRow>
         data={findings.data?.rows ?? []}
@@ -237,5 +267,6 @@ export function FindingsTable() {
         }}
       />
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

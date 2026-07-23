@@ -12,12 +12,20 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingLinksScope } from "@/features/surfaces/manifests/marketing-links.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   useCrawlLinks,
+  useLinkGraphEdges,
   useSiteLinks,
 } from "@/features/marketing/data/inspection-hooks";
-import type { InspectionLinkRow } from "@/features/marketing/data/inspection-types";
+import type {
+  InspectionLinkRow,
+  LinkGraphEdgeResult,
+  LinkGraphEdgeRow,
+} from "@/features/marketing/data/inspection-types";
 import { useCrawl } from "@/features/marketing/data/hooks";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
@@ -35,11 +43,85 @@ function sourceUrl(row: InspectionLinkRow): string {
 
 type LinksViewMode = "graph" | "external" | "table";
 
+function hostnameOf(url: string): string | null {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/** Run-time aggregate over already-cached link-graph edges. Pure, no fetch. */
+function buildLinkTotals(result: LinkGraphEdgeResult): Record<string, unknown> {
+  const internalPages = new Set<string>();
+  const externalDomains = new Set<string>();
+  let nofollowLinks = 0;
+  let brokenLinks = 0;
+  for (const edge of result.rows) {
+    internalPages.add(edge.source_page_id);
+    if (edge.is_internal && edge.target_page_id) {
+      internalPages.add(edge.target_page_id);
+    }
+    if (!edge.is_internal) {
+      const domain = hostnameOf(edge.target_url);
+      if (domain) externalDomains.add(domain);
+    }
+    if (edge.rel?.includes("nofollow")) nofollowLinks += 1;
+    if (edge.http_status !== null && edge.http_status >= 400) brokenLinks += 1;
+  }
+  return {
+    edges: result.total,
+    edges_loaded: result.rows.length,
+    truncated: result.truncated,
+    internal_pages: internalPages.size,
+    external_domains: externalDomains.size,
+    nofollow_links: nofollowLinks,
+    broken_links: brokenLinks,
+  };
+}
+
+/** Top outbound destination domains from cached edges (External rollup). */
+function buildExternalDomainsTop(
+  rows: LinkGraphEdgeRow[],
+): Array<Record<string, unknown>> {
+  const byDomain = new Map<
+    string,
+    { links: number; nofollow: number; pages: Set<string> }
+  >();
+  for (const edge of rows) {
+    if (edge.is_internal) continue;
+    const domain = hostnameOf(edge.target_url);
+    if (!domain) continue;
+    const entry = byDomain.get(domain) ?? {
+      links: 0,
+      nofollow: 0,
+      pages: new Set<string>(),
+    };
+    entry.links += 1;
+    if (edge.rel?.includes("nofollow")) entry.nofollow += 1;
+    entry.pages.add(edge.source_page_id);
+    byDomain.set(domain, entry);
+  }
+  return [...byDomain.entries()]
+    .sort((a, b) => b[1].links - a[1].links)
+    .slice(0, 15)
+    .map(([domain, entry]) => ({
+      domain,
+      links: entry.links,
+      linking_pages: entry.pages.size,
+      nofollow_share: entry.links > 0 ? entry.nofollow / entry.links : 0,
+    }));
+}
+
 export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // enabled=false — a pure cache subscription to whatever the Graph/External
+  // views already fetched. Zero added requests; getScope reads it at Run time.
+  const graphEdges = useLinkGraphEdges(site.id, null, false);
   // Graph is the default view — the URL only records the exception.
   const viewParam = searchParams.get("view");
   const view: LinksViewMode =
@@ -203,7 +285,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
     );
   }
 
-  return (
+  const content = (
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       {crawl.data ? <CrawlSubnav crawl={crawl.data} /> : null}
       <section className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
@@ -333,5 +415,29 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
         )}
       </div>
     </main>
+  );
+
+  // Crawl-scoped links stay on the authoritative `matrx-user/marketing-crawl`
+  // surface (registered by the crawl routes) — mount NO provider here.
+  if (crawlId) return content;
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-links"
+      surfaceLabel="Links"
+      getScope={() => {
+        const result = graphEdges.data;
+        return createMarketingLinksScope({
+          ...getBaseValues(),
+          view_mode: view,
+          link_totals: result ? buildLinkTotals(result) : undefined,
+          external_domains_top: result
+            ? buildExternalDomainsTop(result.rows)
+            : undefined,
+        });
+      }}
+    >
+      {content}
+    </SurfaceRuntimeProvider>
   );
 }

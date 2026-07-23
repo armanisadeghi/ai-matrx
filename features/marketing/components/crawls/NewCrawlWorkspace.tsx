@@ -16,6 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingCrawlsScope } from "@/features/surfaces/manifests/marketing-crawls.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
 import { LiveCrawlFeed } from "@/features/marketing/components/crawls/LiveCrawlFeed";
 import {
@@ -70,6 +73,7 @@ function siteCrawlOptions(settings: Json): CrawlStartOptions {
 
 export function NewCrawlWorkspace() {
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const [options, setOptions] = useState<CrawlStartOptions>(() =>
     siteCrawlOptions(site.settings),
@@ -147,6 +151,16 @@ export function NewCrawlWorkspace() {
   };
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-crawls"
+      surfaceLabel="Crawls"
+      getScope={() =>
+        createMarketingCrawlsScope({
+          ...getBaseValues(),
+          active_crawl_id: sessionId ?? undefined,
+        })
+      }
+    >
     <main className="flex h-full max-h-full min-h-0 flex-col overflow-hidden bg-textured p-3 sm:p-4">
       <div className="flex min-h-0 flex-1 gap-3 overflow-hidden sm:flex-row">
         <section className="flex w-full shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card sm:h-full sm:w-[23rem] sm:max-h-full">
@@ -314,5 +328,6 @@ export function NewCrawlWorkspace() {
         </div>
       </div>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

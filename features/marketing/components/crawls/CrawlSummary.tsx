@@ -1,6 +1,7 @@
 "use client";
 
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
 import {
   CrawlMetadataPanel,
@@ -74,6 +75,7 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
       attributes: { session_id: row.id, site_id: site.id },
     });
   return (
+    <CrawlSurfaceProvider crawlId={crawlId} crawl={row}>
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <CrawlSubnav crawl={row} />
       <section className="grid shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
@@ -194,5 +196,6 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
         </SectionCard>
       </div>
     </main>
+    </CrawlSurfaceProvider>
   );
 }

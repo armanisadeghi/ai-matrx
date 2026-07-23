@@ -8,6 +8,9 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingSitemapsScope } from "@/features/surfaces/manifests/marketing-sitemaps.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSitemap, useSitemapPages } from "@/features/marketing/data/hooks";
@@ -33,6 +36,7 @@ const FILTERS: Array<{ value: SitemapPagesFilter; label: string }> = [
 
 export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const router = useRouter();
   const sitemap = useSitemap(site.id, sitemapId);
   const [filter, setFilter] = useState<SitemapPagesFilter>("all");
@@ -148,6 +152,28 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
   });
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-sitemaps"
+      surfaceLabel="Sitemaps"
+      getScope={() =>
+        createMarketingSitemapsScope({
+          ...getBaseValues(),
+          sitemap_id: sitemapId,
+          sitemaps_summary: [
+            {
+              url: doc.url,
+              kind: doc.kind,
+              http_status: doc.status_code,
+              url_count: doc.url_count,
+              child_count: doc.child_count,
+              is_active: doc.is_active,
+              fetch_error: doc.fetch_error,
+              last_fetched_at: doc.last_fetched_at,
+            },
+          ],
+        })
+      }
+    >
     <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured p-3 sm:p-4">
       <header className="flex shrink-0 flex-wrap items-center gap-2">
         <Button
@@ -262,5 +288,6 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
         />
       </div>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

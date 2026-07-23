@@ -29,6 +29,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingDiscoveryScope } from "@/features/surfaces/manifests/marketing-discovery.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   useConfirmDiscoveredAsset,
@@ -130,6 +133,7 @@ function itemContextSnippet(item: DiscoveredItem): string | null {
 
 export function DiscoveryInbox() {
   const { site } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const [status, setStatus] = useState<DiscoveredItemStatus>("pending");
   const items = useDiscoveredItems(site.brand_id, status);
 
@@ -189,6 +193,26 @@ export function DiscoveryInbox() {
   });
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-discovery"
+      surfaceLabel="Discovery"
+      getScope={() => {
+        // Pending values are honest only when the Pending tab's data is the
+        // data actually loaded — other tabs load different rows.
+        const pendingLoaded = status === "pending" && items.data !== undefined;
+        return createMarketingDiscoveryScope({
+          ...getBaseValues(),
+          pending_count: pendingLoaded ? rows.length : undefined,
+          pending_items: pendingLoaded
+            ? rows.slice(0, 30).map((item) => ({
+                guessed_kind: item.guessed_kind,
+                url: item.url,
+                label: itemDisplayValue(item),
+              }))
+            : undefined,
+        });
+      }}
+    >
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
         <header className="flex flex-wrap items-center justify-between gap-2">
@@ -271,6 +295,7 @@ export function DiscoveryInbox() {
         )}
       </div>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }
 

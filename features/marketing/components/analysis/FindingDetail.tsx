@@ -22,6 +22,9 @@ import {
   SeverityBadge,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingFindingsScope } from "@/features/surfaces/manifests/marketing-findings.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import {
   formatCompactDate,
   formatDate,
@@ -118,6 +121,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const table = useMarketingTableState({
     defaultSort: { id: "computed_at", direction: "desc" },
   });
@@ -276,6 +280,29 @@ export function FindingDetail({ findingId }: { findingId: string }) {
   });
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-findings"
+      surfaceLabel="Findings"
+      getScope={() =>
+        createMarketingFindingsScope({
+          ...getBaseValues(),
+          finding_id: finding.id,
+          finding_summary: {
+            status: finding.status,
+            severity: finding.severity,
+            category: finding.category,
+            subcategory: finding.subcategory,
+            item_key: finding.item_key,
+            subject_type: finding.subject_type,
+            subject_id: finding.subject_id,
+            page_url: data.page?.url ?? null,
+            suppressed: finding.suppressed,
+            first_detected_at: finding.first_detected_at,
+            last_detected_at: finding.last_detected_at,
+          },
+        })
+      }
+    >
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <section className="shrink-0 overflow-hidden rounded-lg border border-border bg-card">
         <div className="flex min-w-0 flex-col gap-2 p-3 sm:flex-row sm:items-start sm:justify-between">
@@ -479,5 +506,6 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         )}
       </div>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

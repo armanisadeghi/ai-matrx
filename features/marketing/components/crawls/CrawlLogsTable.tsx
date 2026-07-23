@@ -5,6 +5,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
+import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useCrawl, useCrawlEvents } from "@/features/marketing/data/hooks";
 import type { CrawlEvent } from "@/features/marketing/types";
@@ -109,6 +110,7 @@ export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
       />
     );
   return (
+    <CrawlSurfaceProvider crawlId={crawlId} crawl={crawl.data ?? null}>
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <CrawlSubnav crawl={crawl.data} />
       <div className="min-h-0 flex-1">
@@ -178,5 +180,6 @@ export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
         )}
       </div>
     </main>
+    </CrawlSurfaceProvider>
   );
 }

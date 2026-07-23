@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { ArrowUpRight, Grid3x3, SearchCheck } from "lucide-react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingCoverageScope } from "@/features/surfaces/manifests/marketing-coverage.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useCoverageMatrix } from "@/features/marketing/data/hooks";
 import type {
@@ -82,6 +85,7 @@ function CoverageTile({
 
 export function CoverageWorkspace() {
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const matrix = useCoverageMatrix(site.id);
 
   if (matrix.isLoading) return <LoadingSurface label="Loading coverage…" />;
@@ -141,6 +145,17 @@ export function CoverageWorkspace() {
   });
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-coverage"
+      surfaceLabel="Coverage"
+      getScope={() =>
+        createMarketingCoverageScope({
+          ...getBaseValues(),
+          coverage_matrix: data ? { ...data } : undefined,
+          gsc_synced: Boolean(site.gsc_synced_at),
+        })
+      }
+    >
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
         <header className="flex items-start justify-between gap-2">
@@ -274,5 +289,6 @@ export function CoverageWorkspace() {
         </section>
       </div>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

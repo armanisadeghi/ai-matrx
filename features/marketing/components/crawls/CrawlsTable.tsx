@@ -9,6 +9,9 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingCrawlsScope } from "@/features/surfaces/manifests/marketing-crawls.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   useCrawls,
@@ -44,6 +47,7 @@ const TRIGGER_OPTIONS = [
 export function CrawlsTable() {
   const router = useRouter();
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const table = useMarketingTableState({
     defaultSort: { id: "started_at", direction: "desc" },
   });
@@ -163,6 +167,31 @@ export function CrawlsTable() {
       <QueryError error={crawls.error} onRetry={() => void crawls.refetch()} />
     );
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-crawls"
+      surfaceLabel="Crawls"
+      getScope={() => {
+        const rows = crawls.data?.rows ?? [];
+        return createMarketingCrawlsScope({
+          ...getBaseValues(),
+          recent_sessions:
+            rows.length > 0
+              ? rows.slice(0, 20).map((row) => ({
+                  id: row.id,
+                  status: row.status,
+                  trigger: row.trigger,
+                  started_at: row.started_at,
+                  finished_at: row.finished_at,
+                  pages_discovered: jsonNumber(row.stats, [
+                    "pages_discovered",
+                  ]),
+                  pages_fetched: jsonNumber(row.stats, ["pages_fetched"]),
+                  error: row.error,
+                }))
+              : undefined,
+        });
+      }}
+    >
     <main className="h-full overflow-hidden bg-textured p-3 sm:p-4">
       <MatrxDataTable<CrawlSession>
         data={crawls.data?.rows ?? []}
@@ -275,5 +304,6 @@ export function CrawlsTable() {
         onConfirm={() => void confirmDelete()}
       />
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

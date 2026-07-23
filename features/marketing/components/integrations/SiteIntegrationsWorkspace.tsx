@@ -32,6 +32,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingIntegrationsScope } from "@/features/surfaces/manifests/marketing-integrations.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   buildSiteIntegrations,
@@ -119,6 +122,7 @@ export function SiteIntegrationsWorkspace() {
 }
 
 function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const googleInventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
@@ -364,6 +368,38 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   });
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-integrations"
+      surfaceLabel="Integrations"
+      getScope={() =>
+        createMarketingIntegrationsScope({
+          ...getBaseValues(),
+          // Safe binding metadata ONLY — never tokens/secrets/credentials.
+          provider_bindings: {
+            google_search_console: {
+              enabled: draft.googleSearchConsole.enabled,
+              status: providerStatusLabel("googleSearchConsole"),
+              gsc_synced_at: site.gsc_synced_at,
+            },
+            google_analytics_4: {
+              enabled: draft.googleAnalytics4.enabled,
+              status: providerStatusLabel("googleAnalytics4"),
+            },
+            pagespeed_insights: {
+              enabled: draft.pageSpeedInsights.enabled,
+              status: providerStatusLabel("pageSpeedInsights"),
+            },
+            custom_providers: draft.customProviders.map((provider) => ({
+              key: provider.key,
+              label: provider.label,
+              enabled: provider.enabled,
+              status: providerReferenceStatus(provider).replace(/_/g, " "),
+            })),
+          },
+          gsc_synced_at: site.gsc_synced_at ?? undefined,
+        })
+      }
+    >
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -569,6 +605,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
         </div>
       </div>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }
 

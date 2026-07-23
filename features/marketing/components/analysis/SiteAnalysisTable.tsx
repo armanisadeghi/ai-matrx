@@ -11,6 +11,9 @@ import {
   SeverityBadge,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingAnalysisScope } from "@/features/surfaces/manifests/marketing-analysis.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useSitePriorityQueue } from "@/features/marketing/data/analysis-hooks";
 import type { PriorityQueueRow } from "@/features/marketing/data/analysis-types";
@@ -33,6 +36,7 @@ export function SiteAnalysisTable() {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
   const { site, sitePath } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const table = useMarketingTableState({
     defaultSort: { id: "priority", direction: "desc" },
   });
@@ -130,6 +134,29 @@ export function SiteAnalysisTable() {
   };
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-analysis"
+      surfaceLabel="Analysis"
+      getScope={() => {
+        const rows = priority.data?.rows ?? [];
+        return createMarketingAnalysisScope({
+          ...getBaseValues(),
+          queue_total: priority.data?.total,
+          top_queue_items:
+            rows.length > 0
+              ? rows.slice(0, 10).map((row) => ({
+                  item_key: row.item_key,
+                  category: row.category,
+                  subcategory: row.subcategory,
+                  severity: row.severity,
+                  priority: row.priority,
+                  page_path: row.page_path,
+                  page_url: row.page_url,
+                }))
+              : undefined,
+        });
+      }}
+    >
     <main className="h-full overflow-hidden bg-textured p-3 sm:p-4">
       <MatrxDataTable<PriorityQueueRow>
         data={priority.data?.rows ?? []}
@@ -224,5 +251,6 @@ export function SiteAnalysisTable() {
         }}
       />
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

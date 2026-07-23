@@ -6,6 +6,7 @@ import { ArrowLeft, ExternalLink, FileSearch } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
+import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import {
   formatCompactDate,
   LoadingSurface,
@@ -740,6 +741,21 @@ export function CrawlReportWorkspace({
   );
 
   return (
+    <CrawlSurfaceProvider
+      crawlId={crawlId}
+      crawl={crawl.data}
+      reportKey={reportKey}
+      getReportSummary={() => {
+        if (!query.data) return undefined;
+        return {
+          report_key: report.key,
+          report_label: report.label,
+          report_source: report.source,
+          loaded_rows: query.data.rows.length,
+          total_rows: query.data.total,
+        };
+      }}
+    >
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <CrawlSubnav crawl={crawl.data} />
       <section className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
@@ -907,5 +923,6 @@ export function CrawlReportWorkspace({
         )}
       </div>
     </main>
+    </CrawlSurfaceProvider>
   );
 }
