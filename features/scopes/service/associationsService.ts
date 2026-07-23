@@ -56,6 +56,20 @@ interface AssocForEntityRow {
   created_at: string;
 }
 
+interface ConversationFileRow {
+  file_id: string;
+  label: string | null;
+  metadata: Json;
+  created_at: string;
+}
+
+export interface ConversationFileLink {
+  fileId: string;
+  label: string | null;
+  metadata: Json;
+  createdAt: string;
+}
+
 function toEdge(row: AssocForEntityRow): AssociationEdge {
   return {
     id: row.id,
@@ -158,6 +172,37 @@ export const associationsService = {
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as AssocForEntityRow[];
       return ok({ edges: rows.map(toEdge) });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /**
+   * Viewer-aware file attachments for a conversation. Unlike the generic
+   * org-filtered association reader, this follows the conversation's canonical
+   * viewer grant, so an explicitly shared cross-org conversation has the same
+   * attachment inventory in every client.
+   */
+  async listConversationFiles(
+    conversationId: string,
+  ): Promise<ScopesRpcResult<{ files: ConversationFileLink[] }>> {
+    try {
+      requireUserId();
+      const bad = checkUuid("conversationId", conversationId);
+      if (bad) return { ok: false, error: bad };
+      const { data, error } = await supabase.rpc("conversation_files", {
+        p_conversation_id: conversationId,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      const rows = (Array.isArray(data) ? data : []) as ConversationFileRow[];
+      return ok({
+        files: rows.map((row) => ({
+          fileId: row.file_id,
+          label: row.label ?? null,
+          metadata: row.metadata ?? {},
+          createdAt: row.created_at,
+        })),
+      });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
@@ -300,6 +345,11 @@ export const associationsService = {
     orgId?: string;
     label?: string;
     metadata?: Json;
+    /**
+     * Exact file → conversation updates preserve existing metadata unless the
+     * caller explicitly opts into replacement. Invalid for every other pair.
+     */
+    replaceMetadata?: boolean;
     role?: string;
     position?: number;
     /**
@@ -345,12 +395,19 @@ export const associationsService = {
           p_file_id: args.sourceId,
           p_label: args.label,
           p_metadata: args.metadata ?? {},
+          p_replace_metadata: args.replaceMetadata ?? false,
         });
         if (error) return err(...mapPgErrorPair(error));
         if (!data || typeof data !== "string") {
           return err("internal", "conversation_file_add returned no association id");
         }
         return ok({ id: data });
+      }
+      if (args.replaceMetadata != null) {
+        return err(
+          "invalid_argument",
+          "replaceMetadata is supported only for file conversation attachments",
+        );
       }
       const { data, error } = await supabase.rpc("assoc_add", {
         p_source_type: sourceType,

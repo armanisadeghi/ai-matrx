@@ -7,16 +7,24 @@
 // edge SOURCE and the container is the edge TARGET — `task → organization`,
 // `file → scope`. So a container's attached resources are its INCOMING edges.
 //
-// It reads through `useAssociations({ type: containerType, id: containerId })`
-// (shared Redux cache — every card for the same container dedupes to ONE fetch)
-// and derives per-token counts/links from the incoming edges. Writes go through
-// the association thunks with source=resource → target=container; those reload
-// BOTH endpoints, so the container's counts refresh automatically.
+// It normally reads through `useAssociations({ type: containerType,
+// id: containerId })` (shared Redux cache). Conversation file attachments use
+// the viewer-aware `conversation_files` RPC instead: the generic association
+// reader is org-filtered and would omit files for an explicitly shared
+// cross-org conversation. Writes still use the one association chokepoint.
 
 "use client";
 
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import {
   addAssociation as addAssociationThunk,
   removeAssociation as removeAssociationThunk,
@@ -28,6 +36,7 @@ import type {
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import type { Json } from "@/types/database.types";
+import { isScopesRpcErr } from "@/features/scopes/types";
 
 export interface ContainerLink {
   /** The edge id (for keys / removal). */
@@ -69,6 +78,7 @@ export interface UseContainerLinksReturn {
     resourceId: string,
     label?: string,
     metadata?: Json,
+    options?: { replaceMetadata?: boolean },
   ) => Promise<AssociationWriteResult>;
   /** Detach a resource from this container. */
   detach: (
@@ -83,34 +93,125 @@ export function useContainerLinks(
   const { containerType, containerId, orgId } = args;
   const dispatch = useAppDispatch();
 
-  const { edges, status, error, reload } = useAssociations({
+  const {
+    edges,
+    status: genericStatus,
+    error: genericError,
+    reload: reloadGeneric,
+  } = useAssociations({
     type: containerType,
     id: containerId,
   });
 
+  const conversationKey =
+    containerType === "conversation" && containerId
+      ? `conversation:${containerId}`
+      : null;
+  const activeConversationKey = useRef<string | null>(conversationKey);
+  const conversationGeneration = useRef(0);
+  const [conversationResult, setConversationResult] = useState<{
+    key: string;
+    files: ContainerLink[];
+    error: string | null;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    activeConversationKey.current = conversationKey;
+    conversationGeneration.current += 1;
+  }, [conversationKey]);
+
+  const loadConversationFiles = useCallback(async (): Promise<void> => {
+    const key = conversationKey;
+    if (!key || !containerId) return;
+    // A mutation from the previous conversation may settle after navigation.
+    // It must not clear or overwrite the current conversation's inventory.
+    if (activeConversationKey.current !== key) return;
+    const generation = ++conversationGeneration.current;
+    const result = await associationsService.listConversationFiles(containerId);
+    if (
+      generation !== conversationGeneration.current ||
+      activeConversationKey.current !== key
+    ) {
+      return;
+    }
+    if (isScopesRpcErr(result)) {
+      setConversationResult({
+        key,
+        files: [],
+        error: result.error.message,
+      });
+      return;
+    }
+    setConversationResult({
+      key,
+      files: result.data.files.map((file) => ({
+        edgeId: `conversation-file:${file.fileId}`,
+        resourceId: file.fileId,
+        token: "file",
+        role: null,
+        label: file.label,
+        metadata: file.metadata,
+      })),
+      error: null,
+    });
+  }, [containerId, conversationKey]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void loadConversationFiles();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [loadConversationFiles]);
+
+  const conversationFiles =
+    conversationResult?.key === conversationKey ? conversationResult.files : [];
+  const conversationFileError =
+    conversationResult?.key === conversationKey ? conversationResult.error : null;
+  const conversationFileStatus =
+    containerType !== "conversation"
+      ? "idle"
+      : conversationResult?.key !== conversationKey
+        ? "loading"
+        : conversationFileError
+          ? "error"
+          : "ready";
+
   // A container's attached resources are the edges pointing AT it (incoming).
-  const incoming: AssociationEdge[] = edges.filter(
-    (e) => e.direction === "incoming",
-  );
+  // Suppress the generic conversation-file copy because its org-filtered read
+  // is intentionally replaced by the viewer-aware dedicated result above.
+  const incomingGeneric: ContainerLink[] = edges
+    .filter(
+      (edge: AssociationEdge) =>
+        edge.direction === "incoming" &&
+        !(
+          containerType === "conversation" &&
+          edge.otherType === "file"
+        ),
+    )
+    .map((edge) => ({
+      edgeId: edge.id,
+      resourceId: edge.otherId,
+      token: edge.otherType,
+      role: edge.role ?? null,
+      label: edge.label ?? null,
+      metadata: edge.metadata ?? {},
+    }));
+  const incoming =
+    containerType === "conversation"
+      ? [...incomingGeneric, ...conversationFiles]
+      : incomingGeneric;
 
   const linksFor = (token: EntityTypeToken): ContainerLink[] =>
-    incoming
-      .filter((e) => e.otherType === token)
-      .map((e) => ({
-        edgeId: e.id,
-        resourceId: e.otherId,
-        token: e.otherType,
-        role: e.role ?? null,
-        label: e.label ?? null,
-        metadata: e.metadata ?? {},
-      }));
+    incoming.filter((link) => link.token === token);
 
   const countFor = (token: EntityTypeToken): number =>
-    incoming.reduce((n, e) => (e.otherType === token ? n + 1 : n), 0);
+    incoming.reduce((n, link) => (link.token === token ? n + 1 : n), 0);
 
   const attachedIdsFor = (token: EntityTypeToken): Set<string> => {
     const set = new Set<string>();
-    for (const e of incoming) if (e.otherType === token) set.add(e.otherId);
+    for (const link of incoming) {
+      if (link.token === token) set.add(link.resourceId);
+    }
     return set;
   };
 
@@ -119,9 +220,10 @@ export function useContainerLinks(
     resourceId: string,
     label?: string,
     metadata?: Json,
+    options?: { replaceMetadata?: boolean },
   ): Promise<AssociationWriteResult> => {
     if (!containerId) return { ok: false, error: "Missing container id" };
-    return dispatch(
+    const result = await dispatch(
       addAssociationThunk({
         sourceType: token,
         sourceId: resourceId,
@@ -130,8 +232,17 @@ export function useContainerLinks(
         orgId: orgId ?? undefined,
         label,
         metadata,
+        replaceMetadata: options?.replaceMetadata,
       }),
     );
+    if (
+      result.ok &&
+      containerType === "conversation" &&
+      token === "file"
+    ) {
+      await loadConversationFiles();
+    }
+    return result;
   };
 
   const detach = async (
@@ -139,7 +250,7 @@ export function useContainerLinks(
     resourceId: string,
   ): Promise<AssociationWriteResult> => {
     if (!containerId) return { ok: false, error: "Missing container id" };
-    return dispatch(
+    const result = await dispatch(
       removeAssociationThunk({
         sourceType: token,
         sourceId: resourceId,
@@ -147,7 +258,36 @@ export function useContainerLinks(
         targetId: containerId,
       }),
     );
+    if (
+      result.ok &&
+      containerType === "conversation" &&
+      token === "file"
+    ) {
+      await loadConversationFiles();
+    }
+    return result;
   };
+
+  const reload = async (): Promise<void> => {
+    await Promise.all([
+      reloadGeneric(),
+      containerType === "conversation"
+        ? loadConversationFiles()
+        : Promise.resolve(),
+    ]);
+  };
+
+  const status =
+    !containerId
+      ? genericStatus
+      : conversationFileStatus === "error"
+        ? "error"
+        : containerType === "conversation" &&
+            (conversationFileStatus === "idle" ||
+              conversationFileStatus === "loading")
+          ? "loading"
+          : genericStatus;
+  const error = conversationFileError ?? genericError;
 
   return {
     status,

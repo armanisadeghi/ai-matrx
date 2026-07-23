@@ -28513,6 +28513,7 @@ export type Database = {
           p_file_id: string
           p_label?: string
           p_metadata?: Json
+          p_replace_metadata?: boolean
         }
         Returns: string
       }

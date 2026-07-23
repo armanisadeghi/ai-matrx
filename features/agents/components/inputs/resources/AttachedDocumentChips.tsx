@@ -272,6 +272,7 @@ export function AttachedDocumentChips({
       fileId,
       displayTitle,
       metaAsJson(fileId, policy),
+      { replaceMetadata: true },
     );
     if (!attachResult.ok) {
       console.error("[attached-document] family policy change failed", {
@@ -305,6 +306,7 @@ export function AttachedDocumentChips({
             fileId,
             priorFileEdge.label ?? displayTitle,
             priorFileEdge.metadata,
+            { replaceMetadata: true },
           )
           : await links.detach("file", fileId);
         if (!rollbackResult.ok) {
