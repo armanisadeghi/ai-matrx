@@ -135,11 +135,11 @@ export function useContainerLinks(
       return;
     }
     if (isScopesRpcErr(result)) {
-      setConversationResult({
+      setConversationResult((current) => ({
         key,
-        files: [],
+        files: current?.key === key ? current.files : [],
         error: result.error.message,
-      });
+      }));
       return;
     }
     setConversationResult({

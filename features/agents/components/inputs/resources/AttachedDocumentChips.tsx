@@ -15,7 +15,7 @@
  * complete dynamic family policy + remove. Only the USER removes an attachment.
  */
 
-import { FileText } from "lucide-react";
+import { AlertTriangle, FileText, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -236,7 +236,13 @@ export function AttachedDocumentChips({
   );
   const visibleFiles = files.filter((l) => !processedFileIds.has(l.resourceId));
 
-  if (processedDocs.length === 0 && visibleFiles.length === 0) return null;
+  if (
+    processedDocs.length === 0 &&
+    visibleFiles.length === 0 &&
+    !links.error
+  ) {
+    return null;
+  }
 
   const openDrawer = (drawerItems: ContextDrawerItem[], id: string) => {
     drawer.openItem(drawerItems, id);
@@ -328,6 +334,21 @@ export function AttachedDocumentChips({
 
   return (
     <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
+      {links.error && (
+        <button
+          type="button"
+          onClick={() => void links.reload()}
+          disabled={links.status === "loading"}
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-xs text-amber-700 hover:bg-amber-500/15 disabled:opacity-60 dark:text-amber-300"
+          title={links.error}
+        >
+          <AlertTriangle className="size-3.5" />
+          Attachment list unavailable
+          <RefreshCw
+            className={`size-3 ${links.status === "loading" ? "animate-spin" : ""}`}
+          />
+        </button>
+      )}
       <AnimatePresence mode="popLayout">
         {processedDocs.map((link) => (
           <DocumentChipRow
