@@ -12,6 +12,10 @@ The flow is `Content → Script → Audio` with hard gates between stages; the g
 system (through 2026-07-06, incl. the runs/recovery/per-asset-regen subsystem) is
 `features/podcasts/FEATURE.md` — do not restate it here.
 
+This handoff covers the **generation pipeline** (gates, casts, chapters, languages). The **live run
+page** — the false-stall bug and streaming the research back to the user — is a separate work order:
+`docs/handoffs/podcast-run-liveness-and-research-feed.md`.
+
 ## Vision — Arman's words
 
 - Exact speaker count is law: "14 means 14" — GATE 2 fails a run whose script doesn't produce
