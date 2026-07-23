@@ -145,21 +145,29 @@ interface BabelBindingLike {
 interface BabelProgramPathLike {
   scope: { bindings: Record<string, BabelBindingLike> };
 }
+/**
+ * Returns a Babel PLUGIN FACTORY (an uncalled function, matching how
+ * `@babel/standalone` types every `plugins[]` entry) closed over `sink`. Add it
+ * to the `plugins` array of the same `transform` call that produces the sandbox
+ * body: `plugins: [otherPlugin, collectTopLevelBindingsPlugin(sink)]`.
+ */
 export function collectTopLevelBindingsPlugin(sink: Set<string>) {
-  return {
-    name: "collect-top-level-bindings",
-    visitor: {
-      Program: {
-        exit(path: BabelProgramPathLike) {
-          const bindings = path.scope.bindings;
-          for (const name of Object.keys(bindings)) {
-            const kind = bindings[name]?.kind;
-            if (kind === "module" || kind === "param") continue;
-            sink.add(name);
-          }
+  return function collectTopLevelBindings() {
+    return {
+      name: "collect-top-level-bindings",
+      visitor: {
+        Program: {
+          exit(path: BabelProgramPathLike) {
+            const bindings = path.scope.bindings;
+            for (const name of Object.keys(bindings)) {
+              const kind = bindings[name]?.kind;
+              if (kind === "module" || kind === "param") continue;
+              sink.add(name);
+            }
+          },
         },
       },
-    },
+    };
   };
 }
 
