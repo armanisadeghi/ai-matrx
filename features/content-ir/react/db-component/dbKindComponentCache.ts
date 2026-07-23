@@ -32,6 +32,7 @@ import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { JsonObject } from "@/types/json";
 import type { ComponentResolution } from "../../registry/component-registry";
+import type { RunKindAction } from "../actions/useKindActionRunner";
 
 /** Props every compiled DB kind component receives. */
 export interface DbKindComponentRenderProps {
@@ -41,6 +42,13 @@ export interface DbKindComponentRenderProps {
   kind: string;
   /** The resolver row's `config` object, verbatim. */
   config: JsonObject;
+  /**
+   * The action seam: `runAction(key, input)` triggers a registered platform
+   * capability (e.g. "trigger_agent"). Always resolves to a `{ ok }` envelope,
+   * never throws — safe to call from imperfect component code. This is the ONLY
+   * side-effect channel a sandboxed component gets; it reaches no data directly.
+   */
+  runAction: RunKindAction;
 }
 
 export interface CompiledDbKindComponent {

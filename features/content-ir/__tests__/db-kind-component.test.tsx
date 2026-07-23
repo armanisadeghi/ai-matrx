@@ -407,6 +407,7 @@ describe("staleness — refresh re-keys the compile cache", () => {
         data: { title: "X" },
         kind: "k1_stale",
         config: {},
+        runAction: async () => ({ ok: false as const, error: "noop" }),
       }),
     );
     expect(html).toContain("v2:X");

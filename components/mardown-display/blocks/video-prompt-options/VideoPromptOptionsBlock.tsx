@@ -151,7 +151,6 @@ function VariationCard({
               label={action.label ?? "Generate video"}
               variables={{ [action.variableName]: variation.prompt }}
               llmOverrides={overrides}
-              sourceFeature="kind-action"
             />
           ) : null}
         </div>

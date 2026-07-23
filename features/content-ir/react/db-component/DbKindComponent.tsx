@@ -18,6 +18,7 @@ import dynamic from "next/dynamic";
 import React from "react";
 
 import type { DbKindComponentImplProps } from "./DbKindComponentImpl";
+import { useKindActionRunner } from "../actions/useKindActionRunner";
 
 const LazyImpl = dynamic(
   () =>
@@ -27,12 +28,17 @@ const LazyImpl = dynamic(
   { ssr: false, loading: () => null },
 );
 
-// The public wrapper props ARE the impl props — the wrapper only adds the
-// lazy boundary (Method B: shell exports the type, impl stays un-importable).
-export type DbKindComponentProps = DbKindComponentImplProps;
+// The public wrapper props ARE the impl props MINUS runAction — the shell owns
+// binding the action seam (it's the always-client boundary, under the Redux
+// provider), so callers never supply it.
+export type DbKindComponentProps = Omit<DbKindComponentImplProps, "runAction">;
 
 export const DbKindComponent: React.FC<DbKindComponentProps> = (props) => {
-  return <LazyImpl {...props} />;
+  // Bind the action runner here (client, under the provider) and hand it to the
+  // compiled component. Keeping this in the shell — not the impl — keeps the
+  // impl bare-renderable (tests/SSR) and Redux out of that path.
+  const runAction = useKindActionRunner();
+  return <LazyImpl {...props} runAction={runAction} />;
 };
 
 export default DbKindComponent;

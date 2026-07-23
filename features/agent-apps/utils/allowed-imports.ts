@@ -93,6 +93,21 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     exports: ["DynamicIcon", "renderIcon", "getIconComponent"],
   },
   {
+    // Copy / Copy-for-AI — the mandated action on every kind component. Safe:
+    // it only writes the clipboard (+ toast) from caller-supplied `human`/
+    // `agent` payload builders; it reaches no app data on its own.
+    path: "@/components/agent-copy/CopyButtons",
+    loader: () => require("@/components/agent-copy/CopyButtons"),
+    scopeStrategy: "named",
+    exports: ["CopyButtons"],
+  },
+  {
+    path: "@/components/agent-copy/CopyForAiButton",
+    loader: () => require("@/components/agent-copy/CopyForAiButton"),
+    scopeStrategy: "named",
+    exports: ["CopyForAiButton"],
+  },
+  {
     path: "@/components/Markdown",
     loader: () => require("@/components/MarkdownStream"),
     scopeStrategy: "named",

@@ -35,6 +35,16 @@ import {
 } from "./dbKindComponentCache";
 import { DbKindComponentErrorBoundary } from "./DbKindComponentErrorBoundary";
 import { KindHtmlFrame } from "./KindHtmlFrame";
+import type { RunKindAction } from "../actions/useKindActionRunner";
+
+/**
+ * Safe fallback when no runner is supplied (bare test/SSR render): the action
+ * seam still exists and still never throws — it just reports "unavailable".
+ */
+const noopRunAction: RunKindAction = async (key) => ({
+  ok: false,
+  error: `Action "${key}" is unavailable (no runner bound to this surface).`,
+});
 
 export interface DbKindComponentImplProps {
   /** Raw region source — the zero-loss floor + the generic viewer's input. */
@@ -42,6 +52,12 @@ export interface DbKindComponentImplProps {
   /** Carries `__ir` (the parsed envelope) and `__ir_route` (the marker). */
   metadata?: Record<string, unknown>;
   className?: string;
+  /**
+   * The action seam handed to the compiled component. Supplied by the client
+   * shell (`DbKindComponent`) from `useKindActionRunner`; defaults to a safe
+   * "unavailable" runner so a bare render (tests/SSR) never needs a store.
+   */
+  runAction?: RunKindAction;
 }
 
 const screamedDefects = new Set<string>();
@@ -87,6 +103,7 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
   content,
   metadata,
   className,
+  runAction = noopRunAction,
 }) => {
   const generic = (
     <GenericStructuredBlock
@@ -142,7 +159,12 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
       resetSignal={resolution.updatedAt}
       fallback={generic}
     >
-      <Component data={data} kind={kind} config={resolution.config} />
+      <Component
+        data={data}
+        kind={kind}
+        config={resolution.config}
+        runAction={runAction}
+      />
     </DbKindComponentErrorBoundary>
   );
 };
