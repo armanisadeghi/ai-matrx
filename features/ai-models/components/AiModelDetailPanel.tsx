@@ -1402,9 +1402,7 @@ export default function AiModelDetailPanel({
                 onSave={handleJsonSave("capabilities")}
                 description="Supported features (array or object)"
                 defaultExpanded
-                onDirtyChange={(dirty) =>
-                  reportSectionDirty("json-capabilities", dirty)
-                }
+                onDirtyChange={reportJsonCapsDirty}
               />
             </TabsContent>
 
@@ -1416,9 +1414,7 @@ export default function AiModelDetailPanel({
                 <ModelControlsEditor
                   model={model}
                   offerings={offerings}
-                  onDirtyChange={(dirty) =>
-                    reportSectionDirty("controls", dirty)
-                  }
+                  onDirtyChange={reportControlsDirty}
                 />
               )}
             </TabsContent>
@@ -1431,9 +1427,7 @@ export default function AiModelDetailPanel({
                 <ModelRulesEditor
                   model={model}
                   offerings={offerings}
-                  onDirtyChange={(section, dirty) =>
-                    reportSectionDirty(`constraints-${section}`, dirty)
-                  }
+                  onDirtyChange={reportConstraintsDirty}
                 />
               )}
             </TabsContent>
