@@ -15,7 +15,10 @@ import type { CatalogEntryRow } from "@/features/admin/applications/catalogs/typ
 /** Same constraints as the DB CHECKs on catalog_entries. */
 export const CATALOG_APP_REGEX = /^[a-z0-9][a-z0-9-]{1,62}$/;
 export const CATALOG_KIND_REGEX = /^[a-z0-9][a-z0-9_]{1,62}$/;
-export const CATALOG_KEY_REGEX = /^[A-Za-z0-9][A-Za-z0-9._:@/ -]{0,199}$/;
+// Includes underscore, matching the LIVE DB CHECK (verified 2026-07-23:
+// key ~ '^[A-Za-z0-9][A-Za-z0-9._:@/ _-]{0,199}$'). This constant was stale —
+// credential_definition keys are snake_case ('env_value', 'openai_api_key').
+export const CATALOG_KEY_REGEX = /^[A-Za-z0-9][A-Za-z0-9._:@/_ -]{0,199}$/;
 export const SEMVER_REGEX = /^\d+\.\d+\.\d+$/;
 export const SHA256_REGEX = /^[a-f0-9]{64}$/;
 
@@ -302,6 +305,123 @@ export const apiKeyProviderSchema = loose({
   }
 });
 
+// ── credential_definition (Unified Credential Vault, app='matrx') ────────────
+
+const ENV_ALIAS_REGEX = /^[A-Z][A-Z0-9_]*$/;
+const FIELD_KEY_REGEX = /^[a-z][a-z0-9_]*$/;
+
+/** Twin of `CredentialFieldPayload` — one field of a credential definition.
+ *  `placeholder_example` must be a SAFE non-secret fake. */
+export const credentialFieldSchema = loose({
+  field_key: z.string().regex(FIELD_KEY_REGEX),
+  label: z.string(),
+  description: z.string().optional(),
+  placeholder_example: z.string().optional(),
+  format: z.string().nullable().optional(),
+  validation_regex: z.string().nullable().optional(),
+  env_aliases: z.array(z.string().regex(ENV_ALIAS_REGEX)).optional(),
+  handling: z.enum(["visible", "revealable", "sealed"]).optional(),
+  editable: z.boolean().optional(),
+  inject_into_sandbox: z.boolean().optional(),
+  required: z.boolean().optional(),
+  group: z.string().nullable().optional(),
+  repeated: z.boolean().optional(),
+});
+
+/** Twin of `CredentialDefinitionPayload` — a credential-type definition or
+ *  provider preset for the Unified Credential Vault (non-secret catalog data;
+ *  row key = the stable definition key, e.g. 'env_value'). A preset sets
+ *  `base_definition_key` (+ usually `provider_key`, matching api_key_provider
+ *  slugs where they exist); base definitions must declare fields. Mirrors the
+ *  Pydantic `_consistent` model validator. */
+export const credentialDefinitionSchema = loose({
+  label: z.string(),
+  description: z.string().optional(),
+  family: z.enum([
+    "generic",
+    "ai_providers",
+    "source_control",
+    "cloud_infrastructure",
+    "databases",
+    "hosting_deployment",
+    "server_network",
+    "domains_dns_cdn",
+    "messaging_communications",
+    "payments_commerce",
+    "business_platforms",
+    "analytics_marketing",
+    "cms_content",
+    "identity_security",
+    "automation_integrations",
+    "signing_files",
+  ]),
+  tags: z.array(z.string()).optional(),
+  docs_url: z.string().nullable().optional(),
+  setup_hints: z.array(z.string()).optional(),
+  fields: z.array(credentialFieldSchema).optional(),
+  mutually_exclusive: z.array(z.array(z.string())).optional(),
+  import_adapters: z.array(z.enum(["env", "json", "pem", "kv"])).optional(),
+  expiring: z.boolean().optional(),
+  refreshable: z.boolean().optional(),
+  verifiable: z.boolean().optional(),
+  rotatable: z.boolean().optional(),
+  auth_type: z
+    .enum(["oauth2", "api_key", "bearer", "basic", "headers", "stdio_env"])
+    .nullable()
+    .optional(),
+  auth_field_map: z.record(z.string(), z.string()).optional(),
+  base_definition_key: z.string().nullable().optional(),
+  provider_key: z.string().nullable().optional(),
+}).superRefine((payload, ctx) => {
+  const fields = Array.isArray(payload.fields) ? payload.fields : [];
+  const keys = fields
+    .map((f) => (f as { field_key?: unknown }).field_key)
+    .filter((k): k is string => typeof k === "string");
+  if (new Set(keys).size !== keys.length) {
+    ctx.addIssue({ code: "custom", message: "duplicate field_key within definition" });
+  }
+  const isPreset =
+    payload.base_definition_key !== null &&
+    payload.base_definition_key !== undefined;
+  if (payload.provider_key != null && !isPreset) {
+    ctx.addIssue({
+      code: "custom",
+      message: "provider_key requires base_definition_key (presets specialize a base)",
+    });
+  }
+  if (!isPreset && fields.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      message: "a base definition (no base_definition_key) must declare fields",
+    });
+  }
+  const known = new Set(keys);
+  for (const grp of payload.mutually_exclusive ?? []) {
+    if (grp.length < 2) {
+      ctx.addIssue({
+        code: "custom",
+        message: "mutually_exclusive groups need at least 2 field_keys",
+      });
+    }
+    for (const fk of grp) {
+      if (known.size > 0 && !known.has(fk)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `mutually_exclusive references unknown field_key '${fk}'`,
+        });
+      }
+    }
+  }
+  for (const [role, fk] of Object.entries(payload.auth_field_map ?? {})) {
+    if (known.size > 0 && !known.has(fk)) {
+      ctx.addIssue({
+        code: "custom",
+        message: `auth_field_map['${role}'] references unknown field_key '${fk}'`,
+      });
+    }
+  }
+});
+
 // ── Kind registry ────────────────────────────────────────────────────────────
 
 export interface CatalogKindDef {
@@ -420,6 +540,14 @@ export const CATALOG_KINDS: readonly CatalogKindDef[] = [
     description:
       "Provider key patterns for the desktop API-key vault (must match backend VALID_PROVIDERS).",
     schema: apiKeyProviderSchema,
+    hasArtifact: false,
+  },
+  {
+    slug: "credential_definition",
+    label: "Credential definitions",
+    description:
+      "Unified Credential Vault definitions and provider presets (app='matrx') — non-secret field layouts, handling defaults, env aliases, import adapters.",
+    schema: credentialDefinitionSchema,
     hasArtifact: false,
   },
 ] as const;
