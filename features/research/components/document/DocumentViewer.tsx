@@ -43,6 +43,7 @@ import {
 // wrapper is the lightweight shell (imported statically); MenuContent
 // lazy-loads on first open.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CostValue } from "@/components/processing-units/CostValue";
 
 export default function DocumentViewer() {
   const { topicId, topic, progress, refresh } = useTopicContext();
@@ -398,18 +399,26 @@ export default function DocumentViewer() {
         {/* Token usage */}
         {docTokenUsage && (
           <div className="flex items-center gap-4 text-[10px] text-muted-foreground mb-4 pb-4 border-b border-border">
-            {docTokenUsage.input_tokens != null && (
-              <span>
-                Input: {docTokenUsage.input_tokens.toLocaleString()} tokens
+            <span>
+              Input: {docTokenUsage.inputTokens.toLocaleString()} tokens
+            </span>
+            {docTokenUsage.cachedInputTokens > 0 && (
+              <span className="text-muted-foreground/60">
+                Cached: {docTokenUsage.cachedInputTokens.toLocaleString()}
               </span>
             )}
-            {docTokenUsage.output_tokens != null && (
-              <span>
-                Output: {docTokenUsage.output_tokens.toLocaleString()} tokens
+            <span>
+              Output: {docTokenUsage.outputTokens.toLocaleString()} tokens
+            </span>
+            {docTokenUsage.models.length > 0 && (
+              <span className="text-muted-foreground/50">
+                {docTokenUsage.models.map((m) => m.model).join(", ")}
               </span>
             )}
-            {docTokenUsage.estimated_cost != null && (
-              <span>Cost: ${docTokenUsage.estimated_cost.toFixed(4)}</span>
+            {docTokenUsage.costUsd != null && (
+              <span className="inline-flex items-center gap-1">
+                Cost: <CostValue costUsd={docTokenUsage.costUsd} short />
+              </span>
             )}
           </div>
         )}

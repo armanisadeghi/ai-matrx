@@ -18,6 +18,7 @@ import { useResearchApi } from "../../hooks/useResearchApi";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { humanizeAgentType } from "../../labels";
 import { type ResearchAnalysis, tokenUsageFromJson } from "../../types";
+import { CostValue } from "@/components/processing-units/CostValue";
 
 interface AnalysisCardProps {
   analysis: ResearchAnalysis | null;
@@ -289,14 +290,20 @@ export function AnalysisCard({
 
           {tokenUsage && (
             <div className="flex items-center gap-4 text-[10px] text-muted-foreground border-t border-border pt-2">
-              {tokenUsage.input_tokens != null && (
-                <span>In: {tokenUsage.input_tokens.toLocaleString()}</span>
+              <span>In: {tokenUsage.inputTokens.toLocaleString()}</span>
+              {tokenUsage.cachedInputTokens > 0 && (
+                <span className="text-muted-foreground/60">
+                  Cached: {tokenUsage.cachedInputTokens.toLocaleString()}
+                </span>
               )}
-              {tokenUsage.output_tokens != null && (
-                <span>Out: {tokenUsage.output_tokens.toLocaleString()}</span>
+              <span>Out: {tokenUsage.outputTokens.toLocaleString()}</span>
+              {tokenUsage.models.length > 0 && (
+                <span className="text-muted-foreground/50">
+                  {tokenUsage.models.map((m) => m.model).join(", ")}
+                </span>
               )}
-              {tokenUsage.estimated_cost != null && (
-                <span>${tokenUsage.estimated_cost.toFixed(4)}</span>
+              {tokenUsage.costUsd != null && (
+                <CostValue costUsd={tokenUsage.costUsd} short />
               )}
             </div>
           )}

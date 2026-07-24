@@ -1,5 +1,9 @@
 import type { components } from "@/types/python-generated/api-types";
 import type { Database, Json } from "@/types/database.types";
+import {
+  normalizeTokenUsage,
+  type NormalizedUsage,
+} from "@/lib/token-usage/normalize";
 
 // ============================================================================
 // REQUEST BODY TYPES
@@ -999,28 +1003,25 @@ export interface ExtractedLink {
   found_on_url: string | null;
 }
 
-export interface TokenUsage {
-  input_tokens?: number;
-  output_tokens?: number;
-  total_tokens?: number;
-  model?: string;
-  estimated_cost?: number;
-}
+/**
+ * A persisted `token_usage` blob, normalized.
+ *
+ * DEFECT HISTORY (do not regress): this used to be a hand-written flat shape
+ * (`{ input_tokens, estimated_cost }`) read straight off the JSONB column. No
+ * row has ever been written that way — the server persists the generated
+ * `AggregatedUsageResult` shape (`{ total, by_model }`) — so every research
+ * surface that showed tokens or cost rendered zero on 100% of real data
+ * (verified 2026-07-24: 0 of 331 `rs_analysis` rows carried the flat keys).
+ * Parsing now lives in ONE platform primitive, `@/lib/token-usage/normalize`.
+ * Never re-read `token_usage.input_tokens` at a callsite.
+ */
+export type TokenUsage = NormalizedUsage;
 
 /** Narrow DB `Json` (unknown) token_usage payloads for UI. */
 export function tokenUsageFromJson(
   raw: Json | null | undefined,
 ): TokenUsage | null {
-  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const o = raw as Record<string, unknown>;
-  const out: TokenUsage = {};
-  if (typeof o.input_tokens === "number") out.input_tokens = o.input_tokens;
-  if (typeof o.output_tokens === "number") out.output_tokens = o.output_tokens;
-  if (typeof o.total_tokens === "number") out.total_tokens = o.total_tokens;
-  if (typeof o.model === "string") out.model = o.model;
-  if (typeof o.estimated_cost === "number")
-    out.estimated_cost = o.estimated_cost;
-  return Object.keys(out).length > 0 ? out : null;
+  return normalizeTokenUsage(raw);
 }
 
 /** `rs_template.keyword_templates` — expect string[] in JSONB. */

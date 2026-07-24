@@ -11,9 +11,11 @@ import {
   Layers,
   ArrowRight,
   Clock,
+  Gauge,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { CostValue } from "@/components/processing-units/CostValue";
 import type {
   ResearchProgress,
   ScrapeStatus,
@@ -88,7 +90,7 @@ function pagesAttempted(
 interface LineProps {
   icon: typeof Search;
   label: string;
-  value: string | number;
+  value: React.ReactNode;
   href?: string;
   warning?: string;
   /** When true, render dimmed (no progress on this line). */
@@ -293,6 +295,20 @@ export function LastRunSummary({
             value={hasReport ? "Generated" : "Not yet"}
             href={hasReport ? `${base}/synthesis` : undefined}
             dim={!hasReport}
+          />
+          {/* Cost belongs on the receipt, not only behind the Costs tab —
+              a run that spent real money must say so where the user lands. */}
+          <Line
+            icon={Gauge}
+            label="AI cost"
+            value={
+              <CostValue
+                costUsd={costSummary?.total_estimated_cost_usd ?? 0}
+                short
+              />
+            }
+            href={`${base}/costs`}
+            dim={(costSummary?.total_llm_calls ?? 0) === 0}
           />
         </div>
       </div>

@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/markdown";
+import { CostValue } from "@/components/processing-units/CostValue";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   useAnalysesForTopic,
@@ -112,7 +113,7 @@ function StatsBar({
         <div>
           <p className="text-[10px] text-muted-foreground leading-none">Cost</p>
           <p className="text-sm font-bold tabular-nums text-amber-600 dark:text-amber-400 mt-0.5 leading-none">
-            ${totalCost.toFixed(2)}
+            <CostValue costUsd={totalCost} short />
           </p>
         </div>
       </div>
@@ -155,7 +156,7 @@ function ListItem({
   const isFailed = analysis.status === "failed";
   const isEmpty = !isFailed && !isDoneAnalysis(analysis);
   const usage = tokenUsageFromJson(analysis.token_usage);
-  const tokenCost = usage?.estimated_cost;
+  const tokenCost = usage?.costUsd ?? null;
   const formattedDate = analysis.created_at
     ? new Date(analysis.created_at).toLocaleDateString(undefined, {
         month: "short",
@@ -222,9 +223,11 @@ function ListItem({
           {formattedDate}
         </span>
         {tokenCost != null && tokenCost > 0 && (
-          <span className="text-[9px] text-amber-500/50 tabular-nums ml-auto shrink-0">
-            ${tokenCost.toFixed(4)}
-          </span>
+          <CostValue
+            costUsd={tokenCost}
+            short
+            className="text-[9px] text-amber-500/50 ml-auto shrink-0"
+          />
         )}
       </div>
     </div>
@@ -256,8 +259,9 @@ function DetailPanel({
     ? new Date(analysis.created_at)
     : null;
   const usage = tokenUsageFromJson(analysis.token_usage);
-  const tokenCost = usage?.estimated_cost;
-  const totalTokens = (usage?.input_tokens ?? 0) + (usage?.output_tokens ?? 0);
+  const tokenCost = usage?.costUsd ?? null;
+  const totalTokens = usage?.totalTokens ?? 0;
+  const cachedTokens = usage?.cachedInputTokens ?? 0;
 
   const handleRetry = async () => {
     setRetrying(true);
@@ -408,30 +412,33 @@ function DetailPanel({
       {/* Token usage footer */}
       {usage && (
         <div className="flex-shrink-0 flex items-center gap-4 px-4 py-2 border-t border-border/30 bg-muted/5">
-          {usage.input_tokens != null && (
-            <span className="text-[10px] text-muted-foreground tabular-nums">
-              Input: {usage.input_tokens.toLocaleString()}
+          <span className="text-[10px] text-muted-foreground tabular-nums">
+            Input: {usage.inputTokens.toLocaleString()}
+          </span>
+          {cachedTokens > 0 && (
+            <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+              Cached: {cachedTokens.toLocaleString()}
             </span>
           )}
-          {usage.output_tokens != null && (
-            <span className="text-[10px] text-muted-foreground tabular-nums">
-              Output: {usage.output_tokens.toLocaleString()}
-            </span>
-          )}
+          <span className="text-[10px] text-muted-foreground tabular-nums">
+            Output: {usage.outputTokens.toLocaleString()}
+          </span>
           {totalTokens > 0 && (
             <span className="text-[10px] text-muted-foreground tabular-nums">
               Total: {totalTokens.toLocaleString()}
             </span>
           )}
-          {usage.model && (
-            <span className="text-[10px] text-muted-foreground/30">
-              {usage.model}
+          {usage.models.length > 0 && (
+            <span className="text-[10px] text-muted-foreground/40">
+              {usage.models.map((m) => m.model).join(", ")}
             </span>
           )}
           {tokenCost != null && tokenCost > 0 && (
-            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 tabular-nums ml-auto">
-              ${tokenCost.toFixed(4)}
-            </span>
+            <CostValue
+              costUsd={tokenCost}
+              short
+              className="text-[10px] font-medium text-amber-600 dark:text-amber-400 ml-auto"
+            />
           )}
         </div>
       )}
@@ -534,8 +541,8 @@ export default function AnalysisList() {
     for (const a of analysisList) {
       const u = tokenUsageFromJson(a.token_usage);
       if (u) {
-        totalCost += u.estimated_cost ?? 0;
-        totalTokens += (u.input_tokens ?? 0) + (u.output_tokens ?? 0);
+        totalCost += u.costUsd ?? 0;
+        totalTokens += u.totalTokens;
       }
     }
     return {
