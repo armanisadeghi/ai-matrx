@@ -222,6 +222,26 @@
         }
       }
     },
+    "/health/version": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Version Check",
+        "description": "Build identity (D-G — 2026-07-23 audit had no way to answer \"what commit\nis prod?\" short of fingerprinting /openapi.json against git history).\n\nResolution order, loud never crashing:\n  1. GIT_SHA / BUILD_TIME env vars — set from Docker build args (see\n     Dockerfile) at image build time. This is the only source that works\n     in a deployed container, since .dockerignore excludes .git from the\n     build context.\n  2. `git rev-parse HEAD` — fallback for a local checkout (dev server\n     run straight from the repo, no Docker build args set).\n  3. \"unknown\" — neither source available. Never raises; a broken\n     version probe must not take down the health surface.\n\nNOTE: no Coolify-side build-arg wiring exists yet for this image, so a\nCoolify-deployed container currently reports git_sha=\"unknown\" until that\nops follow-up lands (see Dockerfile comment above the GIT_SHA ARG).",
+        "operationId": "version_check_health_version_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "tags": [
@@ -3833,6 +3853,129 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/runtime/open": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Open Execution",
+        "operationId": "open_execution_v2_runtime_open_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeOpenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeOpenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/runtime/heartbeat": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Heartbeat Execution",
+        "operationId": "heartbeat_execution_v2_runtime_heartbeat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeHeartbeatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeHeartbeatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/runtime/settle": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Settle Execution",
+        "operationId": "settle_execution_v2_runtime_settle_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeSettleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSettleResponse"
+                }
               }
             }
           },
@@ -7737,6 +7880,835 @@
         }
       }
     },
+    "/vault/items": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "List Items",
+        "operationId": "list_items_vault_items_get",
+        "parameters": [
+          {
+            "name": "principal_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(user|organization)$",
+              "default": "user",
+              "title": "Principal Type"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Create Item",
+        "operationId": "create_item_vault_items_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultItemCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/import-env": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Import Env",
+        "operationId": "import_env_vault_items_import_env_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultImportEnvRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Get Item",
+        "operationId": "get_item_vault_items__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Update Item",
+        "operationId": "update_item_vault_items__item_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultItemUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Delete Item",
+        "operationId": "delete_item_vault_items__item_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/fields": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Add Field",
+        "operationId": "add_field_vault_items__item_id__fields_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultFieldOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/fields/{field_id}/value": {
+      "put": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Update Field Value",
+        "operationId": "update_field_value_vault_items__item_id__fields__field_id__value_put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultFieldValueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultFieldOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/fields/{field_id}": {
+      "delete": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Delete Field",
+        "operationId": "delete_field_vault_items__item_id__fields__field_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/reveal": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Reveal",
+        "description": "Explicit reveal of ONE `revealable` field. Audited; `sealed` is\nstructurally refused (403); subject to the recent-auth hook.",
+        "operationId": "reveal_vault_items__item_id__reveal_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultRevealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultRevealResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/rotate": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Rotate",
+        "operationId": "rotate_vault_items__item_id__rotate_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultRotateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/resolve": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Resolve",
+        "description": "Browser-facing resolution by stable reference. `sealed` never crosses\nthis boundary — trusted executors resolve in-process via the battery.",
+        "operationId": "resolve_vault_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultResolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultResolveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/effective-env": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Effective Env",
+        "description": "Personal-over-organization effective environment for the actor,\nminus sealed aliases.",
+        "operationId": "effective_env_vault_effective_env_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultEffectiveEnvResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/share": {
+      "put": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Share",
+        "operationId": "share_vault_items__item_id__share_put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultShareRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/transfer": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Transfer",
+        "operationId": "transfer_vault_items__item_id__transfer_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/fork": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Fork",
+        "operationId": "fork_vault_items__item_id__fork_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultForkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/audit": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "List Audit",
+        "operationId": "list_audit_vault_items__item_id__audit_get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultAuditResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-integrations/exchange": {
       "post": {
         "tags": [
@@ -7818,7 +8790,7 @@
           "Google Integrations (internal)"
         ],
         "summary": "Internal Credential",
-        "description": "Resolve a Google connection's refresh token + OAuth client for a\ntrusted server-side consumer (the standalone scraper's GSC sync).",
+        "description": "Resolve a Google connection's refresh token + OAuth client for a\ntrusted server-side consumer (the standalone scraper's GSC sync).\n\n``resource_type``/``resource_ref`` (+ optional ``site_id``/\n``provider_binding_key``) are the WS-6 exact-resource-binding check\n(DEF-24) — the scraper's legacy GSC credential chain reaches the same\nverification the SEO collector uses, through this one bridge.",
         "operationId": "internal_credential_google_integrations_internal_credential_get",
         "parameters": [
           {
@@ -7845,6 +8817,70 @@
                 }
               ],
               "title": "Organization Id"
+            }
+          },
+          {
+            "name": "resource_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resource Type"
+            }
+          },
+          {
+            "name": "resource_ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resource Ref"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "provider_binding_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Binding Key"
             }
           }
         ],
@@ -8098,6 +9134,7 @@
           "SEO Collections"
         ],
         "summary": "Create Collection",
+        "description": "Run one durable provider collection as canonical detached NDJSON: every\nprovider/checkpoint/persistence stage streams as it happens (DataForSEO\nstandard workflows poll on the server whether or not the client stays),\nending with a ``seo.receipt`` event. Work never stops on disconnect.",
         "operationId": "create_collection_seo_collections_post",
         "requestBody": {
           "required": true,
@@ -8114,9 +9151,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CollectionReceipt"
-                }
+                "schema": {}
               }
             }
           },
@@ -8137,6 +9172,7 @@
           "SEO Collections"
         ],
         "summary": "List Collections",
+        "description": "LIST gate — DEF-12/WS-5: bounded by the effective org for query scope,\nthen narrowed to ``iam.is_discoverable`` per row (identical to the\nstandalone list route) so a contextually-reachable run never leaks into\nthis enumeration.",
         "operationId": "list_collections_seo_collections_get",
         "parameters": [
           {
@@ -8192,6 +9228,213 @@
         }
       }
     },
+    "/seo/collections/{run_id}/resume": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Resume Collection",
+        "description": "Continue a persisted provider run after process loss or failure. The\nrepository reclaims the run by id (an actively leased run cannot be\nstolen), and checkpointed provider workflows (DataForSEO standard tasks)\nresume from their persisted checkpoints instead of re-submitting paid\nwork. A completed run just replays its receipt.",
+        "operationId": "resume_collection_seo_collections__run_id__resume_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/collections/{run_id}/rejoin": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rejoin Collection",
+        "description": "Reconnect to a run by id: replays buffered progress and follows live\nevents when the run is executing in this process; otherwise emits one\ndurable ``seo.run_snapshot`` event (status + error + result + receipt).",
+        "operationId": "rejoin_collection_seo_collections__run_id__rejoin_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/backlinks/refresh": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Refresh Site Backlinks",
+        "description": "On-demand streamed backlink refresh through the ONE package\nBacklinkRefreshService — dataset-by-dataset provider/persistence events,\nending with ``seo.backlink_refresh_completed``.",
+        "operationId": "refresh_site_backlinks_seo_sites__site_id__backlinks_refresh_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BacklinkRefreshBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/bing/search-performance/sync": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Sync Bing Search Performance",
+        "description": "On-demand streamed Bing Webmaster SEARCH_PERFORMANCE collection for one\nbound site (WS-9 / M-69 / DEF-14): builds the canonical\n``CollectionRequest`` from the site's live binding (the SSOT — never a\ncaller-supplied site_url/credential) and runs it through the ONE\n``run_collection`` funnel used by every other provider.",
+        "operationId": "sync_bing_search_performance_seo_sites__site_id__bing_search_performance_sync_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BingSearchPerformanceSyncBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/providers/dataforseo/operations": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Dataforseo Operations",
+        "operationId": "dataforseo_operations_seo_providers_dataforseo_operations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataForSeoOperationsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/collections/{run_id}": {
       "get": {
         "tags": [
@@ -8219,6 +9462,335 @@
                 "schema": {
                   "$ref": "#/components/schemas/RunStatusResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/collections/{run_id}/evidence": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Collection Evidence",
+        "operationId": "collection_evidence_seo_collections__run_id__evidence_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunEvidenceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/keywords/research": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Keyword Relationship Research",
+        "description": "Run the LSI research agent for one primary keyword as a DURABLE\nstreamed command: the run identity persists to seo.collection_run BEFORE\nthe agent call, every stage streams as NDJSON, the final result document\nlands on the run row, and the same identity reuses/rejoins instead of\nre-spending.",
+        "operationId": "keyword_relationship_research_seo_keywords_research_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeywordResearchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/keywords/volume-refresh": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Keyword Volume Refresh",
+        "description": "Fetch DataForSEO market data for phrases with a missing/stale\nkeyword_market row as a DURABLE streamed command (run identity persisted\nbefore any provider batch; result document lands on the run row).",
+        "operationId": "keyword_volume_refresh_seo_keywords_volume_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeywordVolumeRefreshBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/keywords/classify": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Keyword Classify",
+        "description": "Run the Keyword Classifier over unclassified keywords (or explicit ids),\nfilling the 13 intrinsic columns + envelope.",
+        "operationId": "keyword_classify_seo_keywords_classify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeywordClassifyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeywordClassifyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/keywords/assign-topics": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Keyword Assign Topics",
+        "description": "Pin unassigned keywords to the shared topic tree (lazy growth) for one\nindustry territory.",
+        "operationId": "keyword_assign_topics_seo_keywords_assign_topics_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicAssignBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicAssignResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/strategy-interview": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Site Strategy Interview",
+        "description": "Translate business context into seo.site_topic_value rows for one site\n(values set high on the tree; open questions returned, never guessed).",
+        "operationId": "site_strategy_interview_seo_sites_strategy_interview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteStrategyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteStrategyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/pages/analyze": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Analyze Page Route",
+        "description": "Run the Page Analyzer for one canonical `web.page` as a DURABLE\nstreamed command (WS-11 / M-53): persists site_keyword_value +\npage<->keyword associations through the package writer.",
+        "operationId": "analyze_page_route_seo_pages_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageAnalyzeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/pages/map-keywords": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Map Page Keywords Route",
+        "description": "Run the Page↔Keyword Mapper for one topic cluster on one site as a\nDURABLE streamed command (WS-11 / M-27): populates\nseo.site_keyword_value.workflow_status/content_role/priority_score\n(DEF-22) + page<->keyword associations through the package writer.",
+        "operationId": "map_page_keywords_route_seo_pages_map_keywords_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageKeywordMapBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -13819,6 +15391,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -14259,7 +15891,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/TopicResponse"
+                }
               }
             }
           },
@@ -21105,6 +22739,57 @@
                 "schema": {
                   "$ref": "#/components/schemas/LibrarySubscribeResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/library/stores/{store_id}/ingest": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Ingest Library Store Document",
+        "description": "Curator publish: ingest an EXISTING file into a library store as\nsystem-owned shared knowledge (Decision 3 rehome + library-profile\ningest), streamed. Super-admin only.",
+        "operationId": "ingest_library_store_document_rag_library_stores__store_id__ingest_post",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryIngestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -41689,15 +43374,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 10
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 1
           },
@@ -41816,29 +43501,29 @@
           },
           "max_attempts": {
             "type": "integer",
-            "maximum": 20,
-            "minimum": 1,
+            "maximum": 20.0,
+            "minimum": 1.0,
             "title": "Max Attempts",
             "default": 3
           },
           "lease_seconds": {
             "type": "integer",
-            "maximum": 86400,
-            "minimum": 30,
+            "maximum": 86400.0,
+            "minimum": 30.0,
             "title": "Lease Seconds",
             "default": 900
           },
           "max_concurrency": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Max Concurrency",
             "default": 5
           },
           "retry_delay_seconds": {
             "type": "integer",
-            "maximum": 86400,
-            "minimum": 0,
+            "maximum": 86400.0,
+            "minimum": 0.0,
             "title": "Retry Delay Seconds",
             "default": 0
           },
@@ -43205,15 +44890,15 @@
           },
           "max_iterations": {
             "type": "integer",
-            "maximum": 500,
-            "minimum": 1,
+            "maximum": 500.0,
+            "minimum": 1.0,
             "title": "Max Iterations",
             "default": 100
           },
           "max_retries_per_iteration": {
             "type": "integer",
-            "maximum": 10,
-            "minimum": 0,
+            "maximum": 10.0,
+            "minimum": 0.0,
             "title": "Max Retries Per Iteration",
             "default": 2
           }
@@ -43328,15 +45013,15 @@
           },
           "max_runtime_seconds": {
             "type": "integer",
-            "maximum": 86400,
-            "minimum": 1,
+            "maximum": 86400.0,
+            "minimum": 1.0,
             "title": "Max Runtime Seconds",
             "default": 600
           },
           "max_concurrent": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Max Concurrent",
             "default": 1
           }
@@ -43879,8 +45564,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 10
           },
@@ -43911,8 +45596,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 1
           },
@@ -44530,6 +46215,39 @@
             "type": "string",
             "title": "Target Ref"
           },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "source_crawl_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Crawl Session Id"
+          },
           "observation_period": {
             "type": "string",
             "title": "Observation Period"
@@ -44584,6 +46302,11 @@
           "resume_existing": {
             "type": "boolean",
             "title": "Resume Existing",
+            "default": false
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
             "default": false
           }
         },
@@ -45047,7 +46770,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -46213,7 +47936,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024,
+            "minimum": 1024.0,
             "title": "Max Inline Bytes",
             "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
             "default": 262144
@@ -46810,32 +48533,32 @@
           },
           "total_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Total Items"
           },
           "pending_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Pending Items"
           },
           "running_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Running Items"
           },
           "completed_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Completed Items"
           },
           "failed_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Failed Items"
           },
           "cancelled_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Cancelled Items"
           },
           "created_at": {
@@ -46891,8 +48614,8 @@
         "properties": {
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
+            "maximum": 604800.0,
+            "minimum": 60.0,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -47112,7 +48835,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -47132,7 +48855,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -47145,6 +48868,85 @@
         "type": "object",
         "title": "AutoTagPassRequest",
         "description": "Trigger the WHOLE auto-tag pass on demand (the \"Run now\" button).\n\n`max_calls` overrides how many included+scraped sources the pass tags this\nrun. When omitted, the topic's `rs_topic.max_auto_tag_calls` is used; if\nthat is 0 (the auto-pipeline default = OFF), the on-demand pass instead\ntags ALL eligible sources — the user explicitly asked for it, so it must\nnever silently no-op."
+      },
+      "BacklinkRefreshBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "profile": {
+            "type": "string",
+            "title": "Profile",
+            "default": "bootstrap"
+          },
+          "detail_limit": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Detail Limit",
+            "default": 1000
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": true
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "source_crawl_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Crawl Session Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BacklinkRefreshBody"
       },
       "BatchDeleteRequest": {
         "properties": {
@@ -47976,6 +49778,83 @@
         ],
         "title": "BingOAuthExchangeRequest"
       },
+      "BingSearchPerformanceSyncBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "window_days": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Window Days",
+            "default": 28
+          },
+          "max_query_fanout": {
+            "type": "integer",
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Max Query Fanout",
+            "default": 50
+          },
+          "max_calls": {
+            "type": "integer",
+            "maximum": 500.0,
+            "minimum": 1.0,
+            "title": "Max Calls",
+            "default": 100
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BingSearchPerformanceSyncBody"
+      },
       "BingSiteBinding": {
         "properties": {
           "enabled": {
@@ -48041,8 +49920,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Level",
             "default": 3
           },
@@ -48059,7 +49938,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024,
+            "minimum": 1024.0,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -48084,7 +49963,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024,
+            "minimum": 1024.0,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -48276,8 +50155,8 @@
           },
           "signed_url_ttl": {
             "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
+            "maximum": 604800.0,
+            "minimum": 60.0,
             "title": "Signed Url Ttl",
             "default": 3600
           },
@@ -49979,8 +51858,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000,
-                "minimum": 1
+                "maximum": 100000.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -53441,6 +55320,33 @@
             "type": "boolean",
             "title": "Reused Completed Run",
             "default": false
+          },
+          "from_cache": {
+            "type": "boolean",
+            "title": "From Cache",
+            "default": false
+          },
+          "cache_age_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Age Seconds"
+          },
+          "freshness_ttl_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Ttl Seconds"
           }
         },
         "type": "object",
@@ -55483,7 +57389,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -55608,6 +57514,39 @@
         "title": "CopyInfo",
         "description": "New-file info when a mutate or upload op also performs a copy_to.\n\nCarries the same URL flavours as AssetVariant so the FE can navigate\ndirectly to the new file without a second round-trip."
       },
+      "CostBreakdownItem": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "calls": {
+            "type": "integer",
+            "title": "Calls",
+            "default": 0
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens",
+            "default": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens",
+            "default": 0
+          },
+          "estimated_cost_usd": {
+            "type": "number",
+            "title": "Estimated Cost Usd",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "CostBreakdownItem"
+      },
       "CrawlPresetSaveRequest": {
         "properties": {
           "name": {
@@ -55663,8 +57602,8 @@
           },
           "max_pages": {
             "type": "integer",
-            "maximum": 50000,
-            "minimum": 1,
+            "maximum": 50000.0,
+            "minimum": 1.0,
             "title": "Max Pages",
             "default": 200
           },
@@ -55672,8 +57611,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20,
-                "minimum": 0
+                "maximum": 20.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -55683,8 +57622,8 @@
           },
           "concurrency": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Concurrency",
             "default": 8
           },
@@ -55733,26 +57672,26 @@
           },
           "politeness_delay_ms": {
             "type": "integer",
-            "maximum": 10000,
-            "minimum": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
             "title": "Politeness Delay Ms",
             "default": 0
           },
           "host_rps": {
             "type": "number",
-            "maximum": 50,
+            "maximum": 50.0,
             "minimum": 0.1,
             "title": "Host Rps",
             "description": "Per-host steady-state request-per-second cap. Applied across all workers.",
-            "default": 4
+            "default": 4.0
           },
           "host_burst": {
             "type": "number",
-            "maximum": 200,
-            "minimum": 1,
+            "maximum": 200.0,
+            "minimum": 1.0,
             "title": "Host Burst",
             "description": "Per-host token-bucket burst capacity.",
-            "default": 8
+            "default": 8.0
           },
           "render_mode": {
             "type": "string",
@@ -56127,8 +58066,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           },
@@ -56543,15 +58482,15 @@
           },
           "limit_per_side": {
             "type": "integer",
-            "maximum": 20,
-            "minimum": 1,
+            "maximum": 20.0,
+            "minimum": 1.0,
             "title": "Limit Per Side",
             "default": 4
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 4,
-            "minimum": 1,
+            "maximum": 4.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 2
           },
@@ -56884,6 +58823,116 @@
           "cost_usd"
         ],
         "title": "DailySpendPoint"
+      },
+      "DataForSeoEndpointExampleOut": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "workflow": {
+            "type": "string",
+            "title": "Workflow"
+          },
+          "task": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Task"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint",
+          "workflow",
+          "task"
+        ],
+        "title": "DataForSeoEndpointExampleOut"
+      },
+      "DataForSeoOperationOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "family": {
+            "type": "string",
+            "title": "Family"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          },
+          "endpoints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Endpoints"
+          },
+          "workflows": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Workflows"
+          },
+          "pricing_key": {
+            "type": "string",
+            "title": "Pricing Key"
+          },
+          "raw_only": {
+            "type": "boolean",
+            "title": "Raw Only"
+          },
+          "canonical_normalizer": {
+            "type": "boolean",
+            "title": "Canonical Normalizer"
+          },
+          "freshness_ttl_seconds": {
+            "type": "integer",
+            "title": "Freshness Ttl Seconds"
+          },
+          "endpoint_examples": {
+            "items": {
+              "$ref": "#/components/schemas/DataForSeoEndpointExampleOut"
+            },
+            "type": "array",
+            "title": "Endpoint Examples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "capabilities",
+          "endpoints",
+          "workflows",
+          "pricing_key",
+          "raw_only",
+          "canonical_normalizer",
+          "freshness_ttl_seconds",
+          "endpoint_examples"
+        ],
+        "title": "DataForSeoOperationOut"
+      },
+      "DataForSeoOperationsResponse": {
+        "properties": {
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/DataForSeoOperationOut"
+            },
+            "type": "array",
+            "title": "Operations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operations"
+        ],
+        "title": "DataForSeoOperationsResponse"
       },
       "DataStoreAdminRow": {
         "properties": {
@@ -58631,15 +60680,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -58707,6 +60756,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400.0,
+            "minimum": 60.0,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -58845,15 +60949,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 20
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 1
           },
@@ -59561,8 +61665,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000,
-            "minimum": 1,
+            "maximum": 20000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 2000
           }
@@ -60054,8 +62158,8 @@
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 500,
-            "minimum": 1,
+            "maximum": 500.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 50
           }
@@ -60466,8 +62570,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Count",
             "default": 1
           }
@@ -61653,8 +63757,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 3
           },
@@ -62431,7 +64535,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -63625,6 +65729,69 @@
         ],
         "title": "FieldDefinition"
       },
+      "FieldIn": {
+        "properties": {
+          "field_key": {
+            "type": "string",
+            "title": "Field Key",
+            "description": "stable lowercase-snake identity within the item"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "env_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env Key",
+            "description": "optional environment-variable alias"
+          },
+          "handling": {
+            "type": "string",
+            "enum": [
+              "visible",
+              "revealable",
+              "sealed"
+            ],
+            "title": "Handling",
+            "default": "revealable"
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable",
+            "default": true
+          },
+          "inject_into_sandbox": {
+            "type": "boolean",
+            "title": "Inject Into Sandbox",
+            "default": false
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "field_key",
+          "value"
+        ],
+        "title": "FieldIn"
+      },
       "FieldRecord": {
         "properties": {
           "id": {
@@ -64637,7 +66804,7 @@
           },
           "attempt_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Attempt Count",
             "default": 0
           },
@@ -64675,7 +66842,7 @@
           },
           "chunk_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Chunk Count",
             "default": 0
           },
@@ -65346,8 +67513,8 @@
           },
           "max_hits_per_page": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Max Hits Per Page",
             "default": 5
           }
@@ -65581,15 +67748,15 @@
         "properties": {
           "x": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "X",
             "description": "0=left, 1=right"
           },
           "y": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Y",
             "description": "0=top, 1=bottom"
           }
@@ -66152,8 +68319,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -66991,8 +69158,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Quality",
             "default": 90
           },
@@ -67610,8 +69777,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Count"
           },
           "uniqueness": {
@@ -69414,6 +71581,107 @@
         ],
         "title": "Keyword"
       },
+      "KeywordClassifyBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "keyword_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyword Ids"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "en"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 200
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "KeywordClassifyBody"
+      },
+      "KeywordClassifyResult": {
+        "properties": {
+          "eligible": {
+            "type": "integer",
+            "title": "Eligible",
+            "default": 0
+          },
+          "batches": {
+            "type": "integer",
+            "title": "Batches",
+            "default": 0
+          },
+          "updated": {
+            "type": "integer",
+            "title": "Updated",
+            "default": 0
+          },
+          "skipped_error": {
+            "type": "integer",
+            "title": "Skipped Error",
+            "default": 0
+          },
+          "missing_keyword_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Keyword Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "KeywordClassifyResult"
+      },
       "KeywordCreate": {
         "properties": {
           "keywords": {
@@ -69461,6 +71729,150 @@
         ],
         "title": "KeywordReorderRequest",
         "description": "Payload for PATCH /topics/{topic_id}/keywords/reorder.\n\n`keyword_ids` is the new full ordering of the topic's keywords. The\nserver assigns `position = index_in_list + 1` (1-indexed) to each\nrow inside a single ORM transaction, then returns the keywords in\ntheir new order. The list must contain exactly the topic's current\nkeyword IDs (no additions, no deletions) — that's a separate concern,\nhandled by POST/DELETE /topics/{topic_id}/keywords.\n\nWire shape:\n    {\"keyword_ids\": [\"uuid1\", \"uuid2\", \"uuid3\"]}"
+      },
+      "KeywordResearchBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "primary_keyword": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Primary Keyword"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "en"
+          },
+          "industry_context": {
+            "type": "string",
+            "title": "Industry Context",
+            "default": "none"
+          },
+          "refresh_volume": {
+            "type": "boolean",
+            "title": "Refresh Volume",
+            "default": true
+          },
+          "classify": {
+            "type": "boolean",
+            "title": "Classify",
+            "default": true
+          },
+          "location_code": {
+            "type": "integer",
+            "title": "Location Code",
+            "default": 2840
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "primary_keyword"
+        ],
+        "title": "KeywordResearchBody"
+      },
+      "KeywordVolumeRefreshBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "phrases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Phrases"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "en"
+          },
+          "location_code": {
+            "type": "integer",
+            "title": "Location Code",
+            "default": 2840
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "phrases"
+        ],
+        "title": "KeywordVolumeRefreshBody"
       },
       "KgCostSummaryResponse": {
         "properties": {
@@ -71016,8 +73428,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200,
-            "minimum": 1,
+            "maximum": 200.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 20
           },
@@ -71862,6 +74274,32 @@
         ],
         "title": "LibraryFullPage"
       },
+      "LibraryIngestRequest": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "``files.files.id`` of the source file to ingest."
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile",
+            "description": "Optional ingest profile name. 'library' (the default and only profile) = run_ner=False + cleanup=False; unknown names are 422."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "LibraryIngestRequest"
+      },
       "LibraryListResponse": {
         "properties": {
           "documents": {
@@ -72211,8 +74649,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 10
           }
@@ -72937,7 +75375,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -72948,8 +75386,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -73387,7 +75825,7 @@
           "cost": {
             "type": "number",
             "title": "Cost",
-            "default": 0
+            "default": 0.0
           },
           "input_tokens": {
             "type": "integer",
@@ -73977,29 +76415,29 @@
         "properties": {
           "chunk_count": {
             "type": "integer",
-            "maximum": 10000,
-            "minimum": 1,
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Chunk Count",
             "default": 10
           },
           "chunk_delay_ms": {
             "type": "integer",
-            "maximum": 60000,
-            "minimum": 0,
+            "maximum": 60000.0,
+            "minimum": 0.0,
             "title": "Chunk Delay Ms",
             "default": 200
           },
           "heartbeat_interval_ms": {
             "type": "integer",
-            "maximum": 60000,
-            "minimum": 1000,
+            "maximum": 60000.0,
+            "minimum": 1000.0,
             "title": "Heartbeat Interval Ms",
             "default": 10000
           },
           "max_lifetime_ms": {
             "type": "integer",
-            "maximum": 600000,
-            "minimum": 1000,
+            "maximum": 600000.0,
+            "minimum": 1000.0,
             "title": "Max Lifetime Ms",
             "default": 120000
           },
@@ -76431,16 +78869,16 @@
           },
           "fill_opacity": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Fill Opacity",
             "default": 0.18
           },
           "stroke_width": {
             "type": "number",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Stroke Width",
-            "default": 2
+            "default": 2.0
           },
           "label": {
             "anyOf": [
@@ -76455,9 +78893,9 @@
           },
           "font_size": {
             "type": "number",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Font Size",
-            "default": 10
+            "default": 10.0
           }
         },
         "type": "object",
@@ -76490,6 +78928,59 @@
           "text"
         ],
         "title": "OverridePageTextBody"
+      },
+      "PageAnalyzeBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "page_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Page Id"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id"
+        ],
+        "title": "PageAnalyzeBody"
       },
       "PageDetail": {
         "properties": {
@@ -76658,6 +79149,65 @@
           "page_number"
         ],
         "title": "PageDetail"
+      },
+      "PageKeywordMapBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "site_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Site Id"
+          },
+          "topic_slug": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Topic Slug"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "topic_slug"
+        ],
+        "title": "PageKeywordMapBody"
       },
       "PageSummary": {
         "properties": {
@@ -76977,7 +79527,7 @@
           },
           "use_ocr_threshold": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Use Ocr Threshold",
             "default": 100
           }
@@ -77082,12 +79632,12 @@
         "properties": {
           "output_page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Output Page"
           },
           "source_page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Source Page"
           }
         },
@@ -77102,12 +79652,12 @@
         "properties": {
           "start": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Start"
           },
           "end": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "End"
           }
         },
@@ -77150,8 +79700,8 @@
           },
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
+            "maximum": 604800.0,
+            "minimum": 60.0,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -77183,14 +79733,14 @@
           },
           "source_page_count": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Source Page Count"
           },
           "source_size_bytes": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -77200,7 +79750,7 @@
           },
           "source_bytes_fetched": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Source Bytes Fetched",
             "default": 0
           },
@@ -78466,6 +81016,112 @@
         "type": "object",
         "title": "PicklistUpdate"
       },
+      "PipelineProgress": {
+        "properties": {
+          "total_keywords": {
+            "type": "integer",
+            "title": "Total Keywords",
+            "default": 0
+          },
+          "stale_keywords": {
+            "type": "integer",
+            "title": "Stale Keywords",
+            "default": 0
+          },
+          "total_sources": {
+            "type": "integer",
+            "title": "Total Sources",
+            "default": 0
+          },
+          "included_sources": {
+            "type": "integer",
+            "title": "Included Sources",
+            "default": 0
+          },
+          "sources_pending": {
+            "type": "integer",
+            "title": "Sources Pending",
+            "default": 0
+          },
+          "sources_success": {
+            "type": "integer",
+            "title": "Sources Success",
+            "default": 0
+          },
+          "sources_thin": {
+            "type": "integer",
+            "title": "Sources Thin",
+            "default": 0
+          },
+          "sources_failed": {
+            "type": "integer",
+            "title": "Sources Failed",
+            "default": 0
+          },
+          "sources_complete": {
+            "type": "integer",
+            "title": "Sources Complete",
+            "default": 0
+          },
+          "total_content": {
+            "type": "integer",
+            "title": "Total Content",
+            "default": 0
+          },
+          "total_analyses": {
+            "type": "integer",
+            "title": "Total Analyses",
+            "default": 0
+          },
+          "failed_analyses": {
+            "type": "integer",
+            "title": "Failed Analyses",
+            "default": 0
+          },
+          "keyword_syntheses": {
+            "type": "integer",
+            "title": "Keyword Syntheses",
+            "default": 0
+          },
+          "failed_keyword_syntheses": {
+            "type": "integer",
+            "title": "Failed Keyword Syntheses",
+            "default": 0
+          },
+          "topic_syntheses": {
+            "type": "integer",
+            "title": "Topic Syntheses",
+            "default": 0
+          },
+          "failed_topic_syntheses": {
+            "type": "integer",
+            "title": "Failed Topic Syntheses",
+            "default": 0
+          },
+          "project_syntheses": {
+            "type": "integer",
+            "title": "Project Syntheses",
+            "default": 0
+          },
+          "failed_project_syntheses": {
+            "type": "integer",
+            "title": "Failed Project Syntheses",
+            "default": 0
+          },
+          "total_tags": {
+            "type": "integer",
+            "title": "Total Tags",
+            "default": 0
+          },
+          "total_documents": {
+            "type": "integer",
+            "title": "Total Documents",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "PipelineProgress"
+      },
       "PodcastAudioProvider": {
         "type": "string",
         "enum": [
@@ -78501,6 +81157,91 @@
       },
       "PodcastGenerateRequest": {
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature"
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
+          },
           "show_id": {
             "anyOf": [
               {
@@ -78544,8 +81285,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20,
-                "minimum": 1
+                "maximum": 20.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -78628,7 +81369,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -78640,13 +81381,29 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
               }
             ],
             "title": "Max Videos"
+          },
+          "feature_image_style": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Image Style"
+          },
+          "include_feature_image": {
+            "type": "boolean",
+            "title": "Include Feature Image",
+            "default": true
           },
           "dictionary": {
             "anyOf": [
@@ -79071,8 +81828,8 @@
           },
           "n": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "N",
             "default": 5
           }
@@ -79164,12 +81921,12 @@
           },
           "width": {
             "type": "integer",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Width"
           },
           "height": {
             "type": "integer",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Height"
           },
           "format": {
@@ -79185,8 +81942,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Quality",
             "description": "Ignored for png",
             "default": 85
@@ -79242,6 +81999,34 @@
         ],
         "title": "PreviewVariantSpec",
         "description": "One target render for POST /assets/preview.\n\nMirrors ``ImageHandler.StudioRenderSpec`` — every field is reachable\nby the renderer. The discriminated union on ``position`` lets the FE\npass either a named anchor (including the smart-crop modes\n``entropy`` / ``attention``) or a continuous focal point."
+      },
+      "PrincipalIn": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "organization"
+            ],
+            "title": "Type",
+            "default": "user"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PrincipalIn",
+        "description": "The owning scope a call operates on. ``user`` == the authenticated\nactor, always."
       },
       "ProcessBlocksRequest": {
         "properties": {
@@ -79386,7 +82171,7 @@
           "heartbeat_interval_s": {
             "type": "number",
             "title": "Heartbeat Interval S",
-            "default": 15
+            "default": 15.0
           },
           "debug": {
             "type": "boolean",
@@ -79705,6 +82490,209 @@
         "type": "object",
         "title": "PromptWarmRequest"
       },
+      "ProviderCallEvidenceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "provider_call_key": {
+            "type": "string",
+            "title": "Provider Call Key"
+          },
+          "external_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Task Id"
+          },
+          "request_count": {
+            "type": "integer",
+            "title": "Request Count"
+          },
+          "reported_cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Cost"
+          },
+          "estimated_cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "provider_call_key",
+          "request_count",
+          "currency",
+          "fetched_at",
+          "metadata"
+        ],
+        "title": "ProviderCallEvidenceOut"
+      },
+      "ProviderTaskEvidenceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "external_task_id": {
+            "type": "string",
+            "title": "External Task Id"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "request_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Request Payload"
+          },
+          "response_payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Payload"
+          },
+          "request_count": {
+            "type": "integer",
+            "title": "Request Count"
+          },
+          "provider_cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Cost"
+          },
+          "estimated_cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Submitted At"
+          },
+          "last_polled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Polled At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "external_task_id",
+          "status",
+          "request_payload",
+          "request_count",
+          "currency",
+          "submitted_at"
+        ],
+        "title": "ProviderTaskEvidenceOut"
+      },
       "PublicWorkflowRecord": {
         "properties": {
           "id": {
@@ -80004,8 +82992,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 10,
+            "maximum": 1000.0,
+            "minimum": 10.0,
             "title": "Anchor Size",
             "default": 100
           },
@@ -80032,6 +83020,108 @@
           "urls"
         ],
         "title": "QuickScrapeRequest"
+      },
+      "RawPayloadEvidenceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "checksum": {
+            "type": "string",
+            "title": "Checksum"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload"
+          },
+          "cloud_file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloud File Id"
+          },
+          "provider_schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Schema Version"
+          },
+          "external_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Task Id"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "offload_error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offload Error"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "checksum",
+          "size_bytes",
+          "content_type",
+          "payload",
+          "fetched_at",
+          "created_at"
+        ],
+        "title": "RawPayloadEvidenceOut"
       },
       "RealtimeTool": {
         "properties": {
@@ -80351,8 +83441,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "run_id": {
@@ -80692,15 +83782,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Confidence",
             "default": 0.5
           },
@@ -80720,7 +83810,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "x0": {
@@ -80783,7 +83873,7 @@
           },
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -80916,7 +84006,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -81393,8 +84483,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 300,
-            "minimum": 8,
+            "maximum": 300.0,
+            "minimum": 8.0,
             "title": "Dpi",
             "default": 150
           },
@@ -81412,8 +84502,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -81483,14 +84573,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
-            "maximum": 600,
-            "minimum": 8,
+            "maximum": 600.0,
+            "minimum": 8.0,
             "title": "Dpi",
             "default": 150
           },
@@ -81508,8 +84598,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -81561,8 +84651,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 400,
-            "minimum": 36,
+            "maximum": 400.0,
+            "minimum": 36.0,
             "title": "Dpi",
             "default": 144
           },
@@ -81672,14 +84762,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
-            "maximum": 2048,
-            "minimum": 16,
+            "maximum": 2048.0,
+            "minimum": 16.0,
             "title": "Max Side",
             "default": 256
           },
@@ -81696,8 +84786,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -81986,8 +85076,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 2000,
-            "minimum": 1,
+            "maximum": 2000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 100
           },
@@ -82190,8 +85280,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -82420,8 +85510,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000,
-            "minimum": 1,
+            "maximum": 20000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 2000
           }
@@ -82683,8 +85773,8 @@
           },
           "max_chars": {
             "type": "integer",
-            "maximum": 10000,
-            "minimum": 1,
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Max Chars",
             "default": 5000
           }
@@ -82961,7 +86051,14 @@
             "title": "Target Instance Id"
           },
           "user_request_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "User Request Id"
           },
           "config_overrides": {
@@ -83078,9 +86175,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "user_request_id"
-        ],
         "title": "ResumeRequest"
       },
       "ResumeRunRequest": {
@@ -83129,8 +86223,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           },
@@ -83249,7 +86343,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -83260,8 +86354,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -83741,7 +86835,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "total_input_tokens": {
             "type": "integer",
@@ -83908,6 +87002,59 @@
         "title": "RunEventRecord",
         "description": "One row from ``wf_node_events``. Shape mirrors\n``matrx_graph.types.events`` — payload carries the full original\nPydantic event model_dump."
       },
+      "RunEvidenceResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "operation": {
+            "type": "string",
+            "title": "Operation"
+          },
+          "request": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Request"
+          },
+          "provider_calls": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderCallEvidenceOut"
+            },
+            "type": "array",
+            "title": "Provider Calls"
+          },
+          "provider_tasks": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderTaskEvidenceOut"
+            },
+            "type": "array",
+            "title": "Provider Tasks"
+          },
+          "raw_payloads": {
+            "items": {
+              "$ref": "#/components/schemas/RawPayloadEvidenceOut"
+            },
+            "type": "array",
+            "title": "Raw Payloads"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "provider",
+          "operation",
+          "request",
+          "provider_calls",
+          "provider_tasks",
+          "raw_payloads"
+        ],
+        "title": "RunEvidenceResponse"
+      },
       "RunExtractionRequest": {
         "properties": {
           "job_id": {
@@ -83932,8 +87079,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50,
-                "minimum": 1
+                "maximum": 50.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -83945,8 +87092,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20,
-                "minimum": 1
+                "maximum": 20.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -84095,6 +87242,17 @@
       },
       "RunPipelineRequest": {
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
           "use_user_agent_overrides": {
             "type": "boolean",
             "title": "Use User Agent Overrides",
@@ -84549,6 +87707,39 @@
             "type": "string",
             "title": "Target Ref"
           },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "source_crawl_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Crawl Session Id"
+          },
           "observation_period": {
             "type": "string",
             "title": "Observation Period"
@@ -84656,6 +87847,18 @@
                 "type": "null"
               }
             ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
           }
         },
         "type": "object",
@@ -84754,8 +87957,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           },
@@ -84763,8 +87966,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 256,
-                "minimum": 1
+                "maximum": 256.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -84799,6 +88002,207 @@
         },
         "type": "object",
         "title": "RunWorkflowRequest"
+      },
+      "RuntimeHeartbeatRequest": {
+        "properties": {
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "lease_holder": {
+            "type": "string",
+            "title": "Lease Holder"
+          },
+          "lease_seconds": {
+            "type": "number",
+            "title": "Lease Seconds",
+            "default": 1800.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "execution_id",
+          "lease_holder"
+        ],
+        "title": "RuntimeHeartbeatRequest"
+      },
+      "RuntimeHeartbeatResponse": {
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "owned",
+              "lost",
+              "terminal"
+            ],
+            "title": "Outcome"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outcome"
+        ],
+        "title": "RuntimeHeartbeatResponse"
+      },
+      "RuntimeOpenRequest": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "conversation"
+          },
+          "app": {
+            "type": "string",
+            "title": "App",
+            "default": "matrx-local"
+          },
+          "surface": {
+            "type": "string",
+            "title": "Surface",
+            "default": "desktop_ai"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "link_kind": {
+            "type": "string",
+            "title": "Link Kind",
+            "default": "conversation"
+          },
+          "link_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Id"
+          },
+          "lease_seconds": {
+            "type": "number",
+            "title": "Lease Seconds",
+            "default": 1800.0
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "type": "object",
+        "title": "RuntimeOpenRequest",
+        "description": "Open a spine request+execution for a client-hosted run."
+      },
+      "RuntimeOpenResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "root_execution_id": {
+            "type": "string",
+            "title": "Root Execution Id"
+          },
+          "lease_holder": {
+            "type": "string",
+            "title": "Lease Holder"
+          },
+          "lease_seconds": {
+            "type": "number",
+            "title": "Lease Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "execution_id",
+          "root_execution_id",
+          "lease_holder",
+          "lease_seconds"
+        ],
+        "title": "RuntimeOpenResponse"
+      },
+      "RuntimeSettleRequest": {
+        "properties": {
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "completed | failed | cancelled (prefix-matched)"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "meters": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "execution_id",
+          "status"
+        ],
+        "title": "RuntimeSettleRequest"
+      },
+      "RuntimeSettleResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "status"
+        ],
+        "title": "RuntimeSettleResponse"
       },
       "SandboxBindRequest": {
         "properties": {
@@ -85694,8 +89098,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 10,
+            "maximum": 1000.0,
+            "minimum": 10.0,
             "title": "Anchor Size",
             "default": 100
           },
@@ -85710,8 +89114,8 @@
           },
           "max_page_read": {
             "type": "integer",
-            "maximum": 20,
-            "minimum": 1,
+            "maximum": 20.0,
+            "minimum": 1.0,
             "title": "Max Page Read",
             "default": 10
           },
@@ -85791,8 +89195,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 10,
+            "maximum": 1000.0,
+            "minimum": 10.0,
             "title": "Anchor Size",
             "default": 100
           },
@@ -85810,8 +89214,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 30,
-            "minimum": 10,
+            "maximum": 30.0,
+            "minimum": 10.0,
             "title": "Total Results Per Keyword",
             "default": 10
           },
@@ -85900,8 +89304,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Total Results Per Keyword",
             "default": 5
           },
@@ -86411,8 +89815,8 @@
           },
           "event_spacing_ms": {
             "type": "integer",
-            "maximum": 5000,
-            "minimum": 0,
+            "maximum": 5000.0,
+            "minimum": 0.0,
             "title": "Event Spacing Ms",
             "description": "Milliseconds to wait between simulated events.",
             "default": 250
@@ -86708,6 +90112,86 @@
           "cron_expr"
         ],
         "title": "SiteScheduleCreateRequest"
+      },
+      "SiteStrategyBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "site_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Site Id"
+          },
+          "business_context": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Business Context"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "business_context"
+        ],
+        "title": "SiteStrategyBody"
+      },
+      "SiteStrategyResult": {
+        "properties": {
+          "valuations_written": {
+            "type": "integer",
+            "title": "Valuations Written",
+            "default": 0
+          },
+          "unknown_topic_slugs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unknown Topic Slugs"
+          },
+          "open_questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Open Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SiteStrategyResult"
       },
       "SkillCreate": {
         "properties": {
@@ -87379,7 +90863,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -87390,8 +90874,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -87482,7 +90966,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -87490,10 +90974,10 @@
           },
           "expand_pad_pt": {
             "type": "number",
-            "maximum": 20,
-            "minimum": 0,
+            "maximum": 20.0,
+            "minimum": 0.0,
             "title": "Expand Pad Pt",
-            "default": 1
+            "default": 1.0
           }
         },
         "type": "object",
@@ -88646,6 +92130,42 @@
         ],
         "title": "StorageUsageResponse"
       },
+      "StoredSuggestedTag": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "keywords_spanned": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keywords Spanned"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 0.0
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "StoredSuggestedTag",
+        "description": "One persisted cross-cutting tag suggestion (a row of\n``rs_topic.tag_suggestions.tags``). ``applied`` flips to true once the user\npicks it and ``apply_tag_suggestions`` creates the tag."
+      },
       "StripMetadataRequest": {
         "properties": {
           "output_mode": {
@@ -88796,15 +92316,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -90215,6 +93735,49 @@
         "type": "object",
         "title": "TagInputExport",
         "description": "The exact inputs the cross-cutting tag generator would receive, so a user\ncan run the agent manually (``GET /topics/{topic_id}/tag-input-export``)."
+      },
+      "TagSuggestionsState": {
+        "properties": {
+          "generated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At"
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/StoredSuggestedTag"
+            },
+            "type": "array",
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "title": "TagSuggestionsState",
+        "description": "The full ``rs_topic.tag_suggestions`` JSONB shape, typed for the FE so the\npicker renders without treating the column as ``unknown``."
       },
       "TagUpdate": {
         "properties": {
@@ -91922,6 +95485,162 @@
         "title": "TopSourceRow",
         "description": "Aggregate of cost by source for one org over the last 30 days."
       },
+      "TopicAssignBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "territory": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Territory"
+          },
+          "keyword_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyword Ids"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "en"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 50
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "territory"
+        ],
+        "title": "TopicAssignBody"
+      },
+      "TopicAssignResult": {
+        "properties": {
+          "eligible": {
+            "type": "integer",
+            "title": "Eligible",
+            "default": 0
+          },
+          "topics_created": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics Created"
+          },
+          "keywords_assigned": {
+            "type": "integer",
+            "title": "Keywords Assigned",
+            "default": 0
+          },
+          "unassignable": {
+            "type": "integer",
+            "title": "Unassignable",
+            "default": 0
+          },
+          "unknown_topic_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unknown Topic Refs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TopicAssignResult"
+      },
+      "TopicCostSummary": {
+        "properties": {
+          "total_llm_calls": {
+            "type": "integer",
+            "title": "Total Llm Calls",
+            "default": 0
+          },
+          "total_input_tokens": {
+            "type": "integer",
+            "title": "Total Input Tokens",
+            "default": 0
+          },
+          "total_output_tokens": {
+            "type": "integer",
+            "title": "Total Output Tokens",
+            "default": 0
+          },
+          "total_estimated_cost_usd": {
+            "type": "number",
+            "title": "Total Estimated Cost Usd",
+            "default": 0.0
+          },
+          "page_analyses": {
+            "$ref": "#/components/schemas/CostBreakdownItem"
+          },
+          "keyword_syntheses": {
+            "$ref": "#/components/schemas/CostBreakdownItem"
+          },
+          "topic_syntheses": {
+            "$ref": "#/components/schemas/CostBreakdownItem"
+          },
+          "project_syntheses": {
+            "$ref": "#/components/schemas/CostBreakdownItem"
+          },
+          "tag_consolidations": {
+            "$ref": "#/components/schemas/CostBreakdownItem"
+          },
+          "document_assembly": {
+            "$ref": "#/components/schemas/CostBreakdownItem"
+          }
+        },
+        "type": "object",
+        "title": "TopicCostSummary",
+        "description": "Aggregated LLM cost for a topic across all phases.\n\nSourced from `token_usage` JSONB on rs_analysis / rs_synthesis /\nrs_document. Each phase rolls up to a CostBreakdownItem; the top-level\nfields are the totals.\n\nReads `token_usage.total.{input_tokens,output_tokens,total_cost}` —\nmatches what `_execute_agent` writes via the AI engine's usage shape."
+      },
       "TopicCreate": {
         "properties": {
           "project_id": {
@@ -92093,6 +95812,222 @@
         },
         "type": "object",
         "title": "TopicCreate"
+      },
+      "TopicResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "autonomy_level": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "semi",
+              "manual"
+            ],
+            "title": "Autonomy Level"
+          },
+          "default_search_provider": {
+            "type": "string",
+            "enum": [
+              "brave",
+              "google"
+            ],
+            "title": "Default Search Provider"
+          },
+          "default_search_params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Default Search Params"
+          },
+          "good_scrape_threshold": {
+            "type": "integer",
+            "title": "Good Scrape Threshold"
+          },
+          "max_keywords": {
+            "type": "integer",
+            "title": "Max Keywords",
+            "default": 3
+          },
+          "scrapes_per_keyword": {
+            "type": "integer",
+            "title": "Scrapes Per Keyword"
+          },
+          "analyses_per_keyword": {
+            "type": "integer",
+            "title": "Analyses Per Keyword",
+            "default": 5
+          },
+          "max_keyword_syntheses": {
+            "type": "integer",
+            "title": "Max Keyword Syntheses",
+            "default": 3
+          },
+          "max_topic_syntheses": {
+            "type": "integer",
+            "title": "Max Topic Syntheses",
+            "default": 1
+          },
+          "max_project_syntheses": {
+            "type": "integer",
+            "title": "Max Project Syntheses",
+            "default": 1
+          },
+          "max_documents": {
+            "type": "integer",
+            "title": "Max Documents",
+            "default": 1
+          },
+          "max_tag_consolidations": {
+            "type": "integer",
+            "title": "Max Tag Consolidations",
+            "default": 0
+          },
+          "max_auto_tag_calls": {
+            "type": "integer",
+            "title": "Max Auto Tag Calls",
+            "default": 0
+          },
+          "tone_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tone Profile"
+          },
+          "outputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Outputs"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "searching",
+              "scraping",
+              "curating",
+              "analyzing",
+              "complete"
+            ],
+            "title": "Status"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "agent_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Agent Config"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "tag_suggestions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TagSuggestionsState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PipelineProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cost_summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopicCostSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "autonomy_level",
+          "default_search_provider",
+          "default_search_params",
+          "good_scrape_threshold",
+          "scrapes_per_keyword",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TopicResponse"
       },
       "TopicUpdate": {
         "properties": {
@@ -94861,21 +98796,7 @@
           "category": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "github",
-                  "openai",
-                  "anthropic",
-                  "google",
-                  "aws",
-                  "stripe",
-                  "supabase",
-                  "vercel",
-                  "linear",
-                  "notion",
-                  "slack",
-                  "custom"
-                ]
+                "type": "string"
               },
               {
                 "type": "null"
@@ -95057,8 +98978,8 @@
           },
           "next_n": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Next N",
             "default": 5
           }
@@ -95450,6 +99371,1033 @@
         "title": "VariableSpec",
         "description": "One declared run variable on a Definition.\n\n``default=None`` means \"no default\" — a reference to this variable with\nno per-reference default MUST be supplied at run time or the run fails\nloudly at that node. (A literal None default would be useless anyway:\nnode input schemas want real values.)"
       },
+      "VaultAuditEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_secret_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Secret Id"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "created_at"
+        ],
+        "title": "VaultAuditEntry"
+      },
+      "VaultAuditResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/VaultAuditEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries",
+          "count"
+        ],
+        "title": "VaultAuditResponse"
+      },
+      "VaultCapabilities": {
+        "properties": {
+          "can_use": {
+            "type": "boolean",
+            "title": "Can Use",
+            "default": false
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit",
+            "default": false
+          },
+          "can_reveal": {
+            "type": "boolean",
+            "title": "Can Reveal",
+            "default": false
+          },
+          "can_manage": {
+            "type": "boolean",
+            "title": "Can Manage",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "VaultCapabilities"
+      },
+      "VaultEffectiveEnvResponse": {
+        "properties": {
+          "env": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Env"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "env",
+          "count"
+        ],
+        "title": "VaultEffectiveEnvResponse"
+      },
+      "VaultFieldOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "credential_item_id": {
+            "type": "string",
+            "title": "Credential Item Id"
+          },
+          "field_key": {
+            "type": "string",
+            "title": "Field Key"
+          },
+          "env_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env Key"
+          },
+          "handling": {
+            "type": "string",
+            "title": "Handling",
+            "default": "revealable"
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable",
+            "default": true
+          },
+          "inject_into_sandbox": {
+            "type": "boolean",
+            "title": "Inject Into Sandbox",
+            "default": false
+          },
+          "value_hint": {
+            "type": "string",
+            "title": "Value Hint",
+            "default": ""
+          },
+          "value_version": {
+            "type": "integer",
+            "title": "Value Version",
+            "default": 1
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "credential_item_id",
+          "field_key",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VaultFieldOut",
+        "description": "Masked field — never carries plaintext."
+      },
+      "VaultFieldValueRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "VaultFieldValueRequest"
+      },
+      "VaultForkRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "to_principal": {
+            "$ref": "#/components/schemas/PrincipalIn"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "to_principal"
+        ],
+        "title": "VaultForkRequest"
+      },
+      "VaultImportEnvRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/PrincipalIn"
+          },
+          "env_text": {
+            "type": "string",
+            "title": "Env Text"
+          },
+          "inject_into_sandbox": {
+            "type": "boolean",
+            "title": "Inject Into Sandbox",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "env_text"
+        ],
+        "title": "VaultImportEnvRequest"
+      },
+      "VaultItemCreateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/PrincipalIn"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldIn"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Fields"
+          },
+          "definition_key": {
+            "type": "string",
+            "title": "Definition Key",
+            "default": "custom"
+          },
+          "definition_version": {
+            "type": "integer",
+            "title": "Definition Version",
+            "default": 1
+          },
+          "provider_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Key"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "manual"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "display_name",
+          "fields"
+        ],
+        "title": "VaultItemCreateRequest"
+      },
+      "VaultItemListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VaultItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "count"
+        ],
+        "title": "VaultItemListResponse"
+      },
+      "VaultItemOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "definition_key": {
+            "type": "string",
+            "title": "Definition Key",
+            "default": "custom"
+          },
+          "definition_version": {
+            "type": "integer",
+            "title": "Definition Version",
+            "default": 1
+          },
+          "provider_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Key"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "active"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "manual"
+          },
+          "access_mode": {
+            "type": "string",
+            "title": "Access Mode",
+            "default": "all_members"
+          },
+          "lifecycle": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Lifecycle"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/VaultFieldOut"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/VaultCapabilities"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VaultItemOut"
+      },
+      "VaultItemUpdateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "disabled",
+                  "expired",
+                  "pending_verification"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "provider_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Key"
+          },
+          "lifecycle": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "VaultItemUpdateRequest"
+      },
+      "VaultResolveRef": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "field_key": {
+            "type": "string",
+            "title": "Field Key"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "item_id",
+          "field_key"
+        ],
+        "title": "VaultResolveRef"
+      },
+      "VaultResolveRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "refs": {
+            "items": {
+              "$ref": "#/components/schemas/VaultResolveRef"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Refs"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "refs"
+        ],
+        "title": "VaultResolveRequest"
+      },
+      "VaultResolveResponse": {
+        "properties": {
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "title": "VaultResolveResponse",
+        "description": "Browser-facing resolution — sealed fields are structurally refused\nupstream; keys are ``\"{item_id}/{field_key}\"``."
+      },
+      "VaultRevealRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "field_key": {
+            "type": "string",
+            "title": "Field Key"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "field_key"
+        ],
+        "title": "VaultRevealRequest"
+      },
+      "VaultRevealResponse": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "field_key": {
+            "type": "string",
+            "title": "Field Key"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "field_key",
+          "value"
+        ],
+        "title": "VaultRevealResponse",
+        "description": "The ONLY human-facing plaintext shape. Short-lived, component-local on\nthe FE — never persisted, cached, or logged."
+      },
+      "VaultRotateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Values",
+            "description": "{field_key: new plaintext}"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "title": "VaultRotateRequest"
+      },
+      "VaultShareRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "access_mode": {
+            "type": "string",
+            "enum": [
+              "all_members",
+              "restricted"
+            ],
+            "title": "Access Mode"
+          },
+          "user_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "User Ids"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "access_mode"
+        ],
+        "title": "VaultShareRequest"
+      },
+      "VaultTransferRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "to_principal": {
+            "$ref": "#/components/schemas/PrincipalIn"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "to_principal"
+        ],
+        "title": "VaultTransferRequest"
+      },
       "VerdictRequest": {
         "properties": {
           "verdict": {
@@ -95610,18 +100558,18 @@
           "x": {
             "type": "number",
             "title": "X",
-            "default": 0
+            "default": 0.0
           },
           "y": {
             "type": "number",
             "title": "Y",
-            "default": 0
+            "default": 0.0
           },
           "zoom": {
             "type": "number",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Zoom",
-            "default": 1
+            "default": 1.0
           }
         },
         "type": "object",
@@ -97228,12 +102176,12 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "avg_run_cost_usd": {
             "type": "number",
             "title": "Avg Run Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "runs_per_day": {
             "items": {
@@ -97445,8 +102393,8 @@
           },
           "max_hits": {
             "type": "integer",
-            "maximum": 2000,
-            "minimum": 1,
+            "maximum": 2000.0,
+            "minimum": 1.0,
             "title": "Max Hits",
             "default": 200
           },
@@ -97481,8 +102429,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 20
           },
@@ -97546,8 +102494,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
             "default": 1

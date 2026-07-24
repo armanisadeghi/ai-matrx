@@ -112,6 +112,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Version Check
+         * @description Build identity (D-G — 2026-07-23 audit had no way to answer "what commit
+         *     is prod?" short of fingerprinting /openapi.json against git history).
+         *
+         *     Resolution order, loud never crashing:
+         *       1. GIT_SHA / BUILD_TIME env vars — set from Docker build args (see
+         *          Dockerfile) at image build time. This is the only source that works
+         *          in a deployed container, since .dockerignore excludes .git from the
+         *          build context.
+         *       2. `git rev-parse HEAD` — fallback for a local checkout (dev server
+         *          run straight from the repo, no Docker build args set).
+         *       3. "unknown" — neither source available. Never raises; a broken
+         *          version probe must not take down the health surface.
+         *
+         *     NOTE: no Coolify-side build-arg wiring exists yet for this image, so a
+         *     Coolify-deployed container currently reports git_sha="unknown" until that
+         *     ops follow-up lands (see Dockerfile comment above the GIT_SHA ARG).
+         */
+        get: operations["version_check_health_version_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -1684,6 +1719,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/runtime/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open Execution */
+        post: operations["open_execution_v2_runtime_open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/runtime/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Heartbeat Execution */
+        post: operations["heartbeat_execution_v2_runtime_heartbeat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/runtime/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Settle Execution */
+        post: operations["settle_execution_v2_runtime_settle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audio/transcribe": {
         parameters: {
             query?: never;
@@ -3088,6 +3174,259 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Items */
+        get: operations["list_items_vault_items_get"];
+        put?: never;
+        /** Create Item */
+        post: operations["create_item_vault_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/import-env": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Env */
+        post: operations["import_env_vault_items_import_env_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Item */
+        get: operations["get_item_vault_items__item_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Item */
+        delete: operations["delete_item_vault_items__item_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Item */
+        patch: operations["update_item_vault_items__item_id__patch"];
+        trace?: never;
+    };
+    "/vault/items/{item_id}/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Field */
+        post: operations["add_field_vault_items__item_id__fields_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/fields/{field_id}/value": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Field Value */
+        put: operations["update_field_value_vault_items__item_id__fields__field_id__value_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/fields/{field_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Field */
+        delete: operations["delete_field_vault_items__item_id__fields__field_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal
+         * @description Explicit reveal of ONE `revealable` field. Audited; `sealed` is
+         *     structurally refused (403); subject to the recent-auth hook.
+         */
+        post: operations["reveal_vault_items__item_id__reveal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate */
+        post: operations["rotate_vault_items__item_id__rotate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve
+         * @description Browser-facing resolution by stable reference. `sealed` never crosses
+         *     this boundary — trusted executors resolve in-process via the battery.
+         */
+        post: operations["resolve_vault_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/effective-env": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Effective Env
+         * @description Personal-over-organization effective environment for the actor,
+         *     minus sealed aliases.
+         */
+        get: operations["effective_env_vault_effective_env_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Share */
+        put: operations["share_vault_items__item_id__share_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transfer */
+        post: operations["transfer_vault_items__item_id__transfer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/fork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fork */
+        post: operations["fork_vault_items__item_id__fork_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Audit */
+        get: operations["list_audit_vault_items__item_id__audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/exchange": {
         parameters: {
             query?: never;
@@ -3133,6 +3472,11 @@ export interface paths {
          * Internal Credential
          * @description Resolve a Google connection's refresh token + OAuth client for a
          *     trusted server-side consumer (the standalone scraper's GSC sync).
+         *
+         *     ``resource_type``/``resource_ref`` (+ optional ``site_id``/
+         *     ``provider_binding_key``) are the WS-6 exact-resource-binding check
+         *     (DEF-24) — the scraper's legacy GSC credential chain reaches the same
+         *     verification the SEO collector uses, through this one bridge.
          */
         get: operations["internal_credential_google_integrations_internal_credential_get"];
         put?: never;
@@ -3228,6 +3572,179 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Collections
+         * @description LIST gate — DEF-12/WS-5: bounded by the effective org for query scope,
+         *     then narrowed to ``iam.is_discoverable`` per row (identical to the
+         *     standalone list route) so a contextually-reachable run never leaks into
+         *     this enumeration.
+         */
+        get: operations["list_collections_seo_collections_get"];
+        put?: never;
+        /**
+         * Create Collection
+         * @description Run one durable provider collection as canonical detached NDJSON: every
+         *     provider/checkpoint/persistence stage streams as it happens (DataForSEO
+         *     standard workflows poll on the server whether or not the client stays),
+         *     ending with a ``seo.receipt`` event. Work never stops on disconnect.
+         */
+        post: operations["create_collection_seo_collections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/collections/{run_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Collection
+         * @description Continue a persisted provider run after process loss or failure. The
+         *     repository reclaims the run by id (an actively leased run cannot be
+         *     stolen), and checkpointed provider workflows (DataForSEO standard tasks)
+         *     resume from their persisted checkpoints instead of re-submitting paid
+         *     work. A completed run just replays its receipt.
+         */
+        post: operations["resume_collection_seo_collections__run_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/collections/{run_id}/rejoin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rejoin Collection
+         * @description Reconnect to a run by id: replays buffered progress and follows live
+         *     events when the run is executing in this process; otherwise emits one
+         *     durable ``seo.run_snapshot`` event (status + error + result + receipt).
+         */
+        post: operations["rejoin_collection_seo_collections__run_id__rejoin_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/backlinks/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Site Backlinks
+         * @description On-demand streamed backlink refresh through the ONE package
+         *     BacklinkRefreshService — dataset-by-dataset provider/persistence events,
+         *     ending with ``seo.backlink_refresh_completed``.
+         */
+        post: operations["refresh_site_backlinks_seo_sites__site_id__backlinks_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/bing/search-performance/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Bing Search Performance
+         * @description On-demand streamed Bing Webmaster SEARCH_PERFORMANCE collection for one
+         *     bound site (WS-9 / M-69 / DEF-14): builds the canonical
+         *     ``CollectionRequest`` from the site's live binding (the SSOT — never a
+         *     caller-supplied site_url/credential) and runs it through the ONE
+         *     ``run_collection`` funnel used by every other provider.
+         */
+        post: operations["sync_bing_search_performance_seo_sites__site_id__bing_search_performance_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/providers/dataforseo/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dataforseo Operations */
+        get: operations["dataforseo_operations_seo_providers_dataforseo_operations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/collections/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Collection */
+        get: operations["get_collection_seo_collections__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/collections/{run_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Collection Evidence */
+        get: operations["collection_evidence_seo_collections__run_id__evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/keywords/research": {
         parameters: {
             query?: never;
@@ -3239,8 +3756,11 @@ export interface paths {
         put?: never;
         /**
          * Keyword Relationship Research
-         * @description Run the LSI research agent for one primary keyword, store the artifact,
-         *     ingest keywords + edges, and (by default) batch-fetch market volume.
+         * @description Run the LSI research agent for one primary keyword as a DURABLE
+         *     streamed command: the run identity persists to seo.collection_run BEFORE
+         *     the agent call, every stage streams as NDJSON, the final result document
+         *     lands on the run row, and the same identity reuses/rejoins instead of
+         *     re-spending.
          */
         post: operations["keyword_relationship_research_seo_keywords_research_post"];
         delete?: never;
@@ -3261,7 +3781,8 @@ export interface paths {
         /**
          * Keyword Volume Refresh
          * @description Fetch DataForSEO market data for phrases with a missing/stale
-         *     keyword_market row (30-day TTL); force_refresh bypasses the TTL.
+         *     keyword_market row as a DURABLE streamed command (run identity persisted
+         *     before any provider batch; result document lands on the run row).
          */
         post: operations["keyword_volume_refresh_seo_keywords_volume_refresh_post"];
         delete?: never;
@@ -3270,35 +3791,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/collections": {
+    "/seo/keywords/classify": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List Collections */
-        get: operations["list_collections_seo_collections_get"];
+        get?: never;
         put?: never;
-        /** Create Collection */
-        post: operations["create_collection_seo_collections_post"];
+        /**
+         * Keyword Classify
+         * @description Run the Keyword Classifier over unclassified keywords (or explicit ids),
+         *     filling the 13 intrinsic columns + envelope.
+         */
+        post: operations["keyword_classify_seo_keywords_classify_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/seo/collections/{run_id}": {
+    "/seo/keywords/assign-topics": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Collection */
-        get: operations["get_collection_seo_collections__run_id__get"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Keyword Assign Topics
+         * @description Pin unassigned keywords to the shared topic tree (lazy growth) for one
+         *     industry territory.
+         */
+        post: operations["keyword_assign_topics_seo_keywords_assign_topics_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/strategy-interview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Site Strategy Interview
+         * @description Translate business context into seo.site_topic_value rows for one site
+         *     (values set high on the tree; open questions returned, never guessed).
+         */
+        post: operations["site_strategy_interview_seo_sites_strategy_interview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/pages/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Page Route
+         * @description Run the Page Analyzer for one canonical `web.page` as a DURABLE
+         *     streamed command (WS-11 / M-53): persists site_keyword_value +
+         *     page<->keyword associations through the package writer.
+         */
+        post: operations["analyze_page_route_seo_pages_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/pages/map-keywords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Map Page Keywords Route
+         * @description Run the Page↔Keyword Mapper for one topic cluster on one site as a
+         *     DURABLE streamed command (WS-11 / M-27): populates
+         *     seo.site_keyword_value.workflow_status/content_role/priority_score
+         *     (DEF-22) + page<->keyword associations through the package writer.
+         */
+        post: operations["map_page_keywords_route_seo_pages_map_keywords_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5255,6 +5849,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7837,6 +8455,28 @@ export interface paths {
         post: operations["subscribe_library_ep_rag_library_catalog__store_id__subscribe_post"];
         /** Unsubscribe Library Ep */
         delete: operations["unsubscribe_library_ep_rag_library_catalog__store_id__subscribe_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/library/stores/{store_id}/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Library Store Document
+         * @description Curator publish: ingest an EXISTING file into a library store as
+         *     system-owned shared knowledge (Decision 3 rehome + library-profile
+         *     ingest), streamed. Super-admin only.
+         */
+        post: operations["ingest_library_store_document_rag_library_stores__store_id__ingest_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -16209,6 +16849,12 @@ export interface components {
             operation: string;
             /** Target Ref */
             target_ref: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Page Id */
+            page_id?: string | null;
+            /** Source Crawl Session Id */
+            source_crawl_session_id?: string | null;
             /** Observation Period */
             observation_period: string;
             /** Settings */
@@ -16230,6 +16876,11 @@ export interface components {
              * @default false
              */
             resume_existing?: boolean;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
         };
         /** AnalysisPreferencesBody */
         AnalysisPreferencesBody: {
@@ -17209,6 +17860,34 @@ export interface components {
              */
             max_calls?: number | null;
         };
+        /** BacklinkRefreshBody */
+        BacklinkRefreshBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Profile
+             * @default bootstrap
+             */
+            profile?: string;
+            /**
+             * Detail Limit
+             * @default 1000
+             */
+            detail_limit?: number;
+            /**
+             * Force Refresh
+             * @default true
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
+            /** Source Crawl Session Id */
+            source_crawl_session_id?: string | null;
+        };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
             /** Organization Id */
@@ -17499,6 +18178,37 @@ export interface components {
             owner_type?: string;
             /** Organization Id */
             organization_id?: string | null;
+        };
+        /** BingSearchPerformanceSyncBody */
+        BingSearchPerformanceSyncBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Window Days
+             * @default 28
+             */
+            window_days?: number;
+            /**
+             * Max Query Fanout
+             * @default 50
+             */
+            max_query_fanout?: number;
+            /**
+             * Max Calls
+             * @default 100
+             */
+            max_calls?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
         };
         /** BingSiteBinding */
         BingSiteBinding: {
@@ -19269,6 +19979,15 @@ export interface components {
              * @default false
              */
             reused_completed_run?: boolean;
+            /**
+             * From Cache
+             * @default false
+             */
+            from_cache?: boolean;
+            /** Cache Age Seconds */
+            cache_age_seconds?: number | null;
+            /** Freshness Ttl Seconds */
+            freshness_ttl_seconds?: number | null;
         };
         /**
          * CollectionTrigger
@@ -20040,6 +20759,31 @@ export interface components {
             /** Download Url */
             download_url?: string | null;
         };
+        /** CostBreakdownItem */
+        CostBreakdownItem: {
+            /** Label */
+            label: string;
+            /**
+             * Calls
+             * @default 0
+             */
+            calls?: number;
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens?: number;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens?: number;
+            /**
+             * Estimated Cost Usd
+             * @default 0
+             */
+            estimated_cost_usd?: number;
+        };
         /** CrawlPresetSaveRequest */
         CrawlPresetSaveRequest: {
             /** Name */
@@ -20581,6 +21325,45 @@ export interface components {
             date: string;
             /** Cost Usd */
             cost_usd: number;
+        };
+        /** DataForSeoEndpointExampleOut */
+        DataForSeoEndpointExampleOut: {
+            /** Endpoint */
+            endpoint: string;
+            /** Workflow */
+            workflow: string;
+            /** Task */
+            task: {
+                [key: string]: unknown;
+            };
+        };
+        /** DataForSeoOperationOut */
+        DataForSeoOperationOut: {
+            /** Name */
+            name: string;
+            /** Family */
+            family: string;
+            /** Capabilities */
+            capabilities: string[];
+            /** Endpoints */
+            endpoints: string[];
+            /** Workflows */
+            workflows: string[];
+            /** Pricing Key */
+            pricing_key: string;
+            /** Raw Only */
+            raw_only: boolean;
+            /** Canonical Normalizer */
+            canonical_normalizer: boolean;
+            /** Freshness Ttl Seconds */
+            freshness_ttl_seconds: number;
+            /** Endpoint Examples */
+            endpoint_examples: components["schemas"]["DataForSeoEndpointExampleOut"][];
+        };
+        /** DataForSeoOperationsResponse */
+        DataForSeoOperationsResponse: {
+            /** Operations */
+            operations: components["schemas"]["DataForSeoOperationOut"][];
         };
         /** DataStoreAdminRow */
         DataStoreAdminRow: {
@@ -21156,6 +21939,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -22994,6 +23804,41 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** FieldIn */
+        FieldIn: {
+            /**
+             * Field Key
+             * @description stable lowercase-snake identity within the item
+             */
+            field_key: string;
+            /** Value */
+            value: string;
+            /**
+             * Env Key
+             * @description optional environment-variable alias
+             */
+            env_key?: string | null;
+            /**
+             * Handling
+             * @default revealable
+             * @enum {string}
+             */
+            handling?: "visible" | "revealable" | "sealed";
+            /**
+             * Editable
+             * @default true
+             */
+            editable?: boolean;
+            /**
+             * Inject Into Sandbox
+             * @default false
+             */
+            inject_into_sandbox?: boolean;
+            /** Description */
+            description?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** FieldRecord */
         FieldRecord: {
             /** Id */
@@ -24108,135 +24953,6 @@ export interface components {
             is_default?: boolean;
         };
         /** HTTPValidationError */
-        /** KeywordResearchBody */
-        KeywordResearchBody: {
-            /** Primary Keyword */
-            primary_keyword: string;
-            /** Organization Id */
-            organization_id?: string | null;
-            /**
-             * Language
-             * @default en
-             */
-            language?: string;
-            /**
-             * Refresh Volume
-             * @default true
-             */
-            refresh_volume?: boolean;
-            /**
-             * Location Code
-             * @default 2840
-             */
-            location_code?: number;
-        };
-        /** KeywordResearchIngestSummary */
-        KeywordResearchIngestSummary: {
-            /** Primary Keyword Ids */
-            primary_keyword_ids?: string[];
-            /**
-             * Keywords Created
-             * @default 0
-             */
-            keywords_created?: number;
-            /**
-             * Keywords Already Existed
-             * @default 0
-             */
-            keywords_already_existed?: number;
-            /**
-             * Edges Written
-             * @default 0
-             */
-            edges_written?: number;
-            /**
-             * Edges Skipped Rejected
-             * @default 0
-             */
-            edges_skipped_rejected?: number;
-            /**
-             * Edges Skipped Self
-             * @default 0
-             */
-            edges_skipped_self?: number;
-        };
-        /** KeywordResearchResult */
-        KeywordResearchResult: {
-            /** Primary Keyword */
-            primary_keyword: string;
-            /** Research Doc Id */
-            research_doc_id: string;
-            /** Artifact */
-            artifact: {
-                [key: string]: unknown;
-            };
-            ingest: components["schemas"]["KeywordResearchIngestSummary"];
-            volume?: components["schemas"]["KeywordVolumeRefreshResult"] | null;
-        };
-        /** KeywordVolumeBatchReceipt */
-        KeywordVolumeBatchReceipt: {
-            /** Run Id */
-            run_id: string;
-            /** Keyword Count */
-            keyword_count: number;
-            /**
-             * Created Observations
-             * @default 0
-             */
-            created_observations?: number;
-            /**
-             * Existing Observations
-             * @default 0
-             */
-            existing_observations?: number;
-            /**
-             * From Cache
-             * @default false
-             */
-            from_cache?: boolean;
-        };
-        /** KeywordVolumeRefreshBody */
-        KeywordVolumeRefreshBody: {
-            /** Phrases */
-            phrases: string[];
-            /** Organization Id */
-            organization_id?: string | null;
-            /**
-             * Language
-             * @default en
-             */
-            language?: string;
-            /**
-             * Location Code
-             * @default 2840
-             */
-            location_code?: number;
-            /**
-             * Force Refresh
-             * @default false
-             */
-            force_refresh?: boolean;
-        };
-        /** KeywordVolumeRefreshResult */
-        KeywordVolumeRefreshResult: {
-            /**
-             * Requested Phrases
-             * @default 0
-             */
-            requested_phrases?: number;
-            /**
-             * Skipped Fresh
-             * @default 0
-             */
-            skipped_fresh?: number;
-            /**
-             * Fetched Phrases
-             * @default 0
-             */
-            fetched_phrases?: number;
-            /** Batches */
-            batches?: components["schemas"]["KeywordVolumeBatchReceipt"][];
-        };
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
@@ -25235,6 +25951,52 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** KeywordClassifyBody */
+        KeywordClassifyBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Keyword Ids */
+            keyword_ids?: string[] | null;
+            /**
+             * Language
+             * @default en
+             */
+            language?: string;
+            /**
+             * Limit
+             * @default 200
+             */
+            limit?: number;
+        };
+        /** KeywordClassifyResult */
+        KeywordClassifyResult: {
+            /**
+             * Eligible
+             * @default 0
+             */
+            eligible?: number;
+            /**
+             * Batches
+             * @default 0
+             */
+            batches?: number;
+            /**
+             * Updated
+             * @default 0
+             */
+            updated?: number;
+            /**
+             * Skipped Error
+             * @default 0
+             */
+            skipped_error?: number;
+            /** Missing Keyword Ids */
+            missing_keyword_ids?: string[];
+        };
         /** KeywordCreate */
         KeywordCreate: {
             /** Keywords */
@@ -25259,6 +26021,73 @@ export interface components {
         KeywordReorderRequest: {
             /** Keyword Ids */
             keyword_ids: string[];
+        };
+        /** KeywordResearchBody */
+        KeywordResearchBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Primary Keyword */
+            primary_keyword: string;
+            /**
+             * Language
+             * @default en
+             */
+            language?: string;
+            /**
+             * Industry Context
+             * @default none
+             */
+            industry_context?: string;
+            /**
+             * Refresh Volume
+             * @default true
+             */
+            refresh_volume?: boolean;
+            /**
+             * Classify
+             * @default true
+             */
+            classify?: boolean;
+            /**
+             * Location Code
+             * @default 2840
+             */
+            location_code?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
+        /** KeywordVolumeRefreshBody */
+        KeywordVolumeRefreshBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Phrases */
+            phrases: string[];
+            /**
+             * Language
+             * @default en
+             */
+            language?: string;
+            /**
+             * Location Code
+             * @default 2840
+             */
+            location_code?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
         };
         /** KgCostSummaryResponse */
         KgCostSummaryResponse: {
@@ -25907,6 +26736,19 @@ export interface components {
             is_continuation: boolean;
             /** Has Image */
             has_image: boolean;
+        };
+        /** LibraryIngestRequest */
+        LibraryIngestRequest: {
+            /**
+             * File Id
+             * @description ``files.files.id`` of the source file to ingest.
+             */
+            file_id: string;
+            /**
+             * Profile
+             * @description Optional ingest profile name. 'library' (the default and only profile) = run_ner=False + cleanup=False; unknown names are 422.
+             */
+            profile?: string | null;
         };
         /** LibraryListResponse */
         LibraryListResponse: {
@@ -27615,6 +28457,22 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** PageAnalyzeBody */
+        PageAnalyzeBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Page Id */
+            page_id: string;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
         /** PageDetail */
         PageDetail: {
             /** Page Index */
@@ -27670,6 +28528,24 @@ export interface components {
             chunk_ids?: string[];
             /** Image Url */
             image_url?: string | null;
+        };
+        /** PageKeywordMapBody */
+        PageKeywordMapBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Site Id */
+            site_id: string;
+            /** Topic Slug */
+            topic_slug: string;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
         };
         /** PageSummary */
         PageSummary: {
@@ -28337,6 +29213,109 @@ export interface components {
             /** Public Read */
             public_read?: boolean | null;
         };
+        /** PipelineProgress */
+        PipelineProgress: {
+            /**
+             * Total Keywords
+             * @default 0
+             */
+            total_keywords?: number;
+            /**
+             * Stale Keywords
+             * @default 0
+             */
+            stale_keywords?: number;
+            /**
+             * Total Sources
+             * @default 0
+             */
+            total_sources?: number;
+            /**
+             * Included Sources
+             * @default 0
+             */
+            included_sources?: number;
+            /**
+             * Sources Pending
+             * @default 0
+             */
+            sources_pending?: number;
+            /**
+             * Sources Success
+             * @default 0
+             */
+            sources_success?: number;
+            /**
+             * Sources Thin
+             * @default 0
+             */
+            sources_thin?: number;
+            /**
+             * Sources Failed
+             * @default 0
+             */
+            sources_failed?: number;
+            /**
+             * Sources Complete
+             * @default 0
+             */
+            sources_complete?: number;
+            /**
+             * Total Content
+             * @default 0
+             */
+            total_content?: number;
+            /**
+             * Total Analyses
+             * @default 0
+             */
+            total_analyses?: number;
+            /**
+             * Failed Analyses
+             * @default 0
+             */
+            failed_analyses?: number;
+            /**
+             * Keyword Syntheses
+             * @default 0
+             */
+            keyword_syntheses?: number;
+            /**
+             * Failed Keyword Syntheses
+             * @default 0
+             */
+            failed_keyword_syntheses?: number;
+            /**
+             * Topic Syntheses
+             * @default 0
+             */
+            topic_syntheses?: number;
+            /**
+             * Failed Topic Syntheses
+             * @default 0
+             */
+            failed_topic_syntheses?: number;
+            /**
+             * Project Syntheses
+             * @default 0
+             */
+            project_syntheses?: number;
+            /**
+             * Failed Project Syntheses
+             * @default 0
+             */
+            failed_project_syntheses?: number;
+            /**
+             * Total Tags
+             * @default 0
+             */
+            total_tags?: number;
+            /**
+             * Total Documents
+             * @default 0
+             */
+            total_documents?: number;
+        };
         /**
          * PodcastAudioProvider
          * @enum {string}
@@ -28352,6 +29331,25 @@ export interface components {
         };
         /** PodcastGenerateRequest */
         PodcastGenerateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @default true
+             */
+            store?: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
             /** Show Id */
             show_id?: string | null;
             input_data_type: components["schemas"]["InputDataType"];
@@ -28411,6 +29409,13 @@ export interface components {
             max_images?: number | null;
             /** Max Videos */
             max_videos?: number | null;
+            /** Feature Image Style */
+            feature_image_style?: string | null;
+            /**
+             * Include Feature Image
+             * @default true
+             */
+            include_feature_image?: boolean;
             /** Dictionary */
             dictionary?: {
                 [key: string]: unknown;
@@ -28657,6 +29662,23 @@ export interface components {
              */
             background_color?: string;
         };
+        /**
+         * PrincipalIn
+         * @description The owning scope a call operates on. ``user`` == the authenticated
+         *     actor, always.
+         */
+        PrincipalIn: {
+            /**
+             * Type
+             * @default user
+             * @enum {string}
+             */
+            type?: "user" | "organization";
+            /** Organization Id */
+            organization_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** ProcessBlocksRequest */
         ProcessBlocksRequest: {
             /**
@@ -28821,6 +29843,72 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** ProviderCallEvidenceOut */
+        ProviderCallEvidenceOut: {
+            /** Id */
+            id: string;
+            /** Provider Call Key */
+            provider_call_key: string;
+            /** External Task Id */
+            external_task_id?: string | null;
+            /** Request Count */
+            request_count: number;
+            /** Reported Cost */
+            reported_cost?: string | null;
+            /** Estimated Cost */
+            estimated_cost?: string | null;
+            /** Currency */
+            currency: string;
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+        };
+        /** ProviderTaskEvidenceOut */
+        ProviderTaskEvidenceOut: {
+            /** Id */
+            id: string;
+            /** External Task Id */
+            external_task_id: string;
+            /** Endpoint */
+            endpoint?: string | null;
+            /** Status */
+            status: string;
+            /** Request Payload */
+            request_payload: {
+                [key: string]: unknown;
+            };
+            /** Response Payload */
+            response_payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** Request Count */
+            request_count: number;
+            /** Provider Cost */
+            provider_cost?: string | null;
+            /** Estimated Cost */
+            estimated_cost?: string | null;
+            /** Currency */
+            currency: string;
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+            /** Last Polled At */
+            last_polled_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /**
          * PublicWorkflowRecord
          * @description Read-only public view — only the fields safe to expose anonymously.
@@ -28978,6 +30066,41 @@ export interface components {
              * @default false
              */
             stream?: boolean;
+        };
+        /** RawPayloadEvidenceOut */
+        RawPayloadEvidenceOut: {
+            /** Id */
+            id: string;
+            /** Checksum */
+            checksum: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Content Type */
+            content_type: string;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            } | unknown[] | null;
+            /** Cloud File Id */
+            cloud_file_id?: string | null;
+            /** Provider Schema Version */
+            provider_schema_version?: string | null;
+            /** External Task Id */
+            external_task_id?: string | null;
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /** Offload Error */
+            offload_error?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * RealtimeTool
@@ -30056,7 +31179,7 @@ export interface components {
             /** Target Instance Id */
             target_instance_id?: string | null;
             /** User Request Id */
-            user_request_id: string;
+            user_request_id?: string | null;
             config_overrides?: components["schemas"]["LLMParams"] | null;
             /**
              * Debug
@@ -30411,6 +31534,25 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** RunEvidenceResponse */
+        RunEvidenceResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Provider */
+            provider: string;
+            /** Operation */
+            operation: string;
+            /** Request */
+            request: {
+                [key: string]: unknown;
+            };
+            /** Provider Calls */
+            provider_calls: components["schemas"]["ProviderCallEvidenceOut"][];
+            /** Provider Tasks */
+            provider_tasks: components["schemas"]["ProviderTaskEvidenceOut"][];
+            /** Raw Payloads */
+            raw_payloads: components["schemas"]["RawPayloadEvidenceOut"][];
+        };
         /** RunExtractionRequest */
         RunExtractionRequest: {
             /** Job Id */
@@ -30508,6 +31650,8 @@ export interface components {
         };
         /** RunPipelineRequest */
         RunPipelineRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
             /**
              * Use User Agent Overrides
              * @description When true, load the caller's `user_preferences.research.agent_overrides` JSONB and use it as a fallback layer between `topic.agent_config` and the system defaults. When false (default), user prefs are ignored entirely. Missing/broken overrides silently fall through to defaults.
@@ -30637,6 +31781,12 @@ export interface components {
             status: string;
             /** Target Ref */
             target_ref: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Page Id */
+            page_id?: string | null;
+            /** Source Crawl Session Id */
+            source_crawl_session_id?: string | null;
             /** Observation Period */
             observation_period: string;
             /** Organization Id */
@@ -30670,6 +31820,10 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** RunWorkflowRequest */
         RunWorkflowRequest: {
@@ -30741,6 +31895,99 @@ export interface components {
              * @description Optional URL POSTed the terminal run summary (run_id, status, outputs/error, duration, cost) exactly once when the run completes / fails / cancels — by ANY path, including worker runs and cancels. Gives external callers single-request semantics with zero polling. Delivery is retried with exponential backoff and never blocks the run; the outcome is recorded on the run's metadata (_callback).
              */
             callback_url?: string | null;
+        };
+        /** RuntimeHeartbeatRequest */
+        RuntimeHeartbeatRequest: {
+            /** Execution Id */
+            execution_id: string;
+            /** Lease Holder */
+            lease_holder: string;
+            /**
+             * Lease Seconds
+             * @default 1800
+             */
+            lease_seconds?: number;
+        };
+        /** RuntimeHeartbeatResponse */
+        RuntimeHeartbeatResponse: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "owned" | "lost" | "terminal";
+        };
+        /**
+         * RuntimeOpenRequest
+         * @description Open a spine request+execution for a client-hosted run.
+         */
+        RuntimeOpenRequest: {
+            /**
+             * Type
+             * @default conversation
+             */
+            type?: string;
+            /**
+             * App
+             * @default matrx-local
+             */
+            app?: string;
+            /**
+             * Surface
+             * @default desktop_ai
+             */
+            surface?: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Link Kind
+             * @default conversation
+             */
+            link_kind?: string;
+            /** Link Id */
+            link_id?: string | null;
+            /**
+             * Lease Seconds
+             * @default 1800
+             */
+            lease_seconds?: number;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+        };
+        /** RuntimeOpenResponse */
+        RuntimeOpenResponse: {
+            /** Request Id */
+            request_id: string;
+            /** Execution Id */
+            execution_id: string;
+            /** Root Execution Id */
+            root_execution_id: string;
+            /** Lease Holder */
+            lease_holder: string;
+            /** Lease Seconds */
+            lease_seconds: number;
+        };
+        /** RuntimeSettleRequest */
+        RuntimeSettleRequest: {
+            /** Execution Id */
+            execution_id: string;
+            /**
+             * Status
+             * @description completed | failed | cancelled (prefix-matched)
+             */
+            status: string;
+            /** Error */
+            error?: string | null;
+            /** Meters */
+            meters?: {
+                [key: string]: number;
+            } | null;
+        };
+        /** RuntimeSettleResponse */
+        RuntimeSettleResponse: {
+            /** Ok */
+            ok: boolean;
+            /** Status */
+            status: string;
         };
         /** SandboxBindRequest */
         SandboxBindRequest: {
@@ -31530,6 +32777,31 @@ export interface components {
              */
             enabled?: boolean;
         };
+        /** SiteStrategyBody */
+        SiteStrategyBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Site Id */
+            site_id: string;
+            /** Business Context */
+            business_context: string;
+        };
+        /** SiteStrategyResult */
+        SiteStrategyResult: {
+            /**
+             * Valuations Written
+             * @default 0
+             */
+            valuations_written?: number;
+            /** Unknown Topic Slugs */
+            unknown_topic_slugs?: string[];
+            /** Open Questions */
+            open_questions?: string[];
+        };
         /** SkillCreate */
         SkillCreate: {
             /** Organization Id */
@@ -32202,6 +33474,33 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
         };
+        /**
+         * StoredSuggestedTag
+         * @description One persisted cross-cutting tag suggestion (a row of
+         *     ``rs_topic.tag_suggestions.tags``). ``applied`` flips to true once the user
+         *     picks it and ``apply_tag_suggestions`` creates the tag.
+         */
+        StoredSuggestedTag: {
+            /** Name */
+            name: string;
+            /** Keywords Spanned */
+            keywords_spanned?: string[];
+            /**
+             * Confidence
+             * @default 0
+             */
+            confidence?: number;
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
+            /**
+             * Applied
+             * @default false
+             */
+            applied?: boolean;
+        };
         /** StripMetadataRequest */
         StripMetadataRequest: {
             /** Output Mode */
@@ -32800,6 +34099,21 @@ export interface components {
              */
             search_results_text?: string;
         };
+        /**
+         * TagSuggestionsState
+         * @description The full ``rs_topic.tag_suggestions`` JSONB shape, typed for the FE so the
+         *     picker renders without treating the column as ``unknown``.
+         */
+        TagSuggestionsState: {
+            /** Generated At */
+            generated_at?: string | null;
+            /** User Input */
+            user_input?: string | {
+                [key: string]: unknown;
+            }[] | null;
+            /** Tags */
+            tags?: components["schemas"]["StoredSuggestedTag"][];
+        };
         /** TagUpdate */
         TagUpdate: {
             /** Name */
@@ -33372,6 +34686,90 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** TopicAssignBody */
+        TopicAssignBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Territory */
+            territory: string;
+            /** Keyword Ids */
+            keyword_ids?: string[] | null;
+            /**
+             * Language
+             * @default en
+             */
+            language?: string;
+            /**
+             * Limit
+             * @default 50
+             */
+            limit?: number;
+        };
+        /** TopicAssignResult */
+        TopicAssignResult: {
+            /**
+             * Eligible
+             * @default 0
+             */
+            eligible?: number;
+            /** Topics Created */
+            topics_created?: string[];
+            /**
+             * Keywords Assigned
+             * @default 0
+             */
+            keywords_assigned?: number;
+            /**
+             * Unassignable
+             * @default 0
+             */
+            unassignable?: number;
+            /** Unknown Topic Refs */
+            unknown_topic_refs?: string[];
+        };
+        /**
+         * TopicCostSummary
+         * @description Aggregated LLM cost for a topic across all phases.
+         *
+         *     Sourced from `token_usage` JSONB on rs_analysis / rs_synthesis /
+         *     rs_document. Each phase rolls up to a CostBreakdownItem; the top-level
+         *     fields are the totals.
+         *
+         *     Reads `token_usage.total.{input_tokens,output_tokens,total_cost}` —
+         *     matches what `_execute_agent` writes via the AI engine's usage shape.
+         */
+        TopicCostSummary: {
+            /**
+             * Total Llm Calls
+             * @default 0
+             */
+            total_llm_calls?: number;
+            /**
+             * Total Input Tokens
+             * @default 0
+             */
+            total_input_tokens?: number;
+            /**
+             * Total Output Tokens
+             * @default 0
+             */
+            total_output_tokens?: number;
+            /**
+             * Total Estimated Cost Usd
+             * @default 0
+             */
+            total_estimated_cost_usd?: number;
+            page_analyses?: components["schemas"]["CostBreakdownItem"];
+            keyword_syntheses?: components["schemas"]["CostBreakdownItem"];
+            topic_syntheses?: components["schemas"]["CostBreakdownItem"];
+            project_syntheses?: components["schemas"]["CostBreakdownItem"];
+            tag_consolidations?: components["schemas"]["CostBreakdownItem"];
+            document_assembly?: components["schemas"]["CostBreakdownItem"];
+        };
         /** TopicCreate */
         TopicCreate: {
             /** Project Id */
@@ -33458,6 +34856,105 @@ export interface components {
             } | null;
             /** Keywords */
             keywords?: string[] | null;
+        };
+        /** TopicResponse */
+        TopicResponse: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id?: string | null;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /**
+             * Autonomy Level
+             * @enum {string}
+             */
+            autonomy_level: "auto" | "semi" | "manual";
+            /**
+             * Default Search Provider
+             * @enum {string}
+             */
+            default_search_provider: "brave" | "google";
+            /** Default Search Params */
+            default_search_params: {
+                [key: string]: unknown;
+            };
+            /** Good Scrape Threshold */
+            good_scrape_threshold: number;
+            /**
+             * Max Keywords
+             * @default 3
+             */
+            max_keywords?: number;
+            /** Scrapes Per Keyword */
+            scrapes_per_keyword: number;
+            /**
+             * Analyses Per Keyword
+             * @default 5
+             */
+            analyses_per_keyword?: number;
+            /**
+             * Max Keyword Syntheses
+             * @default 3
+             */
+            max_keyword_syntheses?: number;
+            /**
+             * Max Topic Syntheses
+             * @default 1
+             */
+            max_topic_syntheses?: number;
+            /**
+             * Max Project Syntheses
+             * @default 1
+             */
+            max_project_syntheses?: number;
+            /**
+             * Max Documents
+             * @default 1
+             */
+            max_documents?: number;
+            /**
+             * Max Tag Consolidations
+             * @default 0
+             */
+            max_tag_consolidations?: number;
+            /**
+             * Max Auto Tag Calls
+             * @default 0
+             */
+            max_auto_tag_calls?: number;
+            /** Tone Profile */
+            tone_profile?: string | null;
+            /** Outputs */
+            outputs?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "searching" | "scraping" | "curating" | "analyzing" | "complete";
+            /** Template Id */
+            template_id?: string | null;
+            /** Agent Config */
+            agent_config?: {
+                [key: string]: unknown;
+            };
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            tag_suggestions?: components["schemas"]["TagSuggestionsState"] | null;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+            progress?: components["schemas"]["PipelineProgress"] | null;
+            cost_summary?: components["schemas"]["TopicCostSummary"] | null;
         };
         /** TopicUpdate */
         TopicUpdate: {
@@ -34333,7 +35830,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            category?: string | null;
             /**
              * Is Active
              * @default true
@@ -34559,6 +36056,391 @@ export interface components {
             description?: string;
             /** Default */
             default?: unknown;
+        };
+        /** VaultAuditEntry */
+        VaultAuditEntry: {
+            /** Id */
+            id: string;
+            /** User Secret Id */
+            user_secret_id?: string | null;
+            /** Actor Id */
+            actor_id?: string | null;
+            /** Action */
+            action: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Created At */
+            created_at: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultAuditResponse */
+        VaultAuditResponse: {
+            /** Entries */
+            entries: components["schemas"]["VaultAuditEntry"][];
+            /** Count */
+            count: number;
+        };
+        /** VaultCapabilities */
+        VaultCapabilities: {
+            /**
+             * Can Use
+             * @default false
+             */
+            can_use?: boolean;
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit?: boolean;
+            /**
+             * Can Reveal
+             * @default false
+             */
+            can_reveal?: boolean;
+            /**
+             * Can Manage
+             * @default false
+             */
+            can_manage?: boolean;
+        };
+        /** VaultEffectiveEnvResponse */
+        VaultEffectiveEnvResponse: {
+            /** Env */
+            env: {
+                [key: string]: string;
+            };
+            /** Count */
+            count: number;
+        };
+        /**
+         * VaultFieldOut
+         * @description Masked field — never carries plaintext.
+         */
+        VaultFieldOut: {
+            /** Id */
+            id: string;
+            /** Credential Item Id */
+            credential_item_id: string;
+            /** Field Key */
+            field_key: string;
+            /** Env Key */
+            env_key?: string | null;
+            /**
+             * Handling
+             * @default revealable
+             */
+            handling?: string;
+            /**
+             * Editable
+             * @default true
+             */
+            editable?: boolean;
+            /**
+             * Inject Into Sandbox
+             * @default false
+             */
+            inject_into_sandbox?: boolean;
+            /**
+             * Value Hint
+             * @default
+             */
+            value_hint?: string;
+            /**
+             * Value Version
+             * @default 1
+             */
+            value_version?: number;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active?: boolean;
+            /** Description */
+            description?: string | null;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultFieldValueRequest */
+        VaultFieldValueRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Value */
+            value: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultForkRequest */
+        VaultForkRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            to_principal: components["schemas"]["PrincipalIn"];
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultImportEnvRequest */
+        VaultImportEnvRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            principal?: components["schemas"]["PrincipalIn"];
+            /** Env Text */
+            env_text: string;
+            /**
+             * Inject Into Sandbox
+             * @default false
+             */
+            inject_into_sandbox?: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultItemCreateRequest */
+        VaultItemCreateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            principal?: components["schemas"]["PrincipalIn"];
+            /** Display Name */
+            display_name: string;
+            /** Fields */
+            fields: components["schemas"]["FieldIn"][];
+            /**
+             * Definition Key
+             * @default custom
+             */
+            definition_key?: string;
+            /**
+             * Definition Version
+             * @default 1
+             */
+            definition_version?: number;
+            /** Provider Key */
+            provider_key?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Source
+             * @default manual
+             */
+            source?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultItemListResponse */
+        VaultItemListResponse: {
+            /** Items */
+            items: components["schemas"]["VaultItemOut"][];
+            /** Count */
+            count: number;
+        };
+        /** VaultItemOut */
+        VaultItemOut: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Definition Key
+             * @default custom
+             */
+            definition_key?: string;
+            /**
+             * Definition Version
+             * @default 1
+             */
+            definition_version?: number;
+            /** Provider Key */
+            provider_key?: string | null;
+            /** Display Name */
+            display_name: string;
+            /** Description */
+            description?: string | null;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Status
+             * @default active
+             */
+            status?: string;
+            /**
+             * Source
+             * @default manual
+             */
+            source?: string;
+            /**
+             * Access Mode
+             * @default all_members
+             */
+            access_mode?: string;
+            /** Lifecycle */
+            lifecycle?: {
+                [key: string]: unknown;
+            };
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+            /** Fields */
+            fields?: components["schemas"]["VaultFieldOut"][];
+            capabilities?: components["schemas"]["VaultCapabilities"];
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultItemUpdateRequest */
+        VaultItemUpdateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Display Name */
+            display_name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Status */
+            status?: ("active" | "disabled" | "expired" | "pending_verification") | null;
+            /** Provider Key */
+            provider_key?: string | null;
+            /** Lifecycle */
+            lifecycle?: {
+                [key: string]: unknown;
+            } | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultResolveRef */
+        VaultResolveRef: {
+            /** Item Id */
+            item_id: string;
+            /** Field Key */
+            field_key: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultResolveRequest */
+        VaultResolveRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Refs */
+            refs: components["schemas"]["VaultResolveRef"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * VaultResolveResponse
+         * @description Browser-facing resolution — sealed fields are structurally refused
+         *     upstream; keys are ``"{item_id}/{field_key}"``.
+         */
+        VaultResolveResponse: {
+            /** Values */
+            values: {
+                [key: string]: string;
+            };
+        };
+        /** VaultRevealRequest */
+        VaultRevealRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Field Key */
+            field_key: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * VaultRevealResponse
+         * @description The ONLY human-facing plaintext shape. Short-lived, component-local on
+         *     the FE — never persisted, cached, or logged.
+         */
+        VaultRevealResponse: {
+            /** Item Id */
+            item_id: string;
+            /** Field Key */
+            field_key: string;
+            /** Value */
+            value: string;
+        };
+        /** VaultRotateRequest */
+        VaultRotateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Values
+             * @description {field_key: new plaintext}
+             */
+            values: {
+                [key: string]: string;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultShareRequest */
+        VaultShareRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Access Mode
+             * @enum {string}
+             */
+            access_mode: "all_members" | "restricted";
+            /** User Ids */
+            user_ids?: string[];
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultTransferRequest */
+        VaultTransferRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            to_principal: components["schemas"]["PrincipalIn"];
+        } & {
+            [key: string]: unknown;
         };
         /** VerdictRequest */
         VerdictRequest: {
@@ -35590,6 +37472,26 @@ export interface operations {
         };
     };
     detailed_health_check_health_detailed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    version_check_health_version_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -38192,6 +40094,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_execution_v2_runtime_open_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuntimeOpenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeOpenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    heartbeat_execution_v2_runtime_heartbeat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuntimeHeartbeatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeHeartbeatResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_execution_v2_runtime_settle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuntimeSettleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeSettleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -40871,6 +42872,572 @@ export interface operations {
             };
         };
     };
+    list_items_vault_items_get: {
+        parameters: {
+            query?: {
+                principal_type?: string;
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_item_vault_items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultItemCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_env_vault_items_import_env_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultImportEnvRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_item_vault_items__item_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_item_vault_items__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_item_vault_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultItemUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_field_vault_items__item_id__fields_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultFieldOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_field_value_vault_items__item_id__fields__field_id__value_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                field_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultFieldValueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultFieldOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_field_vault_items__item_id__fields__field_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                field_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_vault_items__item_id__reveal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultRevealRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultRevealResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rotate_vault_items__item_id__rotate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultRotateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_vault_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultResolveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    effective_env_vault_effective_env_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultEffectiveEnvResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    share_vault_items__item_id__share_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultShareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transfer_vault_items__item_id__transfer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fork_vault_items__item_id__fork_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultForkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_audit_vault_items__item_id__audit_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultAuditResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     exchange_google_integrations_exchange_post: {
         parameters: {
             query?: never;
@@ -40940,6 +43507,10 @@ export interface operations {
             query: {
                 connection_id: string;
                 organization_id?: string | null;
+                resource_type?: string | null;
+                resource_ref?: string | null;
+                site_id?: string | null;
+                provider_binding_key?: string | null;
             };
             header?: never;
             path?: never;
@@ -41162,6 +43733,253 @@ export interface operations {
             };
         };
     };
+    create_collection_seo_collections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AidreamCollectionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_collection_seo_collections__run_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rejoin_collection_seo_collections__run_id__rejoin_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_site_backlinks_seo_sites__site_id__backlinks_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BacklinkRefreshBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_bing_search_performance_seo_sites__site_id__bing_search_performance_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BingSearchPerformanceSyncBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dataforseo_operations_seo_providers_dataforseo_operations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataForSeoOperationsResponse"];
+                };
+            };
+        };
+    };
+    get_collection_seo_collections__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collection_evidence_seo_collections__run_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunEvidenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     keyword_relationship_research_seo_keywords_research_post: {
         parameters: {
             query?: never;
@@ -41181,7 +43999,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KeywordResearchResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -41214,7 +44032,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KeywordVolumeRefreshResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -41228,7 +44046,7 @@ export interface operations {
             };
         };
     };
-    create_collection_seo_collections_post: {
+    keyword_classify_seo_keywords_classify_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -41237,7 +44055,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AidreamCollectionCreateRequest"];
+                "application/json": components["schemas"]["KeywordClassifyBody"];
             };
         };
         responses: {
@@ -41247,7 +44065,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CollectionReceipt"];
+                    "application/json": components["schemas"]["KeywordClassifyResult"];
                 };
             };
             /** @description Validation Error */
@@ -41261,16 +44079,18 @@ export interface operations {
             };
         };
     };
-    get_collection_seo_collections__run_id__get: {
+    keyword_assign_topics_seo_keywords_assign_topics_post: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                run_id: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicAssignBody"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -41278,7 +44098,106 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunStatusResponse"];
+                    "application/json": components["schemas"]["TopicAssignResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    site_strategy_interview_seo_sites_strategy_interview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteStrategyBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteStrategyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_page_route_seo_pages_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageAnalyzeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    map_page_keywords_route_seo_pages_map_keywords_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageKeywordMapBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -44849,6 +47768,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -45196,7 +48150,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["TopicResponse"];
                 };
             };
             /** @description Validation Error */
@@ -49855,6 +52809,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibrarySubscribeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_library_store_document_rag_library_stores__store_id__ingest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryIngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
