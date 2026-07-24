@@ -63,7 +63,13 @@ async function main() {
   );
   const ALL_MANIFESTS: ReadonlyArray<{
     surfaceName: string;
+    label?: string;
     skipBaselineValues?: boolean;
+    groups?: ReadonlyArray<{
+      key: string;
+      label: string;
+      sortOrder: number;
+    }>;
     values: ReadonlyArray<{
       name: string;
       label: string;
@@ -72,6 +78,8 @@ async function main() {
       alwaysAvailable: boolean;
       typicalCharCount: number;
       sortOrder?: number;
+      group?: string;
+      groupKey?: string;
     }>;
     agentRoles?: ReadonlyArray<{
       name: string;
@@ -104,8 +112,64 @@ async function main() {
 
   const errors: string[] = [];
   const seenSurfaces = new Set<string>();
+  // THE NAMING LAW — one canonical label per surface, unique within a client.
+  const labelsByClient = new Map<string, Map<string, string>>();
 
   for (const m of ALL_MANIFESTS) {
+    const label = m.label?.trim();
+    if (!label) {
+      errors.push(
+        `Surface "${m.surfaceName}" has no canonical label — SurfaceManifest.label is required.`,
+      );
+    } else {
+      const client = m.surfaceName.split("/")[0] ?? "";
+      const clientLabels =
+        labelsByClient.get(client) ?? new Map<string, string>();
+      const clash = clientLabels.get(label.toLowerCase());
+      if (clash && clash !== m.surfaceName) {
+        errors.push(
+          `Canonical label "${label}" is used by both "${clash}" and "${m.surfaceName}" — labels must be unique per client.`,
+        );
+      }
+      clientLabels.set(label.toLowerCase(), m.surfaceName);
+      labelsByClient.set(client, clientLabels);
+    }
+
+    // Canonical groups: curated keys snake_case + author band 0–899; every
+    // resolved value's groupKey must map to a synthesized group (canary for
+    // registry resolution breakage).
+    const groupKeys = new Set<string>();
+    for (const g of m.groups ?? []) {
+      groupKeys.add(g.key);
+      const reserved =
+        g.key === "general" ||
+        g.key === "baseline" ||
+        g.key.startsWith("inherited:");
+      if (!reserved) {
+        if (!NAME_RE.test(g.key)) {
+          errors.push(
+            `Surface "${m.surfaceName}" group "${g.key}" doesn't match /^[a-z][a-z0-9_]*$/.`,
+          );
+        }
+        if (g.sortOrder < 0 || g.sortOrder > 899) {
+          errors.push(
+            `Surface "${m.surfaceName}" group "${g.key}" sortOrder ${g.sortOrder} is outside the curated band 0–899.`,
+          );
+        }
+        if (!g.label?.trim()) {
+          errors.push(
+            `Surface "${m.surfaceName}" group "${g.key}" has no canonical label.`,
+          );
+        }
+      }
+    }
+    for (const v of m.values) {
+      if (v.groupKey && !groupKeys.has(v.groupKey)) {
+        errors.push(
+          `Surface "${m.surfaceName}" value "${v.name}" resolved to groupKey "${v.groupKey}" which is missing from the resolved groups list — registry group synthesis is broken.`,
+        );
+      }
+    }
     if (seenSurfaces.has(m.surfaceName)) {
       errors.push(
         `Duplicate manifest surfaceName: "${m.surfaceName}" appears more than once.`,
