@@ -152,13 +152,17 @@ export default function DocumentPage({
         right={
           doc ? (
             <div className="flex items-center gap-0.5">
-              <ReferenceCopyButton
-                referenceType="document"
-                id={doc.id}
-                label={doc.document_name}
-                toastLabel={doc.document_name}
-                size="sm"
-              />
+              {/* Secondary action — hidden below sm so the rename field and
+                  the share control keep the whole mobile header budget. */}
+              <span className="hidden sm:inline-flex">
+                <ReferenceCopyButton
+                  referenceType="document"
+                  id={doc.id}
+                  label={doc.document_name}
+                  toastLabel={doc.document_name}
+                  size="sm"
+                />
+              </span>
               <ShareButton
                 resourceType="udt_document"
                 resourceId={doc.id}
@@ -171,7 +175,11 @@ export default function DocumentPage({
           ) : undefined
         }
       />
-      <div className="h-full w-full overflow-hidden">
+      {/* The editor owns a static status/action bar at its very top, so the
+          body takes header clearance instead of scrolling behind the glass —
+          without it that row (and Save / History) sits under the shell header
+          and collides with the avatar. */}
+      <div className="h-full w-full overflow-hidden pt-[var(--shell-header-h)]">
         {permsResolved && doc ? (
           <DocumentEditor
             documentId={id}

@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { toast } from "@/components/ui/use-toast";
 
+import { defaultDocumentPageStyle } from "../document-page-style";
 import { useDocumentRealtime } from "../hooks/useDocumentRealtime";
 import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
 import { sanitizeUniverDocSnapshot } from "../utils/sanitizeUniverDocSnapshot";
@@ -67,14 +68,6 @@ type Props = {
    * never share a broadcast room even if their UUIDs collide.
    */
   collab?: boolean;
-  /**
-   * Optional content rendered into the editor's top toolbar (left cluster).
-   * Use this to push the page-level "back arrow + rename input" INTO the
-   * editor bar so we don't burn a second row above the canvas.
-   */
-  toolbarLeftSlot?: React.ReactNode;
-  /** Optional right-cluster slot — typically the <ShareButton>. */
-  toolbarRightSlot?: React.ReactNode;
 };
 
 export default function DocumentEditor({
@@ -82,8 +75,6 @@ export default function DocumentEditor({
   editable = true,
   documentName,
   collab = false,
-  toolbarLeftSlot,
-  toolbarRightSlot,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<FUniver | null>(null);
@@ -291,8 +282,8 @@ export default function DocumentEditor({
       ]);
 
     let commandService:
-      | import("../collab/WorkbookCollabSession").CommandServiceLike
-      | null = null;
+      import("../collab/WorkbookCollabSession").CommandServiceLike | null =
+      null;
     try {
       const injector = (
         univerRef.current as unknown as {
@@ -422,30 +413,23 @@ export default function DocumentEditor({
     // token so it adapts with the app theme during boot.
     <div className="matrx-univer-shell flex h-full w-full flex-col">
       <div className="flex items-center gap-2 border-b border-border px-2 py-1 text-xs min-w-0">
-        {toolbarLeftSlot && (
-          <div className="flex items-center gap-1 min-w-0 flex-1 pl-8 sm:pl-0">
-            {toolbarLeftSlot}
-          </div>
-        )}
-        {!toolbarLeftSlot && (
-          <div className="text-muted-foreground flex-1 min-w-0 truncate">
-            {bootState === "booting" && (
-              <span className="flex items-center gap-2">
-                <Loader2 className="size-3 animate-spin" />
-                Loading document…
-              </span>
-            )}
-            {bootState === "load_error" && (
-              <span className="text-destructive">
-                Load failed: {loadError ?? "unknown"}
-              </span>
-            )}
-            {bootState === "ready" && (
-              <span>{editable ? "Editing" : "Viewing"}</span>
-            )}
-          </div>
-        )}
-        <div className="flex items-center gap-1 shrink-0 pr-8">
+        <div className="text-muted-foreground flex-1 min-w-0 truncate">
+          {bootState === "booting" && (
+            <span className="flex items-center gap-2">
+              <Loader2 className="size-3 animate-spin" />
+              Loading document…
+            </span>
+          )}
+          {bootState === "load_error" && (
+            <span className="text-destructive">
+              Load failed: {loadError ?? "unknown"}
+            </span>
+          )}
+          {bootState === "ready" && (
+            <span>{editable ? "Editing" : "Viewing"}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
           {collab && bootState === "ready" && (
             <RemoteCursorsLayer
               states={remoteAwareness}
@@ -460,7 +444,6 @@ export default function DocumentEditor({
               <span>{statusPill.text}</span>
             </div>
           )}
-          {toolbarRightSlot}
           {bootState === "ready" && (
             <DocumentPageReferenceCopyButton
               documentId={documentId}
@@ -530,13 +513,7 @@ function defaultEmptyDocument(): Partial<IDocumentData> {
       paragraphs: [{ startIndex: 0 }],
       sectionBreaks: [{ startIndex: 1 }],
     },
-    documentStyle: {
-      pageSize: { width: 595, height: 842 }, // A4 in points (72dpi)
-      marginTop: 72,
-      marginBottom: 72,
-      marginLeft: 90,
-      marginRight: 90,
-    },
+    documentStyle: defaultDocumentPageStyle(),
   };
 }
 

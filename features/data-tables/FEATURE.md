@@ -441,6 +441,22 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-07-23` — **`/documents/[id]` scroll + header conformance.** Two independent bugs.
+  (1) **Scroll was dead** because agent-written snapshots store `documentStyle: {}` — with no
+  `pageSize` Univer has no page box, so text never wraps and the docs viewport reports no
+  scrollable extent (the wheel is received, `preventDefault`ed, and nothing moves). The page
+  geometry is now ONE primitive, `features/data-tables/document-page-style.ts`
+  (`DEFAULT_DOCUMENT_PAGE_STYLE` / `defaultDocumentPageStyle()`), consumed by `DocumentEditor`'s
+  empty doc, `markdown-to-univer-doc`, and a new loud recovery in `sanitizeUniverDocSnapshot`
+  (`restorePageStyle`) that stamps it back on any snapshot that arrives without it. **Every writer
+  of a Univer document snapshot MUST stamp this style** — the recovery firing means a writer is
+  broken (FOUND_DEFECTS D96, aidream owns the server-side writer).
+  (2) **Header overlap:** the editor's static status/action row sat at `top: 0` under the glass
+  shell header, hiding Save/History behind the avatar. The route body now takes
+  `pt-[var(--shell-header-h)]` (the body-type rule for a static top bar), and the `pl-8`/`pr-8`
+  avatar-dodge hacks plus the now-unused `toolbarLeftSlot`/`toolbarRightSlot` props are deleted.
+  `/documents` got the same clearance so the search toolbar stops colliding with the title and the
+  New button; the secondary reference-copy action hides below `sm` to keep the mobile budget.
 - `2026-07-14` — codex: **Structured List naming clarified.** Added the product/data concept:
   Structured Lists are editable item collections that can be consumed as picklists/dropdowns, but
   are not read-only or dropdown-only. Documented the boundary with typed datasets: fixed item shape

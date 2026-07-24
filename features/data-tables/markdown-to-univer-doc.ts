@@ -39,6 +39,8 @@ import type {
 } from "@univerjs/core";
 import { LocaleType } from "@univerjs/presets";
 
+import { defaultDocumentPageStyle } from "./document-page-style";
+
 // ─── inline parsing ──────────────────────────────────────────────────────────
 
 interface InlineStyle {
@@ -163,13 +165,7 @@ class DocBuilder {
         textRuns: this.textRuns,
         sectionBreaks,
       },
-      documentStyle: {
-        pageSize: { width: 595, height: 842 }, // A4 at 72dpi, matches editor
-        marginTop: 72,
-        marginBottom: 72,
-        marginLeft: 90,
-        marginRight: 90,
-      },
+      documentStyle: defaultDocumentPageStyle(),
     };
   }
 }

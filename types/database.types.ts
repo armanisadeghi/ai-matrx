@@ -41972,7 +41972,6 @@ export type Database = {
           connected_at: string | null
           created_at: string
           credential_item_id: string | null
-          credentials_encrypted: string | null
           display_name: string
           endpoint_url_override: string | null
           error_count: number
@@ -42001,7 +42000,6 @@ export type Database = {
           connected_at?: string | null
           created_at?: string
           credential_item_id?: string | null
-          credentials_encrypted?: string | null
           display_name: string
           endpoint_url_override?: string | null
           error_count?: number
@@ -42030,7 +42028,6 @@ export type Database = {
           connected_at?: string | null
           created_at?: string
           credential_item_id?: string | null
-          credentials_encrypted?: string | null
           display_name?: string
           endpoint_url_override?: string | null
           error_count?: number

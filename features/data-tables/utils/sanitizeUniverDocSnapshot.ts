@@ -26,6 +26,8 @@
 import { NamedStyleType } from "@univerjs/core";
 import type { IDocumentData } from "@univerjs/core";
 
+import { defaultDocumentPageStyle } from "../document-page-style";
+
 /**
  * Map of every string name that could appear in a legacy snapshot to its
  * canonical numeric `NamedStyleType`. Built from the enum itself so it stays in
@@ -51,14 +53,15 @@ export function sanitizeUniverDocSnapshot(
   snapshot: Partial<IDocumentData>,
   docId?: string,
 ): Partial<IDocumentData> {
+  restorePageStyle(snapshot, docId);
+
   const paragraphs = snapshot?.body?.paragraphs;
   if (!Array.isArray(paragraphs)) return snapshot;
 
   let fixed = 0;
   for (const paragraph of paragraphs) {
     const style = paragraph?.paragraphStyle as
-      | { namedStyleType?: unknown }
-      | undefined;
+      { namedStyleType?: unknown } | undefined;
     const value = style?.namedStyleType;
     if (typeof value === "string") {
       const numeric = NAMED_STYLE_STRING_TO_NUMBER[value];
@@ -85,4 +88,32 @@ export function sanitizeUniverDocSnapshot(
   }
 
   return snapshot;
+}
+
+/**
+ * Second recovery: a snapshot with no `documentStyle.pageSize` has no page box,
+ * so Univer lays the body out unbounded — text never wraps and the docs
+ * viewport reports no scrollable extent, which reads to the user as "the
+ * document won't scroll". Snapshots written by agents (`origin='agent'`) and by
+ * older converters reach storage with `documentStyle: {}`. Stamp the canonical
+ * page geometry back on and SCREAM: the writer is the real bug.
+ */
+function restorePageStyle(snapshot: Partial<IDocumentData>, docId?: string) {
+  if (!snapshot || typeof snapshot !== "object") return;
+  if (snapshot.documentStyle?.pageSize?.width) return;
+
+  snapshot.documentStyle = {
+    ...defaultDocumentPageStyle(),
+    ...(snapshot.documentStyle ?? {}),
+    pageSize: defaultDocumentPageStyle().pageSize,
+  };
+
+  console.warn(
+    `[data-tables] RECOVERY: document snapshot${docId ? ` ${docId}` : ""} had no ` +
+      `documentStyle.pageSize — restored the default A4 page geometry. Without a ` +
+      `page box Univer lays the body out unbounded: text does not wrap and the ` +
+      `viewport has no scrollable extent, so the document appears frozen. Fix the ` +
+      `snapshot writer (agent/markdown converters must stamp ` +
+      `DEFAULT_DOCUMENT_PAGE_STYLE).`,
+  );
 }
