@@ -127,7 +127,7 @@ const categories: Category[] = [
           "Scrape any URL and get an instant on-page audit — title, description, headings, canonical, robots directives, and more.",
         icon: ShieldCheck,
         href: "/seo/page-audit",
-        status: "coming-soon",
+        status: "live",
       },
       {
         id: "heading-structure",
@@ -145,7 +145,7 @@ const categories: Category[] = [
           "Parse JSON-LD and microdata on any page and validate against Google's rich result requirements.",
         icon: Code2,
         href: "/seo/structured-data",
-        status: "coming-soon",
+        status: "live",
       },
     ],
   },
@@ -259,7 +259,7 @@ const categories: Category[] = [
           "Fetch and parse any site's robots.txt, then test whether specific URLs are allowed or blocked by each rule.",
         icon: ShieldCheck,
         href: "/seo/robots-tester",
-        status: "coming-soon",
+        status: "live",
       },
       {
         id: "page-speed",
