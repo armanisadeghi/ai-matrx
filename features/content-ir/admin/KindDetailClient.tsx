@@ -17,7 +17,7 @@
  * imported statically and simply not rendered until its tab is active.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ChevronRight, Loader2 } from "lucide-react";
@@ -26,6 +26,8 @@ import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import KindPreviewTab from "@/features/content-ir/admin/KindPreviewTab";
 import KindSchemaTab from "@/features/content-ir/admin/KindSchemaTab";
 import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
+import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
+import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
 
 const KindGateTab = dynamic(
   () => import("@/features/content-ir/admin/KindGateTab"),
@@ -66,15 +68,24 @@ const KindInputsTab = dynamic(
   },
 );
 
-const TABS = ["preview", "try-input", "gate", "schema", "inputs", "assets"] as const;
+const TABS = [
+  "preview",
+  "examples",
+  "assets",
+  "try-input",
+  "gate",
+  "schema",
+  "inputs",
+] as const;
 type TabId = (typeof TABS)[number];
 const TAB_LABELS: Record<TabId, string> = {
   preview: "Preview",
+  examples: "Examples",
+  assets: "Assets",
   "try-input": "Try input",
   gate: "Gate",
   schema: "Schema",
   inputs: "Inputs",
-  assets: "Assets",
 };
 
 function isTabId(value: string | undefined): value is TabId {
@@ -91,8 +102,20 @@ export default function KindDetailClient({
   initialTab,
 }: KindDetailClientProps) {
   const [tab, setTab] = useState<TabId>(isTabId(initialTab) ? initialTab : "preview");
+  // Bumped after any example write so the shared fetch re-runs (admin edits
+  // examples in place on the Examples tab).
+  const [refreshKey, setRefreshKey] = useState(0);
   // Shared example fetch — extracted to the studio module (one engine, no fork).
-  const examples = useKindExamples(detail.id);
+  const examples = useKindExamples(detail.id, refreshKey);
+  const refreshExamples = () => setRefreshKey((k) => k + 1);
+
+  // The concrete sample the content-block generator teaches from — canonical
+  // first, else the newest, else nothing (schema-synthesized downstream).
+  const canonicalExampleData = useMemo(() => {
+    if (examples.status !== "ready" || examples.rows.length === 0) return undefined;
+    const canonical = examples.rows.find((row) => row.isCanonical);
+    return (canonical ?? examples.rows[0]).data;
+  }, [examples]);
 
   function selectTab(next: TabId) {
     setTab(next);
@@ -130,6 +153,16 @@ export default function KindDetailClient({
           v{detail.version} · {detail.visibility} · updated{" "}
           {detail.updatedAt.slice(0, 19).replace("T", " ")}
         </span>
+        <div className="ml-auto">
+          <KindAgentButton
+            kind={detail.kind}
+            label={detail.label}
+            part="edit"
+            emittedJsonSchema={detail.emittedJsonSchema}
+          >
+            Edit with agent
+          </KindAgentButton>
+        </div>
       </header>
 
       {/* Tabs */}
@@ -155,6 +188,17 @@ export default function KindDetailClient({
         {tab === "preview" && (
           <KindPreviewTab kind={detail.kind} examples={examples} />
         )}
+        {tab === "examples" && (
+          <div className="mx-auto max-w-4xl">
+            <KindExampleManager
+              kindDefinitionId={detail.id}
+              emittedJsonSchema={detail.emittedJsonSchema}
+              examples={examples}
+              onExamplesChanged={refreshExamples}
+              authMode="admin"
+            />
+          </div>
+        )}
         {tab === "try-input" && <KindTryInputTab kind={detail.kind} />}
         {tab === "gate" && (
           <KindGateTab
@@ -177,7 +221,13 @@ export default function KindDetailClient({
             emittedJsonSchema={detail.emittedJsonSchema}
           />
         )}
-        {tab === "assets" && <KindAssetsTab detail={detail} />}
+        {tab === "assets" && (
+          <KindAssetsTab
+            detail={detail}
+            canonicalExampleData={canonicalExampleData}
+            onOpenExamples={() => selectTab("examples")}
+          />
+        )}
       </main>
     </div>
   );

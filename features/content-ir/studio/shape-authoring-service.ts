@@ -15,6 +15,15 @@ import type { Database, Json } from "@/types/database.types";
 export type ShapeWriteClient = SupabaseClient<Database>;
 export type ShapeVisibility = Database["platform"]["Enums"]["visibility"];
 
+/**
+ * Who is authoring. "owner" is the /shapes path — writes prove
+ * `created_by = you` on top of RLS. "admin" is the kind-registry path — a
+ * super-admin edits ANY kind (created_by does not match); the DB already grants
+ * them `editor` access to platform kinds via `iam.has_access`, so RLS remains
+ * the real gate and the app-layer owner check is simply not applied.
+ */
+export type ShapeAuthMode = "owner" | "admin";
+
 export interface EditableShapeMetadata {
   titleKey: string | null;
   loadingComponent: string | null;
@@ -91,24 +100,31 @@ async function requireCurrentUserId(client: ShapeWriteClient): Promise<string> {
   return data.user.id;
 }
 
-async function fetchOwnedDefinition(
+async function fetchWritableDefinition(
   client: ShapeWriteClient,
   definitionId: string,
   userId: string,
+  mode: ShapeAuthMode,
 ): Promise<OwnedDefinition> {
-  const { data, error } = await client
+  let query = client
     .schema("content_ir")
     .from("kind_definition")
     .select("id,version,metadata,organization_id")
     .eq("id", definitionId)
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .maybeSingle();
+    .is("deleted_at", null);
+  // Owner mode belts the RLS read with an explicit ownership check; admin mode
+  // relies on RLS (viewer to read, editor to write) so a super-admin can edit
+  // a platform kind they did not create.
+  if (mode === "owner") query = query.eq("created_by", userId);
+
+  const { data, error } = await query.maybeSingle();
   if (error)
-    throw new Error(`Failed to load the owned Shape: ${error.message}`);
+    throw new Error(`Failed to load the Shape: ${error.message}`);
   if (!data) {
     throw new Error(
-      "This Shape is not owned by the signed-in user, no longer exists, or is no longer editable.",
+      mode === "owner"
+        ? "This Shape is not owned by the signed-in user, no longer exists, or is no longer editable."
+        : "This Shape no longer exists or you do not have editor access to it.",
     );
   }
   return {
@@ -152,14 +168,20 @@ const EXAMPLE_RETURN_COLUMNS =
 export async function updateOwnedShapeProfile(
   client: ShapeWriteClient,
   args: UpdateOwnedShapeProfileArgs,
+  mode: ShapeAuthMode = "owner",
 ): Promise<ShapeProfileWriteResult> {
   const userId = await requireCurrentUserId(client);
-  const current = await fetchOwnedDefinition(client, args.definitionId, userId);
+  const current = await fetchWritableDefinition(
+    client,
+    args.definitionId,
+    userId,
+    mode,
+  );
   const label = args.label.trim();
   if (!label) throw new Error("Shape name cannot be empty.");
 
   const metadata = mergeEditableShapeMetadata(current.metadata, args);
-  const { data: updated, error: updateError } = await client
+  let updateQuery = client
     .schema("content_ir")
     .from("kind_definition")
     .update({
@@ -169,8 +191,9 @@ export async function updateOwnedShapeProfile(
       updated_by: userId,
     })
     .eq("id", current.id)
-    .eq("created_by", userId)
-    .eq("version", current.version)
+    .eq("version", current.version);
+  if (mode === "owner") updateQuery = updateQuery.eq("created_by", userId);
+  const { data: updated, error: updateError } = await updateQuery
     .select("label,visibility,version,metadata")
     .maybeSingle();
   if (updateError) {
@@ -224,12 +247,14 @@ export interface CreateOwnedShapeExampleArgs {
 export async function createOwnedShapeExample(
   client: ShapeWriteClient,
   args: CreateOwnedShapeExampleArgs,
+  mode: ShapeAuthMode = "owner",
 ): Promise<ShapeExampleWriteResult> {
   const userId = await requireCurrentUserId(client);
-  const definition = await fetchOwnedDefinition(
+  const definition = await fetchWritableDefinition(
     client,
     args.definitionId,
     userId,
+    mode,
   );
   const { count, error: countError } = await client
     .schema("content_ir")
@@ -271,12 +296,14 @@ export interface UpdateOwnedShapeExampleArgs extends CreateOwnedShapeExampleArgs
 export async function updateOwnedShapeExample(
   client: ShapeWriteClient,
   args: UpdateOwnedShapeExampleArgs,
+  mode: ShapeAuthMode = "owner",
 ): Promise<ShapeExampleWriteResult> {
   const userId = await requireCurrentUserId(client);
-  const definition = await fetchOwnedDefinition(
+  const definition = await fetchWritableDefinition(
     client,
     args.definitionId,
     userId,
+    mode,
   );
   const { data: row, error } = await client
     .schema("content_ir")
@@ -306,9 +333,10 @@ export async function softDeleteOwnedShapeExample(
   client: ShapeWriteClient,
   definitionId: string,
   exampleId: string,
+  mode: ShapeAuthMode = "owner",
 ): Promise<void> {
   const userId = await requireCurrentUserId(client);
-  await fetchOwnedDefinition(client, definitionId, userId);
+  await fetchWritableDefinition(client, definitionId, userId, mode);
   const { data, error } = await client
     .schema("content_ir")
     .from("kind_example")
@@ -332,9 +360,10 @@ export async function makeOwnedShapeExampleCanonical(
   client: ShapeWriteClient,
   definitionId: string,
   exampleId: string,
+  mode: ShapeAuthMode = "owner",
 ): Promise<void> {
   const userId = await requireCurrentUserId(client);
-  await fetchOwnedDefinition(client, definitionId, userId);
+  await fetchWritableDefinition(client, definitionId, userId, mode);
   const { data: previous, error: readError } = await client
     .schema("content_ir")
     .from("kind_example")

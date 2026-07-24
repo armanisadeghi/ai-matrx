@@ -43,8 +43,26 @@ const DEFAULT_FOLDER = "Inbox";
 export function shouldInheritActiveScope(
   visibility: NonNullable<UploadOpts["visibility"]>,
   override?: boolean,
+  folderPath?: string,
 ): boolean {
-  return override ?? visibility !== "personal";
+  if (override !== undefined) return override;
+
+  // Shared/Private Assets are the user's long-lived library namespaces.
+  // Their existing folder rows belong to the personal organization even
+  // when individual files are public. Letting an unrelated active org leak
+  // into these paths makes the backend correctly reject the owner+path
+  // collision as a cross-organization write.
+  const normalizedFolder = folderPath?.replace(/^\/+|\/+$/g, "") ?? "";
+  if (
+    normalizedFolder === "Shared Assets" ||
+    normalizedFolder.startsWith("Shared Assets/") ||
+    normalizedFolder === "Private Assets" ||
+    normalizedFolder.startsWith("Private Assets/")
+  ) {
+    return false;
+  }
+
+  return visibility !== "personal";
 }
 
 export async function uploadInternal(
@@ -68,7 +86,7 @@ export async function uploadInternal(
   const visibility = opts.visibility ?? (opts.preset ? "public" : "personal");
   const metadata = stampScope(
     opts.metadata ?? {},
-    shouldInheritActiveScope(visibility, opts.inheritActiveScope),
+    shouldInheritActiveScope(visibility, opts.inheritActiveScope, folderPath),
   );
 
   // Asset-pipeline branch — when `preset` is set the upload routes through

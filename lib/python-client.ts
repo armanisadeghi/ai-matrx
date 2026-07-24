@@ -378,12 +378,21 @@ function failClient(
   path: string,
   url: string,
 ): never {
+  captureClientError(err, method, path, url);
+  throw err;
+}
+
+function captureClientError(
+  err: unknown,
+  method: string,
+  path: string,
+  url: string,
+): void {
   capturePythonClientError(err, {
     url,
     method,
     path: relationPathFromUrl(path),
   });
-  throw err;
 }
 
 // ---------------------------------------------------------------------------
@@ -751,6 +760,11 @@ export async function uploadWithProgress<T>(
   );
 
   return new Promise((resolve, reject) => {
+    const rejectCaptured = (error: BackendApiError) => {
+      captureClientError(error, "POST", path, url);
+      reject(error);
+    };
+
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -781,7 +795,7 @@ export async function uploadWithProgress<T>(
             },
           });
         } catch (err) {
-          reject(
+          rejectCaptured(
             new BackendApiError({
               code: "internal",
               detail: `Failed to parse upload response: ${extractErrorMessage(err)}`,
@@ -801,7 +815,7 @@ export async function uploadWithProgress<T>(
       } catch {
         body = null;
       }
-      reject(
+      rejectCaptured(
         new BackendApiError({
           code: (body?.error as string) ?? statusToCloudFilesCode(xhr.status),
           detail: (body?.message as string) ?? `HTTP ${xhr.status}`,
@@ -817,7 +831,7 @@ export async function uploadWithProgress<T>(
     });
 
     xhr.addEventListener("error", () => {
-      reject(
+      rejectCaptured(
         new BackendApiError({
           code: "internal",
           detail: "Network error during upload",
@@ -828,7 +842,7 @@ export async function uploadWithProgress<T>(
     });
 
     xhr.addEventListener("abort", () => {
-      reject(
+      rejectCaptured(
         new BackendApiError({
           code: "invalid_request",
           detail: "Upload aborted",
@@ -844,7 +858,7 @@ export async function uploadWithProgress<T>(
     // links; a genuinely stalled transfer fails loudly instead of silently.
     xhr.timeout = 10 * 60 * 1000;
     xhr.addEventListener("timeout", () => {
-      reject(
+      rejectCaptured(
         new BackendApiError({
           code: "internal",
           detail: "Upload timed out (no response within 10 minutes)",

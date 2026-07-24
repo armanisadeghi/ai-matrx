@@ -19,4 +19,25 @@ describe("shouldInheritActiveScope", () => {
   it("allows a non-personal upload to explicitly opt out of scope inheritance", () => {
     expect(shouldInheritActiveScope("public", false)).toBe(false);
   });
+
+  it.each([
+    "Shared Assets",
+    "Shared Assets/feedback-images",
+    "/Shared Assets/agent-variables/images/",
+    "Private Assets",
+    "Private Assets/transcripts",
+  ])(
+    "keeps the user-library namespace independent of ambient scope: %s",
+    (folderPath) => {
+      expect(shouldInheritActiveScope("public", undefined, folderPath)).toBe(
+        false,
+      );
+    },
+  );
+
+  it("still honors an explicit scoped-write override for a user-library path", () => {
+    expect(
+      shouldInheritActiveScope("public", true, "Shared Assets/feedback-images"),
+    ).toBe(true);
+  });
 });

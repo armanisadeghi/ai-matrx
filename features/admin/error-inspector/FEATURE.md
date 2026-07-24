@@ -207,6 +207,7 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-24 — **Buffered upload failures now preserve the backend rejection.** `python-client.uploadWithProgress` previously rejected XHR upload failures directly, bypassing the `capturePythonClientError` chokepoint used by fetch requests. Progress-enabled file uploads could therefore leave only the caller's generic toast in the Error Inspector. Every XHR HTTP/network/abort/timeout/malformed-response rejection now enters the same structured capture path with endpoint, status, backend detail, user message, and request id intact.
 - 2026-07-21 — **Caught-fetch blind spot closed.** `useBackendApi` previously
   issued raw `fetch` calls and returned failures to feature-level `catch` blocks,
   so no global `error`, `unhandledrejection`, or `console.error` signal existed.

@@ -31,9 +31,9 @@ import {
   selectFirstMessageId,
   selectHasMoreOlderMessages,
   selectIsLoadingOlderMessages,
-  selectMessageCount,
   selectVisibleMessageGroupLimit,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectLoadedDisplayGroupCount } from "@/features/agents/components/messages-display/display-groups";
 import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
 import { revealOlderGroups } from "@/features/agents/redux/execution-system/messages/messages.slice";
 
@@ -71,7 +71,14 @@ export function OlderMessagesSentinel({
     selectIsLoadingOlderMessages(conversationId),
   );
   const firstMessageId = useAppSelector(selectFirstMessageId(conversationId));
-  const messageCount = useAppSelector(selectMessageCount(conversationId));
+  // The window + reveal step count GROUPS, so the reveal-vs-DB-load decision
+  // must compare against the loaded GROUP count, not the raw message count
+  // (grouping collapses each assistant turn into one group; the old
+  // message-count comparison never reached zero-hidden-groups and so never
+  // paged from the DB — see selectLoadedDisplayGroupCount).
+  const loadedGroupCount = useAppSelector(
+    selectLoadedDisplayGroupCount(conversationId),
+  );
   const visibleGroupLimit = useAppSelector(
     selectVisibleMessageGroupLimit(conversationId),
   );
@@ -85,7 +92,7 @@ export function OlderMessagesSentinel({
   const hasMoreRef = useRef(hasMoreOlder);
   const loadingRef = useRef(isLoadingOlder);
   const firstIdRef = useRef(firstMessageId);
-  const messageCountRef = useRef(messageCount);
+  const loadedGroupCountRef = useRef(loadedGroupCount);
   const visibleGroupLimitRef = useRef(visibleGroupLimit);
   const disabledRef = useRef(disabled);
   const visibleGroupLimitOverrideRef = useRef(visibleGroupLimitOverride);
@@ -99,8 +106,8 @@ export function OlderMessagesSentinel({
     firstIdRef.current = firstMessageId;
   }, [firstMessageId]);
   useEffect(() => {
-    messageCountRef.current = messageCount;
-  }, [messageCount]);
+    loadedGroupCountRef.current = loadedGroupCount;
+  }, [loadedGroupCount]);
   useEffect(() => {
     visibleGroupLimitRef.current = visibleGroupLimit;
   }, [visibleGroupLimit]);
@@ -120,6 +127,48 @@ export function OlderMessagesSentinel({
     prevFirstId: string | undefined;
   } | null>(null);
 
+  // The single "give me more older history" step, shared by the
+  // IntersectionObserver and the top-pinned scroll listener below.
+  //   "reveal" — synchronously showed a hidden loaded group (content grew this
+  //              frame); the scroll driver may keep draining immediately.
+  //   "load"   — kicked off an async DB page; stop and let the prepend +
+  //              anchor restore land before doing anything else.
+  //   "none"   — nothing to do (disabled, already loading, or fully drained).
+  type AdvanceResult = "reveal" | "load" | "none";
+  const advanceOlderHistory = useRef<() => AdvanceResult>(() => "none");
+  advanceOlderHistory.current = () => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return "none";
+    if (disabledRef.current) return "none";
+    if (loadingRef.current) return "none";
+
+    const limit =
+      visibleGroupLimitOverrideRef.current ?? visibleGroupLimitRef.current;
+
+    // More loaded-but-hidden groups to reveal before we touch the network.
+    // Compared against the GROUP count (not messages) — the unit both the
+    // window and `revealStep` actually use.
+    if (limit !== null && limit < loadedGroupCountRef.current) {
+      pendingAnchor.current = {
+        prevScrollHeight: scrollEl.scrollHeight,
+        prevFirstId: firstIdRef.current,
+      };
+      onRevealOlderGroups?.(revealStep);
+      dispatch(revealOlderGroups({ conversationId, count: revealStep }));
+      return "reveal";
+    }
+
+    // Every loaded group is on screen — page the next batch from the DB.
+    if (!hasMoreRef.current) return "none";
+
+    pendingAnchor.current = {
+      prevScrollHeight: scrollEl.scrollHeight,
+      prevFirstId: firstIdRef.current,
+    };
+    void dispatch(loadOlderMessages({ conversationId, pageSize }));
+    return "load";
+  };
+
   // IntersectionObserver setup. Re-binds only when the conversation
   // changes — flag changes flow through the latest-value refs above so the
   // observer stays attached across pages.
@@ -132,28 +181,7 @@ export function OlderMessagesSentinel({
       (entries) => {
         const entry = entries[0];
         if (!entry?.isIntersecting) return;
-        if (disabledRef.current) return;
-        if (loadingRef.current) return;
-
-        pendingAnchor.current = {
-          prevScrollHeight: scrollEl.scrollHeight,
-          prevFirstId: firstIdRef.current,
-        };
-
-        const limit =
-          visibleGroupLimitOverrideRef.current ?? visibleGroupLimitRef.current;
-        if (limit !== null && limit < messageCountRef.current) {
-          onRevealOlderGroups?.(revealStep);
-          dispatch(revealOlderGroups({ conversationId, count: revealStep }));
-          return;
-        }
-
-        if (!hasMoreRef.current) {
-          pendingAnchor.current = null;
-          return;
-        }
-
-        void dispatch(loadOlderMessages({ conversationId, pageSize }));
+        advanceOlderHistory.current();
       },
       {
         root: scrollEl,
@@ -166,14 +194,41 @@ export function OlderMessagesSentinel({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [
-    conversationId,
-    dispatch,
-    onRevealOlderGroups,
-    pageSize,
-    revealStep,
-    scrollRef,
-  ]);
+  }, [conversationId, scrollRef]);
+
+  // Top-pinned scroll driver. The IntersectionObserver only fires on an
+  // intersection *transition* — so a user who scrolls to the very top and
+  // stays there (sentinel already in view, no further transitions) would get
+  // no more history. This listener re-checks on every scroll while the user
+  // is within the prefetch band of the top, and after a reveal that didn't
+  // move them off the top it re-checks on the next frame so a run of hidden
+  // groups drains without needing a fresh gesture each time. Anchor
+  // restoration keeps the viewport parked, so this never yanks position.
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return undefined;
+
+    const PREFETCH_BAND_PX = 200;
+    let frame = 0;
+
+    const pump = () => {
+      if (scrollEl.scrollTop > PREFETCH_BAND_PX) return;
+      const result = advanceOlderHistory.current();
+      // Only a synchronous reveal is safe to chain on the next frame; a DB
+      // load is async (isLoadingOlder lags a render) so we stop and let the
+      // prepend + anchor restore land, then the next scroll resumes.
+      if (result === "reveal" && scrollEl.scrollTop <= PREFETCH_BAND_PX) {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(pump);
+      }
+    };
+
+    scrollEl.addEventListener("scroll", pump, { passive: true });
+    return () => {
+      scrollEl.removeEventListener("scroll", pump);
+      cancelAnimationFrame(frame);
+    };
+  }, [conversationId, scrollRef]);
 
   // Scroll-anchor restore. Runs synchronously after the prepend reducer's
   // commit so the user's viewport doesn't jump.

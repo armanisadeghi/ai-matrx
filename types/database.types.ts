@@ -8029,6 +8029,18 @@ export type Database = {
       }
     }
     Functions: {
+      admin_upsert_kind_content_block: {
+        Args: {
+          p_block_id: string
+          p_description: string
+          p_icon_name: string
+          p_kind_definition_id: string
+          p_label: string
+          p_metadata?: Json
+          p_template: string
+        }
+        Returns: Json
+      }
       admission_enforced: { Args: never; Returns: boolean }
       assert_kind_admission: {
         Args: {

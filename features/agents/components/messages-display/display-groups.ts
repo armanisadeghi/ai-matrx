@@ -1,7 +1,12 @@
+import { createSelector } from "@reduxjs/toolkit";
+import type { RootState } from "@/lib/redux/store";
 import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import type { MessageRole } from "@/features/agents/types/agent-message-types";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
-import { isFailedRecord } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  isFailedRecord,
+  selectConversationMessages,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 
 export interface DisplayEntry {
   key: string;
@@ -167,3 +172,43 @@ export function applyDisplayGroupWindow(
   if (groups.length <= visibleGroupLimit) return groups;
   return groups.slice(groups.length - visibleGroupLimit);
 }
+
+// ---------------------------------------------------------------------------
+// Loaded display-group count — the unit the visible-group window and the
+// "reveal more" step actually operate in. `visibleGroupLimit` is a count of
+// GROUPS, but the older-history sentinel used to compare it against the raw
+// MESSAGE count; grouping collapses each assistant turn (its many
+// assistant/tool rows) into ONE group, so `groups < messages` almost always
+// holds. That mismatch trapped the sentinel: with all loaded groups already
+// visible it still saw `limit < messageCount` and kept firing no-op reveals
+// instead of paging the next batch from the DB. This selector is the correct
+// denominator.
+//
+// Counted with static (non-streaming) flags: grouping of the OLDER end — all
+// the sentinel cares about — never depends on stream state; only the newest
+// group can shift, and that one is always inside the window regardless.
+// ---------------------------------------------------------------------------
+const loadedGroupCountSelectorCache = new Map<
+  string,
+  (state: RootState) => number
+>();
+
+export const selectLoadedDisplayGroupCount = (conversationId: string) => {
+  const cached = loadedGroupCountSelectorCache.get(conversationId);
+  if (cached) return cached;
+
+  const selector = createSelector(
+    selectConversationMessages(conversationId),
+    (messages: MessageRecord[]): number =>
+      groupDisplayEntries(
+        buildDisplayEntries({
+          messages,
+          isActive: false,
+          latestRequestId: null,
+          isErrorPhase: false,
+        }),
+      ).length,
+  );
+  loadedGroupCountSelectorCache.set(conversationId, selector);
+  return selector;
+};
