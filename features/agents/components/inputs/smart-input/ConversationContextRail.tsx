@@ -102,15 +102,9 @@ import {
   unsubscribeAgentLists,
 } from "@/features/agents/ui-first-tools/redux/agent-lists.thunks";
 import { TaskPanel } from "@/features/agents/ui-first-tools/ui/lists/TaskPanel";
-<<<<<<< Updated upstream
-=======
-import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
-import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
-import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
 import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { selectActiveScopeIdsByType } from "@/features/scopes/redux/selectors/active-context";
->>>>>>> Stashed changes
 
 interface ConversationContextRailProps {
   conversationId: string;
@@ -216,15 +210,10 @@ export function ConversationContextRail({
     };
   }, [conversationId, dispatch]);
 
-<<<<<<< Updated upstream
-=======
-  // ── Active context layers (org / scope / project / task) ───────────────────
-  const layers = useActiveContextLayerItems(conversationId);
-
   // ── Does this agent declare a context slot sourced from a scope's context
   // item whose scope TYPE isn't currently active? An unrelated org/scope being
   // active (e.g. a law-firm org while this agent needs a "Goal" scope) must
-  // still nudge — checking layers.count alone would wrongly stay silent just
+  // still nudge — checking active layers alone would wrongly stay silent just
   // because *something* is active. Missing this means the slot silently
   // resolves to nothing server-side with no visible explanation. ────────────
   const agentContextSlots = useAppSelector((state) =>
@@ -242,7 +231,6 @@ export function ConversationContextRail({
   );
   const showSetScopeCta = needsScope;
 
->>>>>>> Stashed changes
   // ── Detail surfaces (one of each, opened on demand) ────────────────────────
   const [activeEntry, setActiveEntry] = useState<{
     key: string;
@@ -489,9 +477,6 @@ export function ConversationContextRail({
     };
   }, [items, maxInline]);
 
-<<<<<<< Updated upstream
-  if (items.length === 0) return null;
-=======
   // Zero footprint when there's nothing to surface — but keep any drawer that
   // is mid-open mounted so its close animation completes if the backing item
   // momentarily drops out.
@@ -499,8 +484,7 @@ export function ConversationContextRail({
     items.length === 0 &&
     !showSetScopeCta &&
     !detailOpen &&
-    !listsOpen &&
-    !layerDrawer.open
+    !listsOpen
   ) {
     return null;
   }
@@ -515,11 +499,9 @@ export function ConversationContextRail({
         setDetailOpen={setDetailOpen}
         listsOpen={listsOpen}
         setListsOpen={setListsOpen}
-        layerDrawer={layerDrawer}
       />
     );
   }
->>>>>>> Stashed changes
 
   return (
     <div

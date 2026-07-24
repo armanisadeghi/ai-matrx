@@ -54,7 +54,6 @@ export function AgentBuilderClient({
     return (
       <SurfaceRuntimeProvider
         surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
-        surfaceLabel="Agent Builder"
         getScope={getAgentBuilderScope}
         isEditable
       >
@@ -66,7 +65,6 @@ export function AgentBuilderClient({
   return (
     <SurfaceRuntimeProvider
       surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Agent Builder"
       getScope={getAgentBuilderScope}
       isEditable
     >

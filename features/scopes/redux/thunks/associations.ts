@@ -117,7 +117,6 @@ export function addAssociation(args: {
   label?: string;
   role?: string;
   /**
-<<<<<<< Updated upstream
    * Free-form edge props stored on `platform.associations.metadata`. Generic
    * `assoc_add` writes replace metadata on conflict. The stricter canonical
    * file → conversation path preserves metadata unless `replaceMetadata` is
@@ -126,14 +125,6 @@ export function addAssociation(args: {
   metadata?: Json;
   /** Explicit metadata replacement for the canonical file → conversation edge. */
   replaceMetadata?: boolean;
-=======
-   * Free-form edge props stored on `platform.associations.metadata`. `assoc_add`
-   * REPLACES metadata on conflict, so callers that persist per-edge state (a
-   * document's chosen representation, a doc-kind flag) must pass the FULL object
-   * each write. Omitted → the RPC defaults to `{}`.
-   */
-  metadata?: Json;
->>>>>>> Stashed changes
 }): AppThunk<Promise<AssociationWriteResult>> {
   return async (dispatch) => {
     const res = await associationsService.add(args);

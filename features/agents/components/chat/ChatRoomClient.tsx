@@ -506,7 +506,6 @@ export function ChatRoomClient({
   return (
     <SurfaceRuntimeProvider
       surfaceName={CHAT_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Chat"
       getScope={getChatScope}
       isEditable
     >

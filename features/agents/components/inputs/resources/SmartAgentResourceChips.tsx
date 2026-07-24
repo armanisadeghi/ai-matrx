@@ -225,7 +225,6 @@ interface ResourceChipProps {
   onRemove: () => void;
   onToggleEditable: () => void;
   onOpen: () => void;
-<<<<<<< Updated upstream
 }
 
 function getImageRef(source: unknown): string | null {
@@ -334,8 +333,6 @@ function ImageResourceThumbnail({
       </button>
     </motion.div>
   );
-=======
->>>>>>> Stashed changes
 }
 
 function ResourceChip({
