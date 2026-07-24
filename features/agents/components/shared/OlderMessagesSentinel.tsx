@@ -128,50 +128,60 @@ export function OlderMessagesSentinel({
   } | null>(null);
 
   // The single "give me more older history" step, shared by the
-  // IntersectionObserver and the top-pinned scroll listener below.
-  //   "reveal" — synchronously showed a hidden loaded group (content grew this
-  //              frame); the scroll driver may keep draining immediately.
-  //   "load"   — kicked off an async DB page; stop and let the prepend +
-  //              anchor restore land before doing anything else.
-  //   "none"   — nothing to do (disabled, already loading, or fully drained).
-  type AdvanceResult = "reveal" | "load" | "none";
-  const advanceOlderHistory = useRef<() => AdvanceResult>(() => "none");
-  advanceOlderHistory.current = () => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return "none";
-    if (disabledRef.current) return "none";
-    if (loadingRef.current) return "none";
+  // IntersectionObserver and the top-pinned scroll listener below. It is
+  // strictly one-shot: it does ONE thing (reveal a hidden group OR start one
+  // DB page) and then waits for the anchor-restore layout effect to consume
+  // `pendingAnchor` before it will act again. That self-pacing is what keeps
+  // the viewport parked — firing a second advance before the first
+  // compensation has committed would overwrite the pending snapshot and the
+  // view would jump. Real upward scrolling produces a steady stream of scroll
+  // events, so one-shot-per-settled-step drains the whole history smoothly.
+  // Kept in a ref (refreshed in the effect below, never during render) so the
+  // IntersectionObserver / scroll listeners can call it without re-binding on
+  // every render.
+  const advanceOlderHistory = useRef<() => void>(() => {});
+  useEffect(() => {
+    advanceOlderHistory.current = () => {
+      const scrollEl = scrollRef.current;
+      if (!scrollEl) return;
+      if (disabledRef.current) return;
+      if (loadingRef.current) return;
+      // A prior reveal/load hasn't been position-compensated yet — wait.
+      if (pendingAnchor.current) return;
 
-    const limit =
-      visibleGroupLimitOverrideRef.current ?? visibleGroupLimitRef.current;
+      const limit =
+        visibleGroupLimitOverrideRef.current ?? visibleGroupLimitRef.current;
 
-    // More loaded-but-hidden groups to reveal before we touch the network.
-    // Compared against the GROUP count (not messages) — the unit both the
-    // window and `revealStep` actually use.
-    if (limit !== null && limit < loadedGroupCountRef.current) {
+      // More loaded-but-hidden groups to reveal before we touch the network.
+      // Compared against the GROUP count (not messages) — the unit both the
+      // window and `revealStep` actually use. The old comparison was against
+      // the raw message count, which (grouping collapses each assistant turn
+      // into one group) stayed true forever and so never paged the DB.
+      if (limit !== null && limit < loadedGroupCountRef.current) {
+        pendingAnchor.current = {
+          prevScrollHeight: scrollEl.scrollHeight,
+          prevFirstId: firstIdRef.current,
+        };
+        onRevealOlderGroups?.(revealStep);
+        dispatch(revealOlderGroups({ conversationId, count: revealStep }));
+        return;
+      }
+
+      // Every loaded group is on screen — page the next batch from the DB.
+      if (!hasMoreRef.current) return;
+
       pendingAnchor.current = {
         prevScrollHeight: scrollEl.scrollHeight,
         prevFirstId: firstIdRef.current,
       };
-      onRevealOlderGroups?.(revealStep);
-      dispatch(revealOlderGroups({ conversationId, count: revealStep }));
-      return "reveal";
-    }
-
-    // Every loaded group is on screen — page the next batch from the DB.
-    if (!hasMoreRef.current) return "none";
-
-    pendingAnchor.current = {
-      prevScrollHeight: scrollEl.scrollHeight,
-      prevFirstId: firstIdRef.current,
+      void dispatch(loadOlderMessages({ conversationId, pageSize }));
     };
-    void dispatch(loadOlderMessages({ conversationId, pageSize }));
-    return "load";
-  };
+  });
 
-  // IntersectionObserver setup. Re-binds only when the conversation
-  // changes — flag changes flow through the latest-value refs above so the
-  // observer stays attached across pages.
+  // IntersectionObserver — fires when the sentinel enters the prefetch band
+  // as content above shifts. Re-binds only when the conversation changes;
+  // flag changes flow through the latest-value refs so the observer stays
+  // attached across pages.
   useEffect(() => {
     const sentinel = sentinelRef.current;
     const scrollEl = scrollRef.current;
@@ -197,41 +207,30 @@ export function OlderMessagesSentinel({
   }, [conversationId, scrollRef]);
 
   // Top-pinned scroll driver. The IntersectionObserver only fires on an
-  // intersection *transition* — so a user who scrolls to the very top and
-  // stays there (sentinel already in view, no further transitions) would get
-  // no more history. This listener re-checks on every scroll while the user
-  // is within the prefetch band of the top, and after a reveal that didn't
-  // move them off the top it re-checks on the next frame so a run of hidden
-  // groups drains without needing a fresh gesture each time. Anchor
-  // restoration keeps the viewport parked, so this never yanks position.
+  // intersection *transition*, so once the sentinel is already in view (the
+  // user parked near the top) it goes quiet. This listener re-checks on every
+  // scroll while within the prefetch band, so continuing to scroll up keeps
+  // feeding older history. `advanceOlderHistory` is one-shot + anchor-paced,
+  // so frequent scroll events can never stack up or jump the view.
   useEffect(() => {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return undefined;
 
     const PREFETCH_BAND_PX = 200;
-    let frame = 0;
-
     const pump = () => {
       if (scrollEl.scrollTop > PREFETCH_BAND_PX) return;
-      const result = advanceOlderHistory.current();
-      // Only a synchronous reveal is safe to chain on the next frame; a DB
-      // load is async (isLoadingOlder lags a render) so we stop and let the
-      // prepend + anchor restore land, then the next scroll resumes.
-      if (result === "reveal" && scrollEl.scrollTop <= PREFETCH_BAND_PX) {
-        cancelAnimationFrame(frame);
-        frame = requestAnimationFrame(pump);
-      }
+      advanceOlderHistory.current();
     };
 
     scrollEl.addEventListener("scroll", pump, { passive: true });
-    return () => {
-      scrollEl.removeEventListener("scroll", pump);
-      cancelAnimationFrame(frame);
-    };
+    return () => scrollEl.removeEventListener("scroll", pump);
   }, [conversationId, scrollRef]);
 
   // Scroll-anchor restore. Runs synchronously after the prepend reducer's
-  // commit so the user's viewport doesn't jump.
+  // commit so the user's viewport doesn't jump. Clearing `pendingAnchor` here
+  // is also what un-gates the next advance (see advanceOlderHistory), so the
+  // ONLY path that may leave it set is the "not landed yet" early-return
+  // below — every terminal path must clear it or history loading dead-locks.
   useLayoutEffect(() => {
     const anchor = pendingAnchor.current;
     if (!anchor) return;
@@ -247,6 +246,15 @@ export function OlderMessagesSentinel({
     }
     pendingAnchor.current = null;
   }, [effectiveVisibleGroupLimit, firstMessageId, scrollRef]);
+
+  // Dead-lock guard: a DB page that returns ZERO new rows changes neither
+  // `firstMessageId` nor the group limit, so the anchor-restore effect never
+  // re-runs to clear `pendingAnchor` — which would block every future
+  // advance. When loading settles with the snapshot still pending, release it.
+  useEffect(() => {
+    if (isLoadingOlder) return;
+    if (pendingAnchor.current) pendingAnchor.current = null;
+  }, [isLoadingOlder]);
 
   return <div ref={sentinelRef} aria-hidden className="h-px w-full" />;
 }
