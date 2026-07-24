@@ -27,6 +27,11 @@ import {
   verifyCollectionOwnership,
 } from "../_lib/cmsDb";
 import { logCmsActivity } from "../_lib/activityLog";
+import {
+  validateItem,
+  itemByteSize,
+  countKeys,
+} from "@/features/cms/collections/validateItem";
 import type {
   CollectionFieldDef,
   CollectionFieldType,
@@ -88,9 +93,79 @@ function isFieldType(v: unknown): v is CollectionFieldType {
   return typeof v === "string" && (FIELD_TYPES as readonly string[]).includes(v);
 }
 
+/**
+ * Item payload caps — the ROUTE is the size authority (CW3: "size caps are
+ * CALLER-enforced"). These mirror my-matrx's visitor route exactly, so an
+ * admin-authored item is bounded identically to a visitor-submitted one.
+ */
+const MAX_ITEM_BYTES = 65_536;
+/** Hard ceiling on the settings.max_item_bytes override (512 KB). */
+const MAX_ITEM_BYTES_CEILING = 524_288;
+/** Keys after flatten — not overridable. */
+const MAX_ITEM_FIELDS = 200;
+/** settings.max_items — quota QUARANTINE (archived), never a rejection. */
+const MAX_ITEMS = 100_000;
+
 /** Non-empty string param, or null. */
 function asString(v: unknown): string | null {
   return typeof v === "string" && v.trim() !== "" ? v : null;
+}
+
+/** Positive-integer setting override with default + optional hard ceiling. */
+function intSetting(
+  settings: unknown,
+  key: string,
+  fallback: number,
+  ceiling: number | null = null,
+): number {
+  const raw = isPlainObject(settings) ? settings[key] : undefined;
+  const value = Number.isInteger(raw) && (raw as number) > 0 ? (raw as number) : fallback;
+  return ceiling !== null ? Math.min(value, ceiling) : value;
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Shape + size gate for an incoming item `data` payload, shared by
+ * items_create and items_update. Returns the payload ready to store.
+ */
+function prepareItemData(
+  raw: unknown,
+  settings: unknown,
+):
+  | { ok: true; data: Record<string, unknown> }
+  | { ok: false; error: string; status: number } {
+  if (!isPlainObject(raw)) {
+    return {
+      ok: false,
+      error: "data must be a JSON object of field values",
+      status: 400,
+    };
+  }
+  const maxBytes = intSetting(
+    settings,
+    "max_item_bytes",
+    MAX_ITEM_BYTES,
+    MAX_ITEM_BYTES_CEILING,
+  );
+  const size = itemByteSize(raw);
+  if (size > maxBytes) {
+    return {
+      ok: false,
+      error: `This item is ${size.toLocaleString()} bytes — the limit for this collection is ${maxBytes.toLocaleString()}. Shorten a long field.`,
+      status: 413,
+    };
+  }
+  if (countKeys(raw) > MAX_ITEM_FIELDS) {
+    return {
+      ok: false,
+      error: `This item has more than ${MAX_ITEM_FIELDS} keys (counted through nested objects).`,
+      status: 413,
+    };
+  }
+  return { ok: true, data: raw };
 }
 
 function validateName(
@@ -1036,6 +1111,240 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
         return NextResponse.json({ item: data });
+      }
+
+      /**
+       * ── Items: admin-authored create ──────────────────────────────────
+       *
+       * Arman's ruling for W2-C is that client sites RENDER collection data
+       * (events, testimonials, FAQ entries, practitioner profiles) "curated by
+       * a human OR authored by an agent". aidream's collection_item_service
+       * had the agent half; this is the human half.
+       *
+       * NOT the visitor path: we do a plain insert, never
+       * `submit_collection_item`. That RPC carries the rate windows, the quota
+       * quarantine and — crucially — the `visitor_write_at` stamp that keeps
+       * the visitor limiter honest. An admin adding 30 events must not burn
+       * the window and 429 the site's public contact form.
+       *
+       * Admin rows therefore carry NO visitor provenance (no ip_address,
+       * user_agent or source_url) and are NEVER marked spam.
+       */
+      case "items_create": {
+        const collectionId = asString(params.collectionId);
+        if (!collectionId) {
+          return NextResponse.json(
+            { error: "collectionId is required" },
+            { status: 400 },
+          );
+        }
+        if (!(await verifyCollectionOwnership(db, collectionId, user.id))) {
+          return NextResponse.json(
+            { error: "Collection not found or access denied" },
+            { status: 403 },
+          );
+        }
+        const { data: target, error: targetError } = await db
+          .from("site_collections")
+          .select("id, client_id, name, field_schema, validation_mode, settings, status, deleted_at")
+          .eq("id", collectionId)
+          .single();
+        if (targetError || !target) {
+          return NextResponse.json(
+            { error: "Collection not found" },
+            { status: 404 },
+          );
+        }
+        if (target.deleted_at) {
+          return NextResponse.json(
+            { error: "This collection has been deleted" },
+            { status: 400 },
+          );
+        }
+
+        const prepared = prepareItemData(params.data, target.settings);
+        if (!prepared.ok) {
+          return NextResponse.json(
+            { error: prepared.error },
+            { status: prepared.status },
+          );
+        }
+
+        const report = validateItem(
+          target.field_schema,
+          prepared.data,
+          target.validation_mode === "strict" ? "strict" : "advisory",
+        );
+        if (!report.ok) {
+          return NextResponse.json(
+            {
+              error: "This item does not match the collection's field rules",
+              validationErrors: report.errors,
+              validationWarnings: report.warnings,
+            },
+            { status: 422 },
+          );
+        }
+
+        /**
+         * Quota quarantine, mirroring the service contract: at
+         * `settings.max_items` the row lands `status='archived'` — it is NEVER
+         * rejected. Losing an admin's authored content to a quota would be
+         * worse than parking it.
+         */
+        const maxItems = intSetting(target.settings, "max_items", MAX_ITEMS);
+        const { count: liveCount } = await db
+          .from("site_collection_items")
+          .select("id", { count: "exact", head: true })
+          .eq("collection_id", collectionId)
+          .eq("is_spam", false)
+          .is("deleted_at", null)
+          .eq("status", "active");
+        const quarantined = (liveCount ?? 0) >= maxItems;
+
+        const { data: created, error: createError } = await db
+          .from("site_collection_items")
+          .insert({
+            collection_id: collectionId,
+            client_id: target.client_id,
+            data: prepared.data,
+            status: quarantined ? "archived" : "active",
+            // Admin-authored: no visitor provenance, never spam, and seen by
+            // definition — the person who wrote it has obviously read it.
+            is_spam: false,
+            seen_at: new Date().toISOString(),
+            submitted_by: user.id,
+          })
+          .select(ITEM_COLUMNS)
+          .single();
+        if (createError) {
+          console.error("[cms/collections] items_create error:", createError);
+          return NextResponse.json(
+            { error: createError.message },
+            { status: 500 },
+          );
+        }
+        if (quarantined) {
+          console.warn(
+            "[cms/collections] items_create QUARANTINED a row for collection",
+            collectionId,
+            `— live items (${liveCount}) reached settings.max_items (${maxItems}); it landed archived.`,
+          );
+        }
+
+        await logCmsActivity(db, {
+          siteId: target.client_id,
+          activityType: "collection_item.create",
+          entityType: "collection_item",
+          entityId: created.id,
+          description: `Authored an item in collection "${target.name}"`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: {
+            keys: Object.keys(prepared.data),
+            ...(quarantined ? { quarantined: true } : {}),
+            ...(report.warnings.length > 0
+              ? { validation_warnings: report.warnings.length }
+              : {}),
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          item: created,
+          quarantined,
+          validationWarnings: report.warnings,
+        });
+      }
+
+      // ── Items: admin edit of one item's data (fix a typo) ─────────────
+      case "items_update": {
+        const itemId = asString(params.itemId);
+        if (!itemId) {
+          return NextResponse.json(
+            { error: "itemId is required" },
+            { status: 400 },
+          );
+        }
+        const owned = await verifyItemsOwnership(db, [itemId], user.id);
+        if (!owned.ok) {
+          return NextResponse.json(
+            { error: "Item not found or access denied" },
+            { status: 403 },
+          );
+        }
+        const { data: parent, error: parentError } = await db
+          .from("site_collections")
+          .select("id, client_id, name, field_schema, validation_mode, settings")
+          .eq("id", owned.items[0].collection_id)
+          .single();
+        if (parentError || !parent) {
+          return NextResponse.json(
+            { error: "Collection not found" },
+            { status: 404 },
+          );
+        }
+
+        const prepared = prepareItemData(params.data, parent.settings);
+        if (!prepared.ok) {
+          return NextResponse.json(
+            { error: prepared.error },
+            { status: prepared.status },
+          );
+        }
+
+        const report = validateItem(
+          parent.field_schema,
+          prepared.data,
+          parent.validation_mode === "strict" ? "strict" : "advisory",
+        );
+        if (!report.ok) {
+          return NextResponse.json(
+            {
+              error: "This item does not match the collection's field rules",
+              validationErrors: report.errors,
+              validationWarnings: report.warnings,
+            },
+            { status: 422 },
+          );
+        }
+
+        // `data` only — an edit never rewrites provenance, flags or timestamps.
+        const { data: updated, error: updateError } = await db
+          .from("site_collection_items")
+          .update({ data: prepared.data })
+          .eq("id", itemId)
+          .select(ITEM_COLUMNS)
+          .single();
+        if (updateError) {
+          console.error("[cms/collections] items_update error:", updateError);
+          return NextResponse.json(
+            { error: updateError.message },
+            { status: 500 },
+          );
+        }
+
+        await logCmsActivity(db, {
+          siteId: parent.client_id,
+          activityType: "collection_item.update",
+          entityType: "collection_item",
+          entityId: itemId,
+          description: `Edited an item in collection "${parent.name}"`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: {
+            keys: Object.keys(prepared.data),
+            ...(report.warnings.length > 0
+              ? { validation_warnings: report.warnings.length }
+              : {}),
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          item: updated,
+          validationWarnings: report.warnings,
+        });
       }
 
       // ── Items: triage flags (seen / spam / archive) — row or bulk ────

@@ -34,6 +34,7 @@ import type {
     CollectionExportRow,
     SiteCollectionSettings,
 } from '../types';
+import type { ItemValidationProblem } from '../collections/validateItem';
 
 export class SiteNotEmptyError extends Error {
     pageCount: number;
@@ -411,6 +412,54 @@ export interface CollectionUpsertParams {
     status?: CollectionStatus;
 }
 
+/**
+ * A collection refused an item on its field rules. Carries the per-field
+ * detail so the editor can mark the offending inputs instead of showing one
+ * opaque banner. Same shape as the validator's own report entries.
+ */
+export class ItemValidationError extends Error {
+    validationErrors: ItemValidationProblem[];
+    validationWarnings: ItemValidationProblem[];
+    constructor(
+        message: string,
+        validationErrors: ItemValidationProblem[],
+        validationWarnings: ItemValidationProblem[],
+    ) {
+        super(message);
+        this.name = 'ItemValidationError';
+        this.validationErrors = validationErrors;
+        this.validationWarnings = validationWarnings;
+    }
+}
+
+/**
+ * Item write with structured-error passthrough. `callApi` flattens every
+ * failure to `new Error(data.error)`, which would throw the field-level detail
+ * away — the whole point of a schema-driven editor.
+ */
+async function itemWriteCall<T>(
+    action: 'items_create' | 'items_update',
+    params: Record<string, unknown>,
+): Promise<T> {
+    const response = await fetch('/api/cms/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...params }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        if (response.status === 422 && Array.isArray(data.validationErrors)) {
+            throw new ItemValidationError(
+                data.error || 'This item does not match the field rules',
+                data.validationErrors,
+                data.validationWarnings ?? [],
+            );
+        }
+        throw new Error(data.error || `CMS API error: ${response.status}`);
+    }
+    return data as T;
+}
+
 export interface CollectionItemsPage {
     items: SiteCollectionItem[];
     total: number;
@@ -478,6 +527,32 @@ export const CmsCollectionService = {
         params: { filter?: CollectionItemFilter; q?: string; page?: number; perPage?: number } = {},
     ): Promise<CollectionItemsPage> {
         return callApi<CollectionItemsPage>('collections', 'items_list', { collectionId, ...params });
+    },
+
+    /**
+     * Admin-authored item create. Deliberately NOT the visitor
+     * `submit_collection_item` RPC — that path carries the rate windows and the
+     * `visitor_write_at` stamp, so authoring 30 events through it would 429 the
+     * site's public forms. Rows land with no visitor provenance and never spam.
+     * Throws ItemValidationError (field-level) when the collection refuses it.
+     */
+    async createItem(
+        collectionId: string,
+        data: Record<string, unknown>,
+    ): Promise<{
+        item: SiteCollectionItem;
+        quarantined: boolean;
+        validationWarnings: ItemValidationProblem[];
+    }> {
+        return itemWriteCall('items_create', { collectionId, data });
+    },
+
+    /** Edit one item's `data` (fix a typo). Never rewrites flags or provenance. */
+    async updateItem(
+        itemId: string,
+        data: Record<string, unknown>,
+    ): Promise<{ item: SiteCollectionItem; validationWarnings: ItemValidationProblem[] }> {
+        return itemWriteCall('items_update', { itemId, data });
     },
 
     async getItem(itemId: string): Promise<SiteCollectionItem> {
