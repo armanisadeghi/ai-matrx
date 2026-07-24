@@ -2545,7 +2545,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/document/by-cld-file/{cld_file_id}": {
+    "/document/by-cld-file/{cld_file_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2559,7 +2559,7 @@ export interface paths {
          *     only docs the user can see are returned. Resolves to None if the
          *     file has never been processed for RAG.
          */
-        get: operations["find_document_by_cld_file_api_document_by_cld_file__cld_file_id__get"];
+        get: operations["find_document_by_cld_file_document_by_cld_file__cld_file_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2568,7 +2568,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/document/{doc_id}": {
+    "/document/{doc_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2576,7 +2576,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Document Overview */
-        get: operations["get_document_overview_api_document__doc_id__get"];
+        get: operations["get_document_overview_document__doc_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2585,7 +2585,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/document/{doc_id}/lineage": {
+    "/document/{doc_id}/lineage": {
         parameters: {
             query?: never;
             header?: never;
@@ -2593,7 +2593,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Document Lineage */
-        get: operations["get_document_lineage_api_document__doc_id__lineage_get"];
+        get: operations["get_document_lineage_document__doc_id__lineage_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2602,7 +2602,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/document/{doc_id}/pages": {
+    "/document/{doc_id}/pages": {
         parameters: {
             query?: never;
             header?: never;
@@ -2610,7 +2610,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Document Pages */
-        get: operations["get_document_pages_api_document__doc_id__pages_get"];
+        get: operations["get_document_pages_document__doc_id__pages_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2619,7 +2619,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/document/{doc_id}/page/{page_index}": {
+    "/document/{doc_id}/page/{page_index}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2627,7 +2627,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Document Page */
-        get: operations["get_document_page_api_document__doc_id__page__page_index__get"];
+        get: operations["get_document_page_document__doc_id__page__page_index__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2636,7 +2636,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/document/{doc_id}/page/{page_index}/image": {
+    "/document/{doc_id}/page/{page_index}/image": {
         parameters: {
             query?: never;
             header?: never;
@@ -2644,7 +2644,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Document Page Image */
-        get: operations["get_document_page_image_api_document__doc_id__page__page_index__image_get"];
+        get: operations["get_document_page_image_document__doc_id__page__page_index__image_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2653,7 +2653,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/document/{doc_id}/chunks": {
+    "/document/{doc_id}/chunks": {
         parameters: {
             query?: never;
             header?: never;
@@ -2661,7 +2661,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Document Chunks */
-        get: operations["get_document_chunks_api_document__doc_id__chunks_get"];
+        get: operations["get_document_chunks_document__doc_id__chunks_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6336,7 +6336,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/surfaces/{client_name}/{surface_name}/manifest": {
+    "/surfaces/{client_name}/{surface_name}/manifest": {
         parameters: {
             query?: never;
             header?: never;
@@ -6354,7 +6354,7 @@ export interface paths {
          *     what ``apply_unified_tools`` would inject. Returns 404 when the name
          *     isn't in ``ui.ui_surface``.
          */
-        get: operations["get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get"];
+        get: operations["get_db_surface_manifest_surfaces__client_name___surface_name__manifest_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6363,7 +6363,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/surfaces/{name}/manifest": {
+    "/surfaces/{name}/manifest": {
         parameters: {
             query?: never;
             header?: never;
@@ -6379,7 +6379,7 @@ export interface paths {
          *     a registered capability — for DB surfaces use the
          *     ``/surfaces/{client}/{surface}/manifest`` form.
          */
-        get: operations["get_capability_manifest_api_surfaces__name__manifest_get"];
+        get: operations["get_capability_manifest_surfaces__name__manifest_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -42736,7 +42736,7 @@ export interface operations {
             };
         };
     };
-    find_document_by_cld_file_api_document_by_cld_file__cld_file_id__get: {
+    find_document_by_cld_file_document_by_cld_file__cld_file_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -42767,7 +42767,7 @@ export interface operations {
             };
         };
     };
-    get_document_overview_api_document__doc_id__get: {
+    get_document_overview_document__doc_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -42798,7 +42798,7 @@ export interface operations {
             };
         };
     };
-    get_document_lineage_api_document__doc_id__lineage_get: {
+    get_document_lineage_document__doc_id__lineage_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -42829,7 +42829,7 @@ export interface operations {
             };
         };
     };
-    get_document_pages_api_document__doc_id__pages_get: {
+    get_document_pages_document__doc_id__pages_get: {
         parameters: {
             query?: {
                 from?: number;
@@ -42863,7 +42863,7 @@ export interface operations {
             };
         };
     };
-    get_document_page_api_document__doc_id__page__page_index__get: {
+    get_document_page_document__doc_id__page__page_index__get: {
         parameters: {
             query?: {
                 include_blocks?: boolean;
@@ -42898,7 +42898,7 @@ export interface operations {
             };
         };
     };
-    get_document_page_image_api_document__doc_id__page__page_index__image_get: {
+    get_document_page_image_document__doc_id__page__page_index__image_get: {
         parameters: {
             query?: {
                 dpi?: number;
@@ -42934,7 +42934,7 @@ export interface operations {
             };
         };
     };
-    get_document_chunks_api_document__doc_id__chunks_get: {
+    get_document_chunks_document__doc_id__chunks_get: {
         parameters: {
             query?: {
                 parent_only?: boolean;
@@ -49812,7 +49812,7 @@ export interface operations {
             };
         };
     };
-    get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get: {
+    get_db_surface_manifest_surfaces__client_name___surface_name__manifest_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -49844,7 +49844,7 @@ export interface operations {
             };
         };
     };
-    get_capability_manifest_api_surfaces__name__manifest_get: {
+    get_capability_manifest_surfaces__name__manifest_get: {
         parameters: {
             query?: never;
             header?: never;

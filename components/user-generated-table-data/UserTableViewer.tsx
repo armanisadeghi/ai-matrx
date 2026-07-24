@@ -49,6 +49,13 @@ import {
   type FieldDataType,
 } from "@/features/data-tables/types";
 import { TableSkeleton } from "./TableSkeleton";
+import { CellCleanupButton } from "@/components/content-cleanup/CellCleanupButton";
+import { cleanValue } from "@/lib/content-cleanup/clean-cells";
+import { DEFAULT_ENABLED_VALUE_OPERATIONS } from "@/lib/content-cleanup/value-operations";
+import type {
+  CleanableRow,
+  RowPatch,
+} from "@/lib/content-cleanup/value-types";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -157,7 +164,13 @@ function asTableFields(raw: unknown): TableField[] {
 
 interface UserTableViewerProps {
   tableId: string;
-  showTableSelector?: boolean;
+  /**
+   * Fill the page's own body height instead of sizing to content. Route
+   * surfaces (`/data/[id]`) turn this on so the grid uses the whole viewport
+   * and the pagination bar sits at the bottom edge; embedded surfaces
+   * (windows, sheets, chat artifacts) leave it off and keep the natural flow.
+   */
+  fillHeight?: boolean;
   /**
    * Render cell text as inline markdown (bold/italic/links) instead of showing
    * raw `**syntax**`. OFF by default so existing data tables are unchanged; the
@@ -178,15 +191,25 @@ interface UserTableViewerProps {
    * name without a second fetch of the same RPC.
    */
   onTableInfoChange?: (info: TableInfo | null) => void;
+  /**
+   * Fires with the user's full table list once loaded. Supplied by a surface
+   * that renders its OWN table switcher (the `/data/[id]` header identity
+   * menu), so the list is fetched once here rather than twice. Passing this
+   * is what opts the viewer into loading the list at all — there is no
+   * in-body selector any more, because a second control for a choice the
+   * header already owns is exactly the duplication the header rules forbid.
+   */
+  onTablesChange?: (tables: UserTable[]) => void;
 }
 
 const UserTableViewer = ({
   tableId,
-  showTableSelector = false,
+  fillHeight = false,
   renderCellMarkdown = false,
   hideHeader = false,
   toolbarTrailing,
   onTableInfoChange,
+  onTablesChange,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
@@ -249,10 +272,6 @@ const UserTableViewer = ({
   const [showTableSettingsModal, setShowTableSettingsModal] = useState(false);
   const [showReferenceOverlay, setShowReferenceOverlay] = useState(false);
 
-  // Table selector state
-  const [tables, setTables] = useState<UserTable[]>([]);
-  const [tablesLoading, setTablesLoading] = useState(false);
-
   // Text expansion modal state
   const [expandedText, setExpandedText] = useState<string | null>(null);
   const [expandedFieldName, setExpandedFieldName] = useState<string | null>(
@@ -302,41 +321,19 @@ const UserTableViewer = ({
     });
   };
 
-  // Add this helper function after the other state declarations and before formatCellValue
-  const cleanupHtmlText = (text: string): string => {
-    if (!text || typeof text !== "string") return text;
-
-    // Replace <br> and <br/> tags with newlines
-    let cleaned = text.replace(/<br\s*\/?>/gi, "\n");
-
-    // Replace HTML entities
-    cleaned = cleaned.replace(/&lt;/g, "<");
-    cleaned = cleaned.replace(/&gt;/g, ">");
-    cleaned = cleaned.replace(/&amp;/g, "&");
-    cleaned = cleaned.replace(/&quot;/g, '"');
-    cleaned = cleaned.replace(/&#39;/g, "'");
-    cleaned = cleaned.replace(/&nbsp;/g, " ");
-
-    // Remove any remaining HTML tags
-    cleaned = cleaned.replace(/<[^>]*>/g, "");
-
-    // Clean up extra whitespace but preserve intentional line breaks
-    cleaned = cleaned.replace(/\n\s*\n/g, "\n\n"); // Multiple newlines become double newlines
-    cleaned = cleaned.replace(/^\s+|\s+$/g, ""); // Trim start and end
-
-    return cleaned;
+  // Single-cell cleanup runs the SHARED value-cleanup engine
+  // (lib/content-cleanup) with its recommended defaults — the same operations
+  // the bulk "Clean" control offers, so a one-cell fix and a whole-table pass
+  // can never disagree about what "clean" means. It replaces the old
+  // HTML-only helpers that lived here.
+  const cleanCellValue = (text: string): string => {
+    if (typeof text !== "string") return text;
+    return cleanValue(text, DEFAULT_ENABLED_VALUE_OPERATIONS).after;
   };
 
-  // Add this helper function to detect if text contains HTML that can be cleaned
-  const containsCleanableHtml = (text: string): boolean => {
-    if (!text || typeof text !== "string") return false;
-
-    // Check for <br> tags or other common HTML patterns
-    return (
-      /<br\s*\/?>/gi.test(text) ||
-      /&lt;|&gt;|&amp;|&quot;|&#39;|&nbsp;/g.test(text) ||
-      /<[^>]*>/g.test(text)
-    );
+  const isCellValueDirty = (text: string): boolean => {
+    if (typeof text !== "string" || text.length === 0) return false;
+    return cleanValue(text, DEFAULT_ENABLED_VALUE_OPERATIONS).changed;
   };
 
   // Add this function to handle the cleanup and update
@@ -349,7 +346,7 @@ const UserTableViewer = ({
     e.stopPropagation(); // Prevent row edit modal from opening
 
     try {
-      const cleanedText = cleanupHtmlText(originalText);
+      const cleanedText = cleanCellValue(originalText);
 
       if (cleanedText === originalText) {
         // No changes needed
@@ -378,12 +375,13 @@ const UserTableViewer = ({
     }
   };
 
-  // Load tables for selector
+  // Load the user's table list ONCE, for whatever outer surface renders the
+  // switcher. Nothing in this component consumes it — it exists purely so the
+  // header's identity menu doesn't have to repeat the RPC.
   const loadTables = async () => {
-    if (!showTableSelector) return;
+    if (!onTablesChange) return;
 
     try {
-      setTablesLoading(true);
       const { data, error } = await supabase.rpc("get_user_tables");
 
       if (error) throw error;
@@ -391,11 +389,11 @@ const UserTableViewer = ({
       if (!data.success) throw new Error(data.error || "Failed to load tables");
 
       const listUnknown = (data as { tables?: unknown }).tables;
-      setTables(Array.isArray(listUnknown) ? (listUnknown as UserTable[]) : []);
+      onTablesChange(
+        Array.isArray(listUnknown) ? (listUnknown as UserTable[]) : [],
+      );
     } catch (err) {
       console.error("Error fetching tables:", err);
-    } finally {
-      setTablesLoading(false);
     }
   };
 
@@ -404,13 +402,6 @@ const UserTableViewer = ({
     onTableInfoChange?.(tableInfo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableInfo]);
-
-  // Handle table selection change
-  const handleTableChange = (value: string) => {
-    if (value !== tableId) {
-      router.push(`/data/${value}`);
-    }
-  };
 
   // Load table data
   const loadTableData = async (
@@ -568,11 +559,10 @@ const UserTableViewer = ({
   useEffect(() => {
     if (tableId) {
       loadTableData();
-      if (showTableSelector) {
-        loadTables();
-      }
+      void loadTables();
     }
-  }, [tableId, showTableSelector]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableId]);
 
   // --- Column filtering -------------------------------------------------
 
@@ -967,7 +957,7 @@ const UserTableViewer = ({
   const handleCleanupExpandedText = () => {
     if (!expandedText) return;
 
-    const cleanedText = cleanupHtmlText(expandedText);
+    const cleanedText = cleanCellValue(expandedText);
     setExpandedText(cleanedText);
     setExpandedTextModified(true);
   };
@@ -1210,109 +1200,61 @@ const UserTableViewer = ({
   const isSortSaved =
     sortField === savedSortField && sortDirection === savedSortDirection;
 
-  // Check if any data in the current table contains cleanable HTML
-  const hasCleanableHtmlInTable = () => {
-    if (!data || !fields) return false;
+  // --- Bulk cell cleanup ------------------------------------------------
+  //
+  // Backs the toolbar's <CellCleanupButton>. The button owns the operation
+  // choice and the review; this side owns only "give me every row" and
+  // "write these patches" — the two things that need the table's own
+  // canonical paths (paginated RPC in, udt_bulk_write out).
 
-    const stringFields = fields.filter((field) => field.data_type === "string");
-    if (stringFields.length === 0) return false;
-
-    return data.some((row) =>
-      stringFields.some((field) => {
-        const value = row.data[field.field_name];
-        return (
-          value && typeof value === "string" && containsCleanableHtml(value)
-        );
-      }),
+  /** Every row, not just the current page — cleaning only what you can see is
+   *  the wrong answer for a table that paginates. */
+  const loadAllRowsForCleanup = async (): Promise<CleanableRow[]> => {
+    const { data: allData, error: allError } = await supabase.rpc(
+      "get_user_table_data_paginated_v2",
+      {
+        p_table_id: tableId,
+        p_limit: Math.min(Math.max(totalCount, 1), FILTER_FETCH_CAP),
+        p_offset: 0,
+        p_sort_field: undefined,
+        p_sort_direction: "asc",
+        p_search_term: undefined,
+      },
     );
+    if (allError) throw allError;
+    assertRpcSuccessEnvelope(allData);
+    if (!allData.success) {
+      throw new Error(allData.error || "Failed to load rows for cleanup");
+    }
+    const payload = allData as typeof allData & { data: unknown[] };
+    return asTableDataRows(payload.data);
   };
 
-  // Handle bulk HTML cleanup for all rows in the table
-  const handleBulkHtmlCleanup = async () => {
-    if (!data || !fields) return;
-
-    try {
-      setLoading(true);
-
-      const stringFields = fields.filter(
-        (field) => field.data_type === "string",
-      );
-      const updates: Array<{
-        rowId: string;
-        data: Record<string, string>;
-      }> = [];
-
-      // Collect all rows that need cleaning
-      for (const row of data) {
-        const cleanedData: Record<string, string> = {};
-        let hasChanges = false;
-
-        for (const field of stringFields) {
-          const value = row.data[field.field_name];
-          if (
-            value &&
-            typeof value === "string" &&
-            containsCleanableHtml(value)
-          ) {
-            const cleanedValue = cleanupHtmlText(value);
-            if (cleanedValue !== value) {
-              cleanedData[field.field_name] = cleanedValue;
-              hasChanges = true;
-            }
-          }
-        }
-
-        if (hasChanges) {
-          updates.push({
-            rowId: row.id,
-            data: cleanedData,
-          });
-        }
-      }
-
-      if (updates.length === 0) {
-        setError("No HTML content found to clean up");
-        return;
-      }
-
-      // One atomic bulkWrite with op:'merge' — sends only the changed fields
-      // per row (jsonb_concat preserves unchanged keys). Replaces the prior
-      // chunked Promise.all(N round-trips) loop.
-      const operations: BulkMergeOp[] = updates.map((u) => ({
-        op: "merge",
-        row_id: u.rowId,
-        data: u.data,
-      }));
-      const bulkResult = await bulkWrite({ tableId, operations });
-      if (isServiceFailure(bulkResult)) {
-        throw new Error(bulkResult.error);
-      }
-      const processedCount = updates.length;
-
-      // Clear sorted data cache when data is modified
-      setAllSortedData(null);
-
-      // Reload the table data to reflect changes
-      await loadTableData(
-        currentPage,
-        limit,
-        sortField,
-        sortDirection,
-        searchTerm,
-      );
-
-      // Show success message
-      setError(null);
-      // You could add a success toast here if you have a toast system
-      console.log(`Successfully cleaned HTML in ${processedCount} rows`);
-    } catch (err) {
-      console.error("Error during bulk HTML cleanup:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to cleanup HTML content",
-      );
-    } finally {
-      setLoading(false);
+  /** Write the accepted patches as ONE atomic merge bulkWrite — only the
+   *  changed fields per row, so every other key survives untouched. */
+  const applyCleanupPatches = async (patches: RowPatch[]) => {
+    if (patches.length === 0) return;
+    const operations: BulkMergeOp[] = patches.map((p) => ({
+      op: "merge",
+      row_id: p.rowId,
+      data: p.data,
+    }));
+    const bulkResult = await bulkWrite({ tableId, operations });
+    if (isServiceFailure(bulkResult)) {
+      toast({
+        title: "Cleanup failed",
+        description: bulkResult.error,
+        variant: "destructive",
+      });
+      throw new Error(bulkResult.error);
     }
+
+    setAllSortedData(null);
+    await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+    toast({
+      title: "Cells cleaned",
+      description: `Updated ${patches.length} row${patches.length !== 1 ? "s" : ""}.`,
+    });
   };
 
   // Handle reference modal
@@ -1387,7 +1329,7 @@ const UserTableViewer = ({
       case "string":
         // For string fields, handle multiline content intelligently
         const stringValue = String(value);
-        const hasCleanableHtml = containsCleanableHtml(stringValue);
+        const hasCleanableHtml = isCellValueDirty(stringValue);
         const lines = stringValue.split("\n");
 
         // If multiline, show first line with indicator
@@ -1411,7 +1353,7 @@ const UserTableViewer = ({
         };
       default:
         const defaultDisplay = String(value);
-        const defaultHasCleanableHtml = containsCleanableHtml(defaultDisplay);
+        const defaultHasCleanableHtml = isCellValueDirty(defaultDisplay);
         return {
           display: defaultDisplay,
           isTruncated: defaultDisplay.length > 100,
@@ -1495,49 +1437,29 @@ const UserTableViewer = ({
   const showLoadingRow = loading || filteringInProgress;
 
   return (
-    <div className="space-y-4 p-2">
-      {/* Table header with optional selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        {!hideHeader && (
-          <div>
-            <h2 className="text-2xl font-bold">{tableInfo.table_name}</h2>
-            {tableInfo.description && (
-              <p className="text-gray-500 dark:text-gray-400">
-                {tableInfo.description}
-              </p>
-            )}
-          </div>
-        )}
-
-        {showTableSelector && tables.length > 0 && (
-          <div className="min-w-[250px]">
-            <Select value={tableId} onValueChange={handleTableChange}>
-              <SelectTrigger
-                id="table-select"
-                className="bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                <SelectValue placeholder="Select a table" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                {tables.map((table) => (
-                  <SelectItem
-                    key={table.id}
-                    value={table.id}
-                    className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  >
-                    <div className="flex flex-col">
-                      <span>{table.table_name}</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {table.row_count} rows • {table.field_count} fields
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
+    // fillHeight: a three-band column (chrome / grid / pagination) where only
+    // the grid scrolls, so the table uses every pixel the route gives it and
+    // the pagination bar sits on the bottom edge instead of floating in the
+    // middle above dead space.
+    <div
+      className={
+        fillHeight
+          ? "flex h-full min-h-0 flex-col gap-2 p-2"
+          : "space-y-4 p-2"
+      }
+    >
+      {/* Title band — only for embedded surfaces that have no header of their
+          own. Route surfaces show the identity in the shell header instead. */}
+      {!hideHeader && (
+        <div>
+          <h2 className="text-2xl font-bold">{tableInfo.table_name}</h2>
+          {tableInfo.description && (
+            <p className="text-gray-500 dark:text-gray-400">
+              {tableInfo.description}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Read-only banner for shared tables */}
       {isReadOnly && (
@@ -1552,7 +1474,7 @@ const UserTableViewer = ({
 
       {/* Sort indicator with save option */}
       {sortField && !isReadOnly && (
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex shrink-0 items-center gap-2 text-xs">
           <span className="text-gray-500 dark:text-gray-400">
             Sorted by{" "}
             <span className="font-medium text-gray-700 dark:text-gray-300">
@@ -1654,11 +1576,24 @@ const UserTableViewer = ({
         // Sort state for export
         sortField={sortField}
         sortDirection={sortDirection}
-        // HTML cleanup functions
-        cleanupHtmlText={cleanupHtmlText}
-        containsCleanableHtml={containsCleanableHtml}
-        hasCleanableHtmlInTable={hasCleanableHtmlInTable()}
-        handleBulkHtmlCleanup={handleBulkHtmlCleanup}
+        // Cell cleanup — single-cell helpers for the row editor, plus the bulk
+        // control itself (the toolbar just hosts it; the button owns the flow).
+        cleanCellValue={cleanCellValue}
+        isCellValueDirty={isCellValueDirty}
+        cleanupControl={
+          isReadOnly ? null : (
+            <CellCleanupButton
+              fields={fields.map((f) => ({
+                fieldName: f.field_name,
+                label: f.display_name,
+              }))}
+              rows={data}
+              loadAllRows={loadAllRowsForCleanup}
+              scopeLabel={tableInfo.table_name}
+              onApply={applyCleanupPatches}
+            />
+          )
+        }
         // Row ordering functions
         rowOrderingEnabled={rowOrderingEnabled}
         enableRowOrdering={enableRowOrdering}
@@ -1674,8 +1609,16 @@ const UserTableViewer = ({
         toolbarTrailing={toolbarTrailing}
       />
 
-      {/* Table */}
-      <div className="border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm [&>div]:max-h-[70dvh] [&>div]:overflow-auto">
+      {/* Table. In fillHeight mode the grid is the ONLY flexible band and owns
+          the scroll (`min-h-0` so flex lets it actually shrink); otherwise it
+          keeps the legacy content-sized cap. */}
+      <div
+        className={
+          fillHeight
+            ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm [&>div]:min-h-0 [&>div]:flex-1 [&>div]:overflow-auto"
+            : "border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm [&>div]:max-h-[70dvh] [&>div]:overflow-auto"
+        }
+      >
         <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -1963,9 +1906,15 @@ const UserTableViewer = ({
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination — pinned band in fillHeight mode, normal flow otherwise. */}
       {!loading && displayRows.length > 0 && (
-        <div className="flex flex-wrap justify-between items-center gap-y-2 gap-x-3 mt-4">
+        <div
+          className={
+            fillHeight
+              ? "flex shrink-0 flex-wrap items-center justify-between gap-y-2 gap-x-3"
+              : "flex flex-wrap justify-between items-center gap-y-2 gap-x-3 mt-4"
+          }
+        >
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
             <Select value={String(limit)} onValueChange={handleLimitChange}>
               <SelectTrigger className="h-8 w-[70px]">
@@ -2079,7 +2028,7 @@ const UserTableViewer = ({
                   <span className="text-orange-500 ml-2">*</span>
                 )}
               </DialogTitle>
-              {expandedText && containsCleanableHtml(expandedText) && (
+              {expandedText && isCellValueDirty(expandedText) && (
                 <Button
                   variant="outline"
                   size="sm"

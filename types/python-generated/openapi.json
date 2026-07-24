@@ -5877,14 +5877,14 @@
         }
       }
     },
-    "/api/document/by-cld-file/{cld_file_id}": {
+    "/document/by-cld-file/{cld_file_id}": {
       "get": {
         "tags": [
           "Documents"
         ],
         "summary": "Find Document By Cld File",
         "description": "Return the newest processed_documents row anchored to this\ncld_files id. Caller-scoped — RLS on processed_documents ensures\nonly docs the user can see are returned. Resolves to None if the\nfile has never been processed for RAG.",
-        "operationId": "find_document_by_cld_file_api_document_by_cld_file__cld_file_id__get",
+        "operationId": "find_document_by_cld_file_document_by_cld_file__cld_file_id__get",
         "parameters": [
           {
             "name": "cld_file_id",
@@ -5920,13 +5920,13 @@
         }
       }
     },
-    "/api/document/{doc_id}": {
+    "/document/{doc_id}": {
       "get": {
         "tags": [
           "Documents"
         ],
         "summary": "Get Document Overview",
-        "operationId": "get_document_overview_api_document__doc_id__get",
+        "operationId": "get_document_overview_document__doc_id__get",
         "parameters": [
           {
             "name": "doc_id",
@@ -5962,13 +5962,13 @@
         }
       }
     },
-    "/api/document/{doc_id}/lineage": {
+    "/document/{doc_id}/lineage": {
       "get": {
         "tags": [
           "Documents"
         ],
         "summary": "Get Document Lineage",
-        "operationId": "get_document_lineage_api_document__doc_id__lineage_get",
+        "operationId": "get_document_lineage_document__doc_id__lineage_get",
         "parameters": [
           {
             "name": "doc_id",
@@ -6004,13 +6004,13 @@
         }
       }
     },
-    "/api/document/{doc_id}/pages": {
+    "/document/{doc_id}/pages": {
       "get": {
         "tags": [
           "Documents"
         ],
         "summary": "Get Document Pages",
-        "operationId": "get_document_pages_api_document__doc_id__pages_get",
+        "operationId": "get_document_pages_document__doc_id__pages_get",
         "parameters": [
           {
             "name": "doc_id",
@@ -6060,7 +6060,7 @@
                   "items": {
                     "$ref": "#/components/schemas/PageSummary"
                   },
-                  "title": "Response Get Document Pages Api Document  Doc Id  Pages Get"
+                  "title": "Response Get Document Pages Document  Doc Id  Pages Get"
                 }
               }
             }
@@ -6078,13 +6078,13 @@
         }
       }
     },
-    "/api/document/{doc_id}/page/{page_index}": {
+    "/document/{doc_id}/page/{page_index}": {
       "get": {
         "tags": [
           "Documents"
         ],
         "summary": "Get Document Page",
-        "operationId": "get_document_page_api_document__doc_id__page__page_index__get",
+        "operationId": "get_document_page_document__doc_id__page__page_index__get",
         "parameters": [
           {
             "name": "doc_id",
@@ -6149,13 +6149,13 @@
         }
       }
     },
-    "/api/document/{doc_id}/page/{page_index}/image": {
+    "/document/{doc_id}/page/{page_index}/image": {
       "get": {
         "tags": [
           "Documents"
         ],
         "summary": "Get Document Page Image",
-        "operationId": "get_document_page_image_api_document__doc_id__page__page_index__image_get",
+        "operationId": "get_document_page_image_document__doc_id__page__page_index__image_get",
         "parameters": [
           {
             "name": "doc_id",
@@ -6222,13 +6222,13 @@
         }
       }
     },
-    "/api/document/{doc_id}/chunks": {
+    "/document/{doc_id}/chunks": {
       "get": {
         "tags": [
           "Documents"
         ],
         "summary": "Get Document Chunks",
-        "operationId": "get_document_chunks_api_document__doc_id__chunks_get",
+        "operationId": "get_document_chunks_document__doc_id__chunks_get",
         "parameters": [
           {
             "name": "doc_id",
@@ -6298,7 +6298,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ChunkRow"
                   },
-                  "title": "Response Get Document Chunks Api Document  Doc Id  Chunks Get"
+                  "title": "Response Get Document Chunks Document  Doc Id  Chunks Get"
                 }
               }
             }
@@ -16591,14 +16591,14 @@
         }
       }
     },
-    "/api/surfaces/{client_name}/{surface_name}/manifest": {
+    "/surfaces/{client_name}/{surface_name}/manifest": {
       "get": {
         "tags": [
           "Tool Routing"
         ],
         "summary": "Get Db Surface Manifest",
         "description": "DB-driven surface manifest. The canonical path — used by frontends\nthat declare a ``client.surface`` from the 60+ rows in\n``ui.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).\n\nIncludes tools inherited from every ancestor surface walked via\n``ui_surface.parent_surface_name`` so the response reflects exactly\nwhat ``apply_unified_tools`` would inject. Returns 404 when the name\nisn't in ``ui.ui_surface``.",
-        "operationId": "get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get",
+        "operationId": "get_db_surface_manifest_surfaces__client_name___surface_name__manifest_get",
         "parameters": [
           {
             "name": "client_name",
@@ -16643,14 +16643,14 @@
         }
       }
     },
-    "/api/surfaces/{name}/manifest": {
+    "/surfaces/{name}/manifest": {
       "get": {
         "tags": [
           "Tool Routing"
         ],
         "summary": "Get Capability Manifest",
         "description": "Capability-driven manifest. Looks up by short capability name\n(``editor-state``, ``sandbox-fs``, ``browser-dom``) in matrx-ai's\nPython-registered capability registry. Use this for payload-bearing\ncapabilities that extend any surface. Returns 404 when the name isn't\na registered capability — for DB surfaces use the\n``/surfaces/{client}/{surface}/manifest`` form.",
-        "operationId": "get_capability_manifest_api_surfaces__name__manifest_get",
+        "operationId": "get_capability_manifest_surfaces__name__manifest_get",
         "parameters": [
           {
             "name": "name",

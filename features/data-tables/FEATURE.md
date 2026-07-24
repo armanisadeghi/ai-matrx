@@ -138,6 +138,14 @@ become 5 linked datasets under one workbook.
   `reconcile.ts` + `save-to-table.ts`.
 - `components/mardown-display/blocks/json/AppendToTableDialog.tsx` — appends a JSON block's rows
   to an existing dataset; same shared engine (atomic `appendToTable`).
+- `components/user-generated-table-data/TableIdentityMenu.tsx` — the ONE identity control in the
+  `/data/[id]` route header: shows the table name, renames it in place (via
+  `update_user_table_metadata`), switches tables, and creates a new one. Replaced the old
+  header-title + in-body `Select` pairing that showed the same name twice.
+- `components/content-cleanup/CellCleanupButton.tsx` — the shared bulk cell-cleanup control
+  (popover of opt-in operations with live counts → review dialog → one atomic merge write).
+  Grid-agnostic; owned by [`lib/content-cleanup/`](../../lib/content-cleanup/FEATURE.md), NOT by
+  this feature. Wired into `TableToolbar` via its `cleanupControl` slot.
 - `features/data-tables/components/VersionHistoryViewer.tsx` — read-only row audit log;
   consumes `useRowVersions`. Drop into any sheet/dialog/inline panel that wants to show
   a single row's edit history. Renders insert/update/delete with key-level diffs, honours
@@ -275,6 +283,17 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
 
 ## Invariants & gotchas
 
+- **Cell cleanup is NOT owned here.** Every "the agent wrapped this value in backticks / bold /
+  HTML" fix goes through the shared engine at [`lib/content-cleanup/`](../../lib/content-cleanup/FEATURE.md)
+  (`cleanValue` / `cleanCells`) and the shared `<CellCleanupButton>`. Both the per-cell fixer and
+  the bulk pass in `UserTableViewer` run the SAME operation set, so they can never disagree about
+  what "clean" means. A new kind of damage is a new operation in that registry — never a helper
+  in this feature. The bulk pass scans **every** row (`loadAllRowsForCleanup`), not the page.
+- **`/data/[id]` renders the viewer in `fillHeight` mode.** Three bands — chrome, grid, pagination
+  — where only the grid scrolls. Embedded surfaces (windows, sheets, chat artifacts, pickers)
+  leave it off and keep the content-sized `70dvh` cap. There is no in-body table selector any
+  more: `onTablesChange` hands the list to whatever surface owns the switcher, so the RPC is
+  fetched once and the header owns the choice.
 - **`validation_mode='permissive'` enforces NOTHING.** It is a pure passthrough so the 118
   pre-existing datasets keep their exact prior write behavior. Enforcement is opt-in via
   `'strict'`. Do not "helpfully" make permissive enforce things — that silently breaks live data.
@@ -440,6 +459,24 @@ into:
 Decide before agent-heavy workloads land.
 
 ## Change log
+
+- `2026-07-24` — **`/data/[id]` layout + cell cleanup.** Three changes.
+  (1) **One identity control.** The route header showed the table name AND an in-body full-width
+  `Select` card repeated it — the exact duplication the route-header rules forbid. Both are
+  replaced by `TableIdentityMenu`: name + chevron, inline rename, table switcher with search, and
+  "New table". `UserTableViewer`'s `showTableSelector` prop and its `Select` block are **deleted**;
+  the new `onTablesChange` callback surfaces the already-loaded `get_user_tables` list to the
+  header so nothing is fetched twice.
+  (2) **The page fills the viewport.** New `fillHeight` prop turns the viewer into a flex column
+  (chrome / grid / pagination) where only the grid scrolls, replacing the `max-h-[70dvh]` grid
+  that floated above dead space with the pagination bar stranded mid-page.
+  (3) **Cell cleanup engine.** `UserTableViewer`'s hand-rolled `cleanupHtmlText` /
+  `containsCleanableHtml` / `handleBulkHtmlCleanup` are **deleted** and replaced by the new value
+  engine in `lib/content-cleanup/` (see its FEATURE.md) plus the shared `<CellCleanupButton>`.
+  The headline fix: a value wrapped **entirely** in backticks (`` `parent_id` ``) is unwrapped,
+  while interior code spans (``The dot-path id, e.g. `a.b.c`. Stable``) are left alone. Writes go
+  out as ONE `udt_bulk_write` merge. `TableToolbar`/`EditRowModal` props renamed accordingly
+  (`cleanCellValue` / `isCellValueDirty` / `cleanupControl`).
 
 - `2026-07-23` — **`/documents/[id]` scroll + header conformance.** Two independent bugs.
   (1) **Scroll was dead** because agent-written snapshots store `documentStyle: {}` — with no

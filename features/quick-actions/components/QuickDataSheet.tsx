@@ -227,7 +227,6 @@ export function QuickDataSheet({
           <UserTableViewer
             key={selectedTableId}
             tableId={selectedTableId}
-            showTableSelector={false}
           />
         )}
       </div>

@@ -1,7 +1,7 @@
 /**
  * features/rag/api/document.ts
  *
- * Read-only client for the unified document API at /api/document/*.
+ * Read-only client for the unified document API at /document/*.
  * All calls go through the contract-bound typed client
  * (`@/lib/api/typed-client`) — path, params, and response shapes are
  * derived from the generated OpenAPI contract, never asserted.
@@ -22,7 +22,7 @@ import type {
 
 export async function fetchDocument(docId: string): Promise<DocumentDetail> {
   const { data } = await apiGet(
-    buildPath("/api/document/{doc_id}", { doc_id: docId }),
+    buildPath("/document/{doc_id}", { doc_id: docId }),
   );
   return data;
 }
@@ -31,7 +31,7 @@ export async function fetchDocumentLineage(
   docId: string,
 ): Promise<LineageTree> {
   const { data } = await apiGet(
-    buildPath("/api/document/{doc_id}/lineage", { doc_id: docId }),
+    buildPath("/document/{doc_id}/lineage", { doc_id: docId }),
   );
   return data;
 }
@@ -41,7 +41,7 @@ export async function fetchDocumentPages(
   range: { from?: number; to?: number } = {},
 ): Promise<PageSummary[]> {
   const { data } = await apiGet(
-    buildPath("/api/document/{doc_id}/pages", { doc_id: docId }),
+    buildPath("/document/{doc_id}/pages", { doc_id: docId }),
     { query: { from: range.from, to: range.to } },
   );
   return data;
@@ -53,7 +53,7 @@ export async function fetchDocumentPage(
   opts: { includeBlocks?: boolean; includeWords?: boolean } = {},
 ): Promise<PageDetail> {
   const { data } = await apiGet(
-    buildPath("/api/document/{doc_id}/page/{page_index}", {
+    buildPath("/document/{doc_id}/page/{page_index}", {
       doc_id: docId,
       page_index: pageIndex,
     }),
@@ -78,7 +78,7 @@ export async function fetchDocumentChunks(
   } = {},
 ): Promise<ChunkRow[]> {
   const { data } = await apiGet(
-    buildPath("/api/document/{doc_id}/chunks", { doc_id: docId }),
+    buildPath("/document/{doc_id}/chunks", { doc_id: docId }),
     {
       query: {
         parent_only: filters.parentOnly || undefined,

@@ -22,6 +22,7 @@ import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
@@ -44,6 +45,8 @@ const backendUrl = getArg('--url', useLocal ? LOCAL_BACKEND_URL : LIVE_BACKEND_U
 const outDir = resolve(PROJECT_ROOT, 'types/python-generated');
 
 const AIDREAM_SYNC_SCRIPT = resolve(PROJECT_ROOT, '../aidream/scripts/sync-types.mjs');
+const BACKEND_SYNC_MAX_ATTEMPTS = 3;
+const BACKEND_SYNC_RETRY_DELAY_MS = 3_000;
 
 const modeLabel = fastMode ? 'fast (api types only)' : useLocal ? 'local (all 3 steps)' : 'live (all 3 steps)';
 
@@ -91,12 +94,27 @@ if (!existsSync(AIDREAM_SYNC_SCRIPT)) {
 
 console.log('  Step 2: Fetching API types from Python backend...\n');
 
-try {
-    execSync(
-        `node "${AIDREAM_SYNC_SCRIPT}" --url "${backendUrl}" --out "${outDir}"`,
-        { stdio: 'inherit', cwd: PROJECT_ROOT },
-    );
-} catch {
+let backendSyncSucceeded = false;
+for (let attempt = 1; attempt <= BACKEND_SYNC_MAX_ATTEMPTS; attempt += 1) {
+    try {
+        execSync(
+            `node "${AIDREAM_SYNC_SCRIPT}" --url "${backendUrl}" --out "${outDir}"`,
+            { stdio: 'inherit', cwd: PROJECT_ROOT },
+        );
+        backendSyncSucceeded = true;
+        break;
+    } catch {
+        if (attempt < BACKEND_SYNC_MAX_ATTEMPTS) {
+            console.warn(
+                `\n  ⚠ Backend unavailable. Retrying in 3 seconds ` +
+                `(${attempt}/${BACKEND_SYNC_MAX_ATTEMPTS - 1} retries)...\n`,
+            );
+            await delay(BACKEND_SYNC_RETRY_DELAY_MS);
+        }
+    }
+}
+
+if (!backendSyncSucceeded) {
     console.error('\n  ✗ Failed to sync types from the Python backend.');
     if (useLocal) {
         console.error('    Make sure the backend is running: uv run run.py (from aidream/)');

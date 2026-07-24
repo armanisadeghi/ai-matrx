@@ -54,8 +54,8 @@ interface EditRowModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  cleanupHtmlText?: (text: string) => string;
-  containsCleanableHtml?: (text: string) => boolean;
+  cleanCellValue?: (text: string) => string;
+  isCellValueDirty?: (text: string) => boolean;
 }
 
 export default function EditRowModal({
@@ -66,8 +66,8 @@ export default function EditRowModal({
   isOpen,
   onClose,
   onSuccess,
-  cleanupHtmlText,
-  containsCleanableHtml,
+  cleanCellValue,
+  isCellValueDirty,
 }: EditRowModalProps) {
   const [rowData, setRowData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
@@ -90,11 +90,11 @@ export default function EditRowModal({
 
   // Handle HTML cleanup for a specific field
   const handleFieldCleanup = (fieldName: string) => {
-    if (!cleanupHtmlText) return;
+    if (!cleanCellValue) return;
 
     const currentValue = rowData[fieldName];
     if (currentValue && typeof currentValue === "string") {
-      const cleanedValue = cleanupHtmlText(currentValue);
+      const cleanedValue = cleanCellValue(currentValue);
       handleValueChange(fieldName, cleanedValue);
     }
   };
@@ -231,7 +231,7 @@ export default function EditRowModal({
         const stringValue =
           value === null || value === undefined ? "" : String(value);
         const hasCleanableHtml =
-          containsCleanableHtml && containsCleanableHtml(stringValue);
+          isCellValueDirty && isCellValueDirty(stringValue);
 
         return (
           <div className="relative">
@@ -244,7 +244,7 @@ export default function EditRowModal({
               rows={6}
               className="resize-y pr-10"
             />
-            {hasCleanableHtml && cleanupHtmlText && (
+            {hasCleanableHtml && cleanCellValue && (
               <Button
                 type="button"
                 variant="ghost"

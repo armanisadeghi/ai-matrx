@@ -608,7 +608,6 @@ export function TablesResourcePicker({
               <div className="h-full px-6 py-4">
                 <UserTableViewer
                   tableId={previewTableId}
-                  showTableSelector={false}
                 />
               </div>
             )}

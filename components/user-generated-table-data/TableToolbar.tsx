@@ -26,7 +26,6 @@ import {
   Settings,
   Plus,
   Link,
-  Zap,
   ArrowUpDown,
   GripVertical,
   Eye,
@@ -108,11 +107,12 @@ interface TableToolbarProps {
   onEditSuccess?: () => void;
   onDeleteSuccess?: () => void;
 
-  // HTML cleanup functions
-  cleanupHtmlText?: (text: string) => string;
-  containsCleanableHtml?: (text: string) => boolean;
-  hasCleanableHtmlInTable?: boolean;
-  handleBulkHtmlCleanup?: () => Promise<void>;
+  // Cell cleanup. `cleanCellValue` / `isCellValueDirty` are the single-value
+  // helpers the row editor uses; `cleanupControl` is the bulk control itself,
+  // rendered here but owned by the caller (see CellCleanupButton).
+  cleanCellValue?: (text: string) => string;
+  isCellValueDirty?: (text: string) => boolean;
+  cleanupControl?: React.ReactNode;
 
   // Sort state for export
   sortField?: string | null;
@@ -169,11 +169,10 @@ export default function TableToolbar({
   onEditSuccess = () => loadTableData(),
   onDeleteSuccess = () => loadTableData(),
 
-  // HTML cleanup functions
-  cleanupHtmlText,
-  containsCleanableHtml,
-  hasCleanableHtmlInTable,
-  handleBulkHtmlCleanup,
+  // Cell cleanup
+  cleanCellValue,
+  isCellValueDirty,
+  cleanupControl,
 
   // Sort state for export
   sortField,
@@ -320,19 +319,8 @@ export default function TableToolbar({
             </Button>
           )}
 
-          {/* Clean HTML - only show if not read-only */}
-          {!isReadOnly && hasCleanableHtmlInTable && handleBulkHtmlCleanup && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBulkHtmlCleanup}
-              className="whitespace-nowrap text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-              title="Clean HTML formatting in all string fields"
-            >
-              <Zap className="h-3.5 w-3.5 md:mr-1.5" />
-              <span className="hidden md:inline">Clean HTML</span>
-            </Button>
-          )}
+          {/* Bulk cell cleanup — the caller's <CellCleanupButton>. */}
+          {cleanupControl}
 
           {/* Reference - always available (read-only action) */}
           <Button
@@ -426,16 +414,8 @@ export default function TableToolbar({
                   handleReorderClick();
                 }}
               />
-              {hasCleanableHtmlInTable && handleBulkHtmlCleanup && (
-                <MobileActionRow
-                  icon={Zap}
-                  label="Clean HTML"
-                  tone="purple"
-                  onClick={() => {
-                    setShowMobileActions(false);
-                    handleBulkHtmlCleanup();
-                  }}
-                />
+              {cleanupControl && (
+                <div className="px-2 py-1">{cleanupControl}</div>
               )}
             </>
           )}
@@ -503,8 +483,8 @@ export default function TableToolbar({
             isOpen={showEditModal}
             onClose={() => setShowEditModal(false)}
             onSuccess={onEditSuccess}
-            cleanupHtmlText={cleanupHtmlText}
-            containsCleanableHtml={containsCleanableHtml}
+            cleanCellValue={cleanCellValue}
+            isCellValueDirty={isCellValueDirty}
           />
           <DeleteRowModal
             rowId={selectedRowId}
