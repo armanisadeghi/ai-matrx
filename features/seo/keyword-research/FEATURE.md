@@ -32,6 +32,18 @@ market enrichment remain explicit compute operations.
     arrives. A client disconnect stops only delivery—the backend's detached stream task
     continues and persists. Backend contract: `aidream/services/seo/FEATURE.md` § Keyword
     pipeline.
+  - **Durable run identity + reconnect (2026-07-23, WS-1).** Every research/volume
+    command persists a `seo.collection_run` row server-side BEFORE the first AI call and
+    streams it first as `seo.command_run {run_id}`. The hook stores
+    `{runId, primaryKeyword}` in `sessionStorage` (`seo.keywordResearch.activeRun`)
+    while a run is live and clears it on terminal state. On mount, a stored record
+    auto-rejoins via `POST /seo/collections/{runId}/rejoin` — replaying buffered stages
+    and following live progress when the server still executes the run, or rendering the
+    durable `seo.run_snapshot` (status + persisted result) after completion/restart.
+    `seo.run_in_progress` means another process holds the lease — the stored run id is
+    kept so a later rejoin still works. Re-running the same command the same day reuses
+    the completed run (`seo.research_completed {reused_completed_run: true}`) — zero
+    duplicate paid calls.
 
 ## Files
 
@@ -65,6 +77,9 @@ market enrichment remain explicit compute operations.
 
 ## Change Log
 
+- 2026-07-23 — WS-1: consume the durable run identity (`seo.command_run`), persist the
+  active run id in sessionStorage, and auto-rejoin by run id on mount
+  (`/seo/collections/{runId}/rejoin` — live replay or durable snapshot).
 - 2026-07-23 — Converted keyword research and volume refresh from long blocking JSON to
   canonical NDJSON, rendering live stages and consuming the AI/provider stream through
   completion; removed the 100/110-second timeout workaround. This supersedes the temporary

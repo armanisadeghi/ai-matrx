@@ -29,6 +29,41 @@ export interface ResearchRunState {
   streamingOutput?: string;
   result?: KeywordResearchResponse;
   error?: string;
+  /** Durable seo.collection_run id — persisted by the server BEFORE the AI
+   * call, so a refreshed/crashed client can rejoin or re-read by id. */
+  runId?: string;
+}
+
+/** sessionStorage record of the in-flight research command, used to rejoin
+ * live progress (or read the durable result) after a page refresh. */
+const ACTIVE_RUN_STORAGE_KEY = "seo.keywordResearch.activeRun";
+
+interface StoredActiveRun {
+  runId: string;
+  primaryKeyword: string;
+}
+
+function readStoredActiveRun(): StoredActiveRun | null {
+  try {
+    const raw = sessionStorage.getItem(ACTIVE_RUN_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredActiveRun;
+    return parsed.runId ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeActiveRun(record: StoredActiveRun | null): void {
+  try {
+    if (record) {
+      sessionStorage.setItem(ACTIVE_RUN_STORAGE_KEY, JSON.stringify(record));
+    } else {
+      sessionStorage.removeItem(ACTIVE_RUN_STORAGE_KEY);
+    }
+  } catch {
+    // sessionStorage unavailable (SSR/private mode) — reconnect is best-effort.
+  }
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -110,22 +145,18 @@ export function useKeywordResearch() {
     return () => clearTimeout(timer);
   }, [search, reload]);
 
-  const runResearch = useCallback(
-    async (primaryKeyword: string) => {
-      const phrase = primaryKeyword.trim();
-      if (!phrase) return;
+  const consumeResearchStream = useCallback(
+    async (
+      phrase: string,
+      request: { path: string; body: Record<string, unknown> },
+    ) => {
       const completedResults: KeywordResearchResponse[] = [];
-      setRun({
-        status: "running",
-        primaryKeyword: phrase,
-        stage: "Connecting",
-        streamingOutput: "",
-      });
+      let serverBusy = false;
       const result = await dispatch(
         callApi({
-          path: "/seo/keywords/research",
+          path: request.path,
           method: "POST",
-          body: { primary_keyword: phrase },
+          body: request.body,
           stream: true,
           onStreamEvent: (event) => {
             if (event.event === "chunk") {
@@ -137,12 +168,53 @@ export function useKeywordResearch() {
             }
             const data = streamData(event);
             const kind = typeof data?.kind === "string" ? data.kind : null;
-            if (kind) {
+            if (!kind) return;
+            // Durable job identity — persisted server-side BEFORE the AI call.
+            if (kind === "seo.command_run" && typeof data.run_id === "string") {
+              const runId = data.run_id;
+              storeActiveRun({ runId, primaryKeyword: phrase });
+              setRun((current) => ({ ...current, runId }));
+            }
+            if (kind === "seo.run_in_progress") {
+              serverBusy = true;
               setRun((current) => ({
                 ...current,
-                stage: STAGE_LABELS[kind] ?? kind,
+                stage:
+                  "This research is already running on the server — rejoin or retry shortly.",
               }));
+              return;
             }
+            if (kind === "seo.run_snapshot") {
+              // Durable snapshot after a restart: no live stream to follow.
+              const snapshotResult = data.result as KeywordResearchResponse | null;
+              if (data.status === "completed" && snapshotResult) {
+                completedResults.push(snapshotResult);
+                setRun((current) => ({
+                  ...current,
+                  status: "done",
+                  stage: "Research complete (recovered)",
+                  result: snapshotResult,
+                }));
+              } else if (data.status === "failed") {
+                const error = data.error as { message?: string } | null;
+                setRun((current) => ({
+                  ...current,
+                  status: "error",
+                  error: error?.message ?? "The research run failed.",
+                }));
+              } else {
+                serverBusy = true;
+                setRun((current) => ({
+                  ...current,
+                  stage: `Run is ${String(data.status)} on the server`,
+                }));
+              }
+              return;
+            }
+            setRun((current) => ({
+              ...current,
+              stage: STAGE_LABELS[kind] ?? kind,
+            }));
             const final = resultFromEvent(event, "seo.research_completed");
             if (final) {
               const completedResult = final as unknown as KeywordResearchResponse;
@@ -158,30 +230,35 @@ export function useKeywordResearch() {
         }),
       );
       if (result.error) {
-        setRun({
+        storeActiveRun(null);
+        setRun((current) => ({
+          ...current,
           status: "error",
           primaryKeyword: phrase,
-          error: result.error.message,
-        });
+          error: result.error?.message,
+        }));
         return;
       }
       const completedResult = completedResults.at(-1);
       if (!completedResult) {
-        setRun({
+        if (serverBusy) return; // keep the stored run id so rejoin stays possible
+        storeActiveRun(null);
+        setRun((current) => ({
+          ...current,
           status: "error",
           primaryKeyword: phrase,
           error: "The research stream ended without a completed result.",
-        });
+        }));
         return;
       }
-      const data = completedResult;
-      const artifact = data.artifact as {
+      storeActiveRun(null);
+      const artifact = completedResult.artifact as {
         primary_keyword?: string;
         keyword_lists?: { keywords?: string[] }[];
       };
       const phrases = [
-        artifact.primary_keyword ?? phrase,
-        ...(artifact.keyword_lists ?? []).flatMap((list) => list.keywords ?? []),
+        artifact?.primary_keyword ?? phrase,
+        ...(artifact?.keyword_lists ?? []).flatMap((list) => list.keywords ?? []),
       ]
         .map((keyword) => keyword.trim().toLowerCase())
         .filter(Boolean);
@@ -190,6 +267,52 @@ export function useKeywordResearch() {
     },
     [dispatch, reload, search],
   );
+
+  const runResearch = useCallback(
+    async (primaryKeyword: string) => {
+      const phrase = primaryKeyword.trim();
+      if (!phrase) return;
+      setRun({
+        status: "running",
+        primaryKeyword: phrase,
+        stage: "Connecting",
+        streamingOutput: "",
+      });
+      await consumeResearchStream(phrase, {
+        path: "/seo/keywords/research",
+        body: { primary_keyword: phrase },
+      });
+    },
+    [consumeResearchStream],
+  );
+
+  const rejoinResearch = useCallback(
+    async (runId: string, primaryKeyword: string) => {
+      setRun({
+        status: "running",
+        primaryKeyword,
+        stage: "Rejoining previous run",
+        streamingOutput: "",
+        runId,
+      });
+      await consumeResearchStream(primaryKeyword, {
+        path: `/seo/collections/${runId}/rejoin`,
+        body: {},
+      });
+    },
+    [consumeResearchStream],
+  );
+
+  // After a refresh/crash mid-run, automatically rejoin the durable run —
+  // live progress replays when the server still executes it; otherwise the
+  // persisted snapshot (status + result) renders immediately.
+  const attemptedRejoinRef = useRef(false);
+  useEffect(() => {
+    if (attemptedRejoinRef.current) return;
+    attemptedRejoinRef.current = true;
+    const stored = readStoredActiveRun();
+    if (stored) void rejoinResearch(stored.runId, stored.primaryKeyword);
+  }, [rejoinResearch]);
 
   const refreshVolume = useCallback(
     async (phrases: string[], forceRefresh: boolean) => {
@@ -244,6 +367,7 @@ export function useKeywordResearch() {
     run,
     volumeStage,
     runResearch,
+    rejoinResearch,
     refreshVolume,
     loadEdges,
   };
