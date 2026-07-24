@@ -228,6 +228,7 @@ export default function OutputsStudio() {
         />
 
         <BlogOutputCard
+          organizationId={topic?.organization_id ?? undefined}
           reportMarkdown={reportMarkdown}
           hasReport={hasReport}
           toneProfile={topic?.tone_profile ?? ""}
@@ -236,6 +237,7 @@ export default function OutputsStudio() {
           onPersisted={(asset) => persistOutput("blog", asset)}
         />
         <SlidesOutputCard
+          organizationId={topic?.organization_id ?? undefined}
           reportMarkdown={reportMarkdown}
           hasReport={hasReport}
           toneProfile={topic?.tone_profile ?? ""}
@@ -245,6 +247,7 @@ export default function OutputsStudio() {
         />
 
         <SeoOutputCard
+          organizationId={topic?.organization_id ?? undefined}
           reportMarkdown={reportMarkdown}
           hasReport={hasReport}
           toneProfile={topic?.tone_profile ?? ""}
@@ -696,6 +699,7 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
 // ── Blog output (live: runs the content_to_blog agent over the report) ──────
 
 function BlogOutputCard({
+  organizationId,
   reportMarkdown,
   hasReport,
   toneProfile,
@@ -703,6 +707,7 @@ function BlogOutputCard({
   existing,
   onPersisted,
 }: {
+  organizationId?: string;
   reportMarkdown: string;
   hasReport: boolean;
   toneProfile: string;
@@ -725,6 +730,9 @@ function BlogOutputCard({
       const md = await run({
         agentId: BLOG_AGENT_ID,
         userInput: input,
+        organizationId,
+        sourceApp: "matrx-frontend",
+        sourceFeature: "research",
         onChunk: (full) => setStreamText(full),
       });
       if (md && md.trim()) {
@@ -921,6 +929,7 @@ function GeneratingNote({ label }: { label: string }) {
 // ── Slides output (live: runs research_to_slides → renders a Slideshow) ───────
 
 function SlidesOutputCard({
+  organizationId,
   reportMarkdown,
   hasReport,
   toneProfile,
@@ -928,6 +937,7 @@ function SlidesOutputCard({
   existing,
   onPersisted,
 }: {
+  organizationId?: string;
   reportMarkdown: string;
   hasReport: boolean;
   toneProfile: string;
@@ -947,6 +957,9 @@ function SlidesOutputCard({
       const raw = await run({
         agentId: SLIDES_AGENT_ID,
         userInput: buildGeneratorInput(reportMarkdown, toneProfile),
+        organizationId,
+        sourceApp: "matrx-frontend",
+        sourceFeature: "research",
       });
       const deck = parseJsonLoose<PresentationDeck>(raw);
       if (!deck || !Array.isArray(deck.slides) || deck.slides.length === 0) {
@@ -1055,6 +1068,7 @@ function SlidesOutputCard({
 // ── SEO output (live: runs research_to_seo → renders the package) ────────────
 
 function SeoOutputCard({
+  organizationId,
   reportMarkdown,
   hasReport,
   toneProfile,
@@ -1062,6 +1076,7 @@ function SeoOutputCard({
   existing,
   onPersisted,
 }: {
+  organizationId?: string;
   reportMarkdown: string;
   hasReport: boolean;
   toneProfile: string;
@@ -1081,6 +1096,9 @@ function SeoOutputCard({
       const raw = await run({
         agentId: SEO_AGENT_ID,
         userInput: buildGeneratorInput(reportMarkdown, toneProfile),
+        organizationId,
+        sourceApp: "matrx-frontend",
+        sourceFeature: "research",
       });
       const seo = parseJsonLoose<SeoPackage>(raw);
       if (!seo || !seo.title) {

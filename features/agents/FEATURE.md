@@ -31,6 +31,13 @@ The system runs in three stages with three consumer surfaces:
 
 After the first turn, saved-agent surfaces collapse to `POST /ai/conversations/{conversationId}` (or `POST /ai/chat` for ephemeral). Builder tests remain on `POST /ai/manual`: the client carries their accumulated history and the server mints a fresh durable wire conversation for each stored request while Redux keeps one stable local test-panel key. See **AGENT_INVOCATION_LIFECYCLE.md**.
 
+One-shot feature invocations use `features/agents/run/useRunAgent`. It delegates
+to canonical `callAgentStart`/`callApi`, so auth, API versioning, diagnostics,
+global org/project/task fallback, source attribution, and streaming share the
+same request boundary as every other agent surface. Entity-local callers pass
+their own scope (`organizationId`/`projectId`/`taskId`); explicit local identity
+beats global active context. Never rebuild a bare `useBackendApi` agent body.
+
 Admin/dev desktop targeting is an additive request overlay, not part of agent authoring. When `adminPreferences.desktopTargetInstanceId` is set by the admin Server environment tab, first-turn, continuation, resume, manual, and legacy `callApi` agent turn paths stamp `client.state["desktop-native"].target_instance_id` with the selected `public.app_instances.instance_id` (`/desktop-instances.id`); compatibility paths also include a root `target_instance_id`. Auto stores `null` and omits the target so aidream keeps default routing.
 
 ### Variables vs. context slots
@@ -244,6 +251,12 @@ model overrides.
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-24` — **One-shot agent runs preserve request identity.**
+  `useRunAgent` now delegates to canonical `callAgentStart`/`callApi` instead
+  of assembling a scope-free `useBackendApi` request. All consumers inherit
+  global org/project/task fallback, and entity-local callers can explicitly
+  override it; source app/feature attribution travels on the same contract.
+  Regression tests ensure omitted local fields do not overwrite global scope.
 - `2026-07-24` — **Added canonical multi-run request fan-out.** New
   `copyInstanceRequestDraft` composes the existing execution-slice actions to
   copy a Smart Agent Input draft—including multimodal message parts, uploaded

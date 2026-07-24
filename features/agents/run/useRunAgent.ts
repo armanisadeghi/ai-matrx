@@ -7,11 +7,9 @@
 // counterpart to the Redux prompt-execution engine (which models interactive
 // chat instances).
 //
-// Wraps the platform primitives instead of hand-rolling a fetch loop:
-//   • useBackendApi   — resolved base URL + auth headers + waitForAuth
-//   • ENDPOINTS.ai    — the canonical `/ai/agents/{id}` path
-//   • consumeStream   — the single backpressure-safe NDJSON reader; folds the
-//                       stream's `chunk` events into accumulated text.
+// Wraps the platform's canonical callApi primitive so auth, URL selection,
+// request scope, source attribution, API-version routing, diagnostics, and
+// NDJSON parsing cannot drift from other Python requests.
 //
 // Backend contract (verified against the Agent Demo, the reference caller):
 //   POST {base}/ai/agents/{agentId}
@@ -28,13 +26,13 @@
 //   });
 
 import { useCallback, useRef, useState } from "react";
-import { useBackendApi } from "@/hooks/useBackendApi";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
-import { consumeStream } from "@/lib/api/stream-parser";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import {
+  callAgentStart,
+  type CallScope,
+  type LLMParamsBody,
+} from "@/lib/api/call-api";
 import { extractErrorMessage } from "@/utils/errors";
-import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
 
 export interface RunAgentArgs {
   /** Live agent id (UUID) or slug. */
@@ -44,7 +42,14 @@ export interface RunAgentArgs {
   /** Variable name → value map, filling the agent's declared variables. */
   variables?: Record<string, string>;
   /** Per-run model/config overrides (temperature, ai_model_id, …). */
-  configOverrides?: Record<string, unknown>;
+  configOverrides?: LLMParamsBody;
+  /** Entity-local scope. Explicit values beat the user's global active context. */
+  organizationId?: string;
+  projectId?: string;
+  taskId?: string;
+  /** Durable producer attribution for the conversation and usage ledger. */
+  sourceApp: string;
+  sourceFeature: string;
   /** Abort the in-flight run. */
   signal?: AbortSignal;
   /** Stream chunk-by-chunk text as it arrives (e.g. to show live progress). */
@@ -59,9 +64,36 @@ export interface UseRunAgent {
   reset: () => void;
 }
 
+export function buildRunAgentRequest(args: RunAgentArgs): {
+  body: Parameters<typeof callAgentStart>[0]["body"];
+  scopeOverrides: Partial<CallScope>;
+} {
+  const scopeOverrides: Partial<CallScope> = {};
+  if (args.organizationId !== undefined) {
+    scopeOverrides.organization_id = args.organizationId;
+  }
+  if (args.projectId !== undefined) scopeOverrides.project_id = args.projectId;
+  if (args.taskId !== undefined) scopeOverrides.task_id = args.taskId;
+
+  return {
+    body: {
+      user_input: args.userInput ?? null,
+      variables:
+        args.variables && Object.keys(args.variables).length > 0
+          ? args.variables
+          : undefined,
+      config_overrides: args.configOverrides,
+      source_app: args.sourceApp,
+      source_feature: args.sourceFeature,
+      stream: true,
+      debug: false,
+    },
+    scopeOverrides,
+  };
+}
+
 export function useRunAgent(): UseRunAgent {
-  const api = useBackendApi();
-  const desktopTargetInstanceId = useAppSelector(selectDesktopTargetInstanceId);
+  const dispatch = useAppDispatch();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const streamErrorRef = useRef<string | null>(null);
@@ -78,6 +110,11 @@ export function useRunAgent(): UseRunAgent {
       userInput,
       variables,
       configOverrides,
+      organizationId,
+      projectId,
+      taskId,
+      sourceApp,
+      sourceFeature,
       signal,
       onChunk,
     }: RunAgentArgs): Promise<string> => {
@@ -85,66 +122,75 @@ export function useRunAgent(): UseRunAgent {
       setError(null);
       streamErrorRef.current = null;
 
-      const body = {
-        user_input: userInput ?? null,
-        variables:
-          variables && Object.keys(variables).length > 0 ? variables : undefined,
-        config_overrides: configOverrides,
-        stream: true,
-        debug: false,
-      };
-      // Gated: only stamps the target when the body already declares a live
-      // `desktop-native` capability (this quick-run body never does, so the
-      // sticky admin preference no longer rides — see desktop-target-request).
-      applyDesktopTargetToRequestBody(body, desktopTargetInstanceId);
-
       try {
-        const response = await api.post(
-          ENDPOINTS.ai.agentStart(agentId),
-          body,
-          signal,
-        );
-
         let accumulated = "";
-        // Structured-output agents (a declared response schema) deliver their
-        // result via the terminal `completion` event's `result.output`, NOT as
-        // streamed `chunk` events — so capture both. A failed completion is a
-        // run failure even when no error event was emitted.
         let completionOutput: string | null = null;
-        const { accumulatedText } = await consumeStream(
-          response,
-          {
-            onChunk: (chunk) => {
-              accumulated += chunk.text;
-              onChunk?.(accumulated);
-            },
-            onCompletion: (c) => {
-              if (c.status === "failed" || c.status === "cancelled") {
-                const r = (c.result ?? {}) as Record<string, unknown>;
-                streamErrorRef.current =
-                  (typeof r.error === "string" && r.error) ||
-                  (typeof r.user_message === "string" && r.user_message) ||
-                  `The agent run ${c.status}`;
+        const request = buildRunAgentRequest({
+          agentId,
+          userInput,
+          variables,
+          configOverrides,
+          organizationId,
+          projectId,
+          taskId,
+          sourceApp,
+          sourceFeature,
+          signal,
+          onChunk,
+        });
+
+        const response = await dispatch(
+          callAgentStart({
+            agentId,
+            body: request.body,
+            scopeOverrides: request.scopeOverrides,
+            signal,
+            onStreamEvent: (event) => {
+              if (event.event === "chunk") {
+                accumulated += event.data.text;
+                onChunk?.(accumulated);
                 return;
               }
-              const out = (c.result as Record<string, unknown> | undefined)?.output;
-              if (typeof out === "string" && out) completionOutput = out;
+              if (event.event === "error") {
+                streamErrorRef.current =
+                  event.data.user_message ||
+                  event.data.message ||
+                  "The agent run failed";
+                return;
+              }
+              if (event.event !== "completion") return;
+              if (
+                event.data.status === "failed" ||
+                event.data.status === "cancelled"
+              ) {
+                const result = event.data.result ?? {};
+                streamErrorRef.current =
+                  (typeof result.error === "string" && result.error) ||
+                  (typeof result.user_message === "string" &&
+                    result.user_message) ||
+                  `The agent run ${event.data.status}`;
+                return;
+              }
+              const output = event.data.result?.output;
+              if (typeof output === "string" && output) {
+                completionOutput = output;
+              }
             },
-            onError: (err) => {
+            onStreamError: (err) => {
               streamErrorRef.current =
-                err.user_message || err.message || "The agent run failed";
+                err.message || "The agent run failed";
             },
-          },
-          signal,
+          }),
         );
 
+        if (response.error && !streamErrorRef.current) {
+          streamErrorRef.current = response.error.message;
+        }
         if (streamErrorRef.current) {
           throw new Error(streamErrorRef.current);
         }
 
-        // Prefer streamed chunk text; fall back to the structured completion
-        // output for schema agents that don't stream chunks.
-        return accumulatedText || accumulated || completionOutput || "";
+        return accumulated || completionOutput || "";
       } catch (err) {
         const message = extractErrorMessage(err);
         setError(message);
@@ -153,7 +199,7 @@ export function useRunAgent(): UseRunAgent {
         setRunning(false);
       }
     },
-    [api, desktopTargetInstanceId],
+    [dispatch],
   );
 
   return { run, running, error, reset };

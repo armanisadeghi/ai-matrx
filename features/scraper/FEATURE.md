@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-05-07`
+**Last updated:** `2026-07-24`
 
 > This file lives in `features/scraper/` because scraper is the largest surface, but it is the **umbrella doc for four sibling ingestion pipelines**: `features/scraper/`, `features/pdf-extractor/`, `features/research/`, `features/transcripts/`. They share a single role: pull external data into Matrx and make it consumable by agents and other parts of the system.
 
@@ -193,6 +193,11 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 ---
 
 ## Change log
+
+- **2026-07-24 — One-shot scraper analysis uses the canonical scoped
+  launcher.** `useScraperAgentAnalysis` declares
+  `matrx-frontend`/`scraper` attribution and inherits active
+  org/project/task context through `useRunAgent` → `callApi`.
 
 - `2026-07-18` — Documented the standalone Marketing crawler exception: direct
   browser command/live-stream transport, canonical scraper persistence, and

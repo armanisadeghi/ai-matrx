@@ -13,6 +13,23 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D99 — Podcast article hook violates React ref/effect rules (2026-07-24)
+
+`features/podcasts/generator/useEpisodeArticles.ts` writes
+`articleRef.current` during render and synchronously changes loading state
+inside an effect. Targeted lint fails on `react-hooks/refs` and
+`react-hooks/set-state-in-effect`. Refactor the state/reference flow; discovered
+while validating the unrelated request-attribution callsite update.
+
+### D98 — Outputs Studio fails its targeted React lint gate (2026-07-24)
+
+`features/research/components/outputs/OutputsStudio.tsx` synchronously calls
+`setReportLoading(true)` inside an effect (`react-hooks/set-state-in-effect`).
+The same file also uses the banned `Sparkles` icon and carries two stale
+`no-img-element` disable comments. Refactor the loading transition around the
+async fetch and clean the icon/directives; discovered while validating the
+unrelated request-context fix.
+
 ### D96 — writers ship Univer document snapshots with no page geometry; the doc then cannot scroll (2026-07-23)
 
 Every `workbench.udt_document_snapshots` row written with `origin='agent'` carries `documentStyle: {}` — no `pageSize`, no margins. Univer lays a document out inside `documentStyle.pageSize`; with none there is no page box, so text never wraps (it runs off the right edge) and the docs viewport reports **no scrollable extent** — the wheel is swallowed and `/documents/[id]` sits frozen at the top. 8 of the 10 most-recent documents are affected. The frontend now recovers loudly (`sanitizeUniverDocSnapshot#restorePageStyle` stamps `DEFAULT_DOCUMENT_PAGE_STYLE` + `console.warn`), which fixes reading, but **the writer is the real bug and lives in aidream** — the snapshot is still stored page-less, so every other consumer (export, print, any non-Matrx reader) still gets a malformed document. Fix aidream's markdown→Univer document writer to stamp A4 geometry (`pageSize {width:595,height:842}`, margins 72/72/90/90 — mirrors `features/data-tables/document-page-style.ts`), then backfill the existing `documentStyle: {}` snapshots.

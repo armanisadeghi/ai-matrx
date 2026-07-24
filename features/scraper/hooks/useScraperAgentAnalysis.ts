@@ -35,6 +35,8 @@ export function useScraperAgentAnalysis() {
         agentId,
         userInput,
         variables,
+        sourceApp: "matrx-frontend",
+        sourceFeature: "scraper",
         signal: controller.signal,
         onChunk: setStreamingResponse,
       });

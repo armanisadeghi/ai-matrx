@@ -82,6 +82,8 @@ export function useSourceResolvers(): UseSourceResolvers {
       const cleaned = await run({
         agentId: WEB_CONTENT_EXTRACTOR_AGENT_ID,
         userInput: raw,
+        sourceApp: "matrx-frontend",
+        sourceFeature: "podcast",
         variables: {
           scraped_content: raw,
           focus_area: DEFAULT_EXTRACTOR_FOCUS,
@@ -98,6 +100,8 @@ export function useSourceResolvers(): UseSourceResolvers {
       const text = await run({
         agentId: YOUTUBE_RESEARCH_AGENT_ID,
         userInput: url,
+        sourceApp: "matrx-frontend",
+        sourceFeature: "podcast",
         variables: {
           youtube_url: url,
           timestamp_instruction: DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION,
