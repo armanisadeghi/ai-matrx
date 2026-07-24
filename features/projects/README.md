@@ -89,6 +89,7 @@ features/projects/
     ├── ProjectFormCore.tsx    — Canonical chrome-less create form (name/slug/desc/owner). Single source of truth — don't fork
     ├── ProjectCreatePanel.tsx — Two-mode wrapper around the core: "Manual" (ProjectFormCore) + "Use AI" (AgentRunWrapper, agent 917074a0…). The body every create surface wraps
     ├── ProjectFormSheet.tsx   — Dialog (desktop) / Drawer (mobile) chrome over ProjectCreatePanel
+    ├── ProjectPicker.tsx      — Canonical complete-list searchable picker; optional org filter + visible New button; opens CreateProjectWindow
     ├── ProjectSettings.tsx    — Tabbed settings (General, Members, Invites, Danger)
     ├── ProjectSidebar.tsx
     ├── GeneralSettings.tsx
@@ -166,6 +167,7 @@ Two project-specific templates in `lib/email/client.ts`:
 
 ## Change Log
 
+- `2026-07-23` — Promoted the War Room's flat dropdown into the shared `ProjectPicker`. It renders the complete nav-tree result set in one searchable, scrollable popover (cross-org or filtered to one org), refreshes in place, and opens the canonical `CreateProjectWindow`; callers can expose a persistent **New** button beside the trigger. Research creation and War Room now consume this one primitive.
 - `2026-07-21` — Project creation now relies on the `workspace.projects` insert trigger to atomically bootstrap the creator's canonical `iam.memberships` owner row; the client no longer follows the insert with the forbidden `mbr_add(owner)` call. Slug availability uses zero-or-one-row `maybeSingle()` semantics and fails closed on real query errors.
 - `2026-06-25` — **Canonical-DB cutover: members + invitations moved to `iam.memberships` / `iam.invitations`.** All project member + invitation reads/writes now go through two new sole-chokepoint services — `membershipsService` (`mbr_*` RPCs) and `invitationsService` (`inv_*` RPCs) in `features/organizations/service/` — never the legacy `ctx_project_*` junction tables. `service.ts` member functions (`getProjectMembers`, role/remove with the last-owner guard, `getProjectUserRole`, the project-listing trio via a shared `loadUserProjectsWithRole` using batch `mbr_count`) and invitation functions (`inviteToProject`/`getProjectInvitations`/`cancel`/`resend`/`accept`/`getUserProjectInvitations`) were rewritten. `createProject` writes the owner membership explicitly (legacy trigger no longer mirrors to canonical). `acceptProjectInvitation` relies on the atomic `inv_accept` (membership + accept in one txn). The two invite API routes are now email-only. `features/tasks/services/projectService.ts` and the accept page migrated too.
 - `2026-06-26` — Removed the Personal pseudo-org sentinel from project creation and navigation. `createProject`, JSON import, legacy task project creation, slug checks, and project listing hooks now resolve personal work to the user's real personal organization id.

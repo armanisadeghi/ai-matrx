@@ -73,6 +73,22 @@ export function shouldWarn(units: number): boolean {
   return t === "high" || t === "very_high";
 }
 
+/**
+ * Format a raw USD cost. ADMIN-ONLY surfaces — users never see dollars, they
+ * see Processing Units (`formatUnits`). Gate every callsite on
+ * `useCostDisplay().showUsd`, never on an ad-hoc admin check.
+ *
+ * Null/undefined means "unpriced", which is NOT the same as free: it renders
+ * "—" so an unpriced model can never be mistaken for a zero-cost one.
+ */
+export function formatUsd(usd: number | null | undefined): string {
+  if (typeof usd !== "number" || !Number.isFinite(usd)) return "—";
+  if (usd === 0) return "$0.00";
+  if (usd < 0.01) return `$${usd.toFixed(5)}`;
+  if (usd < 1) return `$${usd.toFixed(4)}`;
+  return `$${usd.toFixed(2)}`;
+}
+
 /** Format a unit count: 0 → "Free", else "1,234 units" (or "1,234 PU" short). */
 export function formatUnits(
   units: number,

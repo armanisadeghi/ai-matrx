@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-07-17`
+**Last updated:** `2026-07-24`
 
 > Combined doc covering the three audio-adjacent features. This doc lives under `features/audio/` as the umbrella.
 
@@ -126,6 +126,7 @@ Verify exact schemas in Supabase before extending.
 - **TTS providers are swappable.** Always go through the service layer; never pin a provider in a component.
 - **STT is audio-evidence-only.** The shared `/audio/transcribe` and `/audio/transcribe-url` contracts do not accept provider `prompt` text. Groq Whisper interprets it as context/continuation rather than a constrained vocabulary, so dictionary terms must never be passed through it; this prevents unspoken terms from appearing in a transcript.
 - **Audio assets go through the universal file handler** (`fileHandler.upload(...)` / `useFileUpload` from `@/features/files`). Do not invent a parallel storage scheme. The legacy `audioStorageService.ts` is a thin wrapper that funnels through the handler.
+- **Recording storage is personal, not ambient-org scoped.** Chunk journals and finalized recordings use personal visibility, so the universal file handler keeps them independent of whichever organization/project/task happens to be active in the UI.
 - **Playback state is transient.** Do not persist per-message play state in the DB.
 - **TTS integration with chat flows through the Conversation System's shared TTS feature** — don't wire TTS directly in a new chat surface; consume the shared hook.
 - **Podcasts use the same audio asset path** as individual audio files — same Storage bucket, same ACL pattern.
@@ -180,6 +181,7 @@ Unit tests exist for exactly two primitives — `features/audio/__tests__/sinkAw
 
 ## Change log
 
+- `2026-07-24` — **Fixed SmartAgentInput recording uploads under a different active organization.** Personal chunk journals and finalized recordings no longer inherit ambient organization/project/task scope by default. This prevents backend folder-owner conflicts for `.matrx-tmp/transcripts` and `system-files/transcripts/Recordings` while preserving same-device IndexedDB recovery.
 - `2026-07-21` — **Audio window retitled "Media" (media-capture Phase 8).** `AudioControlWindow` gained a Camera tab (read-only `mediaCaptureDiagnostics` view owned by `features/media-capture`); title, registry/catalogue labels, and the avatar-menu entry are now "Media" (`MonitorSpeaker` icon). OverlayId `audioControlWindow` and all openers unchanged.
 - `2026-07-21` — **`useSimpleRecorder` now runs on the shared recorder controller (media-capture Phase 7).** The raw MediaRecorder mechanics (constructor-confirmed MIME ladder, lifecycle, pause-aware elapsed time, chunk emission) moved to the ONE canonical `features/media-capture/recording/media-recorder-controller.ts`; the hook keeps only the audio-system discipline (captureLock, shared mic, session registry row, analyser meter). Public API unchanged. `AudioSessionSource` gained `"media-capture"` for Capture Studio recordings.
 - `2026-07-21` — **Media-capture Phase 4:** preference module unified — `userPreferences.audioDevices` → `userPreferences.mediaDevices` (adds camera id+label + `preferredFacingMode`; paired TS+SQL backfill). `useAudioDevices` gained the camera surface; `AudioDevicesPanel` renamed `MediaDevicesPanel` with a Camera section (picker, permission row, opt-in preview tile). New Settings tab `devices` ("Camera, microphone & speakers").

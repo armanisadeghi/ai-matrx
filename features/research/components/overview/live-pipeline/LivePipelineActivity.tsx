@@ -23,7 +23,7 @@ import type {
   UsePipelineProgressResult,
   StageKind,
 } from "../../../hooks/usePipelineProgress";
-import { useCostSummary } from "../../../hooks/useCostSummary";
+import { useCostSummary } from "../../../hooks/useTopicCosts";
 import { MetricsStrip } from "./MetricsStrip";
 import { QuotaStrip } from "./QuotaStrip";
 import { StageStatSquare } from "./StageStatSquare";

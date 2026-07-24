@@ -9,7 +9,7 @@ import {
   Tags,
   Zap
 } from "lucide-react";
-import { useCostSummary } from "../../hooks/useCostSummary";
+import { useCostSummary } from "../../hooks/useTopicCosts";
 import { useTopicContext } from "../../context/ResearchContext";
 import type { TopicCostSummary, CostBreakdownItem } from "../../types";
 import { costToUnits, formatUnits } from "@/lib/processing-units/units";

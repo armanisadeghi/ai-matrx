@@ -47,8 +47,19 @@ market enrichment remain explicit compute operations.
 
 ## Files
 
-- `types.ts` — row types from `Database["seo"]` + API response types from
-  `types/python-generated/api-types.ts` (never hand-widened).
+- `types.ts` — row types from `Database["seo"]` + API response types aliased from
+  the generated bundles (never hand-widened). `KeywordResearchResponse` /
+  `KeywordVolumeRefreshResponse` come from `stream-events.ts`, which is where the
+  streamed `data`-event payloads live; the SAME models are also real OpenAPI
+  schemas in `api-types.ts` (they ride `SeoRunStatusResponse.result` on
+  `GET /seo/collections[/{run_id}]`), so the durable read and the live stream
+  describe one shape. Both bundles regenerate from the Pydantic models — an
+  alias that stops resolving means the server contract moved, never that the
+  alias should be hand-declared.
+  `KeywordResearchResult.artifact` is the typed `KeywordResearchArtifact`
+  (`primary_keyword` + `keyword_lists[{label, keywords}]`, mirroring the
+  registered `keyword_relationship_research` content_ir kind) — do NOT re-cast it
+  to a local inline shape as this file once did.
 - `data/queries.ts` — `listKeywordsWithMarket` (ilike on `normalized_phrase`, market
   embedded, volume sort client-side), `listKeywordEdges` (both directions + partner
   phrases).

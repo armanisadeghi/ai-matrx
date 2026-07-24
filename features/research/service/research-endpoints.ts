@@ -31,7 +31,6 @@ export const RESEARCH_ENDPOINTS = {
     applyTagSuggestions: `${BASE}/topics/${topicId}/apply-tag-suggestions`,
     tagInputExport: `${BASE}/topics/${topicId}/tag-input-export`,
     synthesize: `${BASE}/topics/${topicId}/synthesize`,
-    costs: `${BASE}/topics/${topicId}/costs`,
     links: `${BASE}/topics/${topicId}/links`,
 
     keywords: {

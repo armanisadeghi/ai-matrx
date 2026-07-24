@@ -365,7 +365,7 @@ export interface UploadOpts {
    * Surfaces in the version history UI.
    */
   changeSummary?: string;
-  /** Visibility on the new cld_files row. Default "private". */
+  /** Visibility on the new cld_files row. Default "personal" (or "public" for preset uploads). */
   visibility?: Visibility;
   /** Initial sharing grants. */
   shareWith?: string[];
@@ -377,7 +377,8 @@ export interface UploadOpts {
   /**
    * When true, scope columns (organization_id/project_id/task_id) are read
    * from `appContext` and stamped into `metadata.scope` so the row carries
-   * its scope context. Default true.
+   * its scope context. Defaults to false for personal uploads and true for
+   * public/shared uploads.
    */
   inheritActiveScope?: boolean;
   /** Per-byte progress callback. */

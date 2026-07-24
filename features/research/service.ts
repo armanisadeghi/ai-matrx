@@ -38,6 +38,12 @@ import {
   type SourceImportance,
 } from "./ranking";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import type {
+  CostLedgerInput,
+  CostLedgerRow,
+  SynthesisCostRow,
+} from "./costs";
+
 import type { ScopesRpcResult } from "@/features/scopes/types";
 
 // ── Research M2M edges live in platform.associations ─────────────────────────
@@ -1281,4 +1287,75 @@ export async function getTemplate(
     throw error;
   }
   return data;
+}
+
+// ============================================================================
+// Cost ledger
+// ============================================================================
+
+/**
+ * Every persisted AI call for a topic, direct from Supabase.
+ *
+ * Four narrow RLS-filtered reads in parallel (three LLM tables + the keyword /
+ * tag names that let a ledger row say what it worked on). This replaces the
+ * aidream `GET /research/topics/{id}/costs` round-trip for our client: same
+ * source rows, no server hop, and it returns the per-call detail the aggregate
+ * endpoint structurally could not. See `features/research/costs.ts` for why
+ * this is the canonical path.
+ *
+ * Only the columns the ledger needs are selected — `result` / `instructions`
+ * on these tables are large text blobs and must never be pulled for a cost view.
+ */
+export async function getTopicCostLedger(
+  topicId: string,
+): Promise<CostLedgerInput> {
+  const LEDGER_COLUMNS = "id, agent_type, agent_id, model_id, status, created_at, token_usage";
+
+  const [analyses, syntheses, documents, keywords, tags] = await Promise.all([
+    supabase
+      .schema("research")
+      .from("rs_analysis")
+      .select(LEDGER_COLUMNS)
+      .eq("topic_id", topicId),
+    supabase
+      .schema("research")
+      .from("rs_synthesis")
+      .select(`${LEDGER_COLUMNS}, scope, keyword_id, tag_id`)
+      .eq("topic_id", topicId),
+    supabase
+      .schema("research")
+      .from("rs_document")
+      .select(LEDGER_COLUMNS)
+      .eq("topic_id", topicId),
+    supabase
+      .schema("research")
+      .from("rs_keyword")
+      .select("id, keyword")
+      .eq("topic_id", topicId),
+    supabase
+      .schema("research")
+      .from("rs_tag")
+      .select("id, name")
+      .eq("topic_id", topicId),
+  ]);
+
+  // Any of the five failing means the ledger would silently under-report,
+  // which is worse than showing nothing — surface it.
+  for (const res of [analyses, syntheses, documents, keywords, tags]) {
+    if (res.error) throw res.error;
+  }
+
+  const keywordNames: Record<string, string> = {};
+  for (const k of keywords.data ?? []) keywordNames[k.id] = k.keyword;
+
+  const tagNames: Record<string, string> = {};
+  for (const t of tags.data ?? []) tagNames[t.id] = t.name;
+
+  return {
+    analyses: (analyses.data ?? []) as CostLedgerRow[],
+    syntheses: (syntheses.data ?? []) as SynthesisCostRow[],
+    documents: (documents.data ?? []) as CostLedgerRow[],
+    keywordNames,
+    tagNames,
+  };
 }

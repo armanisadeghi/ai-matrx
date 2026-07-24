@@ -19,7 +19,7 @@ import {
 import { setRoomProjectThunk } from "@/features/war-room/redux/thunks";
 import { useUserProjects } from "@/features/projects/hooks";
 import { cn } from "@/lib/utils";
-import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
+import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 
 export function RoomProjectButton({ sessionId }: { sessionId: string }) {
   const { projects } = useUserProjects();
@@ -98,7 +98,7 @@ function RoomProjectPickerBody({
             : "Optional project context for this room. Threads can still use different projects."}
         </p>
       </div>
-      <WarRoomProjectPicker
+      <ProjectPicker
         value={roomProjectId}
         onSelect={(id) => void choose(id)}
         allowClear={false}

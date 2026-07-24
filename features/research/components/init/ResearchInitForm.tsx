@@ -42,7 +42,7 @@ import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
-import { EntityTargetPicker } from "@/features/scopes/components/entity-context/EntityTargetPicker";
+import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { TemplatePicker } from "./TemplatePicker";
 import { AiReviewQuotaDialog } from "./AiReviewQuotaDialog";
@@ -2293,12 +2293,12 @@ export default function ResearchInitForm() {
                       Optionally link this topic to a project.
                     </p>
                   </div>
-                  <EntityTargetPicker
-                    kind="project"
+                  <ProjectPicker
                     value={selectedProjectId}
                     organizationId={activeOrgId}
-                    label="No project"
-                    className="max-w-sm rounded-lg border border-border/60 bg-card/60 p-1"
+                    placeholder="No project"
+                    showCreateButton
+                    className="max-w-md"
                     onSelect={(id, name) => {
                       setSelectedProjectId(id);
                       setSelectedProjectName(name);
@@ -2350,12 +2350,12 @@ export default function ResearchInitForm() {
                 </p>
               </div>
 
-              <EntityTargetPicker
-                kind="project"
+              <ProjectPicker
                 value={selectedProjectId}
                 organizationId={activeOrgId}
-                label="No project"
-                className="max-w-sm rounded-lg border border-border/60 bg-card/60 p-1"
+                placeholder="No project"
+                showCreateButton
+                className="max-w-md"
                 onSelect={(id, name) => {
                   setSelectedProjectId(id);
                   setSelectedProjectName(name);

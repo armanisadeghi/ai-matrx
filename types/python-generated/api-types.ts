@@ -126,17 +126,16 @@ export interface paths {
          *
          *     Resolution order, loud never crashing:
          *       1. GIT_SHA / BUILD_TIME env vars — set from Docker build args (see
-         *          Dockerfile) at image build time. This is the only source that works
-         *          in a deployed container, since .dockerignore excludes .git from the
-         *          build context.
-         *       2. `git rev-parse HEAD` — fallback for a local checkout (dev server
-         *          run straight from the repo, no Docker build args set).
-         *       3. "unknown" — neither source available. Never raises; a broken
-         *          version probe must not take down the health surface.
-         *
-         *     NOTE: no Coolify-side build-arg wiring exists yet for this image, so a
-         *     Coolify-deployed container currently reports git_sha="unknown" until that
-         *     ops follow-up lands (see Dockerfile comment above the GIT_SHA ARG).
+         *          Dockerfile) at image build time, when a builder passes them.
+         *       2. SOURCE_COMMIT / COOLIFY_BRANCH — Coolify injects these into the
+         *          running container automatically at RUNTIME (verified live 2026-07-23:
+         *          the prod container carries SOURCE_COMMIT=<full sha>, COOLIFY_BRANCH).
+         *          This is the source that actually works on Coolify with zero build-arg
+         *          wiring — .dockerignore excludes .git so the checkout fallback can't
+         *          fire in-container.
+         *       3. `git rev-parse HEAD` — fallback for a local/dev checkout.
+         *       4. "unknown" — none available. Never raises; a broken version probe
+         *          must not take down the health surface.
          */
         get: operations["version_check_health_version_get"];
         put?: never;
@@ -3440,6 +3439,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/{server_id}/oauth-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Persist Tokens */
+        post: operations["persist_tokens_mcp_connections__server_id__oauth_tokens_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/{server_id}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Persist Credentials */
+        post: operations["persist_credentials_mcp_connections__server_id__credentials_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/{server_id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh */
+        post: operations["refresh_mcp_connections__server_id__refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/{server_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect */
+        delete: operations["disconnect_mcp_connections__server_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/{server_id}/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discover Tools */
+        get: operations["discover_tools_mcp_connections__server_id__tools_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/{server_id}/invoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invoke Tool */
+        post: operations["invoke_tool_mcp_connections__server_id__invoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/exchange": {
         parameters: {
             query?: never;
@@ -6143,6 +6244,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -8737,7 +8862,7 @@ export interface paths {
          * Ingest Library Store Document
          * @description Curator publish: ingest an EXISTING file into a library store as
          *     system-owned shared knowledge (Decision 3 rehome + library-profile
-         *     ingest), streamed. Super-admin only.
+         *     ingest), streamed. Any Matrx admin (Arman's 2026-07-23 directive).
          */
         post: operations["ingest_library_store_document_rag_library_stores__store_id__ingest_post"];
         delete?: never;
@@ -20589,6 +20714,30 @@ export interface components {
          * @enum {string}
          */
         ConformanceState: "full" | "dynamic" | "partial" | "non_conformant";
+        /**
+         * ConnectionSummary
+         * @description Non-secret connection state — what the FE reads after any operation.
+         */
+        ConnectionSummary: {
+            /** Connection Id */
+            connection_id: string;
+            /** Server Id */
+            server_id: string | null;
+            /** Server Slug */
+            server_slug: string | null;
+            /** Status */
+            status: string;
+            /** Auth Method */
+            auth_method: string | null;
+            /** Credential Item Id */
+            credential_item_id: string | null;
+            /** Token Expires At */
+            token_expires_at: string | null;
+            /** Oauth Scopes Granted */
+            oauth_scopes_granted: string[];
+            /** Last Error */
+            last_error: string | null;
+        };
         /** ContentEditRequest */
         ContentEditRequest: {
             /** Content */
@@ -22232,6 +22381,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -26305,6 +26481,19 @@ export interface components {
             /** Keyword Ids */
             keyword_ids: string[];
         };
+        /**
+         * KeywordResearchArtifact
+         * @description The research agent's structured output — the registered content_ir kind
+         *     ``keyword_relationship_research``, which is byte-identical to what
+         *     ``seo.fn_ingest_keyword_research`` accepts. Typed here so the artifact is a
+         *     real contract on the wire instead of an opaque object the client re-guesses.
+         */
+        KeywordResearchArtifact: {
+            /** Primary Keyword */
+            primary_keyword: string;
+            /** Keyword Lists */
+            keyword_lists?: components["schemas"]["KeywordResearchList"][];
+        };
         /** KeywordResearchBody */
         KeywordResearchBody: {
             /** Organization Id */
@@ -26346,6 +26535,86 @@ export interface components {
              */
             force_refresh?: boolean;
         };
+        /** KeywordResearchIngestSummary */
+        KeywordResearchIngestSummary: {
+            /** Primary Keyword Ids */
+            primary_keyword_ids?: string[];
+            /**
+             * Keywords Created
+             * @default 0
+             */
+            keywords_created?: number;
+            /**
+             * Keywords Already Existed
+             * @default 0
+             */
+            keywords_already_existed?: number;
+            /**
+             * Edges Written
+             * @default 0
+             */
+            edges_written?: number;
+            /**
+             * Edges Skipped Rejected
+             * @default 0
+             */
+            edges_skipped_rejected?: number;
+            /**
+             * Edges Skipped Self
+             * @default 0
+             */
+            edges_skipped_self?: number;
+        };
+        /**
+         * KeywordResearchList
+         * @description One categorized list from the research artifact. Mirrors the registered
+         *     ``keyword_relationship_research`` kind item schema exactly, including its
+         *     ``additionalProperties: false``.
+         */
+        KeywordResearchList: {
+            /** Label */
+            label: string;
+            /** Keywords */
+            keywords?: string[];
+        };
+        /** KeywordResearchResult */
+        KeywordResearchResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "keywords.relationship_research";
+            /** Primary Keyword */
+            primary_keyword: string;
+            /** Research Doc Id */
+            research_doc_id: string;
+            artifact: components["schemas"]["KeywordResearchArtifact"];
+            ingest: components["schemas"]["KeywordResearchIngestSummary"];
+            volume?: components["schemas"]["KeywordVolumeRefreshResult"] | null;
+            classification?: components["schemas"]["KeywordClassifyResult"] | null;
+        };
+        /** KeywordVolumeBatchReceipt */
+        KeywordVolumeBatchReceipt: {
+            /** Run Id */
+            run_id: string;
+            /** Keyword Count */
+            keyword_count: number;
+            /**
+             * Created Observations
+             * @default 0
+             */
+            created_observations?: number;
+            /**
+             * Existing Observations
+             * @default 0
+             */
+            existing_observations?: number;
+            /**
+             * From Cache
+             * @default false
+             */
+            from_cache?: boolean;
+        };
         /** KeywordVolumeRefreshBody */
         KeywordVolumeRefreshBody: {
             /** Organization Id */
@@ -26371,6 +26640,31 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
+        };
+        /** KeywordVolumeRefreshResult */
+        KeywordVolumeRefreshResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "keywords.volume_refresh";
+            /**
+             * Requested Phrases
+             * @default 0
+             */
+            requested_phrases?: number;
+            /**
+             * Skipped Fresh
+             * @default 0
+             */
+            skipped_fresh?: number;
+            /**
+             * Fetched Phrases
+             * @default 0
+             */
+            fetched_phrases?: number;
+            /** Batches */
+            batches?: components["schemas"]["KeywordVolumeBatchReceipt"][];
         };
         /** KgCostSummaryResponse */
         KgCostSummaryResponse: {
@@ -27399,6 +27693,28 @@ export interface components {
             auto_context?: boolean;
         };
         /**
+         * ManualCredentialsRequest
+         * @description Non-OAuth connection credentials (api_key / bearer / basic / headers /
+         *     stdio_env). Values are written sealed + non-editable.
+         */
+        ManualCredentialsRequest: {
+            /** Auth Method */
+            auth_method: string;
+            /** Fields */
+            fields: {
+                [key: string]: string;
+            };
+            /**
+             * Transport
+             * @default http
+             */
+            transport?: string;
+            /** Config Id */
+            config_id?: string | null;
+            /** Endpoint Override */
+            endpoint_override?: string | null;
+        };
+        /**
          * ManualResultProposal
          * @description User-supplied output for the failed node.
          */
@@ -27503,6 +27819,38 @@ export interface components {
              * @default []
              */
             notes?: string[];
+        };
+        /** McpInvokeRequest */
+        McpInvokeRequest: {
+            /**
+             * Tool Name
+             * @description Local tool name on the remote server.
+             */
+            tool_name: string;
+            /** Arguments */
+            arguments?: {
+                [key: string]: unknown;
+            };
+        };
+        /** McpInvokeResponse */
+        McpInvokeResponse: {
+            /** Success */
+            success: boolean;
+            /** Output */
+            output?: string | null;
+            /** Error */
+            error?: string | null;
+        };
+        /** McpToolsResponse */
+        McpToolsResponse: {
+            /** Server Id */
+            server_id: string;
+            /** Server Slug */
+            server_slug: string | null;
+            /** Tools */
+            tools: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * MediaRef
@@ -28416,6 +28764,40 @@ export interface components {
             delete: "yes" | "planned" | "no";
         };
         /**
+         * OAuthTokenPersistRequest
+         * @description The FE OAuth callback's hand-off: the raw token-endpoint response plus
+         *     the non-secret exchange context the callback already holds. The callback
+         *     keeps the code exchange (it holds the PKCE verifier); persistence happens
+         *     here so tokens land only in the vault.
+         */
+        OAuthTokenPersistRequest: {
+            /**
+             * Tokens
+             * @description Raw OAuth token-endpoint response body (access_token, refresh_token?, expires_in?, scope?, ...).
+             */
+            tokens: {
+                [key: string]: unknown;
+            };
+            /** Token Endpoint */
+            token_endpoint: string;
+            /** Client Id */
+            client_id?: string | null;
+            /**
+             * Client Secret
+             * @description Dynamic-registration client secret that must outlive the callback — stored sealed in the same vault item.
+             */
+            client_secret?: string | null;
+            /**
+             * Transport
+             * @default http
+             */
+            transport?: string;
+            /** Config Id */
+            config_id?: string | null;
+            /** Endpoint Override */
+            endpoint_override?: string | null;
+        };
+        /**
          * OccupationalCodesResponse
          * @description Wrapper around the bundled California job-codes config.
          *
@@ -28740,6 +29122,31 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** PageAnalysisResult */
+        PageAnalysisResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "pages.analyze";
+            /** Page Id */
+            page_id: string;
+            /** Site Id */
+            site_id: string;
+            /**
+             * Analyzer Version
+             * @default pageanalyze-v1
+             */
+            analyzer_version?: string;
+            /** Artifact */
+            artifact?: {
+                [key: string]: unknown;
+            };
+            /** Summary */
+            summary?: {
+                [key: string]: unknown;
+            };
+        };
         /** PageAnalyzeBody */
         PageAnalyzeBody: {
             /** Organization Id */
@@ -28771,6 +29178,37 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
+        };
+        /** PageAuditIssue */
+        PageAuditIssue: {
+            /** Severity */
+            severity: string;
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+        };
+        /** PageAuditResult */
+        PageAuditResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "public.page_audit";
+            /** Url */
+            url: string;
+            /** Fetched Url */
+            fetched_url: string;
+            /** Status Code */
+            status_code: number;
+            /** Score */
+            score: number;
+            /** Issues */
+            issues?: components["schemas"]["PageAuditIssue"][];
+            /** Audit */
+            audit?: {
+                [key: string]: unknown;
+            };
         };
         /** PageDetail */
         PageDetail: {
@@ -28845,6 +29283,31 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
+        };
+        /** PageKeywordMapResult */
+        PageKeywordMapResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "pages.map_keywords";
+            /** Site Id */
+            site_id: string;
+            /** Topic Slug */
+            topic_slug: string;
+            /**
+             * Mapper Version
+             * @default pagemap-v1
+             */
+            mapper_version?: string;
+            /** Artifact */
+            artifact?: {
+                [key: string]: unknown;
+            };
+            /** Summary */
+            summary?: {
+                [key: string]: unknown;
+            };
         };
         /** PageSummary */
         PageSummary: {
@@ -31877,6 +32340,40 @@ export interface components {
              */
             force_refresh?: boolean;
         };
+        /** RobotsCheckResult */
+        RobotsCheckResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "public.robots_check";
+            /** Site Url */
+            site_url: string;
+            /** Robots Url */
+            robots_url: string;
+            /** Found */
+            found: boolean;
+            /** Status Code */
+            status_code: number;
+            /**
+             * Raw Robots Txt
+             * @default
+             */
+            raw_robots_txt?: string;
+            /** Sitemaps */
+            sitemaps?: string[];
+            /** Checks */
+            checks?: components["schemas"]["RobotsPathCheck"][];
+        };
+        /** RobotsPathCheck */
+        RobotsPathCheck: {
+            /** Path */
+            path: string;
+            /** User Agent */
+            user_agent: string;
+            /** Allowed */
+            allowed: boolean;
+        };
         /** RotatePageBody */
         RotatePageBody: {
             /**
@@ -32155,6 +32652,11 @@ export interface components {
              */
             required?: boolean;
         };
+        /** RunListResponse */
+        RunListResponse: {
+            /** Runs */
+            runs: components["schemas"]["RunResponse"][];
+        };
         /** RunNowResponse */
         RunNowResponse: {
             /** Run Id */
@@ -32276,66 +32778,6 @@ export interface components {
             } | null;
             /** Created At */
             created_at?: string | null;
-        };
-        /** RunStatusResponse */
-        RunStatusResponse: {
-            /** Id */
-            id: string;
-            /** Provider */
-            provider: string;
-            /** Capability */
-            capability: string;
-            /** Operation */
-            operation: string;
-            /** Trigger */
-            trigger: string;
-            /** Status */
-            status: string;
-            /** Target Ref */
-            target_ref: string;
-            /** Site Id */
-            site_id?: string | null;
-            /** Page Id */
-            page_id?: string | null;
-            /** Source Crawl Session Id */
-            source_crawl_session_id?: string | null;
-            /** Observation Period */
-            observation_period: string;
-            /** Organization Id */
-            organization_id: string;
-            /** Created By */
-            created_by: string;
-            /** Attempt Count */
-            attempt_count: number;
-            /** Requested At */
-            requested_at?: string | null;
-            /** Started At */
-            started_at?: string | null;
-            /** Completed At */
-            completed_at?: string | null;
-            /**
-             * Request Count
-             * @default 0
-             */
-            request_count?: number;
-            /** Reported Cost */
-            reported_cost?: string | null;
-            /** Estimated Cost */
-            estimated_cost?: string | null;
-            /**
-             * Currency
-             * @default USD
-             */
-            currency?: string;
-            /** Error */
-            error?: {
-                [key: string]: unknown;
-            } | null;
-            receipt?: components["schemas"]["CollectionReceipt"] | null;
-            /** Result */
-            result?: {
-                [key: string]: unknown;
-            } | null;
         };
         /** RunWorkflowRequest */
         RunWorkflowRequest: {
@@ -33071,6 +33513,75 @@ export interface components {
          * @enum {string}
          */
         SeoCapability: "serp_rank" | "keyword_metrics" | "search_performance" | "web_analytics" | "page_performance" | "backlinks" | "competitors" | "raw_provider";
+        /** SeoRunListResponse */
+        SeoRunListResponse: {
+            /** Organization Id */
+            organization_id: string;
+            /** Runs */
+            runs: components["schemas"]["SeoRunStatusResponse"][];
+        };
+        /**
+         * SeoRunStatusResponse
+         * @description aidream's narrowing of the package run-status contract: the result
+         *     document is the typed command union, not an opaque object.
+         */
+        SeoRunStatusResponse: {
+            /** Id */
+            id: string;
+            /** Provider */
+            provider: string;
+            /** Capability */
+            capability: string;
+            /** Operation */
+            operation: string;
+            /** Trigger */
+            trigger: string;
+            /** Status */
+            status: string;
+            /** Target Ref */
+            target_ref: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Page Id */
+            page_id?: string | null;
+            /** Source Crawl Session Id */
+            source_crawl_session_id?: string | null;
+            /** Observation Period */
+            observation_period: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Created By */
+            created_by: string;
+            /** Attempt Count */
+            attempt_count: number;
+            /** Requested At */
+            requested_at?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /**
+             * Request Count
+             * @default 0
+             */
+            request_count?: number;
+            /** Reported Cost */
+            reported_cost?: string | null;
+            /** Estimated Cost */
+            estimated_cost?: string | null;
+            /**
+             * Currency
+             * @default USD
+             */
+            currency?: string;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            receipt?: components["schemas"]["CollectionReceipt"] | null;
+            /** Result */
+            result?: (components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+        };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
             /** Organization Id */
@@ -34123,6 +34634,34 @@ export interface components {
              */
             min_confidence?: number;
         };
+        /** StructuredDataBlockReport */
+        StructuredDataBlockReport: {
+            /** Source */
+            source: string;
+            /** Types */
+            types: string[];
+            /** Primary Type */
+            primary_type: string | null;
+            /** Known Type */
+            known_type: boolean;
+            /** Rich Result Eligible */
+            rich_result_eligible: boolean;
+            /** Issues */
+            issues?: components["schemas"]["StructuredDataIssue"][];
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+        };
+        /** StructuredDataIssue */
+        StructuredDataIssue: {
+            /** Severity */
+            severity: string;
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+        };
         /** StructuredDataValidateBody */
         StructuredDataValidateBody: {
             /** Organization Id */
@@ -34138,6 +34677,36 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
+        };
+        /** StructuredDataValidateResult */
+        StructuredDataValidateResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "public.structured_data_validate";
+            /** Url */
+            url: string;
+            /** Fetched Url */
+            fetched_url: string;
+            /** Block Count */
+            block_count: number;
+            /** Types Found */
+            types_found?: string[];
+            /** Rich Result Eligible Types */
+            rich_result_eligible_types?: string[];
+            /** Blocks */
+            blocks?: components["schemas"]["StructuredDataBlockReport"][];
+            /**
+             * Error Count
+             * @default 0
+             */
+            error_count?: number;
+            /**
+             * Warning Count
+             * @default 0
+             */
+            warning_count?: number;
         };
         /**
          * StuckRow
@@ -37940,11 +38509,6 @@ export interface components {
              */
             soft?: boolean;
         };
-        /** RunListResponse */
-        matrx_scheduler__api__schemas__RunListResponse: {
-            /** Runs */
-            runs: components["schemas"]["RunResponse"][];
-        };
         /** ScannerStatusResponse */
         matrx_scheduler__api__schemas__ScannerStatusResponse: {
             /** Running */
@@ -37987,13 +38551,6 @@ export interface components {
             consecutive_errors?: number;
             /** Error Message */
             error_message?: string | null;
-        };
-        /** RunListResponse */
-        matrx_seo__api_contracts__RunListResponse: {
-            /** Organization Id */
-            organization_id: string;
-            /** Runs */
-            runs: components["schemas"]["RunStatusResponse"][];
         };
     };
     responses: never;
@@ -44113,6 +44670,204 @@ export interface operations {
             };
         };
     };
+    persist_tokens_mcp_connections__server_id__oauth_tokens_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OAuthTokenPersistRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    persist_credentials_mcp_connections__server_id__credentials_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualCredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_mcp_connections__server_id__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_mcp_connections__server_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discover_tools_mcp_connections__server_id__tools_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["McpToolsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invoke_tool_mcp_connections__server_id__invoke_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["McpInvokeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["McpInvokeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     exchange_google_integrations_exchange_post: {
         parameters: {
             query?: never;
@@ -44394,7 +45149,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["matrx_seo__api_contracts__RunListResponse"];
+                    "application/json": components["schemas"]["SeoRunListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -44837,7 +45592,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunStatusResponse"];
+                    "application/json": components["schemas"]["SeoRunStatusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -48897,6 +49652,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -64547,7 +65337,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["matrx_scheduler__api__schemas__RunListResponse"];
+                    "application/json": components["schemas"]["RunListResponse"];
                 };
             };
             /** @description Validation Error */

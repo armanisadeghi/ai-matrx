@@ -27,9 +27,8 @@ import type {
  * surface. The whole returned object is wrapped in `useMemo` keyed on `api`
  * so it is reference-stable across renders — consumers can safely depend on
  * the `api` reference inside `useEffect` / `useCallback` without re-firing
- * every render. Without this memo, hooks like `useCostSummary` (which
- * include `api` in their effect deps) would loop indefinitely and hammer the
- * backend.
+ * every render. Without this memo, a hook that includes `api` in its effect
+ * deps would loop indefinitely and hammer the backend.
  */
 export function useResearchApi() {
   const api = useBackendApi();
@@ -208,10 +207,6 @@ export function useResearchApi() {
 
       retryFailedAnalyses: (topicId: string) =>
         api.post(endpoints(topicId).analyses.retryFailed, {}),
-
-      // --- Costs (Python for multi-table aggregation) ---
-      getCosts: (topicId: string, signal?: AbortSignal) =>
-        api.get(endpoints(topicId).costs, signal),
 
       // --- Templates (Python) ---
       getTemplates: (signal?: AbortSignal) =>

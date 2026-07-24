@@ -2,7 +2,7 @@
 
 **Status:** `canonical`
 **Tier:** `1`
-**Last updated:** `2026-07-23`
+**Last updated:** `2026-07-24`
 
 ---
 
@@ -68,7 +68,7 @@ This feature is the **single source of resistance** for file flows: direct const
 
 1. The paste/drop handler synchronously inserts a pending agent resource. Images get a bounded tracked `blob:` preview; that URL is UI-only and never becomes a ready payload.
 2. `useFileUpload().upload({ kind: "file", file }, opts)` starts immediately. The pending resource blocks send and renders a loader over the local image (or a pending file tile).
-3. `uploadInternal` coerces source → `File`, stamps `metadata.scope = { organization_id, project_id, task_id }` from `appContext`, and posts to `/files/upload`.
+3. `uploadInternal` coerces source → `File`, conditionally stamps `metadata.scope = { organization_id, project_id, task_id }` from `appContext` according to the visibility-aware policy below, and posts to `/files/upload`.
 4. The returned `NormalizedFile` points at the new `cld_files` row. The shared agent `useAttachResource` mapping converts it to the canonical media resource or durable `file → conversation` document association.
 5. Only after the durable attachment exists is the staging resource removed and its local object URL revoked. If the user removed the pending resource while upload was running, the completed cloud file is not re-attached.
 
@@ -115,7 +115,7 @@ There is no background refresh. The policy is **lazy mint on demand**:
 
 ### Org-scope routing
 
-When uploading, `inheritActiveScope: true` (default) reads `selectOrganizationId / selectProjectId / selectTaskId` from `appContext` and stamps them into `metadata.scope`. The Python backend reads this and writes the column counterparts.
+Public/shared uploads inherit active scope by default: the handler reads `selectOrganizationId / selectProjectId / selectTaskId` from `appContext` and stamps them into `metadata.scope`. Personal uploads do **not** inherit active scope by default because they belong to the individual regardless of the ambient organization/project/task. Stamping an unrelated active organization can collide with the user's existing personal folder namespace and make the backend reject the upload. Callers may explicitly set `inheritActiveScope: true` for an intentionally scoped personal file, or `false` to opt a public/shared upload out. Existing metadata values take precedence whenever inheritance is enabled.
 
 ### Lazy signed-URL cache
 
@@ -179,13 +179,14 @@ The previous parallel object-store path is fully removed. Compatibility readers,
 3. The S3 bucket is touched only by the Python backend. The FE never sees an AWS SDK.
 4. Anonymous users (public chat) are authenticated to Supabase with an anonymous UUID — they use the same handler API. There is no second lane.
 5. New file flows must use the handler from day one. Direct object-store SDK calls and direct media-block construction are regressions.
-6. Every uploaded file carries scope (`organization_id / project_id / task_id`) in `metadata.scope` when the active context has them. The handler stamps this.
+6. Scope inheritance is visibility-aware: public/shared uploads carry active `organization_id / project_id / task_id` in `metadata.scope` when available; personal uploads remain independent of ambient app scope unless explicitly opted in.
 7. Signed object-store URLs are private playback/download credentials, never share links. `shareableMediaUrl` rejects both AWS SigV2 and SigV4 URLs at copy/share boundaries; owned media must use its internal viewer URL, a durable public URL, or the canonical share-link RPC flow.
 
 ---
 
 ## Change log
 
+- **2026-07-24 — Personal uploads are independent of ambient app scope.** The shared upload boundary now defaults `inheritActiveScope` to false for personal visibility while preserving true for public/shared uploads and explicit caller overrides. This fixes SmartAgentInput audio journal chunks and finalized recordings being rejected when their existing personal transcript folders belonged to a different organization than the UI's active organization.
 - **2026-07-23 — Agent paste/drop staging is immediate and canonical.** `useUploadAgentResources` now owns the shared stage → upload → attach lifecycle for every Smart input composer. It creates bounded local image previews and pending file tiles synchronously, uploads through `useFileUpload`, hands ready payloads to `useAttachResource`, and revokes the preview on completion/removal.
 - **2026-07-21 — Signed playback URLs can no longer escape through media actions.** All chat video inputs (`media_block`, legacy `video_output`, and markdown video links) now converge on `UnifiedVideoBlockRenderer`, preserving or recovering `file_id` before rendering actions; the two legacy video components that copied/shared raw `src` values were deleted. `shareableMediaUrl` now fails closed on both AWS signing dialects, image/video share menus no longer offer “Copy temporary link,” misclassified signed “CDN” or external URLs are rejected, and owned Copy/Open actions use the auth-gated file viewer while public sharing continues through durable CDN or canonical `/share/{token}` URLs.
 - **2026-07-21 — TUS transport landed (media-capture Phase 7).** `tusUpload.ts` + the 80 MB transport policy in `cloudUpload` (`resolveUploadTransport`); `UploadOpts` gained `signal` + `transport`; shared `buildUploadMetadataEnvelope` guarantees buffered↔TUS `metadata_json` parity. Live E2E pending aidream deploy (see § Transport policy).

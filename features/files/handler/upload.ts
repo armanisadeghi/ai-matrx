@@ -7,10 +7,9 @@
  * the same round-trip). The returned `NormalizedFile` reflects the new
  * `cld_files` row and carries the share-link URL when requested.
  *
- * Org-scope routing: when `inheritActiveScope` is on (default), the
- * active organization / project / task ids from the appContext slice
- * are stamped into `metadata.scope` so each row carries its scope
- * context. The Python backend reads this and writes the columns.
+ * Org-scope routing is visibility-aware: public/shared uploads inherit
+ * active organization / project / task ids by default; personal uploads
+ * remain independent of ambient app scope unless explicitly opted in.
  */
 
 import type { RootState, AppDispatch } from "@/lib/redux/store";
@@ -37,6 +36,17 @@ import type { FileSource, NormalizedFile, UploadOpts } from "./types";
 
 const DEFAULT_FOLDER = "Inbox";
 
+/**
+ * Personal files belong to the individual, independent of whichever
+ * organization, project, or task happens to be active in the UI.
+ */
+export function shouldInheritActiveScope(
+  visibility: NonNullable<UploadOpts["visibility"]>,
+  override?: boolean,
+): boolean {
+  return override ?? visibility !== "personal";
+}
+
 export async function uploadInternal(
   source: FileSource,
   opts: UploadOpts,
@@ -55,9 +65,10 @@ export async function uploadInternal(
   const dispatch = store.dispatch as AppDispatch;
 
   const folderPath = opts.folderPath ?? defaultFolderForSource(source);
+  const visibility = opts.visibility ?? (opts.preset ? "public" : "personal");
   const metadata = stampScope(
     opts.metadata ?? {},
-    opts.inheritActiveScope ?? true,
+    shouldInheritActiveScope(visibility, opts.inheritActiveScope),
   );
 
   // Asset-pipeline branch — when `preset` is set the upload routes through
@@ -70,7 +81,7 @@ export async function uploadInternal(
       file,
       preset: opts.preset,
       folder: folderPath.replace(/^\/+|\/+$/g, ""),
-      visibility: opts.visibility ?? "public",
+      visibility,
       customVariants: opts.customVariants,
       shareWith: opts.shareWith,
       shareLevel: opts.shareLevel,
@@ -101,7 +112,7 @@ export async function uploadInternal(
       ...(opts.filePath
         ? { filePath: opts.filePath.replace(/^\/+/, "") }
         : { folderPath: folderPath.replace(/^\/+|\/+$/g, "") }),
-      visibility: opts.visibility ?? "personal",
+      visibility,
       shareWith: opts.shareWith,
       shareLevel: opts.shareLevel,
       changeSummary: opts.changeSummary,

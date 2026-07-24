@@ -32,7 +32,7 @@ import {
   PlusTapButton,
   XTapButton,
 } from "@/components/icons/tap-buttons";
-import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
+import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 import { WarRoomTaskPicker } from "../shared/WarRoomTaskPicker";
 
 /** How the collapsed trigger reads — matches the two NewThread shells. */
@@ -315,7 +315,7 @@ export function QuickAddThread({
       ) : null}
 
       {flavor === "project" ? (
-        <WarRoomProjectPicker
+        <ProjectPicker
           value={projectId}
           onSelect={(id, displayName) => {
             setProjectId(id);

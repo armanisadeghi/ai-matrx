@@ -4,7 +4,7 @@
 //
 // "From project" flow on /war-room/all: a CONTROLLED dialog (the trigger now
 // lives in the shell header via HeaderActions) with the canonical
-// WarRoomProjectPicker. On select, mints a project-flavored room via
+// shared ProjectPicker. On select, mints a project-flavored room via
 // createRoomFromProject, then navigates to it using the repo's useTransition
 // navigation standard.
 
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createRoomFromProject } from "@/features/war-room/redux/thunks";
-import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
+import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 
 export function NewRoomFromProjectDialog({
   open,
@@ -65,7 +65,7 @@ export function NewRoomFromProjectDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-lg border border-border bg-card p-2">
-          <WarRoomProjectPicker value={null} onSelect={handleSelect} />
+          <ProjectPicker value={null} onSelect={handleSelect} />
         </div>
         {busy && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

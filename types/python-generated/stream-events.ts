@@ -1494,6 +1494,11 @@ export interface KeywordClassifyResult {
   missing_keyword_ids?: string[];
 }
 
+export interface KeywordResearchArtifact {
+  primary_keyword: string;
+  keyword_lists?: KeywordResearchList[];
+}
+
 export interface KeywordResearchIngestSummary {
   primary_keyword_ids?: string[];
   keywords_created?: number;
@@ -1501,6 +1506,11 @@ export interface KeywordResearchIngestSummary {
   edges_written?: number;
   edges_skipped_rejected?: number;
   edges_skipped_self?: number;
+}
+
+export interface KeywordResearchList {
+  label: string;
+  keywords?: string[];
 }
 
 export interface KeywordVolumeBatchReceipt {
@@ -1512,6 +1522,7 @@ export interface KeywordVolumeBatchReceipt {
 }
 
 export interface KeywordVolumeRefreshResult {
+  result_kind?: "keywords.volume_refresh";
   requested_phrases?: number;
   skipped_fresh?: number;
   fetched_phrases?: number;
@@ -1519,9 +1530,10 @@ export interface KeywordVolumeRefreshResult {
 }
 
 export interface KeywordResearchResult {
+  result_kind?: "keywords.relationship_research";
   primary_keyword: string;
   research_doc_id: string;
-  artifact: Record<string, unknown>;
+  artifact: KeywordResearchArtifact;
   ingest: KeywordResearchIngestSummary;
   volume?: KeywordVolumeRefreshResult | null;
   classification?: KeywordClassifyResult | null;

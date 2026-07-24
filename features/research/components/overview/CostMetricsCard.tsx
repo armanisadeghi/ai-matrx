@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTopicId } from "../../context/ResearchContext";
-import { useCostSummary } from "../../hooks/useCostSummary";
+import { useCostSummary } from "../../hooks/useTopicCosts";
 import type { TopicCostSummary, CostBreakdownItem } from "../../types";
 
 interface Props {

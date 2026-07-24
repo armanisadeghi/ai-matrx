@@ -52,7 +52,7 @@ import {
 } from "../../../context/ResearchContext";
 import { useResearchApi } from "../../../hooks/useResearchApi";
 import { useResearchStream } from "../../../hooks/useResearchStream";
-import { useCostSummary } from "../../../hooks/useCostSummary";
+import { useCostSummary } from "../../../hooks/useTopicCosts";
 import {
   usePipelineProgress,
   type StageKind,

@@ -278,13 +278,10 @@ export function useKeywordResearch() {
         return;
       }
       storeActiveRun(null);
-      const artifact = completedResult.artifact as {
-        primary_keyword?: string;
-        keyword_lists?: { keywords?: string[] }[];
-      };
+      const artifact = completedResult.artifact;
       const phrases = [
-        artifact?.primary_keyword ?? phrase,
-        ...(artifact?.keyword_lists ?? []).flatMap((list) => list.keywords ?? []),
+        artifact.primary_keyword || phrase,
+        ...(artifact.keyword_lists ?? []).flatMap((list) => list.keywords ?? []),
       ]
         .map((keyword) => keyword.trim().toLowerCase())
         .filter(Boolean);
