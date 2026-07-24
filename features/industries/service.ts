@@ -1,9 +1,10 @@
 /**
  * Industries data access. Reads go direct to Supabase (`iam.industries` /
  * `iam.org_industries` are PostgREST-exposed, read-only taxonomy). WRITES go
- * through the SECURITY DEFINER RPCs (`industry_upsert`, `industry_assign_org`,
- * `industry_unassign_org`) — never a raw insert. Taxonomy upsert is
- * super-admin only; assign/unassign allow org owner/admin or super-admin.
+ * through the SECURITY DEFINER RPCs (`industry_upsert`, `industry_set_active`,
+ * `industry_assign_org`, `industry_unassign_org`) — never a raw insert. Taxonomy
+ * writes are any-admin (Arman's 2026-07-23 directive — admins == super-admins for
+ * this); assign/unassign also allow org owner/admin (self-serve).
  */
 
 import { supabase } from "@/utils/supabase/client";
@@ -101,6 +102,22 @@ export async function upsertIndustry(input: {
     p_default_template_id: input.defaultTemplateId ?? undefined,
     p_description: input.description ?? undefined,
     p_sort_order: input.sortOrder ?? 0,
+  });
+  if (error) throw new Error(error.message);
+  return rowToIndustry(data as IndustryRow);
+}
+
+/**
+ * Soft-delete / reactivate an industry (flips `is_active`). No hard delete —
+ * orgs may reference it and grants key on it. Any-admin gated (`industry_set_active`).
+ */
+export async function setIndustryActive(
+  industryId: string,
+  isActive: boolean,
+): Promise<Industry> {
+  const { data, error } = await supabase.rpc("industry_set_active", {
+    p_industry: industryId,
+    p_active: isActive,
   });
   if (error) throw new Error(error.message);
   return rowToIndustry(data as IndustryRow);

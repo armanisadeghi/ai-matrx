@@ -31142,6 +31142,16 @@ export type Database = {
         Args: { p_actor?: string; p_industry: string; p_user: string }
         Returns: undefined
       }
+      industry_set_active: {
+        Args: { p_active: boolean; p_actor?: string; p_industry: string }
+        Returns: Database["iam"]["Tables"]["industries"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "industries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       industry_unassign_org: {
         Args: {
           p_actor?: string

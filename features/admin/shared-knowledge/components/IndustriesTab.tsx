@@ -2,11 +2,11 @@
 
 // features/admin/shared-knowledge/components/IndustriesTab.tsx
 //
-// Industry taxonomy management: create/edit via the super-admin
-// `industry_upsert` RPC (slug is the upsert key — immutable once created),
-// facets + ordering, and per-industry organization assignment via
-// `industry_assign_org` / `industry_unassign_org`. All writes go through
-// `features/industries/service.ts` — never raw table writes.
+// Industry taxonomy management: create/edit via the any-admin `industry_upsert`
+// RPC (slug is the upsert key — immutable once created), facets + ordering,
+// soft-delete/reactivate via `industry_set_active`, and per-industry
+// organization assignment via `industry_assign_org` / `industry_unassign_org`.
+// All writes go through `features/industries/service.ts` — never raw table writes.
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Building2, Loader2, Pencil, Plus, X } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Building2,
+  Loader2,
+  Pencil,
+  Plus,
+  X,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAllOrgIndustries, useIndustries } from "@/features/industries/hooks";
 import {
   assignOrgIndustry,
+  setIndustryActive,
   unassignOrgIndustry,
   upsertIndustry,
 } from "@/features/industries/service";
@@ -94,6 +103,11 @@ export function IndustriesTab({
     orgName: string;
   } | null>(null);
   const [unassignBusy, setUnassignBusy] = useState(false);
+
+  const [deactivateTarget, setDeactivateTarget] = useState<Industry | null>(
+    null,
+  );
+  const [activeBusy, setActiveBusy] = useState(false);
 
   const selected = industries.find((i) => i.id === selectedId) ?? null;
 
@@ -183,6 +197,22 @@ export function IndustriesTab({
     }
   };
 
+  const setActive = async (industry: Industry, isActive: boolean) => {
+    setActiveBusy(true);
+    try {
+      await setIndustryActive(industry.id, isActive);
+      toast.success(isActive ? "Industry reactivated" : "Industry deactivated");
+      setDeactivateTarget(null);
+      refresh();
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Could not update industry",
+      );
+    } finally {
+      setActiveBusy(false);
+    }
+  };
+
   const onUnassign = async () => {
     if (!selected || !unassignTarget) return;
     setUnassignBusy(true);
@@ -254,18 +284,48 @@ export function IndustriesTab({
                     {i.description ? ` · ${i.description}` : ""}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 shrink-0 px-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEdit(i);
-                  }}
-                  aria-label={`Edit ${i.name}`}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(i);
+                    }}
+                    aria-label={`Edit ${i.name}`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  {i.isActive ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeactivateTarget(i);
+                      }}
+                      aria-label={`Deactivate ${i.name}`}
+                    >
+                      <Archive className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                      disabled={activeBusy}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void setActive(i, true);
+                      }}
+                      aria-label={`Reactivate ${i.name}`}
+                    >
+                      <ArchiveRestore className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -500,6 +560,24 @@ export function IndustriesTab({
         confirmLabel="Unassign"
         busy={unassignBusy}
         onConfirm={onUnassign}
+      />
+
+      {/* Deactivate confirm (soft-delete — reversible) */}
+      <ConfirmDialog
+        open={Boolean(deactivateTarget)}
+        onOpenChange={(o) => !o && setDeactivateTarget(null)}
+        title="Deactivate industry?"
+        description={
+          deactivateTarget
+            ? `“${deactivateTarget.name}” will be hidden from new assignments and catalogs. Existing org assignments and library grants are kept; you can reactivate it any time.`
+            : undefined
+        }
+        variant="destructive"
+        confirmLabel="Deactivate"
+        busy={activeBusy}
+        onConfirm={() =>
+          deactivateTarget ? setActive(deactivateTarget, false) : undefined
+        }
       />
     </div>
   );
