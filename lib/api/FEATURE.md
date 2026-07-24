@@ -18,12 +18,18 @@ Inspector capture. Feature-owned raw `fetch`, `useBackendApi`, and raw
 
 ## Multi-service environment routing
 
-The shell API environment control owns four independently deployed Python targets:
+In local development, the shell API environment control owns four independently deployed Python targets:
 `aidream`, `scraper`, `files`, and `seo`. A normal click switches every target between
 Production and Localhost and clears old exceptions. The adjacent detail menu can pin one
 service to Production or Localhost while the remaining services follow the global choice;
 both the global choice and pins persist in `matrx.apiConfig.v1`.
 
+- Loopback targets are development-bundle only. Production bundles discard persisted
+  `localhost` selections and pins, reject new ones in the central Redux primitive, and do
+  not render the shell environment toggle. A deployed site must never send browser API
+  traffic to the visitor's own `localhost`. The persisted setting is browser-wide, not
+  account-scoped, so an admin selection must never leak through logout into a non-admin
+  session.
 - `lib/api/service-routing.ts` is the one service/origin map and exact file-route ownership map.
 - `apiConfigSlice.ts` resolves the global environment plus per-service exceptions.
 - React code reads `selectApiServiceTargets` / `selectResolvedServiceBaseUrl`; imperative
@@ -143,6 +149,8 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-07-24 — Prevented production bundles from restoring or selecting loopback API
+  targets, eliminating deployed agent runs that failed against `http://localhost:8000`.
 - 2026-07-22 — Added canonical global and per-service Production/Localhost routing for
   aidream, scraper, files, and SEO; moved scraper commands and the DataForSEO lab onto it.
 - 2026-07-21 — Added the site-wide backend-boundary approval gate. Existing

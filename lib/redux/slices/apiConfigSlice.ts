@@ -45,7 +45,9 @@ import {
 } from "@/lib/api/ai-api-version";
 import {
   API_SERVICES,
+  allowsLoopbackApiTargets,
   configuredServiceUrl,
+  isLoopbackApiUrl,
   type ApiService,
   type ServiceEnvironment,
 } from "@/lib/api/service-routing";
@@ -155,9 +157,11 @@ interface ApiConfigState {
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────────
-// The active server is an admin/dev choice that must SURVIVE reloads — losing
-// "localhost" on every refresh and silently snapping back to production is a
-// real footgun. SSR-safe: no-op on the server, lazy-read on the client.
+// The active server is a local-development choice that must SURVIVE reloads in
+// development — losing "localhost" on every refresh is a real footgun there.
+// Production bundles sanitize loopback state because this storage is
+// browser-wide (not user/account-scoped). SSR-safe: no-op on the server,
+// lazy-read on the client.
 const PERSIST_KEY = "matrx.apiConfig.v1";
 
 interface PersistedApiConfig {
@@ -192,16 +196,27 @@ function loadPersistedServer(): PersistedApiConfig {
       "gpu",
       "custom",
     ];
+    const loopbackAllowed = allowsLoopbackApiTargets();
+    const persistedActiveServer =
+      parsed.activeServer && valid.includes(parsed.activeServer)
+        ? parsed.activeServer
+        : "production";
+    const persistedCustomUrl =
+      typeof parsed.customUrl === "string" ? parsed.customUrl : null;
+    const unsafeCustomTarget =
+      !loopbackAllowed && isLoopbackApiUrl(persistedCustomUrl);
     return {
       activeServer:
-        parsed.activeServer && valid.includes(parsed.activeServer)
-          ? parsed.activeServer
-          : "production",
-      customUrl: typeof parsed.customUrl === "string" ? parsed.customUrl : null,
+        (persistedActiveServer === "localhost" && !loopbackAllowed) ||
+        (persistedActiveServer === "custom" && unsafeCustomTarget)
+          ? "production"
+          : persistedActiveServer,
+      customUrl: unsafeCustomTarget ? null : persistedCustomUrl,
       serviceOverrides: Object.fromEntries(
         API_SERVICES.flatMap((service) => {
           const value = parsed.serviceOverrides?.[service];
-          return value === "production" || value === "localhost"
+          return value === "production" ||
+            (value === "localhost" && loopbackAllowed)
             ? [[service, value]]
             : [];
         }),
@@ -272,12 +287,19 @@ export const switchServer = createAsyncThunk(
     { env, customUrl }: { env: ServerEnvironment; customUrl?: string },
     { dispatch },
   ) => {
-    dispatch(setActiveServer(env));
-    if (env === "custom" && customUrl) {
+    const targetEnv =
+      env === "localhost" && !allowsLoopbackApiTargets() ? "production" : env;
+    if (targetEnv !== env) {
+      console.error(
+        "[apiConfig] Blocked a localhost API target in a production browser bundle; using production.",
+      );
+    }
+    dispatch(setActiveServer(targetEnv));
+    if (targetEnv === "custom" && customUrl) {
       dispatch(setCustomUrl(customUrl));
     }
-    dispatch(checkServerHealth({ env, force: true }));
-    return env;
+    dispatch(checkServerHealth({ env: targetEnv, force: true }));
+    return targetEnv;
   },
 );
 
@@ -403,15 +425,24 @@ const apiConfigSlice = createSlice({
   initialState,
   reducers: {
     setActiveServer: (state, action: PayloadAction<ServerEnvironment>) => {
-      state.activeServer = action.payload;
+      state.activeServer =
+        action.payload === "localhost" && !allowsLoopbackApiTargets()
+          ? "production"
+          : action.payload;
       // Clear custom URL when switching away from custom
-      if (action.payload !== "custom") {
+      if (state.activeServer !== "custom") {
         state.customUrl = null;
       }
       persistServer(state);
     },
 
     setCustomUrl: (state, action: PayloadAction<string>) => {
+      if (!allowsLoopbackApiTargets() && isLoopbackApiUrl(action.payload)) {
+        state.activeServer = "production";
+        state.customUrl = null;
+        persistServer(state);
+        return;
+      }
       state.activeServer = "custom";
       state.customUrl = action.payload;
       persistServer(state);
@@ -426,7 +457,10 @@ const apiConfigSlice = createSlice({
       }>,
     ) => {
       const { service, environment } = action.payload;
-      if (environment === null) {
+      if (
+        environment === null ||
+        (environment === "localhost" && !allowsLoopbackApiTargets())
+      ) {
         delete state.serviceOverrides[service];
       } else {
         state.serviceOverrides[service] = environment;
@@ -483,10 +517,7 @@ const apiConfigSlice = createSlice({
      * four covered AI surfaces — never a blanket path prefix. See
      * lib/api/ai-api-version.ts.
      */
-    setAiApiVersion: (
-      state,
-      action: PayloadAction<AiApiVersion | null>,
-    ) => {
+    setAiApiVersion: (state, action: PayloadAction<AiApiVersion | null>) => {
       state.aiApiVersionOverride = action.payload;
       persistServer(state);
     },
@@ -613,7 +644,7 @@ export function selectResolvedServiceBaseUrl(
     state.apiConfig.activeServer !== "localhost"
   ) {
     return state.apiConfig.activeServer === "custom"
-      ? state.apiConfig.customUrl ?? undefined
+      ? (state.apiConfig.customUrl ?? undefined)
       : BACKEND_URLS[state.apiConfig.activeServer];
   }
   return configuredServiceUrl(
@@ -636,7 +667,7 @@ export const selectApiServiceTargets = createSelector(
         apiConfig.activeServer !== "production" &&
         apiConfig.activeServer !== "localhost"
           ? apiConfig.activeServer === "custom"
-            ? apiConfig.customUrl ?? undefined
+            ? (apiConfig.customUrl ?? undefined)
             : BACKEND_URLS[apiConfig.activeServer]
           : configuredServiceUrl(service, environment);
       return { service, environment, override, url };
@@ -667,9 +698,7 @@ export const selectAiApiVersionOverride = (
  * the code-level default (`AI_API_VERSION_DEFAULT`). This is what every AI call
  * site reads to decide v1 vs v2.
  */
-export const selectAiApiVersion = (
-  state: StateWithApiConfig,
-): AiApiVersion =>
+export const selectAiApiVersion = (state: StateWithApiConfig): AiApiVersion =>
   state.apiConfig.aiApiVersionOverride ?? AI_API_VERSION_DEFAULT;
 
 /**

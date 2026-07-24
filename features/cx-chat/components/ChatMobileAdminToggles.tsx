@@ -11,6 +11,7 @@ import {
   selectActiveServer,
   switchServer,
 } from "@/lib/redux/slices/apiConfigSlice";
+import { allowsLoopbackApiTargets } from "@/lib/api/service-routing";
 import {
   selectIsBlockMode,
   selectIsSnapshot,
@@ -27,6 +28,7 @@ export default function ChatMobileAdminToggles() {
   const isUsingLocalhost = activeServer === "localhost";
   const blockMode = useAppSelector(selectIsBlockMode);
   const snapshot = useAppSelector(selectIsSnapshot);
+  const loopbackAllowed = allowsLoopbackApiTargets();
 
   if (!isAdmin) return null;
 
@@ -46,21 +48,23 @@ export default function ChatMobileAdminToggles() {
 
   return (
     <div className="flex items-center gap-1">
-      <button
-        onClick={handleToggleLocalhost}
-        title={
-          isUsingLocalhost
-            ? "Using localhost — click to switch to production"
-            : "Using production — click to switch to localhost"
-        }
-        className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
-          isUsingLocalhost
-            ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40"
-            : "text-muted-foreground/50 hover:text-muted-foreground border border-transparent hover:border-border"
-        }`}
-      >
-        local
-      </button>
+      {loopbackAllowed && (
+        <button
+          onClick={handleToggleLocalhost}
+          title={
+            isUsingLocalhost
+              ? "Using localhost — click to switch to production"
+              : "Using production — click to switch to localhost"
+          }
+          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
+            isUsingLocalhost
+              ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40"
+              : "text-muted-foreground/50 hover:text-muted-foreground border border-transparent hover:border-border"
+          }`}
+        >
+          local
+        </button>
+      )}
       <button
         onClick={handleToggleBlockMode}
         title={

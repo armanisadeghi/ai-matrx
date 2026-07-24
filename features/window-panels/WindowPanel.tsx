@@ -493,6 +493,8 @@ export function WindowPanel({
     ...hookOpts,
     id,
     title,
+    minWidth,
+    minHeight,
     onTriggerPopout,
     ...(preservationEnabled && overlayId
       ? {

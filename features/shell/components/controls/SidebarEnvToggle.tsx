@@ -14,6 +14,7 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import {
   API_SERVICE_LABELS,
+  allowsLoopbackApiTargets,
   type ApiService,
   type ServiceEnvironment,
 } from "@/lib/api/service-routing";
@@ -37,6 +38,7 @@ const UNHEALTHY_CHECK_INTERVAL_MS = 15_000;
 export default function SidebarEnvToggle() {
   const dispatch = useAppDispatch();
   const isAdmin = useAppSelector(selectIsAdmin);
+  const loopbackAllowed = allowsLoopbackApiTargets();
   const activeServer = useAppSelector(selectActiveServer);
   const activeHealth = useAppSelector(selectActiveServerHealth);
   const serviceTargets = useAppSelector(selectApiServiceTargets);
@@ -69,7 +71,7 @@ export default function SidebarEnvToggle() {
     return () => window.clearTimeout(timeoutId);
   }, [activeHealth.lastCheckedAt, dispatch, isAdmin, isAidreamLocalhost]);
 
-  if (!isAdmin) return null;
+  if (!isAdmin || !loopbackAllowed) return null;
 
   const isLocalhostUnhealthy =
     isAidreamLocalhost && activeHealth.status === "unhealthy";

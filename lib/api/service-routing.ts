@@ -14,6 +14,30 @@ export const API_SERVICES = ["aidream", "scraper", "files", "seo"] as const;
 export type ApiService = (typeof API_SERVICES)[number];
 export type ServiceEnvironment = "production" | "localhost";
 
+/**
+ * Loopback API targets are a local-development capability. A production
+ * browser bundle must never call the visitor's own machine.
+ */
+export function allowsLoopbackApiTargets(
+  nodeEnv: string | undefined = process.env.NODE_ENV,
+): boolean {
+  return nodeEnv !== "production";
+}
+
+export function isLoopbackApiUrl(value: string | null | undefined): boolean {
+  if (!value) return false;
+  try {
+    const hostname = new URL(value).hostname;
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]"
+    );
+  } catch {
+    return false;
+  }
+}
+
 export const API_SERVICE_LABELS: Record<ApiService, string> = {
   aidream: "AI / aidream",
   scraper: "Scraper",
@@ -50,8 +74,7 @@ export const API_SERVICE_URLS: Record<
   seo: {
     production:
       process.env.NEXT_PUBLIC_SEO_URL ?? "https://seo.matrxserver.com",
-    localhost:
-      process.env.NEXT_PUBLIC_SEO_URL_LOCAL ?? "http://127.0.0.1:8081",
+    localhost: process.env.NEXT_PUBLIC_SEO_URL_LOCAL ?? "http://127.0.0.1:8081",
   },
 };
 
@@ -59,7 +82,14 @@ export function configuredServiceUrl(
   service: ApiService,
   environment: ServiceEnvironment,
 ): string | undefined {
-  return API_SERVICE_URLS[service][environment]?.replace(/\/+$/, "");
+  const url = API_SERVICE_URLS[service][environment]?.replace(/\/+$/, "");
+  if (
+    !allowsLoopbackApiTargets() &&
+    (environment === "localhost" || isLoopbackApiUrl(url))
+  ) {
+    return undefined;
+  }
+  return url;
 }
 
 const UUID_SEGMENT =

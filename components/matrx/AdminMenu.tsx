@@ -24,6 +24,7 @@ import {
     type ServerEnvironment,
 } from '@/lib/redux/slices/apiConfigSlice';
 import { BACKEND_URLS } from '@/lib/api/endpoints';
+import { allowsLoopbackApiTargets } from '@/lib/api/service-routing';
 
 type HealthStatus = 'unknown' | 'checking' | 'healthy' | 'unhealthy';
 
@@ -32,6 +33,8 @@ export function AdminMenu() {
     const activeServer = useAppSelector(selectActiveServer);
     const activeHealth = useAppSelector(selectActiveServerHealth);
     const resolvedUrl = useAppSelector(selectResolvedBaseUrl);
+
+    if (!allowsLoopbackApiTargets()) return null;
 
     const isLocalhost = resolvedUrl?.includes('localhost') || resolvedUrl?.includes('127.0.0.1');
     const isChecking = activeHealth.status === 'checking';

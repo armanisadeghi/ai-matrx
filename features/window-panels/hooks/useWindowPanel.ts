@@ -126,6 +126,10 @@ export interface UseWindowPanelOptions {
    * Default: 400.
    */
   height?: number | string;
+  /** Minimum width during pointer resize. Default: 180. */
+  minWidth?: number;
+  /** Minimum height during pointer resize. Default: 80. */
+  minHeight?: number;
   /** Where to place the window initially. Default: "center". */
   position?: WindowPosition;
   /**
@@ -205,6 +209,8 @@ export function useWindowPanel(
   const dispatch = useAppDispatch();
   const entry = useAppSelector(selectWindow(id));
 
+  const minWidth = opts.minWidth ?? MIN_WIDTH;
+  const minHeight = opts.minHeight ?? MIN_HEIGHT;
   const maxWidth = opts.maxWidth ?? Infinity;
   const maxHeight = opts.maxHeight ?? Infinity;
 
@@ -251,7 +257,6 @@ export function useWindowPanel(
       if (confirmationTimer !== null) window.clearTimeout(confirmationTimer);
       dispatch(unregisterWindow(id));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // ── Keep title in sync if it changes after mount ─────────────────────────
@@ -271,7 +276,9 @@ export function useWindowPanel(
 
   const onTriggerPopout = opts.onTriggerPopout;
   const onTriggerPopoutRef = useRef(onTriggerPopout);
-  onTriggerPopoutRef.current = onTriggerPopout;
+  useEffect(() => {
+    onTriggerPopoutRef.current = onTriggerPopout;
+  }, [onTriggerPopout]);
 
   const onDragStart = useCallback(
     (e: React.PointerEvent) => {
@@ -402,15 +409,15 @@ export function useWindowPanel(
           nh = height;
 
         if (edge.includes("e"))
-          nw = Math.min(maxWidth, Math.max(MIN_WIDTH, width + dx));
+          nw = Math.min(maxWidth, Math.max(minWidth, width + dx));
         if (edge.includes("s"))
-          nh = Math.min(maxHeight, Math.max(MIN_HEIGHT, height + dy));
+          nh = Math.min(maxHeight, Math.max(minHeight, height + dy));
         if (edge.includes("w")) {
-          nw = Math.min(maxWidth, Math.max(MIN_WIDTH, width - dx));
+          nw = Math.min(maxWidth, Math.max(minWidth, width - dx));
           nx = x + (width - nw);
         }
         if (edge.includes("n")) {
-          nh = Math.min(maxHeight, Math.max(MIN_HEIGHT, height - dy));
+          nh = Math.min(maxHeight, Math.max(minHeight, height - dy));
           ny = y + (height - nh);
         }
 
@@ -432,7 +439,7 @@ export function useWindowPanel(
       document.addEventListener("pointerup", onUp);
       document.addEventListener("pointercancel", onUp);
     },
-    [dispatch, id, entry, maxWidth, maxHeight],
+    [dispatch, id, entry, minWidth, minHeight, maxWidth, maxHeight],
   );
 
   // ── Window state transitions ───────────────────────────────────────────────
