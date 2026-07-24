@@ -150,29 +150,46 @@ export async function GET(req: NextRequest) {
         `Has refresh_token: ${!!tokens.refresh_token}, expires_in: ${tokens.expires_in ?? "none"}`,
     );
 
-    const expiresAt = tokens.expires_in
-      ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-      : undefined;
+    // Vault Phase 4: persistence is delegated to aidream — tokens land ONLY
+    // in a sealed vault item; tool.mcp_user_conn keeps non-secret metadata +
+    // the item reference. This route never writes token columns.
+    const {
+      data: { session: sbSession },
+    } = await supabase.auth.getSession();
+    if (!sbSession?.access_token) {
+      throw new Error("No Supabase session to authorize token persistence");
+    }
 
-    const { error: rpcError } = await supabase.rpc("upsert_mcp_connection", {
-      p_server_id: session.serverId,
-      p_access_token: tokens.access_token,
-      p_refresh_token: tokens.refresh_token,
-      p_token_expires_at: expiresAt,
-      p_credentials_json: undefined,
-      p_config_id: undefined,
-      p_transport: "http",
-      p_oauth_token_endpoint: session.tokenEndpoint,
-      p_oauth_client_id: session.clientId,
-      p_oauth_scopes: tokens.scope ? tokens.scope.split(" ") : undefined,
-      p_endpoint_override: undefined,
-    });
+    const backendBase =
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      "https://server.app.matrxserver.com";
+    const persistRes = await fetch(
+      `${backendBase}/api/mcp-connections/${encodeURIComponent(session.serverId)}/oauth-tokens`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sbSession.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tokens,
+          token_endpoint: session.tokenEndpoint,
+          client_id: session.clientId,
+          client_secret: session.clientSecret ?? undefined,
+          transport: "http",
+        }),
+        signal: AbortSignal.timeout(15_000),
+      },
+    );
 
-    if (rpcError) {
+    if (!persistRes.ok) {
+      const text = await persistRes.text().catch(() => "");
       console.error(
-        `[MCP OAuth Callback] Failed to store connection: ${rpcError.message}`,
+        `[MCP OAuth Callback] Vault persistence failed (${persistRes.status}): ${text.slice(0, 200)}`,
       );
-      throw new Error(`Failed to store connection: ${rpcError.message}`);
+      throw new Error(
+        `Failed to store connection (vault service ${persistRes.status})`,
+      );
     }
 
     console.log(

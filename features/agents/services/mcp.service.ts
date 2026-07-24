@@ -25,18 +25,15 @@ export async function fetchMcpCatalog(): Promise<McpCatalogEntry[]> {
 // ---------------------------------------------------------------------------
 // Connection management
 // ---------------------------------------------------------------------------
+// Phase 4 vault cutover: `upsert_mcp_connection` is METADATA-ONLY — it never
+// accepts a token/credential. Anything secret goes to aidream
+// (`features/agents/services/mcp-connections.service.ts`), which stores it in
+// a sealed vault item and links the connection.
 
 export interface UpsertConnectionParams {
   serverId: string;
-  accessToken?: string;
-  refreshToken?: string;
-  tokenExpiresAt?: string;
-  credentialsJson?: string;
   configId?: string;
   transport?: McpTransport;
-  oauthTokenEndpoint?: string;
-  oauthClientId?: string;
-  oauthScopes?: string[];
   endpointOverride?: string;
 }
 
@@ -45,30 +42,14 @@ export async function connectMcpServer(
 ): Promise<string> {
   const { data, error } = await supabase.rpc("upsert_mcp_connection", {
     p_server_id: params.serverId,
-    p_access_token: params.accessToken,
-    p_refresh_token: params.refreshToken,
-    p_token_expires_at: params.tokenExpiresAt,
-    p_credentials_json: params.credentialsJson,
     p_config_id: params.configId,
     p_transport: params.transport,
-    p_oauth_token_endpoint: params.oauthTokenEndpoint,
-    p_oauth_client_id: params.oauthClientId,
-    p_oauth_scopes: params.oauthScopes,
     p_endpoint_override: params.endpointOverride,
   });
 
   if (error) throw new Error(`Failed to connect MCP server: ${error.message}`);
 
   return data as string;
-}
-
-export async function disconnectMcpServer(serverId: string): Promise<void> {
-  const { error } = await supabase.rpc("disconnect_mcp_server", {
-    p_server_id: serverId,
-  });
-
-  if (error)
-    throw new Error(`Failed to disconnect MCP server: ${error.message}`);
 }
 
 // ---------------------------------------------------------------------------

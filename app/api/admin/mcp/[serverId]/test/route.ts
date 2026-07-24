@@ -11,7 +11,7 @@
  * Persists the result to the tool_mcp_server row's last_test_* columns so
  * the UI's freshness badges can read it without re-running the test.
  *
- * Distinct from /api/mcp/servers/:serverId/refresh, which runs the
+ * Distinct from the aidream /api/mcp-connections/:serverId/refresh path, which runs the
  * catalog-sync flow (a heavier operation that talks the actual MCP
  * tools/list protocol on the backend Python service).
  *

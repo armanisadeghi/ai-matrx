@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
+import { refreshMcpConnection } from "@/features/agents/services/mcp-connections.service";
 
 type Tables = Database["public"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
@@ -192,16 +193,9 @@ export function formatRelativeAge(seconds: number | null): string {
 }
 
 export async function refreshServer(serverId: string): Promise<void> {
-  const res = await fetch(`/api/mcp/servers/${serverId}/refresh`, { method: "POST" });
-  if (!res.ok) {
-    let detail = "";
-    try {
-      detail = (await res.json()).error ?? "";
-    } catch {
-      /* ignore */
-    }
-    throw new Error(detail || `Refresh failed (${res.status})`);
-  }
+  // Server-side OAuth refresh in aidream (vault Phase 4) — the browser never
+  // touches a token.
+  await refreshMcpConnection(serverId);
 }
 
 export interface McpTestResult {
@@ -306,7 +300,7 @@ export interface ProvisionMcpServerResult {
  *   4. system bundle in tool_bundle named <slug>, lister linked
  *
  * Returns IDs of all created rows + the recommended next step
- * (POST /api/mcp/servers/<id>/refresh to fetch the catalog).
+ * (aidream POST /api/mcp-connections/<id>/refresh).
  */
 export async function provisionMcpServer(
   input: ProvisionMcpServerInput,

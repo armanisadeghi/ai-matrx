@@ -3,9 +3,15 @@ import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import {
   fetchMcpCatalog,
   connectMcpServer as connectMcpServerService,
-  disconnectMcpServer as disconnectMcpServerService,
 } from "@/features/agents/services/mcp.service";
 import type { UpsertConnectionParams } from "@/features/agents/services/mcp.service";
+import {
+  disconnectMcpConnection,
+  discoverMcpServerTools,
+  persistMcpManualCredentials,
+  refreshMcpConnection,
+  type ManualAuthMethod,
+} from "@/features/agents/services/mcp-connections.service";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
 
 // ---------------------------------------------------------------------------
@@ -61,51 +67,74 @@ export const connectServer = createAsyncThunk(
   },
 );
 
+/**
+ * Connect with manual credentials (API key / bearer / basic / headers /
+ * stdio env). Values go straight to aidream and land in a sealed vault item —
+ * never in Redux, never in a DB RPC parameter.
+ */
+export const connectServerWithCredentials = createAsyncThunk(
+  "mcp/connectServerWithCredentials",
+  async (
+    params: {
+      serverId: string;
+      authMethod: ManualAuthMethod;
+      fields: Record<string, string>;
+      transport?: string;
+      configId?: string;
+      endpointOverride?: string;
+    },
+    { dispatch },
+  ) => {
+    const summary = await persistMcpManualCredentials(params.serverId, {
+      auth_method: params.authMethod,
+      fields: params.fields,
+      transport: params.transport,
+      config_id: params.configId,
+      endpoint_override: params.endpointOverride,
+    });
+    dispatch(fetchCatalog());
+    return { serverId: params.serverId, connectionId: summary.connection_id };
+  },
+);
+
 export const disconnectServer = createAsyncThunk(
   "mcp/disconnectServer",
   async (serverId: string, { dispatch }) => {
-    await disconnectMcpServerService(serverId);
+    // aidream clears the connection AND soft-deletes the vault item.
+    await disconnectMcpConnection(serverId);
     dispatch(fetchCatalog());
     return serverId;
   },
 );
 
-/** Discover tools/resources/prompts from a connected MCP server via the API route. */
+/**
+ * Discover tools from a connected MCP server. Runs in aidream with
+ * vault-resolved auth (Phase 4 cutover) — the browser never holds a token.
+ */
 export const discoverServerTools = createAsyncThunk(
   "mcp/discoverServerTools",
   async (serverId: string) => {
-    const response = await fetch(`/api/mcp/servers/${serverId}/tools`);
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      throw new Error(body.error ?? `Discovery failed (${response.status})`);
-    }
-    return (await response.json()) as {
-      serverId: string;
-      serverName: string;
-      serverSlug: string;
-      tools: McpToolSchema[];
-      resources: Array<{
+    const resp = await discoverMcpServerTools(serverId);
+    return {
+      serverId: resp.serverId,
+      serverSlug: resp.serverSlug,
+      tools: resp.tools,
+      resources: [] as Array<{
         uri: string;
         name: string;
         description?: string;
         mimeType?: string;
-      }>;
-      prompts: Array<{ name: string; description?: string }>;
+      }>,
+      prompts: [] as Array<{ name: string; description?: string }>,
     };
   },
 );
 
-/** Refresh the OAuth token for a server. */
+/** Refresh the OAuth token for a server — server-side, in aidream. */
 export const refreshServerToken = createAsyncThunk(
   "mcp/refreshServerToken",
   async (serverId: string) => {
-    const response = await fetch(`/api/mcp/servers/${serverId}/refresh`, {
-      method: "POST",
-    });
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      throw new Error(body.error ?? `Refresh failed (${response.status})`);
-    }
+    await refreshMcpConnection(serverId);
     return serverId;
   },
 );
@@ -160,6 +189,16 @@ const mcpSlice = createSlice({
         state.connectingServerId = null;
       })
       .addCase(connectServer.rejected, (state, action) => {
+        state.connectingServerId = null;
+        state.error = action.error.message ?? "Failed to connect MCP server";
+      })
+      .addCase(connectServerWithCredentials.pending, (state, action) => {
+        state.connectingServerId = action.meta.arg.serverId;
+      })
+      .addCase(connectServerWithCredentials.fulfilled, (state) => {
+        state.connectingServerId = null;
+      })
+      .addCase(connectServerWithCredentials.rejected, (state, action) => {
         state.connectingServerId = null;
         state.error = action.error.message ?? "Failed to connect MCP server";
       })

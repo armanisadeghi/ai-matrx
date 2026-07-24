@@ -14,6 +14,7 @@ import {
   selectMcpDiscoveries,
 } from "@/features/agents/redux/mcp/mcp.slice";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
+import { invokeMcpServerTool } from "@/features/agents/services/mcp-connections.service";
 
 const EMPTY_MCP_TOOLS: McpToolSchema[] = [];
 
@@ -78,19 +79,8 @@ export function useMcpServerTools(serverId: string | null) {
   const invokeTool = useCallback(
     async (toolName: string, args?: Record<string, unknown>) => {
       if (!serverId) throw new Error("No server ID");
-
-      const response = await fetch(`/api/mcp/servers/${serverId}/invoke`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool: toolName, arguments: args }),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error ?? `Invocation failed (${response.status})`);
-      }
-
-      return response.json();
+      // Runs in aidream with vault-resolved auth — no token in the browser.
+      return invokeMcpServerTool(serverId, toolName, args);
     },
     [serverId],
   );
@@ -130,19 +120,8 @@ export function useMcpAllTools() {
     async (toolName: string, args?: Record<string, unknown>) => {
       const tool = allTools.find((t) => t.name === toolName);
       if (!tool) throw new Error(`MCP tool not found: ${toolName}`);
-
-      const response = await fetch(`/api/mcp/servers/${tool.serverId}/invoke`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool: toolName, arguments: args }),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error ?? `Invocation failed (${response.status})`);
-      }
-
-      return response.json();
+      // Runs in aidream with vault-resolved auth — no token in the browser.
+      return invokeMcpServerTool(tool.serverId, toolName, args);
     },
     [allTools],
   );

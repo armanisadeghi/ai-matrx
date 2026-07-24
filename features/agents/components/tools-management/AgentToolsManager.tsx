@@ -81,7 +81,7 @@ import {
   selectMcpCatalogError,
   selectMcpConnectingServerId,
   fetchCatalog,
-  connectServer,
+  connectServerWithCredentials,
   disconnectServer,
 } from "@/features/agents/redux/mcp/mcp.slice";
 import type {
@@ -91,6 +91,7 @@ import type {
 } from "@/features/agents/types/mcp.types";
 import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
 import { fetchMcpServerConfigs } from "@/features/agents/services/mcp.service";
+import { headerFieldKey } from "@/features/agents/services/mcp-connections.service";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import type {
   CustomToolDefinition,
@@ -2912,9 +2913,10 @@ function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
     setError(null);
     try {
       await dispatch(
-        connectServer({
+        connectServerWithCredentials({
           serverId: entry.serverId,
-          accessToken: token.trim(),
+          authMethod: "bearer",
+          fields: { token: token.trim() },
           transport: entry.transport,
         }),
       ).unwrap();
@@ -3006,15 +3008,14 @@ function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
       return;
     }
     setError(null);
-    const credentials = JSON.stringify({
-      headerName: headerName.trim() || "X-API-Key",
-      apiKey: apiKey.trim(),
-    });
     try {
       await dispatch(
-        connectServer({
+        connectServerWithCredentials({
           serverId: entry.serverId,
-          credentialsJson: credentials,
+          authMethod: "headers",
+          fields: {
+            [headerFieldKey(headerName.trim() || "X-API-Key")]: apiKey.trim(),
+          },
           transport: entry.transport,
         }),
       ).unwrap();
@@ -3158,12 +3159,15 @@ function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
     }
 
     setError(null);
-    const credentials = JSON.stringify(envValues);
+    const filledEnv = Object.fromEntries(
+      Object.entries(envValues).filter(([, v]) => v.trim().length > 0),
+    );
     try {
       await dispatch(
-        connectServer({
+        connectServerWithCredentials({
           serverId: entry.serverId,
-          credentialsJson: credentials,
+          authMethod: "stdio_env",
+          fields: filledEnv,
           configId: selectedConfigId ?? undefined,
           transport: entry.transport,
         }),

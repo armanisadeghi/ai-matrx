@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchCatalog,
-  connectServer,
+  connectServerWithCredentials,
   disconnectServer,
   selectMcpCatalog,
   selectMcpCatalogStatus,
@@ -226,9 +226,10 @@ export default function IntegrationsPage() {
   const handleBearerConnect = useCallback(
     (serverId: string, token: string) => {
       dispatch(
-        connectServer({
+        connectServerWithCredentials({
           serverId,
-          accessToken: token,
+          authMethod: "bearer",
+          fields: { token },
           transport: "http",
         }),
       );

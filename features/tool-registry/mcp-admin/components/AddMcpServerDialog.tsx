@@ -428,7 +428,7 @@ export function AddMcpServerDialog({ existingSlugs, onClose, onCreated }: Props)
               <div>
                 <Label className="text-xs">Auto-fetch catalog after provision</Label>
                 <p className="text-[11px] text-muted-foreground">
-                  Calls <code className="bg-background px-1 rounded">/api/mcp/servers/&lt;id&gt;/refresh</code>{" "}
+                  Calls the aidream <code className="bg-background px-1 rounded">/api/mcp-connections/&lt;id&gt;/refresh</code> endpoint{" "}
                   immediately after the rows are inserted. Disable if the server
                   isn't reachable yet.
                 </p>
