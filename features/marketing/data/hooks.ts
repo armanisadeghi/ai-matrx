@@ -66,12 +66,14 @@ import {
   updateBrandAsset,
   updateBusinessFact,
   fetchSiteAuditRows,
+  fetchSiteAuditTrendRows,
   updatePageIntent,
   updateProperty,
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
 import {
   buildSiteAuditRollup,
+  buildSiteAuditTrend,
   type SiteAuditRollup,
 } from "@/features/marketing/lib/audit-rollup";
 import type {
@@ -90,6 +92,8 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "overview"] as const,
   auditRollup: (siteId: string) =>
     [...marketingKeys.site(siteId), "audit-rollup"] as const,
+  auditTrend: (siteId: string) =>
+    [...marketingKeys.site(siteId), "audit-trend"] as const,
   homepageMeta: (siteId: string) =>
     [...marketingKeys.site(siteId), "homepage-meta"] as const,
   heroScreenshot: (siteId: string) =>
@@ -720,6 +724,20 @@ export function useSiteAuditRollup(siteId: string) {
     queryKey: marketingKeys.auditRollup(siteId),
     queryFn: async ({ signal }) =>
       buildSiteAuditRollup(await fetchSiteAuditRows(siteId, signal)),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Site audit score trend (M-55) over stored deterministic metrics across
+ * EVERY historical snapshot (not just the latest per page). Aggregation is
+ * pure (lib/audit-rollup.ts::buildSiteAuditTrend).
+ */
+export function useSiteAuditTrend(siteId: string) {
+  return useQuery({
+    queryKey: marketingKeys.auditTrend(siteId),
+    queryFn: async ({ signal }) =>
+      buildSiteAuditTrend(await fetchSiteAuditTrendRows(siteId, signal)),
     staleTime: 60_000,
   });
 }

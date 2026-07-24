@@ -4,6 +4,7 @@ import type {
   BacklinkObservationRow,
   BacklinkPagedResult,
   BacklinkSnapshotRow,
+  BacklinkTrendPoint,
   BacklinkWorkspaceData,
 } from "@/features/marketing/data/backlinks-types";
 import { supabase } from "@/utils/supabase/client";
@@ -120,6 +121,64 @@ export async function getBacklinkWorkspace(
     targetPages,
     competitors,
   };
+}
+
+const TREND_ROW_CAP = 500;
+
+/**
+ * New/lost backlink trend (M-61): reads the DataForSEO timeseries snapshots
+ * already stored per site — `timeseries_new_lost_summary` (new/lost per
+ * period) merged with `timeseries_summary` (total/referring-domain running
+ * counts for the same period). Both datasets land one row PER historical
+ * period from a single provider call, so this is a pure read — no refresh
+ * triggered here.
+ */
+export async function getBacklinkTrend(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<BacklinkTrendPoint[]> {
+  const db = await seoDb();
+  const abortSignal = signal ?? new AbortController().signal;
+  const [newLostResponse, totalsResponse] = await Promise.all([
+    db
+      .from("backlink_snapshot")
+      .select("observed_at, new_backlinks, lost_backlinks")
+      .eq("site_id", siteId)
+      .eq("dataset", "timeseries_new_lost_summary")
+      .order("observed_at", { ascending: true })
+      .limit(TREND_ROW_CAP)
+      .abortSignal(abortSignal),
+    db
+      .from("backlink_snapshot")
+      .select("observed_at, total_backlinks, referring_domains")
+      .eq("site_id", siteId)
+      .eq("dataset", "timeseries_summary")
+      .order("observed_at", { ascending: true })
+      .limit(TREND_ROW_CAP)
+      .abortSignal(abortSignal),
+  ]);
+  const newLostRows = assertData(newLostResponse.data, newLostResponse.error);
+  const totalsRows = assertData(totalsResponse.data, totalsResponse.error);
+  const totalsByDate = new Map(
+    totalsRows.map((row) => [row.observed_at, row]),
+  );
+
+  return newLostRows.map((row) => {
+    const totals = totalsByDate.get(row.observed_at);
+    const newBacklinks = row.new_backlinks;
+    const lostBacklinks = row.lost_backlinks;
+    return {
+      observed_at: row.observed_at,
+      new_backlinks: newBacklinks,
+      lost_backlinks: lostBacklinks,
+      net_backlinks:
+        newBacklinks === null && lostBacklinks === null
+          ? null
+          : (newBacklinks ?? 0) - (lostBacklinks ?? 0),
+      total_backlinks: totals?.total_backlinks ?? null,
+      referring_domains: totals?.referring_domains ?? null,
+    };
+  });
 }
 
 const BACKLINK_SORT_COLUMNS = new Set([

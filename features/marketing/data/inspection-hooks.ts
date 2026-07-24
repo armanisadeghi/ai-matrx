@@ -12,7 +12,7 @@ import {
 } from "@/features/marketing/data/inspection-queries";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 
-const inspectionKeys = {
+export const inspectionKeys = {
   homepageScreenshot: (siteId: string, screenshotId: string) =>
     [
       ...marketingKeys.site(siteId),

@@ -4,7 +4,10 @@ import {
   parseStoredSeoMetrics,
 } from "@/features/seo/serp/metrics";
 import { parseStoredAuditMetrics } from "@/features/seo/audit/stored";
-import type { AuditSourceRow } from "@/features/marketing/lib/audit-rollup";
+import type {
+  AuditSourceRow,
+  AuditTrendSourceRow,
+} from "@/features/marketing/lib/audit-rollup";
 import type {
   BrandAsset,
   BrandListRow,
@@ -2475,4 +2478,74 @@ export async function fetchSiteAuditRows(
       audit_metrics: metrics?.audit_metrics ?? null,
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Site audit SCORE TREND (M-55) — every historical `web.snapshot` row for
+// the site's pages, not just each page's latest. Snapshots are immutable
+// evidence written once per capture (crawl/fetch), so a site that has been
+// crawled on multiple days already has real per-day audit history sitting
+// in this table — this reads it, aggregation is pure (audit-rollup.ts).
+// ---------------------------------------------------------------------------
+
+const AUDIT_TREND_SNAPSHOT_CAP = 20000;
+const AUDIT_TREND_PAGE_SIZE = 1000;
+
+export async function fetchSiteAuditTrendRows(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<AuditTrendSourceRow[]> {
+  const db = await authenticatedWebDb(supabase);
+  const pages: { id: string; url: string; path: string | null }[] = [];
+  for (let offset = 0; ; offset += AUDIT_PAGE_SIZE) {
+    if (offset >= AUDIT_PAGE_CAP) {
+      throw new Error(
+        `Site audit trend exceeded its ${AUDIT_PAGE_CAP}-page bound — refusing to return a silently truncated trend.`,
+      );
+    }
+    const response = await db
+      .from("page")
+      .select("id, url, path")
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .order("id", { ascending: true })
+      .range(offset, offset + AUDIT_PAGE_SIZE - 1)
+      .abortSignal(signal ?? new AbortController().signal);
+    const batch = assertData(response.data, response.error);
+    pages.push(...batch);
+    if (batch.length < AUDIT_PAGE_SIZE) break;
+  }
+  const pageById = new Map(pages.map((page) => [page.id, page]));
+
+  const rows: AuditTrendSourceRow[] = [];
+  for (
+    let offset = 0;
+    offset < AUDIT_TREND_SNAPSHOT_CAP;
+    offset += AUDIT_TREND_PAGE_SIZE
+  ) {
+    const response = await db
+      .from("snapshot")
+      .select("page_id, captured_at, seo_metrics, audit_metrics")
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .order("captured_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + AUDIT_TREND_PAGE_SIZE - 1)
+      .abortSignal(signal ?? new AbortController().signal);
+    const batch = assertData(response.data, response.error);
+    for (const snapshot of batch) {
+      const page = pageById.get(snapshot.page_id);
+      if (!page) continue;
+      rows.push({
+        id: page.id,
+        url: page.url,
+        path: page.path,
+        seo_metrics: snapshot.seo_metrics,
+        audit_metrics: snapshot.audit_metrics,
+        capturedDay: snapshot.captured_at.slice(0, 10),
+      });
+    }
+    if (batch.length < AUDIT_TREND_PAGE_SIZE) break;
+  }
+  return rows;
 }

@@ -10,25 +10,35 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
   Globe,
   Link2Off,
+  Loader2,
+  ShieldCheck,
   Search,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
+import { extractErrorMessage } from "@/utils/errors";
+import { toast } from "@/lib/toast";
 
 import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
-import { useLinkGraphEdges } from "@/features/marketing/data/inspection-hooks";
+import {
+  inspectionKeys,
+  useLinkGraphEdges,
+} from "@/features/marketing/data/inspection-hooks";
+import { checkSiteLinks } from "@/features/marketing/crawler/direct-client";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 
 import {
@@ -60,6 +70,24 @@ function StatChip({
       </span>{" "}
       {label}
     </span>
+  );
+}
+
+function HttpStatusBadge({ httpStatus }: { httpStatus: number | null }) {
+  if (httpStatus === null) return null;
+  const broken = httpStatus === 0 || httpStatus >= 400;
+  const redirect = httpStatus >= 300 && httpStatus < 400;
+  return (
+    <Badge
+      variant={broken ? "destructive" : "outline"}
+      className={cn(
+        "shrink-0 text-[10px] tabular-nums",
+        !broken && redirect && "border-amber-500/50 text-amber-700 dark:text-amber-400",
+        !broken && !redirect && "border-success/40 text-success",
+      )}
+    >
+      {httpStatus === 0 ? "no response" : httpStatus}
+    </Badge>
   );
 }
 
@@ -133,6 +161,7 @@ function DomainRow({
                 >
                   <ExternalLink className="h-3 w-3" />
                 </a>
+                <HttpStatusBadge httpStatus={target.httpStatus} />
                 {target.nofollow ? (
                   <Badge variant="outline" className="shrink-0 text-[10px]">
                     nofollow
@@ -185,13 +214,47 @@ function DomainRow({
 
 export function ExternalLinksView({ crawlId }: { crawlId?: string }) {
   const { site, sitePath } = useMarketingSite();
+  const queryClient = useQueryClient();
   const query = useLinkGraphEdges(site.id, crawlId ?? null);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [checking, setChecking] = useState(false);
+
+  const runLinkCheck = async () => {
+    setChecking(true);
+    try {
+      await checkSiteLinks(site.id);
+      await queryClient.invalidateQueries({
+        queryKey: inspectionKeys.linkGraph(site.id, crawlId ?? null),
+      });
+      toast.success("Link status check complete.");
+    } catch (error) {
+      toast.error("Link status check failed", {
+        description: extractErrorMessage(error),
+      });
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const report = useMemo(
     () => (query.data ? buildExternalLinkReport(query.data.rows) : null),
     [query.data],
+  );
+  const brokenTargets = useMemo(
+    () =>
+      report
+        ? report.domains.reduce(
+            (sum, domain) =>
+              sum +
+              domain.targets.filter(
+                (target) =>
+                  target.httpStatus !== null && target.httpStatus >= 400,
+              ).length,
+            0,
+          )
+        : 0,
+    [report],
   );
 
   const filtered = useMemo(() => {
@@ -287,6 +350,9 @@ export function ExternalLinksView({ crawlId }: { crawlId?: string }) {
           tone="warning"
         />
         <StatChip value={report.linkingPages} label="pages link out" />
+        {!report.statusUnchecked ? (
+          <StatChip value={brokenTargets} label="broken" tone="warning" />
+        ) : null}
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {query.data.truncated ? (
             <span className="text-[11px] tabular-nums text-muted-foreground">
@@ -294,14 +360,27 @@ export function ExternalLinksView({ crawlId }: { crawlId?: string }) {
               {query.data.total.toLocaleString()} rows
             </span>
           ) : null}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5 text-xs"
+            disabled={checking}
+            onClick={() => void runLinkCheck()}
+          >
+            {checking ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ShieldCheck className="h-3.5 w-3.5" />
+            )}
+            Check link status
+          </Button>
           <CopyButtons size="icon" {...copy} />
         </div>
       </div>
       {report.statusUnchecked ? (
         <p className="shrink-0 border-b border-border bg-amber-500/5 px-3 py-1.5 text-[11px] text-amber-700 dark:text-amber-400">
-          Outbound target status has not been checked yet — the crawler records
-          these links but does not (yet) verify their HTTP status, so broken
-          outbound links cannot be flagged.
+          None of these outbound targets have been HTTP-checked yet — click
+          "Check link status" above to verify them and flag broken links.
         </p>
       ) : null}
       <ul className="min-h-0 flex-1 overflow-y-auto">

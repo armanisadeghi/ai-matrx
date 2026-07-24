@@ -36,9 +36,11 @@ import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/sit
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   backlinkKeys,
+  useBacklinkTrend,
   useBacklinkWorkspace,
   useLatestBacklinks,
 } from "@/features/marketing/data/backlinks-hooks";
+import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/BacklinkTrendChart";
 import type {
   BacklinkDimensionRow,
   BacklinkObservationRow,
@@ -154,6 +156,7 @@ export function BacklinksWorkspace() {
     defaultPageSize: 50,
   });
   const workspace = useBacklinkWorkspace(site.id);
+  const trend = useBacklinkTrend(site.id);
   const backlinks = useLatestBacklinks(site.id, table.queryState);
   const [profile, setProfile] = useState<BacklinkRefreshProfile>("bootstrap");
   const [refreshing, setRefreshing] = useState(false);
@@ -226,6 +229,9 @@ export function BacklinksWorkspace() {
       setReceipt(nextReceipt);
       await queryClient.invalidateQueries({
         queryKey: backlinkKeys.workspace(site.id),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: backlinkKeys.trend(site.id),
       });
       await queryClient.invalidateQueries({
         queryKey: [
@@ -511,6 +517,29 @@ export function BacklinksWorkspace() {
             summary ? formatCompactDate(summary.created_at) : "No snapshot yet"
           }
         />
+      </section>
+
+      <section className="rounded-lg border border-border bg-card p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-xs font-semibold">
+              New vs. lost backlinks over time
+            </h2>
+            <p className="text-[10px] text-muted-foreground">
+              From the stored DataForSEO backlink timeseries — no re-fetch
+              required once a weekly or bootstrap refresh has run.
+            </p>
+          </div>
+        </div>
+        {trend.isLoading ? (
+          <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
+            Loading trend…
+          </div>
+        ) : trend.isError ? (
+          <QueryError error={trend.error} onRetry={() => void trend.refetch()} />
+        ) : (
+          <BacklinkTrendChart points={trend.data ?? []} />
+        )}
       </section>
 
       <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">

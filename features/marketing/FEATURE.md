@@ -162,6 +162,29 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-23 — Claude (WS-15): D74/DEF-15 CLOSED — the External Links unchecked-status
+  notice from 2026-07-20 is resolved, and it was never actually a scraper gap: the
+  link-check pipeline (`matrx_scraper.web_crawl.link_check`, built 2026-07-21) had been
+  a silent no-op the whole time because a matrx-frontend migration one day earlier
+  (`web_crawl_artifact_immutable_trigger_security.sql` → `web.reject_immutable_fact_mutation`)
+  blanket-rejects every UPDATE on `web.link_edge`. Fixed at the DB
+  (`db/migrations/0240_web_link_edge_http_status_mutable.sql` in aidream, narrows the
+  trigger to allow an `http_status`-only UPDATE, everything else stays immutable).
+  `ExternalLinksView.tsx` gained a "Check link status" button (streams
+  `POST /crawler/sites/{id}/links/check`), per-target HTTP-status badges, and a broken-
+  link stat chip — live-verified against `allgreenrecycling.com` (120,240 edges, all
+  NULL before → tens of thousands populated after). Also shipped: the new/lost backlink
+  trend chart at `.../backlinks` (M-61, `BacklinkTrendChart.tsx` — reads the
+  `timeseries_new_lost_summary`/`timeseries_summary` datasets already stored on
+  `seo.backlink_snapshot`, no refresh needed to see real history) and a site-audit score
+  trend sparkline at `.../audit` (M-55, `AuditScoreTrendChart.tsx` — aggregates
+  `buildSiteAuditRollup` per historical `web.snapshot` capture day instead of only the
+  latest, reusing the same pure rollup function, zero forked scoring logic). Found but
+  NOT fixed (filed in aidream `FOUND_DEFECTS.md`): the same immutability trigger still
+  blocks `link_resolution.py`'s `target_page_id` backfill (tiny blast radius), and
+  `web.analysis_result` is completely empty platform-wide — `v_page_score`/`v_site_score`
+  have zero real rows despite M-46 claiming WORKING.
+
 - 2026-07-22 — Claude: Marketing surface fleet — 16 new surfaces (+`marketing-page` gaining `inheritsFrom`) with brand→site→vertical inheritance, purpose-driven intros, 36 agent-role slots, and honest value declarations; DB fully mirrored (rows, values, roles, intros, url_patterns, parents — verified live); nested-dynamic route→surface resolver + tests; runtime emitters (`SurfaceRuntimeProvider` + manifest scope helpers over loaded query data) wired across the brand cockpit, portfolios, batches, page workspace (with v3 context menu on page content), site layout, and the site verticals.
 
 - 2026-07-22 — Claude: brand editorial profile + surface parent-context builders — `BrandProfile` type with `parseBrandProfile`/`brandProfileToJson` narrowers over the new `web.brand.profile` jsonb; collapsible "Brand profile" section in `BrandEditorDialog` (create + edit, list fields one-per-line); brand create/update paths carry `profile`; new pure `lib/surface-context.ts` (`buildBrandContextXml` / `buildSiteContextXml`, unit-tested) emitting the compact `brand_context` / `site_context` XML the Marketing surface fleet inherits.

@@ -15,7 +15,11 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingAuditScope } from "@/features/surfaces/manifests/marketing-audit.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
-import { useSiteAuditRollup } from "@/features/marketing/data/hooks";
+import {
+  useSiteAuditRollup,
+  useSiteAuditTrend,
+} from "@/features/marketing/data/hooks";
+import { AuditScoreTrendChart } from "@/features/marketing/components/audit/AuditScoreTrendChart";
 import {
   LoadingSurface,
   MetricCell,
@@ -26,6 +30,7 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type {
   AuditIssueRollup,
   AuditSection,
+  AuditTrendPoint,
   SiteAuditRollup,
 } from "@/features/marketing/lib/audit-rollup";
 import { cn } from "@/lib/utils";
@@ -133,9 +138,11 @@ function IssueRow({
 function AuditBody({
   rollup,
   sitePath,
+  trendPoints,
 }: {
   rollup: SiteAuditRollup;
   sitePath: string;
+  trendPoints: AuditTrendPoint[];
 }) {
   const pagePath = (pageId: string) => `${sitePath}/pages/${pageId}`;
   const copy = webCopy({
@@ -230,6 +237,12 @@ function AuditBody({
           </div>
         </SectionCard>
 
+        <SectionCard title="Score trend">
+          <div className="p-4">
+            <AuditScoreTrendChart points={trendPoints} />
+          </div>
+        </SectionCard>
+
         <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard title="Top issues">
             {rollup.topIssues.length === 0 ? (
@@ -304,6 +317,7 @@ export function AuditWorkspace() {
   const { site, sitePath } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const rollup = useSiteAuditRollup(site.id);
+  const trend = useSiteAuditTrend(site.id);
   if (rollup.isLoading)
     return <LoadingSurface label="Aggregating site audit…" />;
   if (rollup.isError || !rollup.data) {
@@ -327,7 +341,11 @@ export function AuditWorkspace() {
         });
       }}
     >
-      <AuditBody rollup={rollup.data} sitePath={sitePath} />
+      <AuditBody
+        rollup={rollup.data}
+        sitePath={sitePath}
+        trendPoints={trend.data ?? []}
+      />
     </SurfaceRuntimeProvider>
   );
 }

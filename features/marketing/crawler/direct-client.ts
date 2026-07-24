@@ -396,6 +396,32 @@ export function startSiteCrawl(
   );
 }
 
+/**
+ * Backfill `web.link_edge.target_page_id` for the site's internal edges
+ * that were left unresolved at crawl-write time (rare — most edges resolve
+ * inline during the crawl).
+ */
+export function resolveSiteLinks(
+  siteId: string,
+  callbacks?: CrawlStreamCallbacks,
+): Promise<CrawlStreamResult> {
+  return streamCommand(`sites/${siteId}/links/resolve`, null, callbacks);
+}
+
+/**
+ * Populate `web.link_edge.http_status` for the site's internal + external
+ * edges (M-51 / DEF-15 / D74) — internal edges resolve from their target
+ * page's latest crawled snapshot (no network); external targets get a
+ * bounded, polite live HEAD/GET check. Idempotent: only NULL statuses are
+ * touched (the server route does not yet expose a `recheck` toggle).
+ */
+export function checkSiteLinks(
+  siteId: string,
+  callbacks?: CrawlStreamCallbacks,
+): Promise<CrawlStreamResult> {
+  return streamCommand(`sites/${siteId}/links/check`, null, callbacks);
+}
+
 export async function cancelCrawl(sessionId: string): Promise<void> {
   const token = await bearerToken();
   const response = await fetch(
