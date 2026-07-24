@@ -1,5 +1,8 @@
 import type { Database } from "@/types/database.types";
-import type { components } from "@/types/python-generated/api-types";
+import type {
+  KeywordResearchResult,
+  KeywordVolumeRefreshResult,
+} from "@/types/python-generated/stream-events";
 
 export type KeywordRow = Database["seo"]["Tables"]["keyword"]["Row"];
 export type KeywordMarketRow =
@@ -36,9 +39,9 @@ export interface KeywordEdgeView {
   partner_phrase: string;
 }
 
-export type KeywordResearchResponse =
-  components["schemas"]["KeywordResearchResult"];
-export type KeywordVolumeRefreshResponse =
-  components["schemas"]["KeywordVolumeRefreshResult"];
+/** Streamed via the `seo.research_completed` data event — the routes stream
+ * NDJSON, so these live in stream-events.ts, not the OpenAPI api-types. */
+export type KeywordResearchResponse = KeywordResearchResult;
+export type KeywordVolumeRefreshResponse = KeywordVolumeRefreshResult;
 
 export const US_LOCATION_CODE = 2840;

@@ -1484,6 +1484,49 @@ export function isContextGroomedEvent(value: unknown): value is ContextGroomedEv
     && (value as { kind?: unknown }).kind === "value_store.groomed";
 }
 
+// --- SEO Streamed Result Models (kind-discriminated data events) ---
+
+export interface KeywordClassifyResult {
+  eligible?: number;
+  batches?: number;
+  updated?: number;
+  skipped_error?: number;
+  missing_keyword_ids?: string[];
+}
+
+export interface KeywordResearchIngestSummary {
+  primary_keyword_ids?: string[];
+  keywords_created?: number;
+  keywords_already_existed?: number;
+  edges_written?: number;
+  edges_skipped_rejected?: number;
+  edges_skipped_self?: number;
+}
+
+export interface KeywordVolumeBatchReceipt {
+  run_id: string;
+  keyword_count: number;
+  created_observations?: number;
+  existing_observations?: number;
+  from_cache?: boolean;
+}
+
+export interface KeywordVolumeRefreshResult {
+  requested_phrases?: number;
+  skipped_fresh?: number;
+  fetched_phrases?: number;
+  batches?: KeywordVolumeBatchReceipt[];
+}
+
+export interface KeywordResearchResult {
+  primary_keyword: string;
+  research_doc_id: string;
+  artifact: Record<string, unknown>;
+  ingest: KeywordResearchIngestSummary;
+  volume?: KeywordVolumeRefreshResult | null;
+  classification?: KeywordClassifyResult | null;
+}
+
 // --- Completion Result Models ---
 
 export interface LlmRequestResult {
