@@ -18,10 +18,65 @@ import {
   AVAILABLE_AGENTS_OPEN,
   AVAILABLE_AGENTS_RE,
   DUMP_COLUMNS,
+  NAMER_DUMP_COLUMNS,
   ORCHESTRATOR_TEMPLATE_ID,
 } from "./constants";
 
 type DefinitionUpdate = Database["agent"]["Tables"]["definition"]["Update"];
+
+/** A member row + config, as read for the "backfill missing identity" pass. */
+export interface MemberConfigRow {
+  id: string;
+  name: string | null;
+  description: string | null;
+  messages: unknown;
+  variable_definitions: unknown;
+  output_schema: unknown;
+}
+
+/** The Agent Namer's per-agent output. */
+export interface NamedAgent {
+  id: string;
+  name: string;
+  description: string;
+}
+
+/** True when a member field is blank and should be backfilled (never overwrite an author's value). */
+export function isBlankIdentity(value: string | null | undefined): boolean {
+  return !value || value.trim().length === 0;
+}
+
+/**
+ * Parse the Agent Namer's output into `{id,name,description}` rows. Robust to a
+ * stray code fence or surrounding prose: takes the first `[` … last `]` span and
+ * JSON-parses it. Returns [] on anything unparseable (caller treats as "no
+ * updates") — we never write a malformed identity.
+ */
+export function parseNamerOutput(raw: string): NamedAgent[] {
+  const t = (raw ?? "").trim();
+  if (!t) return [];
+  const first = t.indexOf("[");
+  const last = t.lastIndexOf("]");
+  if (first === -1 || last === -1 || last < first) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(t.slice(first, last + 1));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const out: NamedAgent[] = [];
+  for (const row of parsed) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    const id = typeof r.id === "string" ? r.id.trim() : "";
+    const name = typeof r.name === "string" ? r.name.trim() : "";
+    const description =
+      typeof r.description === "string" ? r.description.trim() : "";
+    if (id) out.push({ id, name, description });
+  }
+  return out;
+}
 
 /**
  * Pull just the <agent> blocks out of the generator's raw output, robust to:
@@ -88,6 +143,54 @@ export const orchestratorService = {
       const rows = Array.isArray(data) ? data : [];
       if (rows.length === 0) return err("internal", "None of the selected agents were readable");
       return ok(JSON.stringify(rows, null, 2));
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /**
+   * Read the member rows' identity + config for the "backfill missing name/
+   * description" pass. Includes the system prompt so the namer has real signal.
+   */
+  async fetchMemberConfigs(
+    memberIds: string[],
+  ): Promise<ScopesRpcResult<MemberConfigRow[]>> {
+    try {
+      if (memberIds.length === 0) return ok([]);
+      const { data, error } = await supabase
+        .schema("agent")
+        .from("definition")
+        .select(NAMER_DUMP_COLUMNS)
+        .in("id", memberIds);
+      if (error) return err(...mapPgErrorPair(error));
+      return ok((Array.isArray(data) ? data : []) as unknown as MemberConfigRow[]);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /**
+   * Write a generated name/description to a member — ONLY the fields passed. The
+   * caller decides per-field (blank-only) so an author's existing value is never
+   * touched. No-op (ok) when `patch` is empty. RLS may reject a member the caller
+   * can't edit (e.g. a shared, foreign-org agent); that surfaces as an error the
+   * backfill loop tolerates per-member.
+   */
+  async updateAgentIdentity(
+    agentId: string,
+    patch: { name?: string; description?: string },
+  ): Promise<ScopesRpcResult<null>> {
+    try {
+      if (patch.name === undefined && patch.description === undefined) {
+        return ok(null);
+      }
+      const { error } = await supabase
+        .schema("agent")
+        .from("definition")
+        .update(patch as DefinitionUpdate)
+        .eq("id", agentId);
+      if (error) return err(...mapPgErrorPair(error));
+      return ok(null);
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

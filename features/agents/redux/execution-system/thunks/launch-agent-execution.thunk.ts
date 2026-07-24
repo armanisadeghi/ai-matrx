@@ -54,7 +54,10 @@ import { setUserVariableValues } from "../instance-variable-values/instance-vari
 import { setContextEntries } from "../instance-context/instance-context.slice";
 import { setUserInputText } from "../instance-user-input/instance-user-input.slice";
 import { setDisplayMode as setDisplayModeAction } from "../instance-ui-state/instance-ui-state.slice";
-import { selectRequest } from "../active-requests/active-requests.selectors";
+import {
+  selectRequest,
+  deriveAnswerText,
+} from "../active-requests/active-requests.selectors";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
@@ -119,11 +122,12 @@ async function pollForCompletion(
       request &&
       (request.status === "complete" || request.status === "error")
     ) {
-      return (
-        request.renderBlockOrder
-          .map((id) => request.renderBlocks[id]?.content ?? "")
-          .join("\n") || ""
-      );
+      // Derive the ANSWER text via the canonical rule — this EXCLUDES
+      // `thinking`/`reasoning` blocks. A raw join over renderBlockOrder would
+      // leak the model's chain-of-thought into `responseText`, which headless
+      // consumers persist verbatim (e.g. the orchestrator's system prompt in
+      // agent sets). Never hand-roll a parallel block filter here.
+      return deriveAnswerText(request);
     }
     await new Promise((r) => setTimeout(r, intervalMs));
   }

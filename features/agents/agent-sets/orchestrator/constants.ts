@@ -22,6 +22,28 @@ export const AGENT_DESCRIPTION_GENERATOR_ID = "62d56534-b4e2-47a4-9d97-d0759f68e
 export const GENERATOR_INPUT_VAR = "agent_config";
 
 /**
+ * The "Agent Namer" builtin system agent. Given a JSON dump of agent configs
+ * ({id,name,description,messages,variable_definitions,output_schema}), it returns
+ * a strict JSON array of `{id,name,description}`. Used by "Sync agent listings"
+ * to BACKFILL member agents that are missing a name and/or description — only the
+ * empty fields are written, never an author's existing value. Run headlessly via
+ * `launchAgentExecution` (raw UUID; not in the FE SYSTEM_AGENTS registry).
+ * Seeded by `migrations/agent_namer_builtin_seed.sql`.
+ */
+export const AGENT_NAMER_ID = "a3e9d1c4-7b62-4f08-9c5a-2d6e8f0b1a37";
+
+/** The variable the Agent Namer reads (the agents dump JSON). */
+export const NAMER_INPUT_VAR = "agent_config";
+
+/**
+ * Columns fed to the Agent Namer for each member missing an identity. Unlike the
+ * orchestrator dump this INCLUDES `messages` — the system prompt is the strongest
+ * signal for a good name, and there is no orchestrator prompt to keep terse here.
+ */
+export const NAMER_DUMP_COLUMNS =
+  "id, name, description, messages, variable_definitions, output_schema" as const;
+
+/**
  * The injection site in the orchestrator's system prompt. We replace everything
  * between the open/close tags with the generated agent blocks. If this marker is
  * absent the orchestrator prompt is not template-shaped → fail loudly, never write

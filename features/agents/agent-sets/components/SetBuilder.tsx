@@ -87,8 +87,14 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
     setSyncing(true);
     const res = await dispatch(syncOrchestratorPrompt({ orchestratorId, memberIds }));
     setSyncing(false);
-    if (res.ok) toast.success("Orchestrator prompt synced with the current members.");
-    else toast.error(res.error ?? "Could not sync the orchestrator prompt.");
+    if (res.ok) {
+      const named = res.membersUpdated ?? 0;
+      toast.success(
+        named > 0
+          ? `Orchestrator prompt synced — named ${named} agent${named === 1 ? "" : "s"} that were missing a name or description.`
+          : "Orchestrator prompt synced with the current members.",
+      );
+    } else toast.error(res.error ?? "Could not sync the orchestrator prompt.");
   };
 
   const loading = status === "idle" || (status === "loading" && members.length === 0 && !exists);
