@@ -28969,7 +28969,6 @@ export type Database = {
         Args: { p_after_position: number; p_conversation_id: string }
         Returns: Json
       }
-      decrypt_mcp_token: { Args: { p_encrypted: string }; Returns: string }
       delete_arg: { Args: { p_arg_id: string }; Returns: undefined }
       delete_by_id: {
         Args: { p_ids: string[]; p_table_name: string }
@@ -29177,10 +29176,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      disconnect_mcp_server: {
-        Args: { p_server_id: string }
-        Returns: undefined
-      }
       dissociate_from_task: {
         Args: { p_entity_id: string; p_entity_type: string; p_task_id: string }
         Returns: Json
@@ -29372,7 +29367,6 @@ export type Database = {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: undefined
       }
-      encrypt_mcp_token: { Args: { p_plaintext: string }; Returns: string }
       ensure_folder_chain: {
         Args: { p_folder_path: string; p_owner_id: string }
         Returns: string
@@ -29429,7 +29423,6 @@ export type Database = {
         Args: { operations: Json; options?: Json }
         Returns: Json
       }
-      execute_safe_query: { Args: { query: string }; Returns: Json }
       expand_archetype: {
         Args: { p_archetype: string; p_choices?: Json }
         Returns: Json
@@ -30456,23 +30449,6 @@ export type Database = {
           transport_used: Database["public"]["Enums"]["mcp_transport"]
           vendor: string
           website_url: string
-        }[]
-      }
-      get_mcp_credentials: {
-        Args: { p_server_id: string; p_user_id: string }
-        Returns: {
-          access_token: string
-          auth_strategy: Database["public"]["Enums"]["mcp_auth_strategy"]
-          connection_id: string
-          credentials_json: string
-          endpoint_url: string
-          oauth_client_id: string
-          oauth_token_endpoint: string
-          refresh_token: string
-          server_slug: string
-          status: Database["public"]["Enums"]["mcp_connection_status"]
-          token_expires_at: string
-          transport: Database["public"]["Enums"]["mcp_transport"]
         }[]
       }
       get_missing_broker_ids:
@@ -32851,16 +32827,9 @@ export type Database = {
       }
       upsert_mcp_connection: {
         Args: {
-          p_access_token?: string
           p_config_id?: string
-          p_credentials_json?: string
           p_endpoint_override?: string
-          p_oauth_client_id?: string
-          p_oauth_scopes?: string[]
-          p_oauth_token_endpoint?: string
-          p_refresh_token?: string
           p_server_id: string
-          p_token_expires_at?: string
           p_transport?: Database["public"]["Enums"]["mcp_transport"]
         }
         Returns: string
@@ -39871,6 +39840,7 @@ export type Database = {
           high_top_of_page_bid: number | null
           id: string
           keyword_id: string
+          last_observed_at: string | null
           location_code: number
           low_top_of_page_bid: number | null
           metadata: Json
@@ -39881,6 +39851,8 @@ export type Database = {
           raw: Json | null
           search_volume: number | null
           seasonality_index: number | null
+          source_observation_id: string | null
+          source_provider: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -39899,6 +39871,7 @@ export type Database = {
           high_top_of_page_bid?: number | null
           id?: string
           keyword_id: string
+          last_observed_at?: string | null
           location_code?: number
           low_top_of_page_bid?: number | null
           metadata?: Json
@@ -39909,6 +39882,8 @@ export type Database = {
           raw?: Json | null
           search_volume?: number | null
           seasonality_index?: number | null
+          source_observation_id?: string | null
+          source_provider?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39927,6 +39902,7 @@ export type Database = {
           high_top_of_page_bid?: number | null
           id?: string
           keyword_id?: string
+          last_observed_at?: string | null
           location_code?: number
           low_top_of_page_bid?: number | null
           metadata?: Json
@@ -39937,6 +39913,8 @@ export type Database = {
           raw?: Json | null
           search_volume?: number | null
           seasonality_index?: number | null
+          source_observation_id?: string | null
+          source_provider?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -39956,6 +39934,111 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "location"
             referencedColumns: ["location_code"]
+          },
+          {
+            foreignKeyName: "keyword_market_source_observation_id_fkey"
+            columns: ["source_observation_id"]
+            isOneToOne: false
+            referencedRelation: "keyword_market_observation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keyword_market_observation: {
+        Row: {
+          competition: string | null
+          competition_index: number | null
+          cpc: number | null
+          created_at: string
+          created_by: string | null
+          dedup_key: string
+          high_top_of_page_bid: number | null
+          id: string
+          keyword_id: string
+          location_code: number
+          low_top_of_page_bid: number | null
+          metrics_task_id: string | null
+          monthly_searches: Json
+          observed_at: string
+          organization_id: string
+          provider: string
+          raw: Json | null
+          raw_payload_id: string | null
+          run_id: string | null
+          search_volume: number | null
+        }
+        Insert: {
+          competition?: string | null
+          competition_index?: number | null
+          cpc?: number | null
+          created_at?: string
+          created_by?: string | null
+          dedup_key: string
+          high_top_of_page_bid?: number | null
+          id?: string
+          keyword_id: string
+          location_code: number
+          low_top_of_page_bid?: number | null
+          metrics_task_id?: string | null
+          monthly_searches?: Json
+          observed_at: string
+          organization_id: string
+          provider: string
+          raw?: Json | null
+          raw_payload_id?: string | null
+          run_id?: string | null
+          search_volume?: number | null
+        }
+        Update: {
+          competition?: string | null
+          competition_index?: number | null
+          cpc?: number | null
+          created_at?: string
+          created_by?: string | null
+          dedup_key?: string
+          high_top_of_page_bid?: number | null
+          id?: string
+          keyword_id?: string
+          location_code?: number
+          low_top_of_page_bid?: number | null
+          metrics_task_id?: string | null
+          monthly_searches?: Json
+          observed_at?: string
+          organization_id?: string
+          provider?: string
+          raw?: Json | null
+          raw_payload_id?: string | null
+          run_id?: string | null
+          search_volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_market_observation_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keyword_market_observation_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["location_code"]
+          },
+          {
+            foreignKeyName: "keyword_market_observation_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keyword_market_observation_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -41877,10 +41960,11 @@ export type Database = {
       }
       mcp_user_conn: {
         Row: {
-          access_token_encrypted: string | null
+          auth_method: string | null
           config_id: string | null
           connected_at: string | null
           created_at: string
+          credential_item_id: string | null
           credentials_encrypted: string | null
           display_name: string
           endpoint_url_override: string | null
@@ -41897,7 +41981,6 @@ export type Database = {
           oauth_scopes_granted: string[] | null
           oauth_token_endpoint: string | null
           provider: string
-          refresh_token_encrypted: string | null
           server_id: string | null
           status: Database["public"]["Enums"]["mcp_connection_status"]
           token_expires_at: string | null
@@ -41906,10 +41989,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          access_token_encrypted?: string | null
+          auth_method?: string | null
           config_id?: string | null
           connected_at?: string | null
           created_at?: string
+          credential_item_id?: string | null
           credentials_encrypted?: string | null
           display_name: string
           endpoint_url_override?: string | null
@@ -41926,7 +42010,6 @@ export type Database = {
           oauth_scopes_granted?: string[] | null
           oauth_token_endpoint?: string | null
           provider?: string
-          refresh_token_encrypted?: string | null
           server_id?: string | null
           status?: Database["public"]["Enums"]["mcp_connection_status"]
           token_expires_at?: string | null
@@ -41935,10 +42018,11 @@ export type Database = {
           user_id: string
         }
         Update: {
-          access_token_encrypted?: string | null
+          auth_method?: string | null
           config_id?: string | null
           connected_at?: string | null
           created_at?: string
+          credential_item_id?: string | null
           credentials_encrypted?: string | null
           display_name?: string
           endpoint_url_override?: string | null
@@ -41955,7 +42039,6 @@ export type Database = {
           oauth_scopes_granted?: string[] | null
           oauth_token_endpoint?: string | null
           provider?: string
-          refresh_token_encrypted?: string | null
           server_id?: string | null
           status?: Database["public"]["Enums"]["mcp_connection_status"]
           token_expires_at?: string | null
@@ -43527,6 +43610,7 @@ export type Database = {
           account_email: string | null
           account_name: string | null
           created_at: string
+          credential_item_id: string | null
           deleted_at: string | null
           id: string
           last_error: string | null
@@ -43546,6 +43630,7 @@ export type Database = {
           account_email?: string | null
           account_name?: string | null
           created_at?: string
+          credential_item_id?: string | null
           deleted_at?: string | null
           id?: string
           last_error?: string | null
@@ -43565,6 +43650,7 @@ export type Database = {
           account_email?: string | null
           account_name?: string | null
           created_at?: string
+          credential_item_id?: string | null
           deleted_at?: string | null
           id?: string
           last_error?: string | null
@@ -43580,7 +43666,15 @@ export type Database = {
           updated_at?: string
           vault_secret_key?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "integration_connections_credential_item_id_fkey"
+            columns: ["credential_item_id"]
+            isOneToOne: false
+            referencedRelation: "credential_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invitation_codes: {
         Row: {
