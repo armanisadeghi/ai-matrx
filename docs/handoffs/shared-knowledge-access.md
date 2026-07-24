@@ -56,12 +56,20 @@ share of `editor` cascades editor. Same law, different issued level.
 - **Adjacent, do not absorb:** `docs/handoffs/db-direct-access-sweep.md` (Python-as-DB-proxy removal; owns the `rag.fn_*` conversions) · `docs/handoffs/ama-g5-spine-consolidation.md` (AMA *content* quality/derivations — different workstream, same document)
 - **Skills:** `db-change` family (any DDL), `canonical-associations` (edges/registry), `supabase-realtime`, `type-safety`, `finalize-and-ship`
 - **Live IDs (verified 2026-07-23):** AMA file `e9868104-e276-4cdb-97a4-b948a13eb135` · root processed doc `f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2` · AMA-G5 store `0158e878-1bab-4c91-9597-da4e8951c2a7` · industry `ca-workers-comp` `dfdff5a8-5b5d-40ef-92e3-b335e13c21c8` · Matrx Library org `5e44ec19-3965-4b12-91b2-b2bdb2712abc`
-- **Test identities:** entitled reader `admin@admin.com` / `Password1234#` (id `87a6e699-3622-4869-8843-d0867456c0dd`, member of Castellano & Reyes — **also a super_admin, so always pair any pass with a non-admin control**); non-entitled control `arman26@gmail.com` (id `7604b9d9-…`). ⚠️ The id `87a6e699-4e17-…` in older notes is **wrong** and does not exist — it will make every probe return false.
-- **Verify the spine in one shot** (expect `true,false,false`):
+- **Test identities.** Use the right one or you will prove nothing:
+  | Role | Who | Notes |
+  |---|---|---|
+  | **Clean entitled reader** (use for all DB/judge probes) | `elliesadeghijd@gmail.com` — `77c6af70-a35e-4724-a304-64a0dd789674` | **Not an admin.** Entitled *only* through Pearlman Brown → ca-workers-comp. This is the identity that actually proves the grant path. |
+  | Browser/HTTP testing | `admin@admin.com` / `Password1234#` — `87a6e699-3622-4869-8843-d0867456c0dd` | Member of Castellano & Reyes, but **also super_admin** — it reports `can_curate=true`, which a real grant reader must NOT have. Every pass with this account must be paired with the control below. |
+  | Non-entitled control | `arman26@gmail.com` — `7604b9d9-57f3-4c44-b75b-dc9a3ee8aacf` | Must be denied everything. |
+
+  ⚠️ The id `87a6e699-4e17-…` appearing in older notes is **wrong and does not exist** — every probe using it returns false, which reads exactly like a broken cascade.
+- **Verify the spine in one shot** — expect `t,f,t,f` (viewer yes, editor no, read yes, curate no):
   ```sql
-  select iam.has_access_as('87a6e699-3622-4869-8843-d0867456c0dd','file','e9868104-e276-4cdb-97a4-b948a13eb135','viewer'),
-         iam.has_access_as('87a6e699-3622-4869-8843-d0867456c0dd','file','e9868104-e276-4cdb-97a4-b948a13eb135','editor'),
-         iam.has_access_as('7604b9d9-57f3-4c44-b75b-dc9a3ee8aacf','file','e9868104-e276-4cdb-97a4-b948a13eb135','viewer');
+  select iam.has_access_as('77c6af70-a35e-4724-a304-64a0dd789674','file','e9868104-e276-4cdb-97a4-b948a13eb135','viewer') as viewer,
+         iam.has_access_as('77c6af70-a35e-4724-a304-64a0dd789674','file','e9868104-e276-4cdb-97a4-b948a13eb135','editor') as editor,
+         public.can_read_processed_document('f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2','77c6af70-a35e-4724-a304-64a0dd789674') as doc_read,
+         public.can_curate_library_document('f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2','77c6af70-a35e-4724-a304-64a0dd789674') as doc_curate;
   ```
 
 ## Remaining work

@@ -83,7 +83,8 @@ surfaces — it is admin/owner-gated and returns the full grant list.
 ## Verification
 
 Two-account browser pass (entitled `admin@admin.com` vs non-entitled `arman26@gmail.com` — note
-the former is also a super_admin, so any pass must be paired with the non-admin control). Prove:
+the former is also a super_admin, so any pass must be paired with the non-admin control; for
+DB-level probes use the clean grant-only user `elliesadeghijd@gmail.com`). Prove:
 catalog lists the AMA store for the entitled user and not the other; provenance chip names the
 industry; subscribe to a non-discoverable store fails loudly (DB-gated); the org-settings view
 shows the correct entitlements. Screenshots in the summary.

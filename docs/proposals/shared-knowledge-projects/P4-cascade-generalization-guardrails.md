@@ -40,8 +40,10 @@ recurring the next time someone adds a child table or a hardening pass narrows a
    hit, file download, doc metadata, pages, page image, chunks, extractions, each baby table,
    the store row itself, plus `viewer=true / editor=false / control=false` at every level.
    It must fail loudly and be runnable post-deploy. One home (`scripts/`), documented.
-   **Use a non-admin entitled user** — `admin@admin.com` is a super_admin and will mask
-   grant-path failures; create or use a plain member of Castellano & Reyes.
+   **Use the non-admin entitled user** `elliesadeghijd@gmail.com`
+   (`77c6af70-a35e-4724-a304-64a0dd789674`, entitled only via Pearlman Brown →
+   ca-workers-comp). `admin@admin.com` is a super_admin and reports `can_curate=true`, which
+   masks exactly the failures this matrix exists to catch.
 5. **Drift guards (loud, non-blocking, wired like `pnpm check:schema`).**
    - *Edge coverage:* every `association_types` rule with `conveys_max` has live edges +
      reachability rows wherever its legacy table has rows (catches "the trigger stopped firing"
