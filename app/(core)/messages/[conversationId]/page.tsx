@@ -112,7 +112,6 @@ export default function ConversationPage() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/messages"
-      surfaceLabel="Messages"
       getScope={getScope}
       isEditable={false}
     >

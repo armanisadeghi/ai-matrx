@@ -45,7 +45,6 @@ export default function MessagesPageClient() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/messages"
-      surfaceLabel="Messages"
       getScope={getScope}
       isEditable={false}
     >

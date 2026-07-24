@@ -26,8 +26,6 @@ export interface OpenAgentSettingsWindowOptions {
    * agent↔surface bindings (defaults the pane to Surface).
    */
   surfaceName?: string;
-  /** Optional pretty label for the Surface tab / bind header. */
-  surfaceLabel?: string;
   /** Override which pane opens first when `surfaceName` is set. */
   initialView?: "info" | "surface";
 }
@@ -46,7 +44,6 @@ export function useOpenAgentSettingsWindow() {
           data: {
             initialAgentId: opts.initialAgentId,
             surfaceName: opts.surfaceName,
-            surfaceLabel: opts.surfaceLabel,
             initialView: opts.initialView,
           },
         }),
@@ -78,7 +75,6 @@ export function AgentSettingsWindowController(
     open,
     props.initialAgentId,
     props.surfaceName,
-    props.surfaceLabel,
     props.initialView,
   ]);
   return null;

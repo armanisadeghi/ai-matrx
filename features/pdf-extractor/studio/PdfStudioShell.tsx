@@ -715,7 +715,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/pdf-extractor"
-      surfaceLabel="PDF Extractor"
       getScope={getPdfExtractorScope}
       isEditable={false}
     >

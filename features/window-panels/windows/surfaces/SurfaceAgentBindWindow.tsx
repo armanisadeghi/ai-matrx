@@ -20,7 +20,6 @@ export interface SurfaceAgentBindWindowProps {
   onClose: () => void;
   instanceId: string;
   surfaceName: string;
-  surfaceLabel?: string | null;
   initialAgentId?: string | null;
   callbackGroupId?: string | null;
 }
@@ -30,7 +29,6 @@ export function SurfaceAgentBindWindow({
   onClose,
   instanceId,
   surfaceName,
-  surfaceLabel = null,
   initialAgentId = null,
   callbackGroupId = null,
 }: SurfaceAgentBindWindowProps) {
@@ -72,7 +70,6 @@ export function SurfaceAgentBindWindow({
     >
       <SurfaceAgentBindPanel
         surfaceName={surfaceName}
-        surfaceLabel={surfaceLabel}
         initialAgentId={initialAgentId}
         onBound={(result) => {
           lastBoundRef.current = true;
@@ -97,12 +94,10 @@ export function parseSurfaceAgentBindWindowData(
   data: Record<string, unknown> | null | undefined,
 ): Pick<
   SurfaceAgentBindWindowData,
-  "surfaceName" | "surfaceLabel" | "initialAgentId" | "callbackGroupId"
+  "surfaceName" | "initialAgentId" | "callbackGroupId"
 > {
   return {
     surfaceName: typeof data?.surfaceName === "string" ? data.surfaceName : "",
-    surfaceLabel:
-      typeof data?.surfaceLabel === "string" ? data.surfaceLabel : null,
     initialAgentId:
       typeof data?.initialAgentId === "string" ? data.initialAgentId : null,
     callbackGroupId:

@@ -376,7 +376,6 @@ export function TranscriptViewer() {
   return (
     <SurfaceRuntimeProvider
       surfaceName={TRANSCRIPTS_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Transcripts"
       getScope={() =>
         isEditingContent
           ? getEditorApplicationScope()

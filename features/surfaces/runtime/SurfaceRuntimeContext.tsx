@@ -14,7 +14,6 @@
  *
  *   <SurfaceRuntimeProvider
  *     surfaceName="matrx-user/notes"
- *     surfaceLabel="Notes"
  *     getScope={() => createNotesScope({ ...live })}
  *   >
  *     {children}
@@ -29,10 +28,12 @@ import { useSyncExternalStore } from "react";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
 export interface SurfaceRuntimeValue {
-  /** Canonical `ui_surface.name` this page is emitting. */
+  /**
+   * Canonical `ui_surface.name` this page is emitting. Display labels are
+   * NEVER passed here — THE NAMING LAW: chrome derives the one canonical
+   * label via `getSurfaceDisplayLabel(surfaceName)` (manifest-owned).
+   */
   surfaceName: string;
-  /** Pretty label for bind/settings chrome. */
-  surfaceLabel?: string;
   /**
    * Build the live ApplicationScope / SurfaceScopePayload at Run time.
    * Called only when the user hits ▶ — never on mount.
@@ -124,7 +125,6 @@ const SurfaceRuntimeDepthContext = createContext(0);
 export function SurfaceRuntimeProvider({
   children,
   surfaceName,
-  surfaceLabel,
   getScope,
   isEditable,
 }: SurfaceRuntimeValue & { children: ReactNode }) {
@@ -138,13 +138,12 @@ export function SurfaceRuntimeProvider({
     return registerSurfaceRuntime(
       {
         surfaceName,
-        surfaceLabel,
         isEditable,
         getScope: () => getScopeRef.current(),
       },
       depth,
     );
-  }, [surfaceName, surfaceLabel, isEditable, depth]);
+  }, [surfaceName, isEditable, depth]);
 
   return (
     <SurfaceRuntimeDepthContext.Provider value={depth}>

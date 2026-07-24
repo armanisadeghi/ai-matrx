@@ -695,7 +695,6 @@ export function ScraperFloatingWorkspace({
   return (
     <SurfaceRuntimeProvider
       surfaceName={SCRAPER_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Scraper"
       getScope={getConfigApplicationScope}
       isEditable
     >

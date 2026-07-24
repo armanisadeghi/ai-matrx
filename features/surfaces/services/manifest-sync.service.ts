@@ -34,7 +34,9 @@ import type {
   SurfaceAgentRole,
   SurfaceAgentRoleDrift,
   SurfaceDriftReport,
+  SurfaceLabelDrift,
   SurfaceUrlPatternDrift,
+  SurfaceValueGroupsDrift,
   SurfaceValue,
   SurfaceValueDrift,
   UnknownNamespace,
@@ -70,9 +72,12 @@ type DbRoleKind = (typeof ROLE_KINDS)[number];
 const AUTO_RUN_MODES = ["always", "never", "user-choice"] as const;
 type DbAutoRun = (typeof AUTO_RUN_MODES)[number];
 
+/** SurfaceValue plus the registry-resolved canonical group key. */
+type SyncSurfaceValue = SurfaceValue & { groupKey?: string };
+
 function manifestRowFor(
   surfaceName: string,
-  v: SurfaceValue,
+  v: SyncSurfaceValue,
 ): UiSurfaceValueInsert {
   return {
     surface_name: surfaceName,
@@ -84,10 +89,11 @@ function manifestRowFor(
     typical_char_count: v.typicalCharCount,
     auto_context: v.autoContext ?? true,
     sort_order: v.sortOrder ?? 1000,
+    group_key: v.groupKey ?? v.group ?? "general",
   };
 }
 
-function dbRowToSurfaceValue(row: UiSurfaceValueRow): SurfaceValue {
+function dbRowToSurfaceValue(row: UiSurfaceValueRow): SyncSurfaceValue {
   return {
     name: row.name,
     label: row.label,
@@ -99,21 +105,23 @@ function dbRowToSurfaceValue(row: UiSurfaceValueRow): SurfaceValue {
     typicalCharCount: row.typical_char_count,
     autoContext: row.auto_context,
     sortOrder: row.sort_order,
+    groupKey: row.group_key,
   };
 }
 
 function diffSurfaceValue(
-  manifest: SurfaceValue,
-  db: SurfaceValue,
+  manifest: SyncSurfaceValue,
+  db: SyncSurfaceValue,
 ): SurfaceValueDrift["diff"] {
   const diff: SurfaceValueDrift["diff"] = {};
-  const keys: (keyof SurfaceValue)[] = [
+  const keys: (keyof SyncSurfaceValue)[] = [
     "label",
     "description",
     "valueType",
     "alwaysAvailable",
     "typicalCharCount",
     "sortOrder",
+    "groupKey",
   ];
   keys.push("autoContext");
   for (const k of keys) {
@@ -124,6 +132,13 @@ function diffSurfaceValue(
       const mn = (m ?? 1000) as number;
       const dn = (d ?? 1000) as number;
       if (mn !== dn) diff[k] = { manifest: mn, db: dn };
+      continue;
+    }
+    // groupKey defaults to "general" on the DB side
+    if (k === "groupKey") {
+      const mg = (m ?? "general") as string;
+      const dg = (d ?? "general") as string;
+      if (mg !== dg) diff[k] = { manifest: mg, db: dg };
       continue;
     }
     // autoContext defaults to true on both sides
@@ -428,11 +443,11 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     manifestSurfaceNames,
   );
 
-  // 9. url_pattern drift — compare ui_surface rows against code defaults.
+  // 9. ui_surface-level drift — url_pattern, canonical label, value_groups.
   const surfacesRes = await sb
     .schema("ui")
     .from("ui_surface")
-    .select("name, url_pattern");
+    .select("name, url_pattern, label, value_groups");
   if (surfacesRes.error) throw surfacesRes.error;
   const manifestBySurface = new Map(
     ALL_MANIFESTS.map((m) => [m.surfaceName, m] as const),
@@ -464,6 +479,50 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     }
   }
 
+  // 10. Canonical label + value_groups drift (THE NAMING LAW's DB check).
+  const surfaceLabelDrifts: SurfaceLabelDrift[] = [];
+  const valueGroupsDrifts: SurfaceValueGroupsDrift[] = [];
+  for (const row of surfacesRes.data ?? []) {
+    const manifest = manifestBySurface.get(row.name);
+    if (!manifest) continue;
+    const dbLabel = row.label?.trim() || null;
+    if (dbLabel !== manifest.label) {
+      surfaceLabelDrifts.push({
+        surfaceName: row.name,
+        kind: dbLabel ? "diff" : "missing_in_db",
+        manifest: manifest.label,
+        db: dbLabel,
+      });
+    }
+    const manifestGroups = manifest.groups ?? [];
+    const dbGroups = row.value_groups;
+    // jsonb does not preserve object key order — compare via a normalized
+    // fixed-key projection, never raw JSON.stringify of the rows.
+    const normalizeGroups = (input: unknown): string =>
+      JSON.stringify(
+        (Array.isArray(input) ? input : []).map((g) => {
+          const rec = (g ?? {}) as Record<string, unknown>;
+          return {
+            key: rec.key ?? null,
+            label: rec.label ?? null,
+            sortOrder: rec.sortOrder ?? null,
+            description: rec.description ?? null,
+          };
+        }),
+      );
+    if (normalizeGroups(dbGroups) !== normalizeGroups(manifestGroups)) {
+      valueGroupsDrifts.push({
+        surfaceName: row.name,
+        kind:
+          Array.isArray(dbGroups) && dbGroups.length > 0
+            ? "diff"
+            : "missing_in_db",
+        manifest: manifestGroups,
+        db: dbGroups,
+      });
+    }
+  }
+
   return {
     manifestsMissingInDb,
     dbValuesNotInManifest,
@@ -474,6 +533,8 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     unknownNamespaces,
     brokenAgentMappings,
     urlPatternDrifts,
+    surfaceLabelDrifts,
+    valueGroupsDrifts,
   };
 }
 
@@ -675,6 +736,8 @@ export async function applyManifestSync(
           name: m.surfaceName,
           client_name: clientName ?? "matrx-user",
           description: "",
+          label: m.label,
+          value_groups: (m.groups ?? []) as unknown as Json,
           ...(urlPattern ? { url_pattern: urlPattern } : {}),
           ...(m.intro?.trim() ? { intro: m.intro.trim() } : {}),
         };
@@ -725,19 +788,23 @@ export async function applyManifestSync(
     }
   }
 
-  // 3c. Mirror url_pattern (and manifest-declared intro) onto ui_surface for
-  //     registered manifests. A manifest WITHOUT `intro` does NOT clear a
-  //     DB-authored intro (code-first ownership applies only to what the
-  //     manifest actually declares — same rule as parent_surface_name).
+  // 3c. Mirror the canonical label + value_groups + url_pattern (and
+  //     manifest-declared intro) onto ui_surface for registered manifests.
+  //     `label` and `value_groups` are ALWAYS written — THE NAMING LAW makes
+  //     the manifest the only authority on them. A manifest WITHOUT `intro`
+  //     does NOT clear a DB-authored intro (code-first ownership applies only
+  //     to what the manifest actually declares — same rule as
+  //     parent_surface_name).
   const urlPatternsUpdated: ApplyManifestSyncResult["urlPatternsUpdated"] = [];
   for (const manifest of targetManifests) {
     const urlPattern = resolveSurfaceUrlPattern(manifest);
     const intro = manifest.intro?.trim() || null;
-    if (!urlPattern && !intro) continue;
     const upd = await sb
       .schema("ui")
       .from("ui_surface")
       .update({
+        label: manifest.label,
+        value_groups: (manifest.groups ?? []) as unknown as Json,
         ...(urlPattern ? { url_pattern: urlPattern } : {}),
         ...(intro ? { intro } : {}),
       })

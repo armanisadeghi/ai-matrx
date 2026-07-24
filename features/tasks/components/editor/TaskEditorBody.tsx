@@ -301,7 +301,6 @@ export function TaskEditorBody({
   return (
     <SurfaceRuntimeProvider
       surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Tasks"
       getScope={getApplicationScope}
       isEditable
     >

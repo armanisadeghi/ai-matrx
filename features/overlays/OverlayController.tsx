@@ -2379,11 +2379,6 @@ export default function OverlayController() {
                 ? data.surfaceName
                 : undefined
             }
-            surfaceLabel={
-              typeof data?.surfaceLabel === "string"
-                ? data.surfaceLabel
-                : undefined
-            }
             initialView={
               data?.initialView === "info" || data?.initialView === "surface"
                 ? data.initialView
@@ -4972,9 +4967,6 @@ export default function OverlayController() {
             surfaceName={
               typeof data?.surfaceName === "string" ? data.surfaceName : ""
             }
-            surfaceLabel={
-              typeof data?.surfaceLabel === "string" ? data.surfaceLabel : null
-            }
             initialAgentId={
               typeof data?.initialAgentId === "string"
                 ? data.initialAgentId
@@ -5003,9 +4995,6 @@ export default function OverlayController() {
             }
             surfaceName={
               typeof data?.surfaceName === "string" ? data.surfaceName : ""
-            }
-            surfaceLabel={
-              typeof data?.surfaceLabel === "string" ? data.surfaceLabel : null
             }
             isEditable={data?.isEditable === true}
           />

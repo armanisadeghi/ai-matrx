@@ -43206,12 +43206,14 @@ export type Database = {
           id: string
           intro: string | null
           is_active: boolean
+          label: string | null
           name: string
           parent_surface_name: string | null
           sort_order: number
           supports_dictionary: boolean
           updated_at: string
           url_pattern: string | null
+          value_groups: Json
         }
         Insert: {
           client_name: string
@@ -43222,12 +43224,14 @@ export type Database = {
           id?: string
           intro?: string | null
           is_active?: boolean
+          label?: string | null
           name: string
           parent_surface_name?: string | null
           sort_order?: number
           supports_dictionary?: boolean
           updated_at?: string
           url_pattern?: string | null
+          value_groups?: Json
         }
         Update: {
           client_name?: string
@@ -43238,12 +43242,14 @@ export type Database = {
           id?: string
           intro?: string | null
           is_active?: boolean
+          label?: string | null
           name?: string
           parent_surface_name?: string | null
           sort_order?: number
           supports_dictionary?: boolean
           updated_at?: string
           url_pattern?: string | null
+          value_groups?: Json
         }
         Relationships: [
           {
@@ -43448,6 +43454,7 @@ export type Database = {
           auto_context: boolean
           created_at: string
           description: string
+          group_key: string
           label: string
           name: string
           sort_order: number
@@ -43461,6 +43468,7 @@ export type Database = {
           auto_context?: boolean
           created_at?: string
           description?: string
+          group_key?: string
           label?: string
           name: string
           sort_order?: number
@@ -43474,6 +43482,7 @@ export type Database = {
           auto_context?: boolean
           created_at?: string
           description?: string
+          group_key?: string
           label?: string
           name?: string
           sort_order?: number

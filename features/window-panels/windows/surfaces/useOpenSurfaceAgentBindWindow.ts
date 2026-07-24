@@ -23,7 +23,6 @@ const OVERLAY_ID = "surfaceAgentBindWindow" as const;
 
 export interface OpenSurfaceAgentBindWindowOptions extends SurfaceAgentBindHandlers {
   surfaceName: string;
-  surfaceLabel?: string | null;
   initialAgentId?: string | null;
   instanceId?: string;
 }
@@ -70,7 +69,6 @@ export function useOpenSurfaceAgentBindWindow() {
 
       const data: SurfaceAgentBindWindowData = {
         surfaceName: options.surfaceName,
-        surfaceLabel: options.surfaceLabel ?? null,
         initialAgentId: options.initialAgentId ?? null,
         callbackGroupId,
       };

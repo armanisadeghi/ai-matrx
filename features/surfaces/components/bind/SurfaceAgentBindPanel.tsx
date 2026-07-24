@@ -33,6 +33,7 @@ import { SurfaceVariableBindingList } from "@/features/surfaces/admin/columns/Su
 import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { loadSurfaceValues } from "@/features/surfaces/redux/thunks";
 import {
   makeSelectSurfaceValues,
@@ -70,23 +71,9 @@ export interface SurfaceAgentBindPanelProps {
    * host already fixed the agent (e.g. Agent Settings → Surface tab).
    */
   lockAgent?: boolean;
-  /** Pretty label for the surface (falls back to the local name segment). */
-  surfaceLabel?: string | null;
   onBound?: (result: SurfaceAgentBindResult) => void;
   onCancel?: () => void;
   className?: string;
-}
-
-function prettifySurfaceLocal(fullName: string): string {
-  const local =
-    fullName.indexOf("/") >= 0
-      ? fullName.slice(fullName.indexOf("/") + 1)
-      : fullName;
-  return local
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 function cloneMappings(map: ValueMappingMap): ValueMappingMap {
@@ -101,7 +88,6 @@ export function SurfaceAgentBindPanel({
   surfaceName,
   initialAgentId = null,
   lockAgent = false,
-  surfaceLabel = null,
   onBound,
   onCancel,
   className,
@@ -254,8 +240,7 @@ export function SurfaceAgentBindPanel({
     return buildBindingTargets(agent);
   }, [agent]);
 
-  const displaySurface =
-    surfaceLabel?.trim() || prettifySurfaceLocal(surfaceName);
+  const displaySurface = getSurfaceDisplayLabel(surfaceName);
 
   const handleSelectAgent = (id: string) => {
     setAgentId(id);

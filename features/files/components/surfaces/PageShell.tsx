@@ -725,7 +725,6 @@ function PageShellDesktop({
   return (
     <SurfaceRuntimeProvider
       surfaceName={FILES_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Files"
       getScope={getFilesApplicationScope}
       isEditable={false}
     >

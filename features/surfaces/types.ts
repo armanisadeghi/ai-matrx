@@ -334,7 +334,10 @@ export interface SurfaceValueDrift {
   kind: "manifest_only" | "db_only" | "diff";
   /** Field-level diff when `kind === "diff"`. */
   diff?: Partial<
-    Record<keyof SurfaceValue, { manifest: unknown; db: unknown }>
+    Record<
+      keyof SurfaceValue | "groupKey",
+      { manifest: unknown; db: unknown }
+    >
   >;
 }
 
@@ -385,6 +388,21 @@ export interface SurfaceUrlPatternDrift {
   db: string | null;
 }
 
+/** Drift for `ui_surface.label` / `ui_surface.value_groups` vs the resolved manifest. */
+export interface SurfaceLabelDrift {
+  surfaceName: string;
+  kind: "missing_in_db" | "diff";
+  manifest: string;
+  db: string | null;
+}
+
+export interface SurfaceValueGroupsDrift {
+  surfaceName: string;
+  kind: "missing_in_db" | "diff";
+  manifest: readonly SurfaceValueGroup[];
+  db: unknown;
+}
+
 export interface SurfaceDriftReport {
   /** Surface values that exist in code manifests but not in DB. */
   manifestsMissingInDb: SurfaceValueDrift[];
@@ -404,6 +422,10 @@ export interface SurfaceDriftReport {
   brokenAgentMappings: BrokenMapping[];
   /** Surfaces whose `ui_surface.url_pattern` differs from code defaults. */
   urlPatternDrifts: SurfaceUrlPatternDrift[];
+  /** Surfaces whose `ui_surface.label` differs from the canonical manifest label. */
+  surfaceLabelDrifts: SurfaceLabelDrift[];
+  /** Surfaces whose `ui_surface.value_groups` differs from the resolved manifest groups. */
+  valueGroupsDrifts: SurfaceValueGroupsDrift[];
 }
 
 // ---------------------------------------------------------------------------

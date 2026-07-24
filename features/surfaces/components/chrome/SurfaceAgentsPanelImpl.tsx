@@ -4,23 +4,23 @@
  * features/surfaces/components/chrome/SurfaceAgentsPanelImpl.tsx
  *
  * Heavy Agents chrome body — loaded ONLY after the user opens the header
- * button (`next/dynamic({ ssr: false })` + conditional render). Fetches
- * bound agents + parent/child related surfaces on mount of THIS panel, never
- * from the thin header shell.
+ * button (`next/dynamic({ ssr: false })` + conditional render).
+ *
+ * THE NAMING LAW: every surface label rendered here comes from
+ * `getSurfaceDisplayLabel` (manifest-owned). Hierarchy comes synchronously
+ * from the manifest registry (`getRelatedSurfaces`) — the full ancestry is
+ * rendered as a breadcrumb (Brand › Site › [Page]) with children below.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Braces, Loader2, ShieldCheck } from "lucide-react";
+import { Braces, ChevronRight, ShieldCheck } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { surfaceFromPathname } from "@/features/surfaces/utils/route-to-surface";
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import {
-  fetchRelatedSurfaces,
-  getSurfaceDisplayLabel,
-  type RelatedSurfaceRef,
-} from "@/features/surfaces/runtime/fetchRelatedSurfaces";
+import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { Badge } from "@/components/ui/badge";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -55,47 +55,17 @@ export default function SurfaceAgentsPanelImpl({
       ? runtime.surfaceName
       : (routeSurface ?? runtime?.surfaceName ?? null);
 
-  const primaryLabel =
-    runtime?.surfaceLabel?.trim() ||
-    (primaryName ? getSurfaceDisplayLabel(primaryName) : "This page");
+  const primaryLabel = primaryName
+    ? getSurfaceDisplayLabel(primaryName)
+    : "This page";
 
-  const [related, setRelated] = useState<{
-    surfaceName: string;
-    parent: RelatedSurfaceRef | null;
-    children: RelatedSurfaceRef[];
-  } | null>(null);
-  const [relatedError, setRelatedError] = useState<{
-    surfaceName: string;
-    message: string;
-  } | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("self");
+  // Synchronous, registry-backed — no fetch, no race, no error state.
+  const related = getRelatedSurfaces(primaryName);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!primaryName) return;
-    void (async () => {
-      try {
-        const r = await fetchRelatedSurfaces(primaryName);
-        if (cancelled) return;
-        setRelated({
-          surfaceName: primaryName,
-          parent: r.parent,
-          children: r.children,
-        });
-        setRelatedError(null);
-      } catch (e) {
-        if (cancelled) return;
-        setRelatedError({
-          surfaceName: primaryName,
-          message:
-            e instanceof Error ? e.message : "Could not load related surfaces",
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [primaryName]);
+  // Which surface's agents are listed. Defaults to the page's own surface.
+  const [activeSurface, setActiveSurface] = useState<string | null>(null);
+  const activeName = activeSurface ?? primaryName;
+  const activeLabel = activeName ? getSurfaceDisplayLabel(activeName) : null;
 
   const handleRun = async (surfaceName: string, agentId: string) => {
     try {
@@ -131,40 +101,23 @@ export default function SurfaceAgentsPanelImpl({
     }
   };
 
-  const currentRelated = related?.surfaceName === primaryName ? related : null;
-  const currentRelatedError =
-    relatedError?.surfaceName === primaryName ? relatedError.message : null;
-  const tabs: Array<{ id: string; label: string; surfaceName: string }> = [];
-  if (primaryName) {
-    tabs.push({ id: "self", label: primaryLabel, surfaceName: primaryName });
-  }
-  if (currentRelated?.parent) {
-    tabs.push({
-      id: `parent:${currentRelated.parent.name}`,
-      label: `↑ ${currentRelated.parent.label}`,
-      surfaceName: currentRelated.parent.name,
-    });
-  }
-  for (const c of currentRelated?.children ?? []) {
-    tabs.push({
-      id: `child:${c.name}`,
-      label: c.label,
-      surfaceName: c.name,
-    });
-  }
-
-  const active = tabs.find((t) => t.id === activeTab) ?? tabs[0] ?? null;
-
   const contextActions = (
     <div className="space-y-2 border-b border-border pb-2">
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {primaryLabel}
-        </p>
-        {!primaryName && (
-          <Badge variant="outline" className="shrink-0 text-[9px]">
-            Unregistered
-          </Badge>
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {primaryLabel}
+          </p>
+          {!primaryName && (
+            <Badge variant="outline" className="shrink-0 text-[9px]">
+              Unregistered
+            </Badge>
+          )}
+        </div>
+        {primaryName && (
+          <p className="truncate font-mono text-[10px] text-muted-foreground">
+            {primaryName}
+          </p>
         )}
       </div>
       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
@@ -173,7 +126,6 @@ export default function SurfaceAgentsPanelImpl({
           onClick={() => {
             openSurfaceContext({
               surfaceName: primaryName ?? "",
-              surfaceLabel: primaryLabel,
               isEditable: runtime?.isEditable === true,
             });
             onRequestClose?.();
@@ -235,55 +187,91 @@ export default function SurfaceAgentsPanelImpl({
     );
   }
 
+  const breadcrumb = [...related.ancestry, related.self].filter(
+    (r): r is NonNullable<typeof r> => r !== null,
+  );
+
   return (
     <div className={cn("flex flex-col gap-2 p-3", className)}>
       {contextActions}
 
-      {currentRelatedError && (
-        <p className="rounded-md border border-amber-300/60 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-300">
-          {currentRelatedError}
-        </p>
+      {/* Hierarchy breadcrumb — full ancestry, root first, self last. */}
+      {breadcrumb.length > 1 && (
+        <nav
+          aria-label="Surface hierarchy"
+          className="flex flex-wrap items-center gap-0.5 border-b border-border pb-2"
+        >
+          {breadcrumb.map((ref, i) => {
+            const isSelf = ref.kind === "self";
+            const isActive = activeName === ref.name;
+            return (
+              <span key={ref.name} className="flex items-center gap-0.5">
+                {i > 0 && (
+                  <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveSurface(ref.name)}
+                  title={ref.name}
+                  className={cn(
+                    "rounded-md px-1.5 py-0.5 text-[10px] transition-colors",
+                    isSelf ? "font-semibold" : "font-normal",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  {ref.label}
+                </button>
+              </span>
+            );
+          })}
+        </nav>
       )}
 
-      {currentRelated === null && !currentRelatedError && (
-        <div className="flex items-center gap-2 py-2 text-[10px] text-muted-foreground">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Loading…
-        </div>
-      )}
-
-      {tabs.length > 1 && (
-        <div className="flex flex-wrap gap-1 border-b border-border pb-2">
-          {tabs.map((t) => (
+      {/* Child surfaces of the current page's surface. */}
+      {related.children.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 border-b border-border pb-2">
+          <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+            Child surfaces
+          </span>
+          {related.children.map((c) => (
             <button
-              key={t.id}
+              key={c.name}
               type="button"
-              onClick={() => setActiveTab(t.id)}
+              onClick={() => setActiveSurface(c.name)}
+              title={c.name}
               className={cn(
-                "rounded-md px-2 py-1 text-[10px] transition-colors",
-                active?.id === t.id
+                "rounded-md px-1.5 py-0.5 text-[10px] transition-colors",
+                activeName === c.name
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
             >
-              {t.label}
+              {c.label}
             </button>
           ))}
         </div>
       )}
 
-      {active && (
-        <SurfaceBoundAgentsList
-          key={active.surfaceName}
-          surfaceName={active.surfaceName}
-          surfaceLabel={active.label}
-          isEditable={
-            runtime?.surfaceName === active.surfaceName
-              ? (runtime.isEditable ?? false)
-              : false
-          }
-          onRunAgent={(agentId) => handleRun(active.surfaceName, agentId)}
-        />
+      {activeName && (
+        <div className="min-w-0">
+          {activeName !== primaryName && activeLabel && (
+            <p className="mb-1 text-[10px] text-muted-foreground">
+              Agents on <span className="font-medium">{activeLabel}</span>
+            </p>
+          )}
+          <SurfaceBoundAgentsList
+            key={activeName}
+            surfaceName={activeName}
+            isEditable={
+              runtime?.surfaceName === activeName
+                ? (runtime.isEditable ?? false)
+                : false
+            }
+            onRunAgent={(agentId) => handleRun(activeName, agentId)}
+          />
+        </div>
       )}
     </div>
   );

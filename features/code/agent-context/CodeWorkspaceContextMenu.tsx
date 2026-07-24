@@ -230,7 +230,6 @@ export function CodeWorkspaceContextMenu({
   return (
     <SurfaceRuntimeProvider
       surfaceName={CODE_WORKSPACE_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Code Editor"
       getScope={getApplicationScope}
       isEditable
     >

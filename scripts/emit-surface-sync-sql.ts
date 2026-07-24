@@ -51,7 +51,7 @@ function main() {
           v.alwaysAvailable
         }, ${v.typicalCharCount}, ${v.sortOrder ?? 1000}, ${
           v.autoContext ?? true
-        })`,
+        }, ${sqlString(v.groupKey ?? v.group ?? "general")})`,
       );
     }
     for (const r of m.agentRoles ?? []) {
@@ -72,6 +72,12 @@ function main() {
     // nothing, but read raw for provenance parity with the service).
     const parent = getRawManifest(m.surfaceName)?.inheritsFrom ?? null;
     const sets: string[] = [];
+    // Canonical label + value_groups are ALWAYS declared (THE NAMING LAW) and
+    // therefore always mirrored — matching manifest-sync.service.ts step 3c.
+    sets.push(`label = ${sqlString(m.label)}`);
+    sets.push(
+      `value_groups = ${sqlString(JSON.stringify(m.groups ?? []))}::jsonb`,
+    );
     if (urlPattern) sets.push(`url_pattern = ${sqlString(urlPattern)}`);
     if (intro) sets.push(`intro = ${sqlStringOrNull(intro)}`);
     if (parent) sets.push(`parent_surface_name = ${sqlString(parent)}`);
@@ -91,11 +97,11 @@ function main() {
   console.log("");
   console.log("-- Upsert all manifest values");
   console.log(
-    `INSERT INTO ui.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order, auto_context) VALUES`,
+    `INSERT INTO ui.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order, auto_context, group_key) VALUES`,
   );
   console.log(valueRows.join(",\n"));
   console.log(
-    `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, always_available = EXCLUDED.always_available, typical_char_count = EXCLUDED.typical_char_count, sort_order = EXCLUDED.sort_order, auto_context = EXCLUDED.auto_context, updated_at = now();`,
+    `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, always_available = EXCLUDED.always_available, typical_char_count = EXCLUDED.typical_char_count, sort_order = EXCLUDED.sort_order, auto_context = EXCLUDED.auto_context, group_key = EXCLUDED.group_key, updated_at = now();`,
   );
   if (roleRows.length > 0) {
     console.log("");

@@ -6,6 +6,7 @@ import {
   Check,
   CircleDot,
   Copy,
+  Crosshair,
   RefreshCw,
   Search,
   TriangleAlert,
@@ -18,14 +19,15 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useLiveSurfaceScope } from "@/features/surfaces/runtime/useLiveSurfaceScope";
-import type { SurfaceValue } from "@/features/surfaces/types";
+import { locateSurfaceValueOnPage } from "@/features/surfaces/utils/locate-on-page";
+import type { ResolvedSurfaceValue } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 
 export interface SurfaceContextWindowProps {
   isOpen: boolean;
   onClose: () => void;
   surfaceName: string;
-  surfaceLabel?: string | null;
   isEditable?: boolean;
 }
 
@@ -53,8 +55,10 @@ function displayValue(value: unknown): string {
 }
 
 type ContextItem =
-  | { key: string; kind: "declared"; declaration: SurfaceValue }
+  | { key: string; kind: "declared"; declaration: ResolvedSurfaceValue }
   | { key: string; kind: "runtime"; declaration: null };
+
+const RUNTIME_ONLY_GROUP_KEY = "__runtime_only__";
 
 function statusPresentation(
   status: ReturnType<typeof useLiveSurfaceScope>["status"],
@@ -84,7 +88,6 @@ export default function SurfaceContextWindow({
   isOpen,
   onClose,
   surfaceName,
-  surfaceLabel,
   isEditable = false,
 }: SurfaceContextWindowProps) {
   const live = useLiveSurfaceScope({ enabled: isOpen, surfaceName });
@@ -121,6 +124,45 @@ export default function SurfaceContextWindow({
           );
       })
     : items;
+
+  // Canonical grouped sections: manifest groups in their curated order
+  // (curated → general → inherited → baselines), runtime-only keys last —
+  // loudly, as completeness defects.
+  const groups = manifest?.groups ?? [];
+  const sections: Array<{
+    key: string;
+    label: string;
+    items: ContextItem[];
+  }> = [];
+  for (const group of groups) {
+    const groupItems = filteredItems.filter(
+      (item) =>
+        item.kind === "declared" && item.declaration.groupKey === group.key,
+    );
+    if (groupItems.length > 0) {
+      sections.push({ key: group.key, label: group.label, items: groupItems });
+    }
+  }
+  const ungroupedDeclared = filteredItems.filter(
+    (item) =>
+      item.kind === "declared" &&
+      !groups.some((g) => g.key === item.declaration.groupKey),
+  );
+  if (ungroupedDeclared.length > 0) {
+    sections.push({
+      key: "__ungrouped__",
+      label: "Other",
+      items: ungroupedDeclared,
+    });
+  }
+  const runtimeItems = filteredItems.filter((item) => item.kind === "runtime");
+  if (runtimeItems.length > 0) {
+    sections.push({
+      key: RUNTIME_ONLY_GROUP_KEY,
+      label: "Undeclared (runtime only)",
+      items: runtimeItems,
+    });
+  }
   const selected =
     items.find((item) => item.key === selectedKey) ?? items[0] ?? null;
   const effectiveSelectedKey = selected?.key ?? null;
@@ -133,9 +175,10 @@ export default function SurfaceContextWindow({
     (value) => value.alwaysAvailable && !hasValue(live.scope[value.name]),
   ).length;
   const presentation = statusPresentation(live.status);
-  const friendlySurfaceName =
-    surfaceLabel?.trim() ||
-    (surfaceName ? getSurfaceDisplayLabel(surfaceName) : "This Page");
+  // THE NAMING LAW — only the canonical manifest label, never an override.
+  const friendlySurfaceName = surfaceName
+    ? getSurfaceDisplayLabel(surfaceName)
+    : "This Page";
 
   const copyText = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);
@@ -236,51 +279,65 @@ export default function SurfaceContextWindow({
               />
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto py-1">
-            {filteredItems.map((item) => {
-              const present = hasValue(live.scope[item.key]);
-              const required = item.declaration?.alwaysAvailable === true;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setSelectedKey(item.key)}
+          <div className="min-h-0 flex-1 overflow-y-auto pb-1">
+            {sections.map((section) => (
+              <div key={section.key}>
+                <div
                   className={cn(
-                    "flex w-full min-w-0 items-start gap-2 border-l-2 px-2.5 py-2 text-left transition-colors",
-                    effectiveSelectedKey === item.key
-                      ? "border-primary bg-primary/8"
-                      : "border-transparent hover:bg-muted/50",
+                    "sticky top-0 z-10 border-b border-border/60 bg-background/95 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wide backdrop-blur",
+                    section.key === RUNTIME_ONLY_GROUP_KEY
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-muted-foreground",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "mt-1 h-2 w-2 shrink-0 rounded-full",
-                      present
-                        ? "bg-emerald-500"
-                        : required
-                          ? "bg-destructive"
-                          : "bg-muted-foreground/30",
-                    )}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-medium">
-                      {item.declaration?.label ?? item.key}
-                    </span>
-                    <code className="block truncate text-[10px] text-muted-foreground">
-                      {item.key}
-                    </code>
-                  </span>
-                  {item.kind === "runtime" && (
-                    <Badge
-                      variant="outline"
-                      className="shrink-0 text-[8px] text-amber-600 dark:text-amber-400"
+                  {section.label}
+                </div>
+                {section.items.map((item) => {
+                  const present = hasValue(live.scope[item.key]);
+                  const required = item.declaration?.alwaysAvailable === true;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setSelectedKey(item.key)}
+                      className={cn(
+                        "flex w-full min-w-0 items-start gap-2 border-l-2 px-2.5 py-2 text-left transition-colors",
+                        effectiveSelectedKey === item.key
+                          ? "border-primary bg-primary/8"
+                          : "border-transparent hover:bg-muted/50",
+                      )}
                     >
-                      runtime
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
+                      <span
+                        className={cn(
+                          "mt-1 h-2 w-2 shrink-0 rounded-full",
+                          present
+                            ? "bg-emerald-500"
+                            : required
+                              ? "bg-destructive"
+                              : "bg-muted-foreground/30",
+                        )}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-medium">
+                          {item.declaration?.label ?? item.key}
+                        </span>
+                        <code className="block truncate text-[10px] text-muted-foreground">
+                          {item.key}
+                        </code>
+                      </span>
+                      {item.kind === "runtime" && (
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 text-[8px] text-amber-600 dark:text-amber-400"
+                        >
+                          undeclared
+                        </Badge>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
             {filteredItems.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
                 No matching values.
@@ -319,9 +376,9 @@ export default function SurfaceContextWindow({
         </div>
       }
       footerRight={
-        <span className="max-w-[300px] truncate text-[10px] text-muted-foreground">
-          {friendlySurfaceName}
-        </span>
+        <code className="max-w-[300px] truncate font-mono text-[10px] text-muted-foreground">
+          {surfaceName}
+        </code>
       }
     >
       {selected ? (
@@ -352,8 +409,40 @@ export default function SurfaceContextWindow({
                   <Badge variant="outline">
                     {selected.declaration.valueType}
                   </Badge>
+                  {selected.declaration.provenance.kind === "inherited" && (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Inherited from{" "}
+                      {getSurfaceDisplayLabel(
+                        selected.declaration.provenance.from,
+                      )}
+                    </Badge>
+                  )}
+                  {selected.declaration.provenance.kind === "baseline" && (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Baseline
+                    </Badge>
+                  )}
                 </>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  const found = locateSurfaceValueOnPage(selected.key);
+                  if (!found) {
+                    toast.message("Not anchored on this page", {
+                      description:
+                        "No element is tagged data-surface-value=\"" +
+                        selected.key +
+                        "\" yet.",
+                    });
+                  }
+                }}
+                className="flex h-7 items-center gap-1 rounded px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Highlight where this value appears on the page"
+              >
+                <Crosshair className="h-3.5 w-3.5" />
+                Locate
+              </button>
               <button
                 type="button"
                 disabled={!hasValue(selectedRaw)}

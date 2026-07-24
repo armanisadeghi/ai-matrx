@@ -14,6 +14,7 @@ import { Loader2, Play, Plus, Settings, Unlink } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
 import { unbindAgentFromSurface } from "@/features/surfaces/services/bind-agent-to-surface.service";
@@ -23,8 +24,6 @@ import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surfac
 
 export interface SurfaceBoundAgentsListProps {
   surfaceName: string;
-  /** Human label shown in the bind / settings windows (e.g. "PDF Extractor"). */
-  surfaceLabel: string;
   /**
    * Called when the user hits Play. Surfaces build their own
    * `applicationScope` + launch options here.
@@ -46,7 +45,6 @@ export interface SurfaceBoundAgentsListProps {
 
 export function SurfaceBoundAgentsList({
   surfaceName,
-  surfaceLabel,
   onRunAgent,
   runDisabled = false,
   hideWhenEmpty = false,
@@ -56,6 +54,7 @@ export function SurfaceBoundAgentsList({
   emptyMessage = "No agents bound yet. Add one to run it here.",
   addLabel = "Add custom agent",
 }: SurfaceBoundAgentsListProps) {
+  const surfaceLabel = getSurfaceDisplayLabel(surfaceName);
   const openBind = useOpenSurfaceAgentBindWindow();
   const openSettings = useOpenAgentSettingsWindow();
   const { sections, loading, hasAgents, refresh } = useSurfaceBoundAgents(
@@ -74,7 +73,6 @@ export function SurfaceBoundAgentsList({
   const handleAdd = () => {
     openBind({
       surfaceName,
-      surfaceLabel,
       onBound: () => {
         void refresh();
       },
@@ -132,7 +130,6 @@ export function SurfaceBoundAgentsList({
                     openSettings({
                       initialAgentId: a.agentId,
                       surfaceName,
-                      surfaceLabel,
                     })
                   }
                   className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"

@@ -8,7 +8,6 @@ const OVERLAY_ID = "surfaceContextWindow" as const;
 
 export interface OpenSurfaceContextWindowOptions {
   surfaceName: string;
-  surfaceLabel?: string | null;
   isEditable?: boolean;
 }
 
@@ -21,7 +20,6 @@ export function useOpenSurfaceContextWindow() {
           overlayId: OVERLAY_ID,
           data: {
             surfaceName: options.surfaceName,
-            surfaceLabel: options.surfaceLabel ?? null,
             isEditable: options.isEditable === true,
           },
         }),
@@ -43,6 +41,6 @@ export function SurfaceContextWindowController(
     return () => {
       handle.close();
     };
-  }, [open, props.isEditable, props.surfaceLabel, props.surfaceName]);
+  }, [open, props.isEditable, props.surfaceName]);
   return null;
 }

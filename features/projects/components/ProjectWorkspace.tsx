@@ -262,7 +262,6 @@ export function ProjectWorkspace() {
   return (
     <SurfaceRuntimeProvider
       surfaceName={PROJECTS_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Projects"
       getScope={getApplicationScope}
       isEditable={false}
     >

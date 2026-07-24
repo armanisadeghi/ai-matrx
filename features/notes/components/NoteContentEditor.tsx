@@ -679,7 +679,6 @@ export function NoteContentEditor({
   return (
     <SurfaceRuntimeProvider
       surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Notes"
       getScope={getApplicationScope}
       isEditable={!readOnly}
     >

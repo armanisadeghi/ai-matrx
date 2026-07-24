@@ -725,6 +725,18 @@ const cameraGetUserMediaChokepointBan = [
     },
 ];
 
+// THE NAMING LAW (surfaces): a surface has ONE canonical display label — the
+// manifest's `label`, derived everywhere via getSurfaceDisplayLabel(). The old
+// free-text `surfaceLabel` prop let every page invent its own name ("Page" vs
+// "Marketing Page Workspace") and was deleted 2026-07-24. This ban keeps it dead.
+const surfaceLabelOverrideBan = [
+    {
+        selector: "JSXAttribute[name.name='surfaceLabel']",
+        message:
+            'The surfaceLabel prop is prohibited — surface display names are canonical. Derive the label with getSurfaceDisplayLabel(surfaceName) from @/features/surfaces/utils/surface-display (manifest-owned). See features/surfaces/FEATURE.md "THE NAMING LAW".',
+    },
+];
+
 export default [
     // Generated Next build output — NEVER lint it. `.next`, plus every
     // `NEXT_DISTDIR` variant a parallel dev server invents (`.next-preview`,
@@ -880,6 +892,7 @@ export default [
                 ...reactFlowStaticImportBan,
                 // getUserMedia({video}) only inside the camera stream manager.
                 ...cameraGetUserMediaChokepointBan,
+                ...surfaceLabelOverrideBan,
             ],
         },
     },
@@ -937,6 +950,7 @@ export default [
                 ...directObjectStoreSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 ...cameraGetUserMediaChokepointBan,
+                ...surfaceLabelOverrideBan,
             ],
         },
     },
@@ -964,6 +978,7 @@ export default [
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
                 ...cameraGetUserMediaChokepointBan,
+                ...surfaceLabelOverrideBan,
                 {
                     selector: "JSXOpeningElement[name.name='img']",
                     message:

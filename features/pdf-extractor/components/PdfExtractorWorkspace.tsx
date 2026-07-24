@@ -925,7 +925,6 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
       {hasContent && (
         <SurfaceBoundAgentsList
           surfaceName={PDF_EXTRACTOR_SURFACE}
-          surfaceLabel="PDF Extractor"
           onRunAgent={handleRunAgent}
           runDisabled={!hasContent}
         />

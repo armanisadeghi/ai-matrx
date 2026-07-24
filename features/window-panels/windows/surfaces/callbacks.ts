@@ -39,7 +39,6 @@ export interface SurfaceAgentBindHandlers {
 
 export interface SurfaceAgentBindWindowData {
   surfaceName: string;
-  surfaceLabel?: string | null;
   initialAgentId?: string | null;
   callbackGroupId?: string | null;
 }

@@ -424,7 +424,6 @@ function AiActionsPanel({
   const handleAddAgent = () => {
     openBind({
       surfaceName: PDF_EXTRACTOR_SURFACE,
-      surfaceLabel: "PDF Extractor",
       onBound: () => {
         void refreshBoundAgents();
       },
@@ -582,7 +581,6 @@ function AiActionsPanel({
       {hasContent && (
         <SurfaceBoundAgentsList
           surfaceName={PDF_EXTRACTOR_SURFACE}
-          surfaceLabel="PDF Extractor"
           onRunAgent={(agentId) => handleRunAgent(agentId)}
           runDisabled={!hasContent}
         />

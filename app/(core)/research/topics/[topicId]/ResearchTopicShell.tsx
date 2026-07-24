@@ -40,7 +40,6 @@ function ResearchSurfaceRuntime({ children }: { children: ReactNode }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName={RESEARCH_CONTEXT_MENU_PROPS.surfaceName}
-      surfaceLabel="Research"
       getScope={getScope}
       isEditable={false}
     >

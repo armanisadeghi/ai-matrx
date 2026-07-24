@@ -496,7 +496,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: {
       initialAgentId: null,
       surfaceName: null,
-      surfaceLabel: null,
       initialView: null,
     },
     mobilePresentation: "drawer",
@@ -595,7 +594,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     label: "Surface Context",
     defaultData: {
       surfaceName: "",
-      surfaceLabel: null as string | null,
       isEditable: false,
     },
     ephemeral: true,
@@ -632,7 +630,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     label: "Add Agent to Surface",
     defaultData: {
       surfaceName: "",
-      surfaceLabel: null as string | null,
       initialAgentId: null as string | null,
       callbackGroupId: null as string | null,
     },

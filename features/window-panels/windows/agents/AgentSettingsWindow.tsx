@@ -22,8 +22,6 @@ interface AgentSettingsWindowProps {
    * binding/mappings for that surface (surface-context openers pass this).
    */
   surfaceName?: string;
-  /** Pretty label for the Surface tab header; optional. */
-  surfaceLabel?: string;
   /**
    * Which pane to open first when `surfaceName` is present.
    * Defaults to `"surface"` so surface-context openers land on bindings.
@@ -36,7 +34,6 @@ interface AgentSettingsWindowProps {
 export default function AgentSettingsWindow({
   initialAgentId,
   surfaceName,
-  surfaceLabel,
   initialView,
   isOpen,
   onClose,
@@ -101,7 +98,6 @@ export default function AgentSettingsWindow({
       onCollectData={() => ({
         initialAgentId,
         surfaceName: surfaceName ?? null,
-        surfaceLabel: surfaceLabel ?? null,
         initialView: panelView,
         openedTabIds,
         activeTabId,
@@ -166,7 +162,6 @@ export default function AgentSettingsWindow({
                 surfaceName={surfaceName}
                 initialAgentId={activeTabId}
                 lockAgent
-                surfaceLabel={surfaceLabel}
                 className="h-full"
               />
             ) : (
