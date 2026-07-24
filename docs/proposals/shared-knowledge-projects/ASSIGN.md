@@ -6,10 +6,10 @@ the file-ownership map in `README.md` §2).
 
 | Project | Priority | Status | Owner | Day-1 obligation |
 |---|---|---|---|---|
-| P3 discovery & opt-in | 1 | **IN PROGRESS 2026-07-23** | Fable session (orchestrator) | publish `library_grant_provenance` signature |
-| P2 admin issuance console | 2 | **IN PROGRESS 2026-07-23** | Fable session (subagent) | — (consumes P1 + P3 stubs) |
-| P4 cascade generalization + guards | 3 | **IN PROGRESS 2026-07-23** | Fable session (subagent) | — |
-| P1 library publish pipeline | 4 | **IN PROGRESS 2026-07-23** | Fable session (subagent) | publish ingest endpoint signature |
+| P3 discovery & opt-in | 1 | **SHIPPED 2026-07-23** | Fable fleet | done — RPCs live + catalog route + chips |
+| P2 admin issuance console | 2 | **SHIPPED 2026-07-23** | Fable fleet | done — console + map + D-C both halves |
+| P4 cascade generalization + guards | 3 | **SHIPPED 2026-07-23** | Fable fleet | done — matrix 42/42 + guards live |
+| P1 library publish pipeline | 4 | **SHIPPED 2026-07-23** | Fable fleet | done — ingest + rehome + AMA repair (deploy pending) |
 
 **All four decisions are ANSWERED (2026-07-23)** — see the handoff § Decisions and README §2
 settled contract rows. Executors implement the settled answers; nothing is behind a flag.

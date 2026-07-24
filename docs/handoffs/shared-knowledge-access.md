@@ -75,29 +75,26 @@ edit" report is therefore correct behavior, not a bug.**
 
 ## Remaining work
 
-Ordered by impact. Each is a full brief — read it before starting.
+**P1–P4 all SHIPPED 2026-07-23** (one-day fleet execution; per-project detail + commit SHAs in
+README §1). What remains:
 
-1. **P3 — Discovery & opt-in** (`P3-discovery-and-optin.md`). **Now the highest priority.**
-   `files_listing_owner_grant_only.sql` (07-20) deliberately bars reachability-conveyed rows
-   from every file tree, search, and picker, and `list_library_documents` scopes to
-   owner/curator — so a grant reader's *only* route to entitled content is one unlabeled pane
-   near the bottom of `/rag`. Ships the catalog route, org-level opt-in, provenance
-   ("via California Workers' Compensation"), and the `library_grant_provenance` contract.
-2. **P2 — Admin issuance console** (`P2-admin-issuance-console.md`). Arman's explicit ask.
-   No UI exists to create an organization-audience grant, manage the industry taxonomy
-   (`upsertIndustry` is exported with **zero callers**), or answer "why does org X see doc Y?".
-   Also owns resolving the two-gate fork in Decisions §2.
-3. **P4 — Cascade generalization + guardrails** (`P4-cascade-generalization-guardrails.md`).
-   Non-`cld_file` store members still get no association edge (`source_kind='cld_file'` is
-   hard-coded in every trigger/backfill), so a library of notes/transcripts conveys nothing.
-   Also owns the acceptance-matrix script + drift guards, the `page_extraction.py:157`
-   hand-rolled owner gate, and the `archived_at` read asymmetry.
-4. **P1 — Library publish pipeline** (`P1-library-publish-pipeline.md`). Lowest urgency
-   (nothing is broken for users) but it is the reason the library cannot grow: there is no
-   admin ingest surface, the AMA source file still sits in Arman's personal org, and all 2,733
-   AMA chunks are still `owner_id = Arman`. The system-owner path exists
-   (`packages/matrx-rag/matrx_rag/library.py`) and is reachable only from a workflow node and a
-   one-off script.
+1. **Deploy aidream to prod** — carries P1's real ingest endpoint + Decision-3 rehome, P2's
+   HTTP grant-list gate, P4's spend gates (incl. the previously ungated cancel endpoint), and
+   `/health/version`. All DB-side changes are already live and safe with old code. Also wire
+   Coolify build-args `GIT_SHA`/`BUILD_TIME` or `/health/version` reports "unknown".
+2. **Convergence A on prod** — the full clickable lifecycle (create industry → ingest via admin
+   UI → publish → org opt-in → member discovers/reads/sees provenance → matrix green) needs the
+   deploy above for the ingest hop; everything after ingest is already browser-verified.
+3. **Follow-ons discovered during the build** (filed, unowned): D92 — 38 pre-existing dead RLS
+   policies surfaced by the new dead-policy guard; D93 — `rag.kg_chunks` denial-by-timeout for
+   non-entitled users (perf, 57014); D94 — `docproc.page_extraction_jobs.project_id` FK
+   (forbidden pattern, tagging-only); `iam.industries` has no delete/deactivate RPC (console is
+   create/update only); no non-discoverable store exists in prod to negative-test subscribe;
+   first real notes/transcript library should get a native-viewer click-through (matrix covers
+   it at RLS level).
+4. **Product decision, low urgency:** `project`/`task` member kinds deliberately do NOT convey
+   container access (P4 left them unregistered, documented in `features/rag/FEATURE.md`) —
+   confirm or change.
 
 ## Done
 
@@ -109,6 +106,14 @@ Ordered by impact. Each is a full brief — read it before starting.
 - Library surfaces converted to direct-Supabase `rag.fn_*` RPCs — aidream `0162`/`0163`.
 - Wave A soft-delete/trash respects grant readers (read yes, delete/purge/restore no).
 - Grants-list HTTP endpoint gated + deployed to prod — aidream `195ad916e`.
+- **2026-07-23 fleet pass — P1+P2+P3+P4 all shipped** (README §1 has per-project detail):
+  provenance RPCs + catalog entitlement + Decision-2 gate (both halves) · `/rag/library-catalog`
+  + provenance chips everywhere + org-settings legibility · `/administration/shared-knowledge`
+  console + `/rag/admin` map · registry-driven cascade for note/transcript/code_file + baby-table
+  grant reads + spend gates + acceptance matrix (42/42 GREEN, `pnpm check:access-matrix`) + four
+  drift guards · real streamed ingest + ownership rehome + AMA re-owned to system owner
+  (contributor recorded) + `/health/version`. D89 fixed same day. All four decisions settled and
+  recorded above. **aidream deploy pending** — the only gate left before Convergence A on prod.
 
 ## Decisions — ANSWERED by Arman 2026-07-23 (all four settled; reflected in README §2)
 

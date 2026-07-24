@@ -53,15 +53,29 @@ stays with owner/curator.
   denied`; audit log shows no evidence of prior exploitation. Same class as D31 in
   `KNOWN_DEFECTS.md`.
 
-### NOT STARTED — the four projects
+### ALL FOUR PROJECTS SHIPPED — 2026-07-23 (same-day execution, all decisions settled)
 
-**P1–P4 are all untouched.** Nobody picked up `ASSIGN.md`; the only post-07-10 edit to this
-folder was a one-line documentation correction. Every marker is absent: no
-`app/(admin)/administration/shared-knowledge/`, no `app/(core)/rag/admin/page.tsx`, no
-`app/(core)/rag/library-catalog/page.tsx` **(the Next route — the aidream HTTP endpoint of the
-same name does exist and returns 200)**, no `library_grant_provenance`, no provenance chips, no
-acceptance-matrix or drift-guard script, `upsertIndustry` still has zero callers,
-`DataStorePublishPanel` still offers only industry + global.
+- **P3 (discovery)** — provenance RPCs live (`migrations/library_provenance_and_catalog_entitlement.sql`);
+  `/rag/library-catalog` is a real route with entitlement chips; provenance chips on hit cards /
+  Source Inspector / viewer / granted badge; org-settings industry legibility + subscribe;
+  entitled empty states; D-E closed. FE commits `d3b72bb56`, `264989927`, `ad90cd633`, `bb1ade351`.
+- **P2 (admin console)** — `/administration/shared-knowledge` (industries CRUD via
+  `industry_upsert`, all-three-audience publish/revoke incl. the new organization tab, ingest via
+  canonical fileHandler, access explorer); `/rag/admin` FeatureAdminMap; D-C closed both halves
+  (RPC live; HTTP in aidream `346760431`, deploy pending). FE commit `ef05bb9d4`.
+- **P4 (cascade + guards)** — registry-driven member→edge sync (note/transcript/code_file rules
+  live, unruled kinds WARN loudly); baby-table grant reads; D-B/D-D/D-F/D-H closed; acceptance
+  matrix `pnpm check:access-matrix` (42/42 GREEN) + drift guards `pnpm check:access-drift`.
+  FE commit `278395542`; aidream `fba965fc6` (deploy pending).
+- **P1 (publish pipeline)** — real streamed ingest endpoint; Decision-3 rehome in `add_member`
+  (double-gated to the canonical library org); AMA repaired (file + 2,733 chunks system-owned,
+  contributor recorded); non-file parity; `GET /health/version` (D-G). aidream commits
+  `d0892111cd`, `089364809`, `8a15ebf8b` (deploy pending).
+- Post-wave: D89 (`fn_data_store_members_rich` grant readers) fixed — FE commit `1ed2a109d`.
+
+**Deploy gate:** aidream prod deploy carries P1 ingest/rehome, P2 HTTP gate, P4 spend gates, and
+`/health/version`. Until it ships, those exist in code + are DB-verified but not live over HTTP.
+Coolify also needs `GIT_SHA`/`BUILD_TIME` build-args wired or `/health/version` reports "unknown".
 
 ### Open defects (owned by the briefs, not yet fixed)
 
@@ -69,11 +83,11 @@ acceptance-matrix or drift-guard script, `upsertIndustry` still has zero callers
 |---|---|---|
 | D-A | **CLOSED 2026-07-23 (P4)** — member→edge sync is registry-driven (`library_cascade_generalize_member_kinds.sql`); note/transcript/code_file rules registered + backfilled; proven live (entitled note RLS row 1 / editor false / control 0); unruled kinds WARN loudly and are documented in `features/rag/FEATURE.md` | P4 |
 | D-B | **CLOSED 2026-07-23 (P4)** — `page_extraction.py` index+cancel, `retry.py`, `runs_db.py:_load_job` rewritten onto `authz.user_may_spend_on_job` (owner/curator/super-admin via kernel predicates; ANY-admin bypass gone; cancel was previously ungated entirely). **aidream deploy pending** | P4 (see Decision 4) |
-| D-C | Two different gates answer "who may list a store's grants" — the HTTP endpoint (any admin tier + owner/editor) and the RPC the FE actually uses (super-admin + **any member of the owning org**) | P2 (see Decision 2) |
+| D-C | **CLOSED 2026-07-23** — ONE rule (Decision 2: super-admin OR store owner) in both places: RPC live (`library_provenance_and_catalog_entitlement.sql`, negative-tested), HTTP twin in aidream `346760431` (**deploy pending**) | P2 (see Decision 2) |
 | D-D | **CLOSED 2026-07-23 (P4)** — `library_archived_read_curate_symmetry.sql`: owner/curator keep read on archived docs (they unarchive), audiences lose it; verified live on the archived docs (owner_read flipped false→true, grant reader stays false) | P4 |
-| D-E | RAG/library list surfaces are neither ListScope-scoped nor in `scripts/access-guards/allowlist.json` — outside the new access-guard regime, unexamined | P3 |
+| D-E | **CLOSED 2026-07-23 (P3)** — 3 justified `bareRlsList` allowlist entries for the library/catalog surfaces; `pnpm check:access-guards` clean | P3 |
 | D-F | **CLOSED 2026-07-23 (P4)** — `library_member_orphan_hygiene.sql`: both orphans soft-deleted with provenance markers; `files.files` trigger now soft-deletes members on file delete (loud); `check:access-drift` orphan guard = 0 | P4 |
-| D-G | aidream has **no build/version endpoint** — "what commit is prod?" is only answerable by fingerprinting `/openapi.json` | P1 (ops) |
+| D-G | **CLOSED 2026-07-23 (P1)** — `GET /health/version` reports `{git_sha, built_at}` (env-var → git fallback → loud "unknown"); Dockerfile ARGs added. **Deploy pending + Coolify build-arg wiring needed** or prod reports "unknown" | P1 (ops) |
 | D-H | **CLOSED 2026-07-23 (P4)** — `web_crawl_artifact_live_reconcile.sql`: only real body drift was `web.assert_crawl_artifact_file` (`'private'` on disk vs live `'personal'`) — live body restated; 3 dead-on-disk functions dropped; supersession map for the rest recorded in the file header | P4 |
 
 ---
