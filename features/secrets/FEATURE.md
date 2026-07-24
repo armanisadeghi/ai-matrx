@@ -1,6 +1,8 @@
 # Secrets
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-07-21
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-07-23
+
+> Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in any repository.
 
 User and organization vaults for env vars, API keys, OAuth material, service-account JSON, and other reusable secret strings. Values are write-only in browser APIs: members see masked metadata and can use permitted values in server-side executions and sandboxes, but cannot reveal plaintext.
 
@@ -73,6 +75,7 @@ Database migrations:
 
 ## Change Log
 
+- **2026-07-23** — Linked the proposed cross-repository Unified Credential Vault architecture and rollout plan for expert review.
 - **2026-07-21** — Added paste-to-fill for single dotenv assignments in the personal secret form, backed by a reusable parser with parity for `export`, quotes, whitespace, and embedded equals signs.
 - **2026-07-21** — Made personal-vault read categories forward-compatible so integration-defined values cannot crash the full secrets listing; curated create/update choices remain unchanged.
 - **2026-07-20** — New consumer: Marketing Google integration connections. aidream's `/api/google-integrations/*` stores each connection's Google OAuth refresh token in the canonical vault (personal → user vault, organization → org vault) under `GOOGLE_OAUTH_REFRESH_TOKEN_<connection-id-hex>`, referenced by `users.integration_connections.vault_secret_key`; the scraper resolves it via a service-token internal endpoint. This replaced (annihilated) the bespoke AES-256-GCM Google-credential pathway.

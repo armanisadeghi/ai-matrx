@@ -2,7 +2,9 @@
 
 **Status:** catalog `active / thin` · MCP integration `active`
 **Tier:** `2`
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-07-23`
+
+> Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before changing MCP credential storage or resolution in any repository.
 
 > This doc covers two layered surfaces: the user-facing API Integrations catalog at `features/api-integrations/`, and the substantive runtime it now fronts — the **MCP (Model Context Protocol)** bridge wired into the agents system at `features/agents/services/mcp*` and `features/agents/redux/mcp/`. MCP is the reason api-integrations is relevant.
 
@@ -105,6 +107,7 @@ MCP tool calls integrate into the standard **durable delegated tool** pathway �
 
 ## Change log
 
+- `2026-07-23` — codex: linked the proposed cross-repository Unified Credential Vault plan governing future MCP credential storage and resolution.
 - `2026-04-22` — claude: initial combined doc for API integrations catalog + MCP protocol runtime.
 
 ---

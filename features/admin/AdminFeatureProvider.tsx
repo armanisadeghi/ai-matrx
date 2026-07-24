@@ -10,8 +10,8 @@ const AdminIndicatorWrapper = dynamic(
   { ssr: false, loading: () => null },
 );
 
-const AppleKeyExpiryBanner = dynamic(
-  () => import("@/components/admin/AppleKeyExpiryBanner"),
+const AppleKeyExpiryNotifier = dynamic(
+  () => import("@/components/admin/AppleKeyExpiryNotifier"),
   { ssr: false, loading: () => null },
 );
 
@@ -40,7 +40,7 @@ export default function AdminFeatureProvider() {
   return (
     <>
       <AdminIndicatorWrapper />
-      <AppleKeyExpiryBanner />
+      <AppleKeyExpiryNotifier />
       <DebugIndicatorManager />
       {isDebugMode && <DevPerfOverlay />}
     </>
