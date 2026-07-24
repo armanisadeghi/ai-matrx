@@ -27,6 +27,35 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 export type SurfaceValueType =
   "string" | "number" | "boolean" | "object" | "array" | "document";
 
+// ---------------------------------------------------------------------------
+// SurfaceValueGroup — canonical named grouping of a surface's values.
+// ---------------------------------------------------------------------------
+
+/**
+ * A canonical, surface-authored group of values ("SEO Signals", "Captures").
+ * Groups are the ONLY sanctioned way to organize values — no UI may invent its
+ * own sections. Curated groups author sortOrder 0–899; the registry reserves
+ * `general` (850), `inherited:<parent>` (9000+), and `baseline` (9900), which
+ * manifests may NOT declare. Mirrored to `ui_surface.value_groups` (JSONB) and
+ * per value to `ui_surface_value.group_key`.
+ */
+export interface SurfaceValueGroup {
+  /** lower_snake_case, unique within the surface (e.g. `seo_signals`). */
+  key: string;
+  /** The ONE canonical human label for this group. */
+  label: string;
+  /** Display/curation order. Author band 0–899. */
+  sortOrder: number;
+  description?: string;
+}
+
+/** Reserved group keys synthesized by the registry — undeclarable in manifests. */
+export const RESERVED_GROUP_KEYS = {
+  general: "general",
+  baseline: "baseline",
+  inheritedPrefix: "inherited:",
+} as const;
+
 export interface SurfaceValue {
   /**
    * Lower-snake-case key, unique within the surface (e.g. `selection`,
@@ -69,6 +98,42 @@ export interface SurfaceValue {
 
   /** Optional sort order within the surface; defaults to 1000 in DB. */
   sortOrder?: number;
+
+  /**
+   * Key of the `SurfaceValueGroup` this value belongs to. Must reference a key
+   * declared in the manifest's `groups`. Omitted = the implicit `general`
+   * group. Never set to a reserved key (`general`, `baseline`, `inherited:*`).
+   * Mirrored to `ui_surface_value.group_key`.
+   */
+  group?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Resolved manifest types — what the registry exports after inheritance +
+// baseline injection. Additive supersets of the authored types, so every
+// existing consumer of `SurfaceManifest` / `SurfaceValue` keeps compiling.
+// ---------------------------------------------------------------------------
+
+/** Where a resolved value came from. Preserved through registry resolution. */
+export type SurfaceValueProvenance =
+  | { kind: "own" }
+  | { kind: "inherited"; from: string }
+  | { kind: "baseline" };
+
+export interface ResolvedSurfaceValue extends SurfaceValue {
+  provenance: SurfaceValueProvenance;
+  /** Always populated after resolution: curated key, `general`, `inherited:<parent>`, or `baseline`. */
+  groupKey: string;
+}
+
+export interface ResolvedSurfaceManifest extends SurfaceManifest {
+  values: readonly ResolvedSurfaceValue[];
+  /**
+   * Curated groups + synthesized auto groups (`general`, `inherited:<parent>`,
+   * `baseline`), sorted by sortOrder — curated first, inherited next,
+   * baselines last, by construction.
+   */
+  groups: readonly SurfaceValueGroup[];
 }
 
 // ---------------------------------------------------------------------------
@@ -146,11 +211,13 @@ export interface SurfaceManifest {
   /** Matches `ui_surface.name`. */
   surfaceName: string;
   /**
-   * Human display name for chrome / pickers (e.g. "PDF Extractor").
-   * When omitted, UIs derive a Title Case label from the local slug
-   * (`pdf-extractor` → "PDF Extractor" via acronym-aware formatting).
+   * The ONE canonical human display name for this surface (e.g.
+   * "PDF Extractor"). REQUIRED — this exact string is used byte-identically
+   * everywhere (chrome, windows, admin, binding UIs); free-text overrides are
+   * prohibited. Mirrored to `ui_surface.label` by manifest sync. Derive via
+   * `getSurfaceDisplayLabel` in `features/surfaces/utils/surface-display.ts`.
    */
-  label?: string;
+  label: string;
   /**
    * Canonical route for this surface (e.g. `/notes`, `/agents/builder`,
    * `/transcripts/scribe/:sessionId`). Mirrored to `ui_surface.url_pattern`
@@ -177,6 +244,13 @@ export interface SurfaceManifest {
   intro?: string;
   /** Flat list of SurfaceValues this surface declares. */
   values: readonly SurfaceValue[];
+  /**
+   * Canonical value groups this surface curates. Every `SurfaceValue.group`
+   * must reference one of these keys. Reserved keys (`general`, `baseline`,
+   * `inherited:*`) are synthesized by the registry and may not be declared.
+   * Mirrored to `ui_surface.value_groups` by manifest sync.
+   */
+  groups?: readonly SurfaceValueGroup[];
   /** Agent positions this surface uses. Mirrored to ui_surface_agent_role. */
   agentRoles?: readonly SurfaceAgentRole[];
   /** Config namespaces this surface consumes (code-only declaration). */

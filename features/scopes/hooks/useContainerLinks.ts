@@ -36,7 +36,10 @@ import type {
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import type { Json } from "@/types/database.types";
+<<<<<<< Updated upstream
 import { isScopesRpcErr } from "@/features/scopes/types";
+=======
+>>>>>>> Stashed changes
 
 export interface ContainerLink {
   /** The edge id (for keys / removal). */
@@ -78,7 +81,10 @@ export interface UseContainerLinksReturn {
     resourceId: string,
     label?: string,
     metadata?: Json,
+<<<<<<< Updated upstream
     options?: { replaceMetadata?: boolean },
+=======
+>>>>>>> Stashed changes
   ) => Promise<AssociationWriteResult>;
   /** Detach a resource from this container. */
   detach: (
@@ -215,7 +221,19 @@ export function useContainerLinks(
       : incomingGeneric;
 
   const linksFor = (token: EntityTypeToken): ContainerLink[] =>
+<<<<<<< Updated upstream
     incoming.filter((link) => link.token === token);
+=======
+    incoming
+      .filter((e) => e.otherType === token)
+      .map((e) => ({
+        edgeId: e.id,
+        resourceId: e.otherId,
+        token: e.otherType,
+        label: e.label ?? null,
+        metadata: e.metadata ?? {},
+      }));
+>>>>>>> Stashed changes
 
   const countFor = (token: EntityTypeToken): number =>
     incoming.reduce((n, link) => (link.token === token ? n + 1 : n), 0);
@@ -233,7 +251,10 @@ export function useContainerLinks(
     resourceId: string,
     label?: string,
     metadata?: Json,
+<<<<<<< Updated upstream
     options?: { replaceMetadata?: boolean },
+=======
+>>>>>>> Stashed changes
   ): Promise<AssociationWriteResult> => {
     if (!containerId) return { ok: false, error: "Missing container id" };
     const result = await dispatch(
@@ -245,7 +266,10 @@ export function useContainerLinks(
         orgId: orgId ?? undefined,
         label,
         metadata,
+<<<<<<< Updated upstream
         replaceMetadata: options?.replaceMetadata,
+=======
+>>>>>>> Stashed changes
       }),
     );
     if (

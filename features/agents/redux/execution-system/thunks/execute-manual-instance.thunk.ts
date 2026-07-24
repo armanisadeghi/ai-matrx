@@ -339,8 +339,11 @@ export async function assembleManualRequest(
   );
 
   const variables = selectVariablesForRequest(conversationId)(state);
+<<<<<<< Updated upstream
   const variableResourceContext =
     selectRuntimeVariableResourcePolicies(conversationId)(state);
+=======
+>>>>>>> Stashed changes
   const context = selectContextPayload(conversationId)(state);
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────

@@ -99,6 +99,7 @@ const REPRESENTATION_LABEL: Record<DocumentRepresentation, string> = {
 export function representationLabel(rep: DocumentRepresentation): string {
   return REPRESENTATION_LABEL[rep];
 }
+<<<<<<< Updated upstream
 
 /** How an attached document is wired into agent context. */
 export type AttachedDocumentMode = "file" | DocumentRepresentation;
@@ -150,3 +151,5 @@ export function attachedDocumentModeOptions(params: {
 
   return options;
 }
+=======
+>>>>>>> Stashed changes

@@ -31,7 +31,7 @@ import {
   getManifest,
   getRawManifest,
 } from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { allBaseline } from "@/features/surfaces/manifests/_baseline.manifest";
 import { qualifyingDefaultSurfaces } from "@/features/surfaces/services/surface-bound-agents.service";
 import type { SurfaceValue } from "@/features/surfaces/types";

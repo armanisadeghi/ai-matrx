@@ -13,7 +13,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { Check, Copy, Loader2, Sparkles } from "lucide-react";
+import { Braces, Check, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import type { Json } from "@/types/database.types";
@@ -110,7 +110,7 @@ export default function KindContentBlockGenerator({
   return (
     <div className="space-y-3 rounded-md border border-primary/25 bg-background p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Sparkles className="h-4 w-4 text-primary" />
+        <Braces className="h-4 w-4 text-primary" />
         <span className="text-sm font-semibold text-foreground">
           Generate a teaching content block
         </span>
@@ -175,7 +175,7 @@ export default function KindContentBlockGenerator({
           {saving ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           ) : (
-            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+            <Braces className="mr-1.5 h-3.5 w-3.5" />
           )}
           {storeLabel ??
             (alreadyStored ? "Regenerate & save" : "Generate & save")}

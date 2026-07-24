@@ -183,6 +183,12 @@ const LOWEST_TIER_CUTOFF_DATE = "2026-07-21";
 const LOWEST_TIER_RE = /default\s*[:=]?\s*'personal'|default_visibility.*'personal'/i;
 const JUSTIFY_RE = /personal-justified\s*:/i;
 
+// A comment can only DESCRIBE a default, never BE one. Migrations that fix this
+// exact class explain the old 'personal' behavior in prose and would otherwise
+// report themselves. Only the line's own comment status matters — the
+// justification window (below) still scans comments, as it must.
+const COMMENT_LINE_RE = /^\s*(--|\/\/|\/\*|\*\/|\*(?!\/))/;
+
 function migrationDateFromFilename(file: string): string | null {
   // migrations/20260715_something.sql -> 2026-07-15
   const m = /(\d{4})(\d{2})(\d{2})/.exec(file);
@@ -223,6 +229,7 @@ function detectLowestTierDefault(allow: Allowlist) {
 
     for (let i = 0; i < lines.length; i++) {
       if (!LOWEST_TIER_RE.test(lines[i])) continue;
+      if (COMMENT_LINE_RE.test(lines[i])) continue;
       const lineNo = i + 1;
       const window = lines.slice(Math.max(0, i - 3), Math.min(lines.length, i + 4)).join("\n");
       if (JUSTIFY_RE.test(window)) continue;

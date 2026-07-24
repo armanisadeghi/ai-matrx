@@ -115,6 +115,12 @@ export type SourceFeature =
   // ── Research ─────────────────────────────────────────────────────────────
   | "research"
 
+  // ── Podcasts (`podcast-*`, `features/podcasts/generator/`) ───────────────
+  /** Source resolution while building an episode (URL scrape/clean, YouTube research). */
+  | "podcast-source-resolver"
+  /** Post-episode article generation (blog post / show notes) from an episode. */
+  | "podcast-articles"
+
   // ── Code editor ──────────────────────────────────────────────────────────
   | "code-editor"
   /** Context-menu behavior labs under `/demos/context-menu/*`. */
@@ -311,6 +317,8 @@ export const SOURCE_FEATURES = [
   "agent-app",
   "prompt-app",
   "research",
+  "podcast-source-resolver",
+  "podcast-articles",
   "code-editor",
   "context-menu-demo",
   "launch-inspector-demo",

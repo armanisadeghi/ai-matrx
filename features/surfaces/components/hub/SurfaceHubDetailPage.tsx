@@ -43,7 +43,7 @@ import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { useOpenDictionarySelectorWindow } from "@/features/overlays/openers/dictionarySelectorWindow";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useSurfaceConfig } from "@/features/surfaces/hooks/useSurfaceConfig";
 import {
   deleteRolePref,

@@ -31,7 +31,7 @@ describe("buildRunAgentRequest", () => {
       agentId: "agent-id",
       userInput: "Run",
       sourceApp: "matrx-frontend",
-      sourceFeature: "agent",
+      sourceFeature: "agent-runner",
     });
 
     expect(request.scopeOverrides).toEqual({});

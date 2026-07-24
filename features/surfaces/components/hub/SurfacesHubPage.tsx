@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { Bot, ChevronRight, Loader2, SlidersHorizontal } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { listSurfaceOptions } from "@/features/surfaces/services/surfaces.service";
 import type { SurfaceManifest } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";

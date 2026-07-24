@@ -15,6 +15,10 @@ Advisory only — nothing runs it at commit time; a human or agent runs it.
    defaulting other data to it silently locks out legitimate org users — the
    opposite of the security goal. Migrations filed before 2026-07-21 (the
    `visibility` rename/policy date) are auto-exempt by filename date.
+   Comment-only lines (`--`, `//`, `/* … */`) are skipped on the match side — a
+   comment can only *describe* a default, never *be* one, and the migrations
+   that fix this exact class explain the old `'personal'` behavior in prose.
+   The 3-line justification window still scans comments, as it must.
 
 2. **ACTIVE-ORG ACCESS** — access decisions must key on the user, never the
    currently-selected organization. Heuristic (a): an active-org selector

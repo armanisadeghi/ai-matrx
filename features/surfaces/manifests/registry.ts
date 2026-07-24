@@ -17,8 +17,15 @@
  * destruction.
  */
 
-import type { SurfaceManifest } from "@/features/surfaces/types";
-import { BASELINE_VALUES, mergeBaselineValues } from "./_baseline.manifest";
+import type {
+  ResolvedSurfaceManifest,
+  ResolvedSurfaceValue,
+  SurfaceManifest,
+  SurfaceValueGroup,
+  SurfaceValueProvenance,
+} from "@/features/surfaces/types";
+import { RESERVED_GROUP_KEYS } from "@/features/surfaces/types";
+import { BASELINE_VALUES } from "./_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { codeEditorManifest } from "./code-editor.manifest";
 import { pdfExtractorManifest } from "./pdf-extractor.manifest";
@@ -192,23 +199,91 @@ export function getSurfaceAncestry(surfaceName: string): string[] {
   return chain;
 }
 
-/** Merge parent → child (child wins) for all inheritable declarations. */
-function withInheritance(m: SurfaceManifest): SurfaceManifest {
-  const ancestry = getSurfaceAncestry(m.surfaceName);
-  if (ancestry.length === 0) return m;
+const BASELINE_NAME_SET = new Set(Object.keys(BASELINE_VALUES));
 
-  const lineage = [
+/** Group sortOrder bands. Curated groups author 0–899; the rest is reserved. */
+const GENERAL_GROUP_ORDER = 850;
+const INHERITED_GROUP_ORDER_BASE = 9000;
+const BASELINE_GROUP_ORDER = 9900;
+
+/**
+ * Decide the canonical group key for a resolved value.
+ * A baseline-named value with no explicit group ALWAYS lands in `baseline`
+ * (regardless of which layer authored it) so generic values sink to the
+ * bottom by construction. Inherited values collapse into their supplying
+ * parent's `inherited:<parent>` group; own ungrouped values go to `general`.
+ */
+function groupKeyFor(
+  value: SurfaceManifest["values"][number],
+  provenance: SurfaceValueProvenance,
+): string {
+  if (value.group) return value.group;
+  if (BASELINE_NAME_SET.has(value.name)) return RESERVED_GROUP_KEYS.baseline;
+  if (provenance.kind === "inherited") {
+    return `${RESERVED_GROUP_KEYS.inheritedPrefix}${provenance.from}`;
+  }
+  if (provenance.kind === "baseline") return RESERVED_GROUP_KEYS.baseline;
+  return RESERVED_GROUP_KEYS.general;
+}
+
+/**
+ * Resolve one manifest: merge inheritance (child wins per key), inject the
+ * generic baselines, stamp provenance + groupKey on every value, synthesize
+ * the auto groups, and sort values by (group order, value sortOrder).
+ *
+ * Baseline injection is the platform half of the "generic values are always
+ * available" contract: an agent author can bind a variable to a generic value
+ * on ANY surface, even one whose manifest forgot to spread the baselines —
+ * the regression that dropped `text_before`/`text_after` from ~14 surfaces
+ * during the v2 transition, made structurally impossible here. A surface with
+ * genuinely no text/content concept opts out via `skipBaselineValues`.
+ *
+ * Guards are LOUD by design: a curated group with a reserved key, or a value
+ * referencing an undeclared group, throws at module init.
+ */
+function resolveManifest(m: SurfaceManifest): ResolvedSurfaceManifest {
+  const ancestry = getSurfaceAncestry(m.surfaceName);
+  const lineage: Array<{ layer: SurfaceManifest; from: string | null }> = [
     ...ancestry.map((name) => {
       const layer = RAW_INDEX.get(name);
       if (!layer) {
         throw new Error(`[surfaces] missing inherited manifest "${name}"`);
       }
-      return layer;
+      return { layer, from: name };
     }),
-    m,
+    { layer: m, from: null },
   ];
 
-  const valuesByName = new Map<string, SurfaceManifest["values"][number]>();
+  // Validate curated groups.
+  const curatedKeys = new Set<string>();
+  for (const g of m.groups ?? []) {
+    if (
+      g.key === RESERVED_GROUP_KEYS.general ||
+      g.key === RESERVED_GROUP_KEYS.baseline ||
+      g.key.startsWith(RESERVED_GROUP_KEYS.inheritedPrefix)
+    ) {
+      throw new Error(
+        `[surfaces] "${m.surfaceName}" declares reserved group key "${g.key}" — ` +
+          `general/baseline/inherited:* are synthesized by the registry`,
+      );
+    }
+    if (curatedKeys.has(g.key)) {
+      throw new Error(
+        `[surfaces] "${m.surfaceName}" declares duplicate group key "${g.key}"`,
+      );
+    }
+    curatedKeys.add(g.key);
+  }
+  for (const v of m.values) {
+    if (v.group && !curatedKeys.has(v.group)) {
+      throw new Error(
+        `[surfaces] "${m.surfaceName}" value "${v.name}" references undeclared ` +
+          `group "${v.group}" — declare it in the manifest's \`groups\``,
+      );
+    }
+  }
+
+  const valuesByName = new Map<string, ResolvedSurfaceValue>();
   const rolesByName = new Map<
     string,
     NonNullable<SurfaceManifest["agentRoles"]>[number]
@@ -221,8 +296,17 @@ function withInheritance(m: SurfaceManifest): SurfaceManifest {
     string,
     NonNullable<SurfaceManifest["evidenceSources"]>[number]
   >();
-  for (const layer of lineage) {
-    for (const v of layer.values) valuesByName.set(v.name, v);
+  for (const { layer, from } of lineage) {
+    for (const v of layer.values) {
+      const provenance: SurfaceValueProvenance = from
+        ? { kind: "inherited", from }
+        : { kind: "own" };
+      valuesByName.set(v.name, {
+        ...v,
+        provenance,
+        groupKey: groupKeyFor(v, provenance),
+      });
+    }
     for (const r of layer.agentRoles ?? []) rolesByName.set(r.name, r);
     for (const n of layer.configNamespaces ?? []) nsByName.set(n.namespace, n);
     for (const source of layer.evidenceSources ?? []) {
@@ -230,9 +314,63 @@ function withInheritance(m: SurfaceManifest): SurfaceManifest {
     }
   }
 
+  if (!m.skipBaselineValues) {
+    for (const baseline of Object.values(BASELINE_VALUES)) {
+      if (valuesByName.has(baseline.name)) continue;
+      valuesByName.set(baseline.name, {
+        ...baseline,
+        provenance: { kind: "baseline" },
+        groupKey: RESERVED_GROUP_KEYS.baseline,
+      });
+    }
+  }
+
+  // Synthesize the group list: curated + general + inherited (nearest parent
+  // first) + baseline, sorted by sortOrder.
+  const usedGroupKeys = new Set(
+    Array.from(valuesByName.values(), (v) => v.groupKey),
+  );
+  const groups: SurfaceValueGroup[] = [...(m.groups ?? [])];
+  if (usedGroupKeys.has(RESERVED_GROUP_KEYS.general)) {
+    groups.push({
+      key: RESERVED_GROUP_KEYS.general,
+      label: "General",
+      sortOrder: GENERAL_GROUP_ORDER,
+    });
+  }
+  for (let i = ancestry.length - 1, distance = 0; i >= 0; i--, distance++) {
+    const parentName = ancestry[i];
+    const key = `${RESERVED_GROUP_KEYS.inheritedPrefix}${parentName}`;
+    if (!usedGroupKeys.has(key)) continue;
+    const parentLabel =
+      RAW_INDEX.get(parentName)?.label ?? parentName;
+    groups.push({
+      key,
+      label: `Inherited from ${parentLabel}`,
+      sortOrder: INHERITED_GROUP_ORDER_BASE + distance * 10,
+    });
+  }
+  if (usedGroupKeys.has(RESERVED_GROUP_KEYS.baseline)) {
+    groups.push({
+      key: RESERVED_GROUP_KEYS.baseline,
+      label: "Generic baselines",
+      sortOrder: BASELINE_GROUP_ORDER,
+    });
+  }
+  groups.sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const groupOrder = new Map(groups.map((g) => [g.key, g.sortOrder] as const));
+  const values = Array.from(valuesByName.values()).sort((a, b) => {
+    const ga = groupOrder.get(a.groupKey) ?? GENERAL_GROUP_ORDER;
+    const gb = groupOrder.get(b.groupKey) ?? GENERAL_GROUP_ORDER;
+    if (ga !== gb) return ga - gb;
+    return (a.sortOrder ?? 1000) - (b.sortOrder ?? 1000);
+  });
+
   return {
     ...m,
-    values: Array.from(valuesByName.values()),
+    values,
+    groups,
     ...(rolesByName.size > 0
       ? { agentRoles: Array.from(rolesByName.values()) }
       : {}),
@@ -246,44 +384,35 @@ function withInheritance(m: SurfaceManifest): SurfaceManifest {
 }
 
 /**
- * Guarantee EVERY surface declares the full generic baseline set (`selection`,
- * `text_before`, `text_after`, `content`, `context`). This is the platform
- * half of the "generic values are always available" contract: an agent author
- * can bind a variable to a generic value on ANY surface, even one whose
- * manifest forgot to spread the baselines — the regression that dropped
- * `text_before`/`text_after` from ~14 surfaces during the v2 transition, and
- * that this injection makes structurally impossible going forward.
- *
- * Idempotent and non-destructive: `mergeBaselineValues` lets a surface's own
- * same-named value win, so a manifest that already declares (or customizes) a
- * baseline keeps its version; only the missing baselines are added. A surface
- * with genuinely no text/content concept opts out via `skipBaselineValues`.
+ * All registered surface manifests, fully resolved: inheritance merged
+ * (child wins per key), generic baselines guaranteed, provenance + canonical
+ * group stamped on every value, groups synthesized and ordered
+ * curated → general → inherited → baseline.
  */
-function withInjectedBaselines(m: SurfaceManifest): SurfaceManifest {
-  if (m.skipBaselineValues) return m;
-  return {
-    ...m,
-    values: mergeBaselineValues(Object.values(BASELINE_VALUES), m.values),
-  };
-}
-
-/**
- * All registered surface manifests, with inheritance resolved (parent values /
- * roles / config namespaces / evidence sources merged in, child wins per key) and generic
- * baselines guaranteed.
- */
-export const ALL_MANIFESTS: readonly SurfaceManifest[] = RAW_MANIFESTS.map(
-  (m) => withInjectedBaselines(withInheritance(m)),
-);
+export const ALL_MANIFESTS: readonly ResolvedSurfaceManifest[] =
+  RAW_MANIFESTS.map(resolveManifest);
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */
-const MANIFEST_INDEX: ReadonlyMap<string, SurfaceManifest> = new Map(
+const MANIFEST_INDEX: ReadonlyMap<string, ResolvedSurfaceManifest> = new Map(
   ALL_MANIFESTS.map((m) => [m.surfaceName, m] as const),
 );
 
 /** Get a manifest by surface name. Returns `undefined` when no manifest is registered. */
-export function getManifest(surfaceName: string): SurfaceManifest | undefined {
+export function getManifest(
+  surfaceName: string,
+): ResolvedSurfaceManifest | undefined {
   return MANIFEST_INDEX.get(surfaceName);
+}
+
+/**
+ * Direct children of a surface (manifests declaring `inheritsFrom` it),
+ * in declaration order. The registry — not the DB mirror — is the ONE
+ * hierarchy source for UI chrome.
+ */
+export function getSurfaceChildren(surfaceName: string): string[] {
+  return RAW_MANIFESTS.filter((m) => m.inheritsFrom === surfaceName).map(
+    (m) => m.surfaceName,
+  );
 }
 
 /**
@@ -299,7 +428,7 @@ export function getRawManifest(
 }
 
 /** All known manifests, in declaration order. */
-export function getAllManifests(): readonly SurfaceManifest[] {
+export function getAllManifests(): readonly ResolvedSurfaceManifest[] {
   return ALL_MANIFESTS;
 }
 

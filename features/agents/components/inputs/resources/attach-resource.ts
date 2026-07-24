@@ -7,15 +7,25 @@
  *
  * TWO attach shapes, by kind:
  *  - A stored FILE → a DURABLE `platform.associations` edge to the conversation
+<<<<<<< Updated upstream
  *    (`file → conversation`). The file ID means its complete existing family,
  *    including processed documents and RAG. This PERSISTS across turns and reloads; the
+=======
+ *    (`processed_document → conversation` when the file has a processed document,
+ *    else `file → conversation`). This PERSISTS across turns and reloads; the
+>>>>>>> Stashed changes
  *    backend reads the conversation's edges at call time and injects the context.
  *    The chip renders from the edge list (see `AttachedDocumentChips`), NOT the
  *    ephemeral `instanceResources` slice.
  *  - Everything else (media bytes, notes, tasks, webpages, …) → the per-turn
  *    `instanceResources` block, UNCHANGED (the binary `document` bytes path is
+<<<<<<< Updated upstream
  *    left untouched — a file with no file identity, or a media block, still rides
  *    content[]).
+=======
+ *    left untouched — a file with no processed document AND no file identity, or
+ *    a media block, still rides content[]).
+>>>>>>> Stashed changes
  */
 
 import type { Dispatch } from "@reduxjs/toolkit";
@@ -34,6 +44,7 @@ import {
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import {
   addAssociation,
+<<<<<<< Updated upstream
   loadAssociations,
   type AssociationWriteResult,
 } from "@/features/scopes/redux/thunks/associations";
@@ -44,6 +55,28 @@ import {
 } from "@/features/agents/components/inputs/resources/attached-documents";
 import type { Resource } from "@/features/agents/resources/types";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
+=======
+  removeAssociation,
+  associationsKey,
+  type AssociationWriteResult,
+} from "@/features/scopes/redux/thunks/associations";
+import {
+  lookupFileDocument,
+  peekFileDocument,
+  type FileDocumentState,
+} from "@/features/files/api/document-lookup";
+import {
+  cleanDocumentLabel,
+  resolveConversationOrgId,
+  type AttachedDocumentMetadata,
+  type AttachedDocumentToken,
+} from "@/features/agents/components/inputs/resources/attached-documents";
+import type { Resource } from "@/features/agents/resources/types";
+import type {
+  DocumentRepresentation,
+  ResourceBlockType,
+} from "@/features/agents/types/instance.types";
+>>>>>>> Stashed changes
 import type { Json } from "@/types/database.types";
 
 /** Map prompt-system resource types to agent ResourceBlockType. */
@@ -160,6 +193,7 @@ function attachBinary(
 
 // ─── Document association edges (durable, persist across turns/reloads) ──────
 
+<<<<<<< Updated upstream
 function edgeMetadata(fileId: string | null, existing?: Json): Json {
   const previous =
     existing && typeof existing === "object" && !Array.isArray(existing)
@@ -189,6 +223,122 @@ async function attachDocumentEdge(
       targetId: conversationId,
       label,
       metadata: edgeMetadata(fileId, existingMetadata),
+=======
+function edgeMetadata(
+  fileId: string | null,
+  representation?: DocumentRepresentation,
+): Json {
+  const meta: AttachedDocumentMetadata = { file_id: fileId };
+  if (representation) meta.representation = representation;
+  return meta as Json;
+}
+
+/** True when the conversation already has an incoming edge of `token` → `id`. */
+function conversationHasEdge(
+  getState: () => RootState,
+  conversationId: string,
+  token: AttachedDocumentToken,
+  sourceId: string,
+): boolean {
+  const key = associationsKey("conversation", conversationId);
+  const edges = getState().scopesTree.associationsByKey[key]?.edges ?? [];
+  return edges.some(
+    (e) =>
+      e.direction === "incoming" &&
+      e.otherType === token &&
+      e.otherId === sourceId,
+  );
+}
+
+/** Create a `token → conversation` attachment edge (idempotent). */
+async function attachDocumentEdge(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  conversationId: string,
+  token: AttachedDocumentToken,
+  sourceId: string,
+  fileId: string | null,
+  label: string,
+  representation?: DocumentRepresentation,
+): Promise<AssociationWriteResult> {
+  const orgId = resolveConversationOrgId(getState(), conversationId);
+  if (!orgId) {
+    return { ok: false, error: "No organization for this conversation" };
+  }
+  return dispatch(
+    addAssociation({
+      sourceType: token,
+      sourceId,
+      targetType: "conversation",
+      targetId: conversationId,
+      orgId,
+      label,
+      metadata: edgeMetadata(fileId, representation),
+>>>>>>> Stashed changes
+    }),
+  );
+}
+
+/**
+<<<<<<< Updated upstream
+ * Returns a handler that attaches a picked Resource to the conversation.
+ *
+ * A stored file (or file_url) that refines to a `document` becomes a DURABLE
+ * association edge to the conversation. A canonical `file → conversation`
+ * edge is always used. The backend resolves
+ * the complete readable family on every run, so no client-side document probe
+ * or edge replacement is needed when processing finishes later.
+=======
+ * Cold-cache upgrade: a file edge was attached instantly (durable + present for
+ * turn 1); once the file→document probe resolves, if it HAS a processed document
+ * AND the file edge is still attached (the user didn't detach it), swap to the
+ * `processed_document → conversation` edge. Never resurrects a detached
+ * attachment.
+ */
+async function upgradeFileEdgeToProcessedDocument(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  conversationId: string,
+  fileId: string,
+  label: string,
+): Promise<void> {
+  let state: FileDocumentState;
+  try {
+    state = await lookupFileDocument(fileId);
+  } catch {
+    return; // transient probe failure — leave the file edge as-is
+  }
+  if (state.kind !== "found") return;
+  // The user may have detached the file edge while the probe was in flight —
+  // never resurrect it onto the conversation.
+  if (!conversationHasEdge(getState, conversationId, "file", fileId)) return;
+  const representation: DocumentRepresentation = state.doc.has_clean_content
+    ? "clean"
+    : "raw";
+  const res = await attachDocumentEdge(
+    dispatch,
+    getState,
+    conversationId,
+    "processed_document",
+    state.doc.processed_document_id,
+    fileId,
+    label,
+    representation,
+  );
+  if (!res.ok) {
+    console.error(
+      "[attached-document] upgrade to processed_document failed — leaving the raw file edge attached",
+      { conversationId, fileId, error: res.error },
+    );
+    return;
+  }
+  // Drop the now-redundant raw file edge (idempotent; no-op if already gone).
+  await dispatch(
+    removeAssociation({
+      sourceType: "file",
+      sourceId: fileId,
+      targetType: "conversation",
+      targetId: conversationId,
     }),
   );
 }
@@ -197,10 +347,14 @@ async function attachDocumentEdge(
  * Returns a handler that attaches a picked Resource to the conversation.
  *
  * A stored file (or file_url) that refines to a `document` becomes a DURABLE
- * association edge to the conversation. A canonical `file → conversation`
- * edge is always used. The backend resolves
- * the complete readable family on every run, so no client-side document probe
- * or edge replacement is needed when processing finishes later.
+ * association edge to the conversation:
+ *  - cache hit "found"   → `processed_document → conversation` immediately;
+ *  - cache hit "absent"  → `file → conversation` immediately;
+ *  - cache cold          → `file → conversation` immediately (instant + durable,
+ *    safe on fast submit — the edge is there for turn 1), then upgrade to
+ *    `processed_document → conversation` when the probe resolves, IF still
+ *    attached.
+>>>>>>> Stashed changes
  * A file with no file identity, and every media / note / task / … resource, take
  * the per-turn binary/instanceResources path unchanged. Closing the hosting
  * popover is the CALLER's job.
@@ -215,6 +369,7 @@ export function useAttachResource(
     const getState = () => store.getState() as RootState;
     const baseBlockType = resourceTypeToBlockType(resource.type);
     const blockType = refineBlockType(baseBlockType, resource.data);
+<<<<<<< Updated upstream
     const resourcePreviewLabel = cleanDocumentLabel(resourceLabel(resource));
 
     // A real (non-media) file → a durable association edge to the conversation.
@@ -229,8 +384,24 @@ export function useAttachResource(
         // cases the existing per-turn resource path is the truthful boundary.
         if (selectIsCacheOnly(conversationId)(getState())) {
           attachBinary(
+=======
+    const label = cleanDocumentLabel(resourceLabel(resource));
+
+    // A real (non-media) file → a durable association edge to the conversation.
+    if (blockType === "document") {
+      const fileId = extractFileId(resource.data);
+      if (fileId) {
+        const cached = peekFileDocument(fileId);
+        if (cached?.kind === "found") {
+          const representation: DocumentRepresentation = cached.doc
+            .has_clean_content
+            ? "clean"
+            : "raw";
+          void attachDocumentEdge(
+>>>>>>> Stashed changes
             dispatch,
             conversationId,
+<<<<<<< Updated upstream
             blockType,
             resource.data,
             resourcePreviewLabel,
@@ -265,9 +436,33 @@ export function useAttachResource(
         // another tab between refresh and mutation.
         if (existingEdge) return true;
         const result = await attachDocumentEdge(
+=======
+            "processed_document",
+            cached.doc.processed_document_id,
+            fileId,
+            label,
+            representation,
+          ).then((res) => {
+            if (!res.ok) {
+              console.error("[attached-document] attach failed", {
+                conversationId,
+                fileId,
+                error: res.error,
+              });
+            }
+          });
+          return;
+        }
+        // absent / unavailable / cold — attach the raw file edge now. On a cold
+        // cache, upgrade to processed_document once the probe resolves.
+        void attachDocumentEdge(
+>>>>>>> Stashed changes
           dispatch,
           conversationId,
+          "file",
           fileId,
+          fileId,
+<<<<<<< Updated upstream
           fileId,
           label,
           undefined,
@@ -282,6 +477,29 @@ export function useAttachResource(
           return false;
         }
         return true;
+=======
+          label,
+        ).then((res) => {
+          if (!res.ok) {
+            console.error("[attached-document] attach failed", {
+              conversationId,
+              fileId,
+              error: res.error,
+            });
+            return;
+          }
+          if (cached === undefined) {
+            void upgradeFileEdgeToProcessedDocument(
+              dispatch,
+              getState,
+              conversationId,
+              fileId,
+              label,
+            );
+          }
+        });
+        return;
+>>>>>>> Stashed changes
       }
     }
 
