@@ -51,7 +51,7 @@ import { OrgPrivacyTab } from "./OrgPrivacyTab";
 import { OrgScopeTree } from "./OrgScopeTree";
 import { OrgModuleSettings } from "./OrgModuleSettings";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
-import { OrganizationVaultSection } from "@/features/secrets/components/OrganizationVaultSection";
+import { VaultWorkspace } from "@/features/secrets/components/VaultWorkspace";
 import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 
 interface OrgManageProps {
@@ -365,8 +365,11 @@ export function OrgManage({
             title="Organization vault"
             description="Shared API keys and credentials. Members can use values without revealing them."
           >
-            <OrganizationVaultSection
-              organizationId={displayOrganization.id}
+            <VaultWorkspace
+              principal={{
+                type: "organization",
+                organizationId: displayOrganization.id,
+              }}
               canManage={canManageSettings}
             />
           </SectionCard>
