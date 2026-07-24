@@ -79,6 +79,7 @@ import {
 } from "@/features/rag/api/search-lab";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
 import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
 import {
@@ -247,6 +248,7 @@ function RichHitCard({
   onExpandedChange,
   onReviewRepair,
   sourceName,
+  libraryProvenance = null,
 }: {
   rank: number;
   hit: RagSearchHit | DiagnoseHit;
@@ -257,12 +259,18 @@ function RichHitCard({
   onExpandedChange?: (expanded: boolean) => void;
   onReviewRepair?: () => void;
   sourceName?: string | null;
+  /** Shared-library grant provenance label, batch-resolved by the list
+   *  (`useFilesLibraryProvenance`) — never fetched per card. */
+  libraryProvenance?: string | null;
   /** Retained for call-site compatibility; the expanded canonical card always
    *  shows the full chunk + breakdown. */
   showFullText?: boolean;
   showBreakdown?: boolean;
 }) {
-  const view = hitViewFromSearchHit(hit, { name: sourceName });
+  const view = hitViewFromSearchHit(hit, {
+    name: sourceName,
+    libraryProvenance,
+  });
   const href = citationHrefFor(
     hit.source_kind,
     hit.source_id,
@@ -781,6 +789,18 @@ function SearchTab({
   );
   const searchContext = useRagSearchContext(sourceKindFilters);
 
+  // Shared-library provenance — ONE batch per result set, threaded into the
+  // expanded cards ("Shared library · via <industry>").
+  const provenanceFileIds = useMemo(
+    () =>
+      (response?.hits ?? [])
+        .filter((h) => h.source_kind === "cld_file")
+        .map((h) => h.source_ref?.file_id ?? h.source_id),
+    [response?.hits],
+  );
+  const { labelByFile: provenanceByFile } =
+    useFilesLibraryProvenance(provenanceFileIds);
+
   const runSearch = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
@@ -1146,6 +1166,13 @@ function SearchTab({
                       rank={i + 1}
                       hit={h}
                       sourceName={canonicalSourceNameForHit(h, response.hits)}
+                      libraryProvenance={
+                        h.source_kind === "cld_file"
+                          ? (provenanceByFile.get(
+                              h.source_ref?.file_id ?? h.source_id,
+                            ) ?? null)
+                          : null
+                      }
                       topScore={response.hits[0]?.score}
                       highlightQuery={response.query}
                       defaultExpanded={i === 0}

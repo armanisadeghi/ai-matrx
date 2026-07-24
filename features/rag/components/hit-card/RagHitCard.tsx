@@ -19,6 +19,7 @@
 
 import { useId, useState } from "react";
 import {
+  BookMarked,
   BookOpenText,
   ChevronDown,
   ExternalLink,
@@ -384,6 +385,15 @@ function SourceIdentity({
               {view.libraryShortCode}
             </span>
           </>
+        ) : null}
+        {view.libraryProvenance ? (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+            title="You can read this source through a shared-knowledge grant"
+          >
+            <BookMarked className="h-3 w-3" />
+            {view.libraryProvenance}
+          </span>
         ) : null}
       </div>
     </div>

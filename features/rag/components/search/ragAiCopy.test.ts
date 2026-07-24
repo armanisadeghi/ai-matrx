@@ -29,6 +29,7 @@ const VIEW: RagHitView = {
     source: { file_name: "AMAGuides5thv2.pdf", page_count: 618 },
   },
   libraryShortCode: null,
+  libraryProvenance: null,
 };
 
 describe("RAG Copy for AI payload", () => {

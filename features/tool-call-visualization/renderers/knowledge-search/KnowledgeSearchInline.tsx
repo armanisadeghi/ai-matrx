@@ -7,6 +7,7 @@ import { isTerminal } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { canonicalNormalizedSourceName, RagSourceCard } from "./RagSourceCard";
 import { parseRag } from "./parseRag";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 
 /**
  * Inline renderer for `knowledge_search` — the answer's SOURCES as a polished entity
@@ -24,6 +25,16 @@ export function KnowledgeSearchInline({
   onToggleExpanded,
 }: ToolRendererProps) {
   const data = useMemo(() => parseRag(entry), [entry]);
+
+  // Shared-library provenance — ONE batch for the whole source list.
+  const provenanceFileIds = useMemo(
+    () =>
+      data.hits
+        .filter((h) => h.source_kind === "cld_file")
+        .map((h) => h.source_id),
+    [data.hits],
+  );
+  const { labelByFile } = useFilesLibraryProvenance(provenanceFileIds);
 
   // While streaming, the shell's slim line carries it — render nothing here.
   if (!isTerminal(entry) && data.hits.length === 0) return null;
@@ -81,6 +92,11 @@ export function KnowledgeSearchInline({
               key={`${h.chunk_id}-${i}`}
               hit={h}
               sourceName={canonicalNormalizedSourceName(h, data.hits)}
+              libraryProvenance={
+                h.source_kind === "cld_file"
+                  ? (labelByFile.get(h.source_id) ?? null)
+                  : null
+              }
               topScore={topScore}
               query={data.query}
             />

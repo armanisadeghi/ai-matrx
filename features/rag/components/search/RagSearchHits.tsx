@@ -32,6 +32,7 @@ import {
   hitViewFromSearchHit,
   normalizeSourceName,
 } from "@/features/rag/components/hit-card/adapters";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 
 export interface RagSearchHitsProps {
   hits: RagSearchHit[];
@@ -73,6 +74,17 @@ export function RagSearchHits({
     [hits, maxRows],
   );
 
+  // Shared-library provenance — ONE batch for the whole list, threaded into
+  // each card ("Shared library · via <industry>").
+  const provenanceFileIds = useMemo(
+    () =>
+      rows
+        .filter((h) => h.source_kind === "cld_file")
+        .map((h) => h.source_ref?.file_id ?? h.source_id),
+    [rows],
+  );
+  const { labelByFile } = useFilesLibraryProvenance(provenanceFileIds);
+
   if (hits.length === 0) {
     return (
       <div
@@ -108,6 +120,12 @@ export function RagSearchHits({
             hit={hit}
             origin={origin}
             label={resolveSourceLabel(hit, hits, filesById)}
+            libraryProvenance={
+              hit.source_kind === "cld_file"
+                ? (labelByFile.get(hit.source_ref?.file_id ?? hit.source_id) ??
+                  null)
+                : null
+            }
             query={query}
             topScore={hits[0]?.score}
             onClick={onHitClick}
@@ -131,6 +149,7 @@ function RagSearchHitRow({
   hit,
   origin,
   label,
+  libraryProvenance,
   query,
   topScore,
   onClick,
@@ -138,11 +157,12 @@ function RagSearchHitRow({
   hit: RagSearchHit;
   origin: "files" | "chat" | "admin";
   label: string | null;
+  libraryProvenance: string | null;
   query?: string;
   topScore?: number;
   onClick?: (hit: RagSearchHit) => void;
 }) {
-  const view = hitViewFromSearchHit(hit, { name: label });
+  const view = hitViewFromSearchHit(hit, { name: label, libraryProvenance });
   const href = citationHrefFor(hit);
   const openCitation = useOpenCitation();
 

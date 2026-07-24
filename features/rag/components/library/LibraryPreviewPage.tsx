@@ -22,7 +22,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GitFork, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { BookMarked, GitFork, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,7 @@ import { forkProcessedDocument } from "@/features/rag/api/fork";
 import { StatusBadge } from "./StatusBadge";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
   useDocumentSearch,
   type UseDocumentSearch,
@@ -108,6 +109,19 @@ export function LibraryPreviewPage({
   // highlights, the summary banner, the per-page match stepper, and the ranked
   // results list at once.
   const search = useDocumentSearch(documentId);
+
+  // Shared-library grant provenance for the status band — the /files/f/[id]
+  // redirect for grant readers lands HERE, so this is where "why can I read
+  // this?" must be answered ("Shared library · via <industry>").
+  const provenanceFileIds = useMemo(
+    () => (doc?.sourceId ? [doc.sourceId] : []),
+    [doc?.sourceId],
+  );
+  const { labelByFile: provenanceByFile } =
+    useFilesLibraryProvenance(provenanceFileIds);
+  const provenanceLabel = doc?.sourceId
+    ? (provenanceByFile.get(doc.sourceId) ?? null)
+    : null;
 
   const jumpToPage = useCallback((pageNumber: number) => {
     setActivePageIndex(Math.max(0, pageNumber - 1));
@@ -202,6 +216,15 @@ export function LibraryPreviewPage({
         {!embedded && doc && (
           <div className="border-b px-4 py-1.5 flex items-center gap-2 min-w-0 shrink-0">
             <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
+            {provenanceLabel && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary"
+                title="You can read this document through a shared-knowledge grant"
+              >
+                <BookMarked className="h-3 w-3" />
+                {provenanceLabel}
+              </span>
+            )}
             <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
               {doc.pagesPersisted} pages · {doc.chunks}{" "}
               {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}

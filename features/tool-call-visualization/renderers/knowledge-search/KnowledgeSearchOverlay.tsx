@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { canonicalNormalizedSourceName, RagSourceCard } from "./RagSourceCard";
 import { parseRag } from "./parseRag";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 
 /**
  * Overlay renderer for `knowledge_search` — every source for the query, full list, as
@@ -12,6 +13,16 @@ import { parseRag } from "./parseRag";
  */
 export function KnowledgeSearchOverlay({ entry }: ToolRendererProps) {
   const data = useMemo(() => parseRag(entry), [entry]);
+
+  // Shared-library provenance — ONE batch for the whole source list.
+  const provenanceFileIds = useMemo(
+    () =>
+      data.hits
+        .filter((h) => h.source_kind === "cld_file")
+        .map((h) => h.source_id),
+    [data.hits],
+  );
+  const { labelByFile } = useFilesLibraryProvenance(provenanceFileIds);
 
   if (!data.hits.length) {
     return (
@@ -48,6 +59,11 @@ export function KnowledgeSearchOverlay({ entry }: ToolRendererProps) {
             key={`${h.chunk_id}-${i}`}
             hit={h}
             sourceName={canonicalNormalizedSourceName(h, data.hits)}
+            libraryProvenance={
+              h.source_kind === "cld_file"
+                ? (labelByFile.get(h.source_id) ?? null)
+                : null
+            }
             topScore={topScore}
             query={data.query}
           />

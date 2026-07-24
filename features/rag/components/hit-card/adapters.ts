@@ -115,7 +115,7 @@ export function canonicalSourceNameForHit(
 
 export function hitViewFromSearchHit(
   hit: RagSearchHit | DiagnoseHit,
-  opts?: { name?: string | null },
+  opts?: { name?: string | null; libraryProvenance?: string | null },
 ): RagHitView {
   const meta = (hit.metadata ?? {}) as Record<string, unknown>;
   const src = (meta["source"] ?? {}) as Record<string, unknown>;
@@ -167,5 +167,6 @@ export function hitViewFromSearchHit(
     entities,
     metadata: meta,
     libraryShortCode: (src["library_short_code"] as string | undefined) ?? null,
+    libraryProvenance: opts?.libraryProvenance ?? null,
   };
 }

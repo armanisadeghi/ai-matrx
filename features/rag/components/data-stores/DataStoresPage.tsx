@@ -66,6 +66,7 @@ import { fileHandler } from "@/features/files";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
+import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 
 // THE one canonical file picker. Lazy — WindowPanel must never be parsed in
 // a route/boot bundle (features/window-panels FEATURE.md → Bundle invariant).
@@ -337,6 +338,13 @@ function StoreDetailPanel({
   const [publishOpen, setPublishOpen] = useState(false);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
 
+  // WHY the caller can read a 'granted' store — "via <industry>", "Available
+  // to everyone", or "Subscribed" (org-audience grant). Only fetched when the
+  // store is actually grant-conveyed.
+  const grantedStoreId =
+    detail.store?.access === "granted" ? (detail.store?.id ?? null) : null;
+  const { label: grantProvenanceLabel } = useStoreProvenance(grantedStoreId);
+
   // Rich members — server-enriched view of what's actually in the store
   // (file name, size, processing status, page/chunk counts). Replaces
   // the opaque kind/source_id list.
@@ -536,7 +544,8 @@ function StoreDetailPanel({
           )}
           {readOnly && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
-              <Lock className="h-3 w-3" /> Shared library · read-only
+              <Lock className="h-3 w-3" /> Shared library ·{" "}
+              {grantProvenanceLabel ?? "read-only"}
             </span>
           )}
           <div className="ml-auto flex items-center gap-1">

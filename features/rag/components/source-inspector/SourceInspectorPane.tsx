@@ -20,6 +20,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
+  BookMarked,
   Crosshair,
   ExternalLink,
   Loader2,
@@ -40,6 +41,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useFileNode, InlineMediaRef } from "@/features/files";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { usePdfSurfaceLinks } from "@/features/pdf/hooks/usePdfSurfaceLinks";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import { ChunksOnPage } from "@/features/rag/components/library/ChunkList";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
 import { usePageBundle } from "./usePageBundle";
@@ -103,6 +105,14 @@ export function SourceInspectorPane({
   const fileId = ids.fileId;
   const processedDocumentId = ids.processedDocumentId;
   const hasDoc = Boolean(processedDocumentId);
+
+  // Shared-library grant provenance for the header ("Shared library · via …").
+  const provenanceIds = useMemo(() => (fileId ? [fileId] : []), [fileId]);
+  const { labelByFile: provenanceByFile } =
+    useFilesLibraryProvenance(provenanceIds);
+  const provenanceLabelText = fileId
+    ? (provenanceByFile.get(fileId) ?? null)
+    : null;
 
   // The page(s) the citation anchors to.
   const matchPages = useMemo(() => {
@@ -304,6 +314,15 @@ export function SourceInspectorPane({
       <span className="truncate text-sm font-medium text-foreground">
         {fileName ?? "Source"}
       </span>
+      {provenanceLabelText ? (
+        <span
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary"
+          title="You can read this source through a shared-knowledge grant"
+        >
+          <BookMarked className="h-3 w-3" />
+          {provenanceLabelText}
+        </span>
+      ) : null}
       {spanLabel ? (
         <span
           className={cn(

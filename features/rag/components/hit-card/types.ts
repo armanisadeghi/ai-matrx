@@ -33,6 +33,11 @@ export interface RagHitView {
   metadata: Record<string, unknown>;
   /** Curated-library short code (e.g. "AMA5"), when the hit is a library doc. */
   libraryShortCode: string | null;
+  /** Shared-knowledge grant provenance label for the hit's source, e.g.
+   *  "Shared library · via California Workers' Compensation". Resolved by the
+   *  list surface in ONE batch (`useFilesLibraryProvenance`) and threaded via
+   *  the adapter — never fetched per card. Null = not grant-conveyed. */
+  libraryProvenance: string | null;
 }
 
 /** A hit that reached the results purely via KG entity co-occurrence — no

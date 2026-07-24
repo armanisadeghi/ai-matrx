@@ -18,6 +18,7 @@ import { hrefForNormalized, type NormalizedHit } from "./parseRag";
 function viewFromNormalized(
   hit: NormalizedHit,
   name: string | null,
+  libraryProvenance: string | null,
 ): RagHitView {
   return {
     sourceKind: hit.source_kind,
@@ -38,6 +39,7 @@ function viewFromNormalized(
     entities: hit.entities,
     metadata: hit.metadata,
     libraryShortCode: null,
+    libraryProvenance,
   };
 }
 
@@ -46,6 +48,7 @@ export function RagSourceCard({
   topScore,
   query,
   sourceName,
+  libraryProvenance = null,
 }: {
   hit: NormalizedHit;
   /** Top score in the result set, for the relative relevance bar. */
@@ -53,6 +56,9 @@ export function RagSourceCard({
   /** The originating search query — threaded into the source inspector. */
   query?: string | null;
   sourceName?: string | null;
+  /** Shared-library grant provenance label, batch-resolved by the list
+   *  surface (`useFilesLibraryProvenance`) — never fetched per card. */
+  libraryProvenance?: string | null;
 }) {
   const href = hrefForNormalized(hit);
   const isFile = hit.source_kind === "cld_file";
@@ -82,7 +88,7 @@ export function RagSourceCard({
 
   return (
     <RagHitCard
-      view={viewFromNormalized(hit, resolvedName)}
+      view={viewFromNormalized(hit, resolvedName, libraryProvenance)}
       variant="compact"
       topScore={topScore}
       href={href}
