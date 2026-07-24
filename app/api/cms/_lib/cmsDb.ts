@@ -85,6 +85,21 @@ export async function verifyAssetOwnership(
   return verifySiteOwnership(db, asset.client_id, userId);
 }
 
+/** Verify the user owns the site that a collection belongs to (W2-C). */
+export async function verifyCollectionOwnership(
+  db: SupabaseClient,
+  collectionId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data: collection } = await db
+    .from("site_collections")
+    .select("client_id")
+    .eq("id", collectionId)
+    .single();
+  if (!collection) return false;
+  return verifySiteOwnership(db, collection.client_id, userId);
+}
+
 /**
  * Verify the user owns an `html_pages` row. These have no site — ownership is the
  * direct `user_id` column (same rule aidream's `services/cms/access.py` applies).

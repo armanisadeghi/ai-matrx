@@ -24,6 +24,14 @@ import type {
     AssetUsage,
     AssetPageUsage,
     AssetComponentUsage,
+    SiteCollection,
+    SiteCollectionSummary,
+    SiteCollectionItem,
+    CollectionFieldDef,
+    CollectionValidationMode,
+    CollectionStatus,
+    CollectionItemFilter,
+    SiteCollectionSettings,
 } from '../types';
 
 export class SiteNotEmptyError extends Error {
@@ -246,8 +254,8 @@ export const CmsPageService = {
 
 // ── Versions ─────────────────────────────────────────────────────────────────
 
-// Five CMS entities are versioned (client_site / client_page / client_component /
-// client_asset / html_page). `entityType` defaults to `client_page`.
+// Six CMS entities are versioned (client_site / client_page / client_component /
+// client_asset / html_page / site_collection). `entityType` defaults to `client_page`.
 export const CmsVersionService = {
     /** Full change history for a row, newest first. Every change is an entry. */
     async listVersions(rowId: string, entityType: CmsEntityType = 'client_page'): Promise<ClientEntityVersion[]> {
@@ -382,6 +390,133 @@ export const CmsAssetService = {
             }
             throw new Error(data.error || `CMS API error: ${response.status}`);
         }
+    },
+};
+
+// ── Collections (W2-C — site_collections + site_collection_items) ─────────────
+
+export interface CollectionUpsertParams {
+    slug?: string;
+    name?: string;
+    description?: string | null;
+    fieldSchema?: CollectionFieldDef[];
+    validationMode?: CollectionValidationMode;
+    publicWrite?: boolean;
+    publicRead?: boolean;
+    publicReadFields?: string[];
+    allowUpsert?: boolean;
+    searchable?: boolean;
+    settings?: SiteCollectionSettings;
+    status?: CollectionStatus;
+}
+
+export interface CollectionItemsPage {
+    items: SiteCollectionItem[];
+    total: number;
+    page: number;
+    perPage: number;
+    /** True when the non-searchable ilike fallback hit its scan cap. */
+    searchTruncated: boolean;
+}
+
+export const CmsCollectionService = {
+    /** A site's collections with live item/unread counts. */
+    async listCollections(siteId: string): Promise<SiteCollectionSummary[]> {
+        const res = await callApi<{ collections: SiteCollectionSummary[] }>('collections', 'list', { siteId });
+        return res.collections;
+    },
+
+    async getCollection(collectionId: string): Promise<SiteCollection> {
+        const res = await callApi<{ collection: SiteCollection }>('collections', 'get', { collectionId });
+        return res.collection;
+    },
+
+    /**
+     * Creates the collection; the FIRST collection on a site also mints the
+     * site data key (`mintedDataApiKey: true` — refresh the site afterwards).
+     */
+    async createCollection(
+        params: { siteId: string; slug: string; name: string } & CollectionUpsertParams,
+    ): Promise<{ collection: SiteCollection; mintedDataApiKey: boolean }> {
+        const res = await callApi<{ collection: SiteCollection; mintedDataApiKey: boolean }>(
+            'collections',
+            'create',
+            params,
+        );
+        return res;
+    },
+
+    async updateCollection(collectionId: string, updates: CollectionUpsertParams): Promise<SiteCollection> {
+        const res = await callApi<{ collection: SiteCollection }>('collections', 'update', {
+            collectionId,
+            ...updates,
+        });
+        return res.collection;
+    },
+
+    async archiveCollection(collectionId: string): Promise<SiteCollection> {
+        const res = await callApi<{ collection: SiteCollection }>('collections', 'archive', { collectionId });
+        return res.collection;
+    },
+
+    /** Soft delete (deleted_at) — items survive under the FK, hidden with it. */
+    async deleteCollection(collectionId: string): Promise<void> {
+        await callApi('collections', 'delete', { collectionId });
+    },
+
+    /** Rotates client_sites.data_api_key — old key stops working immediately. */
+    async rotateDataKey(siteId: string): Promise<string> {
+        const res = await callApi<{ dataApiKey: string }>('collections', 'rotate_key', { siteId });
+        return res.dataApiKey;
+    },
+
+    // ── Items ────────────────────────────────────────────────────────────
+
+    async listItems(
+        collectionId: string,
+        params: { filter?: CollectionItemFilter; q?: string; page?: number; perPage?: number } = {},
+    ): Promise<CollectionItemsPage> {
+        return callApi<CollectionItemsPage>('collections', 'items_list', { collectionId, ...params });
+    },
+
+    async getItem(itemId: string): Promise<SiteCollectionItem> {
+        const res = await callApi<{ item: SiteCollectionItem }>('collections', 'items_get', { itemId });
+        return res.item;
+    },
+
+    /** Triage flags — row or bulk (seen / spam / archive). */
+    async setItemFlags(
+        itemIds: string[],
+        flags: { seen?: boolean; isSpam?: boolean; status?: CollectionStatus },
+    ): Promise<SiteCollectionItem[]> {
+        const res = await callApi<{ items: SiteCollectionItem[] }>('collections', 'items_set_flags', {
+            itemIds,
+            ...flags,
+        });
+        return res.items;
+    },
+
+    /** Soft delete — row or bulk. */
+    async deleteItems(itemIds: string[]): Promise<void> {
+        await callApi('collections', 'items_delete', { itemIds });
+    },
+
+    /** Rows for client-side CSV assembly (server-capped at 10,000). */
+    async exportItems(
+        collectionId: string,
+        filter: CollectionItemFilter = 'all',
+    ): Promise<{ items: SiteCollectionItem[]; truncated: boolean; cap: number }> {
+        return callApi('collections', 'items_export', { collectionId, filter });
+    },
+
+    /** Admin (requireSuperAdmin): every collection across every site. */
+    async adminListCollections(siteId?: string): Promise<SiteCollection[]> {
+        const res = await callApi<{ collections: SiteCollection[] }>(
+            'collections',
+            'admin_list',
+            siteId ? { siteId } : {},
+        );
+        return res.collections;
     },
 };
 

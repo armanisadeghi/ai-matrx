@@ -31,6 +31,13 @@ export interface ClientSite {
   owner_user_id: string | null;
   global_css: string | null;
   favicon: string | null;
+  /**
+   * W2-C per-site data key (CMS migration 0015). Required on public collection
+   * writes (`X-Matrx-Site-Key`). Ships inside rendered page HTML — NOT a secret;
+   * its value is revocation + attribution. Generated on first collection create,
+   * rotatable from the Collections tab (`rotate_key`).
+   */
+  data_api_key: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -127,7 +134,7 @@ export interface ClientPageSummary {
 // ─── Entity Version ────────────────────────────────────────────────────
 // The canonical append-only history (`history.row_versions` on the CMS project).
 // EVERY change to a versioned row — create, edit, draft save, publish, rollback —
-// is one entry. FIVE entities are versioned (CMS migration 0005), not just pages;
+// is one entry. SIX entities are versioned (CMS migrations 0005 + 0015), not just pages;
 // the `entity_type` token says which. Shapes mirror aidream's `VersionSummary` /
 // `VersionRead` (`services/cms/dtos.py`) 1:1 so both surfaces agree.
 
@@ -139,7 +146,8 @@ export type CmsEntityType =
   | "client_page"
   | "client_component"
   | "client_asset"
-  | "html_page";
+  | "html_page"
+  | "site_collection";
 
 export interface ClientEntityVersion {
   /** `history.row_versions.id` — a bigint, carried as a string. */
@@ -296,6 +304,104 @@ export interface ClientActivityChanges {
   };
   [key: string]: unknown;
 }
+
+// ─── Collections (W2-C — CMS migration 0015) ────────────────────────────
+// Per-site named data collections: the definition (`site_collections`, a
+// versioned content entity, token `site_collection`) and its rows
+// (`site_collection_items`, append-heavy, NOT versioned). Field schemas are
+// validator DATA, never DDL. Hand-maintained like every other type in this
+// file (the CMS project has no generated types).
+
+export type CollectionFieldType =
+  | 'text'
+  | 'richtext'
+  | 'number'
+  | 'boolean'
+  | 'email'
+  | 'url'
+  | 'datetime'
+  | 'select'
+  | 'json';
+
+/** One entry of `site_collections.field_schema` (array of these). */
+export interface CollectionFieldDef {
+  key: string;
+  label: string;
+  type: CollectionFieldType;
+  required?: boolean;
+  /** text-ish types only */
+  max_length?: number;
+  /** number only */
+  min?: number;
+  /** number only */
+  max?: number;
+  /** select only */
+  options?: string[];
+}
+
+/** Per-collection overrides of the platform caps — all optional. */
+export interface SiteCollectionSettings {
+  rate_limit_per_ip_per_hour?: number;
+  rate_limit_per_site_per_hour?: number;
+  max_item_bytes?: number;
+  max_items?: number;
+  honeypot_field?: string;
+  retention_days?: number;
+  [key: string]: unknown;
+}
+
+export type CollectionValidationMode = 'advisory' | 'strict';
+export type CollectionStatus = 'active' | 'archived';
+
+export interface SiteCollection {
+  id: string;
+  client_id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  field_schema: CollectionFieldDef[];
+  validation_mode: CollectionValidationMode;
+  public_write: boolean;
+  public_read: boolean;
+  /** Double opt-in for reads: public_read AND the field named here. */
+  public_read_fields: string[];
+  allow_upsert: boolean;
+  searchable: boolean;
+  settings: SiteCollectionSettings;
+  status: CollectionStatus;
+  deleted_at: string | null;
+  created_by: string | null;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** `list` adds live counts (cheap via the 0015 partial indexes). */
+export interface SiteCollectionSummary extends SiteCollection {
+  item_count: number;
+  unread_count: number;
+}
+
+export interface SiteCollectionItem {
+  id: string;
+  collection_id: string;
+  client_id: string;
+  data: Record<string, unknown>;
+  idempotency_key: string | null;
+  submitted_by: string | null;
+  source_url: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  is_spam: boolean;
+  seen_at: string | null;
+  status: CollectionStatus;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Items-viewer filter vocabulary (maps to is_spam / seen_at / status). */
+export type CollectionItemFilter = 'all' | 'unread' | 'spam' | 'archived';
 
 export interface ClientActivityLog {
   id: string;

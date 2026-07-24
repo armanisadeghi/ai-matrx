@@ -22,7 +22,17 @@ export interface LogCmsActivityParams {
   // aidream/services/cms/CONTRACT.md (C6 section) and the Activity Feed filter.
   // 'client_page' is NOT a member (that token belongs to the version-facade
   // vocabulary only; CMS migration 0007 normalized historical rows).
-  entityType: "site" | "page" | "component" | "version" | "exception" | "html_page" | "asset";
+  // 'collection' / 'collection_item' match aidream's log_activity strings (W2-C).
+  entityType:
+    | "site"
+    | "page"
+    | "component"
+    | "version"
+    | "exception"
+    | "html_page"
+    | "asset"
+    | "collection"
+    | "collection_item";
   entityId: string | null;
   description: string;
   userId: string;

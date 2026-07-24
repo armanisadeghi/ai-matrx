@@ -6,7 +6,7 @@
  * migrations `0003` + `0006`). EVERY change to a versioned row is an entry —
  * create, edit, draft save, publish, rollback.
  *
- * FIVE entities are versioned (migration `0005`), not just pages. The `entityType`
+ * SIX entities are versioned (migrations `0005` + `0015`), not just pages. The `entityType`
  * param is a `platform.entity_types` token; it defaults to `client_page` so the
  * page History tab keeps working unchanged.
  *
@@ -27,6 +27,7 @@ import {
   verifyComponentOwnership,
   verifyAssetOwnership,
   verifyHtmlPageOwnership,
+  verifyCollectionOwnership,
 } from "../_lib/cmsDb";
 import type {
   CmsEntityType,
@@ -52,6 +53,7 @@ const OWNERSHIP: Record<
     (await verifyComponentOwnership(db, rowId, userId)).ok,
   client_asset: verifyAssetOwnership,
   html_page: verifyHtmlPageOwnership,
+  site_collection: verifyCollectionOwnership,
 };
 
 function resolveEntityType(raw: unknown): CmsEntityType | null {
