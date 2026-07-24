@@ -49,13 +49,108 @@ const FIELD_TYPES: readonly CollectionFieldType[] = [
 ];
 
 const EXPORT_CAP = 10_000;
-/** Cap for the in-route ilike fallback on non-searchable collections. */
+/**
+ * Byte budget for an export response. Vercel caps a function response at
+ * 4.5 MB — a row cap alone does not bound `data` (unbounded jsonb), so the
+ * CSV button dies on any real inbox without this. We stop well short and tell
+ * the admin to narrow the filter (mirrors aidream CONTRACT.md §CW2
+ * `CmsExportTooLarge`).
+ */
+const EXPORT_BYTE_BUDGET = 3_500_000;
+/** Rows per round-trip while accumulating an export — keeps peak memory flat. */
+const EXPORT_CHUNK = 500;
+/** Cap for the in-route scan fallback on non-searchable collections. */
 const SEARCH_SCAN_CAP = 2_000;
+/** Memory budget for that same scan — 2,000 fat rows would otherwise OOM. */
+const SEARCH_SCAN_BYTE_BUDGET = 8_000_000;
+/** Ceiling handed to `backfill_collection_search_vectors`. */
+const SEARCH_BACKFILL_CAP = 50_000;
 const DEFAULT_PER_PAGE = 50;
 const MAX_PER_PAGE = 200;
+const MAX_NAME_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 2_000;
+/** Bulk triage/delete batch ceiling — beyond this PostgREST 500s opaquely. */
+const MAX_ITEM_IDS = 500;
+
+/**
+ * Every item column EXCEPT `search_vector`. The tsvector is server-side index
+ * weight (routinely larger than the row itself) and no surface renders it —
+ * `select("*")` shipped it into lambda memory on every list, scan and export.
+ */
+const ITEM_COLUMNS =
+  "id, collection_id, client_id, data, idempotency_key, submitted_by, source_url, ip_address, user_agent, is_spam, seen_at, status, deleted_at, created_at, updated_at";
+
+/** Columns the export CSV actually consumes (`buildCsv` in the items page). */
+const EXPORT_COLUMNS =
+  "id, data, created_at, status, is_spam, seen_at, source_url";
 
 function isFieldType(v: unknown): v is CollectionFieldType {
   return typeof v === "string" && (FIELD_TYPES as readonly string[]).includes(v);
+}
+
+/** Non-empty string param, or null. */
+function asString(v: unknown): string | null {
+  return typeof v === "string" && v.trim() !== "" ? v : null;
+}
+
+function validateName(
+  v: unknown,
+): { ok: true; value: string } | { ok: false; error: string } {
+  if (typeof v !== "string") {
+    return { ok: false, error: "name must be a string" };
+  }
+  const value = v.trim();
+  if (!value) return { ok: false, error: "name is required" };
+  if (value.length > MAX_NAME_LENGTH) {
+    return {
+      ok: false,
+      error: `name must be ${MAX_NAME_LENGTH} characters or fewer`,
+    };
+  }
+  return { ok: true, value };
+}
+
+function validateDescription(
+  v: unknown,
+): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (v === null || v === undefined || v === "") return { ok: true, value: null };
+  if (typeof v !== "string") {
+    return { ok: false, error: "description must be a string" };
+  }
+  const value = v.trim();
+  if (value.length > MAX_DESCRIPTION_LENGTH) {
+    return {
+      ok: false,
+      error: `description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer`,
+    };
+  }
+  return { ok: true, value: value || null };
+}
+
+/**
+ * Dedupe + cap an incoming id array. Duplicates used to produce a FALSE 403:
+ * `.in()` dedupes server-side, so `items.length !== itemIds.length` failed the
+ * ownership check on a payload the user legitimately owned.
+ */
+function normalizeItemIds(
+  raw: unknown,
+): { ok: true; ids: string[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: "itemIds (non-empty array) is required" };
+  }
+  if (raw.length > MAX_ITEM_IDS) {
+    return {
+      ok: false,
+      error: `itemIds accepts at most ${MAX_ITEM_IDS} ids per request — send them in batches`,
+    };
+  }
+  const ids = [
+    ...new Set(raw.filter((v: unknown): v is string => typeof v === "string")),
+  ];
+  if (ids.length === 0) {
+    return { ok: false, error: "itemIds (non-empty array) is required" };
+  }
+  return { ok: true, ids };
 }
 
 /**
@@ -120,7 +215,24 @@ function parseFieldSchema(
           error: `fieldSchema[${i}].options must be an array of strings`,
         };
       }
-      field.options = rec.options as string[];
+      const options = rec.options.filter(
+        (o: unknown): o is string => typeof o === "string" && o.trim() !== "",
+      );
+      if (options.length === 0) {
+        return {
+          ok: false,
+          error: `fieldSchema[${i}].options must contain at least one option`,
+        };
+      }
+      field.options = options;
+    }
+    // Twin parity with the editor dialog: a `select` with no options can never
+    // validate under strict mode, so it must never be accepted here either.
+    if (type === "select" && !field.options) {
+      return {
+        ok: false,
+        error: `fieldSchema[${i}] is a select field and needs at least one option`,
+      };
     }
     fields.push(field);
   }
@@ -214,14 +326,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { action, ...params } = body;
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: "Request body must be a JSON object" },
+        { status: 400 },
+      );
+    }
+
+    const { action, ...params } = body as Record<string, unknown>;
     const db = getCmsClient();
 
     switch (action) {
       // ── List a site's collections (with live counts) ───────────────
       case "list": {
-        const { siteId, includeDeleted } = params;
+        const siteId = asString(params.siteId);
+        const includeDeleted = params.includeDeleted === true;
         if (!siteId) {
           return NextResponse.json({ error: "siteId is required" }, { status: 400 });
         }
@@ -257,12 +382,16 @@ export async function POST(request: NextRequest) {
                   .eq("is_spam", false)
                   .is("deleted_at", null)
                   .eq("status", "active"),
+                // `status = 'active'` is REQUIRED here — `applyItemFilter`'s
+                // "unread" case includes it, so omitting it inflated the "N new"
+                // badge with archived-unseen rows the Unread tab never shows.
                 db
                   .from("site_collection_items")
                   .select("id", { count: "exact", head: true })
                   .eq("collection_id", c.id)
                   .eq("is_spam", false)
                   .is("deleted_at", null)
+                  .eq("status", "active")
                   .is("seen_at", null),
               ]);
             return {
@@ -278,7 +407,7 @@ export async function POST(request: NextRequest) {
 
       // ── Get one collection ──────────────────────────────────────────
       case "get": {
-        const { collectionId } = params;
+        const collectionId = asString(params.collectionId);
         if (!collectionId) {
           return NextResponse.json(
             { error: "collectionId is required" },
@@ -306,10 +435,6 @@ export async function POST(request: NextRequest) {
       // ── Create ──────────────────────────────────────────────────────
       case "create": {
         const {
-          siteId,
-          slug,
-          name,
-          description,
           fieldSchema,
           validationMode,
           publicWrite,
@@ -319,14 +444,27 @@ export async function POST(request: NextRequest) {
           searchable,
           settings,
         } = params;
+        const siteId = asString(params.siteId);
+        const slug = asString(params.slug);
 
-        if (!siteId || !slug || !name) {
+        if (!siteId || !slug || params.name === undefined) {
           return NextResponse.json(
             { error: "siteId, slug, and name are required" },
             { status: 400 },
           );
         }
-        if (typeof slug !== "string" || !SLUG_RE.test(slug)) {
+        const parsedName = validateName(params.name);
+        if (!parsedName.ok) {
+          return NextResponse.json({ error: parsedName.error }, { status: 400 });
+        }
+        const parsedDescription = validateDescription(params.description);
+        if (!parsedDescription.ok) {
+          return NextResponse.json(
+            { error: parsedDescription.error },
+            { status: 400 },
+          );
+        }
+        if (!SLUG_RE.test(slug)) {
           return NextResponse.json(
             {
               error:
@@ -357,8 +495,8 @@ export async function POST(request: NextRequest) {
         const row: Record<string, unknown> = {
           client_id: siteId,
           slug,
-          name,
-          description: description || null,
+          name: parsedName.value,
+          description: parsedDescription.value,
           field_schema: parsed.fields,
           validation_mode: validationMode === "strict" ? "strict" : "advisory",
           public_write: publicWrite === true,
@@ -440,7 +578,8 @@ export async function POST(request: NextRequest) {
 
       // ── Update ──────────────────────────────────────────────────────
       case "update": {
-        const { collectionId, ...updateFields } = params;
+        const { collectionId: rawCollectionId, ...updateFields } = params;
+        const collectionId = asString(rawCollectionId);
         if (!collectionId) {
           return NextResponse.json(
             { error: "collectionId is required" },
@@ -484,9 +623,28 @@ export async function POST(request: NextRequest) {
           }
           updateData.slug = updateFields.slug;
         }
-        if (updateFields.name !== undefined) updateData.name = updateFields.name;
-        if (updateFields.description !== undefined)
-          updateData.description = updateFields.description || null;
+        if (updateFields.name !== undefined) {
+          const parsedName = validateName(updateFields.name);
+          if (!parsedName.ok) {
+            return NextResponse.json(
+              { error: parsedName.error },
+              { status: 400 },
+            );
+          }
+          updateData.name = parsedName.value;
+        }
+        if (updateFields.description !== undefined) {
+          const parsedDescription = validateDescription(
+            updateFields.description,
+          );
+          if (!parsedDescription.ok) {
+            return NextResponse.json(
+              { error: parsedDescription.error },
+              { status: 400 },
+            );
+          }
+          updateData.description = parsedDescription.value;
+        }
         if (updateFields.validationMode !== undefined)
           updateData.validation_mode =
             updateFields.validationMode === "strict" ? "strict" : "advisory";
@@ -572,6 +730,47 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        /**
+         * Flipping `searchable` false→true does NOT vectorize the rows that
+         * already exist: the tsvector trigger only fires on insert / UPDATE OF
+         * data, while `items_list` routes on the flag — so search silently
+         * returned zero for rows that were sitting right there. Re-vectorize
+         * the backlog through the CMS 0019 RPC.
+         */
+        let searchBackfill: {
+          rows: number;
+          truncated: boolean;
+          cap: number;
+        } | null = null;
+        if (updateData.searchable === true && currentRow.searchable === false) {
+          const { data: backfilled, error: backfillError } = await db.rpc(
+            "backfill_collection_search_vectors",
+            { p_collection_id: collectionId, p_max_rows: SEARCH_BACKFILL_CAP },
+          );
+          if (backfillError) {
+            console.error(
+              "[cms/collections] search_vector backfill FAILED for collection",
+              collectionId,
+              "— existing items stay unfindable until this is re-run:",
+              backfillError,
+            );
+            searchBackfill = { rows: 0, truncated: false, cap: SEARCH_BACKFILL_CAP };
+          } else {
+            const rows = typeof backfilled === "number" ? backfilled : 0;
+            const truncated = rows >= SEARCH_BACKFILL_CAP;
+            if (truncated) {
+              console.error(
+                "[cms/collections] search_vector backfill hit the",
+                SEARCH_BACKFILL_CAP,
+                "row cap for collection",
+                collectionId,
+                "— older items remain unfindable; re-run the backfill.",
+              );
+            }
+            searchBackfill = { rows, truncated, cap: SEARCH_BACKFILL_CAP };
+          }
+        }
+
         await logCmsActivity(db, {
           siteId: data.client_id,
           activityType: "collection.update",
@@ -580,15 +779,22 @@ export async function POST(request: NextRequest) {
           description: `Updated collection "${data.name}" (${Object.keys(updateData).join(", ")})`,
           userId: user.id,
           userEmail: user.email,
-          changes: { fields: Object.keys(updateData) },
+          changes: {
+            fields: Object.keys(updateData),
+            ...(searchBackfill ? { search_backfill: searchBackfill } : {}),
+          },
         });
 
-        return NextResponse.json({ success: true, collection: data });
+        return NextResponse.json({
+          success: true,
+          collection: data,
+          ...(searchBackfill ? { searchBackfill } : {}),
+        });
       }
 
       // ── Archive (definition stops accepting writes; items kept) ─────
       case "archive": {
-        const { collectionId } = params;
+        const collectionId = asString(params.collectionId);
         if (!collectionId) {
           return NextResponse.json(
             { error: "collectionId is required" },
@@ -625,7 +831,7 @@ export async function POST(request: NextRequest) {
 
       // ── Delete (soft — deleted_at; items survive under the FK) ──────
       case "delete": {
-        const { collectionId } = params;
+        const collectionId = asString(params.collectionId);
         if (!collectionId) {
           return NextResponse.json(
             { error: "collectionId is required" },
@@ -662,7 +868,7 @@ export async function POST(request: NextRequest) {
 
       // ── Rotate the site data key (kill-switch) ──────────────────────
       case "rotate_key": {
-        const { siteId } = params;
+        const siteId = asString(params.siteId);
         if (!siteId) {
           return NextResponse.json({ error: "siteId is required" }, { status: 400 });
         }
@@ -697,7 +903,8 @@ export async function POST(request: NextRequest) {
 
       // ── Items: paged list with filters + search ─────────────────────
       case "items_list": {
-        const { collectionId, q } = params;
+        const collectionId = asString(params.collectionId);
+        const q = params.q;
         if (!collectionId) {
           return NextResponse.json(
             { error: "collectionId is required" },
@@ -731,7 +938,7 @@ export async function POST(request: NextRequest) {
         if (search && !collection?.searchable) {
           let scanQuery = db
             .from("site_collection_items")
-            .select("*")
+            .select(ITEM_COLUMNS)
             .eq("collection_id", collectionId);
           scanQuery = applyItemFilter(scanQuery, filter);
           const { data: scanned, error: scanError } = await scanQuery
@@ -745,22 +952,39 @@ export async function POST(request: NextRequest) {
             );
           }
           const needle = search.toLowerCase();
-          const matched = (scanned ?? []).filter((row) =>
-            JSON.stringify(row.data ?? {}).toLowerCase().includes(needle),
-          );
+          const rows = scanned ?? [];
+          const matched: typeof rows = [];
+          let scanBytes = 0;
+          let budgetHit = false;
+          for (const row of rows) {
+            const serialized = JSON.stringify(row.data ?? {});
+            scanBytes += serialized.length;
+            if (scanBytes > SEARCH_SCAN_BYTE_BUDGET) {
+              budgetHit = true;
+              console.warn(
+                "[cms/collections] items_list scan hit the byte budget for collection",
+                collectionId,
+                "— results are partial; enable Searchable for full-text search.",
+              );
+              break;
+            }
+            if (serialized.toLowerCase().includes(needle)) matched.push(row);
+          }
           const start = (page - 1) * perPage;
           return NextResponse.json({
             items: matched.slice(start, start + perPage),
+            // Matches WITHIN the scanned window only — not the collection-wide
+            // count. `searchTruncated` says whether that distinction matters.
             total: matched.length,
             page,
             perPage,
-            searchTruncated: (scanned ?? []).length === SEARCH_SCAN_CAP,
+            searchTruncated: rows.length >= SEARCH_SCAN_CAP || budgetHit,
           });
         }
 
         let query = db
           .from("site_collection_items")
-          .select("*", { count: "exact" })
+          .select(ITEM_COLUMNS, { count: "exact" })
           .eq("collection_id", collectionId);
         query = applyItemFilter(query, filter);
         if (search) {
@@ -788,7 +1012,7 @@ export async function POST(request: NextRequest) {
 
       // ── Items: single row ────────────────────────────────────────────
       case "items_get": {
-        const { itemId } = params;
+        const itemId = asString(params.itemId);
         if (!itemId) {
           return NextResponse.json(
             { error: "itemId is required" },
@@ -804,7 +1028,7 @@ export async function POST(request: NextRequest) {
         }
         const { data, error } = await db
           .from("site_collection_items")
-          .select("*")
+          .select(ITEM_COLUMNS)
           .eq("id", itemId)
           .single();
         if (error) {
@@ -816,16 +1040,12 @@ export async function POST(request: NextRequest) {
 
       // ── Items: triage flags (seen / spam / archive) — row or bulk ────
       case "items_set_flags": {
-        const { itemIds, seen, isSpam, status } = params;
-        const ids: string[] = Array.isArray(itemIds)
-          ? itemIds.filter((v: unknown): v is string => typeof v === "string")
-          : [];
-        if (ids.length === 0) {
-          return NextResponse.json(
-            { error: "itemIds (non-empty array) is required" },
-            { status: 400 },
-          );
+        const { seen, isSpam, status } = params;
+        const normalized = normalizeItemIds(params.itemIds);
+        if (!normalized.ok) {
+          return NextResponse.json({ error: normalized.error }, { status: 400 });
         }
+        const ids = normalized.ids;
         const flagUpdate: Record<string, unknown> = {};
         if (seen !== undefined)
           flagUpdate.seen_at = seen ? new Date().toISOString() : null;
@@ -883,16 +1103,11 @@ export async function POST(request: NextRequest) {
 
       // ── Items: soft delete — row or bulk ─────────────────────────────
       case "items_delete": {
-        const { itemIds } = params;
-        const ids: string[] = Array.isArray(itemIds)
-          ? itemIds.filter((v: unknown): v is string => typeof v === "string")
-          : [];
-        if (ids.length === 0) {
-          return NextResponse.json(
-            { error: "itemIds (non-empty array) is required" },
-            { status: 400 },
-          );
+        const normalized = normalizeItemIds(params.itemIds);
+        if (!normalized.ok) {
+          return NextResponse.json({ error: normalized.error }, { status: 400 });
         }
+        const ids = normalized.ids;
         const owned = await verifyItemsOwnership(db, ids, user.id);
         if (!owned.ok) {
           return NextResponse.json(
@@ -923,7 +1138,7 @@ export async function POST(request: NextRequest) {
 
       // ── Items: export rows (client assembles the CSV) ────────────────
       case "items_export": {
-        const { collectionId } = params;
+        const collectionId = asString(params.collectionId);
         if (!collectionId) {
           return NextResponse.json(
             { error: "collectionId is required" },
@@ -937,29 +1152,70 @@ export async function POST(request: NextRequest) {
           );
         }
         const filter = resolveItemFilter(params.filter);
-        let query = db
-          .from("site_collection_items")
-          .select("*")
-          .eq("collection_id", collectionId);
-        query = applyItemFilter(query, filter);
-        const { data, error } = await query
-          .order("created_at", { ascending: false })
-          .limit(EXPORT_CAP);
-        if (error) {
-          console.error("[cms/collections] items_export error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+
+        /**
+         * Pull in chunks and stop on EITHER cap. The row cap alone never
+         * bounded the payload (`data` is unbounded jsonb), so a real inbox blew
+         * past Vercel's 4.5 MB response limit and the CSV button simply died.
+         */
+        type ExportRow = { id: string; data: unknown };
+        const rows: ExportRow[] = [];
+        let bytes = 0;
+        let truncated = false;
+        let reason: "rows" | "size" | null = null;
+
+        for (let offset = 0; offset < EXPORT_CAP; offset += EXPORT_CHUNK) {
+          let query = db
+            .from("site_collection_items")
+            .select(EXPORT_COLUMNS)
+            .eq("collection_id", collectionId);
+          query = applyItemFilter(query, filter);
+          const { data: chunk, error } = await query
+            .order("created_at", { ascending: false })
+            .range(offset, Math.min(offset + EXPORT_CHUNK, EXPORT_CAP) - 1);
+          if (error) {
+            console.error("[cms/collections] items_export error:", error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+          }
+          const batch = chunk ?? [];
+          for (const row of batch) {
+            const size = JSON.stringify(row).length;
+            if (bytes + size > EXPORT_BYTE_BUDGET) {
+              truncated = true;
+              reason = "size";
+              break;
+            }
+            bytes += size;
+            rows.push(row as ExportRow);
+          }
+          if (truncated || batch.length < EXPORT_CHUNK) break;
         }
+        if (!truncated && rows.length >= EXPORT_CAP) {
+          truncated = true;
+          reason = "rows";
+        }
+        if (truncated) {
+          console.warn(
+            "[cms/collections] items_export truncated for collection",
+            collectionId,
+            `(reason=${reason}, rows=${rows.length}, bytes=${bytes})`,
+          );
+        }
+
         return NextResponse.json({
-          items: data ?? [],
-          truncated: (data ?? []).length === EXPORT_CAP,
+          items: rows,
+          truncated,
+          reason,
           cap: EXPORT_CAP,
+          byteBudget: EXPORT_BYTE_BUDGET,
         });
       }
 
       // ── Admin: fleet-wide collection read, requireSuperAdmin ─────────
       case "admin_list": {
         await requireSuperAdmin();
-        const { siteId } = params;
+        const siteId = asString(params.siteId);
+        // siteId is an OPTIONAL narrowing filter here (fleet-wide by default).
         let query = db
           .from("site_collections")
           .select("*")

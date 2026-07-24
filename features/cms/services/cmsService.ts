@@ -31,6 +31,7 @@ import type {
     CollectionValidationMode,
     CollectionStatus,
     CollectionItemFilter,
+    CollectionExportRow,
     SiteCollectionSettings,
 } from '../types';
 
@@ -501,11 +502,21 @@ export const CmsCollectionService = {
         await callApi('collections', 'items_delete', { itemIds });
     },
 
-    /** Rows for client-side CSV assembly (server-capped at 10,000). */
+    /**
+     * Rows for client-side CSV assembly. The server stops on EITHER cap — 10,000
+     * rows or ~3.5 MB serialized (Vercel's response limit is 4.5 MB) — and says
+     * which via `reason`, so the UI can tell the admin to narrow the filter.
+     */
     async exportItems(
         collectionId: string,
         filter: CollectionItemFilter = 'all',
-    ): Promise<{ items: SiteCollectionItem[]; truncated: boolean; cap: number }> {
+    ): Promise<{
+        items: CollectionExportRow[];
+        truncated: boolean;
+        reason: 'rows' | 'size' | null;
+        cap: number;
+        byteBudget: number;
+    }> {
         return callApi('collections', 'items_export', { collectionId, filter });
     },
 

@@ -400,6 +400,17 @@ export interface SiteCollectionItem {
   updated_at: string;
 }
 
+/**
+ * What `items_export` actually returns — ONLY the columns the CSV consumes.
+ * The export deliberately does not ship the full row (unbounded jsonb plus the
+ * tsvector blew past Vercel's 4.5 MB response limit), so it is not a
+ * `SiteCollectionItem`.
+ */
+export type CollectionExportRow = Pick<
+  SiteCollectionItem,
+  'id' | 'data' | 'created_at' | 'status' | 'is_spam' | 'seen_at' | 'source_url'
+>;
+
 /** Items-viewer filter vocabulary (maps to is_spam / seen_at / status). */
 export type CollectionItemFilter = 'all' | 'unread' | 'spam' | 'archived';
 
