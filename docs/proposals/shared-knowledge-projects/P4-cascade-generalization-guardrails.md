@@ -1,94 +1,98 @@
-# P4 — Cascade Generalization + Guardrails (DB + both repos)
+# P4 — Cascade Generalization + Guardrails (DB + both repos) — **PRIORITY 3**
+
+> Read [`README.md`](README.md) and the [handoff](../../handoffs/shared-knowledge-access.md)
+> first. Status: **NOT STARTED** as of 2026-07-23.
 
 ## Objective
 
-The reachability cascade now works for the PDF tree (store → file → processed doc → pages /
-images / chunks / extractions). This project makes "access cascades down the knowledge tree"
-true for the WHOLE tree and keeps it true: non-file store members, the remaining file babies,
-and — most important — automated guards that scream when a new child table or member kind is
-added without joining the cascade. This is the class-extinction project: after it, "search
-finds it but you can't open it" cannot recur silently anywhere (industries today; org and scope
-sharing tomorrow).
+The cascade works for the PDF tree and is prod-proven. It works for exactly one shape of member:
+`source_kind='cld_file'` is hard-coded in every sync trigger and backfill, so a library of notes,
+transcripts, or scraped pages conveys **nothing** — the same wall Arman hit, waiting for the next
+content type. This project makes "access cascades down the whole tree" structurally true and then
+makes it *stay* true with guards that scream, so the failure class goes extinct instead of
+recurring the next time someone adds a child table or a hardening pass narrows a listing.
 
 ## Scope
 
 **In:**
-1. **Non-file store members.** `rag.sync_data_store_member_association()` returns early for
-   `source_kind <> 'cld_file'` — members of kind `note | transcript | scraped | research |
-   code_file` create NO edge, so a library store of notes will not cascade. For each kind:
-   confirm the entity token exists (`platform.entity_types`), register `X → data_store`
-   association rules (little→big, Conveys viewer — via the Relationship Manager doctrine:
-   registry row BEFORE edges), extend the sync trigger + backfill, and verify the content's own
-   RLS honors `iam.has_access` for that token. Chunk search for these kinds is already
-   grant-aware; the OPEN path (their native viewers: note window, transcript studio, scraper
-   view) is what you are wiring — verify each viewer's read path for a grant-only reader.
-2. **Remaining file babies.** Audit `files.analysis*`, `files.entities`, `files.structure`,
-   `files.pages`, `files.page_annotations`, `files.file_rag_jobs`, `docproc.derive_runs`
-   against the grant-reader matrix; add additive grant-aware SELECT (delegating to
-   `iam.has_access('file', file_id)` or `can_read_processed_document`) where a Source-Inspector
-   or file-detail surface reads them. Pattern reference:
-   `migrations/page_extraction_library_grant_read.sql`. Consider folding the repeated
-   job-readability EXISTS into one `STABLE SECURITY DEFINER can_read_extraction_job(job_id)`
-   for plan caching (adversarial finding: per-row judge invocation on child-table lists).
-   **Also the server side:** aidream `aidream/api/routers/page_extraction.py` gates on
-   `owner/ctx.is_admin` only — grant readers 403 on extraction API routes even though direct
-   DB reads now pass. Bring those routes onto the judge (`has_access_as`, read-only).
-3. **Acceptance harness (the guard).** A repeatable script (`scripts/` in matrx-frontend or
-   aidream — your call, one home) that runs the full matrix against live: for a
-   parameterized (store, grant-user, stranger) — search hit, file download, doc meta, pages,
-   page image, chunks, extractions, each baby table direct read; asserts
-   viewer=true/editor=false/stranger=false. Runs post-deploy and in the Convergence-A audit.
-4. **Drift guards (loud).**
-   - A check (SQL or script, wired like `pnpm check:schema`) that every `association_types`
-     rule with `conveys_max` has live edges + reachability rows where its legacy table has
-     rows (catches "trigger stopped firing" and "new member kind forgot its edge").
-   - A dead-policy detector: RLS policy references a predicate but the role lacks table/column
-     SELECT grant (the `processed_documents` near-miss found 2026-07-10 — column grants saved
-     it; make the check so the next one isn't luck).
-   - A cycle check on `platform.entity_relationships` / `association_types` config —
-     `iam.has_access` recurses through component/containment parents with no depth guard; a
-     cyclic registry row would stack-overflow every RLS read at query time.
-5. **Perf sanity.** `iam.has_access` now runs per-row inside several RLS policies and loops
-   reachability containers with per-container EXECUTEs. Measure on realistic volumes (13k
-   chunks, 232 reachable files). `platform.reachability (item_type,item_id)` index verified
-   present (`reachability_item_idx`, 2026-07-10). Add short-circuits/helper-fn folding if p95
-   direct-read latency regresses. Don't micro-optimize past the measurement.
-6. **Security hardening follow-ups** from the adversarial nits: dual read predicates
-   (`can_read_processed_document` vs judge) — document the boundary or unify; `document.py`
-   org-match trusts `ctx.organization_id` — verify membership server-side; broad
-   `WHEN others` swallows in `entity_row_access_attrs` — narrow where safe.
 
-**Out:** publish pipeline (P1), all product UI (P2/P3), org/scope *sharing semantics* changes
-(the spine already handles org/scope shares via permissions/reachability; you generalize
-children coverage, not sharing policy).
+1. **Non-`cld_file` store members (D-A).** For each of `note | transcript | scraped | research |
+   code_file`: confirm the entity token in `platform.entity_types`, register the
+   `X → data_store` rule in `association_types` (little→big, `conveys_max='viewer'`) **before**
+   writing any edge (the auto-orient trigger rejects wrong-way writes of registered pairs),
+   extend `rag.sync_data_store_member_association()` + backfill, and verify each content type's
+   own RLS honors `iam.has_access` for that token. Then verify the **open path** in each native
+   viewer (notes window, transcript studio, scraper view) for a grant-only reader — chunk search
+   is already grant-aware; opening is what you are wiring.
+2. **Remaining file babies.** Audit `files.analysis*`, `files.entities`, `files.structure`,
+   `files.pages`, `files.page_annotations`, `files.file_rag_jobs`, `docproc.derive_runs` against
+   the matrix; add additive grant-aware SELECT where a real surface reads them. Pattern:
+   `migrations/page_extraction_library_grant_read.sql`. Consider folding the repeated
+   job-readability `EXISTS` into one `STABLE SECURITY DEFINER can_read_extraction_job(job_id)`
+   so the planner can cache the sub-plan per job.
+3. **`page_extraction.py` hand-rolled gate (D-B).** `aidream/api/routers/page_extraction.py:157`
+   (and `:53`, `:84`) compare `owner_id == ctx.user_id` with an ANY-admin bypass, on endpoints
+   that **spend money** on embeddings — violating the repo's own rule ("never hand-roll an
+   ownership comparison"). Rewrite onto the kernel per **Decision 4** (handoff): reads follow the
+   cascade, spend actions stay owner/curator. Do not widen spend actions to grant readers.
+4. **Acceptance matrix (the deliverable that makes this project permanent).** A parameterized,
+   repeatable script — `(store, entitled_user, control_user)` — asserting the full grid: search
+   hit, file download, doc metadata, pages, page image, chunks, extractions, each baby table,
+   the store row itself, plus `viewer=true / editor=false / control=false` at every level.
+   It must fail loudly and be runnable post-deploy. One home (`scripts/`), documented.
+   **Use a non-admin entitled user** — `admin@admin.com` is a super_admin and will mask
+   grant-path failures; create or use a plain member of Castellano & Reyes.
+5. **Drift guards (loud, non-blocking, wired like `pnpm check:schema`).**
+   - *Edge coverage:* every `association_types` rule with `conveys_max` has live edges +
+     reachability rows wherever its legacy table has rows (catches "the trigger stopped firing"
+     and "a new member kind forgot its edge").
+   - *Judge/RLS agreement:* for a sample of rows, `iam.has_access(type,id,'viewer')` must not
+     disagree with what RLS actually returns — this is exactly the `rag.data_stores` bug found
+     2026-07-23 (judge yes, RLS zero rows).
+   - *Dead policy:* an RLS policy references a predicate but the role lacks the table/column
+     SELECT grant (the `processed_documents` near-miss; column grants saved it by luck).
+   - *Registry cycle check:* `iam.has_access_for_base` recurses through component/containment
+     parents with no depth guard — a cyclic `entity_relationships` row would stack-overflow every
+     RLS read at query time.
+6. **Data hygiene + drift cleanup.** Orphan `data_store_members` rows outlive their files (D-F:
+   2 of 4 live members point at deleted files) — decide delete-vs-flag and enforce. Reconcile
+   the stale on-disk migrations vs live function bodies (D-H, `web_crawl_artifact_*`): the repo
+   SQL no longer matches production, which will mislead the next reader. Close the `archived_at`
+   asymmetry (D-D) so read and curate agree.
+7. **Perf sanity.** The kernel now runs per row inside several RLS policies and loops reachability
+   containers. Measure on realistic volumes (7.7k+ AMA chunks, 233 reachable files);
+   `platform.reachability (item_type,item_id)` index is already present. Optimize only what you
+   measured.
+
+**Out:** product UI (P2/P3), the publish pipeline (P1), sharing *policy* changes (you generalize
+child coverage, not who may share what).
 
 ## Deliverables / DoD
 
-- Grant on a store containing a note + transcript + scraped page cascades: entitled reader
-  opens each in its native viewer; stranger cannot. Matrix script proves it and is documented.
-- Every baby table above either passes the matrix or is explicitly documented as
-  not-tenant-readable-by-design in `features/rag/FEATURE.md`.
-- Drift guards run loud (red-box style, non-blocking pre-commit / CI-strict like
-  `check:migrations`), documented in the guard's own FEATURE/README.
-- All migrations applied + ledgered + types regenerated; both repos' docs updated.
+- A grant on a store containing a note + a transcript + a scraped page cascades: the entitled
+  reader opens each in its native viewer; the control user cannot.
+- Every baby table either passes the matrix or is documented as not-tenant-readable-by-design in
+  `features/rag/FEATURE.md`.
+- The acceptance matrix script exists, is documented, and is green; the four guards run loud.
+- D-B, D-D, D-F, D-H closed. All migrations applied + ledgered + types regenerated in both repos.
 
 ## Surfaces
 
-DB: `platform.entity_types` / `association_types` / triggers in `rag.*`, `docproc.*`;
-migrations. matrx-frontend: `scripts/` guard + package.json wiring; viewers only if a read path
-needs the grant branch (notes window, transcript studio, scraper view read hooks). aidream:
-predicate unification notes, `document.py` org check.
+DB: `platform.entity_types` / `association_types` / `rag.*` + `docproc.*` triggers; migrations.
+matrx-frontend: `scripts/` (matrix + guards) + `package.json` wiring; native viewer read paths if
+one needs the grant branch. aidream: `aidream/api/routers/page_extraction.py`, predicate
+reconciliation notes.
 
 ## Dependencies / contracts
 
-Consumes frozen judge/predicates and the edge dictionary (README §2); REGISTERS new
-association rules before writing edges (auto-orient trigger enforces). **You OWN all
-`rag.*`/`docproc.*` trigger DDL this wave** (README file-ownership map) — P1's rehome runs in
-Python `add_member`, so coordinate only if you change that trigger's table semantics.
-Independent of P1–P3; Convergence A consumes your matrix script as its audit tool.
+Consumes the frozen kernel + edge dictionary (README §2). **You own all `rag.*`/`docproc.*`
+trigger DDL this wave** — P1's ownership rehome lives in the `add_member` Python path, so
+coordinate only if you change that trigger's semantics. Independent of P1–P3; Convergence A uses
+your matrix as its audit tool.
 
 ## Verification
 
-The matrix script IS the verification; run it before and after every change. Adversarial
-review pass on any `has_access`/RLS change (this is the security spine — two independent
-refuters minimum before applying).
+The matrix script IS the verification — run it before and after every change. Any change to the
+kernel or an RLS policy gets an adversarial review pass (minimum two independent refuters) before
+it is applied: this is the security spine, and the 2026-07-23 audit found a real judge/RLS
+contradiction that no existing check would have caught.

@@ -1,72 +1,83 @@
-# P1 — Library Publish Pipeline (aidream-heavy, cross-repo)
+# P1 — Library Publish Pipeline (aidream-heavy, cross-repo) — **PRIORITY 4**
+
+> Read [`README.md`](README.md) and the [handoff](../../handoffs/shared-knowledge-access.md)
+> first. Status: **NOT STARTED** as of 2026-07-23.
 
 ## Objective
 
-Make "add a document to the shared library" a productized, system-owned, one-click lifecycle
-instead of a hand-run script. Today the canonical AMA Guides content was ingested by
-`scripts/ingest_ama_guides_library.py` under Arman's personal user, its `files.files` row still
-lives in his personal workspace org, and its 2,733 chunks have `owner_id = Arman` — so
-entitlement is only *mostly* grant-driven, and no admin can repeat the process without a
-terminal. This project makes library content true system property, created through an API the
-admin console (P2) can call.
+Nothing is broken for users here, which is why this is last — but it is the reason the library
+cannot grow. The only shared-knowledge document in existence was ingested by a one-off script
+under Arman's personal account: the AMA Guides PDF still lives in **Arman Sadeghi's Workspace**
+and all 2,733 of its chunks are still `owner_id = Arman`, so "the industry owns this resource" is
+true in intent and false in data. There is no admin surface to add a second document. The
+system-owner ingest path already exists and is correct
+(`packages/matrx-rag/matrx_rag/library.py` — `ingest_library_pdf`, `_system_owner_uuid`) and is
+reachable only from a workflow node and a script. This project turns publishing into a product.
 
 ## Scope
 
 **In:**
-1. **Admin ingest endpoint** — `POST /rag/library/stores/{store_id}/ingest` (aidream): accepts
-   `{file_id, profile?}` (file already uploaded via the canonical files flow), super-admin
-   gated, runs the existing-but-unused system-owner path (`library.py: ingest_library_pdf` /
-   `_system_owner_uuid`) with the library profile (`run_ner=False, cleanup=False`), adds the
-   store member (triggers then mirror edges), streams progress per the stream-everything
-   mandate. Publish the route signature as a stub on day 1 (contract for P2).
-2. **Ownership rehome** — on member-add to a `kind='library'` store (or grant publish over one):
-   set `files.files.organization_id` → Matrx Library org (`system_orgs.key='library'`), keep
-   `created_by` as contributor attribution. Implement in the `add_member` Python path (one
-   choke point all callers share) — **NOT a DB trigger: all `rag.*`/`docproc.*` trigger DDL is
-   reserved to P4 this wave** (README file-ownership map). Gate on decision #2 in the
-   README — if PENDING when you start, build it behind a flag and ask.
-3. **Repair existing data** — re-own AMA: chunks `owner_id` → system owner; file org → Matrx
-   Library; verify entitlement still passes for the grant user and that Arman's access now
-   flows from super-admin/library membership, not ownership.
-4. **Non-file member ingest parity** — `ingest_source` for `note|transcript|scraped|research`
-   into a library store must also produce system-owned chunks (same profile switches).
-   NOTE: a grant reader OPENING non-file members in their native viewers is **P4's job**
-   (association edges for non-cld_file members don't exist yet) — your DoD for this item is
-   system-owned chunks + search visibility only; do not chase the open path.
-5. Loud recovery: publishing/ingesting into a library store while any invariant is broken
-   (missing library org, non-uuid source, owner drift) must scream, not silently degrade.
 
-**Out:** admin UI (P2 builds it against your stub), discovery UX (P3), new edge kinds (P4),
+1. **Admin ingest endpoint — publish the signature on day 1** (P2 builds its UI against it):
+   `POST /rag/library/stores/{store_id}/ingest` `{file_id, profile?}`. Super-admin gated, runs
+   the existing system-owner path with the library profile (`run_ner=False, cleanup=False` —
+   both matter; the per-page cleanup agent chokes on chart/table pages and once produced zero
+   chunks after two hours), adds the store member (triggers mirror the edges), and streams
+   progress per the stream-everything mandate.
+2. **Ownership rehome (Decision 3, handoff).** On member-add to a `kind='library'` store: move
+   `files.files.organization_id` to the Matrx Library org and set the system owner, keeping the
+   contributor recorded as author. Implement in the `add_member` Python path — the one choke
+   point every caller shares. **Not a DB trigger:** all `rag.*`/`docproc.*` trigger DDL is P4's
+   this wave. If Decision 3 is unanswered when you start, build it behind a flag and flag it.
+3. **Repair the existing data.** Re-own AMA: chunks `owner_id` → system owner (they are already
+   correctly org-stamped to the library), file org → Matrx Library. Then re-verify that the
+   entitled reader still passes the full matrix and that Arman's own access now flows from
+   super-admin / library membership rather than ownership. Coordinate with
+   `docs/handoffs/ama-g5-spine-consolidation.md` — that handoff owns AMA *content* quality
+   (derivations, clean-stage) on the same document; do not run its stages, and do not let your
+   re-own break its `owner_id`-keyed queries without updating them.
+4. **Non-file ingest parity.** `ingest_source` for `note|transcript|scraped|research` into a
+   library store must also produce system-owned chunks. **Your DoD stops at system-owned chunks +
+   search visibility** — a grant reader *opening* non-file members needs association edges that
+   do not exist yet (P4's D-A). Do not chase the open path.
+5. **Build/version endpoint (D-G).** aidream has no way to answer "what commit is prod?" — the
+   2026-07-23 audit had to fingerprint `/openapi.json` against git history to prove a deploy.
+   Add a cheap `/health`-adjacent endpoint reporting the git SHA + build time. Small, and it
+   ends a recurring class of "is it deployed?" uncertainty.
+6. **Loud recovery.** Ingesting or publishing into a library store with a broken invariant
+   (missing library org, non-uuid source, owner drift) screams; never silently degrades.
+
+**Out:** admin UI (P2 builds it against your stub), discovery (P3), new edge kinds (P4),
 billing/entitlements (Wave 2).
 
 ## Deliverables / DoD
 
-- Endpoint live on prod; a super-admin can ingest a fresh PDF into a library store via curl and
-  the result is: system-owned chunks (`owner_id = system`), file org = Matrx Library, store
-  member row, association edges present, grant reader can read everything, non-entitled user
-  cannot, contributor keeps attribution.
-- AMA data repaired and re-verified (search + open + download for the C&R grant user).
-- `pnpm check:migrations` green; any new migration applied + ledgered + types regenerated
-  (`pnpm db-types` / `python db/generate.py`).
-- FEATURE.md (rag) + aidream docs updated; deploy performed or explicitly flagged.
+- A super-admin can ingest a fresh PDF into a library store via the endpoint and the result is:
+  system-owned chunks, file org = Matrx Library, store member row, association edges present,
+  entitled reader reads everything, control user reads nothing, contributor keeps attribution.
+- AMA data repaired and re-verified against the matrix (or P4's script if it has landed).
+- Prod reports its build SHA.
+- `pnpm check:migrations` green; migrations applied + ledgered; types regenerated both repos
+  (`pnpm db-types` / `python db/generate.py`); aidream deployed or the need explicitly flagged.
 
 ## Surfaces
 
-aidream: `aidream/api/routers/rag.py`, `packages/matrx-rag/matrx_rag/library.py` (the real
-module — `ingest_library_pdf` :191, `_system_owner_uuid` :290; `aidream/services/rag/library.py`
-is only a re-export shim), `library_grants.py`, `packages/matrx-rag/matrx_rag/data_stores.py`
-(`add_member`), `scripts/ingest_ama_guides_library.py` (retire or demote to a wrapper).
-DB: trigger/migration for rehome; repair script for AMA rows. FE: none (P2 owns UI).
+aidream: `aidream/api/routers/rag.py` · `packages/matrx-rag/matrx_rag/library.py` (the real
+module — `aidream/services/rag/library.py` is only a re-export shim) ·
+`packages/matrx-rag/matrx_rag/data_stores.py` (`add_member`) · `aidream/services/rag/browse.py`
+(`add_user_data_store_member`, `publish_data_store_grant`) · `aidream/services/rag/library_guard.py`
+· `aidream/api/routers/health.py` · `scripts/ingest_ama_guides_library.py` (demote to a wrapper).
+DB: repair migration/script for the AMA rows.
 
 ## Dependencies / contracts
 
-Consumes frozen judge + grant predicates (README §2). Publishes the admin-ingest contract day 1.
-Coordinate with P4 only if you need a new association role (register the rule first).
+Consumes the frozen kernel + grant predicates. **Publishes the ingest contract day 1.** Owns no
+FE. Coordinate with P4 before touching any `rag.*` trigger.
 
 ## Verification
 
-Prod (or local-against-prod-DB during downtime) e2e: fresh PDF → ingest → publish → JWT-based
-curl matrix (grant reader 200s on download/pages/chunks/extractions; stranger 403/404; writes
-403). Adversarial re-audit before closing: one agent tries to break ownership/entitlement
-assumptions (e.g., contributor retains write via created_by? rehome fires on non-library
-stores?).
+End-to-end on prod (or local against the prod DB): fresh PDF → ingest → publish → the full
+entitled/control curl matrix (entitled 200s on download/pages/chunks/extractions; control
+403/404; writes 403 for both). Adversarial pass before closing: does the rehome fire on
+non-library stores? does the contributor silently retain write via `created_by`? does the re-own
+break any `owner_id`-keyed query, including the AMA content handoff's?

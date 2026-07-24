@@ -1,84 +1,114 @@
-# Shared Knowledge Resources — Master Plan (fleet decomposition)
+# Shared Knowledge Resources — Master Plan
 
-**Status date: 2026-07-10.** Author: Claude (vision-to-fleet pass). Supersedes the two Cursor
-plans (`grant-aware_file_reads_*.plan.md`) and `docs/rag-access-convo-dump.md` — the P0 access
-bug those documents describe is **fixed and live-proven on prod** (see §1). This folder is the
-source of truth for the remaining work: one brief per project, assignable blind.
+**Status date: 2026-07-23** (full re-audit against live DB, prod API, and both repos after a
+13-day pause). Entry point: [`docs/handoffs/shared-knowledge-access.md`](../../handoffs/shared-knowledge-access.md)
+— Arman's vision in his own words + open decisions. This file is the status of record + the
+contracts every brief builds against. Supersedes the two Cursor plans and
+`docs/rag-access-convo-dump.md` (both describe a bug that is fixed).
 
-**Vision (one paragraph).** Matrx curates system-owned knowledge (canonical: AMA Guides 5th Ed)
-once, and issues READ access to whole audiences — an industry, an org, everyone — through one
-grant primitive (`rag.data_store_grants`). A grant on the container (`data_store`) must confer
-read on *everything inside it*: source files (bytes), OCR/clean text, pages, page images,
-chunks, derivations (tables, Q&A, summaries), extractions — exactly like a War Room thread
-share cascades to its children. Access rides the platform spine (`platform.associations` →
-`platform.reachability` → `iam.has_access`/`has_access_as`), never per-feature exceptions.
-Writes never cascade from grants: viewer only; curation stays owner/curator.
+**Vision.** Matrx curates system-owned knowledge (canonical: AMA Guides 5th Ed) once and issues
+READ to whole audiences — an industry, an org, everyone — through one grant primitive
+(`rag.data_store_grants`). A grant on the container must confer read on *everything inside it*:
+source file bytes, OCR/clean text, pages, page images, chunks, derivations, extractions. Access
+rides the platform spine (`platform.associations` → `platform.reachability` →
+`iam.has_access_for`), never per-feature exceptions. Grants issue **viewer** only; curation
+stays with owner/curator.
 
 ---
 
-## 1. Reality audit (verified 2026-07-10, live DB + both repos + prod e2e)
+## 1. Verified status (2026-07-23)
 
-### DONE — verified, build on this
+### DONE — proven live, build on this
 
 | Layer | Fact | Proof |
 |---|---|---|
-| DB spine | `library_store_file_reachability_cascade.sql` + `library_reachability_cascade_hardening.sql` + `page_image_assoc_retarget_to_source_file.sql` applied + ledgered. Edges `file→data_store` (library_member), `processed_document→file` (source_file), page-image `file→file` (page render → source PDF) — all Conveys viewer; sync triggers mirror `rag.data_store_members` / `docproc.processed_documents` / `..._pages` into `platform.associations` with OLD-edge cleanup; `entity_row_access_attrs` handles `owner_id`-shaped tables; `public.has_access_as` is service_role-only with an anti-impersonation guard | migrations in `migrations/`; `_schema_migrations` rows |
-| DB judge | `iam.has_access` + `iam.has_access_as` admit data_store grant holders (direct + via reachability); `user_can_read_data_store_via_grant` is the single grant predicate | live SQL: grant user viewer=true/editor=false on AMA file; stranger=false |
-| DB RLS | docproc docs/pages additive SELECT via `can_read_processed_document`; `rag.kg_chunks` has 6 SELECT policies incl. library-grant; extraction jobs/runs/page-runs/results grant-read (`page_extraction_library_grant_read.sql`, 2026-07-10); `files.files` `std_select` delegates to `iam.has_access` | pg_policies, live |
-| aidream | `PermissionsManager.check_async` → `public.has_access_as` (viewer→read only) for ALL byte paths (download, stream, versions, assets); `document.py` → `can_read_processed_document`; library read endpoints grant-aware, writes curator-gated | aidream audit, commit `8bfc2bc86` on origin/main |
-| **Prod e2e** | Grant user (admin@admin.com / Castellano & Reyes / ca-workers-comp): `GET /files/{ama}/download` → **200, 3.8 MB**; `/rag/library/{doc}/page/1` → 200; direct PostgREST read of `processed_document_pages` returns rows | curl with real JWT, 2026-07-10 |
-| FE | Source Inspector (PDF/Clean/Raw/Match tabs) has zero ACL branching — DB enforces; `DataStoresPage` + `DataStorePublishPanel` (industry/global, super-admin); `LibraryCatalogPane` + subscribe on `/rag`; org↔industry assignment in org settings (super-admin); denied-but-entitled file route redirects to `/rag/viewer` | FE audit, paths in `features/rag/FEATURE.md` |
+| Access kernel | ONE resolver: `iam.has_access_for(user,type,id,level)`. `iam.has_access` (auth.uid) and `iam.has_access_as` (service-role) are thin wrappers; `has_access_for` dispatches `file`→`files.has_access_for`, else `iam.has_access_for_base`. The 150-line duplicate policy body that used to live in `has_access_as` is gone | aidream `0159`/`0160`; live `pg_get_functiondef` |
+| Cascade | Grants reach files through `platform.reachability` (233 `file→data_store` viewer rows). Edges: `file→data_store` (library_member), `processed_document→file` (source_file), page-image `file→file`. Triggers mirror membership with OLD-edge cleanup | live `platform.reachability` / `associations` |
+| Judge behavior | Entitled reader: file viewer ✅ / editor ❌; store viewer ✅ / editor ❌; `can_read_processed_document` ✅ / `can_curate_library_document` ❌. Non-entitled user: all false | live probes, 2 users incl. a non-admin control |
+| RLS | docproc docs/pages, `rag.kg_chunks` (6 policies incl. library-grant), extraction jobs/runs/page-runs/results, and now `rag.data_stores` + `data_store_members` all admit grant readers additively | `pg_policies`; PostgREST reads with real JWTs |
+| **Prod e2e** | As the entitled reader: `GET /files/{ama}/download` **200, 3.86 MB**; `/rag/library/{doc}/page/1` 200; `/chunks` 200; `/rag/library-catalog` 200. Direct PostgREST: source file 1, processed docs 1, pages 500+, chunks 1000+, extraction jobs 1, page-image files 5 | curl + PostgREST, 2026-07-23 |
+| aidream | All byte/metadata paths ride the kernel (`download`, `stream`, `assets`, `versions`, `/document/*`, `/rag/library/*`); writes curator-gated | audit w/ file:line |
+| Deploy | Prod **provably includes** `195ad916e` (grants-list gating): prod OpenAPI fingerprints commit `b31d6fe86` (07-23 14:28), of which `195ad916e` is an ancestor | prod `/openapi.json` diffing |
+| Direct-access | Library surfaces converted off Python HTTP onto `rag.fn_*` RPCs (`0162`/`0163`): grants list, catalog, doc detail, full page, chunks, delete family. Reads are deliberately SECURITY INVOKER so RLS (incl. the grant branch) does the gating | aidream migrations + FE hooks |
+| Wave A | Soft-delete/trash preserves the grant branch; grant reader reads ✅, delete/purge/restore ❌ | `wave_a_*` migrations, live probes |
 
-### Fixed in this pass (2026-07-10, this session)
+### Fixed in this pass (2026-07-23)
 
-- Extraction tables grant-aware SELECT (Extractions tab was empty for grant readers) — applied + ledgered + committed. **DB-read only**: aidream's extraction API (`page_extraction.py` `owner/ctx.is_admin` gate) still 403s grant readers on server-side extraction routes — P4 scope.
-- `GET /rag/data-stores/{id}/grants` was readable by any tenant (audience enumeration) — now owner/org-member, with `ctx.is_admin` (ANY admin tier, not just super) passing (aidream `195ad916e`, **deploy pending**).
-- Doc truth-ups: catalog mislabeled "Phase 2" (it's shipped); stale `public.*`→`iam.*` industries docstring; stale `cld_get_effective_permission` docstring.
+- **`rag.data_stores` judge/RLS contradiction** — `has_access('data_store',…,'viewer')` returned
+  true while the table's RLS returned **zero rows**: the container was invisible although
+  everything inside it was readable. Additive SELECT on `data_stores` + `data_store_members`
+  (`migrations/data_stores_grant_reader_select.sql`, applied + ledgered; verified 0→1 rows
+  entitled, still 0 non-entitled, editor still false).
+- `features/rag/FEATURE.md` truth-up: grants/catalog hooks are direct-to-Supabase (not HTTP);
+  recorded that the catalog pane is now the only discovery path.
 
-### IN FLIGHT — owned elsewhere, do not absorb
+### NOT STARTED — the four projects
 
-- `features/rag/api/ingest.ts` generic `ingestSource` refactor (uncommitted, another session).
-- aidream local main carries other sessions' commits ahead of origin (ai-catalog, cms, matrx-ai seam work).
-- aidream `sync_engine.py` hard-delete/purge refactor (`hard_delete_and_purge`, `_purge_uris_from`) — another session's work that rode along in commit `195ad916e`; complete and self-consistent, do not revert or re-commit.
+**P1–P4 are all untouched.** Nobody picked up `ASSIGN.md`; the only post-07-10 edit to this
+folder was a one-line documentation correction. Every marker is absent: no
+`/administration/shared-knowledge`, no `/rag/admin` map, no `/rag/library-catalog` route, no
+`library_grant_provenance`, no provenance chips, no acceptance-matrix or drift-guard script,
+`upsertIndustry` still has zero callers, `DataStorePublishPanel` still offers only
+industry + global.
 
-### File-ownership map (Wave 1 runs in parallel on main — respect this)
+### Open defects (owned by the briefs, not yet fixed)
 
-- `features/industries/service.ts` + `hooks.ts` + taxonomy UI → **P2**. P3 touches only `OrgIndustriesSection.tsx` / org-settings surfaces; if P3 needs a new industries read, add a new file, don't edit P2's.
-- ALL trigger/DDL on `rag.*` and `docproc.*` tables → **P4**. P1 implements rehome in the `add_member` Python path + its new endpoint, never via a competing DB trigger.
-- Shared FEATURE.md change logs are append-only; merge conflicts there are expected and trivially resolved — keep entries one-line-per-change.
-
-### MISSING — the four projects below
-
-1. Publish lifecycle is not productized: no admin ingest endpoint (AMA went in via a one-off script as Arman-owned), no ownership rehome on publish, chunks owner_id=Arman.
-2. No admin issuance console: industry taxonomy CRUD RPC has **zero UI consumers**; no org-audience grant creation UI; no `/administration` surface; no `/rag/admin` FeatureAdminMap.
-3. Discovery is thin: catalog pane exists but no org-level opt-in surface, no provenance ("you have this via ca-workers-comp"), no industry taste pages.
-4. Cascade only covers `cld_file` members: store members of kind `note|transcript|scraped|research|code_file` create **no association edge** (trigger returns early), so non-file library content will NOT cascade; no drift guards proving the tree stays connected.
+| # | Defect | Owner |
+|---|---|---|
+| D-A | Non-`cld_file` store members create **no** association edge (`source_kind='cld_file'` hard-coded in every trigger/backfill) — a library of notes/transcripts conveys nothing | P4 |
+| D-B | `page_extraction.py:157` hand-rolls `owner_id ==` + ANY-admin bypass on a **paid** endpoint, violating the repo's own "never hand-roll an ownership comparison" rule | P4 (see Decision 4) |
+| D-C | Two different gates answer "who may list a store's grants" — the HTTP endpoint (any admin tier + owner/editor) and the RPC the FE actually uses (super-admin + **any member of the owning org**) | P2 (see Decision 2) |
+| D-D | `can_read_processed_document` gained `archived_at is null` but `can_curate_library_document` did not — a grant reader loses read on an archived doc while curators keep curate. Dormant (0 archived docs) | P4 |
+| D-E | RAG/library list surfaces are neither ListScope-scoped nor in `scripts/access-guards/allowlist.json` — outside the new access-guard regime, unexamined | P3 |
+| D-F | Orphan `data_store_members` rows survive their file's deletion (2 of 4 live members point at deleted files) | P4 |
+| D-G | aidream has **no build/version endpoint** — "what commit is prod?" is only answerable by fingerprinting `/openapi.json` | P1 (ops) |
+| D-H | Several repo migration files are stale vs live (`web_crawl_artifact_*`): the on-disk SQL no longer matches the deployed function bodies | P4 |
 
 ---
 
 ## 2. Day-1 contracts (frozen — consume, never redefine)
 
-| Contract | Signature | Owner |
+| Contract | Signature / rule | Owner |
 |---|---|---|
-| Access judge | `iam.has_access(type,id,level)` (RLS/auth.uid) · `public.has_access_as(user,type,id,level)` (service-role only) | platform (frozen) |
-| Grant predicate | `public.user_can_read_data_store_via_grant(user,store)` · `public.can_read_processed_document(doc,user)` | platform (frozen) |
-| Edge dictionary | roles `library_member`, `source_file`, `page_image`; direction little→big; register `association_types` BEFORE writing a new edge shape | P4 extends |
-| Grants API | `GET/POST /rag/data-stores/{id}/grants`, `DELETE .../grants/{gid}` (audience `global|industry|organization`); `GET /rag/library-catalog`, `POST/DELETE .../subscribe`. **The grants GET is owner/admin-only after `195ad916e` — tenant surfaces must NOT call it; tenant provenance uses the RPC below** | exists; P2 consumes |
-| Provenance RPC (NEW) | `public.library_grant_provenance(p_store uuid) → {audience, industry_id, industry_name, organization_id}[]` — grants on a store that REACH `auth.uid()` (never the full grant list). SECURITY DEFINER, authenticated. **P3 owns and ships it day 1; P2's access explorer consumes it (with an `_as(user)` variant if needed, service/admin-gated)** | **P3 publishes day 1** |
-| Industry RPCs | `industry_upsert`, `industry_assign_org`, `industry_unassign_org`, `library_grant_publish/revoke`, `library_subscribe/unsubscribe` (SECURITY DEFINER, super-admin/member-gated in-DB) | exists; P2 consumes |
-| Admin ingest (NEW) | `POST /rag/library/stores/{store_id}/ingest` `{file_id, profile?}` → `{processed_document_id, member_id}`; system-owned output; 202+stream per stream-everything | **P1 publishes stub day 1**; P2 wires UI against it |
+| Access kernel | `iam.has_access_for(user,type,id,level)` — the ONE resolver. `iam.has_access` = auth.uid wrapper; `public.has_access_as` = service-role only (anti-impersonation guard). **Never hand-roll an owner/permission ladder** | frozen |
+| Grant predicates | `public.user_can_read_data_store_via_grant(user,store)` · `public.can_read_processed_document(doc,user)` · `public.can_curate_library_document(doc,user)` (write side) | frozen |
+| Edge dictionary | roles `library_member`, `source_file`, `page_image`; direction little→big; **register the `association_types` rule BEFORE writing edges** (the auto-orient trigger rejects wrong-way writes) | P4 extends |
+| Data path | The FE reads library data **direct via `rag.fn_*` / `public.rag_library_*` RPCs**, not Python HTTP. New reads follow the naming convention native to the surface. The HTTP endpoints still exist for non-Supabase clients (extension/external) — do not reintroduce them into FE code | frozen |
+| Grant mutations | `rag.library_grant_publish` / `_revoke` / `library_subscribe` / `_unsubscribe` (SECURITY DEFINER, identity re-validated server-side; anon EXECUTE revoked). Never write `rag.data_store_grants` directly | frozen |
+| Industry taxonomy | `industry_upsert` / `industry_assign_org` / `industry_unassign_org` / `industry_curator_grant` / `industry_curator_revoke` | P2 consumes |
+| Provenance RPC (NEW) | `public.library_grant_provenance(p_store uuid) → {audience, industry_id, industry_name, organization_id}[]` — only grants that reach `auth.uid()`, never the full grant list. **P3 owns and publishes it day 1; P2 consumes it** (admin `_as(user)` variant extends the same family) | **P3** |
+| Admin ingest (NEW) | `POST /rag/library/stores/{store_id}/ingest` `{file_id, profile?}` → system-owned ingest, streamed | **P1 publishes stub day 1**; P2 wires UI |
+
+### File-ownership map (projects run in parallel on `main`)
+
+- `features/industries/service.ts` + `hooks.ts` + taxonomy UI → **P2**. P3 touches only `OrgIndustriesSection.tsx` / org-settings surfaces, or adds new files.
+- All `rag.*` / `docproc.*` **trigger DDL** → **P4**. P1's ownership rehome goes in the `add_member` Python path, not a competing trigger.
+- `scripts/` guards + acceptance matrix → **P4**.
+- FEATURE.md change logs are append-only one-liners; conflicts there are trivial.
+
+---
 
 ## 3. Waves
 
-**Wave 1 (all four in parallel):** P1 publish pipeline · P2 admin console · P3 discovery/opt-in · P4 cascade generalization + guardrails.
+**Wave 1 (parallel):** P3 · P2 · P4 · P1 — in that priority order if agents are limited.
 
-**Convergence A — "full lifecycle" (after Wave 1):** super-admin creates an industry → ingests a PDF into a library store via the ADMIN UI (P1+P2) → publishes to the industry (P2) → an org opts in / is assigned (P3) → its member searches, opens citation, reads PDF/pages/extractions, sees provenance (P3) → automated acceptance matrix green (P4). DoD: the whole loop clickable on prod with a fresh document and a fresh org, zero SQL by hand.
+**Convergence A — "full lifecycle":** a super-admin creates an industry → ingests a document
+into a library store through the admin UI (P1+P2) → publishes it to that industry (P2) → an org
+is assigned or opts in (P2/P3) → its member finds it in the catalog, searches, opens the
+citation, reads PDF + pages + extractions, and sees *why* they have it (P3) → the acceptance
+matrix is green (P4). **DoD:** the whole loop clickable on prod with a fresh document and a
+fresh org, zero hand-written SQL.
 
-**Wave 2 (unlocked by A):** industry taste/marketing pages + SEO; industry→scope-template seeding (`apply_template` safe wrapper); per-industry tooling; entitlement/billing hooks on premium stores; non-file library content (notes/transcript members) end-to-end UX.
+**Wave 2 (unlocked by A):** industry taste/marketing pages + SEO · industry→scope-template
+seeding · per-industry tooling · entitlement/billing on premium stores · non-file library
+content UX.
 
-## 4. Open decisions (asked of Arman 2026-07-10 — record answers here)
+---
 
-1. **Org-admin industry self-join** — may an org admin join their org to an industry, or is industry membership super-admin-issued only (org admins only subscribe to discoverable stores)? *Recommendation: super-admin-issued (it's an ACL input), plus a "request to join" flow.* → PENDING
-2. **Ownership rehome on publish** — when a personal file becomes a library-store member, rehome `files.files.organization_id` to Matrx Library (keep `created_by` as attribution)? Contributor then sees it under Library, not "my files". *Recommendation: yes, for `kind='library'` stores only.* → PENDING
-3. **Hierarchy ratified?** — `data_store` above `file` (file = baby of store), as Arman provisionally accepted. → PENDING confirmation
-4. **Grant-reader visibility of a store's member list** — full rich member table read-only (current) vs. search-only. Current = read-only visible. → PENDING (default: keep)
+## 4. Decisions
+
+The four open decisions live in the handoff
+([`docs/handoffs/shared-knowledge-access.md`](../../handoffs/shared-knowledge-access.md)
+§ Decisions needed) so Arman answers them in one place: industry self-join, who may list
+grants, ownership rehome, and paid actions for grant readers. **Record answers there, then
+reflect them here as settled contract rows.**
