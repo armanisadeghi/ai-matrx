@@ -114,6 +114,14 @@ README §1). What remains:
   drift guards · real streamed ingest + ownership rehome + AMA re-owned to system owner
   (contributor recorded) + `/health/version`. D89 fixed same day. All four decisions settled and
   recorded above. **aidream deploy pending** — the only gate left before Convergence A on prod.
+- **Final adversarial pass (2 independent refuters) — two real findings, both fixed same day**
+  (`migrations/library_grant_predicate_actor_guard_and_service_role.sql`, applied + ledgered):
+  (1) pre-existing cross-user oracle — `user_can_read_data_store_via_grant` was
+  authenticated-executable with arbitrary `p_user`; now actor-guarded (self / service /
+  super-admin only), RLS callers unaffected (verified: ellie store 1 / chunks 2,733 / members 1);
+  (2) my own service-role regression on `fn_list_data_store_grants` + `fn_data_store_members_rich`
+  (missing the `auth.role()='service_role'` bypass their sibling has) — added, bare service calls
+  verified working. Matrix re-run 42/42 GREEN, spine t,f,t,f after both.
 
 ## Decisions — ANSWERED by Arman 2026-07-23 (all four settled; reflected in README §2)
 
