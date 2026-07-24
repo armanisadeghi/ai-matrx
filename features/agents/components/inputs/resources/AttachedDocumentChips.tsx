@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
 import {
   useContainerLinks,
   type ContainerLink,
@@ -213,7 +213,7 @@ interface AttachedDocumentChipsProps {
 export function AttachedDocumentChips({
   conversationId,
 }: AttachedDocumentChipsProps) {
-  const isCacheOnly = useAppSelector(selectIsCacheOnly(conversationId));
+  const isMaterialized = useConversationMaterialized(conversationId);
   const convOrgId = useAppSelector(
     (s) => s.conversations.byConversationId[conversationId]?.organizationId,
   );
@@ -222,10 +222,9 @@ export function AttachedDocumentChips({
 
   const links = useContainerLinks({
     containerType: "conversation",
-    // A cache-only id is a local execution key, not an authorized database
-    // conversation. Builder/manual mode intentionally keeps it local forever.
-    // Passing null keeps the association hook idle until a real row exists.
-    containerId: isCacheOnly ? null : conversationId,
+    // Stream reservation/status events precede the atomic DB commit. Passing
+    // null keeps the RPC idle until the row is actually readable and authorized.
+    containerId: isMaterialized ? conversationId : null,
     orgId,
   });
 

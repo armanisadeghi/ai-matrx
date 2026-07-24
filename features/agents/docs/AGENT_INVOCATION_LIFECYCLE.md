@@ -161,6 +161,7 @@ Server hydrates the definition from the agent ID (current pointer or pinned vers
 
 ## Change log
 
+- `2026-07-24` — codex: Enforced the documented ephemeral turn-1 identity contract in the shared saved-agent executor: `is_new:false, store:false` now omits the local Redux `conversation_id`, and the shared stream runner keeps server-minted transient wire IDs mapped to that local key. Fixes headless Agent Set prompt sync and every other one-shot ephemeral saved-agent launch.
 - `2026-07-18` — codex: Replaced the retired `/prompts`/manual-continuation model with the live `/ai/manual` contract: every Builder turn carries the flattened live definition and client history, receives a fresh server wire conversation, and maps back to one stable local Redux test-panel key. Documented the message-derived persistence identity required by artifacts.
 - `2026-07-18` — codex: Documented the automatic-assignment marker and Builder-only live `variable_definitions` companion payload.
 - `2026-04-22` — claude: initial doc. Canonical endpoint matrix extracted from `agent-system-mental-model.md` §4 and `conversation-invocation.types.ts`.

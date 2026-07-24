@@ -14,19 +14,17 @@
  * THE RULE: never persist a conversation id anywhere durable until this gate
  * returns true.
  *
- * Two independent signals, because neither alone covers both lifecycles:
- *   1. **Live turn** — the request status reaching `streaming` / `awaiting-tools`
- *      / `complete` means the server accepted the turn and owns the row. This is
- *      the same signal `useStudioAssistant` already gates its durable session
- *      pointer on; it fires the instant a brand-new chat becomes real.
- *   2. **Prior life** — after a reload there is no active request, so status is
- *      `undefined` even for a long-lived real conversation. One cheap row read
- *      settles it.
+ * There is exactly one truthful signal: a readable `chat.conversation` row.
+ * Stream lifecycle events such as `record_reserved`, `streaming`, and
+ * `awaiting-tools` arrive before the backend's atomic turn commit, so treating
+ * them as persistence confirmation races durable readers and writes.
  *
  * Only POSITIVES are cached (module-level, page lifetime): a `false` is never
- * sticky, because a fresh id legitimately becomes real moments later via signal 1.
- * The read is one-shot and de-duplicated per id, so N components gating on the
- * same conversation cost exactly one query.
+ * sticky, because a fresh id legitimately becomes real moments later. With no
+ * live request the hook performs one existence read. Once streaming starts it
+ * polls through the existing persistence waiter until the row is readable or
+ * the watching component unmounts. Stream status starts the wait; it never
+ * proves persistence by itself.
  *
  * Async, non-React callers want `waitForConversationPersisted`
  * (`@/features/agents/redux/execution-system/conversations/conversation-persistence`)
@@ -36,12 +34,10 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { supabase } from "@/utils/supabase/client";
+import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
 
 /** Ids proven to have a committed `chat.conversation` row, for this page life. */
 const materializedIds = new Set<string>();
-/** In-flight one-shot reads, so concurrent gates on one id share a single query. */
-const inFlightReads = new Map<string, Promise<boolean>>();
 
 /**
  * The cache is a tiny external store rather than per-hook state, because SEVERAL
@@ -68,64 +64,19 @@ function markMaterialized(conversationId: string): void {
 }
 
 /**
- * A request status that means the SERVER has taken ownership of the turn — at
- * which point the `chat.conversation` row is committed (or committing) and the
- * id is safe to persist. Mirrors `useStudioAssistant`'s durable-write gate.
- */
-function isServerConfirmedStatus(status: string | undefined): boolean {
-  return (
-    status === "streaming" ||
-    status === "awaiting-tools" ||
-    status === "complete"
-  );
-}
-
-/**
- * One-shot existence read, de-duplicated per id. Mirrors
- * `waitForConversationPersisted`'s query exactly (schema, `deleted_at IS NULL`,
- * non-null `initial_agent_id`) so the two gates can never disagree about
- * whether a given conversation is real.
- */
-export async function readConversationMaterialized(
-  conversationId: string,
-): Promise<boolean> {
-  if (materializedIds.has(conversationId)) return true;
-  const existing = inFlightReads.get(conversationId);
-  if (existing) return existing;
-
-  const read = (async () => {
-    const { data, error } = await supabase
-      .schema("chat")
-      .from("conversation")
-      .select("initial_agent_id")
-      .eq("id", conversationId)
-      .is("deleted_at", null)
-      .maybeSingle();
-    // A read FAILURE is not evidence of absence — stay "unknown" so the caller
-    // withholds the durable write rather than acting on a network blip.
-    if (error) return false;
-    const exists = Boolean(data && (data.initial_agent_id as string | null));
-    if (exists) markMaterialized(conversationId);
-    return exists;
-  })().finally(() => {
-    inFlightReads.delete(conversationId);
-  });
-
-  inFlightReads.set(conversationId, read);
-  return read;
-}
-
-/**
  * True once `conversationId` is known to have a committed server row. Gate every
  * durable write of a conversation id on this.
  */
 export function useConversationMaterialized(
   conversationId: string | null | undefined,
 ): boolean {
-  const status = useAppSelector((s) =>
-    conversationId ? selectPrimaryRequest(conversationId)(s)?.status : undefined,
+  const status = useAppSelector((state) =>
+    conversationId ? selectPrimaryRequest(conversationId)(state)?.status : undefined,
   );
-  const confirmedByTurn = isServerConfirmedStatus(status);
+  const shouldPoll =
+    status === "streaming" ||
+    status === "awaiting-tools" ||
+    status === "complete";
 
   // Subscribed, not copied into state: whichever gate proves the id first wakes
   // every other gate watching it, so none can strand on a stale `false`.
@@ -137,13 +88,17 @@ export function useConversationMaterialized(
 
   useEffect(() => {
     if (!conversationId || materializedIds.has(conversationId)) return;
-    // The live turn already proves it — record it and skip the read entirely.
-    if (confirmedByTurn) {
-      markMaterialized(conversationId);
-      return;
-    }
-    void readConversationMaterialized(conversationId);
-  }, [conversationId, confirmedByTurn]);
+    const controller = new AbortController();
+    void waitForConversationPersisted(conversationId, {
+      signal: controller.signal,
+      // Existing/reloaded conversations need one cheap proof read. A live
+      // stream keeps waiting because its first atomic commit is still pending.
+      timeoutMs: shouldPoll ? undefined : 0,
+    }).then((persisted) => {
+      if (persisted) markMaterialized(conversationId);
+    });
+    return () => controller.abort();
+  }, [conversationId, shouldPoll]);
 
-  return confirmedByTurn || confirmedByCache;
+  return confirmedByCache;
 }

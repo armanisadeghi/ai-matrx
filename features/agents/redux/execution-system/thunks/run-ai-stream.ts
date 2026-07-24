@@ -155,6 +155,11 @@ export interface RunAiStreamArgs {
   onStreamOpen?: () => void;
   /** Only set by manual-execution path; mirrors `processStream`'s contract. */
   userMessageClientTempId?: string;
+  /**
+   * Keep the caller's local Redux conversation key when the server owns the
+   * wire id (manual and ephemeral stateless runs).
+   */
+  forceLocalConversationId?: boolean;
   /** Default 30_000 (≈ 3 missed heartbeats). */
   heartbeatTimeoutMs?: number;
   /** Default 24h. By design heartbeat-loss is the only way a healthy stream fails. */
@@ -219,6 +224,7 @@ export async function runAiStream(
     kind,
     clearInputOnError = false,
     userMessageClientTempId,
+    forceLocalConversationId = false,
     heartbeatTimeoutMs = 30_000,
     maxLifetimeMs = 24 * 60 * 60 * 1000,
   } = args;
@@ -419,11 +425,13 @@ export async function runAiStream(
     }
 
     const headerConversationId = response.headers.get("X-Conversation-ID");
-    assertConversationIdMatches(
-      conversationId,
-      headerConversationId,
-      "x-conversation-id-header",
-    );
+    if (!forceLocalConversationId) {
+      assertConversationIdMatches(
+        conversationId,
+        headerConversationId,
+        "x-conversation-id-header",
+      );
+    }
     const conversationIdAt = headerConversationId ? performance.now() : null;
 
     // A stream genuinely opened — let the caller release any single-flight
@@ -452,6 +460,7 @@ export async function runAiStream(
           | undefined) ?? {},
       jsonExtraction,
       userMessageClientTempId,
+      forceLocalConversationId,
       // Heartbeat-based liveness. The server emits {type:"heartbeat"} every
       // ~10s independent of tool progress; a 30s deadline is ~3 missed beats
       // — long enough for jitter, short enough to surface a dead socket fast.

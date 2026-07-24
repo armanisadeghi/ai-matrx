@@ -577,11 +577,22 @@ export async function getActiveSandboxBinding(
       });
       if (!resp.ok) {
         const body = await resp.text().catch(() => "(no body)");
-        console.error(
-          `${LOG} ❌ local-PC resolve FAILED for device ${ref.rowId}: HTTP ${resp.status}. The agent will get NO sandbox tools this turn. Server said: ${body}`,
+        const reason = `local-PC device ${ref.rowId} resolve returned HTTP ${resp.status}: ${body}`;
+        markSandboxDead(
+          ref.rowId,
+          reason,
+          resp.status === 410
+            ? DEAD_COOLDOWN_TERMINAL_SEC
+            : DEAD_COOLDOWN_TRANSIENT_SEC,
         );
+        if (resp.status !== 410) {
+          console.error(
+            `${LOG} ❌ ${reason}. The agent will get NO sandbox tools this turn.`,
+          );
+        }
         return null;
       }
+      DEAD_SANDBOXES.delete(ref.rowId);
       return (await resp.json()) as SandboxBindingPayload;
     } catch (err) {
       console.error(

@@ -101,6 +101,23 @@ import {
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 
+/**
+ * Build the persistence/identity fields for a first-turn saved-agent request.
+ *
+ * Persistent runs reserve the client-generated conversation id. Ephemeral runs
+ * must not send that local Redux key: `is_new:false` plus a supplied id makes
+ * the server resolve an existing conversation, which cannot exist when
+ * `store:false`.
+ */
+export function buildAgentStartLifecycleFields(
+  conversationId: string,
+  isEphemeral: boolean,
+): Record<string, unknown> {
+  return isEphemeral
+    ? { is_new: false, store: false }
+    : { conversation_id: conversationId, is_new: true };
+}
+
 // =============================================================================
 // Assemble Request (pure selector logic, extracted for testability)
 // =============================================================================
@@ -610,11 +627,9 @@ export const executeInstance = createAsyncThunk<
       // continuation.
       const isContinuation = selectMessageCount(conversationId)(state) > 0;
 
-      // Ephemeral conversations stream without writing any cx_* rows. The
-      // server flag pair `is_new:false, store:false` (see turn-1 routing
-      // below) keeps everything stateless. Turn 2+ rides the same
-      // `/ai/conversations/{id}` endpoint as a persistent turn — the server
-      // honors the same `store:false` semantics.
+      // Ephemeral conversations stream without writing any cx_* rows. Turn 1
+      // omits the local Redux conversation key from the wire and sends
+      // `is_new:false, store:false`. The local key remains the UI identity.
       const isEphemeral = instance.isEphemeral === true;
 
       // (Optimistic user bubble + request status were dispatched up-front,
@@ -628,12 +643,6 @@ export const executeInstance = createAsyncThunk<
       // e.g. the /v2 spine). Applied to the canonical path templates below;
       // base URL / server selection (incl. localhost / sandbox) is untouched.
       const overrideConfig = selectEndpointOverrideConfig(state);
-
-      // Ephemeral turn 2+ was handled via the early short-circuit above.
-      // Here we only need to inject `is_new:false, store:false` into the
-      // turn-1 agent payload when ephemeral — the server then streams
-      // without writing any cx_* rows. See the endpoint routing table in
-      // `features/agents/types/conversation-invocation.types.ts`.
 
       // Consume any pending cache-bypass flags for this conversation. If
       // the user edited / forked / deleted a message directly on the DB
@@ -731,8 +740,9 @@ export const executeInstance = createAsyncThunk<
         // server uses the same endpoint with `is_version: true` to read
         // from `agx_version`.
         //
-        // Persistent → is_new:true (server creates the cx_conversation row).
-        // Ephemeral → is_new:false, store:false (server streams without writing).
+        // Persistent → client id + is_new:true (server creates the row).
+        // Ephemeral → no wire id + is_new:false, store:false. The server may
+        // mint a transient wire id; runAiStream keeps the local Redux key.
         const pinnedVersionId = instance.initialAgentVersionId ?? null;
         const targetId = pinnedVersionId ?? instance.agentId;
         const agentPath = resolveEndpointPath(
@@ -742,10 +752,8 @@ export const executeInstance = createAsyncThunk<
         url = `${baseUrl}${agentPath}`;
         routedPayload = {
           ...payload,
-          conversation_id: conversationId,
-          is_new: !isEphemeral,
+          ...buildAgentStartLifecycleFields(conversationId, isEphemeral),
           ...(pinnedVersionId && { is_version: true }),
-          ...(isEphemeral && { store: false }),
           ...(pendingBypass && { cache_bypass: pendingBypass }),
         } as Record<string, unknown>;
       }
@@ -832,6 +840,7 @@ export const executeInstance = createAsyncThunk<
         getState: getState as () => RootState,
         submitAt,
         kind: "turn",
+        forceLocalConversationId: isEphemeral,
         // A retry sends no input and reads none — leave the box untouched
         // (it may hold an unrelated draft). Initial sends clear on failure.
         clearInputOnError: !retry,
