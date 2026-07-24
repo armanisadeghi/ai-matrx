@@ -29,10 +29,10 @@ Get a signed HTTPS callback whenever one of your events fires (a file is shared,
 ## 2. Long-job completion events (the "event spine")
 Every long-running job now records a `run.completed` / `run.failed` event the moment it finishes. This is what lets webhooks (feature 1) and future in-app alerts fire on completion instead of the app polling for hours.
 
-**Where (admin):** `/administration` → **Events** (or `/administration/events`).
+**Where (admin):** `/administration` → **Events** (or `/administration/reporting/events`).
 
 **Test it:**
-1. Open `/administration/events`. Click the **Jobs (run.*)** filter. Toggle **Auto-refresh (5s)** on.
+1. Open `/administration/reporting/events`. Click the **Jobs (run.*)** filter. Toggle **Auto-refresh (5s)** on.
 2. In another tab, trigger a job that finishes — easiest is processing a file into a knowledge base (RAG ingest), which completes in under a minute.
 3. Watch the Events table.
 
@@ -81,6 +81,6 @@ If someone uses the app as a **guest** (not logged in) and creates files or chat
 | Feature | User/Admin | Entry point |
 |---|---|---|
 | Webhooks | User | `/files/webhooks` (Files sidebar → Webhooks) |
-| Job-completion events | Admin | `/administration/events` |
+| Job-completion events | Admin | `/administration/reporting/events` |
 | Live run lists | User | `/podcast/studio` |
 | Guest → account | User | `/sign-up` (from a guest session) |

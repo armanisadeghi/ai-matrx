@@ -233,7 +233,7 @@ function BucketPanel({
 }
 
 /**
- * The "Chooser buckets" strip on /administration/relationships/entity-types:
+ * The "Chooser buckets" strip on /administration/database/relationships/entity-types:
  * reference categories are fully creatable/editable; schema display names are
  * editable (keys fixed — a schema exists or it doesn't).
  */

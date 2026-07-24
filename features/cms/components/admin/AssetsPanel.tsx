@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AssetsPanel — the W2-B asset library tab on /administration/cms-agents.
+ * AssetsPanel — the W2-B asset library tab on /administration/knowledge/cms-agents.
  *
  * Upload flows through the ONE canonical path: `fileHandler.upload(source,
  * { preset: "web", visibility: "public" })` → aidream POST /assets → durable

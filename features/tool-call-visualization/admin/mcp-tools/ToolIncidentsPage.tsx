@@ -22,7 +22,7 @@ export function ToolIncidentsPage({ toolId, toolName }: Props) {
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => startTransition(() => router.push(`/administration/mcp-tools/${toolId}`))}
+                    onClick={() => startTransition(() => router.push(`/administration/agents/mcp-tools/${toolId}`))}
                     disabled={isPending}
                     className="gap-1.5 h-8"
                 >

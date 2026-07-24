@@ -2,7 +2,7 @@
 
 // features/admin/relationships/components/EntityExplorerHeader.tsx
 //
-// Chrome for /administration/relationships/explorer/[token]: back to the
+// Chrome for /administration/database/relationships/explorer/[token]: back to the
 // explorer entry + the same entity picker used there, pre-filled with the
 // current token, so switching entities never requires going back first.
 
@@ -27,7 +27,7 @@ export function EntityExplorerHeader({ token, rules }: Props) {
     <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-2.5">
       <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
         <Link
-          href="/administration/relationships/explorer"
+          href="/administration/database/relationships/explorer"
           title="Back to the entity explorer"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

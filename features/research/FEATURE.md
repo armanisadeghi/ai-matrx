@@ -19,7 +19,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - `/research/topics` · `/research/topics/new` — list + creation wizard.
 - `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `outputs` (**Outputs Studio** — content engine: generate podcast/blog/slides/SEO from the report), `media`, `costs`, `settings`, `agents`, `tasks`.
 - `/research/topics/new?mode=ai&topic=...` — AI-assisted creation with the subject prefilled; used by `/demos/matrx-entry` for the new workflow entryway handoff.
-- Admin surface: `app/(admin)/administration/research-system/` (super-admin). Standardized `/research/admin` `FeatureAdminMap` not yet built — TODO.
+- Admin surface: `app/(admin)/administration/knowledge/research-system/` (super-admin). Standardized `/research/admin` `FeatureAdminMap` not yet built — TODO.
 
 **Hooks** (`features/research/hooks/`)
 - `useResearchStream()` — NDJSON/SSE stream consumer (chunk/data/info/end callbacks).

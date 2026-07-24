@@ -28,7 +28,7 @@ export function EntityRelationshipOrbitPageBody({ token, rules }: Props) {
       rules={rules}
       onSelectToken={(next) =>
         startTransition(() =>
-          router.push(`/administration/relationships/explorer/${next}`),
+          router.push(`/administration/database/relationships/explorer/${next}`),
         )
       }
     />

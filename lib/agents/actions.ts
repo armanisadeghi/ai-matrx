@@ -131,5 +131,5 @@ export async function createSystemAgentFromSeed(
     .single();
 
   if (error) throw pgErrorToError(error);
-  redirect(`/administration/system-agents/agents/${data.id}/build`);
+  redirect(`/administration/agents/system-agents/agents/${data.id}/build`);
 }

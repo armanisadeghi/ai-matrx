@@ -24,14 +24,14 @@ const TOOL_VIZ_ADMIN_MAP: FeatureAdminMap = {
 
   routes: [
     {
-      url: "/administration/mcp-tools",
+      url: "/administration/agents/mcp-tools",
       label: "MCP Tools admin",
       description: "Browse every tool definition; jump to a tool's renderer editor, test samples, and render incidents.",
-      filePath: "app/(admin)/administration/mcp-tools",
+      filePath: "app/(admin)/administration/agents/mcp-tools",
       status: "Live",
     },
     {
-      url: "/administration/mcp-tools/[toolId]/ui",
+      url: "/administration/agents/mcp-tools/[toolId]/ui",
       label: "Renderer editor (authoring)",
       description: "Author a tool's DB renderer: Generate (AI) / Edit Code / Preview-against-fixtures tabs. Saves to tool_ui on the canonical surface.",
       filePath: "features/tool-call-visualization/admin/mcp-tools/ToolUiPage.tsx",

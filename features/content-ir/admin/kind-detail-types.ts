@@ -1,7 +1,7 @@
 /**
  * Pure types shared between the server-side shape-doctor gather
  * (shape-doctor-server.ts, `server-only`) and the client tab components of
- * /administration/kind-registry/[kind]. No runtime imports of either side —
+ * /administration/utilities/kind-registry/[kind]. No runtime imports of either side —
  * keeping the server module's poison pill out of client chunks.
  */
 

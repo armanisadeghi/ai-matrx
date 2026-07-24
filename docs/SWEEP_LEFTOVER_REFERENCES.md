@@ -291,7 +291,7 @@ to delete the block entirely.
   `app/(dev)/demos/context-menu-v2/page.tsx` — this is the shortcut-system
   context filter, not the deleted deprecated bucket.
 - `'attachments'` as a **toggle option id** in
-  `app/(authenticated)/(admin-auth)/administration/official-components/to-be-added/toggle-menu-demo/page.tsx`
+  `app/(authenticated)/(admin-auth)/administration/ui/official-components/to-be-added/toggle-menu-demo/page.tsx`
   — unrelated demo.
 - `extractFileId` defined privately inside
   `features/agents/components/inputs/resources/SmartAgentResourceChips.tsx`

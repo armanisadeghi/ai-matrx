@@ -22,6 +22,8 @@ export interface AdminCatalogCheckResult {
   staleCatalogLinks: string[];
   /** Scanner vs page-file walk disagree — indicates a discovery bug. */
   scannerDrift: string[];
+  /** Registry entries that violate canonical domain-root nesting. */
+  architectureErrors: string[];
 }
 
 export function normalizeCatalogLink(link: string): string {

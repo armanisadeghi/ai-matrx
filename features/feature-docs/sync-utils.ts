@@ -133,5 +133,5 @@ export function parseFeatureDocFile(
 
 export function featureDocViewHref(repoPath: string): string {
   const clean = repoPath.replace(/^\/+/, "");
-  return `/administration/feature-docs/view/${clean.split("/").map(encodeURIComponent).join("/")}`;
+  return `/administration/documentation/feature-docs/view/${clean.split("/").map(encodeURIComponent).join("/")}`;
 }

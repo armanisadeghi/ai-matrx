@@ -2,7 +2,7 @@
 
 **Status**: shipped — admin management + agent picker
 **Owner**: tool-registry
-**Routes**: `/administration/bundles` (admin)
+**Routes**: `/administration/agents/bundles` (admin)
 
 ## What this is
 
@@ -35,7 +35,7 @@ System bundles (`is_system=true`) and personal bundles (`is_system=false`,
 
 ## Entry points
 
-- Admin page: [app/(admin)/administration/bundles/page.tsx](../../../app/(admin)/administration/bundles/page.tsx) → [BundlesAdminPage.tsx](./components/BundlesAdminPage.tsx)
+- Admin page: [app/(admin)/administration/agents/bundles/page.tsx](../../../app/(admin)/administration/agents/bundles/page.tsx) → [BundlesAdminPage.tsx](./components/BundlesAdminPage.tsx)
 - Service — the one primitive, reads + writes: [services/bundles.service.ts](./services/bundles.service.ts)
 - Agent picker — the "Bundles" category in the agent tools manager: [AgentBundlesPanel.tsx](../../agents/components/tools-management/AgentBundlesPanel.tsx) via [useAgentBundleOptions.ts](../../agents/components/tools-management/useAgentBundleOptions.ts)
 

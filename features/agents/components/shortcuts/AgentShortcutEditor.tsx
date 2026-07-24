@@ -37,7 +37,7 @@ interface AgentShortcutEditorProps {
   /** Either a real shortcut UUID, or the literal string `"new"` for creation. */
   shortcutId: string;
   /** Base path for back-to-list navigation. Defaults to `/agents` (user route).
-   *  Admin route passes `/administration/system-agents/agents`. */
+   *  Admin route passes `/administration/agents/system-agents/agents`. */
   basePath?: string;
 }
 

@@ -144,7 +144,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "user_id",
     isPublicColumn: null,
     displayLabel: "Auto-ingest Batch",
-    urlPathTemplate: "/administration/kg-cost/batches/{id}",
+    urlPathTemplate: "/administration/knowledge/kg-cost/batches/{id}",
     rlsUsesHasPermission: false,
   },
   canvas_item: {

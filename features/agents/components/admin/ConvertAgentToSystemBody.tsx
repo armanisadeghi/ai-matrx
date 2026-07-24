@@ -66,7 +66,7 @@ interface ConvertAgentToSystemBodyProps {
 // the personal-agents shell where edits look like they're touching a
 // different object than what they just promoted — that's the bug Arman saw
 // after a successful convert.
-const SYSTEM_AGENT_ADMIN_BASE_PATH = "/administration/system-agents/agents";
+const SYSTEM_AGENT_ADMIN_BASE_PATH = "/administration/agents/system-agents/agents";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

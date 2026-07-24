@@ -144,7 +144,7 @@ export function ToolCreatePage() {
       }
       const data = await response.json();
       toast({ title: "Created", description: "Tool created successfully" });
-      navigateTo(`/administration/mcp-tools/${data.tool.id}`);
+      navigateTo(`/administration/agents/mcp-tools/${data.tool.id}`);
     } catch (err) {
       toast({
         title: "Save failed",
@@ -328,7 +328,7 @@ export function ToolCreatePage() {
     <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-border bg-background">
       <Button
         variant="outline"
-        onClick={() => navigateTo("/administration/mcp-tools")}
+        onClick={() => navigateTo("/administration/agents/mcp-tools")}
         disabled={isSaving || isPending}
       >
         Cancel
@@ -354,7 +354,7 @@ export function ToolCreatePage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigateTo("/administration/mcp-tools")}
+          onClick={() => navigateTo("/administration/agents/mcp-tools")}
           disabled={isPending}
           className="gap-1.5 h-8"
         >

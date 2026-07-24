@@ -115,7 +115,7 @@ export default function KindBuilderClient() {
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => router.push("/administration/kind-registry")}
+            onClick={() => router.push("/administration/utilities/kind-registry")}
           >
             <Table2 className="h-4 w-4" />
             Kind Registry

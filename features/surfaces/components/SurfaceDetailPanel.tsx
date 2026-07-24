@@ -471,7 +471,7 @@ export function SurfaceDetailPanel({
                   !Array.isArray(b.arg_defaults) &&
                   Object.keys(b.arg_defaults as Record<string, unknown>).length >
                     0;
-                const toolHref = `/administration/mcp-tools/${b.tool_id}`;
+                const toolHref = `/administration/agents/mcp-tools/${b.tool_id}`;
                 return (
                   <div
                     key={b.tool_id}

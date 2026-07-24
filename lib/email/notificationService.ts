@@ -447,7 +447,7 @@ export async function sendFeedbackAssignmentEmail(options: {
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const feedbackUrl = `${baseUrl}/administration/feedback?feedback=${feedbackId}`;
+  const feedbackUrl = `${baseUrl}/administration/users/feedback?feedback=${feedbackId}`;
 
   const preview =
     feedbackPreview.length > 200

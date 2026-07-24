@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import IconResolver from "@/components/official/icons/IconResolver";
 import {
+  adminDomainHref,
   adminNavigationRegistry,
   destinationOwnsPathname,
 } from "@/features/admin/constants/admin-navigation";
@@ -117,6 +118,17 @@ export default function AdminMenu() {
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className="max-h-[80vh] w-72 overflow-y-auto">
+                <DropdownMenuItem asChild className="gap-2 font-medium">
+                  <Link href={adminDomainHref(domain)}>
+                    <span className={iconSlot}>
+                      <IconResolver iconName={domain.iconName} />
+                    </span>
+                    <span className="flex-1 truncate">
+                      {domain.name} overview
+                    </span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {domain.sections.map((section, sectionIndex) => (
                   <div key={section.name}>
                     {sectionIndex > 0 && <DropdownMenuSeparator />}

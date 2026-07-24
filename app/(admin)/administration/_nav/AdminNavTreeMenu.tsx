@@ -27,7 +27,10 @@ import {
 import { cn } from "@/lib/utils";
 import { matchesSearch } from "@/utils/search-scoring";
 import { adminNavigation } from "../categories";
-import { findAdminNavigationLocation } from "@/features/admin/constants/admin-navigation";
+import {
+  adminDomainHref,
+  findAdminNavigationLocation,
+} from "@/features/admin/constants/admin-navigation";
 
 const flatDestinations = adminNavigation.flatMap((domain) =>
   domain.sections.flatMap((section) =>
@@ -167,6 +170,15 @@ export default function AdminNavTreeMenu() {
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuSubContent className="max-h-[80vh] w-80 overflow-y-auto">
+                  <DropdownMenuItem asChild className="gap-2 font-medium">
+                    <Link href={adminDomainHref(domain)}>
+                      <span className={cn(iconSlot, "text-muted-foreground")}>
+                        {domain.icon}
+                      </span>
+                      <span className="truncate">{domain.name} overview</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   {domain.sections.map((section, sectionIndex) => (
                     <div key={section.name}>
                       {sectionIndex > 0 && <DropdownMenuSeparator />}

@@ -53,7 +53,7 @@ function buildDmContent(
       : feedback.description;
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const url = `${baseUrl}/administration/feedback?feedback=${feedback.id}`;
+  const url = `${baseUrl}/administration/users/feedback?feedback=${feedback.id}`;
 
   const categoryLine = categoryName ? `\nCategory: ${categoryName}` : "";
 

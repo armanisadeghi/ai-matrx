@@ -51,7 +51,7 @@ export function EpisodeDetailClient({
 
   const back = () =>
     startTransition(() =>
-      router.push(`/administration/podcasts/shows/${showId}?panel=episodes`),
+      router.push(`/administration/knowledge/podcasts/shows/${showId}?panel=episodes`),
     );
 
   const handleSaved = (saved: PcEpisodeWithShow) => {
@@ -59,7 +59,7 @@ export function EpisodeDetailClient({
     if (isNew) {
       startTransition(() =>
         router.replace(
-          `/administration/podcasts/shows/${showId}/episodes/${saved.id}`,
+          `/administration/knowledge/podcasts/shows/${showId}/episodes/${saved.id}`,
         ),
       );
     } else {

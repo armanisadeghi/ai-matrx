@@ -28,8 +28,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const ADMIN_BASE_PATH = "/administration/system-agents/agents";
-const NEW_HREF = "/administration/system-agents/agents/new";
+const ADMIN_BASE_PATH = "/administration/agents/system-agents/agents";
+const NEW_HREF = "/administration/agents/system-agents/agents/new";
 
 /**
  * Admin-only grid for system ("builtin") agents. Simpler than the user-facing

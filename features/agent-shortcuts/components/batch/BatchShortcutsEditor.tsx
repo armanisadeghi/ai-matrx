@@ -83,7 +83,7 @@ export function BatchShortcutsEditor({
 }: {
   agent: AgentDefinition;
   /** Base path for nested agent routes. Defaults to `/agents`; admin surfaces
-   *  pass `/administration/system-agents/agents` so navigation stays in the
+   *  pass `/administration/agents/system-agents/agents` so navigation stays in the
    *  admin shell. */
   basePath?: string;
 }) {

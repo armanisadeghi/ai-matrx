@@ -28,13 +28,23 @@ interface SectionRouteGroup {
 
 function groupRoutes(routes: string[]): {
   groups: SectionRouteGroup[];
+  domainRootRoutes: Map<string, RouteRows[number]>;
   uncategorized: RouteRows;
 } {
   const rows = buildRouteSearchRows(routes, "/administration");
   const grouped = new Map<string, RouteRows>();
+  const domainRootRoutes = new Map<string, RouteRows[number]>();
   const uncategorized: RouteRows = [];
 
   for (const row of rows) {
+    const domainRoot = adminNavigationRegistry.find(
+      (domain) => adminDomainHref(domain) === row.href,
+    );
+    if (domainRoot) {
+      domainRootRoutes.set(domainRoot.name, row);
+      continue;
+    }
+
     const location = findAdminNavigationLocationByRoutePattern(row.route);
     if (!location) {
       uncategorized.push(row);
@@ -54,7 +64,7 @@ function groupRoutes(routes: string[]): {
     }),
   );
 
-  return { groups, uncategorized };
+  return { groups, domainRootRoutes, uncategorized };
 }
 
 function RouteRow({ row }: { row: RouteRows[number] }) {
@@ -102,7 +112,7 @@ function RouteRow({ row }: { row: RouteRows[number] }) {
 export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
-  const { groups, uncategorized } = groupRoutes(routes);
+  const { groups, domainRootRoutes, uncategorized } = groupRoutes(routes);
 
   const visibleGroups = groups.flatMap((group) => {
     if (!normalizedQuery) return [group];
@@ -128,16 +138,24 @@ export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
           row.route.toLowerCase().includes(normalizedQuery),
       )
     : uncategorized;
-  const visibleRouteCount =
-    visibleGroups.reduce((sum, group) => sum + group.routes.length, 0) +
-    visibleUncategorized.length;
-
   const domains = adminNavigationRegistry.flatMap((domain) => {
     const domainGroups = visibleGroups.filter(
       (group) => group.domain.name === domain.name,
     );
-    return domainGroups.length > 0 ? [{ domain, groups: domainGroups }] : [];
+    const domainRootRoute = domainRootRoutes.get(domain.name);
+    const domainRootMatches =
+      !!domainRootRoute &&
+      (!normalizedQuery ||
+        domain.name.toLowerCase().includes(normalizedQuery) ||
+        domainRootRoute.route.toLowerCase().includes(normalizedQuery));
+    return domainGroups.length > 0 || domainRootMatches
+      ? [{ domain, groups: domainGroups, domainRootMatches }]
+      : [];
   });
+  const visibleRouteCount =
+    visibleGroups.reduce((sum, group) => sum + group.routes.length, 0) +
+    visibleUncategorized.length +
+    domains.filter((domain) => domain.domainRootMatches).length;
 
   return (
     <div className="space-y-5">
@@ -167,7 +185,7 @@ export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
       {domains.map(({ domain, groups: domainGroups }) => (
         <section key={domain.name} className="space-y-3">
           <Link
-            href={adminDomainHref(domain.name)}
+            href={adminDomainHref(domain)}
             className="inline-flex items-center gap-2 text-base font-semibold text-foreground hover:text-primary"
           >
             {domain.name}

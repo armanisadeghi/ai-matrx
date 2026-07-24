@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Per-kind admin shell — /administration/kind-registry/[kind].
+ * Per-kind admin shell — /administration/utilities/kind-registry/[kind].
  *
  * Server payload (KindDetailData) carries the shape-doctor row + schema +
  * asset lists; this shell fetches the kind's `content_ir.kind_example` rows
@@ -106,7 +106,7 @@ export default function KindDetailClient({
       <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2 pr-14">
         <nav className="flex items-center gap-1 text-sm">
           <Link
-            href="/administration/kind-registry"
+            href="/administration/utilities/kind-registry"
             className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
           >
             Kind Registry

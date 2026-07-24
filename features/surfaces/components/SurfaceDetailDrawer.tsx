@@ -392,7 +392,7 @@ export function SurfaceDetailDrawer({ surface, onClose, onChanged }: Props) {
                   className={`px-3 py-2 ${t.is_active === false ? "opacity-60" : ""}`}
                 >
                   <a
-                    href={`/administration/mcp-tools/${t.id}`}
+                    href={`/administration/agents/mcp-tools/${t.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-start gap-2 hover:text-primary group"

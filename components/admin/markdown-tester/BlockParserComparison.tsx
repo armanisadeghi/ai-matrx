@@ -315,7 +315,7 @@ export function BlockParserComparison({
         route:
           typeof window !== "undefined"
             ? window.location.pathname
-            : "/administration/markdown-tester",
+            : "/administration/utilities/markdown-tester",
         tool: "Block Parser Comparison (V2 local · Redux accumulator · Python server)",
         source: selectedSampleName,
         reduxMode,

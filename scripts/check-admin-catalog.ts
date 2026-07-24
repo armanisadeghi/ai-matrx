@@ -47,7 +47,8 @@ function main() {
   const issueCount =
     result.missingRoutes.length +
     result.staleCatalogLinks.length +
-    result.scannerDrift.length;
+    result.scannerDrift.length +
+    result.architectureErrors.length;
 
   console.log("");
   console.log(`${BOLD}Admin dashboard catalog check${RESET}`);
@@ -77,6 +78,16 @@ function main() {
     );
     for (const route of result.scannerDrift) {
       console.log(`${RED}  • ${route}${RESET}`);
+    }
+  }
+
+  if (result.architectureErrors.length > 0) {
+    console.log("");
+    console.log(
+      `${RED}${BOLD}✗ Invalid administration route architecture (${result.architectureErrors.length})${RESET}`,
+    );
+    for (const error of result.architectureErrors) {
+      console.log(`${RED}  • ${error}${RESET}`);
     }
   }
 

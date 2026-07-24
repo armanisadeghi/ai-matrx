@@ -28,7 +28,7 @@ interface AgentRunsSidebarProps {
   onToggleSidebar: () => void;
   /** Base path for the embedded header's back-link + agent switcher.
    *  Defaults to `/agents`. Admin surfaces should pass
-   *  `/administration/system-agents/agents`. */
+   *  `/administration/agents/system-agents/agents`. */
   basePath?: string;
   backHref?: string;
 }

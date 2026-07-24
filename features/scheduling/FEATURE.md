@@ -27,7 +27,7 @@ Execution happens on:
   - `new/page.tsx` — create form
   - `[id]/page.tsx` — detail view
   - `[id]/edit/page.tsx` — edit form
-- **Admin routes:** `app/(authenticated)/(admin-auth)/administration/scheduling/`
+- **Admin routes:** `app/(authenticated)/(admin-auth)/administration/automation/scheduling/`
   - `page.tsx` — overview tiles + live health stats
   - `tasks/page.tsx` — all-user tasks (filterable)
   - `runs/page.tsx` — all-user runs (status/surface filters)

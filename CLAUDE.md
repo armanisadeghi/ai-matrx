@@ -210,7 +210,7 @@ Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (t
 
 ## Agent Review Queue — anything you build that Arman must see
 
-Built a demo page, new route, or reviewable UI surface Arman didn't watch you make? **Register it in `agent.review_queue` before ending the turn** — a "please test /demos/foo" buried in a chat message will never be seen. He reviews at `/administration/agent-review`; his feedback comes back through the same table, and you archive the row once handled. **Invoke the `agent-review-queue` skill** for the exact INSERT/feedback/status contract.
+Built a demo page, new route, or reviewable UI surface Arman didn't watch you make? **Register it in `agent.review_queue` before ending the turn** — a "please test /demos/foo" buried in a chat message will never be seen. He reviews at `/administration/users/agent-review`; his feedback comes back through the same table, and you archive the row once handled. **Invoke the `agent-review-queue` skill** for the exact INSERT/feedback/status contract.
 
 ## Handoffs
 
@@ -282,7 +282,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Audio pipeline (TTS, audio, podcasts) | `features/audio/FEATURE.md` |
 | Image Manager hub | `features/image-manager/FEATURE.md` |
 | Custom Dictionary (terminology + pronunciation; user/org/scope-type/scope) | `features/dictionary/FEATURE.md` |
-| CMS (client sites + standalone HTML pages, separate Supabase project `viyklljfdhtidwecakwx`; agent-activity visibility surface at `/administration/cms-agents`) | `features/cms/FEATURE.md` |
+| CMS (client sites + standalone HTML pages, separate Supabase project `viyklljfdhtidwecakwx`; agent-activity visibility surface at `/administration/knowledge/cms-agents`) | `features/cms/FEATURE.md` |
 
 ---
 
@@ -298,7 +298,7 @@ Cross-project issue tracker.
 
 ## Official Component Library
 
-- Components: `components/official/` · Demos: `app/(admin)/administration/official-components/component-displays/` · Registry: `app/(admin)/administration/official-components/parts/component-list.tsx`
+- Components: `components/official/` · Demos: `app/(admin)/administration/ui/official-components/component-displays/` · Registry: `app/(admin)/administration/ui/official-components/parts/component-list.tsx`
 - Must work on import — no local restyling.
 - Never delete existing components.
 

@@ -16,7 +16,7 @@
 **decisionNeeded:** Either (A) add a SECURITY DEFINER RPC that resolves auth.users.email -> id for admin-client use, or (B) accept periodic full listUsers() scans for this low-volume webhook. Left the type honestly narrowed (typeof data.to === 'string' ? data.to : '') and flagged in a code comment rather than building unreviewed DB surface.
 **Status:** DECIDED: add a SECURITY DEFINER RPC that resolves `auth.users.email -> id` for admin-client use, called from the Resend webhook handler. This touches `auth.users` — read/apply the `protected-resources` skill before writing the RPC (gate correctly even though this is a service-role/webhook context, not a user-initiated write).
 
-### BRIEF 3: app/(admin)/administration/agent-apps/edit/[id]/page.tsx:45 — as unknown as (declared type narrower than real data)
+### BRIEF 3: app/(admin)/administration/agents/agent-apps/edit/[id]/page.tsx:45 — as unknown as (declared type narrower than real data)
 **data:** AgentAppAdminView (hand-declared view interface in lib/services/agent-apps-admin-service.ts) is missing component_code/variable_schema/layout_config/styling_config/shell_kind/shell_config/slot_overrides/slot_code/component_language/allowed_imports/app_kind that AgentApp (and the AgentAppEditor that consumes it) require.
 **producedBy:** getAgentAppById() in lib/services/agent-apps-admin-service.ts, which does `.schema("app").from("definition").select("*")` — the real row DOES have every field at runtime; only the declared TS interface is narrow.
 **consumedBy:** AgentAppEditor (features/agent-apps/components/AgentAppEditor.tsx) reads app.component_code directly via useState(app.component_code).
@@ -24,7 +24,7 @@
 **decisionNeeded:** Should AgentAppAdminView be widened/replaced with the full definition Row (or a proper AgentAppSummary vs AgentAppFull split, following the AgentAppSummary precedent another session just added to features/agent-apps/types.ts for the list-view case), so this edit page can drop the cast entirely? That's a change to lib/services/agent-apps-admin-service.ts, outside my app/(admin)-only scope.
 **Status:** HOLD — needs a live session with the user. Agent apps is a critical, actively-evolving new feature (not old code being cleaned up), so the Summary-vs-Full type split decision needs the user's direct involvement rather than a batch call. Do not fix unattended.
 
-### BRIEF 4: app/(admin)/administration/utils/text-cleaner/utilities/ErrorManager.ts:85 — dynamic require + implicit any (not in my priority list but adjacent)
+### BRIEF 4: app/(admin)/administration/utilities/utils/text-cleaner/utilities/ErrorManager.ts:85 — dynamic require + implicit any (not in my priority list but adjacent)
 **data:** const errorProcessors = require('./errorProcessors'); const processor = errorProcessors[processorName]; — CommonJS require() inside an ESM/TS module, indexed by a computed string key, so `processor` and `errorProcessors[processorName]` are implicitly `any`.
 **producedBy:** ErrorManager.parseError()'s dynamic-dispatch-by-error-code lookup.
 **consumedBy:** Same function, immediately calls processor(cleanedError) and reads processed.essential/.basic/.verbose/.errorType.

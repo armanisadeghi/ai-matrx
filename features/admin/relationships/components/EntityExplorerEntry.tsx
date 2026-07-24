@@ -4,7 +4,7 @@
 //
 // Shared entry point for the entity relationship explorer: pick any entity
 // type token, then either navigate to its full page
-// (/administration/relationships/explorer/[token]) or peek at it in a non-blocking
+// (/administration/database/relationships/explorer/[token]) or peek at it in a non-blocking
 // WindowPanel without leaving the current view. Used on the Relationship
 // Manager list page and (pre-filled) as the header of the [token] page
 // itself, so switching entities never requires going back to the list.
@@ -64,7 +64,7 @@ export function EntityExplorerEntry({ rules, value }: Props) {
         disabled={!selected || isPending}
         onClick={() =>
           startTransition(() =>
-            router.push(`/administration/relationships/explorer/${selected}`),
+            router.push(`/administration/database/relationships/explorer/${selected}`),
           )
         }
       >

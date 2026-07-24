@@ -1,14 +1,14 @@
 /**
  * KindStatusBoard — the LIVE twin of the generated SHAPES_STATUS.md matrix
  * (SHAPE_SYSTEM.md R10), rendered as the "Board" tab of
- * /administration/kind-registry.
+ * /administration/utilities/kind-registry.
  *
  * Pure presentational component: the page's Server Component runs the shape
  * doctor once (buildKindStatusBoard in shape-doctor-server.ts) and passes the
  * serializable model here, so the Catalog table and this board share ONE
  * doctor run. Red findings render as red rows, snapshot drift amber
  * (FeatureAdminMap visual language). Every kind links to its
- * /administration/kind-registry/<kind> page.
+ * /administration/utilities/kind-registry/<kind> page.
  */
 
 import Link from "next/link";
@@ -176,7 +176,7 @@ export default function KindStatusBoard({
               >
                 <td className="px-4 py-1">
                   <Link
-                    href={`/administration/kind-registry/${row.kind}`}
+                    href={`/administration/utilities/kind-registry/${row.kind}`}
                     className="font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
                     title={row.label}
                   >

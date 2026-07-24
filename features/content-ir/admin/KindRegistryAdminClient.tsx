@@ -2,7 +2,7 @@
 
 /**
  * Schema Explorer & Export — the "Schema Export" tab of
- * /administration/kind-registry (super-admin gated by the (admin) layout).
+ * /administration/utilities/kind-registry (super-admin gated by the (admin) layout).
  *
  * Browse/search every kind the platform knows (compiled system kinds +
  * flexible_data Block Schemas rows, merged by `listAllKinds`), inspect
@@ -350,7 +350,7 @@ export default function KindRegistryAdminClient() {
                     )}
                     {selected.dbRowId && (
                       <Link
-                        href={`/administration/kind-registry/${selected.kind}`}
+                        href={`/administration/utilities/kind-registry/${selected.kind}`}
                         className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                         title="Open the per-kind admin page (Preview / Gate / Schema / Assets)"
                       >

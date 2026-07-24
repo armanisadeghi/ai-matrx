@@ -442,7 +442,7 @@ function BindingForm({
           // the system twin's surfaces page so the binder continues there.
           toast.info(`Routing to system agent "${twin.name}"`);
           router.push(
-            `/administration/system-agents/agents/${twin.id}/surfaces?surface=${encodeURIComponent(surfaceName)}`,
+            `/administration/agents/system-agents/agents/${twin.id}/surfaces?surface=${encodeURIComponent(surfaceName)}`,
           );
         }}
         onCancel={() => setGuardOpen(false)}

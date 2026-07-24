@@ -12,7 +12,7 @@
 // version wins (the scanner runs server-side and writes the canonical
 // value).
 //
-// FE callers (CronForm preview, /administration/scheduling/cron-tester)
+// FE callers (CronForm preview, /administration/automation/scheduling/cron-tester)
 // import directly from here. Web write paths go through the aidream
 // /scheduler/* HTTP router (features/scheduling/service/schedulerClient.ts)
 // which auto-computes next_due_at server-side.

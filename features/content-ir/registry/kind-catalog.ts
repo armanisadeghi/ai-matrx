@@ -1,6 +1,6 @@
 /**
  * Kind catalog — READ-ONLY helpers over the registry + content_ir for
- * browse/inspect surfaces (the /administration/kind-registry admin page).
+ * browse/inspect surfaces (the /administration/utilities/kind-registry admin page).
  * Merges the live registry definitions (compiled system kinds + any
  * runtime-registered facets) with the content_ir.kind_definition rows and
  * computes the reference graph (uses / used-by) across the whole catalog.

@@ -178,7 +178,7 @@ Resolution order in `getInlineRenderer`:
 3. `DynamicInlineRenderer` (fetch + compile on mount; prefetch on shell mount)
 4. `GenericRenderer`
 
-Author at `/administration/mcp-tools/[toolId]/ui` or via generator prompt (`admin/tool-ui-generator-prompt.ts`).
+Author at `/administration/agents/mcp-tools/[toolId]/ui` or via generator prompt (`admin/tool-ui-generator-prompt.ts`).
 
 Dynamic renderers **do not** support `OverlayTabs` yet — single overlay component only.
 

@@ -26,6 +26,7 @@ import {
   addResource,
   setResourcePreview,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import {
   refineBlockType,
   resourceDataToSource,
@@ -222,6 +223,20 @@ export function useAttachResource(
     if (blockType === "document") {
       const fileId = extractFileId(resource.data);
       if (fileId) {
+        // Durable edges require a real chat.conversation row. New saved-agent
+        // chats are provisional until turn 1, while Builder/manual mode uses a
+        // local Redux id that never becomes its server-minted wire id. In both
+        // cases the existing per-turn resource path is the truthful boundary.
+        if (selectIsCacheOnly(conversationId)(getState())) {
+          attachBinary(
+            dispatch,
+            conversationId,
+            blockType,
+            resource.data,
+            resourcePreviewLabel,
+          );
+          return true;
+        }
         const cacheKey = `conversation:${conversationId}`;
         // Always refresh before a duplicate attach. A "ready" cache may be
         // stale after another tab or server-side variable attachment.

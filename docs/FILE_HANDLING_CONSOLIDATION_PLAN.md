@@ -316,7 +316,7 @@ Move worker source to local `/public/pdfjs-worker.min.mjs` (pinned at build time
 
 **Dev-mode guards:** SW registration disabled in dev by default (`NODE_ENV !== 'production'`) to avoid HMR interference. Opt-in via `localStorage.matrx_dev_sw=1`. Always excludes `/_next/`, `/__webpack_hmr`, `/api/`, `/api/auth/*`.
 
-**Admin observability:** new route `app/(authenticated)/(admin-auth)/administration/blob-cache/page.tsx` gated by `selectIsSuperAdmin`:
+**Admin observability:** new route `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/page.tsx` gated by `selectIsSuperAdmin`:
 
 - L1 memory: entry count, total bytes, top 20 by size, hit/miss counters
 - L2 IDB: same + persisted across reloads, "evict now" + "clear all" buttons
@@ -693,7 +693,7 @@ Combines backend plan §4.3 + Part 4 (SW + IDB streaming cache). Hard cut, one P
 | 20 | Mount `<CloudFilesRealtimeProvider>` once in `app/Providers.tsx`; delete 4 per-route mounts |
 | 21 | ESLint rule banning manual MediaRef literals outside converters |
 | 22 | Internal splits: `FilePreview` registry, `FileTable` → TanStack, `PageShell` per-section, thunks.ts split by domain, types.ts split |
-| 23 | Build admin observability route `app/(authenticated)/(admin-auth)/administration/blob-cache/page.tsx` |
+| 23 | Build admin observability route `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/page.tsx` |
 | 24 | Add `X-Matrx-Cache` debug header (dev-only) |
 | 25 | Delete: `useSignedUrl`, `useFileAsset`, `useAiImageUrl`, `useFileSrc` source, `resolveCloudFileUrl.ts`, `useFileUploadWithStorage.ts`, `server-client.ts`, `cloudUpload.ts`, hand-authored Asset types, duplicate image-manager `*Tab.tsx`, RAG `LibraryPage`/`DataStoresPage` direct uploads |
 | 26 | `pnpm test`, `pnpm tsc --noEmit`, `pnpm lint` — all green |
@@ -721,7 +721,7 @@ After PR 3 lands, run the FE dev server and click through:
 | 12 | Attach existing file to new chat (MediaRef-only) | Server reads bytes; FE makes one POST with `MediaRef { file_id }`, no bytes re-uploaded. |
 | 13 | Run `pnpm gen:types && git diff --exit-code` | Exit 0. |
 | 14 | Run `pnpm lint` | No `useFileSrc` / `useSignedUrl` / `useFileAsset` / manual MediaRef literals / `direct object-store SDK` / banned fetch patterns. |
-| 15 | Admin `/administration/blob-cache` | Shows live L1/L2 stats, hit/miss counters, SW status, BroadcastChannel inspector. |
+| 15 | Admin `/administration/utilities/blob-cache` | Shows live L1/L2 stats, hit/miss counters, SW status, BroadcastChannel inspector. |
 
 ---
 

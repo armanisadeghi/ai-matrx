@@ -43,7 +43,7 @@ interface AgentCardProps {
   /** Ordered ids for prev/next navigation within the Sneak Peek modal. */
   navigationIds?: string[];
   /** Base path for agent navigation. Defaults to `/agents`. The admin
-   *  system-agents route passes `/administration/system-agents/agents`. */
+   *  system-agents route passes `/administration/agents/system-agents/agents`. */
   basePath?: string;
 }
 

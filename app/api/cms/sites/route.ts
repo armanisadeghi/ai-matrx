@@ -7,7 +7,7 @@
  *
  * `admin_*` actions bypass per-user ownership and are gated by `requireSuperAdmin`
  * instead — they back the fleet-wide agent-activity visibility surface at
- * `/administration/cms-agents`, which needs to see every site regardless of which
+ * `/administration/knowledge/cms-agents`, which needs to see every site regardless of which
  * user account owns it.
  */
 

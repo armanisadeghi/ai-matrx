@@ -18,7 +18,7 @@ The Runner is the test track for an already-saved agent definition. It is **the 
 
 **Route**
 - `app/(core)/agents/[id]/run/page.tsx`
-- `app/(admin)/administration/system-agents/agents/[id]/run/page.tsx` — system-agent admin runner; reuses the same header, shell route menu, and execution surface with admin-aware links
+- `app/(admin)/administration/agents/system-agents/agents/[id]/run/page.tsx` — system-agent admin runner; reuses the same header, shell route menu, and execution surface with admin-aware links
 
 **API endpoints**
 - First turn: `POST /ai/agents/{id}` — `apiEndpointMode: "agent"`, `origin: "manual"` or `"test"`

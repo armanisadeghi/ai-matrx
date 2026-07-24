@@ -115,7 +115,7 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     id: "association-registration-23503-translation",
     tier: "red",
     reason:
-      "Association registration failure (23503 on platform.associations source_type/target_type FK). The entity token written as source_type/target_type — shown in this error's details 'Key' (e.g. Key (source_type)=(rs_topic)) — is not registered: either the token is missing from platform.entity_types, or no active rule for the source→target pair exists in platform.association_types. Fix by registering the CANONICAL token (never a physical table name — e.g. research_topic, not rs_topic) and its rule at https://www.aimatrx.com/administration/relationships/rules — never by bypassing the association chokepoint.",
+      "Association registration failure (23503 on platform.associations source_type/target_type FK). The entity token written as source_type/target_type — shown in this error's details 'Key' (e.g. Key (source_type)=(rs_topic)) — is not registered: either the token is missing from platform.entity_types, or no active rule for the source→target pair exists in platform.association_types. Fix by registering the CANONICAL token (never a physical table name — e.g. research_topic, not rs_topic) and its rule at https://www.aimatrx.com/administration/database/relationships/rules — never by bypassing the association chokepoint.",
     addedAt: "2026-07-21",
     match: {
       source: "supabase-postgrest",

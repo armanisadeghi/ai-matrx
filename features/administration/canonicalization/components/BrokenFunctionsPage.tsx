@@ -113,7 +113,7 @@ export function BrokenFunctionsPage() {
         render: (r) =>
           r.function_name ? (
             <Link
-              href={`/administration/canonicalization/function-deps?fn=${encodeURIComponent(r.function_name)}`}
+              href={`/administration/database/canonicalization/function-deps?fn=${encodeURIComponent(r.function_name)}`}
               className="text-xs text-primary hover:underline"
             >
               View →

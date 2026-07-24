@@ -405,7 +405,7 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
   const meta = ENTITY_TYPE_METADATA[token];
   const overlay = ENTITY_OVERLAY[token];
   const labelPlural = overlay?.labelPlural ?? `${meta.label}s`;
-  // DB registry first (admin-managed via /administration/relationships/
+  // DB registry first (admin-managed via /administration/database/relationships/
   // entity-types), FE overlay as legacy fallback only.
   const titleColumn = meta.titleColumn ?? overlay?.titleColumn ?? null;
   // `null` override means "this table has no such column"; `undefined` (the
@@ -478,7 +478,7 @@ export function tryGetEntityInfoByTable(
 /**
  * Tokens offered as reference "Allowed types" — DB-driven via
  * `platform.entity_types.reference_pickable` (admin-managed at
- * /administration/relationships/entity-types), no longer gated by the FE
+ * /administration/database/relationships/entity-types), no longer gated by the FE
  * overlay. A pickable token still needs a way to list candidates: a
  * `title_column` in the registry (or legacy overlay) or an FE
  * `listCandidates` override. A pickable token with neither is a config
@@ -518,7 +518,7 @@ export function listableTokens(): EntityTypeToken[] {
         console.error(
           `[entityRegistry] "${t}" is reference_pickable in platform.entity_types ` +
             `but has NO title_column and no FE candidate source — set its ` +
-            `title_column at /administration/relationships/entity-types.`,
+            `title_column at /administration/database/relationships/entity-types.`,
         );
       }
       return canList;

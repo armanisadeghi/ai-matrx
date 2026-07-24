@@ -105,12 +105,12 @@ export async function GET() {
         const notes: string[] = [];
         if ((categoriesCount.count ?? 0) === 0) {
           notes.push(
-            "shortcut_categories is EMPTY — the context menu has no categories to render. Create categories in /administration/system-agents/categories or they must exist in the DB.",
+            "shortcut_categories is EMPTY — the context menu has no categories to render. Create categories in /administration/agents/system-agents/categories or they must exist in the DB.",
           );
         }
         if ((shortcutsCount.count ?? 0) === 0) {
           notes.push(
-            "agx_shortcut is EMPTY — every AI-action submenu will be disabled (no items). This is the root cause of 'disabled submenus' in /ssr/context-menu. Seed shortcuts via /administration/system-agents/shortcuts or create them programmatically.",
+            "agx_shortcut is EMPTY — every AI-action submenu will be disabled (no items). This is the root cause of 'disabled submenus' in /ssr/context-menu. Seed shortcuts via /administration/agents/system-agents/shortcuts or create them programmatically.",
           );
         }
         if ((contentBlocksCount.count ?? 0) === 0) {

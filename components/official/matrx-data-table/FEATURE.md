@@ -18,8 +18,8 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Component:** `components/official/matrx-data-table/MatrxDataTable.tsx`
 - **Types:** `components/official/matrx-data-table/types.ts`
 - **UUID/FK cell:** `MatrxUuidCell.tsx`
-- **Demo:** `/administration/official-components/matrx-data-table`
-- **First consumer:** `/administration/relationships`
+- **Demo:** `/administration/ui/official-components/matrx-data-table`
+- **First consumer:** `/administration/database/relationships`
 
 ## Invariants
 

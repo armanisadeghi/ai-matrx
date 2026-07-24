@@ -91,7 +91,7 @@ Wrapper components (override semantics, settings badges, etc.) compose `SmartMod
 not re-implement it.
 
 ### The admin variant — `features/ai-models/service.ts` (`aiModelService`)
-The admin catalog surface (`/administration/ai-models`) needs full CRUD across
+The admin catalog surface (`/administration/ai/ai-models`) needs full CRUD across
 `model_definition` / `provider` / `offering` / `service` and the admin-only fields. This is the
 **sanctioned variant** — it goes through `aiModelService` (and `ai.model_admin` where masked fields
 are needed), NOT the consumer registry slice. Two paths, one for each audience, no third path.
@@ -179,8 +179,8 @@ when the bakeoff winner replaces `SmartModelSelect`.**
   (`is_primary`), not a constant.
 
 ### Verification (every touched surface must load with zero 400s / zero dropped-column errors)
-`/administration/ai-models` (table, filter, detail Details/Controls/Constraints save, read-only
-Pricing tab, "+ new" / clone), `/administration/ai-models/audit`, `/administration/ai-models/offerings`,
+`/administration/ai/ai-models` (table, filter, detail Details/Controls/Constraints save, read-only
+Pricing tab, "+ new" / clone), `/administration/ai/ai-models/audit`, `/administration/ai/ai-models/offerings`,
 the **agent-builder model picker**, user **model preferences**, and the **cx-dashboard usage** pages
 (model brand renders, not "Unknown").
 
@@ -230,7 +230,7 @@ running app is on stale code — get onto current `main` and rebuild.
 rg -l --glob '*.{ts,tsx}' \
   'model_definition|model_public|model_admin|model_provider|capabilities_pre_canonical|@/features/ai-models|modelRegistrySlice|resolveAiModels|get_ssr_shell_data|ssrShellData|selectModelOptions|AIModelRecord|hydrateModels|schema\("ai"\)' \
   features app lib utils components actions types
-find features/ai-models 'app/(admin)/administration/ai-models' app/api/ai-models app/api/admin/ai-models features/cx-dashboard 'app/(admin)/administration/cx-dashboard' -type f
+find features/ai-models 'app/(admin)/administration/ai/ai-models' app/api/ai-models app/api/admin/ai-models features/cx-dashboard 'app/(admin)/administration/chat/cx-dashboard' -type f
 ```
 
 ### Types & generated schema (5)
@@ -265,35 +265,35 @@ find features/ai-models 'app/(admin)/administration/ai-models' app/api/ai-models
 - `app/api/ai-models/revalidate/route.ts`
 - `app/api/admin/ai-models/replace-references/route.ts`
 
-### Admin routes — `/administration/ai-models` (10)
-- `app/(admin)/administration/ai-models/layout.tsx`
-- `app/(admin)/administration/ai-models/page.tsx`
-- `app/(admin)/administration/ai-models/audit/page.tsx`
-- `app/(admin)/administration/ai-models/deprecated-audit/page.tsx`
-- `app/(admin)/administration/ai-models/offerings/page.tsx`
-- `app/(admin)/administration/ai-models/provider-sync/page.tsx`
-- `app/(admin)/administration/ai-models/providers/page.tsx`
-- `app/(admin)/administration/ai-models/services/page.tsx`
-- `app/(admin)/administration/ai-models/settings/page.tsx`
-- `app/(admin)/administration/server-cache/page.tsx`
+### Admin routes — `/administration/ai/ai-models` (10)
+- `app/(admin)/administration/ai/ai-models/layout.tsx`
+- `app/(admin)/administration/ai/ai-models/page.tsx`
+- `app/(admin)/administration/ai/ai-models/audit/page.tsx`
+- `app/(admin)/administration/ai/ai-models/deprecated-audit/page.tsx`
+- `app/(admin)/administration/ai/ai-models/offerings/page.tsx`
+- `app/(admin)/administration/ai/ai-models/provider-sync/page.tsx`
+- `app/(admin)/administration/ai/ai-models/providers/page.tsx`
+- `app/(admin)/administration/ai/ai-models/services/page.tsx`
+- `app/(admin)/administration/ai/ai-models/settings/page.tsx`
+- `app/(admin)/administration/utilities/server-cache/page.tsx`
 
 ### Admin routes — cx-dashboard (brand/model resolution) (16)
-- `app/(admin)/administration/cx-dashboard/layout.tsx`
-- `app/(admin)/administration/cx-dashboard/page.tsx`
-- `app/(admin)/administration/cx-dashboard/CxDashboardLayoutClient.tsx`
-- `app/(admin)/administration/cx-dashboard/overview-content.tsx`
-- `app/(admin)/administration/cx-dashboard/usage/page.tsx`
-- `app/(admin)/administration/cx-dashboard/usage/usage-content.tsx`
-- `app/(admin)/administration/cx-dashboard/requests/page.tsx`
-- `app/(admin)/administration/cx-dashboard/requests/requests-content.tsx`
-- `app/(admin)/administration/cx-dashboard/requests/[id]/page.tsx`
-- `app/(admin)/administration/cx-dashboard/requests/[id]/request-detail-content.tsx`
-- `app/(admin)/administration/cx-dashboard/conversations/page.tsx`
-- `app/(admin)/administration/cx-dashboard/conversations/conversations-content.tsx`
-- `app/(admin)/administration/cx-dashboard/conversations/[id]/page.tsx`
-- `app/(admin)/administration/cx-dashboard/conversations/[id]/conversation-detail-content.tsx`
-- `app/(admin)/administration/cx-dashboard/errors/page.tsx`
-- `app/(admin)/administration/cx-dashboard/errors/errors-content.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/layout.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/page.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/CxDashboardLayoutClient.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/overview-content.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/usage/page.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/usage/usage-content.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/requests/page.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/requests/requests-content.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/requests/[id]/page.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/requests/[id]/request-detail-content.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/conversations/page.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/conversations/conversations-content.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/conversations/[id]/page.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/conversations/[id]/conversation-detail-content.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/errors/page.tsx`
+- `app/(admin)/administration/chat/cx-dashboard/errors/errors-content.tsx`
 
 ### `features/ai-models` — core service, server, redux (59 files)
 - `features/ai-models/FEATURE.md`

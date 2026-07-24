@@ -17,7 +17,7 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 | Live run | `/podcast/studio/run/[id]` | `StudioRunView.tsx` → `studio/runs/useStudioRun.ts` |
 | **Manage show (owner)** | `/podcast/studio/show/[showId]` | `studio/components/ShowManageClient.tsx` — owner-facing show settings: cover/title/description/author, RSS distribution (`rss_settings`), feed URL + submit helpers, episodes list |
 | **Upload episode (owner)** | dialog (Studio dashboard + manage page) | `studio/components/UploadEpisodeDialog.tsx` — non-AI "upload your own audio/video" episode creation via `useFileUpload` |
-| Admin | `/administration/podcasts` | `components/admin/PodcastsContainer.tsx` |
+| Admin | `/administration/knowledge/podcasts` | `components/admin/PodcastsContainer.tsx` |
 
 ## Data flow
 

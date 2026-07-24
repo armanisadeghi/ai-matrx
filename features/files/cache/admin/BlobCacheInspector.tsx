@@ -24,7 +24,7 @@
  * machine) without falling back to "open DevTools and clear IDB by
  * hand."
  *
- * Routed at `/administration/blob-cache`. Mounted under (admin-auth)
+ * Routed at `/administration/utilities/blob-cache`. Mounted under (admin-auth)
  * which already gates on Super Admin; the page re-checks via
  * `selectIsSuperAdmin` so the redirect-races a slow boot.
  */

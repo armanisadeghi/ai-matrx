@@ -103,7 +103,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
     } else {
       toast.error(`Rule not found: ${initialEditKey}`);
     }
-    router.replace("/administration/relationships/rules");
+    router.replace("/administration/database/relationships/rules");
      
   }, [initialEditKey]);
 

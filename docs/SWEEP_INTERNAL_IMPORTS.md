@@ -101,7 +101,7 @@ Mostly `handler/hooks/useFileUpload` (19 occurrences), then `handler/types` (9),
 
 | Importing file | Imported names | Recommendation |
 | --- | --- | --- |
-| `app/(authenticated)/(admin-auth)/administration/feedback/components/FeedbackDetailDialog.tsx` | `useFileUpload`, `imageViewUrl` from `handler/utils/python-base` | MIGRATE `useFileUpload` to public index. `imageViewUrl` needs to be re-exported (or replaced with `useFileSrc`). |
+| `app/(authenticated)/(admin-auth)/administration/users/feedback/components/FeedbackDetailDialog.tsx` | `useFileUpload`, `imageViewUrl` from `handler/utils/python-base` | MIGRATE `useFileUpload` to public index. `imageViewUrl` needs to be re-exported (or replaced with `useFileSrc`). |
 | `features/pdf-demo/components/PdfSourcePicker.tsx` | `useFileUpload` | MIGRATE to public index. |
 | `features/cx-chat/components/user-input/ConversationInput.tsx` | `useFileUpload` | MIGRATE. |
 | `features/agent-apps/components/inputs/AgentAppImageField.tsx` | `useFileUpload` | MIGRATE. |
@@ -188,7 +188,7 @@ Direct imports of the single types file. Every symbol consumed (`AssetPreset`, `
 
 | Importing file | Imported names | Recommendation |
 | --- | --- | --- |
-| `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-asset-uploader.tsx` | `AssetPreset`, `Visibility` | MIGRATE — path swap. |
+| `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-asset-uploader.tsx` | `AssetPreset`, `Visibility` | MIGRATE — path swap. |
 | `app/(public)/share/[token]/page.tsx` | `ShareLinkResolveResponse` | MIGRATE — path swap. |
 | `features/image-manager/components/BrandedUploadTab.tsx` | `AssetPreset` | MIGRATE. |
 | `features/image-manager/registry/types.ts` | `Visibility` | MIGRATE. |

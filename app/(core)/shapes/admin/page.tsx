@@ -3,7 +3,7 @@
 // Per-feature admin map for the user-facing Shapes studio (the Content-IR
 // user surface). Renders via the platform primitive `<FeatureAdminPage>`.
 // The admin/registry side of the Shape System has its own surface at
-// /administration/kind-registry — this map indexes the STUDIO's routes and
+// /administration/utilities/kind-registry — this map indexes the STUDIO's routes and
 // modules and points across.
 
 import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
@@ -17,7 +17,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
   name: "Shapes (studio)",
   slug: "shapes",
   description:
-    "User-facing Shape System studio: list your org's kinds + the platform library, preview canonical examples through the real render route, test a shape live via the canonical KindInputForm, and create new shapes with the creator agent (handoff to /chat/a/[agentId]). Registry/admin tooling lives at /administration/kind-registry.",
+    "User-facing Shape System studio: list your org's kinds + the platform library, preview canonical examples through the real render route, test a shape live via the canonical KindInputForm, and create new shapes with the creator agent (handoff to /chat/a/[agentId]). Registry/admin tooling lives at /administration/utilities/kind-registry.",
   docs: [
     { label: "Content-IR FEATURE.md", href: "/features/content-ir/FEATURE.md" },
     {
@@ -84,11 +84,11 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/administration/kind-registry",
+      url: "/administration/utilities/kind-registry",
       label: "Kind Registry (admin)",
       description:
         "Super-admin Shape System board: status matrix, dual gate, assets, drift.",
-      filePath: "app/(admin)/administration/kind-registry/page.tsx",
+      filePath: "app/(admin)/administration/utilities/kind-registry/page.tsx",
       status: "Live",
     },
   ],

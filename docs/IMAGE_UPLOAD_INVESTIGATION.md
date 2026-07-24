@@ -188,7 +188,7 @@ This is the *real* "returning data instead of CDN url" the user is seeing for po
 | Image manager `BrandedUploadTab` | `features/image-manager/components/BrandedUploadTab.tsx` | (check) | (check) | preset `web` |
 | Image manager `ProfilePhotoTab` | `features/image-manager/components/ProfilePhotoTab.tsx` | (check) | avatars | preset `avatar` |
 | Tests | `components/official/__tests__/ImageAssetUploader.test.ts` | — | — | rewrite |
-| Admin component-displays demo | `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-asset-uploader.tsx` | — | — | rewrite |
+| Admin component-displays demo | `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-asset-uploader.tsx` | — | — | rewrite |
 
 (All references found via `grep "ImageAssetUploader"` and `grep "AssetUploader"` — see lists at end of doc.)
 
@@ -351,8 +351,8 @@ Edit each file in the table at the end:
 - `features/window-panels/windows/image/ImageUploaderWindow.tsx`
 - `features/window-panels/windows/image/callbacks.ts`
 - `app/(a)/images/edit/EditShellClient.tsx`
-- `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-asset-uploader.tsx`
-- `app/(authenticated)/(admin-auth)/administration/official-components/parts/component-list.tsx`
+- `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-asset-uploader.tsx`
+- `app/(authenticated)/(admin-auth)/administration/ui/official-components/parts/component-list.tsx`
 - `components/official/__tests__/ImageAssetUploader.test.ts`
 
 ### Files mentioning `/api/images/upload` (sweep targets — should all be zero after F3)

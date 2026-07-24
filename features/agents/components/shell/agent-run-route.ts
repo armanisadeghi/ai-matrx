@@ -1,5 +1,5 @@
 export const USER_AGENT_RUN_BASE_PATH = "/agents";
-export const ADMIN_AGENT_RUN_BASE_PATH = "/administration/system-agents/agents";
+export const ADMIN_AGENT_RUN_BASE_PATH = "/administration/agents/system-agents/agents";
 
 export const AGENT_RUN_PATH_PATTERN =
   /^(?:\/agents|\/administration\/system-agents\/agents)\/[^/]+\/run(?:\/|$)/;

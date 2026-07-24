@@ -23,7 +23,7 @@ interface AgentSelectorIslandProps {
   /** Custom trigger element — replaces the default text button inside AgentListDropdown */
   triggerSlot?: React.ReactNode;
   /** Base path for routing. Defaults to `/agents`. Admin surfaces pass
-   *  `/administration/system-agents/agents`. Used to keep the user inside
+   *  `/administration/agents/system-agents/agents`. Used to keep the user inside
    *  their current surface when switching agents. */
   basePath?: string;
 }
@@ -76,7 +76,7 @@ export function AgentSelectorIsland({
       {showBuiltin &&
         isBuiltin &&
         (() => {
-          const adminBase = "/administration/system-agents/agents";
+          const adminBase = "/administration/agents/system-agents/agents";
           const currentMode = deriveAgentMode(pathname, agentId, basePath);
           const adminHref = getAgentModeHref(currentMode, agentId, adminBase);
           const isOnAdmin = basePath === adminBase;

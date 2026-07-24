@@ -78,7 +78,7 @@ export function ShortcutDirectResolver({
 
   const directoryHref =
     mode === "admin"
-      ? "/administration/system-agents/shortcuts/all"
+      ? "/administration/agents/system-agents/shortcuts/all"
       : "/agents/shortcuts/all";
 
   if (error) {

@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         feedback.description,
         storedMessage.content,
         feedback.username || storedMessage.sender_name || "User",
-        `${siteUrl}/administration/feedback`,
+        `${siteUrl}/administration/users/feedback`,
       );
       const emailResult = await sendEmail({
         to: adminEmail,

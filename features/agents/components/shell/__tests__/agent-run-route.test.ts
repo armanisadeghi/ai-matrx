@@ -13,7 +13,7 @@ describe("agent run route helpers", () => {
       { agentId: "agent-1", basePath: USER_AGENT_RUN_BASE_PATH },
     ],
     [
-      "/administration/system-agents/agents/agent-2/run",
+      "/administration/agents/system-agents/agents/agent-2/run",
       { agentId: "agent-2", basePath: ADMIN_AGENT_RUN_BASE_PATH },
     ],
   ])("resolves %s", (pathname, expected) => {
@@ -22,7 +22,7 @@ describe("agent run route helpers", () => {
   });
 
   it("does not match non-run agent routes", () => {
-    const pathname = "/administration/system-agents/agents/agent-2/build";
+    const pathname = "/administration/agents/system-agents/agents/agent-2/build";
 
     expect(AGENT_RUN_PATH_PATTERN.test(pathname)).toBe(false);
     expect(resolveAgentRunRoute(pathname)).toBeNull();
@@ -38,7 +38,7 @@ describe("agent run route helpers", () => {
         "conversation/with spaces",
       ),
     ).toBe(
-      "/administration/system-agents/agents/agent-2/run?conversationId=conversation%2Fwith%20spaces",
+      "/administration/agents/system-agents/agents/agent-2/run?conversationId=conversation%2Fwith%20spaces",
     );
   });
 });

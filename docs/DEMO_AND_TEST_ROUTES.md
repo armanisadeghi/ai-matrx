@@ -413,10 +413,10 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 *4 routes*
 
-- `/administration/official-components` — `app/(authenticated)/(admin-auth)/administration/official-components/page.tsx`
-- `/administration/official-components/[componentId]` — `app/(authenticated)/(admin-auth)/administration/official-components/[componentId]/page.tsx`
-- `/administration/official-components/to-be-added/toggle-menu-demo` — `app/(authenticated)/(admin-auth)/administration/official-components/to-be-added/toggle-menu-demo/page.tsx`
-- `/administration/official-components/to-be-added/toggle-menu-demo/toggle-with-categories` — `app/(authenticated)/(admin-auth)/administration/official-components/to-be-added/toggle-menu-demo/toggle-with-categories/page.tsx`
+- `/administration/ui/official-components` — `app/(authenticated)/(admin-auth)/administration/ui/official-components/page.tsx`
+- `/administration/ui/official-components/[componentId]` — `app/(authenticated)/(admin-auth)/administration/ui/official-components/[componentId]/page.tsx`
+- `/administration/ui/official-components/to-be-added/toggle-menu-demo` — `app/(authenticated)/(admin-auth)/administration/ui/official-components/to-be-added/toggle-menu-demo/page.tsx`
+- `/administration/ui/official-components/to-be-added/toggle-menu-demo/toggle-with-categories` — `app/(authenticated)/(admin-auth)/administration/ui/official-components/to-be-added/toggle-menu-demo/toggle-with-categories/page.tsx`
 
 ### Admin — template pages
 
@@ -435,12 +435,12 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 *7 routes*
 
-- `/administration/experimental-routes` — `app/(authenticated)/(admin-auth)/administration/experimental-routes/page.tsx`
-- `/administration/markdown-tester` — `app/(authenticated)/(admin-auth)/administration/markdown-tester/page.tsx`
-- `/administration/persistence-test` — `app/(authenticated)/(admin-auth)/administration/persistence-test/page.tsx`
-- `/administration/resilience-lab` — `app/(authenticated)/(admin-auth)/administration/resilience-lab/page.tsx`
-- `/administration/sandbox` — `app/(authenticated)/(admin-auth)/administration/sandbox/page.tsx`
-- `/administration/scheduling/cron-tester` — `app/(authenticated)/(admin-auth)/administration/scheduling/cron-tester/page.tsx`
+- `/administration/ui/experimental-routes` — `app/(authenticated)/(admin-auth)/administration/ui/experimental-routes/page.tsx`
+- `/administration/utilities/markdown-tester` — `app/(authenticated)/(admin-auth)/administration/utilities/markdown-tester/page.tsx`
+- `/administration/ui/persistence-test` — `app/(authenticated)/(admin-auth)/administration/ui/persistence-test/page.tsx`
+- `/administration/compute/resilience-lab` — `app/(authenticated)/(admin-auth)/administration/compute/resilience-lab/page.tsx`
+- `/administration/compute/sandbox` — `app/(authenticated)/(admin-auth)/administration/compute/sandbox/page.tsx`
+- `/administration/automation/scheduling/cron-tester` — `app/(authenticated)/(admin-auth)/administration/automation/scheduling/cron-tester/page.tsx`
 - `/administration/window-panels-smoketest` — `app/(authenticated)/(admin-auth)/administration/window-panels-smoketest/page.tsx`
 
 ### Authenticated — `ai/prompts/experimental`
@@ -467,16 +467,16 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/admin/concepts/file-system`
 - `/admin/template-pages/app-template`
 - `/admin/template-pages/module-link-pack`
-- `/administration/experimental-routes`
-- `/administration/markdown-tester`
-- `/administration/official-components`
-- `/administration/official-components/[componentId]`
-- `/administration/official-components/to-be-added/toggle-menu-demo`
-- `/administration/official-components/to-be-added/toggle-menu-demo/toggle-with-categories`
-- `/administration/persistence-test`
-- `/administration/resilience-lab`
-- `/administration/sandbox`
-- `/administration/scheduling/cron-tester`
+- `/administration/ui/experimental-routes`
+- `/administration/utilities/markdown-tester`
+- `/administration/ui/official-components`
+- `/administration/ui/official-components/[componentId]`
+- `/administration/ui/official-components/to-be-added/toggle-menu-demo`
+- `/administration/ui/official-components/to-be-added/toggle-menu-demo/toggle-with-categories`
+- `/administration/ui/persistence-test`
+- `/administration/compute/resilience-lab`
+- `/administration/compute/sandbox`
+- `/administration/automation/scheduling/cron-tester`
 - `/administration/window-panels-smoketest`
 - `/ai/prompts/experimental`
 - `/ai/prompts/experimental/action-test`

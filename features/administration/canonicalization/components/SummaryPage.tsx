@@ -111,7 +111,7 @@ export function SummaryPage() {
           copyForAi={SUMMARY_TABLE_COPY}
           onRowClick={(row) =>
             router.push(
-              `/administration/canonicalization/verify?schema=${encodeURIComponent(row.schema_name)}&table=${encodeURIComponent(row.table_name)}&token=${encodeURIComponent(row.token)}`,
+              `/administration/database/canonicalization/verify?schema=${encodeURIComponent(row.schema_name)}&table=${encodeURIComponent(row.table_name)}&token=${encodeURIComponent(row.token)}`,
             )
           }
         />

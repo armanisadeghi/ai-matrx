@@ -10,14 +10,14 @@
 Mirror `administration/prompt-apps` for agent apps: list, feature/verify, moderate. Reuse shared components from `features/agent-apps/` (Phase 8).
 
 ## Success criteria
-- [x] Admin route under `app/(authenticated)/(admin-auth)/administration/agent-apps/`.
+- [x] Admin route under `app/(authenticated)/(admin-auth)/administration/agents/agent-apps/`.
 - [x] Feature flag, verify, deactivate controls.
 - [x] Rate limit override UI.
 
 ## Routes shipped
 
 ```
-app/(authenticated)/(admin-auth)/administration/agent-apps/
+app/(authenticated)/(admin-auth)/administration/agents/agent-apps/
 ├── layout.tsx                          # metadata + layout client wrapper
 ├── AgentAppsAdminLayoutClient.tsx      # tabbed nav (Dashboard / Apps / Categories / Executions)
 ├── page.tsx                            # dashboard — counts, featured grid, recently updated
@@ -34,7 +34,7 @@ app/(authenticated)/(admin-auth)/administration/agent-apps/
 **Service layer.** Added `lib/services/agent-apps-admin-service.ts` — mirrors `prompt-apps-admin-service.ts` 1:1 with helpers for categories (list/create/update/delete), apps (list with `creator_email` join via `get_user_emails_by_ids` RPC, get-by-id, admin-patch), executions (list with app join), errors (list + resolve/unresolve), and rate limits (list + block/unblock). RLS enforces admin-only writes (DB migration policies already gate `agent_apps` mutations to `is_platform_admin()`).
 
 **Reuse of Phase 8 components.**
-- `AgentAppsGrid` — mounted in the dashboard for featured + recently-updated sections with `hrefFor` pointing at `/administration/agent-apps/edit/[id]`.
+- `AgentAppsGrid` — mounted in the dashboard for featured + recently-updated sections with `hrefFor` pointing at `/administration/agents/agent-apps/edit/[id]`.
 - `AgentAppEditor` — mounted in the edit page under the "Component Code" tab for Babel-editable JSX/TSX.
 - `UpdateAgentAppModal` — mounted in the edit page as the metadata (name/tagline/description/status) editor.
 - `AgentAppCard` — used transitively via `AgentAppsGrid`.
@@ -65,11 +65,11 @@ Everything here is new admin-specific glue; nothing duplicates Phase 8 or Phase 
 
 ## Cross-links
 
-- Added a deprecation banner on `app/(authenticated)/(admin-auth)/administration/prompt-apps/page.tsx` pointing to `/administration/agent-apps`. Legacy page preserved — Phase 16 removes it.
+- Added a deprecation banner on `app/(authenticated)/(admin-auth)/administration/prompt-apps/page.tsx` pointing to `/administration/agents/agent-apps`. Legacy page preserved — Phase 16 removes it.
 
 ## Open items / deferred
 
-- **Rate-limit row table.** Phase 8 tracks per-identifier rate limits in `agent_app_rate_limits`. The executions surface does not yet include a rate-limits table because the first-order admin need (overriding the per-app caps) is solved via `AgentAppAdminActions.showRateLimits`. A follow-up can add an `/administration/agent-apps/rate-limits/` route that uses `fetchAgentAppRateLimits` / `unblockAgentAppRateLimit` / `blockAgentAppRateLimit` (all already in the service).
+- **Rate-limit row table.** Phase 8 tracks per-identifier rate limits in `agent_app_rate_limits`. The executions surface does not yet include a rate-limits table because the first-order admin need (overriding the per-app caps) is solved via `AgentAppAdminActions.showRateLimits`. A follow-up can add an `/administration/agents/agent-apps/rate-limits/` route that uses `fetchAgentAppRateLimits` / `unblockAgentAppRateLimit` / `blockAgentAppRateLimit` (all already in the service).
 - **Auto-create app flow.** `CreateAgentAppForm` from Phase 8 requires an `agents: AgentOption[]` prop. A first-class "admin creates new agent app" flow needs an agent-discovery query. Out of scope for this phase — the admin use case is moderating existing user apps, not creating new ones.
 - **Types cast.** The service uses `as unknown as any` on the Supabase client in three spots pending DB type regeneration (same pattern Phase 8 used). Will clean up after `npx supabase gen types` runs post-migration.
 

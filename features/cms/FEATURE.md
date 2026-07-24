@@ -25,12 +25,14 @@ build plan this feature is part of (project P5).
 - `app/(core)/cms/[siteId]/page.tsx` — page list for a site
 - `app/(core)/cms/[siteId]/settings/page.tsx` — site settings + delete (danger zone)
 - `app/(core)/cms/[siteId]/components/page.tsx` — header/footer/etc. component CRUD
+- `app/(core)/cms/[siteId]/collections/page.tsx` — W2-C collections list (policy badges, live counts) + editor dialog + Site Data Key block (masked/copy/rotate)
+- `app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx` — items viewer (schema-driven columns, unread/spam/archived filters, search, row+bulk triage, CSV export)
 - `app/(core)/cms/[siteId]/pages/[pageId]/page.tsx`, `.../pages/new/page.tsx` — page editor
 - `app/(core)/cms/html-pages/**` — standalone `html_pages` management (see `features/html-pages/FEATURE.md`... not yet split out; documented in `features/html-pages/README.md`)
-- `app/(admin)/administration/cms-agents/page.tsx` — **agent visibility surface** (super-admin gated by the `(admin)` layout): live activity feed, per-site page tree, agent-write-policy editor, validation-exception approvals queue
+- `app/(admin)/administration/knowledge/cms-agents/page.tsx` — **agent visibility surface** (super-admin gated by the `(admin)` layout): live activity feed, per-site page tree, agent-write-policy editor, validation-exception approvals queue
 
 **Services**
-- `features/cms/services/cmsService.ts` — `CmsSiteService` / `CmsPageService` / `CmsVersionService` / `CmsComponentService` / `CmsApprovalsService` / `CmsAssetService`, all POST `{action}` dispatch against `/api/cms/*` (`CmsAssetService.deleteAsset` throws `AssetInUseError` carrying the live usage detail on a 409)
+- `features/cms/services/cmsService.ts` — `CmsSiteService` / `CmsPageService` / `CmsVersionService` / `CmsComponentService` / `CmsApprovalsService` / `CmsAssetService` / `CmsCollectionService`, all POST `{action}` dispatch against `/api/cms/*` (`CmsAssetService.deleteAsset` throws `AssetInUseError` carrying the live usage detail on a 409)
 
 **Hooks**
 - `features/cms/hooks/useCmsSites.ts`, `useCmsPages.ts`, `useCmsVersions.ts` — owner-scoped CRUD hooks
@@ -43,10 +45,11 @@ build plan this feature is part of (project P5).
 - `POST /api/cms/versions` — `list/get` (read-only, owner-scoped)
 - `POST /api/cms/approvals` — `list/approve/reject` (requireSuperAdmin) — F3 exception queue, degrades gracefully until P1's store table exists
 - `POST /api/cms/assets` — `list/get/create/update/usage/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). W2-B asset library over `client_assets`. **Bytes never pass through this route** — the client uploads through the canonical `fileHandler.upload({preset:'web', visibility:'public'})` → aidream `POST /assets` (durable public CDN URL), then `create` registers the metadata row. `create` re-enforces the durability doctrine (second layer): refuses a `file_path` that isn't absolute https or that carries a signed/expiring-link signature (`isSignedExpiringUrl`, mirrors aidream's validator). `delete` LIVE-scans pages+components (live + draft columns) and returns 409 `asset_in_use` with the exact reference list unless `force`; `usage` returns the same scan and re-syncs `used_in_pages`. aidream twin: `services/cms_assets/`.
+- `POST /api/cms/collections` — W2-C collections (CMS migration 0015): `list` (per site, with live item/unread counts) / `get` / `create` / `update` / `archive` / `delete` (soft) / `rotate_key` (owner-scoped) + item ops `items_list` (filters + search + pagination) / `items_get` / `items_set_flags` (seen/spam/archive, row or bulk) / `items_delete` (soft) / `items_export` (rows for client-side CSV, cap 10,000) + `admin_list` (requireSuperAdmin). Server rules mirrored in-route: slug `^[a-z0-9][a-z0-9_-]{0,62}$`; a field_schema containing `richtext` is REJECTED while `public_write` is true (checked on the MERGED result on update). First collection create mints `client_sites.data_api_key` (`'mk_' + 32 hex`); `rotate_key` re-mints it (old key dies immediately, published pages pick the new one up at next SSR render). Search on non-searchable collections is a capped in-route scan (2,000 newest; `searchTruncated` flag) — PostgREST cannot ilike a jsonb column; searchable collections use `textSearch` on `search_vector`.
 - `POST /api/html-pages` — standalone `html_pages` CRUD (see `features/html-pages/README.md`)
 
 **Shared server helpers**
-- `app/api/cms/_lib/cmsDb.ts` — `getCmsClient()`, `verifySiteOwnership`, `verifyPageOwnership`, `verifyComponentOwnership`, `verifyAssetOwnership`
+- `app/api/cms/_lib/cmsDb.ts` — `getCmsClient()`, `verifySiteOwnership`, `verifyPageOwnership`, `verifyComponentOwnership`, `verifyAssetOwnership`, `verifyCollectionOwnership`
 - `app/api/cms/_lib/activityLog.ts` — `logCmsActivity()`, the C6 contract writer
 
 **Redux slice(s)**
@@ -112,15 +115,23 @@ Supabase MCP at the wrong project for this feature.
 - `client_components` — header/footer/etc., same draft-twin pattern.
 - `history.row_versions` — the canonical append-only version log (aidream CMS migrations `0002` +
   `0005`). EVERY change to a versioned row is captured by its `_history` trigger with a full jsonb
-  snapshot + an incrementing `version` (bumped by `_touch`). **FIVE entities are versioned** —
-  `client_sites`, `client_pages`, `client_components`, `client_assets`, `html_pages`. The
-  append-only tables (`client_activity_log`, `form_submissions`) are NOT, mirroring the main DB.
+  snapshot + an incrementing `version` (bumped by `_touch`). **SIX entities are versioned** —
+  `client_sites`, `client_pages`, `client_components`, `client_assets`, `html_pages`,
+  `site_collections`. The append-only tables (`client_activity_log`, `form_submissions`,
+  `site_collection_items`) are NOT, mirroring the main DB.
   Don't trust this list — ask the DB: `select * from platform.versioning_audit()`. Not reachable
   over PostgREST directly — see the version RPCs below. Legacy `client_page_versions` was retired
   (migration `0004`) and archived as `graveyard.client_page_versions`.
-- `client_assets` — the asset library (W2-B, shipped 2026-07-15). `file_path` = durable public CDN URL, `file_id` = main-project `cld_files` id (migration `cms/0013`). Service: `CmsAssetService` (`features/cms/services/cmsService.ts`) → `/api/cms/assets`; UI: `AssetsPanel` tab on `/administration/cms-agents`. aidream owns the agent path (`cms_asset` tool + `services/cms_assets/`).
+- `client_assets` — the asset library (W2-B, shipped 2026-07-15). `file_path` = durable public CDN URL, `file_id` = main-project `cld_files` id (migration `cms/0013`). Service: `CmsAssetService` (`features/cms/services/cmsService.ts`) → `/api/cms/assets`; UI: `AssetsPanel` tab on `/administration/knowledge/cms-agents`. aidream owns the agent path (`cms_asset` tool + `services/cms_assets/`).
 - `client_activity_log` — the C6 contract. Every mutation writes one row; `changes` jsonb always carries `actor: "agent"|"human"|"system"` + optional `metadata` (e.g. `capture_media_refs[]` from P4's verification loop).
 - `html_pages` — standalone quick-publish pages, no site/draft concept.
+- `site_collections` / `site_collection_items` — W2-C per-site data collections (CMS migration
+  `0015`; design: `aidream/docs/cms_agent_authoring/W2C-design.md`). The definition is a versioned
+  content entity (token `site_collection`); items are append-heavy visitor/agent rows (soft-delete
+  via `deleted_at`, triage via `is_spam`/`seen_at`/`status`, conditional tsvector when `searchable`).
+  `field_schema` is validator DATA, never DDL. `client_sites.data_api_key` (dedicated column, NOT in
+  the settings jsonb) is the public write key — ships in page HTML, not a secret; rotation is the
+  kill-switch. Turnstile/CAPTCHA was CUT from v1 — no UI, no settings seam.
 - `client_content_exceptions` — **does not exist yet.** P1 owns creating it (schema shape: P3's `matrx_content_guard.models.ContentException` + `Violation`, `packages/matrx-content-guard/matrx_content_guard/models.py`). `/api/cms/approvals` and `ApprovalsQueuePanel` are built against that shape and self-report `available: false` until the table lands.
 
 **Version RPCs (aidream CMS migrations `0003` + `0006`).** `history` and `platform` are not exposed
@@ -149,7 +160,9 @@ cascade: the log outlives the rows it describes.
 **Key types** (`features/cms/types.ts`) — `ClientSite`, `ClientSiteSettings`, `AgentWritePolicy`,
 `ClientPage`, `ClientPageSummary`, `ClientEntityVersion`, `ClientEntityVersionDetail`,
 `CmsEntityType`, `VersionOperation`, `PageVersionContent`, `ClientComponent`, `ClientActivityLog`,
-`ClientActivityChanges`, `ContentException`. No generated types exist for this project (it's not
+`ClientActivityChanges`, `ContentException`, `SiteCollection`, `SiteCollectionSummary`,
+`SiteCollectionItem`, `CollectionFieldDef`, `CollectionFieldType`, `SiteCollectionSettings`,
+`CollectionItemFilter`. No generated types exist for this project (it's not
 `txzxabzwovsujtloxrus`) — these are hand-maintained; keep them in sync with live schema by hand.
 
 **C4 URL builder:** `features/cms/utils/pageUrls.ts` — TS twin of my-matrx's routing rules, derived
@@ -181,7 +194,7 @@ action return** — matched field for field (`services/cms/dtos.py::VersionSumma
 Change one, change both.
 
 ### 2. Arman watches agent activity (visibility surface)
-`/administration/cms-agents` → `CmsAgentsAdminClient` fetches `admin_list_sites` once, then each
+`/administration/knowledge/cms-agents` → `CmsAgentsAdminClient` fetches `admin_list_sites` once, then each
 tab polls independently: `ActivityFeedPanel` polls `admin_list_activity` every 8s (filterable by
 site/entity/actor, agent rows visually distinct via `changes.actor`); `SitePageTreePanel` reads
 `admin_list` pages + activity metadata for capture links; both require `requireSuperAdmin` server-side
@@ -258,6 +271,15 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-23` — **W2-C Collections admin surface shipped.** New `/api/cms/collections` route (see
+  API list), `CmsCollectionService`, `verifyCollectionOwnership`, `site_collection` added to the
+  versions-route `OWNERSHIP` map (six versioned entities now), `collection`/`collection_item` added
+  to the C6 `entityType` union + the Activity Feed filter. UI: 4th **Collections** mode on
+  `SiteLayoutClient` → `/cms/[siteId]/collections` (list + `CollectionEditorDialog` field-schema
+  builder + Site Data Key card) and `/cms/[siteId]/collections/[collectionId]` (items viewer:
+  schema-driven columns, unread/spam/archived triage, CSV export). `ClientSite` gained
+  `data_api_key`.
+
 - `2026-07-17` — **Header dedup: `SiteLayoutClient` now consumes `EntityModeHeader`** (the templated
   agents-pattern header) instead of a hand-rolled `RouteHeader` + `CmsSiteSwitcher` composition.
   Site-switch dropdown, mode nav, and actions are behavior-identical (switch keeps sub-view suffix);
@@ -267,7 +289,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   hrefs (e.g. "Open live site") — now `window.open`s external hrefs. Browser-verified desktop +
   mobile (Pages/Components/Settings nav, dropdown, drawer, live-site link).
 - `2026-07-15` — **W2-B asset library shipped.** New `/api/cms/assets` route (see API list) +
-  `CmsAssetService` + `AssetsPanel` tab on `/administration/cms-agents` (upload via
+  `CmsAssetService` + `AssetsPanel` tab on `/administration/knowledge/cms-agents` (upload via
   `fileHandler.upload({preset:'web', visibility:'public'})` → durable CDN URL, grid, alt-text edit,
   copy-URL, delete-with-usage-guard dialog that lists exactly which pages break). C6 `entityType`
   union (`activityLog.ts`) + the Activity Feed filter gained `asset`; the feed's Media column renders
@@ -302,7 +324,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   400); site delete shipped (guarded, cascading, throwaway-site tested); `client_activity_log`
   writes added to every mutation (`actor: "human"`, C6 shape); first-claim side effect removed
   (F2); dead `features/html-pages/lib/supabase-html.ts` removed + README rewritten; agent
-  visibility surface shipped at `/administration/cms-agents` (activity feed, page tree,
+  visibility surface shipped at `/administration/knowledge/cms-agents` (activity feed, page tree,
   agent-write-policy editor, approvals queue); C4 URL builder (`pageUrls.ts`) added; this
   FEATURE.md created (feature predated the doctrine).
 

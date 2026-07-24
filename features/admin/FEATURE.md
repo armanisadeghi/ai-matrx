@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-07-22`
+**Last updated:** `2026-07-23`
 
 ---
 
@@ -12,6 +12,11 @@ Administration navigation organizes every existing `/administration` page into
 one maintained hierarchy: **domain → section → destination**. The same registry
 drives the Administration dashboard, injected AppShell menu, desktop/mobile
 entry menus, route directory, and release-time completeness audit.
+
+Every domain owns a real static route at `/administration/<domain-slug>`, and
+every administration destination is physically nested below that root. The
+dashboard renders direct destination rows for every domain; domain landing
+pages are optional focused views, never a required intermediate click.
 
 This feature organizes admin surfaces; it never invents an admin page for a
 product feature that does not already have one.
@@ -23,9 +28,10 @@ product feature that does not already have one.
 **Routes**
 
 - `app/(admin)/administration/page.tsx` — Administration dashboard.
-- `app/(admin)/administration/AdminDashboardClient.tsx` — domain and section views, destination search, and filesystem route search.
+- `app/(admin)/administration/AdminDashboardClient.tsx` — direct destination directory, destination search, and filesystem route search.
+- `features/admin/components/AdminDomainDirectory.tsx` — compact domain renderer shared by the dashboard and every static domain landing page.
 - `app/(admin)/administration/_nav/AdminNavTreeMenu.tsx` — compact header tree over the same hierarchy.
-- `app/(admin)/administration/admin-directory/page.tsx` — filesystem route directory grouped by its declared registry location.
+- `app/(admin)/administration/utilities/all-routes/page.tsx` — filesystem route directory grouped by its declared registry location.
 
 **Canonical declarations**
 
@@ -68,12 +74,13 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 1. A user enters any `/administration` route.
 2. `RouteMenuSlot` matches the Administration entry in `route-menu-registry.ts` and automatically displays `AdminRouteSidebarMenu` in place of the main app menu.
-3. The user navigates domain → section → destination using declarations from `admin-navigation.ts`.
-4. The shared switcher restores the Main Menu; its Administration switch restores the route menu without navigation.
+3. The dashboard exposes every destination directly. The user may also open a real domain root such as `/administration/compute` for a focused view.
+4. Sidebar, header, desktop flyout, and mobile menu expose the same domain roots and canonical nested destinations.
+5. The shared switcher restores the Main Menu; its Administration switch restores the route menu without navigation.
 
 ### Add or move an admin route
 
-1. Add the real page under `app/(admin)/administration`.
+1. Add the real page beneath its canonical `app/(admin)/administration/<domain-slug>/` root.
 2. Reuse or add its display metadata in `admin-categories.ts`.
 3. Place the destination in `admin-navigation.ts`. If it is a detail/editor leaf that should not be a menu row, add its exact page pattern to the owning destination's `ownedRoutes`.
 4. Run `pnpm check:admin-catalog --strict`; the filesystem and declarations must match exactly.
@@ -82,7 +89,7 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 1. `release.sh` runs the advisory release gates.
 2. `check-admin-catalog.ts` independently discovers every Administration page and compares it with every destination/`ownedRoutes` declaration.
-3. Any missing, stale, or scanner-drifted route prints a large red `ADMIN ROUTE REGISTRY GAP — RELEASE IS CONTINUING` alarm.
+3. Any missing, stale, scanner-drifted, query-domain, or cross-domain route prints a large red `ADMIN ROUTE REGISTRY GAP — RELEASE IS CONTINUING` alarm.
 4. Advisory release execution continues. `--strict` remains available as an intentional manual hard gate.
 
 ---
@@ -90,10 +97,12 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 ## Invariants & gotchas
 
 - `admin-navigation.ts` is the only hierarchy. Never create a second dashboard, sidebar, or mobile grouping object.
+- Domain navigation uses static paths such as `/administration/compute`; `?domain=` routing and catch-all domain pages are forbidden.
+- Every `/administration` destination and owned detail route must equal or descend from its declared domain root. `pnpm check:admin-catalog --strict` enforces this.
 - Every Administration page pattern is declared exactly once as either a destination link or an `ownedRoutes` entry. Parent-prefix inference is forbidden because it hides new pages.
 - Only real admin destinations appear. A conceptual domain such as Knowledge or Scopes may remain sparse until actual admin pages exist.
 - AI, Agents, and Chat are separate domains. Knowledge owns existing CMS, podcast, research, knowledge-graph, and future RAG admin destinations.
-- Specific route-menu matches must precede the generic Administration matcher. This preserves the Agent Run menu on `/administration/system-agents/agents/[id]/run`.
+- Specific route-menu matches must precede the generic Administration matcher. This preserves the Agent Run menu on `/administration/agents/system-agents/agents/[id]/run`.
 - Navigation gaps are loud but non-blocking during a normal release. Do not change the advisory release path into a silent skip or a hard release failure.
 
 ---
@@ -118,6 +127,7 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 - `AdminNavigationDomain` / `AdminNavigationSection` / `AdminNavigationDestination` and `adminNavigationRegistry` — one generic hierarchy was required to replace multiple competing two-level category renderings and to give the release audit exact route ownership.
 - `AdminRouteSidebarMenu` — a thin registry renderer matching the existing route-menu component contract; route switching and persistence remain owned by the shared shell primitive.
+- `AdminDomainDirectory` — one compact direct-link renderer shared by the dashboard and static domain roots; it replaces the parameter-driven animated-card view.
 
 ---
 
@@ -125,11 +135,14 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 The old category catalog remains only as destination display metadata. All
 navigation placement and exact route ownership have moved to
-`admin-navigation.ts`.
+`admin-navigation.ts`. Legacy flat routes and the former `?domain=` URLs
+redirect to the canonical nested route tree through
+`utils/next-config/adminRouteRedirects.js`.
 
 ---
 
 ## Change log
 
+- `2026-07-23` — Codex: replaced query-parameter domain views with real static domain routes, physically nested all administration pages, added legacy redirects, rendered direct dashboard links, and enforced domain-root ownership in the catalog check.
 - `2026-07-22` — Codex: registered the Organizations & Memberships destination inside Users & Access.
 - `2026-07-21` — Codex: introduced the canonical three-level registry, migrated all admin navigation surfaces, added AppShell route-menu injection, and made exact non-blocking release drift detection loud.

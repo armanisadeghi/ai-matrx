@@ -1,6 +1,6 @@
 # Agent Review Queue
 
-**Status:** Live. **Route:** `/administration/agent-review` (super-admin via `app/(admin)/layout.tsx`). **Table:** `agent.review_queue` (single table — deliberately minimal, no RPCs, no satellites).
+**Status:** Live. **Route:** `/administration/users/agent-review` (super-admin via `app/(admin)/layout.tsx`). **Table:** `agent.review_queue` (single table — deliberately minimal, no RPCs, no satellites).
 
 The one place agents register anything they built that Arman must go see/test (demo pages, new routes, feature surfaces), and where his feedback flows back to them. Kills the "finished feature rots undiscovered for weeks" failure. The agent-side contract (when to insert, status obligations, exact SQL) lives in **`.claude/skills/agent-review-queue/SKILL.md`** — that skill is the source of truth for agent behavior; this doc covers the surface.
 
@@ -8,7 +8,7 @@ The one place agents register anything they built that Arman must go see/test (d
 
 | Part | Path |
 |---|---|
-| Page (thin) | `app/(admin)/administration/agent-review/page.tsx` |
+| Page (thin) | `app/(admin)/administration/users/agent-review/page.tsx` |
 | Client + all logic | `features/admin/agent-review/components/AgentReviewClient.tsx` |
 | Types | `features/admin/agent-review/types.ts` (row type from `Database["agent"]["Tables"]["review_queue"]`) |
 | Migration | `migrations/agent_review_queue.sql` (applied + ledgered) |

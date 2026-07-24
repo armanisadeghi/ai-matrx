@@ -6,11 +6,11 @@ import { BarChart3, MessageSquare, Send, AlertCircle, DollarSign } from "lucide-
 import Link from "next/link";
 
 const LINKS = [
-  { href: "/administration/cx-dashboard", label: "Overview Dashboard", icon: BarChart3, description: "KPIs, cost trends, model usage" },
-  { href: "/administration/cx-dashboard/conversations", label: "Conversations", icon: MessageSquare, description: "Browse & drill into conversation chains" },
-  { href: "/administration/cx-dashboard/requests", label: "User Requests", icon: Send, description: "Token usage, cost, iterations per request" },
-  { href: "/administration/cx-dashboard/usage", label: "Usage & Cost", icon: DollarSign, description: "Cost analytics by model, provider, day" },
-  { href: "/administration/cx-dashboard/errors", label: "Errors & Issues", icon: AlertCircle, description: "Pending bugs, max_tokens, tool errors" },
+  { href: "/administration/chat/cx-dashboard", label: "Overview Dashboard", icon: BarChart3, description: "KPIs, cost trends, model usage" },
+  { href: "/administration/chat/cx-dashboard/conversations", label: "Conversations", icon: MessageSquare, description: "Browse & drill into conversation chains" },
+  { href: "/administration/chat/cx-dashboard/requests", label: "User Requests", icon: Send, description: "Token usage, cost, iterations per request" },
+  { href: "/administration/chat/cx-dashboard/usage", label: "Usage & Cost", icon: DollarSign, description: "Cost analytics by model, provider, day" },
+  { href: "/administration/chat/cx-dashboard/errors", label: "Errors & Issues", icon: AlertCircle, description: "Pending bugs, max_tokens, tool errors" },
 ];
 
 export default function CxDashboardRedirect() {
@@ -24,7 +24,7 @@ export default function CxDashboardRedirect() {
           <p className="text-sm text-muted-foreground">Monitor conversations, usage, costs, and errors</p>
         </div>
         <button
-          onClick={() => router.push("/administration/cx-dashboard")}
+          onClick={() => router.push("/administration/chat/cx-dashboard")}
           className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Open Dashboard

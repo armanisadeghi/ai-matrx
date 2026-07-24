@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
+import type { components } from "@/types/python-generated/api-types";
 
 import { listKeywordEdges, listKeywordsWithMarket } from "./data/queries";
 import type {
@@ -106,6 +107,22 @@ function resultFromEvent(
     : null;
 }
 
+/** A durable research-stream command: either a fresh run (typed body, no path
+ * params) or a rejoin of an existing run by id (path param, no body). Both
+ * stream the same seo.* progress events. Paths and their bodies are the
+ * generated OpenAPI contract — the union keeps each variant correlated. */
+type ResearchStreamRequest =
+  | {
+      path: "/seo/keywords/research";
+      pathParams?: undefined;
+      body: components["schemas"]["KeywordResearchBody"];
+    }
+  | {
+      path: "/seo/collections/{run_id}/rejoin";
+      pathParams: { run_id: string };
+      body?: undefined;
+    };
+
 export function useKeywordResearch() {
   const dispatch = useAppDispatch();
   const [keywords, setKeywords] = useState<KeywordWithMarket[]>([]);
@@ -146,19 +163,11 @@ export function useKeywordResearch() {
   }, [search, reload]);
 
   const consumeResearchStream = useCallback(
-    async (
-      phrase: string,
-      request: { path: string; body: Record<string, unknown> },
-    ) => {
+    async (phrase: string, request: ResearchStreamRequest) => {
       const completedResults: KeywordResearchResponse[] = [];
       let serverBusy = false;
-      const result = await dispatch(
-        callApi({
-          path: request.path,
-          method: "POST",
-          body: request.body,
-          stream: true,
-          onStreamEvent: (event) => {
+      const onStreamEvent = (event: TypedStreamEvent) => {
+        {
             if (event.event === "chunk") {
               setRun((current) => ({
                 ...current,
@@ -167,7 +176,8 @@ export function useKeywordResearch() {
               return;
             }
             const data = streamData(event);
-            const kind = typeof data?.kind === "string" ? data.kind : null;
+            if (!data) return;
+            const kind = typeof data.kind === "string" ? data.kind : null;
             if (!kind) return;
             // Durable job identity — persisted server-side BEFORE the AI call.
             if (kind === "seo.command_run" && typeof data.run_id === "string") {
@@ -226,8 +236,24 @@ export function useKeywordResearch() {
                 result: completedResult,
               }));
             }
-          },
-        }),
+        }
+      };
+      const result = await dispatch(
+        request.path === "/seo/keywords/research"
+          ? callApi({
+              path: request.path,
+              method: "POST",
+              body: request.body,
+              stream: true,
+              onStreamEvent,
+            })
+          : callApi({
+              path: request.path,
+              method: "POST",
+              pathParams: request.pathParams,
+              stream: true,
+              onStreamEvent,
+            }),
       );
       if (result.error) {
         storeActiveRun(null);
@@ -296,8 +322,8 @@ export function useKeywordResearch() {
         runId,
       });
       await consumeResearchStream(primaryKeyword, {
-        path: `/seo/collections/${runId}/rejoin`,
-        body: {},
+        path: "/seo/collections/{run_id}/rejoin",
+        pathParams: { run_id: runId },
       });
     },
     [consumeResearchStream],

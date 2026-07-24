@@ -92,20 +92,20 @@ The plan §6.2 directory layout calls for `features/files/cache/`. Today the equ
 | --- | --- |
 | `scripts/copy-pdfjs-worker.mjs` | Post-install copy script. Reads `node_modules/pdfjs-dist/build/pdf.worker.min.mjs`, writes `public/pdfjs-worker.min.mjs`. Idempotent. Wired into `package.json` `postinstall`. |
 
-### `app/(authenticated)/(admin-auth)/administration/blob-cache/`
+### `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/`
 
-Sibling-pattern model: `app/(authenticated)/(admin-auth)/administration/server-cache/` (2 files: `page.tsx` + `layout.tsx`). Match that shape.
+Sibling-pattern model: `app/(authenticated)/(admin-auth)/administration/utilities/server-cache/` (2 files: `page.tsx` + `layout.tsx`). Match that shape.
 
 | File | Purpose |
 | --- | --- |
-| `app/(authenticated)/(admin-auth)/administration/blob-cache/layout.tsx` | Minimal layout; sets page title, no extra chrome. Mirrors `server-cache/layout.tsx`. |
-| `app/(authenticated)/(admin-auth)/administration/blob-cache/page.tsx` | `'use client'`. Gated by `selectIsSuperAdmin`. Composes the four inspectors below. |
-| `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/L1Inspector.tsx` | Reads `getCacheStats()` from `blob-lru.ts` on a 1s interval. Renders: entry count, total bytes, budget, top 20 by size, hit/miss counters (from the new `cache-stat-update` channel). |
-| `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/L2Inspector.tsx` | Reads `getStats()` from `idb-store.ts`. Same shape as L1Inspector. Adds two buttons: "Evict to 70%" → `evictToBudget(0.7 * budget)`, "Clear all" → `clearForUser(currentUserId)`. |
-| `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/SwStatus.tsx` | Reads `navigator.serviceWorker.controller` + listens for SW `cache-stat-update`. Shows: registered version, last activated, intercept counters per URL family (download/share/CDN/image/video/audio). |
-| `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/BroadcastInspector.tsx` | Subscribes to `matrx-sync` channel via `lib/sync/channel.ts`. Renders a live tail of recent `blob-cache:invalidate` messages with their `key` and originating tab ID. |
-| `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/CachePolicyForm.tsx` | Edits `state.preferences.blobCache` settings: enable toggle, per-MIME byte budget overrides, video threshold (default 50 MB), total IDB budget (default 2 GB). Writes via the settings system. |
-| `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/SessionToggle.tsx` | "Disable SW for this session" toggle — writes `sessionStorage.matrx_blob_sw_disabled=1` and unregisters the active SW; restores on toggle off. |
+| `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/layout.tsx` | Minimal layout; sets page title, no extra chrome. Mirrors `server-cache/layout.tsx`. |
+| `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/page.tsx` | `'use client'`. Gated by `selectIsSuperAdmin`. Composes the four inspectors below. |
+| `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/L1Inspector.tsx` | Reads `getCacheStats()` from `blob-lru.ts` on a 1s interval. Renders: entry count, total bytes, budget, top 20 by size, hit/miss counters (from the new `cache-stat-update` channel). |
+| `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/L2Inspector.tsx` | Reads `getStats()` from `idb-store.ts`. Same shape as L1Inspector. Adds two buttons: "Evict to 70%" → `evictToBudget(0.7 * budget)`, "Clear all" → `clearForUser(currentUserId)`. |
+| `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/SwStatus.tsx` | Reads `navigator.serviceWorker.controller` + listens for SW `cache-stat-update`. Shows: registered version, last activated, intercept counters per URL family (download/share/CDN/image/video/audio). |
+| `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/BroadcastInspector.tsx` | Subscribes to `matrx-sync` channel via `lib/sync/channel.ts`. Renders a live tail of recent `blob-cache:invalidate` messages with their `key` and originating tab ID. |
+| `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/CachePolicyForm.tsx` | Edits `state.preferences.blobCache` settings: enable toggle, per-MIME byte budget overrides, video threshold (default 50 MB), total IDB budget (default 2 GB). Writes via the settings system. |
+| `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/SessionToggle.tsx` | "Disable SW for this session" toggle — writes `sessionStorage.matrx_blob_sw_disabled=1` and unregisters the active SW; restores on toggle off. |
 
 ### Settings registry entries
 
@@ -284,7 +284,7 @@ Each phase is independently revertible. The cache-layer rollout fits inside PR3 
 | **Phase 4 — PDF.js remote source** | `PdfDocumentRenderer.tsx` accepts `source: { kind: 'remote' \| 'blob-url' }`. Worker copies from `node_modules/pdfjs-dist/build/`. `postinstall` script wired. `PdfPreview` switches to `kind: 'remote'`. `PdfStudioUrlViewer` switches. PDF.js Range requests fire — but with no SW intercept yet, every Range hits the network. | `scripts/copy-pdfjs-worker.mjs`, `package.json`, `public/pdfjs-worker.min.mjs` (build artifact), `features/files/components/core/FilePreview/previewers/PdfDocumentRenderer.tsx`, `features/files/components/core/FilePreview/previewers/PdfPreview.tsx`, `features/pdf-extractor/studio/PdfStudioUrlViewer.tsx`, `features/rag/components/documents/panes/PdfPane.tsx` |
 | **Phase 5 — SW for /files/{id}/download** | SW source written. `build-sw.ts` wired into `package.json` `build` script. `register-service-worker.ts` mounts from `DeferredSingletons.tsx`. SW intercepts download URLs only (other URL patterns still hit the network directly). Flag stays default `false`. Manual opt-in via `localStorage.matrx_dev_sw=1`. | `features/files/cache/service-worker/{src/sw.ts,build-sw.ts}`, `features/files/cache/{register-service-worker,sw-client}.ts`, `app/DeferredSingletons.tsx`, `package.json` |
 | **Phase 6 — Image/video/audio/CDN/share interception** | SW URL-family matcher extended to cover image, video, audio, CDN-with-checksum, and share-link patterns. Per-MIME policy enforced inside the SW fetch handler. | `features/files/cache/service-worker/src/sw.ts`, `features/files/cache/keys.ts` |
-| **Phase 7 — Cross-tab hardening + observability** | Admin observability route lands with all four inspectors. `X-Matrx-Cache: hit/miss` debug header (dev-only). Live BroadcastChannel inspector. "Disable SW for this session" toggle. Per-MIME budget editor. | `app/(authenticated)/(admin-auth)/administration/blob-cache/**` |
+| **Phase 7 — Cross-tab hardening + observability** | Admin observability route lands with all four inspectors. `X-Matrx-Cache: hit/miss` debug header (dev-only). Live BroadcastChannel inspector. "Disable SW for this session" toggle. Per-MIME budget editor. | `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/**` |
 | **Phase 8 — Default-on** | Flip `state.preferences.blobCache.enabled` default to `true`. Roll forward; rollback path is flag flip. | `features/settings/registry.ts` (default value), `features/files/cache/register-service-worker.ts` (env-default fallback) |
 
 ---
@@ -327,7 +327,7 @@ The cache layer never throws, never blocks first render, never delays auth. Ever
 3. **`build:sw` integration into the main `build` script** — preferred chain location? Current `build` script: `ts-node scripts/generate-manifest.ts && tsx scripts/check-registry.ts && next build`. Proposed insertion: between `check-registry` and `next build`. Confirm.
 4. **Realtime mount in `app/Providers.tsx`.** Today `app/(a)/files/layout.tsx`, `app/(a)/images/layout.tsx`, `features/code/views/explorer/CloudFilesExplorer.tsx`, `features/window-panels/windows/cloud-files/FilePreviewWindow.tsx`, and `features/window-panels/windows/cloud-files/CloudFilesWindow.tsx` all mount `<CloudFilesRealtimeProvider>` locally. Confirm the cache-layer agent should add the global mount (with the cleanup agent later deleting the five locals), versus deferring entirely to the cleanup agent. Risk if deferred: the cache layer ships behind a feature flag and realtime invalidation needs the global mount before the SW intercept goes live.
 5. **`esbuild` as a new devDep.** Confirm we want esbuild for `build-sw.ts` rather than reusing the project's existing tsx + tsc or Next's internal bundler. esbuild is the lowest-friction path for emitting a single bundled `.js` artifact from a `.ts` source.
-6. **Sibling settings entry naming.** Should the admin observability route be `/administration/blob-cache` or `/administration/file-cache`? Matching the user-visible label vs the code subsystem name. Settings group key follows.
+6. **Sibling settings entry naming.** Should the admin observability route be `/administration/utilities/blob-cache` or `/administration/file-cache`? Matching the user-visible label vs the code subsystem name. Settings group key follows.
 7. **PdfPane.tsx scope.** `features/rag/components/documents/panes/PdfPane.tsx` imports `pdfjs-dist` (line 25 per grep). Confirm this is in our scope (it likely needs the same `source: { kind: 'remote' }` migration) versus the RAG agent's scope.
 8. **`policyVersion` bump policy.** When per-MIME budget defaults change in `policy.ts`, should we bump `meta.policyVersion` to drop the whole IDB cache? Or trust LRU eviction? Recommendation: bump on schema changes only, not budget changes.
 
@@ -355,7 +355,7 @@ The cache layer never throws, never blocks first render, never delays auth. Ever
 **Existing reference files (read, do not modify):**
 - `/Users/armanisadeghi/code/matrx-frontend/lib/sync/persistence/idb.ts` — pattern reference
 - `/Users/armanisadeghi/code/matrx-frontend/lib/sync/channel.ts` — used as-is for cross-tab BC
-- `/Users/armanisadeghi/code/matrx-frontend/app/(authenticated)/(admin-auth)/administration/server-cache/page.tsx` — sibling admin route template
+- `/Users/armanisadeghi/code/matrx-frontend/app/(authenticated)/(admin-auth)/administration/utilities/server-cache/page.tsx` — sibling admin route template
 
 **New files to create (all under matrx-frontend):**
 - `features/files/cache/blob-lru.ts`
@@ -370,14 +370,14 @@ The cache layer never throws, never blocks first render, never delays auth. Ever
 - `features/files/cache/service-worker/src/sw.ts`
 - `features/files/cache/service-worker/build-sw.ts`
 - `scripts/copy-pdfjs-worker.mjs`
-- `app/(authenticated)/(admin-auth)/administration/blob-cache/layout.tsx`
-- `app/(authenticated)/(admin-auth)/administration/blob-cache/page.tsx`
-- `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/L1Inspector.tsx`
-- `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/L2Inspector.tsx`
-- `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/SwStatus.tsx`
-- `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/BroadcastInspector.tsx`
-- `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/CachePolicyForm.tsx`
-- `app/(authenticated)/(admin-auth)/administration/blob-cache/_components/SessionToggle.tsx`
+- `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/layout.tsx`
+- `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/page.tsx`
+- `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/L1Inspector.tsx`
+- `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/L2Inspector.tsx`
+- `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/SwStatus.tsx`
+- `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/BroadcastInspector.tsx`
+- `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/CachePolicyForm.tsx`
+- `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/_components/SessionToggle.tsx`
 
 **Build-time artifacts (not checked in):**
 - `public/blob-sw.js`

@@ -47,7 +47,7 @@ export function ruleSentence(rule: {
 }
 
 export const RELATIONSHIPS_LOCATION =
-  "AI Matrx Admin — Relationship Manager (/administration/relationships)";
+  "AI Matrx Admin — Relationship Manager (/administration/database/relationships)";
 
 export const PROBLEM_TITLES: Record<string, string> = {
   unregistered_pair: "Unregistered pair",

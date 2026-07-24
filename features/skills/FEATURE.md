@@ -18,7 +18,7 @@ delete / categorise / ingest, plus the per-agent `skill_config` picker.
 ## Entry points
 
 **Routes**
-- `app/(admin)/administration/skills/` — super-admin registry view + category
+- `app/(admin)/administration/agents/skills/` — super-admin registry view + category
   tree editor + filesystem ingest panel.
 - *(no top-level `/skills` route — full management lives inside the
   agent-connections window panel; see `(a)/agent-connections/skills` in
@@ -119,7 +119,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
 
 ### 3. Admin ingest via the registry page
 
-1. Super-admin opens `/administration/skills/ingest`.
+1. Super-admin opens `/administration/agents/skills/ingest`.
 2. They paste one or more paths and click "Dry run".
 3. `useSkillsIngest().preview(roots)` → `POST /api/skills/ingest` with
    `dry_run: true`. Report shows what *would* land.
@@ -158,7 +158,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
   `features/agents` (stream pump consumes events that drive
   `lastIngestAt`).
 - Depended on by: `features/agents/components/builder` (Track 3 skill
-  picker), `app/(admin)/administration/skills` (registry mirror).
+  picker), `app/(admin)/administration/agents/skills` (registry mirror).
 - Cross-links: `aidream/docs/AGENT_SKILLS_HANDOFF.md` (backend contract),
   `aidream/packages/matrx-ai/matrx_ai/skills/MODULE_README.md`
   (server-side cheat sheet).
@@ -205,7 +205,7 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
   selectors, hooks, service.
 - ✅ Frontend UI: full CRUD inside `SkillsSection` (browse / detail /
   create / categories / ingest), admin registry at
-  `/administration/skills`. Categories editor supports drag-to-reparent,
+  `/administration/agents/skills`. Categories editor supports drag-to-reparent,
   inline rename, color + icon pickers, "+ New" / "Delete" / "+ Add child".
 - ✅ Resources panel: Supabase-direct CRUD mounted in
   `SkillDetailEditor` with drag-to-reorder and 256 KB content soft-cap.

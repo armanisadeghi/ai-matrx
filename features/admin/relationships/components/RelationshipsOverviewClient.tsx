@@ -184,14 +184,14 @@ export function RelationshipsOverviewClient({ status, problems }: Props) {
         onRegisterShareable={(token) =>
           startTransition(() =>
             router.push(
-              `/administration/relationships/sharing?register=${encodeURIComponent(token)}`,
+              `/administration/database/relationships/sharing?register=${encodeURIComponent(token)}`,
             ),
           )
         }
         onEdit={(source, target, lbl) =>
           startTransition(() =>
             router.push(
-              `/administration/relationships/rules?edit=${encodeURIComponent(`${source}:${target}:${lbl ?? ""}`)}`,
+              `/administration/database/relationships/rules?edit=${encodeURIComponent(`${source}:${target}:${lbl ?? ""}`)}`,
             ),
           )
         }

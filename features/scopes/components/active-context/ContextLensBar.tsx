@@ -5,7 +5,7 @@
 // THE composer context control — the Lens Chip (reimagine T2 face) grown into
 // ONE seamless pill with two zones and NO internal border:
 //
-//   [ 👁  ●● 1 org · 1 scope ⌄ ]
+//   [ 👁  ●● PBW · 1 scope ⌄ ]
 //
 // Eye zone   — opens the context preview panel: exactly what the agent will
 //              receive under the current settings (server truth). Primary

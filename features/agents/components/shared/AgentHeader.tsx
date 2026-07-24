@@ -12,7 +12,7 @@ interface AgentHeaderProps {
   agentId: string;
   agentName: string;
   /** Base path for nested mode routes. Defaults to `/agents` for the user
-   *  surface; admin passes `/administration/system-agents/agents`. */
+   *  surface; admin passes `/administration/agents/system-agents/agents`. */
   basePath?: string;
   /** SSR-friendly current path. Optional — falls back to `usePathname()` when
    *  omitted. Pages that already know their pathname server-side can pass it

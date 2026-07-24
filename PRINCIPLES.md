@@ -95,7 +95,7 @@ These are the failure modes agents repeat in this codebase. Every one is a viola
 
 **Look here first.**
 
-- **Canonical, composed components:** [`components/official/`](./components/official/) — the 27-component canonical set. Browse the live registry at `/administration/official-components` (route: `app/(authenticated)/(admin-auth)/administration/official-components/`).
+- **Canonical, composed components:** [`components/official/`](./components/official/) — the 27-component canonical set. Browse the live registry at `/administration/ui/official-components` (route: `app/(authenticated)/(admin-auth)/administration/ui/official-components/`).
 - **Foundation primitives (shadcn/ui):** [`components/ui/`](./components/ui/) — Button, Dialog, Drawer, Input, Select, Toast, Tooltip, Popover, etc. These compose into everything else. Extend props here when the prop is genuinely cross-cutting.
 - **Confirm / prompt / clipboard:** see CLAUDE.md "Browser dialogs are banned" — every replacement lives under `components/ui/confirm-dialog`, `components/dialogs/confirm/`, `components/dialogs/text-input/`, `components/dialogs/clipboard-fallback/`.
 - **File rendering / picking:** never hand-render media or files — `FilePreview`, `MediaThumbnail`, `FileTree`, `FileResourceChip`, `openFilePicker`, `openFolderPicker` are all re-exported from `@/features/files`.
@@ -105,7 +105,7 @@ These are the failure modes agents repeat in this codebase. Every one is a viola
 
 1. **Small / clear case** — open `components/official/` and `components/ui/` in your editor; grep for the concept (`rg -l "Button" components/ui`, `rg "loading" components/ui/button.tsx`). Read the props of the closest match.
 2. **Larger case** — delegate to `Explore`: *"List every component in this repo whose props or layout match `<description>`. Include `components/official/`, `components/ui/`, and any feature-scoped components under `features/*/components/`. Return name, path, and the prop signature."* Read the list. The right answer is almost always *extend an existing component with a prop*, not *create a new one*.
-3. **If you must create a new one** — put it in `components/official/` (or `components/ui/` if it's a primitive). Add it to the registry at `app/(authenticated)/(admin-auth)/administration/official-components/parts/component-list.tsx`. Single-file additions buried inside a feature route are doctrine debt — the component will never be reused, even if it could have been.
+3. **If you must create a new one** — put it in `components/official/` (or `components/ui/` if it's a primitive). Add it to the registry at `app/(authenticated)/(admin-auth)/administration/ui/official-components/parts/component-list.tsx`. Single-file additions buried inside a feature route are doctrine debt — the component will never be reused, even if it could have been.
 
 **Acceptance test.** *"If I deleted this component, could I rebuild the surface in minutes by composing existing primitives + adding one prop?"* If yes — you should have done that instead.
 

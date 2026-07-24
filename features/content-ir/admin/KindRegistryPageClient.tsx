@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Kind Registry page shell — /administration/kind-registry.
+ * Kind Registry page shell — /administration/utilities/kind-registry.
  *
  * ONE page, three tabs over ONE server-side shape-doctor run:
  *  - Catalog (default): the canonical MatrxDataTable of every kind — sort /
@@ -99,7 +99,7 @@ export default function KindRegistryPageClient({
         )}
         <nav className="ml-auto flex items-end gap-1">
           <Link
-            href="/administration/kind-registry/build"
+            href="/administration/utilities/kind-registry/build"
             className="mb-0.5 mr-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Hammer className="h-4 w-4" />

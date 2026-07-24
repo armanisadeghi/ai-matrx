@@ -12,9 +12,9 @@ type NamedSurface = Pick<
   | "executor_name"
 > & { is_active?: boolean | null };
 
-/** Encode a surface name for the `/administration/surfaces/...` catch-all route. */
+/** Encode a surface name for the `/administration/ui/surfaces/...` catch-all route. */
 export function surfaceAdminHref(name: string): string {
-  return `/administration/surfaces/${name
+  return `/administration/ui/surfaces/${name
     .split("/")
     .map(encodeURIComponent)
     .join("/")}`;

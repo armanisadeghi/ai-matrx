@@ -50,7 +50,7 @@ Two evidence sources, cross-checked:
 | `resolveIcon` | `features/scope-system/utils/resolveIcon.ts` | `import * as Icons` then PascalCase lookup, fallback `Folder`. | Namespace import → see §6 bundle note. Functionally safe in 1.0. |
 | `isLucideModuleIconExport` | `utils/icons/lucide-module-icon.ts` | Detects whether a namespace export is a renderable icon. | Safe; icons remain forwardRef/memo components in 1.0. |
 | `getIconComponent` / `renderIcon` / `getIconWithColorAndSize` | `components/official/icons/IconResolver.tsx` | Sync helpers over the static map. | Safe. |
-| Admin icon resolver | `app/(admin)/administration/official-components/component-displays/icon-resolver.tsx` | Admin-side variant of the resolver. | Same considerations as `IconResolver`. |
+| Admin icon resolver | `app/(admin)/administration/ui/official-components/component-displays/icon-resolver.tsx` | Admin-side variant of the resolver. | Same considerations as `IconResolver`. |
 
 ### Build config already in place
 

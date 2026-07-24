@@ -26,7 +26,7 @@ export const REPORTS: ReportDefinition[] = [
       "Every agent whose usages have drifted — breaking changes, silently-ignored context-slot settings, and stale version pins — across all your agents in one place.",
     iconName: "GitCompareArrows",
     href: "/reports/agent-drift",
-    adminHref: "/administration/reports/agent-drift",
+    adminHref: "/administration/agents/reports/agent-drift",
     status: "live",
   },
 ];

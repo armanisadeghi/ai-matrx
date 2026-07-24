@@ -1335,7 +1335,7 @@ export const adminNavItems: ShellNavItem[] = [
   },
   {
     label: "Official Components",
-    href: "/administration/official-components",
+    href: "/administration/ui/official-components",
     iconName: "Puzzle",
     section: "admin",
     category: "primary",
@@ -1343,7 +1343,7 @@ export const adminNavItems: ShellNavItem[] = [
   },
   {
     label: "Reports",
-    href: "/administration/reports",
+    href: "/administration/reporting/reports",
     iconName: "FileChartColumn",
     section: "admin",
     category: "primary",
@@ -1367,7 +1367,7 @@ export const adminNavItems: ShellNavItem[] = [
   },
   {
     label: "Sandbox Admin",
-    href: "/administration/sandbox",
+    href: "/administration/compute/sandbox",
     iconName: "Container",
     section: "admin",
     category: "Automation",

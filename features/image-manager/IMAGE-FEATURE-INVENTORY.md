@@ -171,7 +171,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
 | `cropImage.js` | `components/official/image-cropper/cropImage.js` | Crop helper util | Yes (util) | KEEP |
 | `IconResolver` | `components/official/IconResolver.tsx` | Icon component (mentions image) | No (icons only) | n/a |
 
-Image-related components from the registry (`app/(authenticated)/(admin-auth)/administration/official-components/parts/component-list.tsx`):
+Image-related components from the registry (`app/(authenticated)/(admin-auth)/administration/ui/official-components/parts/component-list.tsx`):
 
 | Registry id | Path | Purpose |
 |---|---|---|
@@ -187,7 +187,7 @@ Image-related components from the registry (`app/(authenticated)/(admin-auth)/ad
 | `paste-image-handler` | `components/ui/file-upload/PasteImageHandler.tsx` | Clipboard paste wrapper |
 | `screenshot-tools` | `hooks/useScreenshot.ts` | Page-screenshot helper |
 
-Demo files for each live under `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/`.
+Demo files for each live under `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/`.
 
 ## 4. Routes inventory (image-related only)
 

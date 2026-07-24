@@ -6,7 +6,7 @@
 // ContextTree). Clear lives in the tree footer. Writes appContextSlice via
 // the same bridge as ContextDocsMenu / PlusAttachMenu.
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Popover,
   PopoverContent,
@@ -46,38 +46,46 @@ export function ActiveContextLensChip({
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const activeScopeTypeIds = useAppSelector(selectActiveScopeTypeIds);
 
-  const scopeIds = useMemo(
-    () => Object.values(scopeSelections).filter((v): v is string => !!v),
-    [scopeSelections],
+  const scopeIds = Object.values(scopeSelections).filter(
+    (value): value is string => Boolean(value),
   );
 
-  const chipNodes = useMemo((): LensChipNode[] => {
-    const out: LensChipNode[] = [];
-    if (orgId) out.push({ kind: "org" });
+  const chipNodes: LensChipNode[] = [];
+  if (orgId) {
+    const selectedOrganization = organizations.find(
+      (organization) => organization.id === orgId,
+    );
+    chipNodes.push({
+      kind: "org",
+      label: selectedOrganization?.abbreviation,
+    });
+  }
 
-    const allTypes = organizations.flatMap((o) => o.scope_types);
-    const typesWithScopes = new Set<string>();
-    for (const scopeId of scopeIds) {
-      const type = allTypes.find((t) => t.scopes.some((s) => s.id === scopeId));
-      if (type) typesWithScopes.add(type.id);
-      out.push({
-        kind: "scope",
-        colorSwatch: type ? resolveColor(type).swatch : undefined,
-      });
-    }
-    for (const typeId of activeScopeTypeIds) {
-      if (typesWithScopes.has(typeId)) continue;
-      const type = allTypes.find((t) => t.id === typeId);
-      out.push({
-        kind: "type",
-        colorSwatch: type ? resolveColor(type).swatch : undefined,
-      });
-    }
+  const allTypes = organizations.flatMap((organization) =>
+    organization.scope_types,
+  );
+  const typesWithScopes = new Set<string>();
+  for (const scopeId of scopeIds) {
+    const type = allTypes.find((candidate) =>
+      candidate.scopes.some((scope) => scope.id === scopeId),
+    );
+    if (type) typesWithScopes.add(type.id);
+    chipNodes.push({
+      kind: "scope",
+      colorSwatch: type ? resolveColor(type).swatch : undefined,
+    });
+  }
+  for (const typeId of activeScopeTypeIds) {
+    if (typesWithScopes.has(typeId)) continue;
+    const type = allTypes.find((candidate) => candidate.id === typeId);
+    chipNodes.push({
+      kind: "type",
+      colorSwatch: type ? resolveColor(type).swatch : undefined,
+    });
+  }
 
-    if (projectId) out.push({ kind: "project" });
-    if (taskId) out.push({ kind: "task" });
-    return out;
-  }, [activeScopeTypeIds, orgId, organizations, projectId, scopeIds, taskId]);
+  if (projectId) chipNodes.push({ kind: "project" });
+  if (taskId) chipNodes.push({ kind: "task" });
 
   // Keep the tree mounted while open so selection ↔ Redux stays live; remount
   // on every parent render was dropping in-flight expand/lazy-load state.

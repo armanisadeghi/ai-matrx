@@ -41,7 +41,7 @@ export function RelationshipSharingClient({
     if (!initialRegisterToken || consumedToken.current) return;
     consumedToken.current = true;
     setPendingToken(initialRegisterToken);
-    router.replace("/administration/relationships/sharing");
+    router.replace("/administration/database/relationships/sharing");
   }, [initialRegisterToken, router]);
 
   const shareableCount = policies.filter((p) => p.is_link_shareable).length;

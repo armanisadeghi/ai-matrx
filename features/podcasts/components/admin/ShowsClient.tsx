@@ -70,7 +70,7 @@ export function ShowsClient() {
       const params = new URLSearchParams(searchParams.toString());
       if (value) params.set("q", value);
       else params.delete("q");
-      router.replace(`/administration/podcasts/shows?${params.toString()}`);
+      router.replace(`/administration/knowledge/podcasts/shows?${params.toString()}`);
     });
   };
 
@@ -153,7 +153,7 @@ export function ShowsClient() {
           className="h-8 gap-1.5"
           onClick={() =>
             startTransition(() =>
-              router.push("/administration/podcasts/shows/new"),
+              router.push("/administration/knowledge/podcasts/shows/new"),
             )
           }
         >
@@ -212,7 +212,7 @@ export function ShowsClient() {
                   key={show.id}
                   onClick={() =>
                     startTransition(() =>
-                      router.push(`/administration/podcasts/shows/${show.id}`),
+                      router.push(`/administration/knowledge/podcasts/shows/${show.id}`),
                     )
                   }
                   className="border-b cursor-pointer group transition-colors hover:bg-muted/40"
@@ -259,7 +259,7 @@ export function ShowsClient() {
                           e.stopPropagation();
                           startTransition(() =>
                             router.push(
-                              `/administration/podcasts/shows/${show.id}`,
+                              `/administration/knowledge/podcasts/shows/${show.id}`,
                             ),
                           );
                         }}

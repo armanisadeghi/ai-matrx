@@ -13,6 +13,7 @@ import {
   adminDomainHref,
   adminNavigationRegistry,
   destinationOwnsPathname,
+  findAdminNavigationDomainByPathname,
   findAdminNavigationLocation,
 } from "@/features/admin/constants/admin-navigation";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,8 @@ export default function AdminRouteSidebarMenu({
 }: AdminRouteSidebarMenuProps) {
   const pathname = usePathname() ?? "/administration";
   const activeLocation = findAdminNavigationLocation(pathname);
+  const activeDomain =
+    activeLocation?.domain ?? findAdminNavigationDomainByPathname(pathname);
 
   if (!expanded) {
     return (
@@ -50,13 +53,12 @@ export default function AdminRouteSidebarMenu({
         {adminNavigationRegistry.map((domain) => (
           <Link
             key={domain.name}
-            href={adminDomainHref(domain.name)}
+            href={adminDomainHref(domain)}
             title={domain.name}
             aria-label={domain.name}
             className={cn(
               navRow,
-              activeLocation?.domain.name === domain.name &&
-                "shell-active-pill",
+              activeDomain?.name === domain.name && "shell-active-pill",
             )}
           >
             <span className="shell-nav-icon">
@@ -89,7 +91,7 @@ export default function AdminRouteSidebarMenu({
 
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-0.5 scrollbar-thin-auto">
         {adminNavigationRegistry.map((domain) => {
-          const domainActive = activeLocation?.domain.name === domain.name;
+          const domainActive = activeDomain?.name === domain.name;
           return (
             <details
               key={domain.name}
@@ -120,7 +122,7 @@ export default function AdminRouteSidebarMenu({
 
               <div className="mb-1 ml-3 border-l border-border/60 pl-2">
                 <Link
-                  href={adminDomainHref(domain.name)}
+                  href={adminDomainHref(domain)}
                   className="shell-tactile-subtle block rounded px-2 py-1 text-[11px] font-medium text-primary"
                 >
                   Browse {domain.name}

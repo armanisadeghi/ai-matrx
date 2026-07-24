@@ -1,6 +1,7 @@
 // next.config.js
 
 const { getHeaders } = require("./utils/next-config/headers");
+const { adminLegacyRouteRedirects } = require("./utils/next-config/adminRouteRedirects");
 // const { remotePatterns } = require("./utils/next-config/imageConfig");
 const { configureWebpack } = require("./utils/next-config/webpackConfig");
 const copyFiles = require("./utils/next-config/copyFiles");
@@ -164,11 +165,12 @@ const nextConfig = {
     headers: getHeaders,
     async redirects() {
         return [
+            ...adminLegacyRouteRedirects,
             // 2026-07-13: Relationships hub consolidation. /administration/sharing
             // (link policy) and /administration/action-catalog moved into the
-            // route-tabbed hub at /administration/relationships/*.
-            { source: '/administration/sharing', destination: '/administration/relationships/sharing', permanent: false },
-            { source: '/administration/action-catalog', destination: '/administration/relationships/actions', permanent: false },
+            // route-tabbed hub at /administration/database/relationships/*.
+            { source: '/administration/sharing', destination: '/administration/database/relationships/sharing', permanent: false },
+            { source: '/administration/action-catalog', destination: '/administration/agents/relationships/actions', permanent: false },
             // 2026-07-13: Users & Access hub consolidation. Admin user/access
             // management moved into the route-tabbed hub at
             // /administration/users/*.

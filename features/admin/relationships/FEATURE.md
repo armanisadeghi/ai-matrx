@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Routes (route-tabbed hub, Super Admin — gated by the `(admin)` layout):**
-`/administration/relationships` (Overview) · `/rules` · `/entity-types` · `/sharing` · `/explorer` (+ `/explorer/[token]`) · `/reachability` · `/actions`
+`/administration/database/relationships` (Overview) · `/rules` · `/entity-types` · `/sharing` · `/explorer` (+ `/explorer/[token]`) · `/reachability` · `/actions`
 **Owner surface for:** the reachability / containment registry control plane, the **`platform.entity_types` registry admin** (the only UI write path), and the **one** home for `platform.shareable_resource_registry` (full CRUD **plus** link policy — the old `/administration/sharing` page is deleted and redirects here).
 
 ---
@@ -23,7 +23,7 @@ DB — the UI just `router.refresh()`es.
 
 ## Structure — one layout, one route per tab
 
-- **Layout:** `app/(admin)/administration/relationships/layout.tsx` →
+- **Layout:** `app/(admin)/administration/database/relationships/layout.tsx` →
   `RelationshipsAdminLayoutClient.tsx` (scheduling-admin pattern: `NAV_ITEMS`,
   `usePathname` active detection, `router.push` in `useTransition`, per-tab spinner).
   The layout owns viewport height (`h-[calc(100dvh-2.5rem)]`); each tab page renders
@@ -107,7 +107,7 @@ Migration: `migrations/relationship_manager_shareable_admin_rpcs.sql` (same
 pattern). The Sharing tab is the **one** home for
 `platform.shareable_resource_registry` — full row CRUD **and** the link-policy
 levers. The old `/administration/sharing` page is **deleted**; a `next.config.js`
-redirect (2026-07-13) points it at `/administration/relationships/sharing`. Its
+redirect (2026-07-13) points it at `/administration/database/relationships/sharing`. Its
 RPCs live on: `admin_list_share_policies` (contributes `supports_public` + the live
 physical column list) and `admin_set_share_policy` (the narrow link-policy write
 used by the per-row **Link policy** side panel).

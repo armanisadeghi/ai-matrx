@@ -491,7 +491,7 @@ function ToolsTab({ slug }: { slug: string }) {
             >
               <TableCell className="font-mono text-xs">
                 <a
-                  href={`/administration/mcp-tools/${t.id}`}
+                  href={`/administration/agents/mcp-tools/${t.id}`}
                   className="text-foreground hover:text-primary hover:underline"
                 >
                   {t.name}

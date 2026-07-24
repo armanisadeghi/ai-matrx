@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * KindCatalogTable — the "Catalog" tab of /administration/kind-registry.
+ * KindCatalogTable — the "Catalog" tab of /administration/utilities/kind-registry.
  *
  * ONE canonical MatrxDataTable over the live shape-doctor rows (the same
  * doctor run that feeds the Board tab): per-column sort/filter, sticky
  * header, toolbar facets (active / issues), Copy-for-AI, and row click →
- * the per-kind detail page (/administration/kind-registry/<kind>).
+ * the per-kind detail page (/administration/utilities/kind-registry/<kind>).
  * No side panel, no second viewer — the detail page is the single detail
  * surface.
  */
@@ -97,7 +97,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
   const openKind = (row: KindBoardRow) => {
     setNavigatingKind(row.kind);
     startTransition(() => {
-      router.push(`/administration/kind-registry/${row.kind}`);
+      router.push(`/administration/utilities/kind-registry/${row.kind}`);
     });
   };
 
@@ -274,7 +274,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
           onClick={(e) => {
             e.stopPropagation();
             window.open(
-              `/administration/kind-registry/${row.kind}`,
+              `/administration/utilities/kind-registry/${row.kind}`,
               "_blank",
               "noopener",
             );
@@ -315,7 +315,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
       copy={{
         label: "Kind",
         listLabel: "Kind catalog view",
-        location: "/administration/kind-registry",
+        location: "/administration/utilities/kind-registry",
         rowKind: "content-ir-kind",
         listKind: "content-ir-kind-catalog",
         humanRow: (row) =>

@@ -41,7 +41,7 @@ interface AgentShortcutsPanelProps {
   agentId: string;
   agentName: string;
   /** Base path for shortcut edit/new routes. Defaults to `/agents` (user route).
-   *  Admin usage passes `/administration/system-agents/agents`. */
+   *  Admin usage passes `/administration/agents/system-agents/agents`. */
   basePath?: string;
 }
 

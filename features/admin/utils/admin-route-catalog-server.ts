@@ -15,6 +15,7 @@ import {
   isRouteCataloged,
   type AdminCatalogCheckResult,
 } from "@/features/admin/utils/admin-route-catalog";
+import { getAdminNavigationArchitectureErrors } from "@/features/admin/constants/admin-navigation";
 
 export const ADMIN_ROUTE_ROOT = join(
   process.cwd(),
@@ -60,5 +61,6 @@ export function checkAdminRouteCatalog(): AdminCatalogCheckResult {
     missingRoutes,
     staleCatalogLinks,
     scannerDrift,
+    architectureErrors: getAdminNavigationArchitectureErrors(),
   };
 }

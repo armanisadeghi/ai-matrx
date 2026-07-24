@@ -212,13 +212,13 @@ Every phase ends green: `pnpm type-check`, `pnpm check:doctrine`, plus the phase
 2. Paired backfill — same change, non-negotiable:
    - TS: rule in `sanitizeLoadedPreferences()` — lift `audioDevices` → `mediaDevices`, drop `videoConference.defaultCamera`, loud warn.
    - SQL: new rule **added** to `users.normalize_preferences_jsonb` (frozen rules never edited) in a new migration; `users.heal_user_preferences_drift()` covers it; applied live via Supabase MCP + `_schema_migrations` ledger upsert + `pnpm db-types`.
-   - Integrity: extend `user-preferences-legacy-drift` in `lib/integrity/checks.ts`; verify drift = 0 at `/administration/data-integrity`.
+   - Integrity: extend `user-preferences-legacy-drift` in `lib/integrity/checks.ts`; verify drift = 0 at `/administration/database/data-integrity`.
 3. All consumers flipped (`useAudioDevices.ts`, provider, panel, selectors); old preference module deleted; no compat reads beyond the sanitizer; Phase 1 re-exports deleted.
 4. Control-window `MediaDevicesPanel` (extends the `AudioDevicesPanel` lineage): camera select (real enumeration), independent camera-permission row + Grant button (through `ensureCameraPermission` → stream manager), **opt-in** live preview tile (explicit button, never auto-starts), effective resolution/frame-rate readout while a stream runs. Mic meter + speaker test unchanged. Consumes the shared controller/hooks.
 5. `MediaDevicesSettingsTab` ("Camera, microphone & speakers"): registry entry `devices` in `features/settings/registry.ts`, `persistence: "synced"`; composed only from official Settings primitives + `useSetting`; new official media-preview/meter primitives added first if needed; desktop may group, mobile renders stacked sections; deep-link aliases added where the registry's routing contract requires.
 6. `VideoConferenceTab`: fake camera selector removed; meeting prefs kept; link chip to the devices tab.
 
-**Test routes:** avatar menu → Audio → Devices (mic/speaker unchanged, camera picker present); Settings → "Camera, microphone & speakers"; Settings → Video conference; `/administration/data-integrity` (drift = 0). Saved camera survives reload and deviceId churn (label fallback). Settings tab contains no raw shadcn imports; mobile stacks sections.
+**Test routes:** avatar menu → Audio → Devices (mic/speaker unchanged, camera picker present); Settings → "Camera, microphone & speakers"; Settings → Video conference; `/administration/database/data-integrity` (drift = 0). Saved camera survives reload and deviceId churn (label fallback). Settings tab contains no raw shadcn imports; mobile stacks sections.
 
 ### Phase 5 — Photo capture + Capture Studio + scanner migration
 

@@ -124,7 +124,7 @@ const GLOBAL_AGENT_ITEMS: MenuItem[] = [
 ];
 
 // Items that can be opened in a new tab (have navigatable URLs).
-// `basePath` lets admin surfaces (`/administration/system-agents/agents`)
+// `basePath` lets admin surfaces (`/administration/agents/system-agents/agents`)
 // reuse this menu without escaping back to the user surface.
 const NEW_TAB_ITEMS: {
   label: string;
@@ -165,7 +165,7 @@ function comingSoon() {
  * The agent menu is mounted on both user and admin surfaces. The only signal
  * we have for "I am the admin" is the route the surface declared via
  * `basePath`. This must stay in lockstep with the system-agents route in
- * `app/(authenticated)/(admin-auth)/administration/system-agents/`.
+ * `app/(authenticated)/(admin-auth)/administration/agents/system-agents/`.
  *
  * Used to:
  *  - opt the duplicate RPC into `asSystem` mode (preserves builtin lineage)
@@ -204,7 +204,7 @@ export function AgentOptionsMenu({
   agentId: string;
   asTapTarget?: boolean;
   /** Base path for routing. Defaults to `/agents`. Admin surfaces pass
-   *  `/administration/system-agents/agents` so internal links stay in the
+   *  `/administration/agents/system-agents/agents` so internal links stay in the
    *  admin context. */
   basePath?: string;
 }) {

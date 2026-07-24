@@ -223,7 +223,7 @@ A Shortcut's `scopeMappings` (stored on the `AgentShortcut` row) maps `UIContext
 
 ### 3.1 Admin (system + organization scope)
 
-- **Route:** `app/(authenticated)/(admin-auth)/administration/system-agents/` _(renamed 2026-04-22 — was `agent-shortcuts`)_
+- **Route:** `app/(authenticated)/(admin-auth)/administration/agents/system-agents/` _(renamed 2026-04-22 — was `agent-shortcuts`)_
   - `page.tsx` — list of all shortcuts (filter by scope, category, agent, active status).
   - `[id]/page.tsx` — edit a shortcut (label, category, icon, keyboard binding, agent + version pin, scope mappings, result display config, all the `display`/`behavior` flags).
   - `new/page.tsx` — create form.

@@ -61,7 +61,7 @@
     "owner_column": "user_id",
     "is_public_column": null,
     "display_label": "Auto-ingest Batch",
-    "url_path_template": "/administration/kg-cost/batches/{id}",
+    "url_path_template": "/administration/knowledge/kg-cost/batches/{id}",
     "rls_uses_has_permission": false,
     "is_active": true
   },

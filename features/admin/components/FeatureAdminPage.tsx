@@ -277,7 +277,7 @@ function docHref(link: FeatureAdminDocLink): string {
   if (/^https?:\/\//.test(link.href)) return link.href;
   const clean = link.href.replace(/^\/+/, "");
   const segments = clean.split("/").map(encodeURIComponent).join("/");
-  return `/administration/feature-docs/view/${segments}`;
+  return `/administration/documentation/feature-docs/view/${segments}`;
 }
 
 export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
@@ -474,7 +474,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
                 // Official components are linked to the registry index;
                 // candidates / internals just show the file path (no link).
                 const href = isOfficial
-                  ? "/administration/official-components"
+                  ? "/administration/ui/official-components"
                   : undefined;
                 return (
                   <ResourceRow
@@ -584,7 +584,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
             <Boxes className="inline h-3 w-3 -mt-0.5 mr-1" />
             source: hand-curated FeatureAdminMap config at{" "}
             <ExternalTabLink
-              href={`/administration/feature-docs/view/app/(core)/${map.slug}/admin/page.tsx`}
+              href={`/administration/documentation/feature-docs/view/app/(core)/${map.slug}/admin/page.tsx`}
               className="hover:underline text-primary"
             >
               app/(core)/{map.slug}/admin/page.tsx

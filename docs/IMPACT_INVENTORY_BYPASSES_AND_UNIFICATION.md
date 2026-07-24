@@ -263,7 +263,7 @@ The "let user upload an image, optionally crop, then persist as an asset" flow l
 ### 2.5 Paste-image handlers
 
 **Today (3 parallel implementations):**
-- `components/ui/file-upload/usePasteImageUpload.ts` (legacy hook — Plan §6.3 deletes) — used by `components/ui/file-upload/PasteImageHandler.tsx` and demoed in `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/paste-image-handler.tsx`.
+- `components/ui/file-upload/usePasteImageUpload.ts` (legacy hook — Plan §6.3 deletes) — used by `components/ui/file-upload/PasteImageHandler.tsx` and demoed in `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/paste-image-handler.tsx`.
 - `components/official/ImageAssetUploader.tsx` (inline paste handler in lines ~580–593) — listens for `paste` events on the dropzone.
 - `features/cx-chat/components/user-input/ConversationInput.tsx` + `features/cx-conversation/ConversationInput.tsx` + `features/public-chat/components/ChatInputWithControls.tsx` + `features/agents/components/inputs/smart-input/AgentTextarea.tsx` + `features/prompts/components/smart/CompactPromptInput.tsx` + `features/prompts/components/smart/SmartPromptInput.tsx` + `features/prompts/components/PromptInput.tsx` — each chat-input component has its own paste-image listener.
 - `components/ui/file-upload/useClipboardPaste.ts` — yet another paste-from-clipboard hook.
@@ -321,7 +321,7 @@ The "let user upload an image, optionally crop, then persist as an asset" flow l
 - `features/public-chat/components/resource-picker/PublicImageUrlPicker.tsx` — public chat version (duplicate logic)
 - `features/public-chat/components/resource-picker/PublicFileUrlPicker.tsx` — Same
 - `features/public-chat/components/resource-picker/PublicWebpagePicker.tsx` — Same
-- `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/paste-image-handler.tsx` — admin demo
+- `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/paste-image-handler.tsx` — admin demo
 
 **After:** One `<ImportUrlPicker mode="image|file|youtube|webpage" onResource={…}>` component. The `paste-image-handler.tsx` admin demo becomes a thin caller. The 4 public-chat variants collapse to use the auth-aware base — the only behavioral difference today is the auth context, which the underlying `useFileUpload` already handles (anonymous Supabase auth UUID per `features/file-handler/FEATURE.md` invariant 4).
 

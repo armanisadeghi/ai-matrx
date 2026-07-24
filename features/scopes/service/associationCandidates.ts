@@ -89,7 +89,7 @@ export async function listAssociationCandidates(
   if (!info.canListCandidates || !info.titleColumn) {
     const msg =
       `Entity "${token}" has no title column — set it at ` +
-      `/administration/relationships/entity-types before listing candidates`;
+      `/administration/database/relationships/entity-types before listing candidates`;
     console.error(`[listAssociationCandidates] ${msg}`);
     return { ok: false, error: msg };
   }

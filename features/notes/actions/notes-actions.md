@@ -45,7 +45,7 @@ Counts are **distinct files** that reference the symbol or mount the component (
 | **SaveSelectionButton** | 0 | — |
 | **QuickNotesButton** | 0 | — |
 | **QuickNotesSheet** | 1 | `components/overlays/OverlayController.tsx` (dynamic import + `NotesProvider` wrapper) |
-| **CategoryNotesModal** | 2 | `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/category-notes-modal.tsx`, `app/(authenticated)/(admin-auth)/administration/database/components/enhanced-sql-editor.tsx` |
+| **CategoryNotesModal** | 2 | `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/category-notes-modal.tsx`, `app/(authenticated)/(admin-auth)/administration/database/components/enhanced-sql-editor.tsx` |
 | **WindowNotesBody** | 1 | `app/(dev)/demos/window-demo/window-bodies/NotesWindowBody.tsx` |
 | **NotesTreeView** | 2 | `features/notes/actions/WindowNotesBody.tsx`, `features/notes/actions/NotesWindow.tsx` |
 | **NotesWindow** | 2 | `app/(dev)/demos/window-demo/page.tsx`, `features/notes/actions/SidebarNotesToggle.tsx` |

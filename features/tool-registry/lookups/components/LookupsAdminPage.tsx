@@ -447,10 +447,10 @@ function UiSurfaceCrud() {
           <span className="text-foreground">
             For most surface work, use the dedicated{" "}
             <a
-              href="/administration/surfaces"
+              href="/administration/ui/surfaces"
               className="font-medium text-primary hover:underline"
             >
-              /administration/surfaces
+              /administration/ui/surfaces
             </a>{" "}
             page — it groups by client &amp; tier, shows tool/agent usage counts,
             supports bulk activate/deactivate, and is built for the 100+ surface

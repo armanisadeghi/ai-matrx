@@ -86,7 +86,7 @@ export function SurfacesContainer() {
   const openEditor = (row: SurfaceWithStats) => {
     if (navigatingName) return;
     setNavigatingName(row.name);
-    const href = `/administration/surfaces/${row.name
+    const href = `/administration/ui/surfaces/${row.name
       .split("/")
       .map(encodeURIComponent)
       .join("/")}`;

@@ -271,14 +271,14 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
             </li>
             <li>
               System (global) shortcuts:{" "}
-              <PageLink href="/administration/system-agents/shortcuts">
-                /administration/system-agents/shortcuts
+              <PageLink href="/administration/agents/system-agents/shortcuts">
+                /administration/agents/system-agents/shortcuts
               </PageLink>
             </li>
             <li>
               Surface registry admin:{" "}
-              <PageLink href="/administration/surfaces">
-                /administration/surfaces
+              <PageLink href="/administration/ui/surfaces">
+                /administration/ui/surfaces
               </PageLink>
             </li>
           </ul>

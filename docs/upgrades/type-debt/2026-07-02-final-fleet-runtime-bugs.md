@@ -199,15 +199,15 @@
 **Runtime consequence:** Every 'collection' share notification silently failed the same way as the canvas case above (caught error -> null -> caller 404).
 **Evidence:** grep of database.types.ts confirms zero collections table anywhere; left as an explicit no-op with a warning log rather than guessing at a replacement table (no evidence of what collections should resolve to today).
 
-## 40. app/(admin)/administration/cx-dashboard/errors/errors-content.tsx:43
+## 40. app/(admin)/administration/chat/cx-dashboard/errors/errors-content.tsx:43
 **Defect:** onExportJSON handler called exportToJSON(errors as any, "errors") where `errors` is `{error_requests, error_tool_calls}` (an object) but exportToJSON's signature is `(data: Record<string, unknown>[], ...)` — an array.
 **Runtime consequence:** Clicking 'Export JSON' on the Errors admin page would silently no-op: exportToJSON does `if (!data.length) return;` and an object's `.length` is `undefined` (falsy), so the function returns immediately with zero download and zero error — the button appeared to do nothing.
-**Evidence:** features/cx-dashboard/utils/export.ts:49-57 exportToJSON signature + `if (!data.length) return;` guard; app/(admin)/administration/cx-dashboard/errors/errors-content.tsx type ErrorsData = {error_requests, error_tool_calls} (an object, not an array).
+**Evidence:** features/cx-dashboard/utils/export.ts:49-57 exportToJSON signature + `if (!data.length) return;` guard; app/(admin)/administration/chat/cx-dashboard/errors/errors-content.tsx type ErrorsData = {error_requests, error_tool_calls} (an object, not an array).
 
-## 41. app/(admin)/administration/cx-dashboard/requests/[id]/request-detail-content.tsx:93
+## 41. app/(admin)/administration/chat/cx-dashboard/requests/[id]/request-detail-content.tsx:93
 **Defect:** onClick handler called exportToJSON(detail as any, "request-detail") where `detail` is `{user_request, requests, tool_calls, cost_verification}` (an object), not an array.
 **Runtime consequence:** Clicking 'Export' on a Request Detail admin page would silently no-op for the same reason as the Errors page: `detail.length` is `undefined`, exportToJSON returns before building/downloading the JSON blob.
-**Evidence:** app/(admin)/administration/cx-dashboard/requests/[id]/request-detail-content.tsx type Detail = {user_request, requests, tool_calls, cost_verification}; features/cx-dashboard/utils/export.ts exportToJSON expects an array.
+**Evidence:** app/(admin)/administration/chat/cx-dashboard/requests/[id]/request-detail-content.tsx type Detail = {user_request, requests, tool_calls, cost_verification}; features/cx-dashboard/utils/export.ts exportToJSON expects an array.
 
 ## 42. app/(public)/p/[slug]/page.tsx:22
 **Defect:** Custom hand-rolled RPC wrapper type cast (as unknown as any + reinvented .rpc() signature) bypassed the real generated get_aga_public_data return type, and the resulting object was force-cast (as never) into PublicAgentApp, which requires 6 fields (app_kind, shared_context_slots, search_tsv, total_tokens_used, total_cost, unique_users_count) the RPC never returns.
@@ -266,9 +266,9 @@
 - components/ui/samples/radio-group.tsx (zero importers anywhere)
 - components/ui/samples/select.tsx (zero importers anywhere)
 - Removed the unused local helper function `formatPhotoForMobile` from components/image/unsplash/mobile/MobileUnsplashGallery.tsx (defined with a `(photo: any)` param, zero callers anywhere in the codebase - grep confirmed no invocation).
-- app/(admin)/administration/utils/text-cleaner/utilities/junk/errorFormatter.ts (zero importers anywhere in the repo; folder literally named junk/; ErrorFormatter class read parsed.summary/parsed.suggestions fields never declared on ParsedError, only reachable via the any-shaped index signature it depended on)
-- app/(admin)/administration/utils/text-cleaner/utilities/junk/errorHandlers.ts (zero importers anywhere in the repo; folder literally named junk/; ErrorHandlerConfig type held the Record<string, any> hatches)
-- app/(admin)/administration/utils/text-cleaner/utilities/errorProcessors.ts lines 752-821 (an entire parseGenericTypeScriptError function body sitting inside a /* ... */ block comment — genuinely dead/inert code, not a real hatch since it never compiles, but matched the hatch scanner's text search)
+- app/(admin)/administration/utilities/utils/text-cleaner/utilities/junk/errorFormatter.ts (zero importers anywhere in the repo; folder literally named junk/; ErrorFormatter class read parsed.summary/parsed.suggestions fields never declared on ParsedError, only reachable via the any-shaped index signature it depended on)
+- app/(admin)/administration/utilities/utils/text-cleaner/utilities/junk/errorHandlers.ts (zero importers anywhere in the repo; folder literally named junk/; ErrorHandlerConfig type held the Record<string, any> hatches)
+- app/(admin)/administration/utilities/utils/text-cleaner/utilities/errorProcessors.ts lines 752-821 (an entire parseGenericTypeScriptError function body sitting inside a /* ... */ block comment — genuinely dead/inert code, not a real hatch since it never compiles, but matched the hatch scanner's text search)
 - components/mardown-display/data-display/JsonDataDisplay.tsx — zero importers anywhere in the repo (grep confirmed). A completely different, unrelated JsonDataDisplay already lives at utils/logger/components/ReduxLogViewer.tsx:62 and is the one actually used. The scoped file also called the component as a plain function (parsedContent: any) rather than with a props object, and its : any param was the only hatch in it.
 - components/mardown-display/enhanced-rederer-older/EnhancedMarkdownRenderer.tsx — directory name signals a stale prior-generation copy ('older'); zero importers anywhere in the repo (grep confirmed, including string-path/dynamic-import searches).
 - components/mardown-display/new/MarkdownFlowDiagramConverter.tsx — zero importers anywhere in the repo; only self-references were its own definition/export lines. Deleting also removed the now-empty new/ directory.

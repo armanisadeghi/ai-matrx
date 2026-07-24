@@ -133,7 +133,7 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
               label="MCP Server"
             >
               <a
-                href={`/administration/mcp-servers/${tool.managed_by_server_id}`}
+                href={`/administration/agents/mcp-servers/${tool.managed_by_server_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline font-mono"
@@ -307,7 +307,7 @@ export function ToolViewPage({ tool }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigateTo("/administration/mcp-tools")}
+            onClick={() => navigateTo("/administration/agents/mcp-tools")}
             disabled={isPending}
             className="gap-1.5 h-8"
           >
@@ -347,7 +347,7 @@ export function ToolViewPage({ tool }: Props) {
               variant="outline"
               size="sm"
               onClick={() =>
-                navigateTo(`/administration/mcp-tools/${tool.id}/incidents`)
+                navigateTo(`/administration/agents/mcp-tools/${tool.id}/incidents`)
               }
               disabled={isPending}
               className="h-8 gap-1.5 text-xs"
@@ -359,7 +359,7 @@ export function ToolViewPage({ tool }: Props) {
               variant="outline"
               size="sm"
               onClick={() =>
-                navigateTo(`/administration/mcp-tools/${tool.id}/ui`)
+                navigateTo(`/administration/agents/mcp-tools/${tool.id}/ui`)
               }
               disabled={isPending}
               className="h-8 gap-1.5 text-xs"
@@ -370,7 +370,7 @@ export function ToolViewPage({ tool }: Props) {
             <Button
               size="sm"
               onClick={() =>
-                navigateTo(`/administration/mcp-tools/${tool.id}/edit`)
+                navigateTo(`/administration/agents/mcp-tools/${tool.id}/edit`)
               }
               disabled={isPending}
               className="h-8 gap-1.5 text-xs"

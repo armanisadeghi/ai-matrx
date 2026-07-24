@@ -60,6 +60,22 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/cms/[siteId]/collections",
+      label: "Collections (W2-C)",
+      description:
+        "Site data collections: list with policy badges + live counts, field-schema editor dialog, Site Data Key block (masked, copy, rotate kill-switch).",
+      filePath: "app/(core)/cms/[siteId]/collections/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/cms/[siteId]/collections/[collectionId]",
+      label: "Collection items viewer",
+      description:
+        "Schema-driven items inbox: unread badges (seen_at), All/Unread/Spam/Archived filters, search, row + bulk triage (seen/spam/archive/delete), client-side CSV export, pagination.",
+      filePath: "app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/cms/html-pages",
       label: "Standalone HTML pages",
       description: "List/create/delete for html_pages (no site/draft concept).",
@@ -67,11 +83,11 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/administration/cms-agents",
+      url: "/administration/knowledge/cms-agents",
       label: "CMS Agent Activity (visibility surface)",
       description:
         "Super-admin gated. Live activity feed (poll 8s, filter by site/entity/actor, agent rows visually distinct), per-site page tree with preview/live links, agent-write-policy editor (F4), validation-exception approvals queue (F3, degrades gracefully until P1's store table lands).",
-      filePath: "app/(admin)/administration/cms-agents/page.tsx",
+      filePath: "app/(admin)/administration/knowledge/cms-agents/page.tsx",
       status: "Live",
       notes: [
         "Data path is polling, not Realtime — the CMS project has no browser-safe anon key/RLS story.",
@@ -121,6 +137,13 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
       description: "Owner-facing page list + editor building blocks.",
       tier: "internal",
     },
+    {
+      name: "CollectionEditorDialog",
+      filePath: "features/cms/components/collections/CollectionEditorDialog.tsx",
+      description:
+        "W2-C collection definition editor: field-schema builder (9 types, reorder, per-type constraints), policy toggles with the richtext × public_write block, settings overrides.",
+      tier: "internal",
+    },
   ],
 
   apiRoutes: [
@@ -147,8 +170,23 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/api/cms/versions",
       method: "POST",
-      description: "{action}-dispatch: list/get (read-only, owner).",
+      description:
+        "{action}-dispatch: list/get (read-only, owner). Six versioned entity tokens incl. site_collection.",
       filePath: "app/api/cms/versions/route.ts",
+    },
+    {
+      url: "/api/cms/collections",
+      method: "POST",
+      description:
+        "{action}-dispatch (W2-C): list/get/create/update/archive/delete + rotate_key + items_list/items_get/items_set_flags/items_delete/items_export (owner) + admin_list (requireSuperAdmin). Enforces slug regex + the richtext × public_write block.",
+      filePath: "app/api/cms/collections/route.ts",
+    },
+    {
+      url: "/api/cms/assets",
+      method: "POST",
+      description:
+        "{action}-dispatch (W2-B): list/get/create/update/usage/delete (owner) + admin_list (requireSuperAdmin). Bytes never pass through — durable CDN URLs only.",
+      filePath: "app/api/cms/assets/route.ts",
     },
     {
       url: "/api/cms/approvals",

@@ -50,7 +50,7 @@ import {
   type AgentAppAdminView,
 } from "@/lib/services/agent-apps-admin-service";
 
-const ADMIN_AGENT_BASE = "/administration/system-agents/agents";
+const ADMIN_AGENT_BASE = "/administration/agents/system-agents/agents";
 
 export function AgentLineageTree() {
   const dispatch = useAppDispatch();
@@ -331,7 +331,7 @@ function LineageCard({
                   key={s.id}
                   href={
                     isGlobalShortcut(s)
-                      ? `/administration/system-agents/edit/${s.id}`
+                      ? `/administration/agents/system-agents/edit/${s.id}`
                       : `${ADMIN_AGENT_BASE}/${agent.id}/shortcuts/${s.id}`
                   }
                   title={s.label}
@@ -347,7 +347,7 @@ function LineageCard({
               {apps.map((app) => (
                 <LineageRow
                   key={app.id}
-                  href={`/administration/agent-apps/edit/${app.id}`}
+                  href={`/administration/agents/agent-apps/edit/${app.id}`}
                   title={app.name}
                   subtitle={app.slug}
                   badge={app.user_id === null ? "system" : app.status}

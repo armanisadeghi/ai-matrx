@@ -95,7 +95,7 @@ The plan's "four current mounts deleted" undercounts by one (FilePreviewWindow).
 
 `app/(public)/share/[token]/page.tsx`, `loading.tsx`, `_components/PublicDownloadButton.tsx` — KEEP. The component-level migration to talk directly to Python `/share/{token}` is component-agent scope; the route slot itself stays.
 
-### `app/(authenticated)/(admin-auth)/administration/blob-cache/` — CREATE
+### `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/` — CREATE
 
 Confirmed NOT present today (no `blob-cache` directory anywhere under `app/`). NEW admin observability route per plan §4A — created by the cache-layer agent. We're noting the route slot here so the parent layout chain knows about it. Will be gated by `selectIsSuperAdmin`.
 

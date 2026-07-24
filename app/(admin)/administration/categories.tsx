@@ -11,6 +11,7 @@ import { adminNavigationRegistry } from "@/features/admin/constants/admin-naviga
 
 export const adminNavigation = adminNavigationRegistry.map((domain) => ({
   name: domain.name,
+  slug: domain.slug,
   iconColor: domain.iconColor,
   icon: <IconResolver iconName={domain.iconName} className="w-6 h-6" />,
   sections: domain.sections.map((section) => ({

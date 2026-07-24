@@ -6,7 +6,7 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
 
 ## Entry point
 
-- Route: `/administration/relationships/actions` → `app/(admin)/administration/relationships/actions/page.tsx` — the **Actions tab of the Relationships hub** (the old `/administration/action-catalog` redirects via `next.config.js`). The hub layout owns viewport height: the page wrapper is `h-full`, never a `100dvh` calc.
+- Route: `/administration/agents/relationships/actions` → `app/(admin)/administration/agents/relationships/actions/page.tsx` — the **Actions tab of the Relationships hub** (the old `/administration/action-catalog` redirects via `next.config.js`). The hub layout owns viewport height: the page wrapper is `h-full`, never a `100dvh` calc.
 - **Gating:** the `(admin)` route group layout (`app/(admin)/layout.tsx`) enforces **super-admin** server-side. `ActionCatalogClient` carries the single, documented in-page gate (`selectIsAdmin`, any admin level) — the one place to lower to org-level admins later.
 
 ## Backend contract (do NOT rebuild)
@@ -48,7 +48,7 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
 ## Change Log
 
 - 2026-07-13 — Route moved into the Relationships hub as the Actions tab
-  (`/administration/relationships/actions`); old route deleted + redirected.
+  (`/administration/agents/relationships/actions`); old route deleted + redirected.
   `ActionCatalogClient` unchanged (zero route coupling).
 - 2026-07-04 — Added to admin dashboard catalog (Tool Registry). Release gate `pnpm check:admin-catalog` prevents future omissions.
 - 2026-07-01 — Type-safety: replaced 7 hand-written API interfaces with OpenAPI aliases

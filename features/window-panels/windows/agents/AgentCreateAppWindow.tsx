@@ -223,7 +223,7 @@ function CreateAppWindowBody({
 
   if (created) {
     const editorHref = publishAsGlobal
-      ? `/administration/agent-apps/edit/${created.id}`
+      ? `/administration/agents/agent-apps/edit/${created.id}`
       : `/agents/${agentId ?? ""}/apps/${created.id}`;
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-10 text-center px-6">

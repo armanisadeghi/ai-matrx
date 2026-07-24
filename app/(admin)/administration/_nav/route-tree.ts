@@ -13,7 +13,7 @@ import { MODULE_HOME, MODULE_NAME, filteredPages } from "../config";
 export interface AdminTreeNode {
   /** Single URL segment, e.g. "system-agents". */
   segment: string;
-  /** Absolute path, e.g. "/administration/system-agents". */
+  /** Absolute path, e.g. "/administration/agents/system-agents". */
   fullPath: string;
   /** Human label — feature title when the path is a registered page, else title-cased. */
   label: string;

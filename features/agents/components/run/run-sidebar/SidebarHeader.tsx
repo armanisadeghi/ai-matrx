@@ -18,7 +18,7 @@ interface SidebarHeaderProps {
   conversationIdFromUrl?: string;
   onToggleSidebar: () => void;
   /** Base path for back-link and agent-switch routing. Defaults to `/agents`.
-   *  Admin surfaces pass `/administration/system-agents/agents`. */
+   *  Admin surfaces pass `/administration/agents/system-agents/agents`. */
   basePath?: string;
   /** Optional explicit back-link href. Falls back to `basePath`. */
   backHref?: string;

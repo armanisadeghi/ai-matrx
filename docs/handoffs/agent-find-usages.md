@@ -14,7 +14,7 @@ short browser-verification tail — nothing needs new design.
 - `features/agents/FEATURE.md` → "Find Usages & Drift" (canonical detail).
 - Thunks: `features/agents/redux/usages/usages.thunks.ts` (calls `agx_usage_scan` / `agx_usage_report` RPCs); drift-only row filter in `usages.selectors.ts` (`userRowHasDrift` / `adminRowHasDrift`).
 - Engine UI: `features/agents/components/usages/AgentUsagesEngine.tsx`; windows in `features/window-panels/windows/agents/`.
-- Routes: `/reports/agent-drift` + `/administration/reports/agent-drift`; `/agents/admin`, `/reports/admin` maps.
+- Routes: `/reports/agent-drift` + `/administration/agents/reports/agent-drift`; `/agents/admin`, `/reports/admin` maps.
 - DB: `agent.usage` / `agent.drift_alert` (post schema-reorg) — RPC names unchanged. Weekly cron = `scheduler.sch_task` "Agent drift weekly scan" (Mondays 13:00 UTC; check `scheduler.sch_run`).
 - aidream: `aidream/services/agent_usage/{registry_sync,weekly_scan,drift_dm}.py`, `aidream/api/routers/agent_usage_admin.py` (`/agent-usage/{sync,scan,registry,report}`, super-admin bearer auth).
 - DM identities (both env-overridable, defaults in `drift_dm.py` + registered in aidream `REQUIRED_ENV`): sender = "Matrx System" bot `71b55cc0-f333-462f-8176-f558f866ea5d` (`system@aimatrx.com`, `MATRX_SYSTEM_DM_SENDER_USER_ID`); ownerless-usage recipient = platform operator `4cf62e4e-…` (`MATRX_PLATFORM_OPERATOR_USER_ID`). Never point the sender var at a human, and never route recipients to the bot.

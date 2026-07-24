@@ -15,9 +15,9 @@ A **Shortcut** is a stored, first-class invocation of a specific agent version t
 ## Entry points
 
 **Routes**
-- `app/(admin)/administration/system-agents/shortcuts/` — admin global shortcuts CRUD
-- `app/(admin)/administration/system-agents/shortcuts/all/` — admin directory of every shortcut (global + non-global), with filter/group-by and UUID jump
-- `app/(admin)/administration/system-agents/shortcuts/[shortcutId]/` — admin direct-open by UUID (resolves to agent-scoped or global editor)
+- `app/(admin)/administration/agents/system-agents/shortcuts/` — admin global shortcuts CRUD
+- `app/(admin)/administration/agents/system-agents/shortcuts/all/` — admin directory of every shortcut (global + non-global), with filter/group-by and UUID jump
+- `app/(admin)/administration/agents/system-agents/shortcuts/[shortcutId]/` — admin direct-open by UUID (resolves to agent-scoped or global editor)
 - `app/(core)/agents/shortcuts/` — user shortcuts CRUD
 - `app/(core)/agents/shortcuts/all/` — user directory across owned/administered scopes
 - `app/(core)/agents/shortcuts/[shortcutId]/` — user direct-open by UUID

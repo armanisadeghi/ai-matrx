@@ -2,9 +2,9 @@
 
 // features/scopes/components/active-context/LensChip.tsx
 //
-// THE Lens Chip trigger — colored scope-type dots + a count summary
-// ("2 scopes · 1 project"), or a muted "Set context" empty state. Pure
-// presentation: the host supplies the selection and what the click opens.
+// THE Lens Chip trigger — colored scope-type dots + a compact summary
+// ("PBW · 2 scopes · 1 project"), or a muted "Set context" empty state.
+// Pure presentation: the host supplies the selection and what the click opens.
 //
 // Promoted from /demos/scopes/context-lab/reimagine (T2). Identical UI;
 // Surface-A wiring lives in ActiveContextLensChip.
@@ -20,6 +20,8 @@ export type LensChipKind =
 /** Minimal node the chip needs — kind for the summary, optional swatch class. */
 export interface LensChipNode {
   kind: LensChipKind;
+  /** Compact identity shown individually for an organization node. */
+  label?: string;
   /** Tailwind swatch class from resolveColor (e.g. `bg-blue-500`). */
   colorSwatch?: string;
 }
@@ -33,7 +35,7 @@ export interface LensChipProps {
   className?: string;
 }
 
-/** Compact human summary, e.g. "2 scopes · 1 project". */
+/** Compact human summary, e.g. "ME · PBW · 2 scopes · 1 project". */
 export function summarizeLensSelection(nodes: LensChipNode[]): string {
   if (nodes.length === 0) return "";
   const counts = new Map<LensChipKind, number>();
@@ -54,11 +56,28 @@ export function summarizeLensSelection(nodes: LensChipNode[]): string {
     "project",
     "task",
   ];
-  return order
-    .filter((k) => counts.has(k))
-    .map((k) => {
+  return order.flatMap((k) => {
+    if (!counts.has(k)) return [];
+    if (k === "org") {
+      const labels = nodes
+        .filter((node) => node.kind === "org")
+        .map((node) => node.label?.trim())
+        .filter((label): label is string => Boolean(label));
+      const unlabeledCount = (counts.get(k) ?? 0) - labels.length;
+      return [
+        ...labels,
+        ...(unlabeledCount > 0
+          ? [
+              `${unlabeledCount} ${
+                plural[k][unlabeledCount === 1 ? 0 : 1]
+              }`,
+            ]
+          : []),
+      ];
+    }
+
       const c = counts.get(k) ?? 0;
-      return `${c} ${plural[k][c === 1 ? 0 : 1]}`;
+      return [`${c} ${plural[k][c === 1 ? 0 : 1]}`];
     })
     .join(" · ");
 }

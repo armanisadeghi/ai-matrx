@@ -50,7 +50,7 @@ export default function EntityRelationshipOrbitWindow({
           title="Open full page"
           onClick={() => {
             router.push(
-              `/administration/relationships/explorer/${activeToken}`,
+              `/administration/database/relationships/explorer/${activeToken}`,
             );
             onClose();
           }}

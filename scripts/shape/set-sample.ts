@@ -26,7 +26,7 @@
  *      CLI entry — see scripts/shape/check-shapes.ts), so the import is
  *      dynamic and guarded; when it can't run, the script says so honestly.
  *      `is_active` is NEVER written here — activation stays with the Gate on
- *      /administration/kind-registry.
+ *      /administration/utilities/kind-registry.
  *
  * Exit codes: 0 ok · 1 kind missing / validation failed / bad sample ·
  * 2 usage / env / infrastructure error.
@@ -154,7 +154,7 @@ async function attemptRenderLeg(
   sample: unknown,
   emittedJsonSchema: unknown,
 ): Promise<void> {
-  const honest = `structural leg passed; render leg unavailable in CLI — run the Gate on /administration/kind-registry/${kind}. is_active NOT changed.`;
+  const honest = `structural leg passed; render leg unavailable in CLI — run the Gate on /administration/utilities/kind-registry/${kind}. is_active NOT changed.`;
 
   if (!isPlainObject(sample)) {
     console.log(`\n${C.yellow}${honest}${C.reset}`);
@@ -191,7 +191,7 @@ async function attemptRenderLeg(
     );
     if (result.render.detail) console.log(`${C.dim}  render note: ${result.render.detail}${C.reset}`);
     console.log(
-      `${C.dim}  is_active NOT changed by this CLI — activation stays with the Gate on /administration/kind-registry/${kind}.${C.reset}`,
+      `${C.dim}  is_active NOT changed by this CLI — activation stays with the Gate on /administration/utilities/kind-registry/${kind}.${C.reset}`,
     );
   } else {
     box(
@@ -199,7 +199,7 @@ async function attemptRenderLeg(
         `RENDER LEG FAILED for "${kind}"`,
         result.render.detail ?? "no detail",
         "is_active NOT changed. Fix the bridge/sample, then run the Gate on",
-        `/administration/kind-registry/${kind}.`,
+        `/administration/utilities/kind-registry/${kind}.`,
       ],
       C.red,
     );

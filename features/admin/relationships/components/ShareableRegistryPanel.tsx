@@ -490,7 +490,7 @@ export function ShareableRegistryPanel({
             label: "Shareable resource",
             listLabel: "Shareable resource registry (this view)",
             location:
-              "AI Matrx Admin — Relationship Manager (/administration/relationships)",
+              "AI Matrx Admin — Relationship Manager (/administration/database/relationships)",
             rowKind: "shareable-resource",
             listKind: "shareable-resources",
             rowDescription:

@@ -23,8 +23,8 @@ A **metadata-only registry** (`registry.ts`, the spirit of the feature admin map
 **Routes**
 - `app/(core)/reports/page.tsx` — user landing (card grid over the registry).
 - `app/(core)/reports/agent-drift/page.tsx` — Agent Drift (user scope).
-- `app/(admin)/administration/reports/page.tsx` — admin landing (reports with an `adminHref`). Super-admin gated by the `(admin)` layout.
-- `app/(admin)/administration/reports/agent-drift/page.tsx` — Agent Drift (platform-wide).
+- `app/(admin)/administration/reporting/reports/page.tsx` — admin landing (reports with an `adminHref`). Super-admin gated by the `(admin)` layout.
+- `app/(admin)/administration/agents/reports/agent-drift/page.tsx` — Agent Drift (platform-wide).
 - `app/(core)/reports/admin/page.tsx` — the feature admin map (`/reports/admin`).
 
 **Components**

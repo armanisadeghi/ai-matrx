@@ -475,8 +475,8 @@ NEW hooks in `features/files/hooks/` introduced by PR3: `useFile.ts`, `useFileSr
 | File | Lines | Current behavior | Action | What changes |
 |---|---|---|---|---|
 | app/(public)/share/[token]/page.tsx | 205 | share-link viewer; embeds FilePreview | MODIFY | pass `{ kind: "share_link", token }` ref; otherwise unchanged |
-| app/(authenticated)/(admin-auth)/administration/feedback/components/FeedbackDetailDialog.tsx | — | renders feedback images; imports from file-handler | MODIFY | retarget import + `<InlineMediaRef>` |
-| app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-upload-field.tsx | 103 | demo of upload field | MODIFY | follows ImageUploadField change |
+| app/(authenticated)/(admin-auth)/administration/users/feedback/components/FeedbackDetailDialog.tsx | — | renders feedback images; imports from file-handler | MODIFY | retarget import + `<InlineMediaRef>` |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-upload-field.tsx | 103 | demo of upload field | MODIFY | follows ImageUploadField change |
 | app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx | 1027 | debug page; references `publicUrl`/`signedUrl`/raw fetches | MODIFY | switch displays to `<InlineMediaRef>` + show `assetsByMasterId` cache state |
 | app/(dev)/demos/pdf-processing/render-thumbnail/page.tsx | 103 | render-thumb demo | MODIFY | use new previewer pipeline |
 | app/Providers.tsx | — | mounts `<CloudFilesRealtimeProvider>` once | MODIFY | structural mount move (plan §6.6) |
@@ -492,9 +492,9 @@ NEW hooks in `features/files/hooks/` introduced by PR3: `useFile.ts`, `useFileSr
 
 The following files matched a tag scan but are not in scope (they render unrelated `<img>` / `<video>` / `<audio>` — e.g. UI scaffolding, flash-card images, oauth-icons, prompt-app legacy UI, error pages, applet builder/home variants, official-component demos, error overlays, etc.). All KEEP:
 
-- `app/(authenticated)/(admin-auth)/administration/official-components/parts/component-list.tsx`
-- `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/paste-image-handler.tsx`
-- `app/(authenticated)/(admin-auth)/administration/official-components/to-be-added/toggle-menu-demo/toggle-with-categories/constants.tsx`
+- `app/(authenticated)/(admin-auth)/administration/ui/official-components/parts/component-list.tsx`
+- `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/paste-image-handler.tsx`
+- `app/(authenticated)/(admin-auth)/administration/ui/official-components/to-be-added/toggle-menu-demo/toggle-with-categories/constants.tsx`
 - `app/(authenticated)/ai/prompts/experimental/chatbot-customizer/page.tsx`
 - `app/(authenticated)/flash-cards/fast-fire/{FastFireContainer,FastFirePractice,page}.tsx`
 - `app/(authenticated)/tests/applet-tests/applet-builder-3/components/steps/IntelligenceStep.tsx`
@@ -578,4 +578,4 @@ The following files matched a tag scan but are not in scope (they render unrelat
 7. **`PdfAnnotationLayer/`** files in `features/files/components/core/` — couldn't enumerate contents from one grep; confirm these stay as MODIFY (ref-based) or KEEP (annotation overlay on top of an already-resolved PDF).
 8. **`features/audio/components/AudioRecoveryModal.tsx`** — references the `audioSafetyStore` (IndexedDB crash-recovery), not `cld_files`. Should it still render via the new handler once recovered, or stay on its dedicated path (per file-handler FEATURE.md's "deliberately does NOT own" list)?
 9. **`features/files/components/core/FilePreview/preview-actions.ts`** — currently builds copy-URL / open-in / download handlers; depends on `useFileSrc`-style helpers. Confirm migrate alongside `useFileActions.ts` (also a hit).
-10. **The `app/(authenticated)/(admin-auth)/administration/blob-cache/page.tsx`** doesn't exist yet (per plan §4A). Confirm this is created in PR3 step 23 and not part of this read-path inventory (it's new code, not a migration).
+10. **The `app/(authenticated)/(admin-auth)/administration/utilities/blob-cache/page.tsx`** doesn't exist yet (per plan §4A). Confirm this is created in PR3 step 23 and not part of this read-path inventory (it's new code, not a migration).

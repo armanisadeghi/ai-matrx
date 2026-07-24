@@ -132,7 +132,7 @@ Routes whose page.tsx currently imports a legacy feature and **has no agent-syst
 | `/prompt-apps`, `/prompt-apps/[id]`, `/prompt-apps/new`, `/prompt-apps/templates`, `/prompt-apps/templates/[mode]` | `features/prompt-apps/` | Partial — `/agent-apps` admin exists but the public `/p/[slug]` resolves agent-apps first; `/prompt-apps/[id]` editor still uses `AICodeEditor` (Phase 6 blocker) |
 | `/ai/prompts*` (list, new, edit, run, view, templates, compare, edit-redux, experimental/*) | `features/prompts/` | `/agents` covers list/new/edit/run; experimental routes have no equivalent |
 | `/ssr/prompts/*` | SSR mirror of `/ai/prompts/` | `/demos/chat/a/[agentId]` only covers chat |
-| `/administration/prompt-builtins/*`, `/administration/shortcut-categories/`, `/administration/prompt-apps/` | `features/prompt-builtins/` | `/administration/system-agents/shortcuts` covers shortcut admin; builtins admin has no agent equivalent |
+| `/administration/prompt-builtins/*`, `/administration/shortcut-categories/`, `/administration/prompt-apps/` | `features/prompt-builtins/` | `/administration/agents/system-agents/shortcuts` covers shortcut admin; builtins admin has no agent equivalent |
 | `/layout-tests/prompt-input` | `features/prompts/` | None — test route |
 
 **Three of these are linked from primary nav** (`nav-data.ts`): `/prompt-apps`, `/ai/prompts` ("Prompt Builder"), `/applets`. Removing them without redirects breaks the sidebar.

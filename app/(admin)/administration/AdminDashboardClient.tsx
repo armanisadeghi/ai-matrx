@@ -1,12 +1,14 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
-import { IconChevronRight, IconList, IconSearch } from "@tabler/icons-react";
+import { useState } from "react";
+import { IconList, IconSearch } from "@tabler/icons-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import FeatureSectionLinkComponent from "@/components/animated/my-custom-demos/feature-section-link-component";
 import { Input } from "@/components/ui/input";
-import { adminNavigation } from "@/app/(admin)/administration/categories";
+import { AdminDomainSection } from "@/features/admin/components/AdminDomainDirectory";
+import {
+  adminNavigationRegistry,
+  type AdminNavigationDestination,
+} from "@/features/admin/constants/admin-navigation";
 import { matchesSearch } from "@/utils/search-scoring";
 import {
   buildRouteSearchRows,
@@ -17,18 +19,12 @@ import {
   isRouteCataloged,
   normalizeCatalogLink,
 } from "@/features/admin/utils/admin-route-catalog";
-import { adminDomainHref } from "@/features/admin/constants/admin-navigation";
-
-type AdminDomain = (typeof adminNavigation)[number];
-type AdminSection = AdminDomain["sections"][number];
-type AdminDestination = AdminSection["destinations"][number];
-
-interface SearchDestination extends AdminDestination {
+interface SearchDestination extends AdminNavigationDestination {
   domainName: string;
   sectionName: string;
 }
 
-const flatDestinations: SearchDestination[] = adminNavigation.flatMap(
+const flatDestinations: SearchDestination[] = adminNavigationRegistry.flatMap(
   (domain) =>
     domain.sections.flatMap((section) =>
       section.destinations.map((item) => ({
@@ -63,111 +59,16 @@ const destinationSearchFields = [
   },
 ];
 
-function domainDestinationCount(domain: AdminDomain): number {
-  return domain.sections.reduce(
-    (count, section) => count + section.destinations.length,
-    0,
-  );
-}
-
-function getDomainBgClass(iconColor?: string) {
-  const colorMap: Record<string, string> = {
-    "text-amber-600": "bg-amber-500 dark:bg-amber-600",
-    "text-blue-600": "bg-blue-500 dark:bg-blue-600",
-    "text-indigo-600": "bg-indigo-500 dark:bg-indigo-600",
-    "text-purple-600": "bg-purple-500 dark:bg-purple-600",
-    "text-green-600": "bg-green-500 dark:bg-green-600",
-    "text-cyan-600": "bg-cyan-500 dark:bg-cyan-600",
-    "text-pink-600": "bg-pink-500 dark:bg-pink-600",
-    "text-orange-600": "bg-orange-500 dark:bg-orange-600",
-    "text-red-600": "bg-red-500 dark:bg-red-600",
-    "text-teal-600": "bg-teal-500 dark:bg-teal-600",
-    "text-violet-600": "bg-violet-500 dark:bg-violet-600",
-    "text-rose-600": "bg-rose-500 dark:bg-rose-600",
-    "text-sky-600": "bg-sky-500 dark:bg-sky-600",
-    "text-emerald-600": "bg-emerald-500 dark:bg-emerald-600",
-    "text-lime-600": "bg-lime-500 dark:bg-lime-600",
-  };
-  return colorMap[iconColor ?? "text-blue-600"] ?? "bg-blue-500 dark:bg-blue-600";
-}
-
 interface AdminDashboardClientProps {
   /** All filesystem routes under /administration (from server scan). */
   filesystemRoutes: string[];
 }
 
-function DomainView({ domain }: { domain: AdminDomain }) {
-  return (
-    <div className="h-full w-full overflow-y-auto bg-textured">
-      <div className="w-full px-4 py-5">
-        <Link
-          href="/administration"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-primary"
-        >
-          <IconChevronRight className="h-4 w-4 rotate-180" />
-          All domains
-        </Link>
-
-        <div className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-          <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${getDomainBgClass(domain.iconColor)}`}
-          >
-            {domain.icon}
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-foreground">
-              {domain.name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {domain.sections.length} section
-              {domain.sections.length === 1 ? "" : "s"} ·{" "}
-              {domainDestinationCount(domain)} destinations
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {domain.sections.map((section) => (
-            <section key={section.name}>
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-                <span className="flex h-6 w-6 items-center justify-center text-muted-foreground [&>svg]:h-4 [&>svg]:w-4">
-                  {section.icon}
-                </span>
-                <h2>{section.name}</h2>
-                <span className="text-xs font-normal text-muted-foreground">
-                  {section.destinations.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {section.destinations.map((item, index) => (
-                  <FeatureSectionLinkComponent
-                    key={item.link}
-                    title={item.title}
-                    description={item.description}
-                    icon={item.icon}
-                    index={index}
-                    link={item.link}
-                    isNew={item.isNew}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
-  const searchParams = useSearchParams();
-  const selectedDomainName = searchParams.get("domain");
+export default function AdminDashboardClient({
+  filesystemRoutes,
+}: AdminDashboardClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const normalizedQuery = searchQuery.trim().toLowerCase();
-
-  const selectedDomain = selectedDomainName
-    ? adminNavigation.find((domain) => domain.name === selectedDomainName)
-    : undefined;
 
   const searchResults = (() => {
     if (!normalizedQuery) return [];
@@ -193,8 +94,6 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
     });
   })();
 
-  if (selectedDomain) return <DomainView domain={selectedDomain} />;
-
   return (
     <div className="h-full w-full overflow-y-auto">
       <div className="w-full bg-neutral-100 px-4 py-4 dark:bg-neutral-900">
@@ -214,7 +113,7 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
           </div>
 
           <Link
-            href="/administration/all-routes"
+            href="/administration/utilities/all-routes"
             className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-primary"
           >
             <IconList className="h-4 w-4" />
@@ -286,74 +185,13 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
               )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {adminNavigation.map((domain) => (
-              <div
-                key={domain.name}
-                className="group relative rounded-lg bg-white p-4 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl dark:bg-neutral-800"
-              >
-                <Link
-                  href={adminDomainHref(domain.name)}
-                  aria-label={`Open ${domain.name} administration`}
-                  className="absolute inset-0 z-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <div className="pointer-events-none relative z-10 mb-3 flex items-center gap-3">
-                  <div
-                    className={`rounded-lg p-3 text-white ${getDomainBgClass(domain.iconColor)}`}
-                  >
-                    {domain.icon}
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="truncate text-lg font-semibold transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-400">
-                      {domain.name}
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      {domain.sections.length} section
-                      {domain.sections.length === 1 ? "" : "s"} ·{" "}
-                      {domainDestinationCount(domain)} destinations
-                    </p>
-                  </div>
-                </div>
-                <div className="relative z-10 space-y-1">
-                  {domain.sections.slice(0, 6).map((section) => (
-                    <Link
-                      key={section.name}
-                      href={adminDomainHref(domain.name)}
-                      className="flex h-6 items-center gap-2 rounded-sm text-sm text-gray-600 transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-gray-300 dark:hover:text-blue-400"
-                    >
-                      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center opacity-80 [&>svg]:h-3.5 [&>svg]:w-3.5">
-                        {section.icon}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate">
-                        {section.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {section.destinations.length}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+          <div className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
+            {adminNavigationRegistry.map((domain) => (
+              <AdminDomainSection key={domain.slug} domain={domain} />
             ))}
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-export default function AdminDashboardClient({
-  filesystemRoutes,
-}: AdminDashboardClientProps) {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-          Loading administration…
-        </div>
-      }
-    >
-      <AdminPageContent filesystemRoutes={filesystemRoutes} />
-    </Suspense>
   );
 }

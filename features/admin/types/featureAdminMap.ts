@@ -114,7 +114,7 @@ export interface FeatureAdminDocLink {
   label: string;
   /**
    * Either a repo-relative path to a `.md` file (rendered via
-   * `/administration/feature-docs/view/<path>`) or an absolute external URL. The admin page
+   * `/administration/documentation/feature-docs/view/<path>`) or an absolute external URL. The admin page
    * detects which and routes accordingly. All doc links open in a new tab.
    */
   href: string;

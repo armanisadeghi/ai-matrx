@@ -117,7 +117,7 @@ export function ToolEditPage({ tool }: Props) {
         throw new Error(err.error || "Failed to save");
       }
       toast({ title: "Saved", description: "Tool updated successfully" });
-      navigateTo(`/administration/mcp-tools/${tool.id}`);
+      navigateTo(`/administration/agents/mcp-tools/${tool.id}`);
     } catch (err) {
       toast({
         title: "Save failed",
@@ -344,7 +344,7 @@ export function ToolEditPage({ tool }: Props) {
     <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-border bg-background">
       <Button
         variant="outline"
-        onClick={() => navigateTo(`/administration/mcp-tools/${tool.id}`)}
+        onClick={() => navigateTo(`/administration/agents/mcp-tools/${tool.id}`)}
         disabled={isSaving || isPending}
       >
         Cancel
@@ -371,7 +371,7 @@ export function ToolEditPage({ tool }: Props) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigateTo(`/administration/mcp-tools/${tool.id}`)}
+          onClick={() => navigateTo(`/administration/agents/mcp-tools/${tool.id}`)}
           disabled={isPending}
           className="gap-1.5 h-8"
         >

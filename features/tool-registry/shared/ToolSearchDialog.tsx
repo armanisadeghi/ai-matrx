@@ -23,7 +23,7 @@ import type { Database } from "@/types/database.types";
  * source_kind renders its badge, category drives grouping).
  */
 export interface ToolSearchOption {
-  /** `tool_def.id` when known — enables the /administration/mcp-tools link. */
+  /** `tool_def.id` when known — enables the /administration/agents/mcp-tools link. */
   id?: string;
   name: string;
   display_name?: string | null;
@@ -225,7 +225,7 @@ export function ToolSearchDialog({
                               <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                                 {tool.id ? (
                                   <Link
-                                    href={`/administration/mcp-tools/${tool.id}`}
+                                    href={`/administration/agents/mcp-tools/${tool.id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-xs font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 min-w-0 max-w-full"

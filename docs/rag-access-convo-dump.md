@@ -1,6 +1,6 @@
 From agent:
 
-You're right to push for the platform path. I checked `/administration/relationships` and the live DB. Here's the honest picture.
+You're right to push for the platform path. I checked `/administration/database/relationships` and the live DB. Here's the honest picture.
 
 ## Your model is the right one
 
@@ -126,7 +126,7 @@ AMA live chunk kinds already under that file: text, fine/coarse, table, table_ro
 - **Not “we mis-set one Conveys toggle”** — the graph for this tree was never built.  
 - **Agree:** don’t patch Source Inspector as the long-term fix; finish the relationship graph so the DB cascade owns it.
 
-Next concrete step (your call): I can draft the **exact relationship rows** (source/target/Conveys) for the core tree only, plus what must be registered in `entity_types` — still no app exception code — for you to confirm in `/administration/relationships` before anything is applied.
+Next concrete step (your call): I can draft the **exact relationship rows** (source/target/Conveys) for the core tree only, plus what must be registered in `entity_types` — still no app exception code — for you to confirm in `/administration/database/relationships` before anything is applied.
 
 ---
 Follow up:

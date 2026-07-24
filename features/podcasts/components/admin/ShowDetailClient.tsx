@@ -87,7 +87,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
       const params = new URLSearchParams(searchParams.toString());
       params.set("panel", value);
       router.replace(
-        `/administration/podcasts/shows/${showId}?${params.toString()}`,
+        `/administration/knowledge/podcasts/shows/${showId}?${params.toString()}`,
       );
     });
   };
@@ -118,7 +118,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
     // After creating a new show, redirect to its real route
     if (isNew) {
       startTransition(() =>
-        router.replace(`/administration/podcasts/shows/${saved.id}?panel=show`),
+        router.replace(`/administration/knowledge/podcasts/shows/${saved.id}?panel=show`),
       );
     }
   };
@@ -138,7 +138,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
   };
 
   const back = () =>
-    startTransition(() => router.push("/administration/podcasts/shows"));
+    startTransition(() => router.push("/administration/knowledge/podcasts/shows"));
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -233,7 +233,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                 onClick={() =>
                   startTransition(() =>
                     router.push(
-                      `/administration/podcasts/shows/${showId}/episodes/new`,
+                      `/administration/knowledge/podcasts/shows/${showId}/episodes/new`,
                     ),
                   )
                 }
@@ -253,7 +253,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                   onClick={() =>
                     startTransition(() =>
                       router.push(
-                        `/administration/podcasts/shows/${showId}/episodes/new`,
+                        `/administration/knowledge/podcasts/shows/${showId}/episodes/new`,
                       ),
                     )
                   }
@@ -271,7 +271,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                     onClick={() =>
                       startTransition(() =>
                         router.push(
-                          `/administration/podcasts/shows/${showId}/episodes/${ep.id}`,
+                          `/administration/knowledge/podcasts/shows/${showId}/episodes/${ep.id}`,
                         ),
                       )
                     }
@@ -331,7 +331,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                           e.stopPropagation();
                           startTransition(() =>
                             router.push(
-                              `/administration/podcasts/shows/${showId}/episodes/${ep.id}`,
+                              `/administration/knowledge/podcasts/shows/${showId}/episodes/${ep.id}`,
                             ),
                           );
                         }}

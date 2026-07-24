@@ -24,13 +24,13 @@ const MAIN_TABS: {
   zone: FeatureDocZone | "hub";
 }[] = [
   {
-    href: "/administration/feature-docs/codebase",
+    href: "/administration/documentation/feature-docs/codebase",
     label: "Codebase",
     zone: "codebase",
   },
-  { href: "/administration/feature-docs/docs", label: "Docs", zone: "docs" },
+  { href: "/administration/documentation/feature-docs/docs", label: "Docs", zone: "docs" },
   {
-    href: "/administration/feature-docs/dotdirs",
+    href: "/administration/documentation/feature-docs/dotdirs",
     label: "Tooling dirs",
     zone: "dotdir",
   },
@@ -50,7 +50,7 @@ export default function FeatureDocsShell({
       <header className="border-b border-border px-4 py-3 shrink-0 space-y-2">
         <div className="flex items-baseline gap-2 flex-wrap">
           <Link
-            href="/administration/feature-docs"
+            href="/administration/documentation/feature-docs"
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             Feature Docs
@@ -87,7 +87,7 @@ export default function FeatureDocsShell({
         {zone === "dotdir" && (
           <nav className="flex flex-wrap items-center gap-1 pt-1 border-t border-border/60">
             {FEATURE_DOC_DOT_DIRS.map((dir) => {
-              const href = `/administration/feature-docs/dotdirs/${dotDirRouteSlug(dir)}`;
+              const href = `/administration/documentation/feature-docs/dotdirs/${dotDirRouteSlug(dir)}`;
               const active = dotDir === dir || pathname === href;
               return (
                 <Link

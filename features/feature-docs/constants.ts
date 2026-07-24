@@ -18,7 +18,7 @@ export type FeatureDocDotDir = (typeof FEATURE_DOC_DOT_DIRS)[number];
 
 export type FeatureDocZone = "codebase" | "docs" | "dotdir";
 
-/** URL slug under /administration/feature-docs/dotdirs/[slug] (no leading dot). */
+/** URL slug under /administration/documentation/feature-docs/dotdirs/[slug] (no leading dot). */
 export const DOT_DIR_ROUTE_SLUG: Record<string, FeatureDocDotDir> =
   Object.fromEntries(
     FEATURE_DOC_DOT_DIRS.map((d) => [d.slice(1), d]),

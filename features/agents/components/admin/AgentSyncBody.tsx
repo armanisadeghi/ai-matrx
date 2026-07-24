@@ -52,7 +52,7 @@ import Link from "next/link";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
 
-const SYSTEM_AGENT_ADMIN_BASE_PATH = "/administration/system-agents/agents";
+const SYSTEM_AGENT_ADMIN_BASE_PATH = "/administration/agents/system-agents/agents";
 const USER_AGENT_BASE_PATH = "/agents";
 
 interface AgentSyncBodyProps {

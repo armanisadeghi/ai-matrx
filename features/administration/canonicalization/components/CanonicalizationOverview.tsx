@@ -221,46 +221,46 @@ export function CanonicalizationOverview() {
               label="Not certified"
               value={overview.notCertifiedTables}
               tone="bad"
-              href="/administration/canonicalization/summary"
+              href="/administration/database/canonicalization/summary"
             />
             <KpiTile
               icon={ShieldAlert}
               label="Total FAIL checks"
               value={overview.totalFails}
               tone="bad"
-              href="/administration/canonicalization/findings?status=FAIL"
+              href="/administration/database/canonicalization/findings?status=FAIL"
             />
             <KpiTile
               icon={AlertTriangle}
               label="Total WARN checks"
               value={overview.totalWarns}
               tone="warn"
-              href="/administration/canonicalization/findings?status=WARN"
+              href="/administration/database/canonicalization/findings?status=WARN"
             />
             <KpiTile
               icon={GitBranch}
               label="Broken functions"
               value={overview.brokenFunctionCount}
               tone={overview.brokenFunctionCount > 0 ? "bad" : "good"}
-              href="/administration/canonicalization/broken-functions"
+              href="/administration/database/canonicalization/broken-functions"
             />
             <KpiTile
               icon={ShieldQuestion}
               label="M2M candidates"
               value={overview.m2mCandidateCount}
-              href="/administration/canonicalization/candidates"
+              href="/administration/database/canonicalization/candidates"
             />
             <KpiTile
               icon={ShieldQuestion}
               label="Unregistered candidates"
               value={overview.unregisteredCandidateCount}
-              href="/administration/canonicalization/candidates"
+              href="/administration/database/canonicalization/candidates"
             />
             <KpiTile
               icon={ShieldQuestion}
               label="Stale registry rows"
               value={overview.staleRegistryCount}
-              href="/administration/canonicalization/candidates"
+              href="/administration/database/canonicalization/candidates"
             />
           </div>
 
@@ -290,7 +290,7 @@ export function CanonicalizationOverview() {
               <li>
                 Run{" "}
                 <Link
-                  href="/administration/canonicalization/verify"
+                  href="/administration/database/canonicalization/verify"
                   className="text-primary hover:underline"
                 >
                   Verify
@@ -300,7 +300,7 @@ export function CanonicalizationOverview() {
               <li>
                 Run{" "}
                 <Link
-                  href="/administration/canonicalization/table-impact"
+                  href="/administration/database/canonicalization/table-impact"
                   className="text-primary hover:underline"
                 >
                   Table impact

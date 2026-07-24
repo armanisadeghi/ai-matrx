@@ -4,7 +4,7 @@
 //
 // The framework is registry-driven so integrity auditing is NOT a one-time
 // script: every check is a declarative definition, run on demand from the
-// admin UI (`/administration/data-integrity`) and from CI/cron via
+// admin UI (`/administration/database/data-integrity`) and from CI/cron via
 // `scripts/check-data-integrity.ts`. Adding a new invariant = adding one entry
 // to `checks.ts` — both surfaces pick it up automatically.
 //

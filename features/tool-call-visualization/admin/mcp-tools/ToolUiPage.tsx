@@ -122,7 +122,7 @@ export function ToolUiPage({ tool }: Props) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigateTo(`/administration/mcp-tools/${tool.id}`)}
+          onClick={() => navigateTo(`/administration/agents/mcp-tools/${tool.id}`)}
           disabled={isPending}
           className="gap-1.5 h-8"
         >

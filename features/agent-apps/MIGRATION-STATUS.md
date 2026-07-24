@@ -78,11 +78,11 @@ One-time SQL: [migrations/migrate_prompt_apps_to_aga_apps.sql](../../migrations/
 | `GET /api/public/agent-apps/response/[taskId]` | ⚠️ DEPRECATED (same reason). |
 | Table-name rename: 18 `.from("agent_apps")` → `.from("aga_apps")` | ✅ | swept across `app/`, `features/`, `lib/` |
 
-### 1.5 Admin UI (`/administration/agent-apps/`)
+### 1.5 Admin UI (`/administration/agents/agent-apps/`)
 
 | Surface | Status | File |
 |---|---|---|
-| Tabbed layout (Dashboard / Apps / Categories / Executions) | ✅ | [app/(authenticated)/(admin-auth)/administration/agent-apps/layout.tsx](../../app/(authenticated)/(admin-auth)/administration/agent-apps/layout.tsx) |
+| Tabbed layout (Dashboard / Apps / Categories / Executions) | ✅ | [app/(authenticated)/(admin-auth)/administration/agents/agent-apps/layout.tsx](../../app/(authenticated)/(admin-auth)/administration/agents/agent-apps/layout.tsx) |
 | Dashboard with stats + featured grid + recently-updated grid | ✅ | `page.tsx` |
 | Apps table with filters (name/slug/status/category/featured/verified/creator) + 8-column sort + row-level toggles | ✅ | `apps/page.tsx` |
 | Categories CRUD (sidebar + detail, sort reorder, AlertDialog delete) | ✅ | `categories/page.tsx` |
@@ -144,9 +144,9 @@ One-time SQL: [migrations/migrate_prompt_apps_to_aga_apps.sql](../../migrations/
 
 | Surface | Files |
 |---|---|
-| Analytics | [administration/agent-apps/analytics/page.tsx](../../app/(authenticated)/(admin-auth)/administration/agent-apps/analytics/page.tsx) — uses the aggregate counters on every `aga_apps` row (`total_executions`, `total_cost`, `success_rate`, etc). Overview cards on top, per-app cards below. Execution-weighted overall success rate. |
-| Rate Limits | [administration/agent-apps/rate-limits/page.tsx](../../app/(authenticated)/(admin-auth)/administration/agent-apps/rate-limits/page.tsx) + [RateLimitsClient.tsx](../../app/(authenticated)/(admin-auth)/administration/agent-apps/rate-limits/RateLimitsClient.tsx) — duplicated from prompt-apps `RateLimitsAdmin.tsx`, retargeted to `aga_rate_limits` via `fetchAgentAppRateLimits` / `unblockAgentAppRateLimit`. |
-| Layout nav | [AgentAppsAdminLayoutClient.tsx](../../app/(authenticated)/(admin-auth)/administration/agent-apps/AgentAppsAdminLayoutClient.tsx) extended with Analytics + Rate Limits tabs. |
+| Analytics | [administration/agent-apps/analytics/page.tsx](../../app/(authenticated)/(admin-auth)/administration/agents/agent-apps/analytics/page.tsx) — uses the aggregate counters on every `aga_apps` row (`total_executions`, `total_cost`, `success_rate`, etc). Overview cards on top, per-app cards below. Execution-weighted overall success rate. |
+| Rate Limits | [administration/agent-apps/rate-limits/page.tsx](../../app/(authenticated)/(admin-auth)/administration/agents/agent-apps/rate-limits/page.tsx) + [RateLimitsClient.tsx](../../app/(authenticated)/(admin-auth)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx) — duplicated from prompt-apps `RateLimitsAdmin.tsx`, retargeted to `aga_rate_limits` via `fetchAgentAppRateLimits` / `unblockAgentAppRateLimit`. |
+| Layout nav | [AgentAppsAdminLayoutClient.tsx](../../app/(authenticated)/(admin-auth)/administration/agents/agent-apps/AgentAppsAdminLayoutClient.tsx) extended with Analytics + Rate Limits tabs. |
 
 ## 1.12 Block 6 — Convenience polish
 
@@ -262,8 +262,8 @@ those two thunks can stay stubbed until then.
 
 | # | Gap | Source to copy | Target |
 |---|---|---|---|
-| I1 | Admin **rate-limits override** UI — DB columns exist, no UI to set per-app limits or temporary blocks. | [.../administration/prompt-apps/components/RateLimitsAdmin.tsx](../../app/(authenticated)/(admin-auth)/administration/prompt-apps/components/RateLimitsAdmin.tsx) | `.../administration/agent-apps/rate-limits/page.tsx` |
-| I2 | Admin **analytics dashboard** — current admin shows summary tiles only; prompt-apps has a full insights tab. | [AnalyticsAdmin.tsx](../../app/(authenticated)/(admin-auth)/administration/prompt-apps/components/AnalyticsAdmin.tsx) | `.../administration/agent-apps/analytics/page.tsx` |
+| I1 | Admin **rate-limits override** UI — DB columns exist, no UI to set per-app limits or temporary blocks. | [.../administration/prompt-apps/components/RateLimitsAdmin.tsx](../../app/(authenticated)/(admin-auth)/administration/prompt-apps/components/RateLimitsAdmin.tsx) | `.../administration/agents/agent-apps/rate-limits/page.tsx` |
+| I2 | Admin **analytics dashboard** — current admin shows summary tiles only; prompt-apps has a full insights tab. | [AnalyticsAdmin.tsx](../../app/(authenticated)/(admin-auth)/administration/prompt-apps/components/AnalyticsAdmin.tsx) | `.../administration/agents/agent-apps/analytics/page.tsx` |
 | I3 | Admin **errors-tab parity** — confirm `aga_errors` rows surface in the existing executions tab; if not, port [ErrorsAdmin.tsx](../../app/(authenticated)/(admin-auth)/administration/prompt-apps/components/ErrorsAdmin.tsx). | as needed | as needed |
 | I4 | `/agents/[id]/apps` agent-context view — currently a placeholder linking to legacy App Builder. Now trivially wireable: query `aga_apps WHERE agent_id = :id` and render via `AgentAppsGrid`. | [app/(a)/agents/[id]/apps/page.tsx](../../app/(a)/agents/[id]/apps/page.tsx) (placeholder) + [features/agents/components/apps/AgentAppsPanel.tsx](../agents/components/apps/AgentAppsPanel.tsx) (placeholder) | rewrite both to query `aga_apps` directly |
 | I5 | DELETE `/api/agent-apps/[id]` ownership check — currently relies on RLS only; prompt-apps version uses `.eq("user_id", user.id)` as belt-and-suspenders. | [app/api/prompt-apps/[id]/route.ts](../../app/api/prompt-apps/[id]/route.ts) | one-line addition to existing route |
@@ -298,7 +298,7 @@ those two thunks can stay stubbed until then.
    - `/agent-apps/templates` and `/agent-apps/templates/{form,chat,form-to-chat,centered-input,chat-with-history}`
    - `/agents/<some-agent-id>/apps` (per-agent app list)
    - `/p/<any-published-slug>` as a guest (should resolve via the agent path)
-   - `/administration/agent-apps/{,apps,categories,executions,analytics,rate-limits}`
+   - `/administration/agents/agent-apps/{,apps,categories,executions,analytics,rate-limits}`
    - `/org/<some-slug>/agent-apps` (Coming Soon placeholder)
 2. **Run an end-to-end AutoCreate** — pick an agent, hit "Auto Create", watch metadata + code generate, land on the new app's edit page, click "Run", verify streaming.
 3. **Confirm zero TypeScript errors** — `pnpm tsc --noEmit` if the build is healthy.
@@ -352,9 +352,9 @@ the affected URL (list → click row → edit → save round-trips).
 
 ### Block 5 — Admin tools parity (~half day)
 
-- [ ] **Rate-limits override page** — duplicate `RateLimitsAdmin.tsx`, retarget to `aga_apps` + `aga_rate_limits`. Mount at `.../administration/agent-apps/rate-limits/page.tsx`.
-- [ ] **Analytics dashboard** — duplicate `AnalyticsAdmin.tsx`, retarget queries. Mount at `.../administration/agent-apps/analytics/page.tsx`.
-- [ ] **Errors-tab confirmation** — load `/administration/agent-apps/executions` against a row known to have errors and confirm they render. Port `ErrorsAdmin.tsx` only if the existing tab is insufficient.
+- [ ] **Rate-limits override page** — duplicate `RateLimitsAdmin.tsx`, retarget to `aga_apps` + `aga_rate_limits`. Mount at `.../administration/agents/agent-apps/rate-limits/page.tsx`.
+- [ ] **Analytics dashboard** — duplicate `AnalyticsAdmin.tsx`, retarget queries. Mount at `.../administration/agents/agent-apps/analytics/page.tsx`.
+- [ ] **Errors-tab confirmation** — load `/administration/agents/agent-apps/executions` against a row known to have errors and confirm they render. Port `ErrorsAdmin.tsx` only if the existing tab is insufficient.
 
 ### Block 6 — Convenience polish (~2 hours)
 

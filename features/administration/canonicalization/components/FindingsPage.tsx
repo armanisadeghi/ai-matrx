@@ -115,7 +115,7 @@ export function FindingsPage() {
           onRowClick={(row) => {
             if (!row.schema_name || !row.table_name || !row.token) return;
             router.push(
-              `/administration/canonicalization/verify?schema=${encodeURIComponent(row.schema_name)}&table=${encodeURIComponent(row.table_name)}&token=${encodeURIComponent(row.token)}`,
+              `/administration/database/canonicalization/verify?schema=${encodeURIComponent(row.schema_name)}&table=${encodeURIComponent(row.table_name)}&token=${encodeURIComponent(row.token)}`,
             );
           }}
         />

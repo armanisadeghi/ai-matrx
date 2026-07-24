@@ -25,7 +25,7 @@ SSR metadata (`generateMetadata`) provides OG tags, Twitter cards, and audio met
 
 ## Creator Routes — Podcast Studio (user-facing)
 
-The user-facing surface for creating podcasts (admins manage the catalog under `/administration/podcasts`).
+The user-facing surface for creating podcasts (admins manage the catalog under `/administration/knowledge/podcasts`).
 
 - **`/podcast/studio`** — the studio dashboard. A library of the episodes you've created
   (`pc_episodes.user_id`) and the shows that host them, with prominent paths to **Create episode**
@@ -72,7 +72,7 @@ picker. The streaming contract is documented in `aidream/docs/podcast/PODCAST_TE
 
 ## Admin Route
 
-`/administration/podcasts` — master-detail split pane (matches ai-models pattern).
+`/administration/knowledge/podcasts` — master-detail split pane (matches ai-models pattern).
 
 - Two tabs: **Episodes** (default) and **Shows**
 - Per-tab: search, table with row actions (edit/delete/copy link), create button

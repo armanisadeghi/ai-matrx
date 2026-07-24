@@ -369,7 +369,7 @@ export function McpToolsManager() {
               onClick={(e) => {
                 e.stopPropagation();
                 window.open(
-                  `/administration/mcp-servers/${t.managed_by_server_id}`,
+                  `/administration/agents/mcp-servers/${t.managed_by_server_id}`,
                   "_blank",
                   "noopener,noreferrer",
                 );
@@ -1180,7 +1180,7 @@ export function McpToolsManager() {
             </DropdownMenu>
             <Button
               size="sm"
-              onClick={() => navigateTo("/administration/mcp-tools/new")}
+              onClick={() => navigateTo("/administration/agents/mcp-tools/new")}
               disabled={isPending}
               className="h-8 gap-1.5"
             >
@@ -1472,7 +1472,7 @@ export function McpToolsManager() {
                             col.width,
                           )}
                           onClick={() =>
-                            navigateTo(`/administration/mcp-tools/${tool.id}`)
+                            navigateTo(`/administration/agents/mcp-tools/${tool.id}`)
                           }
                         >
                           {col.render(tool, counts)}
@@ -1494,7 +1494,7 @@ export function McpToolsManager() {
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              navigateTo(`/administration/mcp-tools/${tool.id}`)
+                              navigateTo(`/administration/agents/mcp-tools/${tool.id}`)
                             }
                             title="View Samples"
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
@@ -1506,7 +1506,7 @@ export function McpToolsManager() {
                             size="sm"
                             onClick={() =>
                               navigateTo(
-                                `/administration/mcp-tools/${tool.id}/ui`,
+                                `/administration/agents/mcp-tools/${tool.id}/ui`,
                               )
                             }
                             title="UI Component"
@@ -1519,7 +1519,7 @@ export function McpToolsManager() {
                             size="sm"
                             onClick={() =>
                               navigateTo(
-                                `/administration/mcp-tools/${tool.id}/incidents`,
+                                `/administration/agents/mcp-tools/${tool.id}/incidents`,
                               )
                             }
                             title="Incidents"
@@ -1532,7 +1532,7 @@ export function McpToolsManager() {
                             size="sm"
                             onClick={() =>
                               navigateTo(
-                                `/administration/mcp-tools/${tool.id}/edit`,
+                                `/administration/agents/mcp-tools/${tool.id}/edit`,
                               )
                             }
                             title="Edit Tool"

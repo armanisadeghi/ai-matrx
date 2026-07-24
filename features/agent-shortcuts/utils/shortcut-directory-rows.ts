@@ -138,9 +138,9 @@ export function resolveShortcutEditUrl(
 ): string {
   if (mode === "admin") {
     if (row.agentId) {
-      return `/administration/system-agents/agents/${row.agentId}/shortcuts/${row.id}`;
+      return `/administration/agents/system-agents/agents/${row.agentId}/shortcuts/${row.id}`;
     }
-    return `/administration/system-agents/edit/${row.id}`;
+    return `/administration/agents/system-agents/edit/${row.id}`;
   }
 
   if (row.agentId) {
@@ -154,7 +154,7 @@ export function resolveShortcutDirectUrl(
   mode: ShortcutDirectoryMode,
 ): string {
   return mode === "admin"
-    ? `/administration/system-agents/shortcuts/${shortcutId}`
+    ? `/administration/agents/system-agents/shortcuts/${shortcutId}`
     : `/agents/shortcuts/${shortcutId}`;
 }
 

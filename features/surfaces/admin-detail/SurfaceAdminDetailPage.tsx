@@ -117,7 +117,7 @@ interface Props {
 }
 
 /**
- * Full-screen per-surface admin editor at /administration/surfaces/<name>.
+ * Full-screen per-surface admin editor at /administration/ui/surfaces/<name>.
  * Every DB-owned `ui_surface` + `tool_surface_defaults` field is editable;
  * value definitions stay code-first (view + drift chips only).
  */
@@ -287,7 +287,7 @@ export function SurfaceAdminDetailPage({
       toast.success(`Renamed to ${target}`);
       startTransition(() =>
         router.replace(
-          `/administration/surfaces/${target.split("/").map(encodeURIComponent).join("/")}`,
+          `/administration/ui/surfaces/${target.split("/").map(encodeURIComponent).join("/")}`,
         ),
       );
     } catch (e) {
@@ -315,7 +315,7 @@ export function SurfaceAdminDetailPage({
     try {
       await deleteSurface(surface.name);
       toast.success(`${surface.name} deleted`);
-      startTransition(() => router.replace("/administration/surfaces"));
+      startTransition(() => router.replace("/administration/ui/surfaces"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Delete failed");
       setBusy(false);
@@ -356,7 +356,7 @@ export function SurfaceAdminDetailPage({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigateTo("/administration/surfaces")}
+                onClick={() => navigateTo("/administration/ui/surfaces")}
                 disabled={isPending}
                 className="gap-1.5 h-7 text-xs"
               >
@@ -2217,7 +2217,7 @@ function UsageSection({
                     className={`px-2 py-1.5 ${t.is_active === false ? "opacity-60" : ""}`}
                   >
                     <Link
-                      href={`/administration/mcp-tools/${t.id}`}
+                      href={`/administration/agents/mcp-tools/${t.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-xs text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 min-w-0 max-w-full"

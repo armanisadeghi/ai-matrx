@@ -16,7 +16,7 @@ interface AgentDriftReportHeaderProps {
 
 const BACK_HREF = {
   user: "/reports",
-  admin: "/administration/reports",
+  admin: "/administration/reporting/reports",
 } as const;
 
 export function AgentDriftReportHeader({

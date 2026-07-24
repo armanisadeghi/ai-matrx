@@ -90,7 +90,7 @@ export function FunctionDepsPage() {
         render: (r) =>
           r.function_name ? (
             <Link
-              href={`/administration/canonicalization/broken-functions?fn=${encodeURIComponent(r.function_name)}`}
+              href={`/administration/database/canonicalization/broken-functions?fn=${encodeURIComponent(r.function_name)}`}
               className="text-xs text-primary hover:underline"
             >
               Check →

@@ -59,7 +59,7 @@ interface AgentRunnerPageProps {
   /** Back-link target shown in the run header. Defaults to `/agents`. */
   backHref?: string;
   /** Base path used by the mode switcher inside the header. Defaults to
-   *  `/agents`. Admin passes `/administration/system-agents/agents`. */
+   *  `/agents`. Admin passes `/administration/agents/system-agents/agents`. */
   basePath?: string;
   /**
    * Optional URL builder for fork / retry navigation. When the embedding

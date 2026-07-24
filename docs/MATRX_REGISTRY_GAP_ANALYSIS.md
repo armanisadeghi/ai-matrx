@@ -2,7 +2,7 @@
 
 **Author**: 2026-05-05 emergency-restoration follow-up
 **Scope**: every gap I can identify in the post-0023 Tool Registry system relative to "complete and production-grade"
-**Status of bedrock**: app boots, every legacy table reference (frontend + server-side RPCs) repointed, 5 admin pages shipped (`/admin/lookups`, `/administration/mcp-tools`, `/admin/bundles`, `/admin/mcp-servers`, `/admin/surfaces`)
+**Status of bedrock**: app boots, every legacy table reference (frontend + server-side RPCs) repointed, 5 admin pages shipped (`/admin/lookups`, `/administration/agents/mcp-tools`, `/admin/bundles`, `/admin/mcp-servers`, `/admin/surfaces`)
 
 ---
 
@@ -113,7 +113,7 @@ A separate top-level admin page summarizing: which servers haven't been tested i
 
 ## 4. Tool admin (the central management interface the user mentioned)
 
-Current state ([/administration/mcp-tools](../app/(authenticated)/(admin-auth)/administration/mcp-tools/)): list (`McpToolsManager`), detail with the new Registry tab covering Executors / Surfaces / Bundles / Gating, edit form, UI-component editor, incidents page.
+Current state ([/administration/agents/mcp-tools](../app/(authenticated)/(admin-auth)/administration/agents/mcp-tools/)): list (`McpToolsManager`), detail with the new Registry tab covering Executors / Surfaces / Bundles / Gating, edit form, UI-component editor, incidents page.
 
 | # | Gap | Severity | Effort | Backend? |
 |---|---|---|---|---|
@@ -166,7 +166,7 @@ Heavily addressed in v2 + v2.1 ([/admin/surfaces](../app/(authenticated)/admin/s
 |---|---|---|---|---|
 | 1 | **No admin audit log.** Who changed what, when? RLS gives us *current* state but no history. Critical for incident response. | **P2** | L | Yes — new `tl_admin_audit_log` table + triggers on each admin-facing table |
 | 2 | **No global search.** `/admin/search?q=…` returning hits across tools, agents, bundles, surfaces, MCP servers. | **P2** | M | No |
-| 3 | **No metrics dashboard.** Aggregate telemetry from `cx_tl_call`: most-used tools, slowest, costliest, error-prone. Today there's `/administration/cx-dashboard` but it's general-purpose, not registry-focused. | **P2** | L | No |
+| 3 | **No metrics dashboard.** Aggregate telemetry from `cx_tl_call`: most-used tools, slowest, costliest, error-prone. Today there's `/administration/chat/cx-dashboard` but it's general-purpose, not registry-focused. | **P2** | L | No |
 | 4 | **No environment switcher.** Admins might want to operate against staging without leaving the admin UI. Today they `git checkout` a different branch. | **P3** | XL | Yes |
 | 5 | **No registry export / import.** A JSON dump of `tl_def` + `tl_executor` + `tl_def_surface` + `tl_bundle` + `tl_bundle_member` + `tl_mcp_server` would let admins clone a registry between environments or recover from disaster. | **P2** | M | No (just a big query + JSON) |
 | 6 | **No activity feed.** Admin homepage doesn't show recent admin actions — would help when teams collaborate. | **P3** | M | Backend (depends on audit log) |

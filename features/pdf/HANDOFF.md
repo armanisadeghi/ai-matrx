@@ -70,7 +70,7 @@ user-facing PDFs are dead.** If it's a meaningful %, that alone explains the
 
 **TOOLING NOW EXISTS (2026-06-13):** a recurring data-integrity system was
 built — don't re-write the audit script. See `lib/integrity/` (registry +
-runner), the admin page `/administration/data-integrity`, and the CLI
+runner), the admin page `/administration/database/data-integrity`, and the CLI
 `pnpm check:data-integrity[:strict]`. It already covers: visible files marked
 `unrecoverable://` (the in-place dead-source flag — **the current state of the
 known-dead ACOEM file**), empty `storage_uri`, dangling folder/bridge/duplicate

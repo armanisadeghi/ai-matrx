@@ -163,7 +163,7 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
   relatedFeatures: [
     {
       name: "Admin Events viewer",
-      adminUrl: "/administration/events",
+      adminUrl: "/administration/reporting/events",
       description:
         "Super-admin viewer over platform.activity_log — watch run.* / file.* / webhook.test events arrive while testing webhook delivery.",
     },

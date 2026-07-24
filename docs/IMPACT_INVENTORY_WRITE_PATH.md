@@ -384,7 +384,7 @@ These are part of the active Prompts→Agents migration (see CLAUDE.md §Active 
 |---|---|---|---|---|
 | features/window-panels/windows/FeedbackWindow.tsx | 897 | `useFileUpload` from `features/file-handler` for feedback screenshot uploads | MODIFY | import-path update; surface `errors[]` for combined upload-and-share grants |
 | features/window-panels/windows/ShareModalWindow.tsx | n/a | wraps `<ShareModal>` (resource-type sharing, not file) | KEEP | no file-write change |
-| app/(authenticated)/(admin-auth)/administration/feedback/components/FeedbackDetailDialog.tsx | n/a | `useFileUpload` from `features/file-handler` for admin feedback image uploads | MODIFY | import-path update |
+| app/(authenticated)/(admin-auth)/administration/users/feedback/components/FeedbackDetailDialog.tsx | n/a | `useFileUpload` from `features/file-handler` for admin feedback image uploads | MODIFY | import-path update |
 
 ---
 
@@ -425,14 +425,14 @@ Routes that stay direct-to-Python and are NOT cloud-files writes (keep as-is):
 | File | Lines | Current behavior | Action | What changes |
 |---|---|---|---|---|
 | app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx | 1027 | manual `fetch('/files/upload')` + `/files/{id}` PATCH/DELETE etc. for debug | MODIFY | rewire to new combined-op contract; useful as a sanity surface for partial-success `errors[]` |
-| app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-asset-uploader.tsx | n/a | demo for `<ImageAssetUploader>` | MODIFY | reflects unified API |
-| app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-cropper.tsx | n/a | demo for `<ImageCropper>` | MODIFY | reflects unified API |
-| app/(authenticated)/(admin-auth)/administration/official-components/component-displays/file-upload-with-storage.tsx | n/a | demo for the deprecated shim | DELETE | shim is deleted |
-| app/(authenticated)/(admin-auth)/administration/official-components/component-displays/paste-image-handler.tsx | n/a | demo for paste handler | MODIFY | rewrite on top of new hook |
-| app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-manager.tsx | n/a | demo for image-manager | MODIFY | reflects new internal hooks |
-| app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-manager-row.tsx | n/a | row demo | MODIFY | as above |
-| app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-manager-icon.tsx | n/a | icon demo | MODIFY | as above |
-| app/(authenticated)/(admin-auth)/administration/official-components/parts/component-list.tsx | n/a | demo registry | MODIFY | remove deleted entries |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-asset-uploader.tsx | n/a | demo for `<ImageAssetUploader>` | MODIFY | reflects unified API |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-cropper.tsx | n/a | demo for `<ImageCropper>` | MODIFY | reflects unified API |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/file-upload-with-storage.tsx | n/a | demo for the deprecated shim | DELETE | shim is deleted |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/paste-image-handler.tsx | n/a | demo for paste handler | MODIFY | rewrite on top of new hook |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-manager.tsx | n/a | demo for image-manager | MODIFY | reflects new internal hooks |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-manager-row.tsx | n/a | row demo | MODIFY | as above |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/image-manager-icon.tsx | n/a | icon demo | MODIFY | as above |
+| app/(authenticated)/(admin-auth)/administration/ui/official-components/parts/component-list.tsx | n/a | demo registry | MODIFY | remove deleted entries |
 
 Test pages confirmed read-only or out-of-scope:
 

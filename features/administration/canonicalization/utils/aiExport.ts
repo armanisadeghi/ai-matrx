@@ -64,7 +64,7 @@ export function auditSummaryToHuman(row: AuditSummaryRow): string {
 export const SUMMARY_TABLE_COPY: AuditTableCopyForAi<AuditSummaryRow> = {
   label: "Summary row",
   listLabel: "Summary table",
-  location: canonicalRouteLocation("/administration/canonicalization/summary"),
+  location: canonicalRouteLocation("/administration/database/canonicalization/summary"),
   rowKind: "canonicalization-summary-row",
   listKind: "canonicalization-summary-rows",
   rowDescription: "One registered table row from audit.summary.",
@@ -104,7 +104,7 @@ export function canonicalFindingToHuman(row: CanonicalFindingRow): string {
 export const FINDINGS_TABLE_COPY: AuditTableCopyForAi<CanonicalFindingRow> = {
   label: "Finding",
   listLabel: "Findings",
-  location: canonicalRouteLocation("/administration/canonicalization/findings"),
+  location: canonicalRouteLocation("/administration/database/canonicalization/findings"),
   rowKind: "canonicalization-finding",
   listKind: "canonicalization-findings",
   rowDescription: "One gate finding (FAIL/WARN) from audit.findings.",
@@ -143,7 +143,7 @@ export const BROKEN_FUNCTIONS_TABLE_COPY: AuditTableCopyForAi<BrokenFunctionRow>
     label: "Broken function",
     listLabel: "Broken functions",
     location: canonicalRouteLocation(
-      "/administration/canonicalization/broken-functions",
+      "/administration/database/canonicalization/broken-functions",
     ),
     rowKind: "canonicalization-broken-function",
     listKind: "canonicalization-broken-functions",
@@ -177,7 +177,7 @@ export const FUNCTION_DEPS_TABLE_COPY: AuditTableCopyForAi<FunctionDepRow> = {
   label: "Function dependency",
   listLabel: "Function dependencies",
   location: canonicalRouteLocation(
-    "/administration/canonicalization/function-deps",
+    "/administration/database/canonicalization/function-deps",
   ),
   rowKind: "canonicalization-function-dep",
   listKind: "canonicalization-function-deps",
@@ -213,7 +213,7 @@ export const M2M_CANDIDATES_TABLE_COPY: AuditTableCopyForAi<M2mCandidateRow> = {
   label: "M2M candidate",
   listLabel: "M2M candidates",
   location: canonicalRouteLocation(
-    "/administration/canonicalization/candidates",
+    "/administration/database/canonicalization/candidates",
   ),
   rowKind: "canonicalization-m2m-candidate",
   listKind: "canonicalization-m2m-candidates",
@@ -247,7 +247,7 @@ export const UNREGISTERED_CANDIDATES_TABLE_COPY: AuditTableCopyForAi<Unregistere
     label: "Unregistered candidate",
     listLabel: "Unregistered candidates",
     location: canonicalRouteLocation(
-      "/administration/canonicalization/candidates",
+      "/administration/database/canonicalization/candidates",
     ),
     rowKind: "canonicalization-unregistered-candidate",
     listKind: "canonicalization-unregistered-candidates",
@@ -278,7 +278,7 @@ export const STALE_REGISTRY_TABLE_COPY: AuditTableCopyForAi<StaleRegistryRow> =
     label: "Stale registry row",
     listLabel: "Stale registry",
     location: canonicalRouteLocation(
-      "/administration/canonicalization/candidates",
+      "/administration/database/canonicalization/candidates",
     ),
     rowKind: "canonicalization-stale-registry-row",
     listKind: "canonicalization-stale-registry-rows",
@@ -312,7 +312,7 @@ export const TABLE_IMPACT_TABLE_COPY: AuditTableCopyForAi<TableImpactRow> = {
   label: "Table impact row",
   listLabel: "Table impact",
   location: canonicalRouteLocation(
-    "/administration/canonicalization/table-impact",
+    "/administration/database/canonicalization/table-impact",
   ),
   rowKind: "canonicalization-table-impact-row",
   listKind: "canonicalization-table-impact-rows",
@@ -347,7 +347,7 @@ export const VERIFY_CHECKLIST_TABLE_COPY: AuditTableCopyForAi<VerifyCanonicalRow
   {
     label: "Verify check",
     listLabel: "Verify checklist",
-    location: canonicalRouteLocation("/administration/canonicalization/verify"),
+    location: canonicalRouteLocation("/administration/database/canonicalization/verify"),
     rowKind: "canonicalization-verify-check",
     listKind: "canonicalization-verify-checklist",
     rowDescription: "One iam.verify_canonical check result.",
@@ -379,7 +379,7 @@ export const VERIFY_BLOCKING_TABLE_COPY: AuditTableCopyForAi<CanonicalCertifyRow
   {
     label: "Certify blocking row",
     listLabel: "Certify blocking",
-    location: canonicalRouteLocation("/administration/canonicalization/verify"),
+    location: canonicalRouteLocation("/administration/database/canonicalization/verify"),
     rowKind: "canonicalization-certify-blocking-row",
     listKind: "canonicalization-certify-blocking-rows",
     rowDescription: "One iam.canonical_certify blocking row.",
@@ -443,7 +443,7 @@ export function verifyRunToAgentInput(
 ): AgentPayloadInput {
   return {
     kind: "canonicalization-verify-run",
-    location: canonicalRouteLocation("/administration/canonicalization/verify"),
+    location: canonicalRouteLocation("/administration/database/canonicalization/verify"),
     description:
       "Full iam.verify_canonical + iam.canonical_certify result for one table.",
     summary: verifyRunToHuman(snapshot),
@@ -492,7 +492,7 @@ export function tableImpactRunToAgentInput(
   return {
     kind: "canonicalization-table-impact-run",
     location: canonicalRouteLocation(
-      "/administration/canonicalization/table-impact",
+      "/administration/database/canonicalization/table-impact",
     ),
     description: "Full audit.table_impact preflight for one schema.table.",
     summary: tableImpactRunToHuman(snapshot),
@@ -527,7 +527,7 @@ export function overviewToAgentInput(
 ): AgentPayloadInput {
   return {
     kind: "canonicalization-overview",
-    location: canonicalRouteLocation("/administration/canonicalization"),
+    location: canonicalRouteLocation("/administration/database/canonicalization"),
     description: "Canonicalization toolkit KPI snapshot from audit.* views.",
     summary: overviewToHuman(data),
     attributes: {

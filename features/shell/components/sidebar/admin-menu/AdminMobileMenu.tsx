@@ -10,7 +10,10 @@
 
 import Link from "next/link";
 import IconResolver from "@/components/official/icons/IconResolver";
-import { adminNavigationRegistry } from "@/features/admin/constants/admin-navigation";
+import {
+  adminDomainHref,
+  adminNavigationRegistry,
+} from "@/features/admin/constants/admin-navigation";
 import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toggleOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -88,6 +91,20 @@ export default function AdminMobileMenu() {
             />
           </summary>
           <div className="shell-mobile-nav-children">
+            <Link
+              href={adminDomainHref(domain)}
+              data-nav-href={adminDomainHref(domain)}
+              className="shell-mobile-nav-item shell-mobile-nav-child font-medium"
+              onClick={closeShellMobileMenu}
+            >
+              <span className="shell-nav-icon">
+                <IconResolver
+                  iconName={domain.iconName}
+                  className="h-[18px] w-[18px]"
+                />
+              </span>
+              <span>{domain.name} overview</span>
+            </Link>
             {domain.sections.map((section) => (
               <div key={section.name}>
                 <div className="flex items-center gap-2 px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">

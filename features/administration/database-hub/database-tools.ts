@@ -52,7 +52,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
   // ── Legacy dashboard ──────────────────────────────────────────────
   {
     title: "Admin Dashboard",
-    path: "/administration/database-admin",
+    path: "/administration/database/database-admin",
     relative: false,
     description:
       "Tabbed legacy view: functions browser, permissions catalog, and basic SQL editor.",
@@ -60,7 +60,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
   },
   {
     title: "Functions",
-    path: "/administration/database-admin?tab=functions",
+    path: "/administration/database/database-admin?tab=functions",
     relative: false,
     description:
       "Read-only functions list with detail drawer. Same RPC as SQL Functions but no CRUD.",
@@ -71,7 +71,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
   },
   {
     title: "Permissions",
-    path: "/administration/database-admin?tab=permissions",
+    path: "/administration/database/database-admin?tab=permissions",
     relative: false,
     description:
       "Browse database object permissions by role via get_database_permissions RPC.",
@@ -79,7 +79,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
   },
   {
     title: "SQL Query",
-    path: "/administration/database-admin?tab=sql",
+    path: "/administration/database/database-admin?tab=sql",
     relative: false,
     description:
       "Basic textarea SQL editor with JsonInspector results. No cache, cancel, or timeout.",
@@ -125,7 +125,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
   // ── Canonicalization (8 pages) ────────────────────────────────────
   {
     title: "Overview",
-    path: "/administration/canonicalization",
+    path: "/administration/database/canonicalization",
     relative: false,
     description:
       "Certification gate summary with quick links to every canonicalization tool.",
@@ -133,7 +133,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
   },
   {
     title: "Summary",
-    path: "/administration/canonicalization/summary",
+    path: "/administration/database/canonicalization/summary",
     relative: false,
     description:
       "Certification summary and overall canonicalization gate status.",
@@ -141,21 +141,21 @@ export const databaseToolPages: DatabaseToolPage[] = [
   },
   {
     title: "Findings",
-    path: "/administration/canonicalization/findings",
+    path: "/administration/database/canonicalization/findings",
     relative: false,
     description: "Every FAIL/WARN finding from the canonicalization audit.",
     section: "canonicalization",
   },
   {
     title: "Broken Functions",
-    path: "/administration/canonicalization/broken-functions",
+    path: "/administration/database/canonicalization/broken-functions",
     relative: false,
     description: "SQL functions that fail canonicalization checks.",
     section: "canonicalization",
   },
   {
     title: "Candidates",
-    path: "/administration/canonicalization/candidates",
+    path: "/administration/database/canonicalization/candidates",
     relative: false,
     description:
       "Migration candidates: M2M tables, unregistered relations, stale shims.",
@@ -163,21 +163,21 @@ export const databaseToolPages: DatabaseToolPage[] = [
   },
   {
     title: "Function Deps",
-    path: "/administration/canonicalization/function-deps",
+    path: "/administration/database/canonicalization/function-deps",
     relative: false,
     description: "Dependency graph for SQL functions under review.",
     section: "canonicalization",
   },
   {
     title: "Table Impact",
-    path: "/administration/canonicalization/table-impact",
+    path: "/administration/database/canonicalization/table-impact",
     relative: false,
     description: "Per-table preflight impact before certifying a migration.",
     section: "canonicalization",
   },
   {
     title: "Verify",
-    path: "/administration/canonicalization/verify",
+    path: "/administration/database/canonicalization/verify",
     relative: false,
     description: "Verify and certify individual tables or functions.",
     section: "canonicalization",
@@ -186,7 +186,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
   // ── Schema visualizers ──────────────────────────────────────────────
   {
     title: "Schema Visualizer",
-    path: "/administration/schema-visualizer",
+    path: "/administration/database/schema-visualizer",
     relative: false,
     description:
       "ReactFlow diagram of the full schema via /api/schema-overview. Standalone, no entity system.",
@@ -194,7 +194,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
   },
   {
     title: "Schema Visualizer",
-    path: "/administration/schema-visualizer-enhanced",
+    path: "/administration/database/schema-visualizer-enhanced",
     relative: false,
     description:
       "SchemaVisualizerLayout with filtering, details panel, and enhanced navigation.",
@@ -240,7 +240,7 @@ export function isActiveDatabaseToolPath(
 
   // Path-only match: for database-admin, don't highlight base when a tab is set
   if (
-    pathOnly === "/administration/database-admin" &&
+    pathOnly === "/administration/database/database-admin" &&
     currentSearch.includes("tab=")
   ) {
     return false;
