@@ -26,7 +26,9 @@ build plan this feature is part of (project P5).
 - `app/(core)/cms/[siteId]/settings/page.tsx` — site settings + delete (danger zone)
 - `app/(core)/cms/[siteId]/components/page.tsx` — header/footer/etc. component CRUD
 - `app/(core)/cms/[siteId]/collections/page.tsx` — W2-C collections list (policy badges, live counts) + editor dialog + Site Data Key block (masked/copy/rotate)
-- `app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx` — items viewer (schema-driven columns, unread/spam/archived filters, search, row+bulk triage, CSV export)
+- `app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx` — items viewer (schema-driven columns, unread/spam/archived filters, search, row+bulk triage, CSV export, **Add item / per-row edit**)
+- `features/cms/components/collections/CollectionItemEditorDialog.tsx` — schema-driven create/edit for one item (correct input per field type, required markers, raw-JSON escape hatch for undeclared keys, route errors pinned to the offending inputs); Drawer on mobile, Dialog on desktop
+- `features/cms/collections/validateItem.ts` — the canonical item-validator TWIN (see Doctrine)
 - `app/(core)/cms/[siteId]/pages/[pageId]/page.tsx`, `.../pages/new/page.tsx` — page editor
 - `app/(core)/cms/html-pages/**` — standalone `html_pages` management (see `features/html-pages/FEATURE.md`... not yet split out; documented in `features/html-pages/README.md`)
 - `app/(admin)/administration/knowledge/cms-agents/page.tsx` — **agent visibility surface** (super-admin gated by the `(admin)` layout): live activity feed, per-site page tree, agent-write-policy editor, validation-exception approvals queue
@@ -45,7 +47,10 @@ build plan this feature is part of (project P5).
 - `POST /api/cms/versions` — `list/get` (read-only, owner-scoped)
 - `POST /api/cms/approvals` — `list/approve/reject` (requireSuperAdmin) — F3 exception queue, degrades gracefully until P1's store table exists
 - `POST /api/cms/assets` — `list/get/create/update/usage/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). W2-B asset library over `client_assets`. **Bytes never pass through this route** — the client uploads through the canonical `fileHandler.upload({preset:'web', visibility:'public'})` → aidream `POST /assets` (durable public CDN URL), then `create` registers the metadata row. `create` re-enforces the durability doctrine (second layer): refuses a `file_path` that isn't absolute https or that carries a signed/expiring-link signature (`isSignedExpiringUrl`, mirrors aidream's validator). `delete` LIVE-scans pages+components (live + draft columns) and returns 409 `asset_in_use` with the exact reference list unless `force`; `usage` returns the same scan and re-syncs `used_in_pages`. aidream twin: `services/cms_assets/`.
-- `POST /api/cms/collections` — W2-C collections (CMS migration 0015): `list` (per site, with live item/unread counts) / `get` / `create` / `update` / `archive` / `delete` (soft) / `rotate_key` (owner-scoped) + item ops `items_list` (filters + search + pagination) / `items_get` / `items_set_flags` (seen/spam/archive, row or bulk) / `items_delete` (soft) / `items_export` (rows for client-side CSV, cap 10,000) + `admin_list` (requireSuperAdmin). Server rules mirrored in-route: slug `^[a-z0-9][a-z0-9_-]{0,62}$`; a field_schema containing `richtext` is REJECTED while `public_write` is true (checked on the MERGED result on update). First collection create mints `client_sites.data_api_key` (`'mk_' + 32 hex`); `rotate_key` re-mints it (old key dies immediately, published pages pick the new one up at next SSR render). Search on non-searchable collections is a capped in-route scan (2,000 newest; `searchTruncated` flag) — PostgREST cannot ilike a jsonb column; searchable collections use `textSearch` on `search_vector`.
+- `POST /api/cms/collections` — W2-C collections (CMS migration 0015): `list` (per site, with live item/unread counts) / `get` / `create` / `update` / `archive` / `delete` (soft) / `rotate_key` (owner-scoped) + item ops `items_list` (filters + search + pagination) / `items_get` / `items_set_flags` (seen/spam/archive, row or bulk) / `items_delete` (soft) / `items_create` + `items_update` (ADMIN AUTHORING — see below) / `items_export` (rows for client-side CSV; stops on EITHER cap — 10,000 rows or ~3.5 MB serialized, returning `{truncated, reason}` because a row cap alone never bounded unbounded jsonb under Vercel's 4.5 MB response limit) + `admin_list` (requireSuperAdmin). Server rules mirrored in-route: slug `^[a-z0-9][a-z0-9_-]{0,62}$`; a field_schema containing `richtext` is REJECTED while `public_write` is true (checked on the MERGED result on update). First collection create mints `client_sites.data_api_key` (`'mk_' + 32 hex`); `rotate_key` re-mints it (old key dies immediately, published pages pick the new one up at next SSR render). Search on non-searchable collections is a capped in-route scan (2,000 newest; `searchTruncated` flag) — PostgREST cannot ilike a jsonb column; searchable collections use `textSearch` on `search_vector`.
+  Flipping `searchable` false→true calls `backfill_collection_search_vectors` (CMS migration 0019) — the tsvector trigger only fires on insert/`UPDATE OF data`, so existing rows were silently unfindable; the row count rides back on `searchBackfill` and screams at the cap.
+  **Admin item authoring (`items_create` / `items_update`)** — Arman's ruling is that client sites RENDER collection data (events, testimonials, FAQ entries, practitioner profiles) "curated by a human OR authored by an agent"; these are the human half, twinning aidream's `collection_item_service.create/update` (CONTRACT §CW2). They run the SAME canonical validator as the visitor path (`features/cms/collections/validateItem.ts`), so a `strict` collection refuses an admin-authored item for exactly the reasons it refuses a visitor's — 422 with field-level `validationErrors`; advisory warnings ride back on success. The route is the size authority (CW3): 65,536 bytes default, `settings.max_item_bytes` override, 524,288 ceiling, 200 keys after flatten. Quota is a QUARANTINE, never a rejection — at `settings.max_items` the row lands `status='archived'`.
+  **These MUST NOT use the `submit_collection_item` RPC.** That is the visitor path: it carries the rate windows, quota quarantine and the `visitor_write_at` stamp the limiter counts (`visitor_write_at > now() - interval '1 hour'`). Admin writes are plain inserts, so an admin adding 30 events cannot burn the window and 429 the site's public contact form. Admin rows carry NO visitor provenance (no ip/user_agent/source_url), are never `is_spam`, and record `submitted_by`.
 - `POST /api/html-pages` — standalone `html_pages` CRUD (see `features/html-pages/README.md`)
 
 **Shared server helpers**
@@ -217,6 +222,20 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
 
 ## Invariants & gotchas
 
+- **The collection-item validator is a TWIN — never edit its rules alone.** Three implementations of
+  the CW3 semantics exist and must agree byte-for-byte: aidream
+  `services/cms/collection_validation.py` (CANONICAL), my-matrx `lib/collections/validateItem.js`
+  (visitor path), and `features/cms/collections/validateItem.ts` (admin path). They are pinned ONLY
+  by the shared fixture `collection-validation-rules.json`, copied verbatim from aidream into each
+  repo. Changing a rule means changing all three, changing the fixture, and running every suite.
+  `pnpm check:collection-validator` runs the whole fixture here (plus the byte counters), treats an
+  unreadable fixture as a FAILURE (an unpinned twin is the dangerous state, not a pass), and
+  checksums the local copy against a co-located aidream checkout so a stale copy screams. It has
+  already caught one real upstream drift.
+- **Admin item writes never go through `submit_collection_item`.** That RPC is the visitor path and
+  stamps `visitor_write_at`, which is exactly what the hourly rate limiter counts. Routing admin
+  authoring through it would let an admin adding 30 events 429 the site's own public forms. Admin
+  rows are plain inserts with no visitor provenance and `is_spam=false`.
 - **Never call the Python backend for CMS data.** This whole feature is the documented exception to
   the repo's "client → Supabase direct" doctrine: the CMS project has a separate Auth domain and the
   secret key must never reach the browser, so the `/api/cms/*` routes ARE the canonical path — do
@@ -270,6 +289,24 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-07-24` — **Collections admin: item authoring + an adversarial-findings pass.** Added
+  `items_create` / `items_update` (twinning aidream `collection_item_service`, CONTRACT §CW2) and a
+  schema-driven `CollectionItemEditorDialog`, closing the vision gap where an admin could triage but
+  could not add an event or fix a typo in a testimonial without asking an agent. Ported the
+  canonical CW3 validator as `features/cms/collections/validateItem.ts` with the
+  `pnpm check:collection-validator` drift guard (149/149 fixture cases). Also fixed 12 verified
+  adversarial findings on this surface: the `searchable` false→true backfill (existing rows were
+  silently unfindable), the unread badge disagreeing with the Unread tab, an unbounded `items_export`
+  that exceeded Vercel's response limit, an unbounded search-scan, the richtext block that disabled
+  the very toggle it told you to turn off, CSV formula injection from visitor-submitted values,
+  unvalidated name/description, `select` fields accepted with zero options, a false 403 on duplicate
+  item ids, a 500 on malformed JSON bodies, prototype-shadowing item data, and click-only rows with
+  no keyboard path. Verified live on `dev-website` (throwaway collections, cleaned up): strict
+  rejects with field-level errors while advisory warns, an admin burst of 10 creates left
+  `visitor_write_at` NULL on every row (zero visitor-window burn) with no spam flag and no fake
+  provenance, and the authored rows render through the anonymous public GET with only the declared
+  `public_read_fields`.
 
 - `2026-07-23` — **W2-C Collections admin surface shipped.** New `/api/cms/collections` route (see
   API list), `CmsCollectionService`, `verifyCollectionOwnership`, `site_collection` added to the
