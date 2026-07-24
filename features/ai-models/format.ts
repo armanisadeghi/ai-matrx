@@ -28,7 +28,7 @@ export function speedRatingLabel(rating: number | null): string | null {
 }
 
 export const AI_MODELS_LOCATION =
-  "AI Matrx Admin — AI Models (/administration/ai-models)";
+  "AI Matrx Admin — AI Models (/administration/ai/ai-models)";
 
 /** Human-readable, multi-line summary of a single AI model row. */
 export function aiModelSummary(m: AiModel): string {

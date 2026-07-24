@@ -11,8 +11,13 @@ import type { AiModel, AiProvider } from "../types";
 import { applyFiltersForCount } from "@/features/ai-models/utils/filterUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, BookOpen } from "lucide-react";
+import { AlertTriangle, BookOpen, Maximize2, Minimize2 } from "lucide-react";
 import ProviderReferenceModal from "./ProviderReferenceModal";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 export default function AiModelsContainer() {
   const [models, setModels] = useState<AiModel[]>([]);
@@ -21,6 +26,7 @@ export default function AiModelsContainer() {
   const [selectedModel, setSelectedModel] = useState<AiModel | null>(null);
   const [isNewModel, setIsNewModel] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [panelMaximized, setPanelMaximized] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [referenceOpen, setReferenceOpen] = useState(false);
 
@@ -180,41 +186,91 @@ export default function AiModelsContainer() {
           />
         </div>
       ) : (
-        /* Main content: table + optional detail panel */
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Table panel */}
-          <div
-            className={`${panelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}
-          >
-            <AiModelTable
-              models={models}
-              providers={providers}
-              isLoading={isLoading}
-              selectedId={selectedModel?.id ?? null}
-              tabState={activeTab}
-              onUpdateTabState={(patch) => updateTabState(activeTabId, patch)}
-              onSelect={openModel}
-              onEdit={openModel}
-              onDelete={(model) => handleDeleted(model.id)}
-              onDuplicate={handleDuplicate}
-              onCreate={openNew}
-              onRefresh={loadData}
-            />
-          </div>
-
-          {/* Detail panel — sticky, fills full height */}
-          {panelOpen && (
-            <div className="w-1/2 border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
-              <AiModelDetailPanel
-                model={selectedModel}
-                isNew={isNewModel}
+        /* Main content: table + optional detail panel (drag to resize) */
+        <div className="flex flex-1 min-h-0 overflow-hidden relative">
+          {!panelOpen ? (
+            <div className="w-full min-w-0 flex flex-col overflow-hidden">
+              <AiModelTable
+                models={models}
                 providers={providers}
-                allModels={models}
-                onClose={closePanel}
-                onSaved={handleSaved}
-                onDeleted={handleDeleted}
+                isLoading={isLoading}
+                selectedId={selectedModel?.id ?? null}
+                tabState={activeTab}
+                onUpdateTabState={(patch) => updateTabState(activeTabId, patch)}
+                onSelect={openModel}
+                onEdit={openModel}
+                onDelete={(model) => handleDeleted(model.id)}
+                onDuplicate={handleDuplicate}
+                onCreate={openNew}
+                onRefresh={loadData}
               />
             </div>
+          ) : (
+            <ResizablePanelGroup orientation="horizontal">
+              {!panelMaximized && (
+                <>
+                  <ResizablePanel
+                    defaultSize={50}
+                    minSize={25}
+                    style={{ overflow: "hidden", height: "100%" }}
+                  >
+                    <div className="h-full min-w-0 flex flex-col overflow-hidden">
+                      <AiModelTable
+                        models={models}
+                        providers={providers}
+                        isLoading={isLoading}
+                        selectedId={selectedModel?.id ?? null}
+                        tabState={activeTab}
+                        onUpdateTabState={(patch) =>
+                          updateTabState(activeTabId, patch)
+                        }
+                        onSelect={openModel}
+                        onEdit={openModel}
+                        onDelete={(model) => handleDeleted(model.id)}
+                        onDuplicate={handleDuplicate}
+                        onCreate={openNew}
+                        onRefresh={loadData}
+                      />
+                    </div>
+                  </ResizablePanel>
+                  <ResizableHandle />
+                </>
+              )}
+              <ResizablePanel
+                defaultSize={50}
+                minSize={30}
+                style={{ overflow: "hidden", height: "100%" }}
+              >
+                <div className="h-full border-l-2 border-l-primary/20 flex flex-col overflow-hidden relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 absolute top-2 right-10 z-10"
+                    onClick={() => setPanelMaximized((v) => !v)}
+                    title={
+                      panelMaximized
+                        ? "Restore split view"
+                        : "Maximize detail panel"
+                    }
+                  >
+                    {panelMaximized ? (
+                      <Minimize2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <AiModelDetailPanel
+                    model={selectedModel}
+                    isNew={isNewModel}
+                    providers={providers}
+                    allModels={models}
+                    onClose={closePanel}
+                    onSaved={handleSaved}
+                    onDeleted={handleDeleted}
+                  />
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           )}
         </div>
       )}

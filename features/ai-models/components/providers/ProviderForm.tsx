@@ -12,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Lock } from "lucide-react";
-import type { AiProviderRow } from "../../types";
+import { Lock, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { AiProviderRow, DocSource } from "../../types";
 
 // ─── Form data shape ────────────────────────────────────────────────────────
 // Mirrors ai.provider's editable identity fields as plain strings (like
@@ -29,6 +30,8 @@ export type ProviderFormData = {
   website_url: string;
   logo_url: string;
   visibility: AiProviderRow["visibility"];
+  /** Curated "ideal doc pages" the sync agent reads first — ai.provider.doc_sources. */
+  doc_sources: DocSource[];
 };
 
 export const EMPTY_PROVIDER_FORM: ProviderFormData = {
@@ -40,7 +43,15 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
   website_url: "",
   logo_url: "",
   visibility: "public",
+  doc_sources: [],
 };
+
+const DOC_SOURCE_KINDS: DocSource["kind"][] = [
+  "models",
+  "params",
+  "pricing",
+  "changelog",
+];
 
 interface ProviderFormProps {
   data: ProviderFormData;
@@ -154,6 +165,88 @@ export default function ProviderForm({
           />
         </FormField>
       </div>
+
+      <FormField
+        label="Sync Doc Sources"
+        description="The EXACT pages the AI Model Config Sync agent reads first (models list, param reference, pricing, changelog) — not homepages."
+      >
+        <div className="space-y-1.5">
+          {data.doc_sources.map((src, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <Select
+                value={src.kind}
+                onValueChange={(kind) => {
+                  const next = [...data.doc_sources];
+                  next[i] = { ...src, kind: kind as DocSource["kind"] };
+                  onChange({ ...data, doc_sources: next });
+                }}
+              >
+                <SelectTrigger className="h-7 w-28 text-xs shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOC_SOURCE_KINDS.map((k) => (
+                    <SelectItem key={k} value={k} className="text-xs">
+                      {k}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="url"
+                className="h-7 text-xs flex-1 min-w-0"
+                placeholder="https://…"
+                value={src.url}
+                onChange={(e) => {
+                  const next = [...data.doc_sources];
+                  next[i] = { ...src, url: e.target.value };
+                  onChange({ ...data, doc_sources: next });
+                }}
+              />
+              <Input
+                className="h-7 text-xs w-56 shrink-0"
+                placeholder="notes / gotchas"
+                value={src.notes ?? ""}
+                onChange={(e) => {
+                  const next = [...data.doc_sources];
+                  next[i] = { ...src, notes: e.target.value || null };
+                  onChange({ ...data, doc_sources: next });
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                onClick={() =>
+                  onChange({
+                    ...data,
+                    doc_sources: data.doc_sources.filter((_, idx) => idx !== i),
+                  })
+                }
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1.5"
+            onClick={() =>
+              onChange({
+                ...data,
+                doc_sources: [
+                  ...data.doc_sources,
+                  { kind: "models", url: "", notes: null },
+                ],
+              })
+            }
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add doc source
+          </Button>
+        </div>
+      </FormField>
 
       <div className="grid grid-cols-2 gap-3 items-start">
         <FormField label="Visibility">

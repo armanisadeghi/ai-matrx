@@ -676,12 +676,15 @@ interface ConstraintsEditorProps {
   constraints: ModelConstraint[] | null;
   onSave: (constraints: ModelConstraint[]) => Promise<void>;
   onChange?: (constraints: ModelConstraint[]) => void;
+  /** Reports unsaved local edits upward (panel-level dirty tracking). */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 export default function ConstraintsEditor({
   constraints,
   onSave,
   onChange,
+  onDirtyChange,
 }: ConstraintsEditorProps) {
   const toArray = (
     v: ModelConstraint[] | null | undefined,
@@ -699,6 +702,11 @@ export default function ConstraintsEditor({
 
   const hasChanges =
     JSON.stringify(local) !== JSON.stringify(constraints ?? []);
+
+  useEffect(() => {
+    onDirtyChange?.(hasChanges);
+    return () => onDirtyChange?.(false);
+  }, [hasChanges, onDirtyChange]);
 
   const save = async () => {
     setSaving(true);

@@ -1,22 +1,13 @@
 "use client";
 
 /**
- * ModelRulesEditor — the Phase-D replacement for editing raw
- * model_definition.controls / .constraints (those columns are dead and drop
- * in Phase C).
+ * ModelRulesEditor — CONSTRAINTS-ONLY since the structured Controls editor
+ * shipped (components/controls/ModelControlsEditor.tsx owns the Controls tab).
  *
- * A model's effective controls/constraints are RESOLVED from two sources:
- *   - FAMILY rules   → ai.api.rules   {params, constraints}  (per wire contract)
- *   - PER-MODEL deltas → ai.offering.override (same envelope) on the offering
+ * A model's effective constraints are RESOLVED from two sources:
+ *   - FAMILY rules   → ai.api.rules.constraints   (per wire contract)
+ *   - PER-MODEL deltas → ai.offering.override.constraints (concatenated)
  * via ai.resolve_model_config / the ai.model_config view.
- *
- * This component renders, for one model:
- *   - an offering selector (defaults to the preferred = lowest-priority live one)
- *   - the resolved output (read-only, from ai.model_config)
- *   - mode="controls":    JSON editors for the family rules envelope and the
- *     offering override envelope
- *   - mode="constraints": structured ConstraintsEditor for each source's
- *     constraints array
  *
  * Every successful save triggers POST /admin/ai-catalog/reload so the live
  * brain picks the change up, then re-reads the resolved view.
@@ -26,6 +17,13 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/lib/toast";
 
 import { FullJsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { aiModelService } from "../service";
 import { reloadAiCatalog } from "../catalogReload";
@@ -37,7 +35,6 @@ import type {
   RulesEnvelope,
 } from "../types";
 import type { Database } from "@/types/database.types";
-import JsonFieldEditor from "./JsonFieldEditor";
 import ConstraintsEditor from "./ConstraintsEditor";
 
 type ModelConfigRow = Database["ai"]["Views"]["model_config"]["Row"];
@@ -45,7 +42,8 @@ type ModelConfigRow = Database["ai"]["Views"]["model_config"]["Row"];
 interface ModelRulesEditorProps {
   model: AiModel;
   offerings: AiOffering[];
-  mode: "controls" | "constraints";
+  /** Reports unsaved edits in either constraints editor upward. */
+  onDirtyChange?: (section: "family" | "override", dirty: boolean) => void;
 }
 
 /** Normalize whatever is stored into the canonical envelope shape. */
@@ -63,7 +61,7 @@ function asEnvelope(value: unknown): RulesEnvelope {
 export default function ModelRulesEditor({
   model,
   offerings,
-  mode,
+  onDirtyChange,
 }: ModelRulesEditorProps) {
   const dispatch = useAppDispatch();
 
@@ -146,43 +144,43 @@ export default function ModelRulesEditor({
 
   const apiEnvelope = asEnvelope(api?.rules);
   const overrideEnvelope = asEnvelope(offering?.override);
-
-  const resolvedData =
-    mode === "controls" ? resolved?.controls : resolved?.constraints;
+  const noOffering = liveOfferings.length === 0;
 
   return (
     <div className="space-y-3">
       {/* Source explanation + offering picker */}
       <div className="rounded-md border bg-muted/30 px-3 py-2 space-y-2">
         <p className="text-xs text-muted-foreground">
-          {mode === "controls" ? "Controls" : "Constraints"} are no longer
-          stored on the model row — they resolve from the family rules
-          (ai.api.rules) merged with the per-model override (ai.offering
-          .override). Edits here save to those sources and reload the backend
-          catalog.
+          Constraints are no longer stored on the model row — they resolve from
+          the family rules (ai.api.rules) merged with the per-model override
+          (ai.offering.override). Edits here save to those sources and reload
+          the backend catalog.
         </p>
         {liveOfferings.length > 1 && (
-          <label className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs">
             <span className="text-muted-foreground shrink-0">Offering</span>
-            <select
-              className="h-7 rounded border bg-background px-2 text-xs"
+            <Select
               value={effectiveOfferingId ?? ""}
-              onChange={(e) => setSelectedOfferingId(e.target.value || null)}
+              onValueChange={(v) => setSelectedOfferingId(v || null)}
             >
-              {liveOfferings.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {`priority ${o.priority}${o.is_available ? "" : " (unavailable)"} — ${
-                    apis.find((a) => a.id === o.api_id)?.name ?? o.api_id
-                  }`}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger className="h-7 w-72 text-xs">
+                <SelectValue placeholder="Select offering" />
+              </SelectTrigger>
+              <SelectContent>
+                {liveOfferings.map((o) => (
+                  <SelectItem key={o.id} value={o.id} className="text-xs">
+                    {`${apis.find((a) => a.id === o.api_id)?.name ?? o.api_id} · priority ${o.priority}${o.is_available ? "" : " (unavailable)"}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
-        {liveOfferings.length === 0 && (
+        {noOffering && (
           <p className="text-xs text-amber-600 dark:text-amber-400">
             This model has NO offering — it cannot route and resolves to
-            capability gates only. Create an offering first.
+            capability gates only. Create an offering first; the editors below
+            are disabled.
           </p>
         )}
         {loadError && (
@@ -196,7 +194,7 @@ export default function ModelRulesEditor({
       <div className="border rounded-md overflow-hidden">
         <div className="px-3 py-2 bg-muted/50 flex items-center justify-between">
           <span className="text-sm font-medium">
-            Resolved {mode} (ai.model_config — what users get)
+            Resolved constraints (ai.model_config — what users get)
           </span>
           <button
             type="button"
@@ -206,9 +204,9 @@ export default function ModelRulesEditor({
             Refresh
           </button>
         </div>
-        <div className="p-2 max-h-72 overflow-auto">
+        <div className="p-2 max-h-[45vh] overflow-auto">
           <FullJsonViewer
-            data={(resolvedData ?? (mode === "controls" ? {} : [])) as object}
+            data={(resolved?.constraints ?? []) as object}
             initialExpanded
             hideControls
             disabled
@@ -216,28 +214,7 @@ export default function ModelRulesEditor({
         </div>
       </div>
 
-      {mode === "controls" ? (
-        <>
-          <JsonFieldEditor
-            title={`Family rules — ai.api.rules${api ? ` (${api.name})` : ""}`}
-            description='Wire-contract envelope {"params": {key: ControlRule}, "constraints": [...]}'
-            data={api?.rules ?? null}
-            defaultExpanded
-            onSave={async (data) => {
-              await saveApiRules(asEnvelope(data));
-            }}
-          />
-          <JsonFieldEditor
-            title="Per-model override — ai.offering.override"
-            description="Same envelope; per-key merge, override wins per field"
-            data={offering?.override ?? null}
-            defaultExpanded
-            onSave={async (data) => {
-              await saveOverride(asEnvelope(data));
-            }}
-          />
-        </>
-      ) : (
+      {!noOffering && (
         <>
           <div className="border rounded-md p-2 space-y-2">
             <div className="text-sm font-medium">
@@ -246,6 +223,7 @@ export default function ModelRulesEditor({
             </div>
             <ConstraintsEditor
               constraints={apiEnvelope.constraints as ModelConstraint[]}
+              onDirtyChange={(dirty) => onDirtyChange?.("family", dirty)}
               onSave={async (constraints) => {
                 await saveApiRules({ ...apiEnvelope, constraints });
               }}
@@ -257,6 +235,7 @@ export default function ModelRulesEditor({
             </div>
             <ConstraintsEditor
               constraints={overrideEnvelope.constraints as ModelConstraint[]}
+              onDirtyChange={(dirty) => onDirtyChange?.("override", dirty)}
               onSave={async (constraints) => {
                 await saveOverride({ ...overrideEnvelope, constraints });
               }}

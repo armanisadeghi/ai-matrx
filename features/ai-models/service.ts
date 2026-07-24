@@ -117,7 +117,7 @@ export const aiModelService = {
       .schema("ai")
       .from("provider")
       .select(
-        "id, name, company_description, documentation_link, models_link, provider_models_cache",
+        "id, name, company_description, documentation_link, models_link, doc_sources, provider_models_cache",
       )
       .order("name", { ascending: true });
     if (error) throw error;
@@ -141,7 +141,7 @@ export const aiModelService = {
       .schema("ai")
       .from("provider")
       .select(
-        "id, name, company_description, documentation_link, models_link, provider_models_cache",
+        "id, name, company_description, documentation_link, models_link, doc_sources, provider_models_cache",
       )
       .eq("id", providerId)
       .single();

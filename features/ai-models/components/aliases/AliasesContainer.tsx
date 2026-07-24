@@ -9,7 +9,7 @@
  *   alias | deprecated | latest
  *
  * Compact single-surface editor: table of live aliases + an inline editor
- * card (same visual language as the other /administration/ai-models pages).
+ * card (same visual language as the other /administration/ai/ai-models pages).
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";

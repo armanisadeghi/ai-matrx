@@ -47,6 +47,9 @@ function rowToFormData(row: AiProvider): ProviderFormData {
     website_url: row.website_url ?? "",
     logo_url: row.logo_url ?? "",
     visibility: row.visibility,
+    doc_sources: Array.isArray(row.doc_sources)
+      ? (row.doc_sources as unknown as ProviderFormData["doc_sources"])
+      : [],
   };
 }
 
@@ -119,6 +122,8 @@ function ProviderDetailPanel({
     website_url: formData.website_url.trim() || null,
     logo_url: formData.logo_url.trim() || null,
     visibility: formData.visibility,
+    // Drop rows with an empty URL — a doc source without a page is noise.
+    doc_sources: formData.doc_sources.filter((s) => s.url.trim() !== ""),
   });
 
   const handleSave = async (): Promise<AiProvider | null> => {

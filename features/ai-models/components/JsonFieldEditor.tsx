@@ -11,6 +11,8 @@ interface JsonFieldEditorProps {
     onSave: (data: object) => Promise<void>;
     description?: string;
     defaultExpanded?: boolean;
+    /** Reports unsaved in-editor edits upward (panel-level dirty tracking). */
+    onDirtyChange?: (dirty: boolean) => void;
 }
 
 export default function JsonFieldEditor({
@@ -19,8 +21,13 @@ export default function JsonFieldEditor({
     onSave,
     description,
     defaultExpanded = false,
+    onDirtyChange,
 }: JsonFieldEditorProps) {
     const [expanded, setExpanded] = React.useState(defaultExpanded);
+
+    // Clear the dirty flag if this editor unmounts (tab switch keeps state
+    // honest — an unmounted editor has no pending edits to lose).
+    React.useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
     const normalizedData = React.useMemo(() => {
         if (data === null || data === undefined) return {};
@@ -73,9 +80,11 @@ export default function JsonFieldEditor({
                 <div className="p-2">
                     <EnhancedEditableJsonViewer
                         data={normalizedData}
+                        onChange={() => onDirtyChange?.(true)}
                         onSave={async (d) => {
                             if (typeof d === 'string') return;
                             await onSave(d);
+                            onDirtyChange?.(false);
                         }}
                         hideHeader={false}
                     />

@@ -37,6 +37,7 @@ import {
 import AiModelForm from "./AiModelForm";
 import JsonFieldEditor from "./JsonFieldEditor";
 import ModelRulesEditor from "./ModelRulesEditor";
+import ModelControlsEditor from "./controls/ModelControlsEditor";
 import ModelUsageAudit from "./ModelUsageAudit";
 import { aiModelService } from "../service";
 import type {
@@ -102,9 +103,11 @@ const EMPTY_FORM: AiModelFormData = {
  *  tiers read-only so an admin sees a model's real prices without a second editor. */
 function OfferingPricingReadOnly({
   offerings,
+  loading,
   error,
 }: {
   offerings: AiOffering[];
+  loading: boolean;
   error: string | null;
 }) {
   const fmt = (p: number | null | undefined) =>
@@ -123,7 +126,13 @@ function OfferingPricingReadOnly({
           Could not load this model&apos;s offerings ({error}).
         </p>
       )}
-      {!error && offerings.length === 0 && (
+      {!error && loading && (
+        <div className="space-y-2">
+          <div className="h-14 rounded-md border bg-muted/40 animate-pulse" />
+          <div className="h-14 rounded-md border bg-muted/40 animate-pulse" />
+        </div>
+      )}
+      {!error && !loading && offerings.length === 0 && (
         <p className="text-xs text-muted-foreground/60">
           No offerings for this model yet — a model is not callable until it has
           one.
@@ -879,7 +888,22 @@ export default function AiModelDetailPanel({
     Object.keys({ ...formData, ...baseline }) as Array<keyof AiModelFormData>
   ).some((k) => JSON.stringify(formData[k]) !== JSON.stringify(baseline[k]));
 
-  const isDirty = formIsDirty || rawJsonDirty;
+  // Per-section dirty flags reported by the tab editors (Controls drafts,
+  // Constraints local edits, JSON Fields in-editor edits). These editors save
+  // through their OWN save actions — the footer Save button does not cover
+  // them — but they must still participate in the close guard.
+  const [dirtySections, setDirtySections] = useState<Record<string, boolean>>(
+    {},
+  );
+  const reportSectionDirty = useCallback((section: string, dirty: boolean) => {
+    setDirtySections((prev) => {
+      if ((prev[section] ?? false) === dirty) return prev;
+      return { ...prev, [section]: dirty };
+    });
+  }, []);
+  const sectionsDirty = Object.values(dirtySections).some(Boolean);
+
+  const isDirty = formIsDirty || rawJsonDirty || sectionsDirty;
 
   useEffect(() => {
     const base = isNew ? EMPTY_FORM : model ? rowToFormData(model) : EMPTY_FORM;
@@ -889,6 +913,7 @@ export default function AiModelDetailPanel({
     setRawJsonError(null);
     setSavedFlash(false);
     setActiveTab("details");
+    setDirtySections({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model?.id, isNew]);
 
@@ -903,12 +928,14 @@ export default function AiModelDetailPanel({
   // READ-ONLY — editing happens in the Offerings page. Load the model's
   // offerings so the Pricing tab can display their tiers.
   const [offerings, setOfferings] = useState<AiOffering[]>([]);
+  const [offeringsLoading, setOfferingsLoading] = useState(false);
   const [offeringsError, setOfferingsError] = useState<string | null>(null);
 
   useEffect(() => {
     const modelId = model?.id;
     setOfferings([]);
     setOfferingsError(null);
+    setOfferingsLoading(Boolean(modelId));
     if (!modelId) return;
     let cancelled = false;
     aiModelService
@@ -920,6 +947,9 @@ export default function AiModelDetailPanel({
         if (!cancelled) {
           setOfferingsError(err instanceof Error ? err.message : String(err));
         }
+      })
+      .finally(() => {
+        if (!cancelled) setOfferingsLoading(false);
       });
     return () => {
       cancelled = true;
@@ -1085,9 +1115,12 @@ export default function AiModelDetailPanel({
     rawJsonText.trim().length > 0 &&
     !validateRawJson(rawJsonText).some((i) => i.kind === "parse");
 
+  // Footer Save covers ONLY the form + raw JSON — section editors (Controls /
+  // Constraints / JSON Fields) have their own save actions, so their dirtiness
+  // must not enable a footer button that would not actually save them.
   const canSave =
     usingRawJsonForNew ||
-    (formData.name.trim() && (isNew || isDirty));
+    (formData.name.trim() && (isNew || formIsDirty || rawJsonDirty));
 
   return (
     <>
@@ -1247,34 +1280,44 @@ export default function AiModelDetailPanel({
             onValueChange={setActiveTab}
             className="flex-1 flex flex-col overflow-hidden min-h-0"
           >
-            <div className="border-b px-3 shrink-0">
-              <TabsList className="h-9 bg-transparent p-0 gap-0">
+            <div className="border-b px-3 shrink-0 overflow-x-auto scrollbar-none">
+              <TabsList className="h-9 bg-transparent p-0 gap-0 w-max">
                 <TabsTrigger
                   value="details"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
+                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3 shrink-0"
                 >
                   Details
-                  {isDirty && (
+                  {(formIsDirty || rawJsonDirty) && (
                     <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
                   )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="json"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
+                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3 shrink-0"
                 >
                   JSON Fields
+                  {dirtySections["json-capabilities"] && (
+                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                  )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="controls"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
+                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3 shrink-0"
                 >
                   Controls
+                  {dirtySections["controls"] && (
+                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                  )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="constraints"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
+                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3 shrink-0"
                 >
                   Constraints
+                  {(dirtySections["constraints-family"] ||
+                    dirtySections["constraints-override"]) && (
+                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                  )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="pricing"
@@ -1344,6 +1387,9 @@ export default function AiModelDetailPanel({
                 onSave={handleJsonSave("capabilities")}
                 description="Supported features (array or object)"
                 defaultExpanded
+                onDirtyChange={(dirty) =>
+                  reportSectionDirty("json-capabilities", dirty)
+                }
               />
             </TabsContent>
 
@@ -1352,10 +1398,12 @@ export default function AiModelDetailPanel({
               className="flex-1 m-0 overflow-auto p-3 min-h-0"
             >
               {model && (
-                <ModelRulesEditor
+                <ModelControlsEditor
                   model={model}
                   offerings={offerings}
-                  mode="controls"
+                  onDirtyChange={(dirty) =>
+                    reportSectionDirty("controls", dirty)
+                  }
                 />
               )}
             </TabsContent>
@@ -1368,7 +1416,9 @@ export default function AiModelDetailPanel({
                 <ModelRulesEditor
                   model={model}
                   offerings={offerings}
-                  mode="constraints"
+                  onDirtyChange={(section, dirty) =>
+                    reportSectionDirty(`constraints-${section}`, dirty)
+                  }
                 />
               )}
             </TabsContent>
@@ -1379,6 +1429,7 @@ export default function AiModelDetailPanel({
             >
               <OfferingPricingReadOnly
                 offerings={offerings}
+                loading={offeringsLoading}
                 error={offeringsError}
               />
             </TabsContent>
@@ -1481,8 +1532,26 @@ export default function AiModelDetailPanel({
           <AlertDialogHeader>
             <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes to <strong>{displayName}</strong>. What
-              would you like to do?
+              You have unsaved changes to <strong>{displayName}</strong>
+              {sectionsDirty && (
+                <>
+                  {" "}
+                  — including edits in{" "}
+                  {[
+                    dirtySections["controls"] ? "Controls" : null,
+                    dirtySections["constraints-family"] ||
+                    dirtySections["constraints-override"]
+                      ? "Constraints"
+                      : null,
+                    dirtySections["json-capabilities"] ? "JSON Fields" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                  , which save from their own tab (the footer Save does not
+                  cover them)
+                </>
+              )}
+              . What would you like to do?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -1498,15 +1567,17 @@ export default function AiModelDetailPanel({
             >
               Discard & Close
             </AlertDialogAction>
-            <AlertDialogAction
-              onClick={async () => {
-                setShowDirtyDialog(false);
-                await handleSaveAndClose();
-              }}
-              className="bg-primary hover:bg-primary/90"
-            >
-              Save & Close
-            </AlertDialogAction>
+            {(formIsDirty || rawJsonDirty) && (
+              <AlertDialogAction
+                onClick={async () => {
+                  setShowDirtyDialog(false);
+                  await handleSaveAndClose();
+                }}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {sectionsDirty ? "Save form & Close" : "Save & Close"}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

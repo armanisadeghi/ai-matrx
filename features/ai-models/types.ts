@@ -118,26 +118,73 @@ export type ControlParamType =
   | "array"
   | "object";
 
+/** RESOLVED control shape — the OUTPUT of `ai.resolve_model_config` /
+ *  the `ai.model_config` view (what the picker & agent-settings UIs consume).
+ *  This is NOT what is stored in `ai.api.rules` / `ai.offering.override` —
+ *  the stored shape is {@link ControlRule}. */
 export type ControlParam = {
-  type?: ControlParamType;
+  type?: ControlParamType | "enum" | "dynamic";
   min?: number;
   max?: number;
   default?: unknown;
   allowed?: boolean;
-  enum?: string[];
+  enum?: unknown[];
   items?: { type: string };
   maxItems?: number;
   required?: boolean;
+  source?: string;
 };
 
 export type ControlsSchema = Record<string, ControlParam>;
 
+/** STORED per-setting rule — the shape kept under `params.<key>` in
+ *  `ai.api.rules` and `ai.offering.override` (mirror of the matrx-ai
+ *  `ControlRule` pydantic model; every field optional/sparse).
+ *  auto/none law: `auto` = omit the key (Python default applies);
+ *  `none` = never send the key to the provider. A `value_map` must never map
+ *  either house token to a concrete provider value (identity or null only). */
+export type ControlRule = {
+  /** Rename: send under this provider key instead of the canonical key. */
+  provider_key?: string;
+  /** Canonical value → provider value. Identity entries define native vocab. */
+  value_map?: Record<string, unknown>;
+  /** What to do with values missing from value_map. */
+  on_unmapped?: string;
+  /** Range clamp applied to outbound values; intersects canonical min/max. */
+  clamp?: { min?: number | null; max?: number | null };
+  /** false = this setting is not supported → hidden from users, never sent. */
+  supported?: boolean;
+  /** Default shown/used when the caller leaves the setting on `auto`. */
+  default?: unknown;
+  /** Send `default` even when the caller never set the key. */
+  send_when_unset?: boolean;
+  /** Hard-pin: always send exactly this value. */
+  const?: unknown;
+  /** Named server-side processor (anthropic_thinking, effort_ceiling, …). */
+  processor?: string;
+  processor_config?: Record<string, unknown>;
+  /** Explicit UI vocabulary (seeded order) — wins over value_map derivation. */
+  ui_values?: unknown[];
+};
+
+export type RulesParams = Record<string, ControlRule>;
+
 /** The enveloped rules shape stored in `ai.api.rules` and `ai.offering.override`:
- *  `{"params": {...ControlsSchema}, "constraints": [...ModelConstraint]}`.
+ *  `{"params": {key: ControlRule}, "constraints": [...ModelConstraint]}`.
  *  Never store a flat param map — the envelope is the canonical wire shape. */
 export type RulesEnvelope = {
-  params: ControlsSchema;
+  params: RulesParams;
   constraints: ModelConstraint[];
+};
+
+/** Where each fact of a resolved control came from. */
+export type ControlProvenance = {
+  /** Rule fields present on the family (`ai.api.rules.params[key]`). */
+  family: (keyof ControlRule)[];
+  /** Rule fields present on the override (`ai.offering.override.params[key]`). */
+  override: (keyof ControlRule)[];
+  /** True when the key exists in `ai.setting` (unknown keys never resolve). */
+  known: boolean;
 };
 
 export type ProviderModelEntry = {
@@ -155,6 +202,15 @@ export type ProviderModelsCache = {
   fetched_at: string;
   models: ProviderModelEntry[];
   raw?: unknown;
+};
+
+/** One curated "ideal doc page" on `ai.provider.doc_sources` /
+ *  `ai.endpoint.doc_sources` — the exact pages the AI Model Config Sync agent
+ *  reads BEFORE any web search. */
+export type DocSource = {
+  kind: "models" | "params" | "pricing" | "changelog";
+  url: string;
+  notes?: string | null;
 };
 
 // =============================================================================
