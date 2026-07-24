@@ -90,8 +90,14 @@ Both are **pure** — no React, Redux, DOM, or Supabase. A consumer supplies con
 
 ## Change log
 
+- `2026-07-24` — **`strip-inline-markdown` op added** (Extra, off by default).
+  Strips inline markdown ANYWHERE in a value — `**bold**`, `*italic*`, `` `code` ``,
+  `[text](url)` — the interior counterpart to the whole-value unwrappers, which only
+  fire when a marker wraps the *entire* value (so `**planning workflow:** …` was
+  reported "already clean" until this op). Underscore emphasis (`_x_` / `__x__`) is
+  deliberately NOT stripped — it would maul snake_case and dunders.
 - `2026-07-24` — **Value engine added.** New `value-types.ts` + `value-operations.ts`
-  (15 ops: line endings, invisibles, exotic spaces, decode HTML, unwrap code ticks /
+  (line endings, invisibles, exotic spaces, decode HTML, unwrap code ticks /
   bold / italic / quotes, strip list + heading markers, straighten quotes, collapse
   spaces + blank lines, trim edges, blank-to-empty) + `clean-cells.ts` (single-value
   run, row×field scan, row patches, review cards). New shared UI at

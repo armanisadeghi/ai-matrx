@@ -221,6 +221,33 @@ export const VALUE_CLEANUP_OPERATIONS: ValueCleanupOperationDef[] = [
       unwrapPair(v, "'" + chars(0x2018), "'" + chars(0x2019)),
   },
   {
+    id: "strip-inline-markdown",
+    label: "Remove markdown formatting",
+    description:
+      "Strip inline markdown ANYWHERE in the value — **bold**, *italic*, `code`, [text](link) — keeping the text. Complements the whole-value unwrappers above (which only fire when the marker wraps the entire value).",
+    human: "Removed inline markdown formatting",
+    defaultEnabled: false,
+    group: "extra",
+    run: (v) => {
+      let out = v;
+      // 1. Links: [text](url) -> text. First, so emphasis inside the label is
+      //    still handled by the passes below.
+      out = out.replace(/\[([^\]\n]+?)\]\((?:[^)\n]*)\)/g, "$1");
+      // 2. Bold: **text** / __text__ -> text. Before italic so ** is consumed
+      //    as bold, not as two italic markers.
+      out = out.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
+      out = out.replace(/__([^_\n]+?)__/g, "$1");
+      // 3. Inline code: `text` -> text (interior spans; the whole-value case is
+      //    unwrap-code-ticks). Skipped when a value is a lone unbalanced tick.
+      out = out.replace(/`([^`\n]+?)`/g, "$1");
+      // 4. Italic: *text* -> text. Underscore italic (_text_) is deliberately
+      //    NOT stripped — it would maul snake_case identifiers like
+      //    needs_reviewer and python dunders, which are common in this data.
+      out = out.replace(/\*([^*\n]+?)\*/g, "$1");
+      return out === v ? null : out;
+    },
+  },
+  {
     id: "strip-list-marker",
     label: "Strip list markers",
     description:

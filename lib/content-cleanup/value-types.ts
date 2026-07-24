@@ -22,6 +22,7 @@ export type ValueCleanupOperationId =
   | "unwrap-bold"
   | "unwrap-italic"
   | "unwrap-quotes"
+  | "strip-inline-markdown"
   | "strip-list-marker"
   | "strip-heading-marker"
   | "normalize-quotes"

@@ -1911,8 +1911,8 @@ const UserTableViewer = ({
         <div
           className={
             fillHeight
-              ? "flex shrink-0 flex-wrap items-center justify-between gap-y-2 gap-x-3"
-              : "flex flex-wrap justify-between items-center gap-y-2 gap-x-3 mt-4"
+              ? "flex shrink-0 items-center justify-between gap-3"
+              : "flex items-center justify-between gap-3 mt-4"
           }
         >
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
@@ -1959,7 +1959,9 @@ const UserTableViewer = ({
             </span>
           </div>
 
-          <Pagination>
+          {/* w-auto: the shared Pagination defaults to w-full, which would push
+              the rows-per-page control onto its own line. */}
+          <Pagination className="mx-0 w-auto justify-end">
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
