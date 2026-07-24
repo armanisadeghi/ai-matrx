@@ -39,6 +39,8 @@ interface ValidateCase {
     ok?: boolean;
     rejected_fields?: string[];
     warning_fields?: string[];
+    rejected_issues?: [string, string][];
+    warning_issues?: [string, string][];
   };
 }
 
@@ -90,6 +92,56 @@ function sortedDedupedKeys(list: { key: string }[]): string[] {
   return [...new Set(list.map((entry) => entry.key))].sort();
 }
 
+// The complete issue-code vocabulary (ruling (i)) — identical in all three
+// implementations, documented in my-matrx's DATA_API.md as a public wire
+// contract. A code outside this set is a divergence even when field lists match.
+const ISSUE_CODES = new Set([
+  "required_missing",
+  "unknown_key",
+  "type_mismatch",
+  "max_length",
+  "out_of_range",
+  "invalid_option",
+]);
+
+function comparePairs(a: [string, string], b: [string, string]): number {
+  if (a[0] !== b[0]) return a[0] < b[0] ? -1 : 1;
+  if (a[1] !== b[1]) return a[1] < b[1] ? -1 : 1;
+  return 0;
+}
+
+/**
+ * Sorted [key, code] pairs — NOT deduped, so issue MULTIPLICITY is pinned too
+ * (ruling (j)). Element-wise comparison, matching Python's list ordering; a
+ * default `.sort()` would compare the joined "key,code" string instead.
+ */
+function sortedIssuePairs(list: { key: string; code: string }[]): [string, string][] {
+  return list.map((entry): [string, string] => [entry.key, entry.code]).sort(comparePairs);
+}
+
+/**
+ * A MISSING expectation is a FAILURE, never a skip — silently tolerating one is
+ * exactly how the fixture stayed blind to the code vocabulary for months.
+ */
+function checkIssues(
+  problems: string[],
+  label: string,
+  got: [string, string][],
+  want: [string, string][] | undefined,
+): void {
+  if (want === undefined) {
+    problems.push(`${label}: fixture case has no ${label} — re-copy the canonical fixture`);
+    return;
+  }
+  const wantSorted = want.map((p): [string, string] => [p[0], p[1]]).sort(comparePairs);
+  if (JSON.stringify(got) !== JSON.stringify(wantSorted)) {
+    problems.push(`${label}: expected ${JSON.stringify(wantSorted)}, got ${JSON.stringify(got)}`);
+  }
+  for (const [, code] of got) {
+    if (!ISSUE_CODES.has(code)) problems.push(`${label}: undeclared issue code "${code}"`);
+  }
+}
+
 // ── 1. validate_cases ────────────────────────────────────────────────────────
 for (const c of fixture.validate_cases ?? []) {
   const result = validateItem(c.field_schema, c.data, c.validation_mode);
@@ -111,6 +163,10 @@ for (const c of fixture.validate_cases ?? []) {
       problems.push(`warning_fields: expected [${want}], got [${got}]`);
     }
   }
+  // (key, code) pairs — the only assertion that can SEE a code-vocabulary or
+  // multiplicity divergence between the three twins. Field lists cannot.
+  checkIssues(problems, "rejected_issues", sortedIssuePairs(result.errors), c.expect.rejected_issues);
+  checkIssues(problems, "warning_issues", sortedIssuePairs(result.warnings), c.expect.warning_issues);
   check("validate", c.name, problems);
 }
 

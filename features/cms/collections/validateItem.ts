@@ -58,6 +58,20 @@
  * contract. JS `$` is the normative end anchor (Python must use `\Z`).
  * Fractional seconds accept up to 9 digits.
  *
+ * `required` (ruling (h)): constrains ONLY when it is the literal boolean
+ * `true`. `1`, `"true"`, `[]`, `{}`, `0`, `null` are MALFORMED and IGNORED,
+ * exactly like a malformed max_length. Never `if (field.required)` — JS truthy
+ * and Python truthy disagree about `[]`/`{}`.
+ *
+ * Issue shape — a PUBLIC WIRE CONTRACT (ruling (i)): the my-matrx visitor route
+ * returns these objects verbatim to the browser and its DATA_API.md documents
+ * them, so every twin emits `{key, code, message}` (the property is `key`,
+ * never `field`) with `code` drawn from exactly six values:
+ *   required_missing | unknown_key | type_mismatch
+ *   max_length | out_of_range | invalid_option
+ * EVERY constraint failure on a field is reported, not just the first (ruling
+ * (j)); a TYPE mismatch still short-circuits its own field's constraints.
+ *
  * Modes (W2C-design §2.3):
  *   - advisory (default): unknown keys pass silently; type/constraint
  *     mismatches are recorded as WARNINGS; only required-missing rejects.
@@ -354,6 +368,19 @@ function checkConstraints(
 }
 
 /**
+ * Normative `required` reader (ruling (h)) — the literal boolean `true` and
+ * NOTHING else. Language-native truthiness is BANNED here: `[]` and `{}` are
+ * truthy in JS/TS and falsy in Python, so "is this field required?" used to
+ * depend on which twin you asked — 368 divergences per 5,000 random cases, the
+ * largest ever measured on this seam. A malformed `required` is IGNORED, the
+ * same ruling as a malformed max_length/min/max/options; `parseFieldSchema` in
+ * `app/api/cms/collections/route.ts` refuses to STORE a non-boolean one.
+ */
+function declaredRequired(field: LooseField): boolean {
+  return field.required === true;
+}
+
+/**
  * Is this value an ABSENCE for `required` purposes? Absent and null always;
  * "" only on a string-ish type (ruling (a)).
  */
@@ -393,7 +420,7 @@ export function validateItem(
     const present = Object.prototype.hasOwnProperty.call(data, key);
     const value = present ? data[key] : undefined;
     if (!present || isMissing(field, value)) {
-      if (field.required) {
+      if (declaredRequired(field)) {
         errors.push({
           key,
           code: "required_missing",

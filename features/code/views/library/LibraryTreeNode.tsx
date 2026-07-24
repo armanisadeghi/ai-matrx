@@ -1,9 +1,14 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { ChevronRight, Folder, FolderOpen } from "lucide-react";
+import { ChevronRight, FilePlus, Folder, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { makeSelectChildFolders, makeSelectFilesInFolder } from "@/features/code-files/redux/selectors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import {
+  makeSelectChildFolders,
+  makeSelectFilesInFolder,
+} from "@/features/code-files/redux/selectors";
 import { type CodeFolder } from "@/features/code-files/redux/code-files.types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { FileIcon } from "../../styles/file-icon";
@@ -20,6 +25,7 @@ interface LibraryTreeNodeProps {
   depth: number;
   onOpenFile: (codeFileId: string) => void;
   activeTabId: string | null;
+  onCreateFile: (folderId: string | null, label: string) => void;
 }
 
 /**
@@ -32,6 +38,7 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
   depth,
   onOpenFile,
   activeTabId,
+  onCreateFile,
 }) => {
   const [expanded, setExpanded] = useState(depth === 0);
 
@@ -49,44 +56,67 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
   const hasChildren = childFolders.length > 0 || files.length > 0;
 
   const toggle = useCallback(() => setExpanded((e) => !e), []);
+  const folderMenuSections: ContextMenuExtraSection[] = [
+    {
+      id: "library-folder-actions",
+      anchor: "after-clipboard",
+      items: [
+        {
+          kind: "item",
+          id: "library-folder-new-file",
+          label: "New file",
+          icon: FilePlus,
+          onSelect: () => onCreateFile(folder.id, folder.name),
+        },
+      ],
+    },
+  ];
 
   return (
     <div className="select-none">
-      <div
-        role="treeitem"
-        aria-expanded={expanded}
-        tabIndex={0}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            toggle();
-          }
-        }}
-        className={cn(
-          "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
-          ROW_HEIGHT,
-          TEXT_BODY,
-          HOVER_ROW,
-        )}
-        style={{ paddingLeft: 8 + depth * 12 }}
-        title={folder.description ?? folder.name}
+      <NonEditableContextMenu
+        sourceFeature="code-editor"
+        contextData={{ content: folder.name }}
+        extraSections={folderMenuSections}
+        enableFloatingIcon={false}
       >
-        <ChevronRight
-          size={12}
+        <div
+          role="treeitem"
+          aria-expanded={expanded}
+          aria-selected={false}
+          tabIndex={0}
+          onClick={toggle}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggle();
+            }
+          }}
           className={cn(
-            "shrink-0 text-neutral-500 transition-transform",
-            expanded && "rotate-90",
-            !hasChildren && "opacity-30",
+            "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
+            ROW_HEIGHT,
+            TEXT_BODY,
+            HOVER_ROW,
           )}
-        />
-        {expanded ? (
-          <FolderOpen size={14} className="shrink-0 text-blue-500" />
-        ) : (
-          <Folder size={14} className="shrink-0 text-blue-500" />
-        )}
-        <span className="truncate">{folder.name}</span>
-      </div>
+          style={{ paddingLeft: 8 + depth * 12 }}
+          title={folder.description ?? folder.name}
+        >
+          <ChevronRight
+            size={12}
+            className={cn(
+              "shrink-0 text-neutral-500 transition-transform",
+              expanded && "rotate-90",
+              !hasChildren && "opacity-30",
+            )}
+          />
+          {expanded ? (
+            <FolderOpen size={14} className="shrink-0 text-blue-500" />
+          ) : (
+            <Folder size={14} className="shrink-0 text-blue-500" />
+          )}
+          <span className="truncate">{folder.name}</span>
+        </div>
+      </NonEditableContextMenu>
 
       {expanded && (
         <div role="group">
@@ -97,6 +127,7 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
               depth={depth + 1}
               onOpenFile={onOpenFile}
               activeTabId={activeTabId}
+              onCreateFile={onCreateFile}
             />
           ))}
           {files.map((file) => {

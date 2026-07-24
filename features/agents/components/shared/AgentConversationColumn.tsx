@@ -185,8 +185,26 @@ export function AgentConversationColumn({
     scrollEl.scrollTo({ top: scrollEl.scrollHeight });
   }, []);
 
+  // Volatile values the reveal chain READS but must never RE-ARM on. Keeping
+  // them in refs is load-bearing: when they were effect deps, any change to
+  // messageCount / isLoadingOlder / hasMoreOlder during the ~5s reveal window
+  // tore down the pending unlock timer, and the re-run bailed at
+  // `didAutoRevealRef` without rescheduling it. The cold lock then stayed on
+  // FOREVER — which left `pinColdTranscriptToBottom`'s ResizeObserver armed
+  // for the life of the conversation (every content resize yanked the
+  // transcript to the bottom: expanding a "Worked for 26s" fold, every
+  // streamed token) and kept OlderMessagesSentinel permanently disabled.
+  const hasMoreOlderRef = useRef(hasMoreOlder);
+  hasMoreOlderRef.current = hasMoreOlder;
+  const isLoadingOlderRef = useRef(isLoadingOlder);
+  isLoadingOlderRef.current = isLoadingOlder;
+  const messageCountRef = useRef(messageCount);
+  messageCountRef.current = messageCount;
+
+  const hasMessages = messageCount > 0;
+
   useEffect(() => {
-    if (!deferColdMarkdown || messageCount === 0) return undefined;
+    if (!deferColdMarkdown || !hasMessages) return undefined;
     if (autoRevealDisplayRef.current !== displayId) {
       autoRevealDisplayRef.current = displayId;
       didAutoRevealRef.current = false;
@@ -215,9 +233,9 @@ export function AgentConversationColumn({
         }),
       );
       if (
-        hasMoreOlder &&
-        !isLoadingOlder &&
-        messageCount < CHAT_AUTO_VISIBLE_GROUPS
+        hasMoreOlderRef.current &&
+        !isLoadingOlderRef.current &&
+        messageCountRef.current < CHAT_AUTO_VISIBLE_GROUPS
       ) {
         void dispatch(
           loadOlderMessages({
@@ -234,14 +252,7 @@ export function AgentConversationColumn({
       window.clearTimeout(timer);
       if (unlockTimer) window.clearTimeout(unlockTimer);
     };
-  }, [
-    deferColdMarkdown,
-    dispatch,
-    displayId,
-    hasMoreOlder,
-    isLoadingOlder,
-    messageCount,
-  ]);
+  }, [deferColdMarkdown, dispatch, displayId, hasMessages]);
 
   useLayoutEffect(() => {
     if (!shouldPinColdScroll) return undefined;
@@ -255,7 +266,30 @@ export function AgentConversationColumn({
     });
     observer.observe(scrollEl);
     observer.observe(contentEl);
-    return () => observer.disconnect();
+
+    // THE BRAKE: the instant the user works against the pin, it is released
+    // for good. Nothing in this surface may ever fight a deliberate scroll —
+    // not during cold load, not mid-stream. This is a hard release (never a
+    // "re-pin when they come back"), and it is deliberately redundant with the
+    // timer above so a stalled unlock can never trap the user again.
+    const release = () => setColdHistoryUnlockedDisplayId(displayId);
+    scrollEl.addEventListener("wheel", release, { passive: true });
+    scrollEl.addEventListener("touchmove", release, { passive: true });
+    scrollEl.addEventListener("keydown", release);
+    // Scrollbar drag / thumb click — a pointerdown on the scroller's own
+    // gutter never reaches a child, so it is unambiguous scroll intent.
+    const releaseOnGutter = (e: PointerEvent) => {
+      if (e.target === scrollEl) release();
+    };
+    scrollEl.addEventListener("pointerdown", releaseOnGutter);
+
+    return () => {
+      observer.disconnect();
+      scrollEl.removeEventListener("wheel", release);
+      scrollEl.removeEventListener("touchmove", release);
+      scrollEl.removeEventListener("keydown", release);
+      scrollEl.removeEventListener("pointerdown", releaseOnGutter);
+    };
   }, [
     chatVisibleGroupLimit,
     displayId,

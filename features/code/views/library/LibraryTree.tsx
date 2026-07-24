@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronRight, FolderHeart } from "lucide-react";
+import { ChevronRight, FilePlus, FolderHeart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import {
   loadCodeFilesList,
   loadCodeFolders,
@@ -38,12 +40,18 @@ import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 
 const selectRootFiles = makeSelectFilesInFolder(null);
 
+interface LibraryTreeProps {
+  refreshKey?: number;
+  onCreateFile: (folderId: string | null, label: string) => void;
+}
+
 /**
  * Tree view backed by the `code_files` + `code_folders` Redux slice. Shows
  * top-level folders (recursive) followed by any unfiled files at the root.
  */
-export const LibraryTree: React.FC<{ refreshKey?: number }> = ({
+export const LibraryTree: React.FC<LibraryTreeProps> = ({
   refreshKey = 0,
+  onCreateFile,
 }) => {
   const dispatch = useAppDispatch();
   const listStatus = useAppSelector(selectCodeFilesListStatus);
@@ -123,6 +131,7 @@ export const LibraryTree: React.FC<{ refreshKey?: number }> = ({
         activeTabId={activeTabId ?? null}
         openFile={openFile}
         defaultExpanded={!focusedLibrarySourceId}
+        onCreateFile={onCreateFile}
       />
 
       {/* Adapter-backed source roots. Each one is lazy — entries are
@@ -155,6 +164,7 @@ interface MyFilesRootProps {
   activeTabId: string | null;
   openFile: (codeFileId: string) => void;
   defaultExpanded?: boolean;
+  onCreateFile: (folderId: string | null, label: string) => void;
 }
 
 const MyFilesRoot: React.FC<MyFilesRootProps> = ({
@@ -165,42 +175,66 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
   activeTabId,
   openFile,
   defaultExpanded = true,
+  onCreateFile,
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const toggle = () => setExpanded((e) => !e);
+  const rootMenuSections: ContextMenuExtraSection[] = [
+    {
+      id: "library-root-actions",
+      anchor: "after-clipboard",
+      items: [
+        {
+          kind: "item",
+          id: "library-root-new-file",
+          label: "New file",
+          icon: FilePlus,
+          onSelect: () => onCreateFile(null, "My Files"),
+        },
+      ],
+    },
+  ];
 
   return (
     <div className="select-none">
-      <div
-        role="treeitem"
-        aria-expanded={expanded}
-        tabIndex={0}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            toggle();
-          }
-        }}
-        className={cn(
-          "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
-          ROW_HEIGHT,
-          TEXT_BODY,
-          HOVER_ROW,
-        )}
-        style={{ paddingLeft: 8 + depth * 12 }}
-        title="Files you've saved or captured"
+      <NonEditableContextMenu
+        sourceFeature="code-editor"
+        contextData={{ content: "My Files" }}
+        extraSections={rootMenuSections}
+        enableFloatingIcon={false}
       >
-        <ChevronRight
-          size={12}
+        <div
+          role="treeitem"
+          aria-expanded={expanded}
+          aria-selected={false}
+          tabIndex={0}
+          onClick={toggle}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggle();
+            }
+          }}
           className={cn(
-            "shrink-0 text-neutral-500 transition-transform",
-            expanded && "rotate-90",
+            "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
+            ROW_HEIGHT,
+            TEXT_BODY,
+            HOVER_ROW,
           )}
-        />
-        <FolderHeart size={14} className="shrink-0 text-emerald-500" />
-        <span className="truncate">My Files</span>
-      </div>
+          style={{ paddingLeft: 8 + depth * 12 }}
+          title="Files you've saved or captured"
+        >
+          <ChevronRight
+            size={12}
+            className={cn(
+              "shrink-0 text-neutral-500 transition-transform",
+              expanded && "rotate-90",
+            )}
+          />
+          <FolderHeart size={14} className="shrink-0 text-emerald-500" />
+          <span className="truncate">My Files</span>
+        </div>
+      </NonEditableContextMenu>
 
       {expanded && (
         <div role="group">
@@ -213,6 +247,14 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
               <p className="mt-1">
                 Save code blocks from chat or HTML pages to see them here.
               </p>
+              <button
+                type="button"
+                className="mt-2 inline-flex items-center gap-1 rounded-sm bg-neutral-200 px-2 py-1 font-medium text-neutral-800 hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                onClick={() => onCreateFile(null, "My Files")}
+              >
+                <FilePlus size={12} />
+                Create a file
+              </button>
             </div>
           )}
 
@@ -223,6 +265,7 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
               depth={depth + 1}
               onOpenFile={openFile}
               activeTabId={activeTabId}
+              onCreateFile={onCreateFile}
             />
           ))}
 

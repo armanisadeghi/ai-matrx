@@ -1,5 +1,5 @@
 {
-  "$comment": "CW3 language-neutral drift fixture for validate_item (aidream/services/cms/collection_validation.py) and the my-matrx JS twin. Both implementations MUST run every case byte-identically. expect.rejected_fields / expect.warning_fields are SORTED, DEDUPED key lists. utf8_byte_length_cases / item_byte_size_cases pin the caller-enforced byte-cap counters (UTF-8 bytes; item bytes = compact JSON, no ascii escaping). max_length counts Unicode CODE POINTS (JS: [...s].length or codePointAt iteration, NEVER .length).",
+  "$comment": "CW3 language-neutral drift fixture for validate_item — the ONE pin holding the three implementations together: aidream/services/cms/collection_validation.py (CANONICAL, Python), my-matrx/lib/collections/validateItem.js (visitor path, JS), and matrx-frontend/features/cms/collections/validateItem.ts (admin path, TS). All three run every case byte-identically. expect.rejected_fields / expect.warning_fields are SORTED, DEDUPED key lists. expect.rejected_issues / expect.warning_issues are SORTED lists of [key, code] pairs, NOT deduped — they pin the error-code vocabulary AND the issue multiplicity, which bare field lists are structurally blind to (that blindness is how Python's coarse 'constraint_violation' code and its short-circuit-after-first-failure both survived undetected). Codes: required_missing | unknown_key | type_mismatch | max_length | out_of_range | invalid_option; the issue's identifier property is 'key' on all three. utf8_byte_length_cases / item_byte_size_cases pin the caller-enforced byte-cap counters (UTF-8 bytes; item bytes = compact JSON, no ascii escaping). max_length counts Unicode CODE POINTS (JS: [...s].length, NEVER .length). required constrains ONLY when it is the literal boolean true.",
   "validate_cases": [
     {
       "name": "advisory_all_types_valid",
@@ -70,7 +70,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -101,7 +103,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -120,7 +124,14 @@
         "rejected_fields": [
           "email"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "email",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -139,7 +150,14 @@
         "rejected_fields": [
           "email"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "email",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -160,7 +178,14 @@
         "rejected_fields": [
           "name"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "name",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -181,7 +206,14 @@
         "rejected_fields": [
           "name"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "name",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -199,7 +231,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -217,7 +251,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -236,7 +272,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -257,7 +295,14 @@
         "rejected_fields": [
           "payload"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "payload",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -276,7 +321,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -297,7 +344,14 @@
         "rejected_fields": [
           "sneaky"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "sneaky",
+            "unknown_key"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -317,6 +371,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "party"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "party",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -337,7 +398,14 @@
         "rejected_fields": [
           "party"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "party",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -355,7 +423,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -375,7 +445,14 @@
         "rejected_fields": [
           "party"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "party",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -395,7 +472,14 @@
         "rejected_fields": [
           "party"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "party",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -415,7 +499,14 @@
         "rejected_fields": [
           "party"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "party",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -435,7 +526,14 @@
         "rejected_fields": [
           "party"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "party",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -457,6 +555,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "party"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "party",
+            "out_of_range"
+          ]
         ]
       }
     },
@@ -479,7 +584,14 @@
         "rejected_fields": [
           "party"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "party",
+            "out_of_range"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -497,7 +609,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -517,7 +631,14 @@
         "rejected_fields": [
           "ok"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "ok",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -537,6 +658,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "ok"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "ok",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -556,7 +684,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -577,7 +707,14 @@
         "rejected_fields": [
           "notes"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "notes",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -598,6 +735,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "notes"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "notes",
+            "max_length"
+          ]
         ]
       }
     },
@@ -620,7 +764,14 @@
         "rejected_fields": [
           "notes"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "notes",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -638,7 +789,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -656,7 +809,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -674,7 +829,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -692,7 +849,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -710,7 +869,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -730,7 +891,14 @@
         "rejected_fields": [
           "when"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "when",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -750,7 +918,14 @@
         "rejected_fields": [
           "when"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "when",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -770,7 +945,14 @@
         "rejected_fields": [
           "when"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "when",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -790,7 +972,14 @@
         "rejected_fields": [
           "when"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "when",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -810,7 +999,14 @@
         "rejected_fields": [
           "when"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "when",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -830,7 +1026,14 @@
         "rejected_fields": [
           "when"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "when",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -850,7 +1053,14 @@
         "rejected_fields": [
           "when"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "when",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -870,6 +1080,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "when"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "when",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -890,6 +1107,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "email"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "email",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -910,7 +1134,14 @@
         "rejected_fields": [
           "email"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "email",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -930,7 +1161,14 @@
         "rejected_fields": [
           "email"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "email",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -948,7 +1186,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -968,7 +1208,14 @@
         "rejected_fields": [
           "site"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "site",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -988,7 +1235,14 @@
         "rejected_fields": [
           "site"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "site",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1010,7 +1264,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1034,7 +1290,14 @@
         "rejected_fields": [
           "service"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "service",
+            "invalid_option"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1058,6 +1321,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "service"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "service",
+            "invalid_option"
+          ]
         ]
       }
     },
@@ -1076,7 +1346,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1099,7 +1371,14 @@
         "rejected_fields": [
           "service"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "service",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1119,7 +1398,14 @@
         "rejected_fields": [
           "name"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "name",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1150,7 +1436,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1178,6 +1466,18 @@
         ],
         "warning_fields": [
           "party"
+        ],
+        "rejected_issues": [
+          [
+            "email",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": [
+          [
+            "party",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -1198,7 +1498,14 @@
         "rejected_fields": [
           "x"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "x",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1218,7 +1525,14 @@
         "rejected_fields": [
           "n"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "n",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1239,6 +1553,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "n"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "n",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -1260,7 +1581,14 @@
         "rejected_fields": [
           "n"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "n",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1280,7 +1608,14 @@
         "rejected_fields": [
           "b"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "b",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1301,6 +1636,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "b"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "b",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -1320,7 +1662,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1339,7 +1683,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1360,7 +1706,14 @@
         "rejected_fields": [
           "t"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "t",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1378,7 +1731,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1399,7 +1754,14 @@
         "rejected_fields": [
           "e"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "e",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1420,6 +1782,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "e"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "e",
+            "max_length"
+          ]
         ]
       }
     },
@@ -1441,6 +1810,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "u"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "u",
+            "max_length"
+          ]
         ]
       }
     },
@@ -1462,7 +1838,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1486,7 +1869,14 @@
         "rejected_fields": [
           "s"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "s",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1507,7 +1897,14 @@
         "rejected_fields": [
           "d"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "d",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1528,6 +1925,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "j"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "j",
+            "max_length"
+          ]
         ]
       }
     },
@@ -1551,7 +1955,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1570,7 +1976,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1590,7 +1998,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1610,7 +2025,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1630,7 +2052,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1650,7 +2079,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1670,7 +2106,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1690,6 +2133,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "u"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -1710,7 +2160,14 @@
         "rejected_fields": [
           "e"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "e",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1730,6 +2187,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "e"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "e",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -1750,7 +2214,14 @@
         "rejected_fields": [
           "d"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "d",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1770,6 +2241,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "d"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "d",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -1790,7 +2268,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1810,7 +2295,14 @@
         "rejected_fields": [
           "e"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "e",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1830,7 +2322,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1850,7 +2349,14 @@
         "rejected_fields": [
           "u"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "u",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1870,7 +2376,14 @@
         "rejected_fields": [
           "e"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "e",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1888,7 +2401,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1906,7 +2421,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1926,7 +2443,14 @@
         "rejected_fields": [
           "d"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "d",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -1945,7 +2469,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1964,7 +2490,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -1983,7 +2511,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2002,7 +2532,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2021,7 +2553,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2042,7 +2576,14 @@
         "rejected_fields": [
           "t"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "t",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2063,7 +2604,14 @@
         "rejected_fields": [
           "t"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "t",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2082,7 +2630,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2101,7 +2651,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2120,7 +2672,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2139,7 +2693,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2158,7 +2714,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2180,7 +2738,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2201,7 +2761,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2218,7 +2780,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2238,7 +2802,14 @@
         "rejected_fields": [
           ""
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "",
+            "unknown_key"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2256,7 +2827,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2273,7 +2846,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2294,7 +2869,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2314,7 +2891,14 @@
         "rejected_fields": [
           "n"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "n",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2334,6 +2918,13 @@
         "rejected_fields": [],
         "warning_fields": [
           "n"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "n",
+            "type_mismatch"
+          ]
         ]
       }
     },
@@ -2354,7 +2945,14 @@
         "rejected_fields": [
           "n"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "n",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2372,7 +2970,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2390,7 +2990,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2408,7 +3010,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2426,7 +3030,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2446,7 +3052,14 @@
         "rejected_fields": [
           "d"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "d",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2464,7 +3077,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2482,7 +3097,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2502,7 +3119,14 @@
         "rejected_fields": [
           "d"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "d",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2522,7 +3146,14 @@
         "rejected_fields": [
           "d"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "d",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2542,7 +3173,14 @@
         "rejected_fields": [
           "d"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "d",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2561,7 +3199,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2587,7 +3227,14 @@
         "rejected_fields": [
           "f"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "f",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2626,7 +3273,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2649,7 +3298,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2670,7 +3321,14 @@
         "rejected_fields": [
           "__proto__"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "__proto__",
+            "unknown_key"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2689,7 +3347,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2707,7 +3367,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2725,7 +3387,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2745,7 +3409,14 @@
         "rejected_fields": [
           "n"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "n",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2765,7 +3436,14 @@
         "rejected_fields": [
           "n"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "n",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2784,7 +3462,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2803,7 +3483,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2824,7 +3506,14 @@
         "rejected_fields": [
           "n"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "n",
+            "out_of_range"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2843,7 +3532,9 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
       }
     },
     {
@@ -2864,7 +3555,14 @@
         "rejected_fields": [
           "t"
         ],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "t",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
       }
     },
     {
@@ -2883,7 +3581,462 @@
       "expect": {
         "ok": true,
         "rejected_fields": [],
-        "warning_fields": []
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "required_true_rejects_missing_key",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": true
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": false,
+        "rejected_fields": [
+          "email"
+        ],
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "email",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "required_false_passes_missing_key",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": false
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_empty_list_is_ignored_advisory",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": []
+        }
+      ],
+      "validation_mode": "advisory",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_empty_list_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": []
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_empty_object_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": {}
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_nonempty_list_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": [
+            0
+          ]
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_nonempty_object_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": {
+            "a": 1
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_zero_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": 0
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_one_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": 1
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_string_false_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": "false"
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_string_true_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": "true"
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_null_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": null
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_empty_string_is_ignored_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": ""
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {},
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [],
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "malformed_required_still_type_checks_a_provided_value_strict",
+      "field_schema": [
+        {
+          "key": "email",
+          "type": "email",
+          "required": []
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {
+        "email": "not-an-email"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_fields": [
+          "email"
+        ],
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "email",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "select_over_max_length_and_bad_option_reports_both_strict",
+      "field_schema": [
+        {
+          "key": "s",
+          "type": "select",
+          "max_length": 2,
+          "options": [
+            "ok"
+          ]
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {
+        "s": "nope"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_fields": [
+          "s"
+        ],
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "s",
+            "invalid_option"
+          ],
+          [
+            "s",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "select_over_max_length_and_bad_option_reports_both_advisory",
+      "field_schema": [
+        {
+          "key": "s",
+          "type": "select",
+          "max_length": 2,
+          "options": [
+            "ok"
+          ]
+        }
+      ],
+      "validation_mode": "advisory",
+      "data": {
+        "s": "nope"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [
+          "s"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "s",
+            "invalid_option"
+          ],
+          [
+            "s",
+            "max_length"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "number_below_min_and_above_max_reports_both_strict",
+      "field_schema": [
+        {
+          "key": "n",
+          "type": "number",
+          "min": 10,
+          "max": 5
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {
+        "n": 7
+      },
+      "expect": {
+        "ok": false,
+        "rejected_fields": [
+          "n"
+        ],
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "n",
+            "out_of_range"
+          ],
+          [
+            "n",
+            "out_of_range"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "number_below_min_and_above_max_reports_both_advisory",
+      "field_schema": [
+        {
+          "key": "n",
+          "type": "number",
+          "min": 10,
+          "max": 5
+        }
+      ],
+      "validation_mode": "advisory",
+      "data": {
+        "n": 7
+      },
+      "expect": {
+        "ok": true,
+        "rejected_fields": [],
+        "warning_fields": [
+          "n"
+        ],
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "n",
+            "out_of_range"
+          ],
+          [
+            "n",
+            "out_of_range"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "type_mismatch_short_circuits_constraints_strict",
+      "field_schema": [
+        {
+          "key": "s",
+          "type": "select",
+          "max_length": 2,
+          "options": [
+            "ok"
+          ]
+        }
+      ],
+      "validation_mode": "strict",
+      "data": {
+        "s": 12345
+      },
+      "expect": {
+        "ok": false,
+        "rejected_fields": [
+          "s"
+        ],
+        "warning_fields": [],
+        "rejected_issues": [
+          [
+            "s",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
       }
     }
   ],

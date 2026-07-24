@@ -216,8 +216,9 @@ const ToolCallVisualizationInner: React.FC<{
 
   // The expanded body is height-capped with internal scroll (see below) so a
   // streaming result NEVER grows the card's footprint unboundedly. While the
-  // tool streams, the viewport stays pinned to the freshest content; when it
-  // finishes, control returns to the user.
+  // tool streams, the body FOLLOWS the freshest content only while it is
+  // already at the bottom — one scroll away detaches it. It never blocks a
+  // scroll (see `useAutoScrollOnStream`).
   const bodyScrollRef = useAutoScrollOnStream<HTMLDivElement>(
     headerTool,
     streamingNow,
@@ -501,8 +502,8 @@ const ToolCallVisualizationInner: React.FC<{
         >
           <div className="overflow-hidden">
             {/* Height-capped viewport: a result NEVER grows the transcript
-                unboundedly. While streaming it stays pinned to the freshest
-                content (auto-scroll); once done the user scrolls it freely.
+                unboundedly. While streaming it follows the freshest content
+                only while already at the bottom; a scroll detaches it.
                 Content fades in rather than slamming into place. */}
             <div
               ref={bodyScrollRef}
