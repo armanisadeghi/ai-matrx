@@ -19,23 +19,39 @@ orgs to find and opt into these resources."*
 
 **In:**
 
-1. **`public.library_grant_provenance(p_store uuid)` — publish day 1** (contract, README §2).
-   SECURITY DEFINER, `authenticated`, returns ONLY grants that reach `auth.uid()`
-   (`{audience, industry_id, industry_name, industry_slug, organization_id}`) — never the full
-   grant list (that is the admin view and a different gate; see README D-C). Mirror the audience
-   logic in `public.user_can_read_data_store_via_grant`; do not fork a second predicate. Apply +
-   ledger + `pnpm db-types`. P2's access explorer consumes this family.
+1. **Publish the provenance contract day 1** — both the single and batch forms, exactly as
+   signed in README §2 (do not restate or alter the signature here; link to it). Mirror the
+   audience logic in `public.user_can_read_data_store_via_grant` — do not fork a second
+   predicate — and follow the industry-RPC security shape (`COALESCE(auth.uid(), p_actor)` if
+   you take an actor at all; anon EXECUTE revoked). Apply + ledger + `pnpm db-types`. P2's
+   access explorer is waiting on this.
 2. **`/rag/library-catalog` as a real route** — promote `LibraryCatalogPane` to a list-view
-   destination per feature-entry doctrine (list → open → act): search/filter, entitlement chip
-   (`subscribed` / `via <industry>` / `global` / `not entitled`), and a store detail view
-   (description, member count, read-only member table, preview links). Keep the `/rag` pane as a
-   teaser that links here. Read via `rag.fn_list_library_catalog` (direct, already live).
-3. **Org-level opt-in in org settings** — an org admin must see the org's industries, the
+   destination per feature-entry doctrine (list → open → act): search/filter, entitlement chip,
+   and a store detail view (description, member count, read-only member table, preview links).
+   Keep the `/rag` pane as a teaser that links here.
+
+   ⚠️ **`rag.fn_list_library_catalog` cannot express the states this UI needs — fixing it is
+   part of your scope.** As live today it returns every `discoverable AND is_active` store with
+   **no entitlement filter at all**, and its `subscribed` flag checks **only**
+   `audience='organization'`. So for the AMA store (discoverable, granted by `industry`): a
+   non-entitled user still sees it listed, and the entitled user's flag reads `false`. Decide
+   and implement the honest model — recommended: keep listing discoverable stores (that is what
+   a catalog is *for*) and return the caller's true entitlement state per row
+   (`entitled_via: 'organization' | 'industry' | 'global' | null` plus the industry label), so
+   the chip can say *subscribed* / *via California Workers' Compensation* / *available to
+   everyone* / *not entitled — request access*. Extend the RPC (or add a sibling) rather than
+   post-filtering in TypeScript, and state the final shape in README §2.
+3. **Org-level opt-in in org settings** — surface, in one place, the org's industries, the
    libraries those industries grant, and discoverable stores with subscribe/unsubscribe
    (`rag.library_subscribe`/`_unsubscribe`, which re-validate membership server-side; pass the
-   org from `selectEffectiveOrganizationId`). **Gated on Decision 1** (handoff): if unanswered
-   when you start, build the read-only view + a "request to join industry" action that notifies
-   super-admins, and flag it — never a dead end.
+   org from `selectEffectiveOrganizationId`).
+   **Start from what already exists:** `OrgIndustriesSection.tsx` already lets an org
+   owner/admin assign and unassign industries (`canEdit = isSuperAdmin || canManageSettings`,
+   backed by `industry_assign_org`, which permits org-admins) — self-join is **live**, not
+   missing. Your job is to make it *legible*: show what each industry unlocks, so joining is an
+   informed choice rather than a bare toggle. **Do not build a "request to join" flow or make
+   the section read-only unless Arman picks option (b) in Decision 1** — that would remove a
+   shipped capability.
 4. **Provenance everywhere granted content appears** — `RagHitCard`, Source Inspector header,
    the `'granted'` badge on `DataStoresPage`, and the `/files/f/[id]` → `/rag/viewer` redirect
    page: show "Shared library · via California Workers' Compensation". Thread it through
@@ -82,9 +98,13 @@ surfaces — it is admin/owner-gated and returns the full grant list.
 
 ## Verification
 
-Two-account browser pass (entitled `admin@admin.com` vs non-entitled `arman26@gmail.com` — note
-the former is also a super_admin, so any pass must be paired with the non-admin control; for
-DB-level probes use the clean grant-only user `elliesadeghijd@gmail.com`). Prove:
-catalog lists the AMA store for the entitled user and not the other; provenance chip names the
-industry; subscribe to a non-discoverable store fails loudly (DB-gated); the org-settings view
-shows the correct entitlements. Screenshots in the summary.
+Two-account browser pass — entitled `admin@admin.com` (also a super_admin, so pair every pass
+with the control) vs the true non-admin, non-entitled control
+`asadeghi415@students.fairmontschools.com` (`929274b1-…`). **Do not use `arman26@gmail.com` as a
+control — it is a `developer` admin and passes ANY-admin gates.** For DB-level probes use the
+clean grant-only user `elliesadeghijd@gmail.com` (`77c6af70-…`). Prove: the entitled user's
+catalog row reads *via California Workers' Compensation* while the control's identical row reads
+*not entitled* (both may see a discoverable store listed — the **chip** is what must differ);
+the provenance chip names the industry on a hit card and in the Source Inspector; subscribe to a
+non-discoverable store fails loudly (DB-gated); org settings shows correct entitlements.
+Screenshots in the summary.

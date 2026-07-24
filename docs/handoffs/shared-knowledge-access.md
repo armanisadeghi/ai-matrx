@@ -2,7 +2,7 @@
 status: active
 updated: 2026-07-23
 repos: [matrx-frontend, aidream]
-vision: [docs/proposals/shared-knowledge-projects/README.md]
+vision: []   # Arman's vision for this system is captured verbatim below; no standalone doc of his exists
 ---
 
 # Shared Knowledge Resources — access cascade, issuance, discovery
@@ -43,15 +43,15 @@ On what is still missing:
 > quickly and easily allows access to anything we have and can issue."
 > "easy ways for users and orgs to find and opt into these resources."
 
-**Note the asymmetry the cascade law does NOT contradict:** *whatever level you grant*
-cascades down. Library/industry grants only ever issue **viewer**
-(`association_types.conveys_max='viewer'`), so they cascade read and never write. A War Room
-share of `editor` cascades editor. Same law, different issued level.
+*(inferred — not Arman's words)* The cascade law and the library model do not conflict:
+whatever level you grant cascades. Library/industry grants only ever issue **viewer**
+(`association_types.conveys_max='viewer'`), so they cascade read and never write; a War Room
+share of `editor` cascades editor. Same law, different issued level. **A "grant reader cannot
+edit" report is therefore correct behavior, not a bug.**
 
 ## Resources
 
-- **Master plan + verified status + day-1 contracts:** `docs/proposals/shared-knowledge-projects/README.md`
-- **Feature docs:** [`features/rag/FEATURE.md`](../../features/rag/FEATURE.md) § Shared Knowledge Resources · [`features/industries/FEATURE.md`](../../features/industries/FEATURE.md)
+- **Master plan + verified status + day-1 contracts:** `docs/proposals/shared-knowledge-projects/README.md` · **Feature docs:** [`features/rag/FEATURE.md`](../../features/rag/FEATURE.md) § Shared Knowledge Resources · [`features/industries/FEATURE.md`](../../features/industries/FEATURE.md)
 - **Access system-of-record (outranks this doc on access mechanics):** `/Users/armanisadeghi/code/common-docs/systems/access-architecture/FEATURE.md`; sibling campaign handoff `docs/handoffs/access-scope-campaign.md`
 - **Adjacent, do not absorb:** `docs/handoffs/db-direct-access-sweep.md` (Python-as-DB-proxy removal; owns the `rag.fn_*` conversions) · `docs/handoffs/ama-g5-spine-consolidation.md` (AMA *content* quality/derivations — different workstream, same document)
 - **Skills:** `db-change` family (any DDL), `canonical-associations` (edges/registry), `supabase-realtime`, `type-safety`, `finalize-and-ship`
@@ -61,15 +61,16 @@ share of `editor` cascades editor. Same law, different issued level.
   |---|---|---|
   | **Clean entitled reader** (use for all DB/judge probes) | `elliesadeghijd@gmail.com` — `77c6af70-a35e-4724-a304-64a0dd789674` | **Not an admin.** Entitled *only* through Pearlman Brown → ca-workers-comp. This is the identity that actually proves the grant path. |
   | Browser/HTTP testing | `admin@admin.com` / `Password1234#` — `87a6e699-3622-4869-8843-d0867456c0dd` | Member of Castellano & Reyes, but **also super_admin** — it reports `can_curate=true`, which a real grant reader must NOT have. Every pass with this account must be paired with the control below. |
-  | Non-entitled control | `arman26@gmail.com` — `7604b9d9-57f3-4c44-b75b-dc9a3ee8aacf` | Must be denied everything. |
+  | **True non-entitled control** | `asadeghi415@students.fairmontschools.com` — `929274b1-a889-41ee-8a7f-dbaec7b0ee54` | Not an admin, not entitled. Must be denied everything. |
+  | ⚠️ NOT a valid control | `arman26@gmail.com` — `7604b9d9-…` | It is an admin (`developer`). Any negative test against an **ANY-admin** gate — `page_extraction.py:157`, the grants-list endpoint — passes falsely with this account. |
 
   ⚠️ The id `87a6e699-4e17-…` appearing in older notes is **wrong and does not exist** — every probe using it returns false, which reads exactly like a broken cascade.
 - **Verify the spine in one shot** — expect `t,f,t,f` (viewer yes, editor no, read yes, curate no):
   ```sql
-  select iam.has_access_as('77c6af70-a35e-4724-a304-64a0dd789674','file','e9868104-e276-4cdb-97a4-b948a13eb135','viewer') as viewer,
-         iam.has_access_as('77c6af70-a35e-4724-a304-64a0dd789674','file','e9868104-e276-4cdb-97a4-b948a13eb135','editor') as editor,
-         public.can_read_processed_document('f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2','77c6af70-a35e-4724-a304-64a0dd789674') as doc_read,
-         public.can_curate_library_document('f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2','77c6af70-a35e-4724-a304-64a0dd789674') as doc_curate;
+  select iam.has_access_as('77c6af70-a35e-4724-a304-64a0dd789674','file','e9868104-e276-4cdb-97a4-b948a13eb135','viewer'),
+         iam.has_access_as('77c6af70-a35e-4724-a304-64a0dd789674','file','e9868104-e276-4cdb-97a4-b948a13eb135','editor'),
+         public.can_read_processed_document('f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2','77c6af70-a35e-4724-a304-64a0dd789674'),
+         public.can_curate_library_document('f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2','77c6af70-a35e-4724-a304-64a0dd789674');
   ```
 
 ## Remaining work
@@ -100,7 +101,8 @@ Ordered by impact. Each is a full brief — read it before starting.
 
 ## Done
 
-- Grant → reachability → judge cascade live and prod-proven — see `migrations/library_store_file_reachability_cascade.sql` + `..._hardening.sql`.
+- Grant → reachability → judge cascade live and prod-proven — see `migrations/library_store_file_reachability_cascade.sql` + `migrations/library_reachability_cascade_hardening.sql`.
+- Actor-spoofing hole in the industry RPC family closed — `migrations/industry_rpc_actor_spoof_fix.sql`.
 - Extraction tables grant-readable — `migrations/page_extraction_library_grant_read.sql`.
 - Data-store row + members visible to their own grant readers — `migrations/data_stores_grant_reader_select.sql`.
 - One access kernel: `iam.has_access`/`has_access_as` are thin wrappers over `iam.has_access_for` — see `db/migrations/0159_iam_has_access_for.sql` (aidream); twin divergence resolved.
@@ -110,15 +112,19 @@ Ordered by impact. Each is a full brief — read it before starting.
 
 ## Decisions needed
 
-**1. Org-admin industry self-join.**
+**1. Org-admin industry self-join — is today's self-serve behavior what you want?**
 *Situation:* An organization's membership in an industry (e.g. "California Workers'
-Compensation") is what entitles it to that industry's shared libraries. Today only a
-super-admin can add an org to an industry; an org admin sees their industries read-only and has
-no way to act.
-*Decide:* (a) keep it super-admin-issued only and add a "request to join" that notifies
-super-admins **[recommended — industry membership is an access-control input, not a
-preference]**, or (b) let org admins join/leave industries freely, or (c) let them join only
-industries flagged self-serve.
+Compensation") is what entitles it to that industry's shared libraries — joining an industry is
+how an org gets read access to that industry's content. **Today any org admin can already add
+their own org to any industry, with no Matrx approval**, in both the database
+(`industry_assign_org` allows super-admin *or* org-admin) and the UI (org settings → Industries).
+This is live and in use: on 2026-07-11 a non-admin org owner self-assigned their firm to
+California Workers' Compensation and thereby gained the AMA Guides.
+*Decide:* (a) keep self-serve as is — anyone who runs an org can claim any industry
+**[recommended if industry content is non-confidential; it is the lowest-friction path and
+matches "the right people get in without blinking"]**, (b) restrict joining to Matrx
+super-admins and give org admins a "request to join" instead, or (c) per-industry flag: some
+industries self-serve, sensitive ones approval-only.
 
 **2. Who may see a library store's grant list.**
 *Situation:* Two different gates now answer this. The HTTP endpoint allows any admin tier plus

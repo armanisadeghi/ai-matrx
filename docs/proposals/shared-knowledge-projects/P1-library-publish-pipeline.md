@@ -19,11 +19,20 @@ reachable only from a workflow node and a script. This project turns publishing 
 **In:**
 
 1. **Admin ingest endpoint — publish the signature on day 1** (P2 builds its UI against it):
-   `POST /rag/library/stores/{store_id}/ingest` `{file_id, profile?}`. Super-admin gated, runs
-   the existing system-owner path with the library profile (`run_ner=False, cleanup=False` —
-   both matter; the per-page cleanup agent chokes on chart/table pages and once produced zero
-   chunks after two hours), adds the store member (triggers mirror the edges), and streams
-   progress per the stream-everything mandate.
+   `POST /rag/library/stores/{store_id}/ingest` `{file_id, profile?}`. Super-admin gated, adds
+   the store member (triggers mirror the edges), and streams progress per the stream-everything
+   mandate.
+
+   ⚠️ **You are writing a new entry point — the existing one does not fit, so read this before
+   you start.** `matrx_rag.library.ingest_library_pdf(...)` takes a **`local_path` on the API
+   host's filesystem**, not a `file_id`, and *creates* a new `files.files` row; it has **no**
+   `run_ner` or `cleanup` parameters (those live on `ingest_library_doc` and
+   `matrx_rag/ingestion.py::ingest_source` respectively). Calling it as-described will
+   `TypeError`. What you want to reuse: `_system_owner_uuid(organization_id)` for ownership, the
+   PDF pipeline (`ingest_pdf`) for the work, and the library profile
+   **`run_ner=False` + `cleanup=False`** threaded through the path that actually accepts them.
+   Both flags matter: the per-page cleanup agent chokes on chart/table pages and once ran two
+   hours producing zero chunks. Verify each signature in the source before wiring.
 2. **Ownership rehome (Decision 3, handoff).** On member-add to a `kind='library'` store: move
    `files.files.organization_id` to the Matrx Library org and set the system owner, keeping the
    contributor recorded as author. Implement in the `add_member` Python path — the one choke

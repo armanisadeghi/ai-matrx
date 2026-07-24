@@ -16,25 +16,39 @@ recurring the next time someone adds a child table or a hardening pass narrows a
 
 **In:**
 
-1. **Non-`cld_file` store members (D-A).** For each of `note | transcript | scraped | research |
-   code_file`: confirm the entity token in `platform.entity_types`, register the
-   `X → data_store` rule in `association_types` (little→big, `conveys_max='viewer'`) **before**
-   writing any edge (the auto-orient trigger rejects wrong-way writes of registered pairs),
-   extend `rag.sync_data_store_member_association()` + backfill, and verify each content type's
-   own RLS honors `iam.has_access` for that token. Then verify the **open path** in each native
-   viewer (notes window, transcript studio, scraper view) for a grant-only reader — chunk search
-   is already grant-aware; opening is what you are wiring.
+1. **Non-`cld_file` store members (D-A).** `rag.sync_data_store_member_association()` returns
+   early for anything but `cld_file` (4 places), so no other member kind gets an edge.
+   **There is no authoritative list of member kinds** — `rag.data_store_members.source_kind` has
+   no CHECK constraint, so derive the working set from live data and the ingest paths. As of
+   2026-07-23, live `rag.kg_chunks.source_kind` values are `cld_file, note, project, research,
+   task`, and `platform.entity_types` has tokens for `code_file, note, transcript,
+   processed_document, file, data_store` but **none for `scraped` or `research`**. So:
+   - For kinds with a token (`note`, `transcript`, `code_file`): register the `X → data_store`
+     rule in `association_types` (little→big, `conveys_max='viewer'`) **before** writing any
+     edge (the auto-orient trigger rejects wrong-way writes of registered pairs), extend the
+     trigger + backfill, and verify that content type's own RLS honors `iam.has_access`.
+   - For kinds without a token (`scraped`, `research`, and the live `project`/`task` sources):
+     you own `platform.entity_types` registry DDL this wave — register them, or document why a
+     kind is deliberately not library-shareable. Do not silently skip one.
+   Then verify the **open path** in each native viewer (notes window, transcript studio, scraper
+   view) for a grant-only reader — chunk search is already grant-aware; opening is the gap.
 2. **Remaining file babies.** Audit `files.analysis*`, `files.entities`, `files.structure`,
    `files.pages`, `files.page_annotations`, `files.file_rag_jobs`, `docproc.derive_runs` against
    the matrix; add additive grant-aware SELECT where a real surface reads them. Pattern:
    `migrations/page_extraction_library_grant_read.sql`. Consider folding the repeated
    job-readability `EXISTS` into one `STABLE SECURITY DEFINER can_read_extraction_job(job_id)`
    so the planner can cache the sub-plan per job.
-3. **`page_extraction.py` hand-rolled gate (D-B).** `aidream/api/routers/page_extraction.py:157`
-   (and `:53`, `:84`) compare `owner_id == ctx.user_id` with an ANY-admin bypass, on endpoints
-   that **spend money** on embeddings — violating the repo's own rule ("never hand-roll an
-   ownership comparison"). Rewrite onto the kernel per **Decision 4** (handoff): reads follow the
-   cascade, spend actions stay owner/curator. Do not widen spend actions to grant readers.
+3. **Hand-rolled ownership gates (D-B).** Three real sites, verified 2026-07-23:
+   `aidream/api/routers/page_extraction.py:157` (`if not ctx.is_admin and str(jobs[0].owner_id)
+   != ctx.user_id:`), `aidream/services/page_extraction/retry.py:61`
+   (`if not is_admin and owner_id != user_id:`), and
+   `aidream/services/page_extraction/runs_db.py:47` (`filter_items(id=job_id,
+   owner_id=user_id)`). Each compares ownership by hand with an **ANY-admin** bypass, on
+   endpoints that **spend money** on embeddings — violating the repo's own rule ("never
+   hand-roll an ownership comparison"). Rewrite onto the kernel per **Decision 4** (handoff):
+   reads follow the cascade, spend actions stay owner/curator. Do not widen spend actions to
+   grant readers. Note `ctx.is_admin` is ANY admin tier (`developer` included) — if a tier
+   distinction matters, read `ctx.admin_level`.
 4. **Acceptance matrix (the deliverable that makes this project permanent).** A parameterized,
    repeatable script — `(store, entitled_user, control_user)` — asserting the full grid: search
    hit, file download, doc metadata, pages, page image, chunks, extractions, each baby table,

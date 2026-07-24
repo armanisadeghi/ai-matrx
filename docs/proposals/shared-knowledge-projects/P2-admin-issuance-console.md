@@ -34,13 +34,17 @@ This project is the issuance and audit cockpit.
      reach and through which grant; pick a store → which industries/orgs are entitled. Consume
      P3's `library_grant_provenance` family (README §2) — **do not write a second provenance
      RPC**; if you need an admin `_as(user)` variant, extend P3's family.
-2. **Resolve D-C (the two-gate fork)** — "who may list a store's grants" is currently answered
+2. **Delete the stale comment at `aidream/api/routers/rag.py:674`** — it claims "The FE calls
+   these over HTTP because rag.* is not PostgREST-exposed." Both halves are false since `0162`:
+   `rag` **is** exposed and the FE calls the RPCs directly. It contradicts README §2's frozen
+   data-path rule and will send the next reader the wrong way.
+3. **Resolve D-C (the two-gate fork)** — "who may list a store's grants" is currently answered
    differently by the HTTP endpoint (any admin tier + owner/editor) and by the RPC the FE
    actually uses (super-admin + **any member of the owning org**). Implement Arman's answer to
    Decision 2 (handoff) as ONE rule in both places, and delete the divergence. If the decision is
    still open when you reach it, implement the recommended option behind a clearly-named
    predicate and flag it — do not ship two rules.
-3. **`/rag/admin` FeatureAdminMap** — RAG is a conspicuous Tier-1 omission (15 other features
+4. **`/rag/admin` FeatureAdminMap** — RAG is a conspicuous Tier-1 omission (15 other features
    have one). Fill `FeatureAdminMap` (`features/admin/types/featureAdminMap.ts`) with every rag
    route, panel, hook, RPC, migration and demo, including the new admin routes.
 
