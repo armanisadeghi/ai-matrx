@@ -61,12 +61,39 @@ Capabilities on the direct list are projected client-side (`deriveCapabilities` 
 6. Access never depends on the active organization — the viewed principal is an explicit prop.
 7. Every mutation surfaces its error via toast; catalog rows failing schema validation are skipped LOUDLY (`console.error`).
 
+## MCP connections (Phase 4 cutover, 2026-07-23)
+
+MCP is a vault consumer, not a token store. `tool.mcp_user_conn` is a
+NON-SECRET connection record (`credential_item_id` + `auth_method` +
+status/scopes/expiry metadata); the tokens/keys live in a sealed vault item
+owned by the connecting user (`definition_key='oauth_token_set'` or
+`'mcp_auth'`, `source='mcp'`, fields `sealed` + `editable=false`).
+
+- **The browser never holds an MCP token.** The OAuth callback
+  (`app/api/mcp/oauth/callback`) still exchanges the code (it holds the PKCE
+  verifier) but POSTs the token response to aidream
+  `/api/mcp-connections/{server_id}/oauth-tokens` — it never writes token
+  columns. The old browser refresh path (`mcp-client/token-refresh.ts`), the
+  browser MCP JSON-RPC client, and the `/api/mcp/servers/[serverId]/*` Next
+  routes are DELETED.
+- Discovery/invocation/refresh/disconnect run in aidream with vault-resolved
+  auth via `features/agents/services/mcp-connections.service.ts`; refresh is
+  server-side (atomic battery rotation of the same vault fields).
+- Manual methods (bearer / API-key header / stdio env) post through
+  `connectServerWithCredentials` → aidream `/credentials` → sealed vault item.
+- `upsert_mcp_connection` is metadata-only (config/transport/endpoint
+  override) — the pgcrypto functions and token bytea columns were dropped
+  (aidream migrations `0237` / `0237b`).
+- Disconnect (aidream `DELETE /api/mcp-connections/{server_id}`) clears the
+  connection AND soft-deletes the owned vault item.
+
 ## Known gaps (2026-07-23)
 
 - aidream `/api/vault/*` is implemented in the local repo but not yet deployed to prod — until deploy, value ops surface clear error toasts while the masked list keeps rendering from Supabase.
 
 ## Change Log
 
+- **2026-07-23** — Phase 4 MCP/OAuth cutover: MCP tokens moved to sealed vault items; browser token paths deleted; refresh/persist/disconnect run in aidream `/api/mcp-connections/*`. Live finding: the legacy pgcrypto store NEVER held a token (its shared key was never configured) — all 4 connections stamped `expired` for re-auth.
 - **2026-07-23** — Alignment with final vault API: field-metadata PATCH (env alias set/clear, description, active, one-way seal with confirm; deleted the interim direct `inject_into_sandbox` write) and per-recipient share grantees with a Can-manage toggle (org members + personal email lookup); types regenerated.
 - **2026-07-23** — Phase 3 unification: ONE definition-driven `VaultWorkspace` for both principals (catalog picker + presets + custom builder, reveal/copy with transient auto-clear, env import, share/transfer/fork/rotate/audit, capability-driven actions); data split direct-Supabase masked reads vs `/api/vault/*` value ops; deleted the duplicated personal/org services, hooks, and `OrganizationVaultSection`; regenerated `api-types.ts` from local aidream OpenAPI.
 - **2026-07-23** — Linked the cross-repository Unified Credential Vault plan.

@@ -122,9 +122,10 @@ Find every place an agent is used and detect when a usage no longer matches the 
 
 **Services**
 
-- `features/agents/services/mcp.service.ts` — MCP protocol integration (see `features/api-integrations/FEATURE.md`)
-- `features/agents/services/mcp-client/` — MCP client
-- `features/agents/services/mcp-oauth/` — MCP OAuth flow
+- `features/agents/services/mcp.service.ts` — MCP catalog + metadata-only connection upsert (`upsert_mcp_connection` carries NO tokens)
+- `features/agents/services/mcp-connections.service.ts` — vault-backed MCP operations via aidream `/api/mcp-connections/*` (discover/invoke/refresh/credentials/disconnect); the browser never holds an MCP token (vault Phase 4 — see `features/secrets/FEATURE.md` § MCP connections)
+- `features/agents/services/mcp-client/` — tool schema types only (the browser JSON-RPC client + token refresh were deleted in the vault cutover)
+- `features/agents/services/mcp-oauth/` — MCP OAuth discovery/PKCE helpers for the Next.js start/callback boundary
 
 ---
 
