@@ -8,12 +8,13 @@
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
-import { Home, Database, FileText, Search, Code2 } from "lucide-react";
+import { Home, Database, FileText, Search, Code2, Library } from "lucide-react";
 
 const HUB_NAV_ITEMS = [
   { name: "Home", href: "/rag", icon: Home },
   { name: "Data Stores", href: "/rag/data-stores", icon: Database },
   { name: "Library", href: "/rag/library", icon: FileText },
+  { name: "Catalog", href: "/rag/library-catalog", icon: Library },
   { name: "Search", href: "/rag/search", icon: Search },
   { name: "Repositories", href: "/rag/repositories", icon: Code2 },
 ];

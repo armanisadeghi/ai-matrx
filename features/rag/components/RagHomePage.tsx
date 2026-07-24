@@ -27,17 +27,64 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibrarySummary } from "@/features/rag/hooks/useLibrary";
+import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { LibraryCatalogPane } from "@/features/rag/components/data-stores/LibraryCatalogPane";
+import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 
 export function RagHomePage() {
   const { summary, loading, error } = useLibrarySummary();
+
+  // Entitled empty state — a user in an entitled org with zero personal
+  // content must see their shared libraries FIRST, not an empty dashboard.
+  const catalog = useLibraryCatalog();
+  const entitledLibraries = catalog.items.filter(
+    (it) => it.entitledVia != null,
+  );
+  const showEntitledHero =
+    !loading &&
+    (summary?.documentsTotal ?? 0) === 0 &&
+    entitledLibraries.length > 0;
 
   return (
     <>
       <RagHubHeader />
       <div className="h-full overflow-auto bg-background">
         <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        {/* Entitled empty state — shared libraries lead when the user has no
+            personal content of their own. */}
+        {showEntitledHero && (
+          <section className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              Shared libraries you can read right now
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              You haven&apos;t added any documents of your own yet, but your
+              organization is entitled to these curated knowledge libraries —
+              open one, or search across them from the Search tab.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {entitledLibraries.map((it) => (
+                <Link
+                  key={it.id}
+                  href={`/rag/library-catalog?store_id=${it.id}`}
+                  className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-primary/50"
+                >
+                  <FileText className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                    {it.name}
+                  </span>
+                  <EntitlementChip
+                    entitledVia={it.entitledVia}
+                    industryName={it.entitledIndustryName}
+                  />
+                  <ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
         {/* Live numbers */}
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">

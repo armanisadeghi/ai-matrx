@@ -19,6 +19,9 @@ import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlic
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 
+/** How the caller is entitled to a catalog store (null = not entitled). */
+export type CatalogEntitlement = "organization" | "industry" | "global" | null;
+
 export interface LibraryCatalogItem {
   id: string;
   name: string;
@@ -26,7 +29,14 @@ export interface LibraryCatalogItem {
   description: string | null;
   kind: string;
   memberCount: number;
+  /** Explicit org-audience grant for the caller's effective org. */
   subscribed: boolean;
+  /** The caller's true per-row entitlement state (settled catalog shape,
+   *  README §2 of docs/proposals/shared-knowledge-projects/). */
+  entitledVia: CatalogEntitlement;
+  /** Present when entitledVia === 'industry' — the informative "why". */
+  entitledIndustryName: string | null;
+  entitledIndustrySlug: string | null;
 }
 
 interface RpcCatalogRow {
@@ -37,6 +47,13 @@ interface RpcCatalogRow {
   kind: string;
   member_count: number;
   subscribed: boolean;
+  entitled_via: string | null;
+  entitled_industry_name: string | null;
+  entitled_industry_slug: string | null;
+}
+
+function coerceEntitlement(v: string | null): CatalogEntitlement {
+  return v === "organization" || v === "industry" || v === "global" ? v : null;
 }
 
 function toItem(c: RpcCatalogRow): LibraryCatalogItem {
@@ -48,12 +65,22 @@ function toItem(c: RpcCatalogRow): LibraryCatalogItem {
     kind: c.kind,
     memberCount: c.member_count,
     subscribed: c.subscribed,
+    entitledVia: coerceEntitlement(c.entitled_via),
+    entitledIndustryName: c.entitled_industry_name ?? null,
+    entitledIndustrySlug: c.entitled_industry_slug ?? null,
   };
 }
 
-export function useLibraryCatalog() {
+/**
+ * @param overrideOrganizationId — evaluate subscription/entitlement against a
+ * SPECIFIC org (org-settings surfaces) instead of the effective active org.
+ * Access itself never depends on the active org — this only affects which
+ * org's subscription state the rows describe.
+ */
+export function useLibraryCatalog(overrideOrganizationId?: string | null) {
   const userId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  const effectiveOrganizationId = useAppSelector(selectEffectiveOrganizationId);
+  const organizationId = overrideOrganizationId ?? effectiveOrganizationId;
   const [items, setItems] = useState<LibraryCatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
