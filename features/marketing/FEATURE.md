@@ -162,6 +162,18 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-24 — Claude (M-9 SEO cost UI): `/marketing/cost` (the pre-existing
+  runtime/AI-execution cost rollup page — a DIFFERENT concept from SEO
+  provider spend) gained a third "Provider spend" mode
+  (`SeoSpendPanel.tsx`/`SeoSpendChart.tsx`/`data/spend.ts`) reading the new
+  aidream `GET /seo/spend/summary` route: provider-by-provider breakdown vs
+  the WS-7 monthly ceiling (spent/ceiling, % used, progress bars), a 30-day
+  daily spend chart, and any recent `seo_budget_exceeded` rejections. No new
+  nav entry — `/marketing/cost` was already in `MarketingWorkspaceNav`. Not
+  exercised in a live browser this pass (no dev server per task rules); the
+  route is deploy-gated like every other 2026-07-23+ SEO route (`as unknown
+  as keyof paths` cast pending the OpenAPI type sync).
+
 - 2026-07-23 — Claude (WS-15): D74/DEF-15 CLOSED — the External Links unchecked-status
   notice from 2026-07-20 is resolved, and it was never actually a scraper gap: the
   link-check pipeline (`matrx_scraper.web_crawl.link_check`, built 2026-07-21) had been

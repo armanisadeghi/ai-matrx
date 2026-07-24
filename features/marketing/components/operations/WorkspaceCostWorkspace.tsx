@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { CircleDollarSign } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -7,6 +8,7 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { CostModeButtons } from "@/features/marketing/components/operations/CostModeButtons";
+import { SeoSpendPanel } from "@/features/marketing/components/operations/SeoSpendPanel";
 import {
   QueryError,
   StatusBadge,
@@ -29,7 +31,15 @@ const WORKSPACE_COST_MODES = [
   { value: "client", label: "By client" },
 ] as const;
 
+const TOP_LEVEL_VIEWS = [
+  { value: "runtime", label: "Runtime cost" },
+  { value: "seo_spend", label: "Provider spend" },
+] as const;
+
 export function WorkspaceCostWorkspace() {
+  const [view, setView] = useState<(typeof TOP_LEVEL_VIEWS)[number]["value"]>(
+    "runtime",
+  );
   const table = useMarketingTableState({
     defaultSort: { id: "cost", direction: "desc" },
     defaultPageSize: 50,
@@ -117,16 +127,23 @@ export function WorkspaceCostWorkspace() {
         }
         center={<MarketingWorkspaceNav />}
         right={
-          <RefreshCwTapButton
-            ariaLabel="Refresh cost rollups"
-            onClick={() => void costs.refetch()}
-            disabled={costs.isFetching}
-            className={costs.isFetching ? "animate-spin" : undefined}
-          />
+          view === "runtime" ? (
+            <RefreshCwTapButton
+              ariaLabel="Refresh cost rollups"
+              onClick={() => void costs.refetch()}
+              disabled={costs.isFetching}
+              className={costs.isFetching ? "animate-spin" : undefined}
+            />
+          ) : null
         }
       />
-      <main className="h-full overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
-        {costs.isError ? (
+      <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
+        <CostModeButtons value={view} options={TOP_LEVEL_VIEWS} onChange={(value) => setView(value as typeof view)} />
+        {view === "seo_spend" ? (
+          <div className="min-h-0 flex-1">
+            <SeoSpendPanel />
+          </div>
+        ) : costs.isError ? (
           <QueryError
             error={costs.error}
             onRetry={() => void costs.refetch()}
