@@ -28,6 +28,9 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
 import { extractErrorMessage } from "@/utils/errors";
 import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteStrategyCard";
+import { ScheduleStatusPanel } from "@/features/marketing/components/settings/ScheduleStatusPanel";
+import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
+import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 
 interface CrawlDefaults {
   respectRobots: boolean;
@@ -303,6 +306,13 @@ export function SiteSettingsWorkspace() {
             </div>
           </div>
         </section>
+
+        <ScheduleStatusPanel siteId={site.id} />
+
+        <SiteAnalyticsCard
+          siteId={site.id}
+          ga4Enabled={parseSiteIntegrations(site.integrations).googleAnalytics4.enabled}
+        />
 
         <SiteStrategyCard siteId={site.id} />
 

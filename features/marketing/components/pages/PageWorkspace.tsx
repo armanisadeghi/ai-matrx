@@ -106,6 +106,16 @@ import { MarketingUrlRow } from "@/features/marketing/components/shared/Marketin
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
+import {
+  listPagePerformance,
+  syncPagespeed,
+  type PagePerformanceRow,
+} from "@/features/marketing/pagespeed/data";
+import {
+  listWebAnalyticsDailyForPage,
+  syncSiteAnalytics,
+  type WebAnalyticsDailyRow,
+} from "@/features/marketing/analytics/data";
 
 function IntentForm({
   page,
@@ -1176,6 +1186,347 @@ function PageAnalyzerCard({ page }: { page: MarketingPage }) {
   );
 }
 
+/**
+ * PageSpeed Insights (M-74/M-75, WS-12) — runs a REAL PSI collection for this
+ * canonical page's URL (POST /seo/pages/{page_id}/pagespeed/sync, detached
+ * NDJSON through the canonical run_collection funnel) and renders the
+ * persisted seo.page_performance rows: lab (Lighthouse) scores + CWV, and
+ * field (CrUX) data when Google has enough real-user traffic for the page.
+ * Replaces the former disabled placeholder.
+ */
+function PagespeedCard({ page }: { page: MarketingPage }) {
+  const [rows, setRows] = useState<PagePerformanceRow[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [syncingStrategy, setSyncingStrategy] = useState<
+    "mobile" | "desktop" | null
+  >(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      setRows(await listPagePerformance(page.id));
+    } catch (error) {
+      setLoadError(extractErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page.id]);
+
+  const runSync = async (strategy: "mobile" | "desktop") => {
+    setSyncingStrategy(strategy);
+    try {
+      await syncPagespeed(page.id, strategy);
+      await load();
+      toast.success(`PageSpeed Insights synced (${strategy})`);
+    } catch (error) {
+      toast.error("PageSpeed Insights sync failed", {
+        description: extractErrorMessage(error),
+      });
+    } finally {
+      setSyncingStrategy(null);
+    }
+  };
+
+  const latestByStrategy = new Map<string, PagePerformanceRow>();
+  for (const row of rows ?? []) {
+    if (!latestByStrategy.has(row.strategy)) latestByStrategy.set(row.strategy, row);
+  }
+
+  const scoreTone = (value: number | null): "good" | "warning" | "bad" | "default" => {
+    if (value === null) return "default";
+    if (value >= 0.9) return "good";
+    if (value >= 0.5) return "warning";
+    return "bad";
+  };
+
+  return (
+    <SectionCard
+      title="PageSpeed Insights"
+      collapsible
+      headerExtra={
+        <div className="flex items-center gap-1">
+          {(["mobile", "desktop"] as const).map((strategy) => (
+            <button
+              key={strategy}
+              type="button"
+              onClick={() => void runSync(strategy)}
+              disabled={syncingStrategy !== null}
+              aria-label={`Run PageSpeed Insights (${strategy})`}
+              title={`Run a real PageSpeed Insights collection (${strategy})`}
+              className="flex h-6 items-center gap-1 rounded-md border border-border px-1.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {syncingStrategy === strategy ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              {strategy}
+            </button>
+          ))}
+        </div>
+      }
+      copy={webCopy({
+        kind: "web-page-pagespeed",
+        label: "PageSpeed Insights",
+        description:
+          "Persisted Lighthouse lab scores and CrUX field data for this page (desktop + mobile).",
+        surface: `PageSpeed Insights — ${page.url}`,
+        data: rows ?? [],
+        lines: [
+          ["URL", page.url],
+          ...[...latestByStrategy.entries()].map(([strategy, row]): [string, string] => [
+            `${strategy} performance`,
+            row.performance_score === null ? "—" : `${Math.round(row.performance_score * 100)}`,
+          ]),
+        ],
+        attributes: { page_id: page.id },
+      })}
+    >
+      <div className="grid gap-3 p-3">
+        {loadError ? <p className="text-xs text-destructive">{loadError}</p> : null}
+        {loading && !rows ? (
+          <div className="h-32 animate-pulse rounded-md border border-border bg-muted/40" />
+        ) : null}
+        {!loading && rows && rows.length === 0 ? (
+          <div className="flex min-h-28 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Gauge className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-xs font-medium text-foreground">No evidence yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Run a mobile or desktop PageSpeed Insights collection to persist
+                lab (Lighthouse) and field (CrUX) evidence for this page.
+              </p>
+            </div>
+          </div>
+        ) : null}
+        {["mobile", "desktop"].map((strategy) => {
+          const row = latestByStrategy.get(strategy);
+          if (!row) return null;
+          const metrics = row.lighthouse?.metrics ?? {};
+          const lcp = metrics.lcp_ms?.numeric_value;
+          const cls = metrics.cls?.numeric_value;
+          const inp = metrics.inp_ms?.numeric_value;
+          const fieldCategory =
+            row.crux?.page?.overall_category ?? row.crux?.origin?.overall_category ?? null;
+          return (
+            <div key={strategy} className="rounded-lg border border-border p-2.5">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-xs font-medium capitalize text-foreground">
+                  {strategy === "mobile" ? (
+                    <Smartphone className="h-3.5 w-3.5" />
+                  ) : (
+                    <Monitor className="h-3.5 w-3.5" />
+                  )}
+                  {strategy}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {formatDate(row.observed_at)}
+                </span>
+              </div>
+              <CondensedFieldGrid
+                fields={[
+                  {
+                    label: "Performance",
+                    value:
+                      row.performance_score === null
+                        ? "—"
+                        : Math.round(row.performance_score * 100),
+                    tone: scoreTone(row.performance_score),
+                  },
+                  {
+                    label: "Accessibility",
+                    value:
+                      row.accessibility_score === null
+                        ? "—"
+                        : Math.round(row.accessibility_score * 100),
+                    tone: scoreTone(row.accessibility_score),
+                  },
+                  {
+                    label: "Best practices",
+                    value:
+                      row.best_practices_score === null
+                        ? "—"
+                        : Math.round(row.best_practices_score * 100),
+                    tone: scoreTone(row.best_practices_score),
+                  },
+                  {
+                    label: "SEO",
+                    value: row.seo_score === null ? "—" : Math.round(row.seo_score * 100),
+                    tone: scoreTone(row.seo_score),
+                  },
+                  {
+                    label: "LCP (lab)",
+                    value:
+                      typeof lcp === "number" ? `${(lcp / 1000).toFixed(2)}s` : "—",
+                  },
+                  {
+                    label: "CLS (lab)",
+                    value: typeof cls === "number" ? cls.toFixed(3) : "—",
+                  },
+                  {
+                    label: "INP (lab)",
+                    value: typeof inp === "number" ? `${Math.round(inp)}ms` : "—",
+                  },
+                  {
+                    label: "Field data (CrUX)",
+                    value: fieldCategory ?? "Not available",
+                    tone: fieldCategory === "FAST" ? "good" : "default",
+                  },
+                ]}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </SectionCard>
+  );
+}
+
+/**
+ * Google Analytics (M-74, WS-12) — this page's persisted GA4 landing-page
+ * rows (`seo.web_analytics_daily.page_id`). GA4 collection is site-scoped
+ * (one property per site), so the sync button here triggers the same
+ * whole-site collection the site settings card does, then re-reads this
+ * page's slice. Replaces the former disabled placeholder.
+ */
+function PageAnalyticsCard({ page }: { page: MarketingPage }) {
+  const { site } = useMarketingSite();
+  const [rows, setRows] = useState<WebAnalyticsDailyRow[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const integrations = parseSiteIntegrations(site.integrations);
+  const ga4Enabled = integrations.googleAnalytics4.enabled;
+
+  const load = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      setRows(await listWebAnalyticsDailyForPage(site.id, page.id));
+    } catch (error) {
+      setLoadError(extractErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page.id, site.id]);
+
+  const runSync = async () => {
+    setSyncing(true);
+    try {
+      await syncSiteAnalytics(site.id);
+      await load();
+      toast.success("Google Analytics synced");
+    } catch (error) {
+      toast.error("Google Analytics sync failed", {
+        description: extractErrorMessage(error),
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const totals = (rows ?? []).reduce(
+    (acc, row) => ({
+      sessions: acc.sessions + row.sessions,
+      users: acc.users + row.users,
+      engagedSessions: acc.engagedSessions + row.engaged_sessions,
+    }),
+    { sessions: 0, users: 0, engagedSessions: 0 },
+  );
+  const engagementRate =
+    totals.sessions > 0 ? (totals.engagedSessions / totals.sessions) * 100 : null;
+
+  return (
+    <SectionCard
+      title="Google Analytics"
+      collapsible
+      headerExtra={
+        <button
+          type="button"
+          onClick={() => void runSync()}
+          disabled={syncing || !ga4Enabled}
+          aria-label="Sync Google Analytics"
+          title={
+            ga4Enabled
+              ? "Run a GA4 landing-page collection for this site"
+              : "Bind a Google Analytics 4 property to this site first"
+          }
+          className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {syncing ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+        </button>
+      }
+      copy={webCopy({
+        kind: "web-page-google-analytics",
+        label: "Google Analytics",
+        description: "Persisted GA4 landing-page traffic for this canonical page.",
+        surface: `Google Analytics — ${page.url}`,
+        data: { url: page.url, enabled: ga4Enabled, totals },
+        lines: [
+          ["URL", page.url],
+          ["Integration enabled", ga4Enabled ? "yes" : "no"],
+          ["Sessions (stored window)", totals.sessions],
+          ["Users (stored window)", totals.users],
+        ],
+        attributes: { page_id: page.id },
+      })}
+    >
+      <div className="grid gap-3 p-3">
+        {loadError ? <p className="text-xs text-destructive">{loadError}</p> : null}
+        {loading && !rows ? (
+          <div className="h-32 animate-pulse rounded-md border border-border bg-muted/40" />
+        ) : null}
+        {!loading && rows && rows.length === 0 ? (
+          <div className="flex min-h-28 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <LineChart className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-xs font-medium text-foreground">No evidence yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {ga4Enabled
+                  ? "Run a GA4 collection to persist sessions, users, and engagement."
+                  : "Connect a Google Analytics 4 property in site integrations, then sync."}
+              </p>
+            </div>
+          </div>
+        ) : null}
+        {rows && rows.length > 0 ? (
+          <CondensedFieldGrid
+            fields={[
+              { label: "Sessions", value: totals.sessions.toLocaleString() },
+              { label: "Users", value: totals.users.toLocaleString() },
+              { label: "Engaged sessions", value: totals.engagedSessions.toLocaleString() },
+              {
+                label: "Engagement rate",
+                value: engagementRate === null ? "—" : `${engagementRate.toFixed(1)}%`,
+              },
+            ]}
+          />
+        ) : null}
+      </div>
+    </SectionCard>
+  );
+}
+
 export function PageWorkspace({ pageId }: { pageId: string }) {
   const { site, sitePath } = useMarketingSite();
   const { brandId, getBaseValues } = useMarketingSiteSurfaceBase();
@@ -1221,7 +1572,6 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const head = parseSnapshotHeadTags(snapshot ? snapshot.head_tags : null);
   const extracted = parseSnapshotExtracted(snapshot?.extracted ?? null);
   const headings = parseSnapshotHeadings(snapshot?.headings ?? null);
-  const integrations = parseSiteIntegrations(site.integrations);
   const searchPerformance = data.searchPerformance;
   const searchCtr = searchPerformance.gsc_impressions_28d
     ? (searchPerformance.gsc_clicks_28d ?? 0) /
@@ -1661,134 +2011,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                   </p>
                 </div>
               </SectionCard>
-              <SectionCard
-                title="PageSpeed Insights"
-                collapsible
-                headerExtra={
-                  <button
-                    type="button"
-                    disabled
-                    aria-label="Run PageSpeed Insights for this page"
-                    title="Page-specific PageSpeed collection is not connected to this screen yet"
-                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground opacity-40"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  </button>
-                }
-                copy={webCopy({
-                  kind: "web-page-pagespeed",
-                  label: "PageSpeed Insights",
-                  description:
-                    "Page-level Lighthouse and CrUX evidence for desktop and mobile.",
-                  surface: `PageSpeed Insights — ${page.url}`,
-                  data: {
-                    url: page.url,
-                    enabled: integrations.pageSpeedInsights.enabled,
-                    status: "read-contract-pending",
-                  },
-                  lines: [
-                    ["URL", page.url],
-                    [
-                      "Integration enabled",
-                      integrations.pageSpeedInsights.enabled ? "yes" : "no",
-                    ],
-                    ["Status", "Frontend read contract pending"],
-                  ],
-                  attributes: { page_id: page.id },
-                })}
-              >
-                <div className="flex min-h-36 items-center gap-3 p-4">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Gauge className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-medium text-foreground">
-                        No page evidence available
-                      </p>
-                      <Badge
-                        variant={
-                          integrations.pageSpeedInsights.enabled
-                            ? "success"
-                            : "outline"
-                        }
-                      >
-                        {integrations.pageSpeedInsights.enabled
-                          ? "Enabled"
-                          : "Not enabled"}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Page-specific desktop and mobile collection is not
-                      connected to this screen yet.
-                    </p>
-                  </div>
-                </div>
-              </SectionCard>
-              <SectionCard
-                title="Google Analytics"
-                collapsible
-                headerExtra={
-                  <button
-                    type="button"
-                    disabled
-                    aria-label="Refresh Google Analytics data for this page"
-                    title="Page-specific Google Analytics collection is not connected to this screen yet"
-                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground opacity-40"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  </button>
-                }
-                copy={webCopy({
-                  kind: "web-page-google-analytics",
-                  label: "Google Analytics",
-                  description:
-                    "Stored GA4 landing-page traffic and engagement evidence for this canonical page.",
-                  surface: `Google Analytics — ${page.url}`,
-                  data: {
-                    url: page.url,
-                    enabled: integrations.googleAnalytics4.enabled,
-                    status: "read-contract-pending",
-                  },
-                  lines: [
-                    ["URL", page.url],
-                    [
-                      "Integration enabled",
-                      integrations.googleAnalytics4.enabled ? "yes" : "no",
-                    ],
-                    ["Status", "Frontend read contract pending"],
-                  ],
-                  attributes: { page_id: page.id },
-                })}
-              >
-                <div className="flex min-h-36 items-center gap-3 p-4">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <LineChart className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-medium text-foreground">
-                        No page evidence available
-                      </p>
-                      <Badge
-                        variant={
-                          integrations.googleAnalytics4.enabled
-                            ? "success"
-                            : "outline"
-                        }
-                      >
-                        {integrations.googleAnalytics4.enabled
-                          ? "Connected"
-                          : "Not connected"}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Page-specific GA4 landing-page collection is not connected
-                      to this screen yet.
-                    </p>
-                  </div>
-                </div>
-              </SectionCard>
+              <PagespeedCard page={page} />
+              <PageAnalyticsCard page={page} />
             </div>
             <div className="grid gap-3 lg:grid-cols-2">
               <SectionCard
