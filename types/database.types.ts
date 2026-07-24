@@ -1300,6 +1300,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           display_name: string
+          doc_sources: Json
           id: string
           internal_name: string
           is_active: boolean
@@ -1322,6 +1323,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           display_name: string
+          doc_sources?: Json
           id?: string
           internal_name: string
           is_active?: boolean
@@ -1344,6 +1346,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           display_name?: string
+          doc_sources?: Json
           id?: string
           internal_name?: string
           is_active?: boolean
@@ -1762,6 +1765,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          doc_sources: Json
           documentation_link: string | null
           id: string
           is_system: boolean
@@ -1783,6 +1787,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          doc_sources?: Json
           documentation_link?: string | null
           id?: string
           is_system?: boolean
@@ -1804,6 +1809,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          doc_sources?: Json
           documentation_link?: string | null
           id?: string
           is_system?: boolean
@@ -31333,6 +31339,27 @@ export type Database = {
           user_id: string
         }[]
       }
+      library_grant_provenance: {
+        Args: { p_store: string }
+        Returns: {
+          audience: string
+          industry_id: string
+          industry_name: string
+          industry_slug: string
+          organization_id: string
+        }[]
+      }
+      library_grant_provenance_batch: {
+        Args: { p_stores: string[] }
+        Returns: {
+          audience: string
+          industry_id: string
+          industry_name: string
+          industry_slug: string
+          organization_id: string
+          store_id: string
+        }[]
+      }
       list_context_value_refs: {
         Args: { p_ref_key: string; p_ref_type: string }
         Returns: Json
@@ -35358,6 +35385,9 @@ export type Database = {
         Args: { p_organization_id?: string }
         Returns: {
           description: string
+          entitled_industry_name: string
+          entitled_industry_slug: string
+          entitled_via: string
           id: string
           kind: string
           member_count: number
@@ -39564,6 +39594,7 @@ export type Database = {
           request_count: number
           request_id: string | null
           requested_at: string
+          result: Json | null
           settings: Json
           settings_hash: string
           site_id: string | null
@@ -39599,6 +39630,7 @@ export type Database = {
           request_count?: number
           request_id?: string | null
           requested_at?: string
+          result?: Json | null
           settings?: Json
           settings_hash: string
           site_id?: string | null
@@ -39634,6 +39666,7 @@ export type Database = {
           request_count?: number
           request_id?: string | null
           requested_at?: string
+          result?: Json | null
           settings?: Json
           settings_hash?: string
           site_id?: string | null
