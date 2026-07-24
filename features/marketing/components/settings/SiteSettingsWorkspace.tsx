@@ -27,6 +27,7 @@ import { useDeleteSite } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
 import { extractErrorMessage } from "@/utils/errors";
+import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteStrategyCard";
 
 interface CrawlDefaults {
   respectRobots: boolean;
@@ -302,6 +303,8 @@ export function SiteSettingsWorkspace() {
             </div>
           </div>
         </section>
+
+        <SiteStrategyCard siteId={site.id} />
 
         <section className="overflow-hidden rounded-lg border border-destructive/40 bg-card">
           <div className="flex h-10 items-center gap-2 border-b border-destructive/30 px-3">

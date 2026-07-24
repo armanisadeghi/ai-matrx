@@ -290,6 +290,14 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(core)/marketing/admin/page.tsx",
       status: "Live",
     },
+    {
+      url: "/marketing/admin/keyword-data-quality",
+      label: "Keyword data quality",
+      description:
+        "Admin-only controls for the Keyword Classifier and Topic Assigner (DEF-25) — previously orphaned server routes.",
+      filePath: "app/(core)/marketing/admin/keyword-data-quality/page.tsx",
+      status: "Live",
+    },
   ],
   components: [
     {
