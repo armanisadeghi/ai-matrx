@@ -901,6 +901,21 @@ export default function AiModelDetailPanel({
       return { ...prev, [section]: dirty };
     });
   }, []);
+  // Stable per-section reporters — a fresh inline arrow per render caused a
+  // setState ping-pong loop with the child dirty-report effects.
+  const reportJsonCapsDirty = useCallback(
+    (dirty: boolean) => reportSectionDirty("json-capabilities", dirty),
+    [reportSectionDirty],
+  );
+  const reportControlsDirty = useCallback(
+    (dirty: boolean) => reportSectionDirty("controls", dirty),
+    [reportSectionDirty],
+  );
+  const reportConstraintsDirty = useCallback(
+    (section: "family" | "override", dirty: boolean) =>
+      reportSectionDirty(`constraints-${section}`, dirty),
+    [reportSectionDirty],
+  );
   const sectionsDirty = Object.values(dirtySections).some(Boolean);
 
   const isDirty = formIsDirty || rawJsonDirty || sectionsDirty;

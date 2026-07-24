@@ -22,6 +22,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { ExternalLink, Plus } from "lucide-react";
@@ -153,11 +154,18 @@ export default function ModelControlsEditor({
     setDrafts({});
   }
 
+  // Report dirtiness through a ref so an unstable (inline-arrow) callback
+  // identity can never re-trigger the effect — identity churn here caused a
+  // setState ping-pong loop with the parent (max-update-depth).
   const dirty = Object.keys(drafts).length > 0;
+  const onDirtyChangeRef = useRef(onDirtyChange);
   useEffect(() => {
-    onDirtyChange?.(dirty);
-    return () => onDirtyChange?.(false);
-  }, [dirty, onDirtyChange]);
+    onDirtyChangeRef.current = onDirtyChange;
+  }, [onDirtyChange]);
+  useEffect(() => {
+    onDirtyChangeRef.current?.(dirty);
+  }, [dirty]);
+  useEffect(() => () => onDirtyChangeRef.current?.(false), []);
 
   const familyEnvelope = useMemo(() => asEnvelope(api?.rules), [api?.rules]);
   const overrideEnvelope = useMemo(

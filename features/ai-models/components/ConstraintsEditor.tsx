@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -703,10 +703,16 @@ export default function ConstraintsEditor({
   const hasChanges =
     JSON.stringify(local) !== JSON.stringify(constraints ?? []);
 
+  // Ref-stable dirty reporting — an inline-arrow onDirtyChange identity must
+  // never re-trigger the effect (setState ping-pong loop with the parent).
+  const onDirtyChangeRef = useRef(onDirtyChange);
   useEffect(() => {
-    onDirtyChange?.(hasChanges);
-    return () => onDirtyChange?.(false);
-  }, [hasChanges, onDirtyChange]);
+    onDirtyChangeRef.current = onDirtyChange;
+  }, [onDirtyChange]);
+  useEffect(() => {
+    onDirtyChangeRef.current?.(hasChanges);
+  }, [hasChanges]);
+  useEffect(() => () => onDirtyChangeRef.current?.(false), []);
 
   const save = async () => {
     setSaving(true);

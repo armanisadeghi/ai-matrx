@@ -26,8 +26,13 @@ export default function JsonFieldEditor({
     const [expanded, setExpanded] = React.useState(defaultExpanded);
 
     // Clear the dirty flag if this editor unmounts (tab switch keeps state
-    // honest — an unmounted editor has no pending edits to lose).
-    React.useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+    // honest — an unmounted editor has no pending edits to lose). Ref-stable:
+    // an inline-arrow callback identity must never re-run the cleanup.
+    const onDirtyChangeRef = React.useRef(onDirtyChange);
+    React.useEffect(() => {
+        onDirtyChangeRef.current = onDirtyChange;
+    }, [onDirtyChange]);
+    React.useEffect(() => () => onDirtyChangeRef.current?.(false), []);
 
     const normalizedData = React.useMemo(() => {
         if (data === null || data === undefined) return {};
