@@ -8,12 +8,13 @@
  * export from items_export. Opening a row marks it seen.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { CmsCollectionService } from "@/features/cms/services/cmsService";
 import type {
+  CollectionExportRow,
   CollectionItemFilter,
   SiteCollection,
   SiteCollectionItem,
@@ -65,20 +66,44 @@ const FILTERS: { value: CollectionItemFilter; label: string }[] = [
 /** Max schema-driven columns before the rest collapses into the JSON preview. */
 const MAX_DATA_COLUMNS = 4;
 
+/**
+ * Own-property read for visitor-submitted `data`. A schema key that shadows a
+ * prototype member (`constructor`, `toString`, …) must never surface the
+ * prototype's value as if a visitor had submitted it.
+ */
+function readField(
+  data: Record<string, unknown> | null | undefined,
+  key: string,
+): unknown {
+  if (!data) return undefined;
+  return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : undefined;
+}
+
 function cellText(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean")
     return String(value);
-  return JSON.stringify(value);
+  // JSON.stringify returns undefined for functions/symbols — the `: string`
+  // annotation was a lie without this guard.
+  if (typeof value === "function" || typeof value === "symbol") return "";
+  return JSON.stringify(value) ?? "";
 }
 
+/**
+ * Excel / Sheets treat a leading =, +, -, @, tab or CR as a formula. This data
+ * is visitor-submitted, so `=cmd|'/c calc'!A1` would otherwise become live code
+ * in the admin's spreadsheet. Prefixing an apostrophe forces text.
+ */
+const CSV_INJECTION_PREFIX_RE = /^[=+\-@\t\r]/;
+
 function csvEscape(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+  const safe = CSV_INJECTION_PREFIX_RE.test(value) ? `'${value}` : value;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 function buildCsv(
-  items: SiteCollectionItem[],
+  items: CollectionExportRow[],
   schemaKeys: string[],
 ): string {
   const extraKeys = new Set<string>();
@@ -99,7 +124,7 @@ function buildCsv(
   const header = [...dataKeys, ...metaKeys].map(csvEscape).join(",");
   const rows = items.map((item) =>
     [
-      ...dataKeys.map((k) => csvEscape(cellText(item.data?.[k]))),
+      ...dataKeys.map((k) => csvEscape(cellText(readField(item.data, k)))),
       ...metaKeys.map((k) => csvEscape(cellText(item[k]))),
     ].join(","),
   );
@@ -153,6 +178,12 @@ export default function CollectionItemsPage() {
       .finally(() => setIsLoading(false));
   }, [collectionId]);
 
+  /**
+   * The truncation notice belongs to the SEARCH, not to the refresh — it used
+   * to re-fire on every pagination click. Keyed so a new query notifies again.
+   */
+  const truncationNoticeKey = useRef<string | null>(null);
+
   const refreshItems = useCallback(async () => {
     setItemsLoading(true);
     try {
@@ -164,10 +195,16 @@ export default function CollectionItemsPage() {
       });
       setItems(res.items);
       setTotal(res.total);
+      const noticeKey = `${collectionId}|${filter}|${search}`;
       if (res.searchTruncated) {
-        toast.info(
-          "Search scanned the most recent 2,000 items only — enable Searchable on this collection for full-text search.",
-        );
+        if (truncationNoticeKey.current !== noticeKey) {
+          truncationNoticeKey.current = noticeKey;
+          toast.info(
+            "Search scanned only the most recent items — matches and the count are partial. Enable Searchable on this collection for full-text search.",
+          );
+        }
+      } else if (truncationNoticeKey.current === noticeKey) {
+        truncationNoticeKey.current = null;
       }
       setError(null);
     } catch (err) {
@@ -248,7 +285,7 @@ export default function CollectionItemsPage() {
     if (!collection) return;
     setIsExporting(true);
     try {
-      const { items: rows, truncated } =
+      const { items: rows, truncated, reason } =
         await CmsCollectionService.exportItems(collectionId, filter);
       if (rows.length === 0) {
         toast.info("Nothing to export for this filter");
@@ -262,11 +299,19 @@ export default function CollectionItemsPage() {
       a.download = `${collection.slug}-${filter}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(
-        truncated
-          ? `Exported the first ${rows.length.toLocaleString()} rows (server cap)`
-          : `Exported ${rows.length.toLocaleString()} row(s)`,
-      );
+      if (truncated && reason === "size") {
+        toast.warning(
+          `Exported the first ${rows.length.toLocaleString()} rows — the response hit its size limit. Narrow the export (pick a filter tab, or archive older items) and run it again to get the rest.`,
+          { duration: 10_000 },
+        );
+      } else if (truncated) {
+        toast.warning(
+          `Exported the first ${rows.length.toLocaleString()} rows (server row cap). Narrow the filter to export the rest.`,
+          { duration: 10_000 },
+        );
+      } else {
+        toast.success(`Exported ${rows.length.toLocaleString()} row(s)`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Export failed");
     } finally {
@@ -522,8 +567,21 @@ export default function CollectionItemsPage() {
                   return (
                     <TableRow
                       key={item.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Open item received ${formatDistanceToNow(
+                        new Date(item.created_at),
+                        { addSuffix: true },
+                      )}`}
                       onClick={() => handleOpenItem(item)}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
+                        // Let the row checkbox keep its own keyboard behaviour.
+                        if (e.target !== e.currentTarget) return;
+                        e.preventDefault();
+                        handleOpenItem(item);
+                      }}
                     >
                       <TableCell
                         className="w-8"
@@ -547,7 +605,7 @@ export default function CollectionItemsPage() {
                           key={key}
                           className={`text-xs max-w-48 truncate ${unread ? "font-semibold" : ""}`}
                         >
-                          {cellText(item.data?.[key]) || (
+                          {cellText(readField(item.data, key)) || (
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
@@ -651,7 +709,7 @@ export default function CollectionItemsPage() {
                       {f.label}
                     </p>
                     <p className="text-sm break-words whitespace-pre-wrap">
-                      {cellText(openItem.data?.[f.key]) || "—"}
+                      {cellText(readField(openItem.data, f.key)) || "—"}
                     </p>
                   </div>
                 ))}
