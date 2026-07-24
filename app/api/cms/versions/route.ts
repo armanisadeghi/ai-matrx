@@ -35,6 +35,43 @@ import type {
   ClientEntityVersionDetail,
 } from "@/features/cms/types";
 
+/**
+ * Columns a version snapshot must never hand back, per entity.
+ *
+ * A row snapshot is the WHOLE row as it was, so it routes around every
+ * column-level protection applied to the live table. CMS migration 0016
+ * column-scoped `client_sites` so the public key could not read
+ * `data_api_key` / `settings` / `owner_user_id`; without this list, asking for
+ * an old version of that same row hands all three back in full. aidream fixed
+ * the identical hole on its side at the DTO seam
+ * (`services/cms/dtos.py` → SNAPSHOT_REDACT_COLUMNS); this is that list's twin,
+ * and the two must be changed together.
+ *
+ * `redacted_fields` is returned so the omission is honest — a caller can tell
+ * a withheld field from an absent one.
+ */
+const SNAPSHOT_REDACT: Partial<Record<CmsEntityType, readonly string[]>> = {
+  client_site: ["data_api_key", "settings", "owner_user_id"],
+};
+
+function redactSnapshot(
+  entityType: CmsEntityType,
+  rowData: Record<string, unknown>,
+): { data: Record<string, unknown>; redactedFields: string[] } {
+  const secrets = SNAPSHOT_REDACT[entityType];
+  if (!secrets?.length) return { data: rowData, redactedFields: [] };
+
+  const data: Record<string, unknown> = { ...rowData };
+  const redactedFields: string[] = [];
+  for (const key of secrets) {
+    if (key in data) {
+      delete data[key];
+      redactedFields.push(key);
+    }
+  }
+  return { data, redactedFields: redactedFields.sort() };
+}
+
 /** The `version_get` RPC returns the summary fields plus the raw row snapshot. */
 type VersionGetRow = ClientEntityVersion & { row_data: Record<string, unknown> };
 
@@ -152,6 +189,11 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "Access denied" }, { status: 403 });
         }
 
+        const { data: snapshot, redactedFields } = redactSnapshot(
+          entityType,
+          row.row_data ?? {},
+        );
+
         const version: ClientEntityVersionDetail = {
           id: row.id,
           entity_type: row.entity_type,
@@ -161,7 +203,8 @@ export async function POST(request: NextRequest) {
           actor_id: row.actor_id,
           occurred_at: row.occurred_at,
           is_current: row.is_current,
-          data: row.row_data ?? {},
+          data: snapshot,
+          redacted_fields: redactedFields,
         };
         return NextResponse.json({ version });
       }

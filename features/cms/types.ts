@@ -178,6 +178,8 @@ export interface ClientEntityVersion {
  */
 export interface ClientEntityVersionDetail extends ClientEntityVersion {
   data: Record<string, unknown>;
+  /** Snapshot columns withheld by the route (see SNAPSHOT_REDACT in app/api/cms/versions/route.ts). */
+  redacted_fields?: string[];
 }
 
 /** The content fields a `client_page` snapshot carries, read out of `data`. */
