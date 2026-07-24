@@ -546,7 +546,13 @@ export function CollectionEditorDialog({
               hint="Site visitors can submit items (forms, signups). Protected by the site data key, rate limits, and the honeypot."
               checked={form.publicWrite}
               onChange={(v) => set("publicWrite", v)}
-              disabled={hasRichtext}
+              /**
+               * Block ENABLING it, never block disabling it. A collection that
+               * is already public_write and then gains a richtext field showed
+               * an error telling you to turn this off — on a toggle that was
+               * unclickable, an inescapable dead end.
+               */
+              disabled={hasRichtext && !form.publicWrite}
               disabledReason="Blocked: this collection has a richtext field. Public visitors never submit rich text."
             />
             <ToggleRow

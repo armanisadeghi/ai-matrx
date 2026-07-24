@@ -271,7 +271,20 @@ export default function CollectionsPage() {
   return (
     <div className="h-full overflow-auto">
       <div className="px-4 sm:px-6 py-6 space-y-4">
-        <div className="flex items-center justify-end">
+        {/* Route chrome (site name, tabs, back) comes from EntityModeHeader in
+            the site layout — this is the section label for the tab body, which
+            was previously an empty row with a floating button. */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-foreground">
+              Collections
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {collections.length === 0
+                ? "Structured site data — form submissions, listings, testimonials."
+                : `${collections.length} collection${collections.length === 1 ? "" : "s"} on this site`}
+            </p>
+          </div>
           <Button
             variant="outline"
             size="sm"
