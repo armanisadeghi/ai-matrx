@@ -109,6 +109,8 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSite[] }) {
                         <SelectItem value="version">Version</SelectItem>
                         <SelectItem value="exception">Exception</SelectItem>
                         <SelectItem value="asset">Asset</SelectItem>
+                        <SelectItem value="collection">Collection</SelectItem>
+                        <SelectItem value="collection_item">Collection item</SelectItem>
                     </SelectContent>
                 </Select>
 

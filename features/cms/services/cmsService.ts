@@ -441,7 +441,7 @@ export const CmsCollectionService = {
         const res = await callApi<{ collection: SiteCollection; mintedDataApiKey: boolean }>(
             'collections',
             'create',
-            params,
+            { ...params },
         );
         return res;
     },

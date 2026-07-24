@@ -28,6 +28,7 @@ import {
   AlertCircle,
   FileText,
   Puzzle,
+  Database,
   Settings,
   ExternalLink,
   Plus,
@@ -73,6 +74,7 @@ export function useSiteContext() {
 function subViewSuffix(pathname: string, siteId: string): string {
   const rest = pathname.slice(`/cms/${siteId}`.length);
   if (rest.startsWith("/components")) return "/components";
+  if (rest.startsWith("/collections")) return "/collections";
   if (rest.startsWith("/settings")) return "/settings";
   return "";
 }
@@ -249,6 +251,11 @@ export default function SiteLayoutClient({
             name: "Components",
             href: `/cms/${siteId}/components`,
             icon: Puzzle,
+          },
+          {
+            name: "Collections",
+            href: `/cms/${siteId}/collections`,
+            icon: Database,
           },
           {
             name: "Settings",
