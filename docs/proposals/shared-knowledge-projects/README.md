@@ -67,14 +67,14 @@ acceptance-matrix or drift-guard script, `upsertIndustry` still has zero callers
 
 | # | Defect | Owner |
 |---|---|---|
-| D-A | Non-`cld_file` store members create **no** association edge (`source_kind='cld_file'` hard-coded in every trigger/backfill) — a library of notes/transcripts conveys nothing | P4 |
-| D-B | `page_extraction.py:157` hand-rolls `owner_id ==` + ANY-admin bypass on a **paid** endpoint, violating the repo's own "never hand-roll an ownership comparison" rule | P4 (see Decision 4) |
+| D-A | **CLOSED 2026-07-23 (P4)** — member→edge sync is registry-driven (`library_cascade_generalize_member_kinds.sql`); note/transcript/code_file rules registered + backfilled; proven live (entitled note RLS row 1 / editor false / control 0); unruled kinds WARN loudly and are documented in `features/rag/FEATURE.md` | P4 |
+| D-B | **CLOSED 2026-07-23 (P4)** — `page_extraction.py` index+cancel, `retry.py`, `runs_db.py:_load_job` rewritten onto `authz.user_may_spend_on_job` (owner/curator/super-admin via kernel predicates; ANY-admin bypass gone; cancel was previously ungated entirely). **aidream deploy pending** | P4 (see Decision 4) |
 | D-C | Two different gates answer "who may list a store's grants" — the HTTP endpoint (any admin tier + owner/editor) and the RPC the FE actually uses (super-admin + **any member of the owning org**) | P2 (see Decision 2) |
-| D-D | `can_read_processed_document` gained `archived_at is null` but `can_curate_library_document` did not — a grant reader loses read on an archived doc while curators keep curate. **Live, not dormant: 13 of 172 processed documents are archived today** | P4 |
+| D-D | **CLOSED 2026-07-23 (P4)** — `library_archived_read_curate_symmetry.sql`: owner/curator keep read on archived docs (they unarchive), audiences lose it; verified live on the archived docs (owner_read flipped false→true, grant reader stays false) | P4 |
 | D-E | RAG/library list surfaces are neither ListScope-scoped nor in `scripts/access-guards/allowlist.json` — outside the new access-guard regime, unexamined | P3 |
-| D-F | Orphan `data_store_members` rows survive their file's deletion (2 of 4 live members point at deleted files) | P4 |
+| D-F | **CLOSED 2026-07-23 (P4)** — `library_member_orphan_hygiene.sql`: both orphans soft-deleted with provenance markers; `files.files` trigger now soft-deletes members on file delete (loud); `check:access-drift` orphan guard = 0 | P4 |
 | D-G | aidream has **no build/version endpoint** — "what commit is prod?" is only answerable by fingerprinting `/openapi.json` | P1 (ops) |
-| D-H | Several repo migration files are stale vs live (`web_crawl_artifact_*`): the on-disk SQL no longer matches the deployed function bodies | P4 |
+| D-H | **CLOSED 2026-07-23 (P4)** — `web_crawl_artifact_live_reconcile.sql`: only real body drift was `web.assert_crawl_artifact_file` (`'private'` on disk vs live `'personal'`) — live body restated; 3 dead-on-disk functions dropped; supersession map for the rest recorded in the file header | P4 |
 
 ---
 

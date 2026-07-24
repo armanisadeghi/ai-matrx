@@ -26685,6 +26685,8 @@ export type Database = {
         Args: { p_organization_id?: string; p_suggestion_id: string }
         Returns: Json
       }
+      access_drift_report: { Args: never; Returns: Json }
+      access_matrix_tree: { Args: { p_store: string }; Returns: Json }
       add_column_to_user_table: {
         Args: {
           p_data_type: string
@@ -28353,6 +28355,7 @@ export type Database = {
         Args: { p_doc: string; p_user: string }
         Returns: boolean
       }
+      can_read_extraction_job: { Args: { p_job: string }; Returns: boolean }
       can_read_processed_document: {
         Args: { p_doc: string; p_user: string }
         Returns: boolean
@@ -28991,6 +28994,7 @@ export type Database = {
         }[]
       }
       delete_user_table: { Args: { p_table_id: string }; Returns: Json }
+      detect_self_containment_row_cycles: { Args: never; Returns: Json }
       dict_assert_access: {
         Args: { p_level: string; p_owner_id: string; p_user_id: string }
         Returns: undefined
@@ -32176,6 +32180,16 @@ export type Database = {
         Returns: Json
       }
       revoke_share_link: { Args: { p_link_id: string }; Returns: Json }
+      rls_count_as: {
+        Args: {
+          p_schema: string
+          p_table: string
+          p_user: string
+          p_where_col?: string
+          p_where_val?: string
+        }
+        Returns: number
+      }
       rs_topic_append_output: {
         Args: { p_asset: Json; p_kind: string; p_topic_id: string }
         Returns: Json
@@ -35468,6 +35482,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      member_source_entity_token: { Args: { p_kind: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -44594,7 +44609,7 @@ export type Database = {
           id: string
           updated_at: string
           user_id: string
-          user_secret_id: string
+          user_secret_id: string | null
         }
         Insert: {
           can_manage?: boolean
@@ -44605,7 +44620,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id: string
-          user_secret_id: string
+          user_secret_id?: string | null
         }
         Update: {
           can_manage?: boolean
@@ -44616,7 +44631,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
-          user_secret_id?: string
+          user_secret_id?: string | null
         }
         Relationships: [
           {
