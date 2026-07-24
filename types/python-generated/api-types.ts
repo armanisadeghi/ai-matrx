@@ -2999,7 +2999,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Secret */
+        /**
+         * Delete Secret
+         * @description Soft delete only — hard deletion has NO HTTP surface (recoverable
+         *     ciphertext is the contract; purge is an operator action).
+         */
         delete: operations["delete_secret_user_secrets__key__delete"];
         options?: never;
         head?: never;
@@ -3245,23 +3249,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/vault/items/{item_id}/fields/{field_id}/value": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update Field Value */
-        put: operations["update_field_value_vault_items__item_id__fields__field_id__value_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/vault/items/{item_id}/fields/{field_id}": {
         parameters: {
             query?: never;
@@ -3274,6 +3261,30 @@ export interface paths {
         post?: never;
         /** Delete Field */
         delete: operations["delete_field_vault_items__item_id__fields__field_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Field Metadata
+         * @description Metadata-only patch (inject flag, handling, editable, env alias,
+         *     description, is_active). The value is untouched and value_version is
+         *     preserved. Sealing is a one-way door: handling may become 'sealed' but a
+         *     sealed field can never be unsealed (403) — rotate/replace instead.
+         */
+        patch: operations["update_field_metadata_vault_items__item_id__fields__field_id__patch"];
+        trace?: never;
+    };
+    "/vault/items/{item_id}/fields/{field_id}/value": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Field Value */
+        put: operations["update_field_value_vault_items__item_id__fields__field_id__value_put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3328,8 +3339,10 @@ export interface paths {
         put?: never;
         /**
          * Resolve
-         * @description Browser-facing resolution by stable reference. `sealed` never crosses
-         *     this boundary — trusted executors resolve in-process via the battery.
+         * @description Browser-facing resolution by stable reference, handling-aware:
+         *     `visible` at can_use; `revealable` at can_reveal + recent auth;
+         *     `sealed` never crosses this boundary — trusted executors resolve
+         *     in-process via the battery.
          */
         post: operations["resolve_vault_resolve_post"];
         delete?: never;
@@ -3711,6 +3724,123 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/rank-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Rank Targets
+         * @description M-34: the site's rank portfolio, latest position/movement/best
+         *     position per keyword (bounded read over recent observations).
+         */
+        get: operations["list_rank_targets_seo_sites__site_id__rank_targets_get"];
+        put?: never;
+        /**
+         * Add Rank Target Route
+         * @description M-34: add (or reactivate) a keyword in the site's rank portfolio.
+         *     Pure DB get-or-create through the canonical identity resolver — zero
+         *     provider spend; use ``POST .../rank-targets/{id}/check`` to actually
+         *     fetch a live position.
+         */
+        post: operations["add_rank_target_route_seo_sites__site_id__rank_targets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/rank-targets/{target_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Rank Target Route
+         * @description M-34: remove a keyword from the portfolio (soft delete).
+         */
+        delete: operations["remove_rank_target_route_seo_rank_targets__target_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Rank Target Route
+         * @description M-34: pause/resume, or edit group/tags/notes/cadence.
+         */
+        patch: operations["update_rank_target_route_seo_rank_targets__target_id__patch"];
+        trace?: never;
+    };
+    "/seo/rank-targets/{target_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank Target History Route
+         * @description M-36: chronological position history for one rank target
+         *     (chart-ready — oldest first).
+         */
+        get: operations["rank_target_history_route_seo_rank_targets__target_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/rank-targets/{target_id}/landscape": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank Target Landscape Route
+         * @description M-37: the full competitive SERP for the target's most recent
+         *     snapshot (drill-in from the history chart).
+         */
+        get: operations["rank_target_landscape_route_seo_rank_targets__target_id__landscape_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/rank-targets/{target_id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Rank Target Check Route
+         * @description M-36: fire a real, live provider collection for this target right
+         *     now over the ONE ``run_collection`` funnel every other collector uses;
+         *     streams provider/persistence progress, ending with
+         *     ``seo.rank_check_completed`` carrying the fresh position.
+         */
+        post: operations["run_rank_target_check_route_seo_rank_targets__target_id__check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/collections/{run_id}": {
         parameters: {
             query?: never;
@@ -3893,6 +4023,78 @@ export interface paths {
          *     (DEF-22) + page<->keyword associations through the package writer.
          */
         post: operations["map_page_keywords_route_seo_pages_map_keywords_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/pages/{page_id}/pagespeed/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Page Pagespeed
+         * @description On-demand streamed PageSpeed Insights collection for one canonical
+         *     page (M-74/M-75, WS-12): builds the CollectionRequest from the page's
+         *     live URL (SSOT — never a caller-supplied URL) and runs it through the
+         *     ONE ``run_collection`` funnel every other provider uses. First-ever
+         *     rows land in ``seo.page_performance``.
+         */
+        post: operations["sync_page_pagespeed_seo_pages__page_id__pagespeed_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/analytics/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Site Analytics
+         * @description On-demand streamed GA4 landing-page collection for one bound site
+         *     (M-74, WS-12): builds the CollectionRequest from the site's live
+         *     ``integrations.marketing.providers.google_analytics_4`` binding (the
+         *     SSOT) and runs it through the ONE ``run_collection`` funnel. First-ever
+         *     rows land in ``seo.web_analytics_daily``.
+         */
+        post: operations["sync_site_analytics_seo_sites__site_id__analytics_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/schedule-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Site Schedule Status
+         * @description M-78 / WS-12: per-provider freshness for one site — last successful
+         *     run, last attempt, and persisted row count, read straight off the
+         *     canonical ``seo.collection_run`` ledger (WS-2 site attribution) plus
+         *     each provider's fact table. Read-only, ordinary JSON (sub-second) per
+         *     the handoff ruling — this is a status panel, not a streamed command.
+         */
+        get: operations["site_schedule_status_seo_sites__site_id__schedule_status_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17004,6 +17206,22 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** AnalyticsSyncBody */
+        AnalyticsSyncBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Window Days
+             * @default 28
+             */
+            window_days?: number;
+            /** Request Id */
+            request_id?: string | null;
+        };
         /** AnalyzeBulkRequest */
         AnalyzeBulkRequest: {
             /** Source Ids */
@@ -24899,6 +25117,23 @@ export interface components {
             /** Revoked */
             revoked: boolean;
         };
+        /** GranteeIn */
+        GranteeIn: {
+            /** User Id */
+            user_id: string;
+            /**
+             * Can Use
+             * @default true
+             */
+            can_use?: boolean;
+            /**
+             * Can Manage
+             * @default false
+             */
+            can_manage?: boolean;
+        } & {
+            [key: string]: unknown;
+        };
         /** GraphEdge */
         GraphEdge: {
             /** Id */
@@ -28588,6 +28823,23 @@ export interface components {
              */
             has_image?: boolean;
         };
+        /** PagespeedSyncBody */
+        PagespeedSyncBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Strategy
+             * @default mobile
+             * @enum {string}
+             */
+            strategy?: "mobile" | "desktop";
+            /** Request Id */
+            request_id?: string | null;
+        };
         /** PatchFolderRequest */
         PatchFolderRequest: {
             /**
@@ -29869,6 +30121,27 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** ProviderScheduleStatus */
+        ProviderScheduleStatus: {
+            /** Provider */
+            provider: string;
+            /** Label */
+            label: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Last Run Status */
+            last_run_status?: string | null;
+            /** Last Success At */
+            last_success_at?: string | null;
+            /** Row Count */
+            row_count?: number | null;
+            /** Next Due At */
+            next_due_at?: string | null;
+            /** Next Due Reason */
+            next_due_reason?: string | null;
+        };
         /** ProviderTaskEvidenceOut */
         ProviderTaskEvidenceOut: {
             /** Id */
@@ -30066,6 +30339,144 @@ export interface components {
              * @default false
              */
             stream?: boolean;
+        };
+        /** RankPortfolioItem */
+        RankPortfolioItem: {
+            /** Target Id */
+            target_id: string;
+            /** Site Id */
+            site_id: string;
+            /** Keyword Id */
+            keyword_id: string;
+            /** Keyword */
+            keyword: string;
+            /** Provider */
+            provider: string;
+            /** Engine */
+            engine: string;
+            /** Language */
+            language: string;
+            /** Device */
+            device: string;
+            /** Target Domain */
+            target_domain: string | null;
+            /** Target Page Id */
+            target_page_id: string | null;
+            /** Group */
+            group: string | null;
+            /** Tags */
+            tags: string[];
+            /** Notes */
+            notes: string | null;
+            /** Cadence Days */
+            cadence_days: number;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Latest Position */
+            latest_position: number | null;
+            /** Latest Absolute Position */
+            latest_absolute_position: number | null;
+            /** Previous Position */
+            previous_position: number | null;
+            /** Movement */
+            movement: number | null;
+            /** Best Position */
+            best_position: number | null;
+            /** Last Checked At */
+            last_checked_at: string | null;
+        };
+        /** RankTargetAddBody */
+        RankTargetAddBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Keyword */
+            keyword: string;
+            /**
+             * Provider
+             * @default brave
+             */
+            provider?: string;
+            /**
+             * Language
+             * @default en
+             */
+            language?: string;
+            /**
+             * Device
+             * @default desktop
+             */
+            device?: string;
+            /**
+             * Country
+             * @default US
+             */
+            country?: string;
+            /** Target Page Id */
+            target_page_id?: string | null;
+            /** Group */
+            group?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Cadence Days
+             * @default 7
+             */
+            cadence_days?: number;
+            /** Location Name */
+            location_name?: string | null;
+        };
+        /** RankTargetHistoryPoint */
+        RankTargetHistoryPoint: {
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Organic Rank */
+            organic_rank: number | null;
+            /** Absolute Rank */
+            absolute_rank: number | null;
+            /** Matched Url */
+            matched_url: string | null;
+            /** Matched Domain */
+            matched_domain: string | null;
+            /** Result Type */
+            result_type: string;
+        };
+        /** RankTargetPatchBody */
+        RankTargetPatchBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Group */
+            group?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Notes */
+            notes?: string | null;
+            /** Cadence Days */
+            cadence_days?: number | null;
+        };
+        /** RankTargetRemovedResponse */
+        RankTargetRemovedResponse: {
+            /** Removed */
+            removed: boolean;
         };
         /** RawPayloadEvidenceOut */
         RawPayloadEvidenceOut: {
@@ -32559,6 +32970,32 @@ export interface components {
          * @enum {string}
          */
         SeoCapability: "serp_rank" | "keyword_metrics" | "search_performance" | "web_analytics" | "page_performance" | "backlinks" | "competitors" | "raw_provider";
+        /** SerpLandscape */
+        SerpLandscape: {
+            /** Snapshot Id */
+            snapshot_id: string | null;
+            /** Observed At */
+            observed_at: string | null;
+            /** Results */
+            results: components["schemas"]["SerpLandscapeResult"][];
+        };
+        /** SerpLandscapeResult */
+        SerpLandscapeResult: {
+            /** Absolute Rank */
+            absolute_rank: number;
+            /** Organic Rank */
+            organic_rank: number | null;
+            /** Result Type */
+            result_type: string;
+            /** Url */
+            url: string | null;
+            /** Domain */
+            domain: string | null;
+            /** Title */
+            title: string | null;
+            /** Snippet */
+            snippet: string | null;
+        };
         /** SetCanonicalCleanRequest */
         SetCanonicalCleanRequest: {
             /** Organization Id */
@@ -32776,6 +33213,18 @@ export interface components {
              * @default true
              */
             enabled?: boolean;
+        };
+        /** SiteScheduleStatusResponse */
+        SiteScheduleStatusResponse: {
+            /** Site Id */
+            site_id: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Providers */
+            providers: components["schemas"]["ProviderScheduleStatus"][];
         };
         /** SiteStrategyBody */
         SiteStrategyBody: {
@@ -36116,6 +36565,40 @@ export interface components {
             count: number;
         };
         /**
+         * VaultFieldMetadataRequest
+         * @description Metadata-only field patch — never carries a value; ``value_version``
+         *     is preserved. Omitted fields are left alone. To CLEAR the env alias pass
+         *     ``clear_env_key=true`` (env_key itself set = replace the alias).
+         *     ``handling`` may move TO 'sealed' but never away from it.
+         */
+        VaultFieldMetadataRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Inject Into Sandbox */
+            inject_into_sandbox?: boolean | null;
+            /** Handling */
+            handling?: ("visible" | "revealable" | "sealed") | null;
+            /** Editable */
+            editable?: boolean | null;
+            /** Env Key */
+            env_key?: string | null;
+            /**
+             * Clear Env Key
+             * @default false
+             */
+            clear_env_key?: boolean;
+            /** Description */
+            description?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * VaultFieldOut
          * @description Masked field — never carries plaintext.
          */
@@ -36425,8 +36908,8 @@ export interface components {
              * @enum {string}
              */
             access_mode: "all_members" | "restricted";
-            /** User Ids */
-            user_ids?: string[];
+            /** Grantees */
+            grantees?: components["schemas"]["GranteeIn"][];
         } & {
             [key: string]: unknown;
         };
@@ -42489,9 +42972,7 @@ export interface operations {
     };
     delete_secret_user_secrets__key__delete: {
         parameters: {
-            query?: {
-                hard?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 key: string;
@@ -43100,6 +43581,72 @@ export interface operations {
             };
         };
     };
+    delete_field_vault_items__item_id__fields__field_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                field_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_field_metadata_vault_items__item_id__fields__field_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                field_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultFieldMetadataRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultFieldOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_field_value_vault_items__item_id__fields__field_id__value_put: {
         parameters: {
             query?: never;
@@ -43124,36 +43671,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["VaultFieldOut"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_field_vault_items__item_id__fields__field_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                item_id: string;
-                field_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -43918,6 +44435,233 @@ export interface operations {
             };
         };
     };
+    list_rank_targets_seo_sites__site_id__rank_targets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankPortfolioItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_rank_target_route_seo_sites__site_id__rank_targets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RankTargetAddBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankPortfolioItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_rank_target_route_seo_rank_targets__target_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankTargetRemovedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_rank_target_route_seo_rank_targets__target_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RankTargetPatchBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankPortfolioItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rank_target_history_route_seo_rank_targets__target_id__history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankTargetHistoryPoint"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rank_target_landscape_route_seo_rank_targets__target_id__landscape_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SerpLandscape"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_rank_target_check_route_seo_rank_targets__target_id__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_collection_seo_collections__run_id__get: {
         parameters: {
             query?: never;
@@ -44198,6 +44942,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_page_pagespeed_seo_pages__page_id__pagespeed_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PagespeedSyncBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_site_analytics_seo_sites__site_id__analytics_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyticsSyncBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    site_schedule_status_seo_sites__site_id__schedule_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteScheduleStatusResponse"];
                 };
             };
             /** @description Validation Error */

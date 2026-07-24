@@ -23,9 +23,9 @@ import {
   forkVaultItem,
   importVaultEnv,
   rotateVaultItem,
-  setFieldInjectFlag,
   shareVaultItem,
   transferVaultItem,
+  updateVaultFieldMetadata,
   updateVaultFieldValue,
   updateVaultItem,
 } from "./vault-service";
@@ -34,6 +34,8 @@ import type {
   VaultAccessMode,
   VaultAuditEntry,
   VaultFieldIn,
+  VaultFieldMetadataRequest,
+  VaultGrantee,
   VaultItem,
   VaultItemCreateRequest,
   VaultItemUpdateRequest,
@@ -80,12 +82,17 @@ export interface VaultActions {
   addField: (itemId: string, field: VaultFieldIn) => Promise<void>;
   updateFieldValue: (itemId: string, fieldId: string, value: string) => Promise<void>;
   deleteField: (itemId: string, fieldId: string) => Promise<void>;
-  setInject: (fieldId: string, inject: boolean) => Promise<void>;
+  setInject: (itemId: string, fieldId: string, inject: boolean) => Promise<void>;
+  updateFieldMeta: (
+    itemId: string,
+    fieldId: string,
+    body: VaultFieldMetadataRequest,
+  ) => Promise<void>;
   rotate: (itemId: string, values: Record<string, string>) => Promise<void>;
   share: (
     itemId: string,
     accessMode: VaultAccessMode,
-    userIds: string[],
+    grantees: VaultGrantee[],
   ) => Promise<void>;
   transfer: (itemId: string, to: VaultPrincipal) => Promise<void>;
   fork: (itemId: string, to: VaultPrincipal) => Promise<void>;
@@ -203,18 +210,26 @@ export function useVault(
       run("Field deleted", async () => {
         await deleteVaultField(itemId, fieldId);
       }),
-    setInject: (fieldId, inject) =>
+    setInject: (itemId, fieldId, inject) =>
       run(
         inject ? "Sandbox injection enabled" : "Sandbox injection disabled",
-        () => setFieldInjectFlag(fieldId, inject),
+        async () => {
+          await updateVaultFieldMetadata(itemId, fieldId, {
+            inject_into_sandbox: inject,
+          });
+        },
       ),
+    updateFieldMeta: (itemId, fieldId, body) =>
+      run("Field updated", async () => {
+        await updateVaultFieldMetadata(itemId, fieldId, body);
+      }),
     rotate: (itemId, values) =>
       run("Credential rotated", async () => {
         await rotateVaultItem(itemId, values);
       }),
-    share: (itemId, accessMode, userIds) =>
+    share: (itemId, accessMode, grantees) =>
       run("Access updated", async () => {
-        await shareVaultItem(itemId, accessMode, userIds);
+        await shareVaultItem(itemId, accessMode, grantees);
       }),
     transfer: (itemId, to) =>
       run(

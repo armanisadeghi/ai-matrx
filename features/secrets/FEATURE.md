@@ -29,6 +29,8 @@ Every field carries exactly three controls (independent; catalog definitions pro
 
 `user_secrets.key` is the **optional env alias** (`VALID_KEY_RE`); `field_key` is the stable lowercase-snake identity within the item. Legacy single-value rows are one-field `env_value` items.
 
+Field metadata (inject flag, env alias set/clear, description, `is_active`, handling, `editable`) is edited via `PATCH /api/vault/items/{id}/fields/{fid}` — there is NO direct client write path to `users.user_secrets` (all client write grants were revoked in Phase 1). **Sealing is a one-way door:** the UI confirms with a cannot-be-undone warning, a sealed field shows a lock and no unseal control, and the server 403s any change away from `sealed`. Sharing carries per-recipient grants (`grantees: [{user_id, can_use, can_manage}]`).
+
 ## Trust boundary — two data paths, one per operation
 
 1. **Masked metadata → DIRECT Supabase.** Items + fields + catalog definitions are read via supabase-js with the **explicit column lists** `CREDENTIAL_ITEM_COLUMNS` / `VAULT_FIELD_COLUMNS` (`types.ts`). `users.user_secrets.value_encrypted` is unreadable by client roles — **never `select *` on these tables.** Scope is declared per THE VIEW LAW (`eq(user_id)` personal, `eq(organization_id)` org); RLS provides owner reads, org-member masked reads, and self-reads on `user_secret_grants`.
@@ -61,12 +63,11 @@ Capabilities on the direct list are projected client-side (`deriveCapabilities` 
 
 ## Known gaps (2026-07-23)
 
-- The `/api/vault` surface has no field-metadata PATCH; the per-field sandbox toggle is a direct RLS-scoped `user_secrets.inject_into_sandbox` update — works for personal owners, refused (loud toast) for org fields until aidream adds the endpoint.
-- The share API carries `access_mode` + `user_ids` (grants `can_use`); per-recipient `can_manage` granting has no wire field yet.
 - aidream `/api/vault/*` is implemented in the local repo but not yet deployed to prod — until deploy, value ops surface clear error toasts while the masked list keeps rendering from Supabase.
 
 ## Change Log
 
+- **2026-07-23** — Alignment with final vault API: field-metadata PATCH (env alias set/clear, description, active, one-way seal with confirm; deleted the interim direct `inject_into_sandbox` write) and per-recipient share grantees with a Can-manage toggle (org members + personal email lookup); types regenerated.
 - **2026-07-23** — Phase 3 unification: ONE definition-driven `VaultWorkspace` for both principals (catalog picker + presets + custom builder, reveal/copy with transient auto-clear, env import, share/transfer/fork/rotate/audit, capability-driven actions); data split direct-Supabase masked reads vs `/api/vault/*` value ops; deleted the duplicated personal/org services, hooks, and `OrganizationVaultSection`; regenerated `api-types.ts` from local aidream OpenAPI.
 - **2026-07-23** — Linked the cross-repository Unified Credential Vault plan.
 - **2026-07-21** — Paste-to-fill for single dotenv assignments (reusable parser).

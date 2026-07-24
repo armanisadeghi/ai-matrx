@@ -7368,6 +7368,7 @@
           "User Secrets"
         ],
         "summary": "Delete Secret",
+        "description": "Soft delete only — hard deletion has NO HTTP surface (recoverable\nciphertext is the contract; purge is an operator action).",
         "operationId": "delete_secret_user_secrets__key__delete",
         "parameters": [
           {
@@ -7377,16 +7378,6 @@
             "schema": {
               "type": "string",
               "title": "Key"
-            }
-          },
-          {
-            "name": "hard",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Hard"
             }
           }
         ],
@@ -8197,6 +8188,110 @@
         }
       }
     },
+    "/vault/items/{item_id}/fields/{field_id}": {
+      "patch": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Update Field Metadata",
+        "description": "Metadata-only patch (inject flag, handling, editable, env alias,\ndescription, is_active). The value is untouched and value_version is\npreserved. Sealing is a one-way door: handling may become 'sealed' but a\nsealed field can never be unsealed (403) — rotate/replace instead.",
+        "operationId": "update_field_metadata_vault_items__item_id__fields__field_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultFieldMetadataRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultFieldOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Delete Field",
+        "operationId": "delete_field_vault_items__item_id__fields__field_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/items/{item_id}/fields/{field_id}/value": {
       "put": {
         "tags": [
@@ -8244,50 +8339,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/vault/items/{item_id}/fields/{field_id}": {
-      "delete": {
-        "tags": [
-          "Credential Vault"
-        ],
-        "summary": "Delete Field",
-        "operationId": "delete_field_vault_items__item_id__fields__field_id__delete",
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          },
-          {
-            "name": "field_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Field Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -8413,7 +8464,7 @@
           "Credential Vault"
         ],
         "summary": "Resolve",
-        "description": "Browser-facing resolution by stable reference. `sealed` never crosses\nthis boundary — trusted executors resolve in-process via the battery.",
+        "description": "Browser-facing resolution by stable reference, handling-aware:\n`visible` at can_use; `revealable` at can_reveal + recent auth;\n`sealed` never crosses this boundary — trusted executors resolve\nin-process via the battery.",
         "operationId": "resolve_vault_resolve_post",
         "requestBody": {
           "content": {
@@ -9435,6 +9486,341 @@
         }
       }
     },
+    "/seo/sites/{site_id}/rank-targets": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "List Rank Targets",
+        "description": "M-34: the site's rank portfolio, latest position/movement/best\nposition per keyword (bounded read over recent observations).",
+        "operationId": "list_rank_targets_seo_sites__site_id__rank_targets_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RankPortfolioItem"
+                  },
+                  "title": "Response List Rank Targets Seo Sites  Site Id  Rank Targets Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Add Rank Target Route",
+        "description": "M-34: add (or reactivate) a keyword in the site's rank portfolio.\nPure DB get-or-create through the canonical identity resolver — zero\nprovider spend; use ``POST .../rank-targets/{id}/check`` to actually\nfetch a live position.",
+        "operationId": "add_rank_target_route_seo_sites__site_id__rank_targets_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankTargetAddBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankPortfolioItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/rank-targets/{target_id}": {
+      "patch": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Update Rank Target Route",
+        "description": "M-34: pause/resume, or edit group/tags/notes/cadence.",
+        "operationId": "update_rank_target_route_seo_rank_targets__target_id__patch",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Target Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankTargetPatchBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankPortfolioItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Remove Rank Target Route",
+        "description": "M-34: remove a keyword from the portfolio (soft delete).",
+        "operationId": "remove_rank_target_route_seo_rank_targets__target_id__delete",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Target Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankTargetRemovedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/rank-targets/{target_id}/history": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rank Target History Route",
+        "description": "M-36: chronological position history for one rank target\n(chart-ready — oldest first).",
+        "operationId": "rank_target_history_route_seo_rank_targets__target_id__history_get",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Target Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 90,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RankTargetHistoryPoint"
+                  },
+                  "title": "Response Rank Target History Route Seo Rank Targets  Target Id  History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/rank-targets/{target_id}/landscape": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rank Target Landscape Route",
+        "description": "M-37: the full competitive SERP for the target's most recent\nsnapshot (drill-in from the history chart).",
+        "operationId": "rank_target_landscape_route_seo_rank_targets__target_id__landscape_get",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Target Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SerpLandscape"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/rank-targets/{target_id}/check": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Run Rank Target Check Route",
+        "description": "M-36: fire a real, live provider collection for this target right\nnow over the ONE ``run_collection`` funnel every other collector uses;\nstreams provider/persistence progress, ending with\n``seo.rank_check_completed`` carrying the fresh position.",
+        "operationId": "run_rank_target_check_route_seo_rank_targets__target_id__check_post",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Target Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/collections/{run_id}": {
       "get": {
         "tags": [
@@ -9791,6 +10177,151 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/pages/{page_id}/pagespeed/sync": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Sync Page Pagespeed",
+        "description": "On-demand streamed PageSpeed Insights collection for one canonical\npage (M-74/M-75, WS-12): builds the CollectionRequest from the page's\nlive URL (SSOT — never a caller-supplied URL) and runs it through the\nONE ``run_collection`` funnel every other provider uses. First-ever\nrows land in ``seo.page_performance``.",
+        "operationId": "sync_page_pagespeed_seo_pages__page_id__pagespeed_sync_post",
+        "parameters": [
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Page Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagespeedSyncBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/analytics/sync": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Sync Site Analytics",
+        "description": "On-demand streamed GA4 landing-page collection for one bound site\n(M-74, WS-12): builds the CollectionRequest from the site's live\n``integrations.marketing.providers.google_analytics_4`` binding (the\nSSOT) and runs it through the ONE ``run_collection`` funnel. First-ever\nrows land in ``seo.web_analytics_daily``.",
+        "operationId": "sync_site_analytics_seo_sites__site_id__analytics_sync_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyticsSyncBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/schedule-status": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Site Schedule Status",
+        "description": "M-78 / WS-12: per-provider freshness for one site — last successful\nrun, last attempt, and persisted row count, read straight off the\ncanonical ``seo.collection_run`` ledger (WS-2 site attribution) plus\neach provider's fact table. Read-only, ordinary JSON (sub-second) per\nthe handoff ruling — this is a status panel, not a streamed command.",
+        "operationId": "site_schedule_status_seo_sites__site_id__schedule_status_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteScheduleStatusResponse"
+                }
               }
             }
           },
@@ -46616,6 +47147,64 @@
         ],
         "title": "AnalysisRecipeRecord"
       },
+      "AnalyticsSyncBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "window_days": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Window Days",
+            "default": 28
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AnalyticsSyncBody"
+      },
       "AnalyzeBulkRequest": {
         "properties": {
           "source_ids": {
@@ -68622,6 +69211,30 @@
         ],
         "title": "GrantRevokedResponse"
       },
+      "GranteeIn": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "can_use": {
+            "type": "boolean",
+            "title": "Can Use",
+            "default": true
+          },
+          "can_manage": {
+            "type": "boolean",
+            "title": "Can Manage",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "GranteeIn"
+      },
       "GraphEdge": {
         "properties": {
           "id": {
@@ -79324,6 +79937,66 @@
         ],
         "title": "PageSummary"
       },
+      "PagespeedSyncBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "desktop"
+            ],
+            "title": "Strategy",
+            "default": "mobile"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PagespeedSyncBody"
+      },
       "PatchFolderRequest": {
         "properties": {
           "folder_path": {
@@ -82565,6 +83238,99 @@
         ],
         "title": "ProviderCallEvidenceOut"
       },
+      "ProviderScheduleStatus": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "last_run_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Status"
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At"
+          },
+          "row_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Count"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "next_due_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "label",
+          "enabled"
+        ],
+        "title": "ProviderScheduleStatus"
+      },
       "ProviderTaskEvidenceOut": {
         "properties": {
           "id": {
@@ -83020,6 +83786,516 @@
           "urls"
         ],
         "title": "QuickScrapeRequest"
+      },
+      "RankPortfolioItem": {
+        "properties": {
+          "target_id": {
+            "type": "string",
+            "title": "Target Id"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "keyword_id": {
+            "type": "string",
+            "title": "Keyword Id"
+          },
+          "keyword": {
+            "type": "string",
+            "title": "Keyword"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "engine": {
+            "type": "string",
+            "title": "Engine"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "device": {
+            "type": "string",
+            "title": "Device"
+          },
+          "target_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Domain"
+          },
+          "target_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Page Id"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "cadence_days": {
+            "type": "integer",
+            "title": "Cadence Days"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "latest_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Position"
+          },
+          "latest_absolute_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Absolute Position"
+          },
+          "previous_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Position"
+          },
+          "movement": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Movement"
+          },
+          "best_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Position"
+          },
+          "last_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Checked At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_id",
+          "site_id",
+          "keyword_id",
+          "keyword",
+          "provider",
+          "engine",
+          "language",
+          "device",
+          "target_domain",
+          "target_page_id",
+          "group",
+          "tags",
+          "notes",
+          "cadence_days",
+          "is_active",
+          "created_at",
+          "latest_position",
+          "latest_absolute_position",
+          "previous_position",
+          "movement",
+          "best_position",
+          "last_checked_at"
+        ],
+        "title": "RankPortfolioItem"
+      },
+      "RankTargetAddBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "keyword": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Keyword"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "brave"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "en"
+          },
+          "device": {
+            "type": "string",
+            "title": "Device",
+            "default": "desktop"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country",
+            "default": "US"
+          },
+          "target_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Page Id"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "cadence_days": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Cadence Days",
+            "default": 7
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "keyword"
+        ],
+        "title": "RankTargetAddBody"
+      },
+      "RankTargetHistoryPoint": {
+        "properties": {
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "organic_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organic Rank"
+          },
+          "absolute_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absolute Rank"
+          },
+          "matched_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Url"
+          },
+          "matched_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Domain"
+          },
+          "result_type": {
+            "type": "string",
+            "title": "Result Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "observed_at",
+          "organic_rank",
+          "absolute_rank",
+          "matched_url",
+          "matched_domain",
+          "result_type"
+        ],
+        "title": "RankTargetHistoryPoint"
+      },
+      "RankTargetPatchBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "cadence_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 90.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadence Days"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RankTargetPatchBody"
+      },
+      "RankTargetRemovedResponse": {
+        "properties": {
+          "removed": {
+            "type": "boolean",
+            "title": "Removed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "removed"
+        ],
+        "title": "RankTargetRemovedResponse"
       },
       "RawPayloadEvidenceOut": {
         "properties": {
@@ -89400,6 +90676,127 @@
         ],
         "title": "SeoCapability"
       },
+      "SerpLandscape": {
+        "properties": {
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SerpLandscapeResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "observed_at",
+          "results"
+        ],
+        "title": "SerpLandscape"
+      },
+      "SerpLandscapeResult": {
+        "properties": {
+          "absolute_rank": {
+            "type": "integer",
+            "title": "Absolute Rank"
+          },
+          "organic_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organic Rank"
+          },
+          "result_type": {
+            "type": "string",
+            "title": "Result Type"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snippet"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "absolute_rank",
+          "organic_rank",
+          "result_type",
+          "url",
+          "domain",
+          "title",
+          "snippet"
+        ],
+        "title": "SerpLandscapeResult"
+      },
       "SetCanonicalCleanRequest": {
         "properties": {
           "organization_id": {
@@ -90112,6 +91509,34 @@
           "cron_expr"
         ],
         "title": "SiteScheduleCreateRequest"
+      },
+      "SiteScheduleStatusResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderScheduleStatus"
+            },
+            "type": "array",
+            "title": "Providers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "generated_at",
+          "providers"
+        ],
+        "title": "SiteScheduleStatusResponse"
       },
       "SiteStrategyBody": {
         "properties": {
@@ -99490,6 +100915,123 @@
         ],
         "title": "VaultEffectiveEnvResponse"
       },
+      "VaultFieldMetadataRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "inject_into_sandbox": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inject Into Sandbox"
+          },
+          "handling": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "visible",
+                  "revealable",
+                  "sealed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handling"
+          },
+          "editable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Editable"
+          },
+          "env_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env Key"
+          },
+          "clear_env_key": {
+            "type": "boolean",
+            "title": "Clear Env Key",
+            "default": false
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "VaultFieldMetadataRequest",
+        "description": "Metadata-only field patch — never carries a value; ``value_version``\nis preserved. Omitted fields are left alone. To CLEAR the env alias pass\n``clear_env_key=true`` (env_key itself set = replace the alias).\n``handling`` may move TO 'sealed' but never away from it."
+      },
       "VaultFieldOut": {
         "properties": {
           "id": {
@@ -100337,12 +101879,12 @@
             ],
             "title": "Access Mode"
           },
-          "user_ids": {
+          "grantees": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/GranteeIn"
             },
             "type": "array",
-            "title": "User Ids"
+            "title": "Grantees"
           }
         },
         "additionalProperties": true,

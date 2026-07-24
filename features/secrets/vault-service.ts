@@ -30,7 +30,9 @@ import {
   type VaultField,
   type VaultFieldIn,
   type VaultFieldMaskedRow,
+  type VaultFieldMetadataRequest,
   type VaultFieldWire,
+  type VaultGrantee,
   type VaultImportEnvRequest,
   type VaultItem,
   type VaultItemCreateRequest,
@@ -148,6 +150,20 @@ export function updateVaultFieldValue(
   ).then(normalizeWireField);
 }
 
+/** Metadata-only field PATCH (inject flag, env alias set/clear, description,
+ *  handling, editable, is_active). Requires `can_edit`; the server enforces
+ *  the one-way seal door (403 on any change away from `sealed`). */
+export function updateVaultFieldMetadata(
+  itemId: string,
+  fieldId: string,
+  body: VaultFieldMetadataRequest,
+): Promise<VaultField> {
+  return vaultFetch<VaultFieldWire>(
+    `/items/${encodeURIComponent(itemId)}/fields/${encodeURIComponent(fieldId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  ).then(normalizeWireField);
+}
+
 export function deleteVaultField(itemId: string, fieldId: string): Promise<void> {
   return vaultFetch<void>(
     `/items/${encodeURIComponent(itemId)}/fields/${encodeURIComponent(fieldId)}`,
@@ -191,11 +207,11 @@ export function rotateVaultItem(
 export function shareVaultItem(
   itemId: string,
   accessMode: VaultAccessMode,
-  userIds: string[],
+  grantees: VaultGrantee[],
 ): Promise<VaultItem> {
   return vaultFetch<VaultItemWire>(`/items/${encodeURIComponent(itemId)}/share`, {
     method: "PUT",
-    body: JSON.stringify({ access_mode: accessMode, user_ids: userIds }),
+    body: JSON.stringify({ access_mode: accessMode, grantees }),
   }).then(normalizeWireItem);
 }
 
@@ -368,34 +384,6 @@ export async function fetchVaultItems(
       manageGrantItemIds,
     }),
   }));
-}
-
-/**
- * Per-field sandbox-injection toggle.
- *
- * The `/api/vault` surface has no field-metadata PATCH yet (only value
- * PUT), so this is a direct RLS-scoped metadata write: personal fields
- * update under the owner ALL policy; org fields require the backend
- * endpoint once it exists (the RLS write will be refused and surfaces
- * as an error toast — loud, never silent).
- */
-export async function setFieldInjectFlag(
-  fieldId: string,
-  inject: boolean,
-): Promise<void> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("users")
-    .from("user_secrets")
-    .update({ inject_into_sandbox: inject })
-    .eq("id", fieldId)
-    .select("id");
-  if (error) throw new Error(error.message);
-  if (!data || data.length === 0) {
-    throw new Error(
-      "Not permitted to change sandbox injection on this field (organization fields need an org admin)",
-    );
-  }
 }
 
 // ── Catalog definitions (public.catalog_entries, kind=credential_definition) ─

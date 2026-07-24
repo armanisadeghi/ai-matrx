@@ -20,9 +20,11 @@ import {
   GitFork,
   History,
   Loader2,
+  Lock,
   Pencil,
   Plus,
   RotateCcw,
+  Settings2,
   Trash2,
   Users,
   X,
@@ -58,6 +60,7 @@ import {
   type CredentialDefinition,
   type VaultAccessMode,
   type VaultField,
+  type VaultGrantee,
   type VaultHandling,
   type VaultItem,
   type VaultPrincipal,
@@ -381,6 +384,10 @@ function FieldRow({
   const [editing, setEditing] = useState(false);
   const [valueDraft, setValueDraft] = useState("");
   const [copied, setCopied] = useState(false);
+  const [metaOpen, setMetaOpen] = useState(false);
+  const [envDraft, setEnvDraft] = useState(field.env_key ?? "");
+  const [descDraft, setDescDraft] = useState(field.description ?? "");
+  const [confirmSeal, setConfirmSeal] = useState(false);
 
   const canShow =
     field.handling === "visible"
@@ -442,7 +449,8 @@ function FieldRow({
         {field.env_key && field.env_key !== (label ?? field.field_key) && (
           <code className="text-xs text-muted-foreground">{field.env_key}</code>
         )}
-        <Badge variant="outline" className="font-normal">
+        <Badge variant="outline" className="gap-1 font-normal">
+          {field.handling === "sealed" && <Lock className="h-3 w-3" />}
           {HANDLING_LABELS[field.handling] ?? field.handling}
         </Badge>
         {!field.editable && (
@@ -509,6 +517,17 @@ function FieldRow({
         {caps.can_edit && (
           <Button
             size="icon"
+            variant={metaOpen ? "secondary" : "ghost"}
+            className="h-7 w-7 shrink-0"
+            onClick={() => setMetaOpen((v) => !v)}
+            aria-label="Field settings"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        {caps.can_edit && (
+          <Button
+            size="icon"
             variant="ghost"
             className="h-7 w-7 shrink-0"
             disabled={busy}
@@ -555,11 +574,145 @@ function FieldRow({
           <Switch
             checked={field.inject_into_sandbox}
             disabled={busy}
-            onCheckedChange={(checked) => void actions.setInject(field.id, checked)}
+            onCheckedChange={(checked) =>
+              void actions.setInject(item.id, field.id, checked)
+            }
             aria-label="Inject into sandboxes"
           />
         </label>
       )}
+
+      {metaOpen && caps.can_edit && (
+        <div className="mt-2 space-y-2 rounded-md bg-muted/40 p-2.5">
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1 space-y-1">
+              <Label className="text-xs">Env key</Label>
+              <Input
+                value={envDraft}
+                onChange={(e) => setEnvDraft(e.target.value)}
+                placeholder="MY_API_KEY"
+                className="h-8 font-mono text-xs"
+                aria-invalid={Boolean(envDraft) && !VALID_KEY_RE.test(envDraft)}
+              />
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={
+                busy ||
+                (Boolean(envDraft) && !VALID_KEY_RE.test(envDraft)) ||
+                envDraft === (field.env_key ?? "")
+              }
+              onClick={() =>
+                void actions.updateFieldMeta(
+                  item.id,
+                  field.id,
+                  envDraft
+                    ? { env_key: envDraft }
+                    : { clear_env_key: true },
+                )
+              }
+            >
+              {envDraft ? "Save" : "Clear"}
+            </Button>
+          </div>
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1 space-y-1">
+              <Label className="text-xs">Description</Label>
+              <Input
+                value={descDraft}
+                onChange={(e) => setDescDraft(e.target.value)}
+                placeholder="What is this field?"
+                className="h-8 text-xs"
+              />
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy || descDraft === (field.description ?? "")}
+              onClick={() =>
+                void actions.updateFieldMeta(item.id, field.id, {
+                  description: descDraft || null,
+                })
+              }
+            >
+              Save
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              Active
+              <Switch
+                checked={field.is_active}
+                disabled={busy}
+                onCheckedChange={(checked) =>
+                  void actions.updateFieldMeta(item.id, field.id, {
+                    is_active: checked,
+                  })
+                }
+                aria-label="Field active"
+              />
+            </label>
+            {field.handling === "sealed" ? (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                Sealed — can never be shown to a human again
+              </span>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Handling</Label>
+                <Select
+                  value={field.handling}
+                  onValueChange={(next) => {
+                    if (next === field.handling) return;
+                    if (next === "sealed") {
+                      setConfirmSeal(true);
+                      return;
+                    }
+                    void actions.updateFieldMeta(item.id, field.id, {
+                      handling: next as "visible" | "revealable",
+                    });
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-32 text-xs" aria-label="Handling">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="visible">Visible</SelectItem>
+                    <SelectItem value="revealable">Revealable</SelectItem>
+                    <SelectItem value="sealed">Sealed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmSeal}
+        onOpenChange={(open) => {
+          if (!open && !busy) setConfirmSeal(false);
+        }}
+        title="Seal this value"
+        description={
+          <>
+            Sealing <b>{field.env_key ?? field.field_key}</b> cannot be undone
+            — sealed values can never be shown to a human again. Trusted
+            server execution can still use them.
+          </>
+        }
+        confirmLabel="Seal permanently"
+        variant="destructive"
+        busy={busy}
+        onConfirm={async () => {
+          await actions.updateFieldMeta(item.id, field.id, {
+            handling: "sealed",
+          });
+          revealed.clear();
+          setConfirmSeal(false);
+        }}
+      />
     </div>
   );
 }
@@ -728,6 +881,12 @@ function RotatePanel({
 
 // ── Share (grants) ────────────────────────────────────────────────────────
 
+interface GranteeDraft {
+  userId: string;
+  label: string;
+  canManage: boolean;
+}
+
 function SharePanel({
   item,
   busy,
@@ -735,17 +894,37 @@ function SharePanel({
 }: {
   item: VaultItem;
   busy: boolean;
-  onShare: (mode: VaultAccessMode, userIds: string[]) => Promise<void>;
+  onShare: (mode: VaultAccessMode, grantees: VaultGrantee[]) => Promise<void>;
 }) {
   const isOrg = Boolean(item.organization_id);
   const { members } = useOrganizationMembers(item.organization_id ?? undefined);
   const [mode, setMode] = useState<VaultAccessMode>(
     item.access_mode === "restricted" ? "restricted" : "all_members",
   );
-  const [userIds, setUserIds] = useState<string[]>([]);
+  const [grantees, setGrantees] = useState<GranteeDraft[]>([]);
   const [email, setEmail] = useState("");
-  const [emails, setEmails] = useState<{ id: string; email: string }[]>([]);
   const [looking, setLooking] = useState(false);
+
+  const toggleGrantee = (userId: string, label: string, on: boolean) =>
+    setGrantees((current) =>
+      on
+        ? current.some((g) => g.userId === userId)
+          ? current
+          : [...current, { userId, label, canManage: false }]
+        : current.filter((g) => g.userId !== userId),
+    );
+
+  const setCanManage = (userId: string, canManage: boolean) =>
+    setGrantees((current) =>
+      current.map((g) => (g.userId === userId ? { ...g, canManage } : g)),
+    );
+
+  const toWire = (): VaultGrantee[] =>
+    grantees.map((g) => ({
+      user_id: g.userId,
+      can_use: true,
+      can_manage: g.canManage,
+    }));
 
   const addByEmail = async () => {
     const trimmed = email.trim();
@@ -757,11 +936,7 @@ function SharePanel({
         toast.error(`No account found for ${trimmed}`);
         return;
       }
-      setEmails((current) =>
-        current.some((e) => e.id === result.id)
-          ? current
-          : [...current, { id: result.id, email: result.email }],
-      );
+      toggleGrantee(result.id, result.email, true);
       setEmail("");
     } finally {
       setLooking(false);
@@ -786,26 +961,36 @@ function SharePanel({
           </div>
           {mode === "restricted" && (
             <div className="grid gap-1.5 sm:grid-cols-2">
-              {members.map((member) => (
-                <label
-                  key={member.userId}
-                  className="flex items-center gap-2 rounded border border-border bg-background p-2 text-xs"
-                >
-                  <Checkbox
-                    checked={userIds.includes(member.userId)}
-                    onCheckedChange={(checked) =>
-                      setUserIds((current) =>
-                        checked
-                          ? [...new Set([...current, member.userId])]
-                          : current.filter((id) => id !== member.userId),
-                      )
-                    }
-                  />
-                  <span className="min-w-0 truncate">
-                    {member.user?.displayName || member.user?.email || member.userId}
-                  </span>
-                </label>
-              ))}
+              {members.map((member) => {
+                const label =
+                  member.user?.displayName || member.user?.email || member.userId;
+                const draft = grantees.find((g) => g.userId === member.userId);
+                return (
+                  <div
+                    key={member.userId}
+                    className="flex items-center gap-2 rounded border border-border bg-background p-2 text-xs"
+                  >
+                    <Checkbox
+                      checked={Boolean(draft)}
+                      onCheckedChange={(checked) =>
+                        toggleGrantee(member.userId, label, checked === true)
+                      }
+                    />
+                    <span className="min-w-0 flex-1 truncate">{label}</span>
+                    {draft && (
+                      <label className="flex shrink-0 items-center gap-1 text-muted-foreground">
+                        <Checkbox
+                          checked={draft.canManage}
+                          onCheckedChange={(checked) =>
+                            setCanManage(member.userId, checked === true)
+                          }
+                        />
+                        Can manage
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
           <p className="text-xs text-muted-foreground">
@@ -834,21 +1019,31 @@ function SharePanel({
               {looking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
             </Button>
           </div>
-          {emails.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {emails.map((entry) => (
-                <Badge key={entry.id} variant="secondary" className="gap-1 font-normal">
-                  {entry.email}
+          {grantees.length > 0 && (
+            <div className="space-y-1.5">
+              {grantees.map((entry) => (
+                <div
+                  key={entry.userId}
+                  className="flex items-center gap-2 rounded border border-border bg-background p-2 text-xs"
+                >
+                  <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+                  <label className="flex shrink-0 items-center gap-1 text-muted-foreground">
+                    <Checkbox
+                      checked={entry.canManage}
+                      onCheckedChange={(checked) =>
+                        setCanManage(entry.userId, checked === true)
+                      }
+                    />
+                    Can manage
+                  </label>
                   <button
                     type="button"
-                    onClick={() =>
-                      setEmails((current) => current.filter((e) => e.id !== entry.id))
-                    }
-                    aria-label={`Remove ${entry.email}`}
+                    onClick={() => toggleGrantee(entry.userId, entry.label, false)}
+                    aria-label={`Remove ${entry.label}`}
                   >
                     <X className="h-3 w-3" />
                   </button>
-                </Badge>
+                </div>
               ))}
             </div>
           )}
@@ -862,11 +1057,11 @@ function SharePanel({
       <div className="flex justify-end">
         <Button
           size="sm"
-          disabled={busy || (isOrg && mode === "restricted" && userIds.length === 0)}
+          disabled={busy || (isOrg && mode === "restricted" && grantees.length === 0)}
           onClick={() =>
             void onShare(
               isOrg ? mode : "restricted",
-              isOrg ? (mode === "restricted" ? userIds : []) : emails.map((e) => e.id),
+              isOrg && mode === "all_members" ? [] : toWire(),
             )
           }
         >
