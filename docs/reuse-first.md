@@ -166,6 +166,8 @@ delete yours and extend ours.
 | Alarm on non-durable media URLs | `reportMediaDurabilityViolation` | `lib/media/durability.ts` |
 | Cmd/Ctrl/middle-click → new tab | `shouldOpenInNewTab` / `openInNewTab` | `utils/navigation/should-open-in-new-tab.ts` |
 | Toast success / error / info | `toast` from `sonner` | (package) — never `window.alert` |
+| Read a persisted `token_usage` JSONB blob (tokens, cache, cost, per-model) | `normalizeTokenUsage` / `rollupByModel` | `lib/token-usage/normalize.ts` |
+| Convert a USD cost to Processing Units / format it | `costToUnits` / `formatUnits` / `formatUsd` | `lib/processing-units/units.ts` |
 
 ### Hooks
 
@@ -176,6 +178,7 @@ delete yours and extend ours.
 | Auth headers for Next.js `/api/*` routes | `useApiAuth` | `hooks/useApiAuth.ts` |
 | Resolve durable media `src` from `file_id` | `useFileSrc` | `features/files/handler/hooks/useFileSrc.ts` |
 | Read / write a catalogue preference | `useSetting` | `features/settings/hooks/useSetting.ts` |
+| Show a cost (units for users, USD for admins) | `useCostDisplay` / `<CostValue>` | `components/processing-units/useCostDisplay.ts` |
 
 ### Systems (extend these — never fork)
 

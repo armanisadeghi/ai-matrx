@@ -136,6 +136,8 @@ export interface TopicCostLedger {
     /** False when at least one call could not be priced. */
     costIsComplete: boolean;
     unpricedCalls: number;
+    /** Spend on failed calls — real money, excluded from the billed total. */
+    failedCostUsd: number;
   };
   /** The exact backend contract, so existing consumers need no changes. */
   summary: TopicCostSummary;
@@ -270,6 +272,14 @@ export function buildTopicCostLedger(input: CostLedgerInput): TopicCostLedger {
     costUsd: round6(ok.reduce((n, e) => n + (e.costUsd ?? 0), 0)),
     costIsComplete: ok.every((e) => e.costUsd != null),
     unpricedCalls: ok.filter((e) => e.costUsd == null).length,
+    // Failed calls still burned provider tokens. They are excluded from the
+    // billed total (matching the backend contract) but reported here so the
+    // waste is visible instead of silently dropped.
+    failedCostUsd: round6(
+      entries
+        .filter((e) => !e.succeeded)
+        .reduce((n, e) => n + (e.costUsd ?? 0), 0),
+    ),
   };
 
   const byPhase = new Map(phases.map((p) => [p.phase, p]));

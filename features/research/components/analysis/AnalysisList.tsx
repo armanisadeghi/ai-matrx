@@ -539,6 +539,9 @@ export default function AnalysisList() {
     let totalCost = 0;
     let totalTokens = 0;
     for (const a of analysisList) {
+      // Successful calls only — same rule the cost ledger and the backend use,
+      // so the Costs page and this bar can never quote different numbers.
+      if (a.status !== "success") continue;
       const u = tokenUsageFromJson(a.token_usage);
       if (u) {
         totalCost += u.costUsd ?? 0;

@@ -92,7 +92,9 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - **"Sources discovered" = `stored_count ?? sources_found` summed** via `sourcesDiscoveredFromItems` — identical in `usePipelineProgress.derived`, `stageSquareData("search")`, and `SearchStageView`. Keep the formula in one function so one screen never shows two totals.
 - **Authority ≠ importance — three distinct axes, never conflate.** `authority_*` = AI-judged source *trustworthiness* (domain-led, written by the ranker agent). `importance`/`rank` = search-position salience (`ranking.ts`). Both surface side by side; they answer different questions. `AuthorityTierBadge` is the ONE renderer for authority everywhere — never hand-roll a score pill. It tolerates an out-of-contract tier (derives from score) so a stray agent value never breaks a row.
 - **Streaming contract:** `app/(core)/research/RESEARCH_STREAMING_GUIDE.md`. Backend source of truth: aidream `research/stream_events.py` (authority events: `authority_rank_start`/`authority_rank_batch`/`authority_rank_complete`).
-- **Cost is server-owned.** Never infer dollars from model/provider names or token-count heuristics in the client. Live events carry catalog-derived `cost_usd`; absent pricing stays unknown.
+- **Cost is server-priced, client-aggregated.** Never infer dollars from model/provider names or token-count heuristics — pricing comes from the server, in the persisted `token_usage` blob (live events carry the same catalog-derived `cost_usd`). Absent pricing stays **unknown** (`costUsd: null` → renders "—"), never $0. The *aggregation* is ours: `useTopicCosts` reads `rs_analysis`/`rs_synthesis`/`rs_document` direct from Supabase and `costs.ts` derives the per-call ledger, phase rollups, per-model rollup, and the `TopicCostSummary` totals. The aidream `GET /research/topics/{id}/costs` hop is gone from this client (it stays for consumers without Supabase access).
+- **`token_usage` is read ONLY through `@/lib/token-usage/normalize`.** The column holds the generated `AggregatedUsageResult` shape (`{ total, by_model }`) — it has never held flat `input_tokens` / `estimated_cost` keys. Reading those directly is the bug that made every research cost render $0 on 100% of rows (see Change Log 2026-07-24, and the same bug's earlier server-side twin in `research/usage.py`). One parser, no callsite exceptions.
+- **Users see Processing Units; admins additionally see USD.** Render every cost via `<CostValue>` / `useCostDisplay` (`components/processing-units/`) — never `toFixed(2)` a dollar figure in a research component. Failed calls burned real tokens: they are excluded from the billed total (matching the backend contract) but reported as "wasted" so the spend is never silently dropped.
 
 ---
 
@@ -125,6 +127,29 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
   Pipeline launch now sends the loaded topic's `organization_id` as a
   consistency assertion instead of relying on ambient active-org state; the
   backend remains authoritative and rejects a mismatch before starting work.
+- `2026-07-24` — **Research costs actually compute (and get a full per-call breakdown).**
+  Root cause: `tokenUsageFromJson` parsed a flat `{ input_tokens, estimated_cost }`
+  shape that no row has ever been written in (verified: 0 of 331 `rs_analysis`
+  rows), so the Analysis stats bar, analysis cards, and DocumentViewer all
+  rendered 0 tokens / no cost. Parsing now lives in one platform primitive,
+  `lib/token-usage/normalize.ts` (canonical `{ total, by_model }` + a legacy
+  flat compat branch + `rollupByModel`), covered by
+  `lib/token-usage/__tests__/normalize.test.ts` using a verbatim production row.
+  New `features/research/costs.ts` builds the per-call cost ledger; new
+  `hooks/useTopicCosts.ts` (shared dedup + 15s cache) replaced
+  `useCostSummary`'s aidream round-trip with a direct Supabase read via
+  `service.getTopicCostLedger` — it still exports `useCostSummary` in the exact
+  `TopicCostSummary` shape, so PipelineOrchestra / LastRunSummary /
+  LivePipelineActivity were untouched. `/research/topics/[id]/costs` rebuilt:
+  five headline tiles (units, calls, input, cached, output), by-phase, by-model,
+  and a fixed-layout ledger of **every AI call** (time, phase, subject, model,
+  provider, status, in/cached/out/total tokens, cost). Cost rendering moved to
+  the new `<CostValue>` / `useCostDisplay` primitive — Processing Units for all,
+  USD appended for admins (`selectIsAdmin`) — and the raw `$x.xxxx` figures in
+  AnalysisList / AnalysisCard / DocumentViewer went with it. The overview
+  receipt gained an "AI cost" line linking to `/costs` (cost was previously
+  absent from the overview entirely; `CostMetricsCard` was dead code and was
+  deleted, as were `getCosts` and the `costs` endpoint constant).
 - `2026-07-21` — **Research project decoupling — frontend cutover (Phase 2).**
   Project is now OPTIONAL and association-backed end to end: `createTopic(organizationId, input, { projectId? })` returns `{ topic, projectLink }` (edge failure = loud retryable warning, topic survives); `getTopicsForProject(s)` reimplemented over `associationsService.listForTargets` + one batched read; new `getTopicProjectLinks` / `setTopicProject`; `TopicList` project labels from edges; duplicated settings forms consolidated into `settings/TopicSettingsForm` (used by page + panel); admin `ProjectsOverview` re-keyed on edges; `updateTopic` no longer writes `project_id`. Vocabulary renamed to topic-wide synthesis (`scope:'topic'`, `max_topic_syntheses`, `topic_syntheses`) with explicit `PHASE-4 COMPAT` boundary translation. Wizard: org from canonical active-org context, durable draft via new generic `wizardDraftSlice`, deterministic Back, `enableTextStats={false}` on the description, `[suggest-stream]` debug logs removed. DB types regenerated (nullable `project_id`; stale quota-field casts repaid via `rowToResearchTopic`). Error rules: `_mirror_fk_to_assoc` pinned critical + 23503 association-registration translation in `lib/diagnostics/errorTierRules.ts`. Tests: `__tests__/serviceTopics.test.ts`. System of record: `common-docs/projects/research-project-decoupling/FEATURE.md`.
 - `2026-07-21` — **Topic initialization moved to canonical DB-direct CRUD.**

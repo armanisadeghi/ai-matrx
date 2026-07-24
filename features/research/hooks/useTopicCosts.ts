@@ -77,6 +77,13 @@ export function useTopicCosts(topicId: string): UseTopicCostsResult {
 
   const load = useCallback(
     async (force: boolean, isMounted: () => boolean) => {
+      // No topic yet (route still resolving) — nothing to fetch.
+      if (!topicId) return;
+      // Yield once before touching state: the mount effect calls this
+      // synchronously, and flipping `isLoading` inside the effect body costs a
+      // cascading render (and trips react-hooks/set-state-in-effect).
+      await Promise.resolve();
+      if (!isMounted()) return;
       setIsLoading(true);
       setError(null);
       try {
@@ -97,10 +104,6 @@ export function useTopicCosts(topicId: string): UseTopicCostsResult {
   );
 
   useEffect(() => {
-    if (!topicId) {
-      setIsLoading(false);
-      return undefined;
-    }
     let mounted = true;
     void load(false, () => mounted);
     return () => {

@@ -114,10 +114,10 @@ function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
       <td className="px-2 py-1.5">
         <div className="flex items-center gap-1.5">
           <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="whitespace-nowrap">{entry.phaseLabel}</span>
+          <span className="truncate">{entry.phaseLabel}</span>
         </div>
       </td>
-      <td className="px-2 py-1.5 max-w-[280px]">
+      <td className="px-2 py-1.5">
         <span className="block truncate" title={entry.subject}>
           {entry.subject}
         </span>
@@ -128,10 +128,7 @@ function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
         )}
       </td>
       <td className="px-2 py-1.5 hidden md:table-cell">
-        <span
-          className="block truncate max-w-[160px]"
-          title={entry.models.join(", ")}
-        >
+        <span className="block truncate" title={entry.models.join(", ")}>
           {entry.models.length > 0 ? entry.models.join(", ") : "—"}
         </span>
         {entry.providers.length > 0 && (
@@ -163,8 +160,13 @@ function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
       <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground hidden sm:table-cell">
         {entry.totalTokens.toLocaleString()}
       </td>
-      <td className="px-2 py-1.5 text-right font-medium">
-        <CostValue costUsd={entry.costUsd} short muted={!entry.succeeded} />
+      <td className="px-2 py-1.5 text-right font-medium whitespace-nowrap">
+        <CostValue
+          costUsd={entry.costUsd}
+          short
+          stacked
+          muted={!entry.succeeded}
+        />
       </td>
     </tr>
   );
@@ -175,7 +177,7 @@ function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
 export default function CostDashboard() {
   const { topicId } = useTopicContext();
   const { ledger, isLoading, error } = useTopicCosts(topicId);
-  const { showUsd } = useCostDisplay();
+  const { showUsd, units: unitsLabel } = useCostDisplay();
   const [phaseFilter, setPhaseFilter] = useState<CostPhase | "all">("all");
   const [showFailed, setShowFailed] = useState(true);
 
@@ -241,7 +243,7 @@ export default function CostDashboard() {
       : 0;
 
   return (
-    <div className="h-full overflow-y-auto p-3 sm:p-4 space-y-3">
+    <div className="p-3 sm:p-4 space-y-3">
       {/* ── Headline ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
         <StatTile
@@ -258,7 +260,7 @@ export default function CostDashboard() {
           accent="text-primary"
           hint={
             totals.failedCalls > 0
-              ? `${totals.failedCalls} failed (not billed)`
+              ? `${totals.failedCalls} failed · ${unitsLabel(totals.failedCostUsd)} wasted`
               : undefined
           }
         >
@@ -469,8 +471,20 @@ export default function CostDashboard() {
           </select>
         </header>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-[860px]">
-            <thead className="sticky top-0 bg-muted/60 backdrop-blur-sm">
+          <table className="w-full text-xs min-w-[860px] table-fixed">
+            <colgroup>
+              <col className="w-[128px]" />
+              <col className="w-[140px]" />
+              <col />
+              <col className="w-[128px] hidden md:table-column" />
+              <col className="w-[56px]" />
+              <col className="w-[68px]" />
+              <col className="w-[68px] hidden lg:table-column" />
+              <col className="w-[68px]" />
+              <col className="w-[72px] hidden sm:table-column" />
+              <col className="w-[96px]" />
+            </colgroup>
+            <thead className="bg-muted/60">
               <tr className="border-b border-border/50 text-[10px] uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-2 text-left font-medium">When</th>
                 <th className="px-2 py-2 text-left font-medium">Phase</th>
