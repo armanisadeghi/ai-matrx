@@ -276,19 +276,18 @@ export function AgentConversationColumn({
     scrollEl.addEventListener("wheel", release, { passive: true });
     scrollEl.addEventListener("touchmove", release, { passive: true });
     scrollEl.addEventListener("keydown", release);
-    // Scrollbar drag / thumb click — a pointerdown on the scroller's own
-    // gutter never reaches a child, so it is unambiguous scroll intent.
-    const releaseOnGutter = (e: PointerEvent) => {
-      if (e.target === scrollEl) release();
-    };
-    scrollEl.addEventListener("pointerdown", releaseOnGutter);
+    // Any pointerdown inside the transcript is a deliberate interaction —
+    // scrollbar drag, text selection, or clicking a "Worked for 26s" fold open.
+    // Every one of those must win over the pin, so none of them can be
+    // answered by a jump to the bottom.
+    scrollEl.addEventListener("pointerdown", release);
 
     return () => {
       observer.disconnect();
       scrollEl.removeEventListener("wheel", release);
       scrollEl.removeEventListener("touchmove", release);
       scrollEl.removeEventListener("keydown", release);
-      scrollEl.removeEventListener("pointerdown", releaseOnGutter);
+      scrollEl.removeEventListener("pointerdown", release);
     };
   }, [
     chatVisibleGroupLimit,
