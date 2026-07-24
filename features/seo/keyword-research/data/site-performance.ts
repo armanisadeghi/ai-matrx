@@ -99,6 +99,15 @@ export async function listSiteKeywordPerformance(
         : [];
     if (values.length) query = query.in("workflow_status", values);
   }
+  const provider = state.columnFilters.provider;
+  if (provider?.kind === "select") {
+    const values = provider.values?.length
+      ? provider.values
+      : provider.value
+        ? [provider.value]
+        : [];
+    if (values.length) query = query.in("provider", values);
+  }
   const competition = state.columnFilters.competition;
   if (competition?.kind === "select") {
     const values = competition.values?.length

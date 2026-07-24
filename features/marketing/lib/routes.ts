@@ -21,6 +21,8 @@ export const marketingRoutes = {
   newSite: (brandId?: string) =>
     brandId ? `/marketing/sites/new?brand=${brandId}` : "/marketing/sites/new",
   connections: () => "/marketing/connections",
+  connectionsGoogle: () => "/marketing/connections/google",
+  connectionsBing: () => "/marketing/connections/bing",
   /**
    * Canonical site base. Falls back to the legacy flat path (which
    * server-redirects to the nested one) when the brand id is unknown at the

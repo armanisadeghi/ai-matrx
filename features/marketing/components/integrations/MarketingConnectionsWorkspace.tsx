@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Building2,
   Gauge,
+  Globe2,
   Loader2,
   RefreshCw,
   SearchCheck,
@@ -400,6 +401,29 @@ function MarketingConnectionsContent() {
                   <Link href="#site-bindings">Choose a managed site</Link>
                 </Button>
               )}
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-border bg-card p-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <Globe2 className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="text-sm font-semibold">Bing Webmaster</h2>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                    Connect an API key and bind a verified Bing property to
+                    each managed site on its own page.
+                  </p>
+                </div>
+              </div>
+              <Button asChild size="sm" variant="outline" className="h-8">
+                <Link href={marketingRoutes.connectionsBing()}>
+                  Manage Bing Webmaster
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
+              </Button>
             </div>
           </section>
         </div>
