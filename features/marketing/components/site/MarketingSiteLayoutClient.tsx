@@ -20,6 +20,7 @@ import {
   ScanSearch,
   Settings,
   ShieldCheck,
+  TrendingUp,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -70,6 +71,7 @@ function sectionSuffix(
     "links",
     "backlinks",
     "keywords",
+    "ranks",
     "integrations",
     "cost",
     "access",
@@ -204,6 +206,11 @@ export function MarketingSiteLayoutClient({
             name: "Keywords",
             href: `${base}/keywords`,
             icon: KeyRound,
+          },
+          {
+            name: "Ranks",
+            href: `${base}/ranks`,
+            icon: TrendingUp,
           },
           {
             name: "Integrations",
