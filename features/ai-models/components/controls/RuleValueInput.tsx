@@ -64,7 +64,17 @@ export default function RuleValueInput({
     return (
       <Select
         value={value === undefined || value === null ? UNSET_SENTINEL : String(value)}
-        onValueChange={(v) => onChange(v === UNSET_SENTINEL ? undefined : v)}
+        onValueChange={(v) => {
+          if (v === UNSET_SENTINEL) {
+            onChange(undefined);
+            return;
+          }
+          // Radix Select round-trips strings — map back to the ORIGINAL enum
+          // value so numeric vocabularies (e.g. thinking budgets) keep their
+          // type instead of being stored as strings.
+          const original = enumValues.find((ev) => String(ev) === v);
+          onChange(original !== undefined ? original : v);
+        }}
         disabled={disabled}
       >
         <SelectTrigger className="h-7 w-44 text-xs">

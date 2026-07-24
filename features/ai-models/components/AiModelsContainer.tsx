@@ -209,9 +209,10 @@ export default function AiModelsContainer() {
             <ResizablePanelGroup orientation="horizontal">
               {!panelMaximized && (
                 <>
+                  {/* v4: bare numbers are PIXELS — sizes must be "%" strings. */}
                   <ResizablePanel
-                    defaultSize={50}
-                    minSize={25}
+                    defaultSize="50%"
+                    minSize="25%"
                     style={{ overflow: "hidden", height: "100%" }}
                   >
                     <div className="h-full min-w-0 flex flex-col overflow-hidden">
@@ -237,8 +238,8 @@ export default function AiModelsContainer() {
                 </>
               )}
               <ResizablePanel
-                defaultSize={50}
-                minSize={30}
+                defaultSize="50%"
+                minSize="30%"
                 style={{ overflow: "hidden", height: "100%" }}
               >
                 <div className="h-full border-l-2 border-l-primary/20 flex flex-col overflow-hidden relative">

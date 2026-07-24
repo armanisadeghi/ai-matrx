@@ -946,6 +946,21 @@ export default function AiModelDetailPanel({
   const [offeringsLoading, setOfferingsLoading] = useState(false);
   const [offeringsError, setOfferingsError] = useState<string | null>(null);
 
+  // Section editors call this after writing ai.offering so the panel's copy
+  // (feeding Pricing + Constraints + the initial Controls state) never goes
+  // stale — a stale copy made a second batch save write from pre-first-save
+  // data (adversarial review A1).
+  const refetchOfferings = useCallback(() => {
+    const modelId = model?.id;
+    if (!modelId) return;
+    aiModelService
+      .fetchOfferingsForModel(modelId)
+      .then(setOfferings)
+      .catch((err: unknown) => {
+        setOfferingsError(err instanceof Error ? err.message : String(err));
+      });
+  }, [model?.id]);
+
   useEffect(() => {
     const modelId = model?.id;
     setOfferings([]);
@@ -1392,9 +1407,14 @@ export default function AiModelDetailPanel({
               />
             </TabsContent>
 
+            {/* The three section editors are forceMount + hidden-when-inactive:
+                Radix unmounts inactive TabsContent, which destroyed unsaved
+                drafts AND cleared their dirty flags on a mere tab switch
+                (adversarial review A3). */}
             <TabsContent
               value="json"
-              className="flex-1 m-0 overflow-auto p-3 space-y-3 min-h-0"
+              forceMount
+              className="flex-1 m-0 overflow-auto p-3 space-y-3 min-h-0 data-[state=inactive]:hidden"
             >
               <JsonFieldEditor
                 title="Capabilities"
@@ -1408,26 +1428,31 @@ export default function AiModelDetailPanel({
 
             <TabsContent
               value="controls"
-              className="flex-1 m-0 overflow-auto p-3 min-h-0"
+              forceMount
+              className="flex-1 m-0 overflow-auto p-3 min-h-0 data-[state=inactive]:hidden"
             >
               {model && (
                 <ModelControlsEditor
                   model={model}
                   offerings={offerings}
+                  offeringsLoading={offeringsLoading}
                   onDirtyChange={reportControlsDirty}
+                  onOfferingsChanged={refetchOfferings}
                 />
               )}
             </TabsContent>
 
             <TabsContent
               value="constraints"
-              className="flex-1 m-0 overflow-auto p-3 min-h-0"
+              forceMount
+              className="flex-1 m-0 overflow-auto p-3 min-h-0 data-[state=inactive]:hidden"
             >
               {model && (
                 <ModelRulesEditor
                   model={model}
                   offerings={offerings}
                   onDirtyChange={reportConstraintsDirty}
+                  onOfferingsChanged={refetchOfferings}
                 />
               )}
             </TabsContent>

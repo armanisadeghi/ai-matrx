@@ -77,31 +77,28 @@ type Drafts = Record<
 interface ModelControlsEditorProps {
   model: AiModel;
   offerings: AiOffering[];
+  /** True while the parent's offerings fetch is in flight (suppresses the
+   *  false "NO offering" banner during load). */
+  offeringsLoading?: boolean;
   /** Reports whether unsaved drafts exist (feeds the panel dirty tracking). */
   onDirtyChange?: (dirty: boolean) => void;
+  /** Called after any write to ai.offering so the parent refetches its copy —
+   *  a stale offerings prop here made save #2 silently revert save #1. */
+  onOfferingsChanged?: () => void;
 }
 
 export default function ModelControlsEditor({
   model,
   offerings,
+  offeringsLoading,
   onDirtyChange,
+  onOfferingsChanged,
 }: ModelControlsEditorProps) {
   const dispatch = useAppDispatch();
-
-  const liveOfferings = useMemo(
-    () => offerings.filter((o) => !o.deleted_at),
-    [offerings],
-  );
 
   const [selectedOfferingId, setSelectedOfferingId] = useState<string | null>(
     null,
   );
-  const effectiveOfferingId =
-    selectedOfferingId ??
-    (liveOfferings.find((o) => o.is_available) ?? liveOfferings[0])?.id ??
-    null;
-  const offering =
-    liveOfferings.find((o) => o.id === effectiveOfferingId) ?? null;
 
   const [apis, setApis] = useState<AiApi[]>([]);
   const [settings, setSettings] = useState<AiSetting[]>([]);
@@ -113,6 +110,28 @@ export default function ModelControlsEditor({
   const [drafts, setDrafts] = useState<Drafts>({});
   const [addKeyFilter, setAddKeyFilter] = useState("");
   const [showAddPicker, setShowAddPicker] = useState(false);
+
+  // Rule sources come from OUR fetch (refreshed after every save) — the
+  // parent's offerings prop is only the initial value; relying on it made a
+  // second batch save write from pre-first-save data (adversarial review A1).
+  const modelOfferings = useMemo(() => {
+    const own = allOfferings
+      .filter((o) => o.model_id === model.id)
+      .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
+    return own.length > 0 || !loading ? own : offerings;
+  }, [allOfferings, loading, offerings, model.id]);
+
+  const liveOfferings = useMemo(
+    () => modelOfferings.filter((o) => !o.deleted_at),
+    [modelOfferings],
+  );
+
+  const effectiveOfferingId =
+    selectedOfferingId ??
+    (liveOfferings.find((o) => o.is_available) ?? liveOfferings[0])?.id ??
+    null;
+  const offering =
+    liveOfferings.find((o) => o.id === effectiveOfferingId) ?? null;
 
   const api = useMemo(
     () => apis.find((a) => a.id === offering?.api_id) ?? null,
@@ -245,43 +264,98 @@ export default function ModelControlsEditor({
   const handleBatchSave = useCallback(async () => {
     if (!dirty) return;
     setSaving(true);
+    // Skip destinations whose working params equal the stored params — a
+    // destination toggle with no field change must not fire a no-op write +
+    // catalog reload (adversarial review B7).
+    const overrideChanged =
+      overrideDraftKeys.length > 0 &&
+      JSON.stringify(workingOverrideParams) !==
+        JSON.stringify(overrideEnvelope.params);
+    const familyChanged =
+      familyDraftKeys.length > 0 &&
+      JSON.stringify(workingFamilyParams) !==
+        JSON.stringify(familyEnvelope.params);
+
+    // Each write commits independently: if one succeeds and the other throws,
+    // the catalog reload + refetch still run for the committed one and only
+    // the FAILED destination's drafts stay pending (adversarial review A5).
+    let committedOverride = !overrideChanged;
+    let committedFamily = !familyChanged;
+    let firstError: unknown = null;
     try {
-      if (overrideDraftKeys.length > 0) {
-        if (!offering) throw new Error("No offering selected for this model");
-        await aiModelService.updateOffering(offering.id, {
-          override: {
-            ...overrideEnvelope,
-            params: workingOverrideParams,
-          } as unknown as Database["ai"]["Tables"]["offering"]["Update"]["override"],
-        });
+      if (overrideChanged) {
+        try {
+          if (!offering)
+            throw new Error("No offering selected for this model");
+          await aiModelService.updateOffering(offering.id, {
+            override: {
+              ...overrideEnvelope,
+              params: workingOverrideParams,
+            } as unknown as Database["ai"]["Tables"]["offering"]["Update"]["override"],
+          });
+          committedOverride = true;
+        } catch (err) {
+          firstError = err;
+        }
       }
-      if (familyDraftKeys.length > 0) {
-        if (!api)
-          throw new Error("No API (wire contract) resolved for this offering");
-        await aiModelService.updateApi(api.id, {
-          rules: {
-            ...familyEnvelope,
-            params: workingFamilyParams,
-          } as unknown as Database["ai"]["Tables"]["api"]["Update"]["rules"],
-        });
+      if (familyChanged) {
+        try {
+          if (!api)
+            throw new Error(
+              "No API (wire contract) resolved for this offering",
+            );
+          await aiModelService.updateApi(api.id, {
+            rules: {
+              ...familyEnvelope,
+              params: workingFamilyParams,
+            } as unknown as Database["ai"]["Tables"]["api"]["Update"]["rules"],
+          });
+          committedFamily = true;
+        } catch (err) {
+          firstError = firstError ?? err;
+        }
       }
-      setDrafts({});
-      await dispatch(reloadAiCatalog());
-      await refresh();
-      toast.success(
-        [
-          overrideDraftKeys.length
-            ? `${overrideDraftKeys.length} override change(s) saved`
-            : null,
-          familyDraftKeys.length
-            ? `${familyDraftKeys.length} family change(s) saved (${familyModelCount} models)`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(" · "),
-      );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+
+      // Drop drafts for destinations that committed (or were no-ops).
+      setDrafts((prev) => {
+        const next: Drafts = {};
+        for (const [key, d] of Object.entries(prev)) {
+          const committed =
+            d.destination === "override" ? committedOverride : committedFamily;
+          if (!committed) next[key] = d;
+        }
+        return next;
+      });
+
+      const anyWrite =
+        (overrideChanged && committedOverride) ||
+        (familyChanged && committedFamily);
+      if (anyWrite) {
+        await dispatch(reloadAiCatalog());
+        await refresh();
+        onOfferingsChanged?.();
+      }
+
+      if (firstError) {
+        toast.error(
+          firstError instanceof Error ? firstError.message : String(firstError),
+        );
+      } else if (anyWrite) {
+        toast.success(
+          [
+            overrideChanged
+              ? `${overrideDraftKeys.length} override change(s) saved`
+              : null,
+            familyChanged
+              ? `${familyDraftKeys.length} family change(s) saved (${familyModelCount} models)`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+        );
+      } else {
+        toast.success("No effective changes — nothing written");
+      }
     } finally {
       setSaving(false);
     }
@@ -293,12 +367,19 @@ export default function ModelControlsEditor({
     familyDraftKeys,
     workingOverrideParams,
     workingFamilyParams,
+    overrideEnvelope,
+    familyEnvelope,
     dispatch,
     refresh,
+    onOfferingsChanged,
     familyModelCount,
   ]);
 
+  const offeringsPending = Boolean(offeringsLoading) || loading;
   const hasOffering = liveOfferings.length > 0;
+  // Never flash the "NO offering" banner (or lock the editor read-only) while
+  // the offerings are still loading (adversarial review B5).
+  const showNoOffering = !hasOffering && !offeringsPending;
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
@@ -338,7 +419,7 @@ export default function ModelControlsEditor({
             </span>
           )}
         </div>
-        {!hasOffering && (
+        {showNoOffering && (
           <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
             This model has NO offering — it cannot route; controls resolve to
             capability gates only. Create one on the
@@ -380,7 +461,7 @@ export default function ModelControlsEditor({
             draft={drafts[row.key] ?? null}
             onDraftChange={setDraft}
             onDiscardDraft={discardDraft}
-            readOnly={!hasOffering}
+            readOnly={showNoOffering}
           />
         ))}
 
@@ -511,6 +592,7 @@ export default function ModelControlsEditor({
               toast.success("Per-model override saved on ai.offering");
               await dispatch(reloadAiCatalog());
               await refresh();
+              onOfferingsChanged?.();
             }}
           />
         </div>

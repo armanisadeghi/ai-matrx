@@ -177,6 +177,27 @@ export function validateAutoNoneLaw(rule: ControlRule): string[] {
   return issues;
 }
 
+/** Shape guard mirrored from the pydantic ControlRule (`extra="forbid"` + the
+ *  processor-exclusivity law): unknown fields or processor+value_map/const
+ *  QUARANTINE the whole rules row server-side — for a family rule that takes
+ *  every model on the wire contract down. Validate before save. */
+export function validateRuleShape(rule: ControlRule): string[] {
+  const issues: string[] = [];
+  for (const k of Object.keys(rule)) {
+    if (!RULE_FIELDS.includes(k as keyof ControlRule)) {
+      issues.push(
+        `Unknown rule field "${k}" — the server quarantines rules carrying unknown fields.`,
+      );
+    }
+  }
+  if (rule.processor && (rule.value_map !== undefined || rule.const !== undefined)) {
+    issues.push(
+      "processor is exclusive with value_map/const — the server rejects this combination.",
+    );
+  }
+  return issues;
+}
+
 /** One row of the editor: everything the UI needs about a single setting key. */
 export type ControlRowModel = {
   key: string;

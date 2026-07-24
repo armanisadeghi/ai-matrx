@@ -26,6 +26,7 @@ import type { AiSetting, ControlRule } from "../../types";
 import {
   resolveControlForKey,
   validateAutoNoneLaw,
+  validateRuleShape,
   type ControlRowModel,
 } from "../../controls/resolveControls";
 import RuleValueInput from "./RuleValueInput";
@@ -102,7 +103,10 @@ export default function ControlRuleRow({
     row.setting,
     modelMaxTokens,
   );
-  const autoNoneIssues = validateAutoNoneLaw(effectiveMerged);
+  const ruleIssues = [
+    ...validateAutoNoneLaw(effectiveMerged),
+    ...validateRuleShape(editedRule),
+  ];
 
   const label =
     (row.setting?.ui as { label?: string } | null)?.label ?? row.key;
@@ -119,12 +123,30 @@ export default function ControlRuleRow({
 
   const setDestination = (dest: RuleDestination) => {
     if (dest === destination) return;
-    // Re-seed the draft from the stored rule at the new destination.
-    onDraftChange(
-      row.key,
-      dest,
-      draft?.rule ?? (dest === "family" ? row.familyRule : row.overrideRule) ?? {},
-    );
+    const storedAtNewDest =
+      (dest === "family" ? row.familyRule : row.overrideRule) ?? {};
+    if (!draft?.rule) {
+      onDraftChange(row.key, dest, storedAtNewDest);
+      return;
+    }
+    // Carry only the fields the user actually CHANGED (relative to the old
+    // destination's stored rule) onto the new destination's stored rule —
+    // carrying the whole draft object wholesale replaced the family rule and
+    // silently dropped its clamp/value_map for every model on the wire
+    // contract (adversarial review A2).
+    const storedAtOldDest = storedAtDestination ?? {};
+    const next: ControlRule = { ...storedAtNewDest };
+    for (const field of Object.keys({
+      ...storedAtOldDest,
+      ...draft.rule,
+    }) as (keyof ControlRule)[]) {
+      const before = JSON.stringify(storedAtOldDest[field]);
+      const after = JSON.stringify(draft.rule[field]);
+      if (before === after) continue; // untouched — keep the new dest's value
+      if (draft.rule[field] === undefined) delete next[field];
+      else (next as Record<string, unknown>)[field] = draft.rule[field];
+    }
+    onDraftChange(row.key, dest, next);
   };
 
   const enumForDefault =
@@ -259,14 +281,29 @@ export default function ControlRuleRow({
             <span className="text-[10px] text-muted-foreground">Supported</span>
             <div className="flex items-center gap-2">
               <Switch
-                checked={editedRule.supported !== false}
+                // Reflect the MERGED outcome — the destination rule alone can
+                // say "exposed" while a family supported:false still hides the
+                // control (adversarial review A6).
+                checked={effectiveMerged.supported !== false}
                 disabled={readOnly}
-                onCheckedChange={(on) =>
-                  patch({ supported: on ? undefined : false })
-                }
+                onCheckedChange={(on) => {
+                  if (!on) {
+                    patch({ supported: false });
+                    return;
+                  }
+                  // Turning ON: the merge is field-level and override wins, so
+                  // when the OTHER source pins supported:false we must write an
+                  // explicit true — deleting the key would leave it hidden.
+                  const otherRule =
+                    destination === "override" ? row.familyRule : row.overrideRule;
+                  patch({
+                    supported:
+                      otherRule?.supported === false ? true : undefined,
+                  });
+                }}
               />
               <span className="text-[10px] text-muted-foreground">
-                {editedRule.supported === false
+                {effectiveMerged.supported === false
                   ? "hidden from users, never sent"
                   : "exposed"}
               </span>
@@ -341,12 +378,12 @@ export default function ControlRuleRow({
                 <UiValuesEditor
                   canonical={
                     Array.isArray(row.setting?.canonical_values)
-                      ? row.setting.canonical_values.map(String)
+                      ? row.setting.canonical_values
                       : []
                   }
                   value={
                     Array.isArray(editedRule.ui_values)
-                      ? editedRule.ui_values.map(String)
+                      ? editedRule.ui_values
                       : null
                   }
                   disabled={readOnly}
@@ -356,11 +393,11 @@ export default function ControlRuleRow({
             )}
           </div>
 
-          {autoNoneIssues.length > 0 && (
+          {ruleIssues.length > 0 && (
             <div className="flex items-start gap-1.5 text-[10px] text-red-600 dark:text-red-400">
               <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
               <div>
-                {autoNoneIssues.map((issue) => (
+                {ruleIssues.map((issue) => (
                   <p key={issue}>{issue}</p>
                 ))}
               </div>
@@ -405,32 +442,44 @@ export default function ControlRuleRow({
   );
 }
 
-/** Ordered multi-select chips over the canonical vocabulary + house tokens. */
+/** Ordered multi-select chips over the canonical vocabulary + house tokens.
+ *  Values keep their ORIGINAL types (numeric vocabularies stay numeric) —
+ *  strings are only used for display and identity comparison. */
 function UiValuesEditor({
   canonical,
   value,
   onChange,
   disabled,
 }: {
-  canonical: string[];
-  value: string[] | null;
-  onChange: (vals: string[] | null) => void;
+  canonical: unknown[];
+  value: unknown[] | null;
+  onChange: (vals: unknown[] | null) => void;
   disabled?: boolean;
 }) {
-  const options = Array.from(new Set([...canonical, "auto", "none"]));
+  const options: unknown[] = [];
+  const seen = new Set<string>();
+  for (const v of [...canonical, "auto", "none"]) {
+    const k = String(v);
+    if (!seen.has(k)) {
+      seen.add(k);
+      options.push(v);
+    }
+  }
   const active = value ?? [];
+  const activeKeys = new Set(active.map(String));
   return (
     <div className="flex flex-wrap items-center gap-1">
       {options.map((opt) => {
-        const on = active.includes(opt);
+        const key = String(opt);
+        const on = activeKeys.has(key);
         return (
           <button
-            key={opt}
+            key={key}
             type="button"
             disabled={disabled}
             onClick={() => {
               const next = on
-                ? active.filter((v) => v !== opt)
+                ? active.filter((v) => String(v) !== key)
                 : [...active, opt];
               onChange(next.length ? next : null);
             }}
@@ -441,7 +490,7 @@ function UiValuesEditor({
                 : "bg-background hover:bg-muted text-muted-foreground",
             )}
           >
-            {opt}
+            {key}
           </button>
         );
       })}

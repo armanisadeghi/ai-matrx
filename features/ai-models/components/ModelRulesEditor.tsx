@@ -44,6 +44,8 @@ interface ModelRulesEditorProps {
   offerings: AiOffering[];
   /** Reports unsaved edits in either constraints editor upward. */
   onDirtyChange?: (section: "family" | "override", dirty: boolean) => void;
+  /** Called after any write to ai.offering so the parent refetches its copy. */
+  onOfferingsChanged?: () => void;
 }
 
 /** Normalize whatever is stored into the canonical envelope shape. */
@@ -62,6 +64,7 @@ export default function ModelRulesEditor({
   model,
   offerings,
   onDirtyChange,
+  onOfferingsChanged,
 }: ModelRulesEditorProps) {
   const dispatch = useAppDispatch();
 
@@ -138,8 +141,9 @@ export default function ModelRulesEditor({
       });
       toast.success("Per-model override saved on ai.offering");
       await afterRuleSave();
+      onOfferingsChanged?.();
     },
-    [offering, afterRuleSave],
+    [offering, afterRuleSave, onOfferingsChanged],
   );
 
   const apiEnvelope = asEnvelope(api?.rules);
