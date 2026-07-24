@@ -6,10 +6,13 @@ the file-ownership map in `README.md` §2).
 
 | Project | Priority | Status | Owner | Day-1 obligation |
 |---|---|---|---|---|
-| P3 discovery & opt-in | 1 | UNASSIGNED | — | publish `library_grant_provenance` signature |
-| P2 admin issuance console | 2 | UNASSIGNED | — | — (consumes P1 + P3 stubs) |
-| P4 cascade generalization + guards | 3 | UNASSIGNED | — | — |
-| P1 library publish pipeline | 4 | UNASSIGNED | — | publish ingest endpoint signature |
+| P3 discovery & opt-in | 1 | **IN PROGRESS 2026-07-23** | Fable session (orchestrator) | publish `library_grant_provenance` signature |
+| P2 admin issuance console | 2 | **IN PROGRESS 2026-07-23** | Fable session (subagent) | — (consumes P1 + P3 stubs) |
+| P4 cascade generalization + guards | 3 | **IN PROGRESS 2026-07-23** | Fable session (subagent) | — |
+| P1 library publish pipeline | 4 | **IN PROGRESS 2026-07-23** | Fable session (subagent) | publish ingest endpoint signature |
+
+**All four decisions are ANSWERED (2026-07-23)** — see the handoff § Decisions and README §2
+settled contract rows. Executors implement the settled answers; nothing is behind a flag.
 
 **Every prompt below assumes the agent reads, in order:**
 `docs/handoffs/shared-knowledge-access.md` → `docs/proposals/shared-knowledge-projects/README.md`

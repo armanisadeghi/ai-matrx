@@ -110,7 +110,16 @@ Ordered by impact. Each is a full brief — read it before starting.
 - Wave A soft-delete/trash respects grant readers (read yes, delete/purge/restore no).
 - Grants-list HTTP endpoint gated + deployed to prod — aidream `195ad916e`.
 
-## Decisions needed
+## Decisions — ANSWERED by Arman 2026-07-23 (all four settled; reflected in README §2)
+
+| # | Decision | Answer |
+|---|---|---|
+| 1 | Industry self-join | **(a) Keep self-serve** — any org admin can claim any industry. P3 makes the section *legible*, never read-only; no request-to-join flow. |
+| 2 | Who lists a store's grants | **(a) Super-admin + store owner only** — ONE rule in both the `rag.fn_list_data_store_grants` RPC (drop "any member of owning org") and the aidream HTTP endpoint (drop ANY-admin + editor). |
+| 3 | Ownership rehome | **(a) Move to Matrx Library org** on add-to-library: system owner, contributor kept as author. AMA data repaired the same way. |
+| 4 | Paid actions | **Confirmed** — reads follow the cascade; anything that spends money stays owner/curator. Grant readers never trigger paid extractions. |
+
+Original decision briefs kept below for context.
 
 **1. Org-admin industry self-join — is today's self-serve behavior what you want?**
 *Situation:* An organization's membership in an industry (e.g. "California Workers'
