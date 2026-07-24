@@ -12,14 +12,18 @@ import { filteredPages, MODULE_HOME, MODULE_NAME } from "./config";
  *
  * Add new patterns here as more fullscreen detail routes are introduced.
  */
+const SYSTEM_AGENT_LIST = "/administration/agents/system-agents/agents";
+
 function isFullscreenRoute(pathname: string): boolean {
   // System agent detail routes: /administration/agents/system-agents/agents/<id>[/...]
   // — every path DEEPER than the list is fullscreen (builder, runner,
-  // shortcuts, apps, edit). The list itself keeps the module header.
+  // shortcuts, apps, edit). Those pages render the agent shell with its own
+  // full navigation, so the admin breadcrumb bar just double-stacks. The list
+  // itself keeps the module header.
   if (
-    /^\/administration\/system-agents\/agents\/[^/]+(?:\/.*)?$/.test(pathname)
+    new RegExp(`^${SYSTEM_AGENT_LIST}/[^/]+(?:/.*)?$`).test(pathname)
   ) {
-    return pathname !== "/administration/agents/system-agents/agents";
+    return pathname !== SYSTEM_AGENT_LIST;
   }
   return false;
 }
