@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D100 — three registered catalog entity types are ACL-invisible: no user can ever be a viewer (2026-07-24)
+
+`public.analysis_recipes`, `runtime.global_origin`, and `scraper.sites` are registered in `platform.entity_types` but carry **no** `visibility` / `created_by` / `owner_id` / `organization_id` column and declare **no** `default_visibility`. `platform.entity_row_access_attrs()` therefore resolves them to `personal` with a NULL owner and NULL org, and `iam.has_access_for_base()` denies every user — so any `assoc_add` edge targeting one of them is impossible to write, for everyone, forever. Same class as the surface-binding regression fixed in `migrations/entity_access_attrs_honor_registry_default_visibility.sql`; that fix makes the resolver honor the registry, so the remaining work is a **product call**: declare each one's `default_visibility` (`public` for catalogs, `internal` for org-scoped) or give it real ownership columns. No caller hits them today — latent, not live.
+
 ### D99 — Podcast article hook violates React ref/effect rules (2026-07-24)
 
 `features/podcasts/generator/useEpisodeArticles.ts` writes
