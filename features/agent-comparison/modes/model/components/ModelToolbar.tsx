@@ -55,7 +55,7 @@ import {
   selectCollapsedModelColumnCount,
   selectIsSubmittingAllModel,
   selectLockedAgentId,
-  selectLockedSetup,
+  selectModelHasDraftContent,
   selectModelColumns,
 } from "../redux/selectors";
 
@@ -64,14 +64,11 @@ interface Props {
   onToggleRunsWindow: () => void;
 }
 
-export function ModelToolbar({
-  runsWindowOpen,
-  onToggleRunsWindow,
-}: Props) {
+export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
   const dispatch = useAppDispatch();
 
   const lockedAgentId = useAppSelector(selectLockedAgentId);
-  const lockedSetup = useAppSelector(selectLockedSetup);
+  const hasDraftContent = useAppSelector(selectModelHasDraftContent);
   const activeSetId = useAppSelector(selectActiveModelSetId);
   const activeSetName = useAppSelector(selectActiveModelSetName);
   const isSubmittingAll = useAppSelector(selectIsSubmittingAllModel);
@@ -98,18 +95,11 @@ export function ModelToolbar({
       );
       return;
     }
-    if (!lockedSetup.userMessage.trim()) {
-      const hasVars = Object.values(lockedSetup.variables).some((v) => {
-        if (v == null) return false;
-        if (typeof v === "string") return v.trim().length > 0;
-        return true;
-      });
-      if (!hasVars) {
-        toast.error(
-          "Add a user message in the Locked input section before submitting.",
-        );
-        return;
-      }
+    if (!hasDraftContent) {
+      toast.error(
+        "Add a message, variable value, or attachment before submitting.",
+      );
+      return;
     }
     // Blind test: shuffle + activate masking BEFORE firing the run.
     maybeShuffleForBlind(columns, setModelColumns);
@@ -140,9 +130,7 @@ export function ModelToolbar({
       await dispatch(saveModelBattle()).unwrap();
       toast.success(`Saved "${activeSetName}"`);
     } catch (err) {
-      toast.error(
-        `Couldn't save: ${err instanceof Error ? err.message : err}`,
-      );
+      toast.error(`Couldn't save: ${err instanceof Error ? err.message : err}`);
     }
   };
 
@@ -153,9 +141,7 @@ export function ModelToolbar({
       setSaveAsOpen(false);
       toast.success(`Saved as "${name}"`);
     } catch (err) {
-      toast.error(
-        `Couldn't save: ${err instanceof Error ? err.message : err}`,
-      );
+      toast.error(`Couldn't save: ${err instanceof Error ? err.message : err}`);
     } finally {
       setSaveAsBusy(false);
     }
@@ -193,7 +179,9 @@ export function ModelToolbar({
       await dispatch(
         resetAllModelConversations({ preserveInputs: true }),
       ).unwrap();
-      toast.success("Responses cleared · per-column models + locked input preserved");
+      toast.success(
+        "Responses cleared · per-column models + locked input preserved",
+      );
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,

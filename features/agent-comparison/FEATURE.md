@@ -23,7 +23,7 @@ and Runs floating windows.
 
 | Concern | Path |
 |---|---|
-| Route shim | [app/(a)/agents/battle/page.tsx](../../app/(a)/agents/battle/page.tsx) |
+| Route shim | [app/(core)/agents/battle/page.tsx](../../app/(core)/agents/battle/page.tsx) |
 | Page shell | [components/BattlePage.tsx](./components/BattlePage.tsx) |
 | Single column | [components/BattleColumn.tsx](./components/BattleColumn.tsx) |
 | Toolbar | [components/BattleToolbar.tsx](./components/BattleToolbar.tsx) |
@@ -42,6 +42,7 @@ and Runs floating windows.
 | Per-column UI (display + variables + input + streaming) | `AgentConversationColumn` |
 | Conversation lifecycle (create instance, mint id, init slices) | `createManualInstance` from `features/agents/redux/execution-system/thunks/create-instance.thunk` |
 | Triggering a run | `launchConversation` thunk |
+| Shared model-mode request composer | `SmartAgentInput` + `copyInstanceRequestDraft` |
 | Per-column tab content (Context, Session) | `ContextSlotsTab`, `SessionStatsPanel` (imported from `run-controls/`) |
 | Agent + version dropdowns | `AgentListDropdown` + `SearchableSelect` (pattern lifted from `AgentComparisonPage`) |
 | Resizable horizontal split (N panels) | `ResizablePanelGroup` / `ResizablePanel` / `ResizableHandle` wrappers |
@@ -84,6 +85,18 @@ and Runs floating windows.
   - `Promise.allSettled` so one bad column doesn't abort the rest.
   - If `activeSetId` is set, upsert per-entry `cmp_comparison_entries`
     rows after all settle.
+
+### Model mode shared request
+
+- `/agents/battle/model` mounts the canonical `SmartAgentInput` against a
+  dedicated cache-only execution instance. It never substitutes hand-built
+  variable fields or a plain textarea.
+- The composer therefore keeps the normal file picker, paste/drop uploads,
+  voice input, variable UI, context, resource chips, and run controls.
+- `submitAllModel` calls the shared `copyInstanceRequestDraft` execution
+  primitive before launching each column. It copies text/message parts,
+  variables and resource policies, files/resources, context, run settings, and
+  client tools. Per-column model overrides are deliberately not copied.
 
 ### Shared Context window
 - Renders `ContextSlotsTab` for the **first** column.
@@ -137,6 +150,9 @@ attributable to this page in analytics.
   feature needs the same pattern (e.g. shared sysprompt override across N
   runs), lift these into a generic helper under
   `features/agents/redux/execution-system/`.
+- Multi-run request fan-out uses the generic execution-system
+  `copyInstanceRequestDraft`; model mode does not maintain a parallel text-only
+  request shape.
 - `cmp_comparison_sets` and `cmp_comparison_entries` are intentionally
   generic — the future judge feature will write its scores into
   `cmp_comparison_sets.metadata` (or a sibling table) without changing
@@ -150,6 +166,14 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-07-24 — **Model comparisons now use the full Smart Agent Input.** Replaced
+  the locked mode's bespoke variable fields + text-only textarea with the
+  canonical `SmartAgentInput` on a dedicated cache-only draft instance. The new
+  reusable `copyInstanceRequestDraft` execution primitive fans the complete
+  request (including uploaded/pasted files and other resources) into every
+  model column while preserving each column's model override. Also removed the
+  blind-state identity selector that made this route emit a React-Redux
+  memoization warning on every render.
 - 2026-06-05 — **De-forked the per-column results display.** `shared/BoundColumn`
   (the single body used by all 8 battle surfaces — model, settings, tools,
   tuning, system-prompt, request-mod, variations, open battle) was a parallel

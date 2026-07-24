@@ -179,6 +179,7 @@ delete yours and extend ours.
 | Resolve durable media `src` from `file_id` | `useFileSrc` | `features/files/handler/hooks/useFileSrc.ts` |
 | Read / write a catalogue preference | `useSetting` | `features/settings/hooks/useSetting.ts` |
 | Show a cost (units for users, USD for admins) | `useCostDisplay` / `<CostValue>` | `components/processing-units/useCostDisplay.ts` |
+| Copy one complete agent request draft to another run | `copyInstanceRequestDraft` | `features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk.ts` |
 
 ### Systems (extend these — never fork)
 

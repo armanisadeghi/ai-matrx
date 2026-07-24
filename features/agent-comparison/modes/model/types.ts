@@ -27,12 +27,15 @@ export interface ModelLockedSetup {
   agentId: string | null;
   agentVersion: "current" | number | null;
   agentVersionId: string | null;
-  variables: Record<string, unknown>;
-  userMessage: string;
 }
 
 export interface ModelBattleState {
   locked: ModelLockedSetup;
+  /**
+   * Dedicated cache-only execution instance that owns the canonical shared
+   * SmartAgentInput draft. Submit All copies its request state to every column.
+   */
+  inputConversationId: string | null;
   columns: ModelColumn[];
   activeSetId: string | null;
   activeSetName: string | null;

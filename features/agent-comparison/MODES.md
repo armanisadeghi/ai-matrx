@@ -28,7 +28,10 @@ conversations + telemetry + feedback for whatever the mode hands it.
   models so the user doesn't have to think about reasoning_effort vs
   thinking_level vs temperature scales. Best for "GPT-5 vs Claude 4.6
   vs Gemini 3" head-to-heads where you want the agent's defaults to
-  carry through.
+  carry through. Its locked request is a real `SmartAgentInput` backed by a
+  dedicated cache-only instance; Submit All uses
+  `copyInstanceRequestDraft` to copy the full multimodal/resource-bearing
+  request to every column without copying the source model override.
 - **Tuning** uses `apiEndpointMode: "manual"` + the synthetic-agent
   pattern. Each column owns a `cmp-<uuid>` clone of the locked agent;
   the user opens the same `AgentSettingsModal` the Agent Builder uses

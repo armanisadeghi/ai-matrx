@@ -12,12 +12,11 @@ const EMPTY_LOCKED: ModelLockedSetup = {
   agentId: null,
   agentVersion: null,
   agentVersionId: null,
-  variables: {},
-  userMessage: "",
 };
 
 const DEFAULT_ROOT = {
   locked: EMPTY_LOCKED,
+  inputConversationId: null,
   columns: EMPTY_COLUMNS,
   activeSetId: null,
   activeSetName: null,
@@ -42,14 +41,9 @@ export const selectLockedAgentVersion = createSelector(
   (l) => l.agentVersion,
 );
 
-export const selectLockedUserMessage = createSelector(
-  [selectLockedSetup],
-  (l) => l.userMessage,
-);
-
-export const selectLockedVariables = createSelector(
-  [selectLockedSetup],
-  (l) => l.variables,
+export const selectModelInputConversationId = createSelector(
+  [selectRoot],
+  (r) => r.inputConversationId,
 );
 
 export const selectModelColumns = createSelector(
@@ -94,5 +88,29 @@ export const selectCanSubmitModel = createSelector(
     if (!locked.agentId) return false;
     if (cols.length === 0) return false;
     return true;
+  },
+);
+
+export const selectModelHasDraftContent = createSelector(
+  [
+    selectModelInputConversationId,
+    (state: RootState) => state.instanceUserInput.byConversationId,
+    (state: RootState) => state.instanceVariableValues.byConversationId,
+    (state: RootState) => state.instanceResources.byConversationId,
+  ],
+  (conversationId, inputs, variables, resources) => {
+    if (!conversationId) return false;
+    if ((inputs[conversationId]?.text.trim().length ?? 0) > 0) return true;
+    if ((inputs[conversationId]?.messageParts?.length ?? 0) > 0) return true;
+    if (
+      Object.values(variables[conversationId]?.userValues ?? {}).some(
+        (value) =>
+          value != null &&
+          (typeof value !== "string" || value.trim().length > 0),
+      )
+    ) {
+      return true;
+    }
+    return Object.keys(resources[conversationId] ?? {}).length > 0;
   },
 );

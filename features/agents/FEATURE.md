@@ -2,7 +2,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-07-23`
+**Last updated:** `2026-07-24`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -184,6 +184,11 @@ Ephemeral runtime state. Core invariant: **`agentId` is read exactly ONCE — at
 ### Layer 4 — Thunks + aggregate selectors
 
 See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors.ts`.
+Multi-run surfaces that need one canonical composer use
+`thunks/copy-instance-request-draft.thunk.ts` to copy the complete request draft
+between initialized instances. It copies input, variables, resources, context,
+run settings, and client tools while intentionally preserving the target's
+model overrides.
 
 ---
 
@@ -239,6 +244,13 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-24` — **Added canonical multi-run request fan-out.** New
+  `copyInstanceRequestDraft` composes the existing execution-slice actions to
+  copy a Smart Agent Input draft—including multimodal message parts, uploaded
+  files/resources, variable resource policies, context, run settings, and
+  client tools—between initialized instances without overwriting target model
+  overrides. `/agents/battle/model` now consumes this primitive instead of a
+  text-only parallel input.
 - `2026-07-23` — **Provisional and Builder conversations no longer call durable attachment RPCs.** `AttachedDocumentChips` keeps the association inventory idle while the execution instance is `cacheOnly`, because that UUID has no authorized `chat.conversation` row (and Builder/manual mode intentionally keeps a local Redux ID distinct from every server-minted wire conversation). Picking a stored document in that state now reuses the existing per-turn `instanceResources` path; server-confirmed conversations still use durable `file → conversation` edges and the viewer-aware `conversation_files` inventory.
 - `2026-07-23` — **Invalid agent tools became non-fatal at every write boundary.** The manual starter no longer pins a retired tool UUID; shared frontend conversion strips malformed UUID syntax before PostgREST casts `uuid[]`; and the live `agent.definition` trigger now removes missing, inactive, or deleted tool references with a loud warning instead of raising `23503`. The sanitizer runs before version snapshots, covering manual creation, imports, saves, templates, duplicates, promotions, and server/admin writers. Also retired the focused table's forbidden project/task association-mirror triggers and project FK after confirming/backfilling canonical edges.
 - `2026-07-23` — **Durable document chips now use viewer-aware attachment reads and explicit policy replacement.** Cross-org viewers of an explicitly shared conversation receive its canonical file attachments through `conversation_files`, while legacy processed-document edges remain visible through the general association inventory. Re-attaching a file no longer erases a concurrent `resource_policy`; only the policy editor and its rollback path opt into full metadata replacement. Transient inventory failures keep last-known chips visible and render an explicit retry control, so active server context never disappears silently from the composer.

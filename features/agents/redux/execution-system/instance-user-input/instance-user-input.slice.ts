@@ -187,7 +187,7 @@ const instanceUserInputSlice = createSlice({
       state,
       action: PayloadAction<{
         conversationId: string;
-        parts: MessagePart[];
+        parts: MessagePart[] | null;
       }>,
     ) {
       const { conversationId, parts } = action.payload;
@@ -424,7 +424,9 @@ const instanceUserInputSlice = createSlice({
         messageParts: null,
         submissionPhase: "idle",
         lastSubmittedText: userInput?.lastSubmittedText ?? "",
-        lastSubmittedUserValues: { ...(userInput?.lastSubmittedUserValues ?? {}) },
+        lastSubmittedUserValues: {
+          ...(userInput?.lastSubmittedUserValues ?? {}),
+        },
         originalSubmittedText: userInput?.originalSubmittedText,
         originalSubmittedUserValues: userInput?.originalSubmittedUserValues
           ? { ...userInput.originalSubmittedUserValues }

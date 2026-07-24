@@ -21,15 +21,14 @@ import {
   selectAgentName,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { cn } from "@/lib/utils";
-import { setLockedUserMessage, setLockedVariable } from "../redux/slice";
 import {
   selectLockedAgentId,
   selectLockedAgentVersion,
-  selectLockedUserMessage,
-  selectLockedVariables,
+  selectModelInputConversationId,
 } from "../redux/selectors";
 import { setLockedAgent, setLockedVersion } from "../redux/thunks";
 
@@ -37,8 +36,7 @@ export function LockedInputSection() {
   const dispatch = useAppDispatch();
   const agentId = useAppSelector(selectLockedAgentId);
   const agentVersion = useAppSelector(selectLockedAgentVersion);
-  const userMessage = useAppSelector(selectLockedUserMessage);
-  const lockedVariables = useAppSelector(selectLockedVariables);
+  const inputConversationId = useAppSelector(selectModelInputConversationId);
 
   const agent = useAppSelector((s) =>
     agentId ? selectAgentById(s, agentId) : undefined,
@@ -50,40 +48,45 @@ export function LockedInputSection() {
   const [versionHistory, setVersionHistory] = useState<
     AgentVersionHistoryItem[]
   >([]);
-  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [versionHistoryAgentId, setVersionHistoryAgentId] = useState<
+    string | null
+  >(null);
   const [collapsed, setCollapsed] = useState(false);
   const [idInput, setIdInput] = useState("");
   const [idLoading, setIdLoading] = useState(false);
 
   useEffect(() => {
     if (!agentId) {
-      setVersionHistory([]);
       return undefined;
     }
     let cancelled = false;
-    setVersionsLoading(true);
     dispatch(fetchAgentVersionHistory({ agentId, limit: 100 }))
       .unwrap()
       .then((rows) => {
-        if (!cancelled) setVersionHistory(rows);
+        if (!cancelled) {
+          setVersionHistory(rows);
+          setVersionHistoryAgentId(agentId);
+        }
       })
       .catch(() => {
-        if (!cancelled) setVersionHistory([]);
-      })
-      .finally(() => {
-        if (!cancelled) setVersionsLoading(false);
+        if (!cancelled) {
+          setVersionHistory([]);
+          setVersionHistoryAgentId(agentId);
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [agentId, dispatch]);
 
+  const versionsLoading = agentId !== null && versionHistoryAgentId !== agentId;
+
   const versionOptions: Option[] = [
     {
       value: "current",
       label: agent?.version != null ? `Current (v${agent.version})` : "Current",
     },
-    ...versionHistory.map((v) => ({
+    ...(versionHistoryAgentId === agentId ? versionHistory : []).map((v) => ({
       value: v.version_number.toString(),
       label: `v${v.version_number}${
         v.change_note ? ` — ${v.change_note}` : ""
@@ -127,8 +130,6 @@ export function LockedInputSection() {
     if (!row) return;
     dispatch(setLockedVersion({ version, versionId: row.version_id }));
   };
-
-  const variableDefs = agent?.variableDefinitions ?? [];
 
   return (
     <div className="border-b border-border bg-card/40 shrink-0">
@@ -238,88 +239,27 @@ export function LockedInputSection() {
             </div>
           </div>
 
-          {variableDefs.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold text-foreground">
-                Variables
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {variableDefs.map((def) => (
-                  <LockedVariableInput
-                    key={def.name}
-                    name={def.name}
-                    helpText={def.helpText}
-                    required={def.required}
-                    value={lockedVariables[def.name]}
-                    onChange={(value) =>
-                      dispatch(setLockedVariable({ name: def.name, value }))
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-foreground">
-              User message
-            </span>
-            <textarea
-              value={userMessage}
-              onChange={(e) => dispatch(setLockedUserMessage(e.target.value))}
-              placeholder={
-                !agentId
-                  ? "Pick an agent first..."
-                  : "Type the message every column will receive..."
-              }
-              rows={3}
-              disabled={!agentId}
-              className="w-full text-xs bg-background border border-border rounded px-2 py-1.5 text-foreground resize-y focus:outline-none focus:border-primary disabled:opacity-50"
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[11px] font-semibold text-foreground">
+                Shared request
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                Use Submit All in the toolbar to run every model.
+              </span>
+            </div>
+            <SmartAgentInput
+              conversationId={inputConversationId}
+              surfaceKey="agent-comparison-model-input"
+              sendButtonVariant="blue"
+              showSendButton={false}
+              showSubmitOnEnterToggle={false}
+              disableSend
+              variablesPanelStyle="inline"
             />
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function LockedVariableInput({
-  name,
-  helpText,
-  required,
-  value,
-  onChange,
-}: {
-  name: string;
-  helpText?: string;
-  required?: boolean;
-  value: unknown;
-  onChange: (next: string) => void;
-}) {
-  const stringValue =
-    typeof value === "string"
-      ? value
-      : value == null
-        ? ""
-        : JSON.stringify(value);
-
-  return (
-    <div className="space-y-0.5">
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-mono font-semibold text-foreground">
-          {name}
-        </span>
-        {required && (
-          <span className="text-[9px] text-rose-500 font-bold">·required</span>
-        )}
-      </div>
-      <textarea
-        value={stringValue}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={helpText ?? `Value for ${name}...`}
-        rows={2}
-        className="w-full text-[11px] bg-background border border-border rounded px-2 py-1 text-foreground resize-y focus:outline-none focus:border-primary"
-      />
     </div>
   );
 }

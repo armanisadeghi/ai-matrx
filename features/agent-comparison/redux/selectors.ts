@@ -89,8 +89,7 @@ export const selectMasterFields = createSelector(
 // Blind test (cross-mode)
 // =============================================================================
 
-const selectBlindRaw = (state: RootState) =>
-  state.agentComparison?.blind ?? DEFAULT_BLIND;
+const selectBlindRaw = (state: RootState) => state.agentComparison?.blind;
 
 export const selectBlindState = createSelector(
   [selectBlindRaw],

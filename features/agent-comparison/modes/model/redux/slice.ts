@@ -1,18 +1,13 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type {
-  ModelBattleState,
-  ModelColumn,
-  ModelLockedSetup,
-} from "../types";
+import type { ModelBattleState, ModelColumn, ModelLockedSetup } from "../types";
 
 const initialState: ModelBattleState = {
   locked: {
     agentId: null,
     agentVersion: null,
     agentVersionId: null,
-    variables: {},
-    userMessage: "",
   },
+  inputConversationId: null,
   columns: [],
   activeSetId: null,
   activeSetName: null,
@@ -98,14 +93,8 @@ const slice = createSlice({
     setLocked(state, action: PayloadAction<Partial<ModelLockedSetup>>) {
       state.locked = { ...state.locked, ...action.payload };
     },
-    setLockedVariable(
-      state,
-      action: PayloadAction<{ name: string; value: unknown }>,
-    ) {
-      state.locked.variables[action.payload.name] = action.payload.value;
-    },
-    setLockedUserMessage(state, action: PayloadAction<string>) {
-      state.locked.userMessage = action.payload;
+    setModelInputConversationId(state, action: PayloadAction<string | null>) {
+      state.inputConversationId = action.payload;
     },
 
     submitAllStarted(state) {
@@ -128,9 +117,8 @@ const slice = createSlice({
         agentId: null,
         agentVersion: null,
         agentVersionId: null,
-        variables: {},
-        userMessage: "",
       };
+      state.inputConversationId = null;
       state.columns = [];
       state.activeSetId = null;
       state.activeSetName = null;
@@ -148,8 +136,7 @@ export const {
   setModelColumnCollapsed,
   reorderModelColumns,
   setLocked,
-  setLockedVariable,
-  setLockedUserMessage,
+  setModelInputConversationId,
   submitAllStarted,
   submitAllFinished,
   setActiveModelSet,

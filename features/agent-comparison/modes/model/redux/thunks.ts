@@ -19,6 +19,7 @@ import {
   destroyInstance,
 } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
@@ -29,6 +30,7 @@ import {
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
 import { fetchModelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -46,6 +48,7 @@ import {
   resetModel,
   setActiveModelSet,
   setLocked,
+  setModelInputConversationId,
   setModelColumns,
   submitAllFinished,
   submitAllStarted,
@@ -75,6 +78,30 @@ function resolveAgentModelLabel(
   return row?.common_name ?? row?.name ?? modelId;
 }
 
+async function createModelInputInstance(
+  dispatch: AppDispatch,
+  agentId: string,
+  agentVersionId: string | null,
+): Promise<string> {
+  const conversationId = generateConversationId();
+  await dispatch(
+    createManualInstance({
+      agentId,
+      conversationId,
+      initialAgentVersionId: agentVersionId,
+      apiEndpointMode: "agent",
+      sourceFeature: MODEL_SOURCE_FEATURE,
+    }),
+  ).unwrap();
+  dispatch(
+    setSubmitOnEnter({
+      conversationId,
+      value: false,
+    }),
+  );
+  return conversationId;
+}
+
 // =============================================================================
 // Locked-axis configuration
 // =============================================================================
@@ -88,7 +115,12 @@ export const setLockedAgent = createAsyncThunk<
   async ({ agentId }, { dispatch, getState }) => {
     const state = getState();
     const prev = state.agentComparisonModel.locked;
-    if (prev.agentId === agentId) return;
+    if (
+      prev.agentId === agentId &&
+      state.agentComparisonModel.inputConversationId
+    ) {
+      return;
+    }
 
     await Promise.allSettled([
       dispatch(fetchFullAgent(agentId)).unwrap(),
@@ -100,9 +132,25 @@ export const setLockedAgent = createAsyncThunk<
         agentId,
         agentVersion: "current",
         agentVersionId: null,
-        variables: {},
       }),
     );
+
+    const inputConversationId = await createModelInputInstance(
+      dispatch,
+      agentId,
+      null,
+    );
+    if (state.agentComparisonModel.inputConversationId) {
+      dispatch(
+        copyInstanceRequestDraft({
+          sourceConversationId: state.agentComparisonModel.inputConversationId,
+          targetConversationId: inputConversationId,
+          copyVariables: false,
+        }),
+      );
+      dispatch(destroyInstance(state.agentComparisonModel.inputConversationId));
+    }
+    dispatch(setModelInputConversationId(inputConversationId));
 
     // Recreate every column's instance under the new agent, carrying
     // the per-column model override forward (the user typically wants
@@ -151,7 +199,12 @@ export const setLockedVersion = createAsyncThunk<
     const state = getState();
     const { agentId, agentVersion } = state.agentComparisonModel.locked;
     if (!agentId) return;
-    if (agentVersion === version) return;
+    if (
+      agentVersion === version &&
+      state.agentComparisonModel.inputConversationId
+    ) {
+      return;
+    }
 
     if (version !== "current") {
       try {
@@ -172,6 +225,22 @@ export const setLockedVersion = createAsyncThunk<
 
     const post = getState();
     const pinnedVersionId = version === "current" ? null : (versionId ?? null);
+    const inputConversationId = await createModelInputInstance(
+      dispatch,
+      agentId,
+      pinnedVersionId,
+    );
+    if (post.agentComparisonModel.inputConversationId) {
+      dispatch(
+        copyInstanceRequestDraft({
+          sourceConversationId: post.agentComparisonModel.inputConversationId,
+          targetConversationId: inputConversationId,
+        }),
+      );
+      dispatch(destroyInstance(post.agentComparisonModel.inputConversationId));
+    }
+    dispatch(setModelInputConversationId(inputConversationId));
+
     for (const col of post.agentComparisonModel.columns) {
       const prevOverrides =
         post.instanceModelOverrides.byConversationId[col.conversationId]
@@ -276,31 +345,21 @@ export const submitAllModel = createAsyncThunk<
   dispatch(submitAllStarted());
   try {
     const state = getState();
-    const { agentId, variables, userMessage } =
-      state.agentComparisonModel.locked;
+    const { agentId } = state.agentComparisonModel.locked;
+    const inputConversationId = state.agentComparisonModel.inputConversationId;
     const columns = state.agentComparisonModel.columns;
 
-    if (!agentId || columns.length === 0) {
+    if (!agentId || !inputConversationId || columns.length === 0) {
       return { launched: 0, failed: 0, skipped: columns.length };
     }
 
     for (const col of columns) {
-      if (userMessage) {
-        dispatch(
-          setUserInputText({
-            conversationId: col.conversationId,
-            text: userMessage,
-          }),
-        );
-      }
-      if (Object.keys(variables).length > 0) {
-        dispatch(
-          setUserVariableValues({
-            conversationId: col.conversationId,
-            values: variables,
-          }),
-        );
-      }
+      dispatch(
+        copyInstanceRequestDraft({
+          sourceConversationId: inputConversationId,
+          targetConversationId: col.conversationId,
+        }),
+      );
     }
 
     const results = await Promise.allSettled(
@@ -328,7 +387,6 @@ export const submitAllModel = createAsyncThunk<
           post.agentComparisonModel.activeSetName ?? "Untitled comparison",
         );
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error("[model] failed to persist comparison entries:", err);
       }
     }
@@ -347,6 +405,9 @@ export const clearModelBattle = createAsyncThunk<void, void, ThunkApi>(
   "agentComparisonModel/clear",
   async (_arg, { dispatch, getState }) => {
     const state = getState();
+    if (state.agentComparisonModel.inputConversationId) {
+      dispatch(destroyInstance(state.agentComparisonModel.inputConversationId));
+    }
     for (const col of state.agentComparisonModel.columns) {
       dispatch(destroyInstance(col.conversationId));
     }
@@ -434,8 +495,17 @@ function buildModelEntries(state: RootState): UpsertEntryInput[] {
 }
 
 function buildSetMetadata(state: RootState): Record<string, unknown> {
-  const { agentId, agentVersion, agentVersionId, variables, userMessage } =
+  const { agentId, agentVersion, agentVersionId } =
     state.agentComparisonModel.locked;
+  const inputConversationId = state.agentComparisonModel.inputConversationId;
+  const variables = inputConversationId
+    ? (state.instanceVariableValues.byConversationId[inputConversationId]
+        ?.userValues ?? {})
+    : {};
+  const userMessage = inputConversationId
+    ? (state.instanceUserInput.byConversationId[inputConversationId]?.text ??
+      "")
+    : "";
   return {
     mode: "model",
     locked: {
@@ -495,6 +565,9 @@ export const loadModelBattleSet = createAsyncThunk<
   ThunkApi
 >("agentComparisonModel/loadSet", async ({ setId }, { dispatch, getState }) => {
   const before = getState();
+  if (before.agentComparisonModel.inputConversationId) {
+    dispatch(destroyInstance(before.agentComparisonModel.inputConversationId));
+  }
   for (const col of before.agentComparisonModel.columns) {
     dispatch(destroyInstance(col.conversationId));
   }
@@ -529,10 +602,26 @@ export const loadModelBattleSet = createAsyncThunk<
         agentId: locked.agent_id,
         agentVersion: locked.agent_version ?? "current",
         agentVersionId: locked.agent_version_id ?? null,
-        variables: locked.variables ?? {},
-        userMessage: locked.user_message ?? "",
       }),
     );
+    const inputConversationId = await createModelInputInstance(
+      dispatch,
+      locked.agent_id,
+      locked.agent_version_id ?? null,
+    );
+    dispatch(
+      setUserInputText({
+        conversationId: inputConversationId,
+        text: locked.user_message ?? "",
+      }),
+    );
+    dispatch(
+      setUserVariableValues({
+        conversationId: inputConversationId,
+        values: locked.variables ?? {},
+      }),
+    );
+    dispatch(setModelInputConversationId(inputConversationId));
   }
 
   const nextColumns: ModelColumn[] = [];
@@ -561,8 +650,7 @@ export const loadModelBattleSet = createAsyncThunk<
     }
 
     const entryMeta = (entry.metadata ?? {}) as
-      | Partial<PersistedModelEntryMeta>
-      | undefined;
+      Partial<PersistedModelEntryMeta> | undefined;
     if (entryMeta?.model) {
       dispatch(
         setOverrides({
@@ -580,7 +668,6 @@ export const loadModelBattleSet = createAsyncThunk<
         }),
       ).unwrap();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn("[model] loadConversation failed:", err);
     }
 
