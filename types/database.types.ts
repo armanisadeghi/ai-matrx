@@ -26668,10 +26668,7 @@ export type Database = {
         Args: { p_resource: string; p_token: string; p_user: string }
         Returns: Json
       }
-      _library_assert_super_admin: {
-        Args: { p_actor: string }
-        Returns: undefined
-      }
+      _library_assert_admin: { Args: { p_actor: string }; Returns: undefined }
       _scope_system_resolve_type_id: {
         Args: { p_kind: string; p_op: Json; p_org_id: string }
         Returns: string

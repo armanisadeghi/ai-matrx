@@ -33,9 +33,15 @@ Regenerating `types/python-generated/api-types.ts` from the LOCAL aidream repo (
 
 Found during P3 (Shared Knowledge discovery); fixed same day. The rich member RPC raised `data store not found` for grant-entitled callers (gate predated `data_stores_grant_reader_select.sql`), so `/rag/data-stores` showed "Could not load members" on granted stores. Fixed in `migrations/data_store_members_rich_grant_reader.sql` (applied + ledgered): gate now super-admin OR creator/org-member OR `user_can_read_data_store_via_grant` (the frozen predicate, not a fork). Verified live: entitled reader `77c6af70-…` gets 1 member on the AMA store; control `929274b1-…` still refused.
 
-### D87 — plaintext secret columns in live tables (2026-07-23)
+### D87 — RESOLVED 2026-07-23 (Phase 5 rulings) — plaintext secret columns in live tables
 
-Found during the Unified Credential Vault Phase 0 inventory (plan: `common-docs/projects/unified-credential-vault/PLAN.md`, item I-6; Phase 5 owns the fix). Three live columns hold secrets as plain `text`, outside the one Fernet battery: `ai.endpoint.byok_secret_key` (BYOK provider keys), `files.webhooks.secret` (webhook signing), `workflow.trigger.webhook_secret`. Fix per plan: migrate values into vault credential items and replace the columns with stable references (or at minimum encrypt via the battery). Also noted: one orphaned `vault.secrets` row (`OPENAI_API_KEY`, created 2024-10-03, predates every current system) — verify it's dead, then delete it; and `tool.mcp_user_conn` token encryption still uses pgcrypto with the shared `app.settings.mcp_encryption_key` until vault Phase 4 lands.
+Found during the Unified Credential Vault Phase 0 inventory (plan: `common-docs/projects/unified-credential-vault/PLAN.md`, item I-6). Resolved by Phase 5 (aidream migration `0242_d87_secret_columns_rulings.sql`, applied + ledgered) with per-column rulings from live inspection:
+
+- **`ai.endpoint.byok_secret_key` — never held secrets.** All 11 non-null values are ENV-VAR NAMES (`ANTHROPIC_API_KEY`, …) on platform system rows (`is_system=true`, system org), resolved through matrx-ai's `resolve_api_key`. Deployment-config bootstrap exception; a live CHECK constraint (`endpoint_byok_secret_key_is_env_name`) now forbids the column from ever holding a raw key.
+- **`files.webhooks.secret` — stays DB-readable plaintext BY DESIGN.** Outbound delivery runs entirely in Postgres (`pg_cron` → `files.webhook_dispatch()` → `files.webhook_sign()` HMAC-SHA256 via pgcrypto → `pg_net`); app-side Fernet would break DB-side signing. It is our system-generated signing value (not a user credential), RLS owner-scoped, returned only at create/rotate. Documented via column COMMENT.
+- **`workflow.trigger.webhook_secret` — now battery-Fernet ciphertext.** 0 legacy rows existed at cutover; encrypted at create (`workflow_triggers.py`), decrypted + constant-time compared at fire (`services/runtime/triggers.py`), never serialized in responses; undecryptable rows refuse to fire loudly.
+
+Still open elsewhere: the orphaned `vault.secrets` `OPENAI_API_KEY` row (2024-10-03 — verify dead, then delete) and the `tool.mcp_user_conn` pgcrypto path (owned by vault Phase 4).
 
 ### D88 — service-role RPCs accept raw p_user_id with no internal actor guard (2026-07-23)
 
