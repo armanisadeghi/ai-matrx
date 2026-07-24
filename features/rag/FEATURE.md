@@ -142,12 +142,12 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 
 **FE surfaces:**
 
-- `hooks/useDataStoreGrants.ts` — publish / revoke / list grants over HTTP.
+- `hooks/useDataStoreGrants.ts` — publish / revoke / list grants **direct to Supabase** (`rag.library_grant_publish` / `_revoke`, `rag.fn_list_data_store_grants`). The old `/rag/data-stores/{id}/grants` HTTP path is dead for the FE (migration `0162`).
 - `components/data-stores/DataStorePublishPanel.tsx` — audience-tab publish dialog (mirrors `ShareModal`; super-admin only). Opened from `DataStoresPage` for `kind:"library"` stores.
 - `DataStoresPage` / `RichMemberTable` — a `'granted'` store shows a "Shared library · read-only" badge and hides Edit / Delete / Add-member / remove / drag-drop. `access` / `readOnly` ride on the data-store list/detail responses.
-- Tenant catalog (browse `discoverable` + subscribe) — SHIPPED: `LibraryCatalogPane` + `hooks/useLibraryCatalog.ts` on `/rag` (`RagHomePage`), consuming `/rag/library-catalog` + subscribe/unsubscribe.
+- Tenant catalog (browse `discoverable` + subscribe) — `LibraryCatalogPane` + `hooks/useLibraryCatalog.ts`, mounted as a **section on `/rag`** (`RagHomePage`), reading `rag.fn_list_library_catalog` direct + `rag.library_subscribe`/`_unsubscribe`. **This pane is currently the ONLY way a grant reader can find granted content** — `files_listing_owner_grant_only.sql` (2026-07-20) deliberately bars reachability-conveyed rows from every file tree, search, and picker. A dedicated `/rag/library-catalog` route is still unbuilt.
 
-**Backend (aidream):** the ACL branch + `can_read_data_store` + grants-aware `list_data_stores`/`get_data_store` + the `run_ner` profile + `/rag/data-stores/{id}/grants` and `/rag/library-catalog` endpoints + `services/rag/library_grants.py` (wraps the SECURITY DEFINER RPCs). DB: migrations `0116`–`0119`.
+**Backend (aidream):** the ACL branch + `can_read_data_store` + grants-aware `list_data_stores`/`get_data_store` + the `run_ner` profile + `services/rag/library_grants.py`. DB: migrations `0116`–`0119`, then `0162`/`0163` (the `rag.fn_*` direct-read family that replaced the FE's HTTP hops). The `/rag/data-stores/{id}/grants` + `/rag/library-catalog` HTTP endpoints still exist for non-Supabase clients (extension/external), but **the FE no longer calls them** — do not "restore" them into FE code.
 
 **Guardrail:** library publishing is the ownership-asymmetry model — READ via `rag.data_store_grants`, WRITE via store ownership. `data_store` is in `shareable_resource_registry` only so Relationship Manager / reachability recognize it as a conveying container (`rls_uses_has_permission=false`, `is_link_shareable=false`). Do **NOT** wire `ShareButton` / `useSharing` / `iam.permissions` for data stores — use `DataStorePublishPanel`. See [`features/sharing/FEATURE.md`](../sharing/FEATURE.md).
 
