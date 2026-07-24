@@ -28983,7 +28983,6 @@ export type Database = {
       delete_note_version: { Args: { p_id: string }; Returns: boolean }
       delete_scope: { Args: { p_scope_id: string }; Returns: Json }
       delete_scope_type: { Args: { p_type_id: string }; Returns: Json }
-      delete_sensitive_item: { Args: { p_item_id: string }; Returns: boolean }
       delete_unused_message_templates: {
         Args: never
         Returns: {
@@ -30740,7 +30739,6 @@ export type Database = {
         Args: { p_org_id: string; p_type_id?: string }
         Returns: Json
       }
-      get_sensitive_item_value: { Args: { p_item_id: string }; Returns: string }
       get_share_capabilities: {
         Args: { p_resource_type: string }
         Returns: Json
@@ -32299,18 +32297,6 @@ export type Database = {
           p_value_timestamp?: string
         }
         Returns: Json
-      }
-      set_sensitive_item: {
-        Args: {
-          p_full_value: string
-          p_is_primary?: boolean
-          p_item_id?: string
-          p_kind: string
-          p_label: string
-          p_metadata?: Json
-          p_preview?: string
-        }
-        Returns: string
       }
       set_streak_rest_weekdays: {
         Args: { p_weekdays: number[] }
@@ -39949,6 +39935,13 @@ export type Database = {
             referencedRelation: "keyword"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "keyword_market_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["location_code"]
+          },
         ]
       }
       keyword_topic: {
@@ -40027,6 +40020,7 @@ export type Database = {
           created_at: string
           id: string
           latitude: number | null
+          location_code: number | null
           longitude: number | null
           postal_code: string | null
           region: string | null
@@ -40038,6 +40032,7 @@ export type Database = {
           created_at?: string
           id?: string
           latitude?: number | null
+          location_code?: number | null
           longitude?: number | null
           postal_code?: string | null
           region?: string | null
@@ -40049,6 +40044,7 @@ export type Database = {
           created_at?: string
           id?: string
           latitude?: number | null
+          location_code?: number | null
           longitude?: number | null
           postal_code?: string | null
           region?: string | null
@@ -43398,6 +43394,69 @@ export type Database = {
   }
   users: {
     Tables: {
+      credential_items: {
+        Row: {
+          access_mode: string
+          created_at: string
+          created_by: string | null
+          definition_key: string
+          definition_version: number
+          deleted_at: string | null
+          description: string | null
+          display_name: string
+          id: string
+          lifecycle: Json
+          organization_id: string | null
+          provider_key: string | null
+          source: string
+          status: string
+          tags: string[]
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_mode?: string
+          created_at?: string
+          created_by?: string | null
+          definition_key?: string
+          definition_version?: number
+          deleted_at?: string | null
+          description?: string | null
+          display_name: string
+          id?: string
+          lifecycle?: Json
+          organization_id?: string | null
+          provider_key?: string | null
+          source?: string
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_mode?: string
+          created_at?: string
+          created_by?: string | null
+          definition_key?: string
+          definition_version?: number
+          deleted_at?: string | null
+          description?: string | null
+          display_name?: string
+          id?: string
+          lifecycle?: Json
+          organization_id?: string | null
+          provider_key?: string | null
+          source?: string
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       integration_connection_resources: {
         Row: {
           connection_id: string
@@ -44530,6 +44589,7 @@ export type Database = {
           can_manage: boolean
           can_use: boolean
           created_at: string
+          credential_item_id: string | null
           granted_by: string | null
           id: string
           updated_at: string
@@ -44540,6 +44600,7 @@ export type Database = {
           can_manage?: boolean
           can_use?: boolean
           created_at?: string
+          credential_item_id?: string | null
           granted_by?: string | null
           id?: string
           updated_at?: string
@@ -44550,6 +44611,7 @@ export type Database = {
           can_manage?: boolean
           can_use?: boolean
           created_at?: string
+          credential_item_id?: string | null
           granted_by?: string | null
           id?: string
           updated_at?: string
@@ -44557,6 +44619,13 @@ export type Database = {
           user_secret_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_secret_grants_credential_item_id_fkey"
+            columns: ["credential_item_id"]
+            isOneToOne: false
+            referencedRelation: "credential_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_secret_grants_user_secret_id_fkey"
             columns: ["user_secret_id"]
@@ -44572,12 +44641,16 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string | null
+          credential_item_id: string | null
           deleted_at: string | null
           description: string | null
+          editable: boolean
+          field_key: string | null
+          handling: string
           id: string
           inject_into_sandbox: boolean
           is_active: boolean
-          key: string
+          key: string | null
           last_used_at: string | null
           organization_id: string | null
           source_user_secret_id: string | null
@@ -44594,12 +44667,16 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          credential_item_id?: string | null
           deleted_at?: string | null
           description?: string | null
+          editable?: boolean
+          field_key?: string | null
+          handling?: string
           id?: string
           inject_into_sandbox?: boolean
           is_active?: boolean
-          key: string
+          key?: string | null
           last_used_at?: string | null
           organization_id?: string | null
           source_user_secret_id?: string | null
@@ -44616,12 +44693,16 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          credential_item_id?: string | null
           deleted_at?: string | null
           description?: string | null
+          editable?: boolean
+          field_key?: string | null
+          handling?: string
           id?: string
           inject_into_sandbox?: boolean
           is_active?: boolean
-          key?: string
+          key?: string | null
           last_used_at?: string | null
           organization_id?: string | null
           source_user_secret_id?: string | null
@@ -44633,46 +44714,15 @@ export type Database = {
           value_hint?: string | null
           value_version?: number
         }
-        Relationships: []
-      }
-      user_sensitive_items: {
-        Row: {
-          created_at: string
-          id: string
-          is_primary: boolean
-          kind: string
-          label: string | null
-          metadata: Json
-          preview: string | null
-          secret_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_primary?: boolean
-          kind: string
-          label?: string | null
-          metadata?: Json
-          preview?: string | null
-          secret_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_primary?: boolean
-          kind?: string
-          label?: string | null
-          metadata?: Json
-          preview?: string | null
-          secret_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_secrets_credential_item_id_fkey"
+            columns: ["credential_item_id"]
+            isOneToOne: false
+            referencedRelation: "credential_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_stats: {
         Row: {
