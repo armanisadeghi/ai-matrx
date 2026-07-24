@@ -39,5 +39,9 @@
     { "file": "features/tasks/services/taskService.ts", "line": 739, "justification": "cosmetic UI union, no access decision — level is a pass-through param to share_resource_with_user RPC, never compared", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "lib/redux/slices/agentCacheSlice.ts", "line": 48, "justification": "cosmetic UI union, no access decision — display-only shared-cache metadata field", "addedBy": "claude", "date": "2026-07-22" }
   ],
-  "bareRlsList": []
+  "bareRlsList": [
+    { "file": "features/rag/hooks/useLibraryCatalog.ts", "justification": "D-E closure: the shared-knowledge catalog is DELIBERATELY a global discoverable list (rag.fn_list_library_catalog lists every discoverable+active store for every caller — that is what a catalog is for); per-caller state is carried in the entitled_via/subscribed columns, not by hiding rows. Scope is declared inside the SECURITY DEFINER RPC (auth.uid()-keyed entitlement mirror of user_can_read_data_store_via_grant), never by bare RLS.", "addedBy": "claude (P3 shared-knowledge)", "date": "2026-07-23" },
+    { "file": "features/rag/hooks/useLibraryProvenance.ts", "justification": "D-E closure: provenance RPCs (public.library_grant_provenance/_batch) return ONLY grants reaching auth.uid() by definition; the rag.data_store_members read is filtered to explicit source_ids and RLS admits only own/org/grant-readable stores — decoration on content the caller already reads, not a browse list.", "addedBy": "claude (P3 shared-knowledge)", "date": "2026-07-23" },
+    { "file": "features/rag/hooks/useDataStores.ts", "justification": "D-E closure: list rides rag.fn_list_user_data_stores / fn_get_user_data_store, SECURITY DEFINER functions that resolve identity from auth.uid() only and declare their own owner+org+grant scope — the ListScope primitive would duplicate the RPC's internal scoping.", "addedBy": "claude (P3 shared-knowledge)", "date": "2026-07-23" }
+  ]
 }

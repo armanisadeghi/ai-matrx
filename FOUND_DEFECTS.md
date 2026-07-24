@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D89 — `rag.fn_data_store_members_rich` denies grant readers (2026-07-23)
+
+Found during P3 (Shared Knowledge discovery). The rich member RPC raises `data store not found` for a caller entitled to a library store via a grant (verified live with jwt-claims probes: `fn_get_user_data_store` returns the store + members for the same caller, the rich RPC errors). Its internal visibility gate predates the grant-reader branch added by `migrations/data_stores_grant_reader_select.sql`. Symptom: `/rag/data-stores?store_id=<granted store>` shows "Could not load members" on granted stores (the new `/rag/library-catalog` detail view is unaffected — it uses `fn_get_user_data_store`). Fix: extend the rich RPC's visibility clause with the same `user_can_read_data_store_via_grant` branch (P4's trigger/guard territory borders this; it's a non-trigger `rag.*` function, so whoever picks it up should mirror the existing grant predicate — never a new one).
+
 ### D87 — plaintext secret columns in live tables (2026-07-23)
 
 Found during the Unified Credential Vault Phase 0 inventory (plan: `common-docs/projects/unified-credential-vault/PLAN.md`, item I-6; Phase 5 owns the fix). Three live columns hold secrets as plain `text`, outside the one Fernet battery: `ai.endpoint.byok_secret_key` (BYOK provider keys), `files.webhooks.secret` (webhook signing), `workflow.trigger.webhook_secret`. Fix per plan: migrate values into vault credential items and replace the columns with stable references (or at minimum encrypt via the battery). Also noted: one orphaned `vault.secrets` row (`OPENAI_API_KEY`, created 2024-10-03, predates every current system) — verify it's dead, then delete it; and `tool.mcp_user_conn` token encryption still uses pgcrypto with the shared `app.settings.mcp_encryption_key` until vault Phase 4 lands.
