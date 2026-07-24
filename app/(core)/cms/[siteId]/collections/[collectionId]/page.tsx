@@ -19,6 +19,7 @@ import type {
   SiteCollection,
   SiteCollectionItem,
 } from "@/features/cms/types";
+import { CollectionItemEditorDialog } from "@/features/cms/components/collections/CollectionItemEditorDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Pencil,
+  Plus,
   Inbox,
   Loader2,
   MailCheck,
@@ -155,6 +158,8 @@ export default function CollectionItemsPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [itemEditorOpen, setItemEditorOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<SiteCollectionItem | null>(null);
 
   const schemaKeys = useMemo(
     () => (collection?.field_schema ?? []).map((f) => f.key),
@@ -378,6 +383,17 @@ export default function CollectionItemsPage() {
               />
             </div>
             <Button
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => {
+                setEditingItem(null);
+                setItemEditorOpen(true);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add item
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               className="gap-1.5 text-xs"
@@ -522,10 +538,24 @@ export default function CollectionItemsPage() {
                   : `No ${filter} items`}
             </p>
             {filter === "all" && !search && (
-              <p className="text-xs max-w-md text-center">
-                Items appear here when visitors submit through published pages
-                or agents write to this collection.
-              </p>
+              <>
+                <p className="text-xs max-w-md text-center">
+                  Items appear here when visitors submit through published
+                  pages, when agents write to this collection, or when you add
+                  one yourself.
+                </p>
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => {
+                    setEditingItem(null);
+                    setItemEditorOpen(true);
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add item
+                </Button>
+              </>
             )}
           </div>
         ) : (
@@ -554,6 +584,9 @@ export default function CollectionItemsPage() {
                   <TableHead className="text-xs">Data</TableHead>
                   <TableHead className="text-xs">Received</TableHead>
                   <TableHead className="text-xs w-20">Status</TableHead>
+                  <TableHead className="text-xs w-10">
+                    <span className="sr-only">Edit</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -643,6 +676,23 @@ export default function CollectionItemsPage() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell
+                        className="w-10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          aria-label="Edit item"
+                          onClick={() => {
+                            setEditingItem(item);
+                            setItemEditorOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -730,10 +780,35 @@ export default function CollectionItemsPage() {
                 </span>
                 <span className="col-span-2 font-mono">ID: {openItem.id}</span>
               </div>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => {
+                    setEditingItem(openItem);
+                    setItemEditorOpen(true);
+                  }}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit item
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      <CollectionItemEditorDialog
+        open={itemEditorOpen}
+        onOpenChange={setItemEditorOpen}
+        collection={collection}
+        item={editingItem}
+        onSaved={async () => {
+          setOpenItem(null);
+          await refreshItems();
+        }}
+      />
 
       <ConfirmDialog
         open={deleteOpen}
