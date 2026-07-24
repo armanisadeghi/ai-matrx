@@ -66,6 +66,7 @@
     "check:ui-primitives:staged": "tsx scripts/check-ui-primitives.ts --staged",
     "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",
     "check:migrations": "tsx scripts/check-migrations.ts",
+    "check:collection-validator": "tsx scripts/check-collection-validator.ts",
     "check:shareable-registry": "tsx scripts/regen-shareable-registry-snapshot.ts --check",
     "check:dead-relations": "tsx scripts/check-dead-relations.ts",
     "check:dead-relations:strict": "tsx scripts/check-dead-relations.ts --strict",
