@@ -3,9 +3,10 @@
 /**
  * Publish a data store to an audience + list its grants — Shared Knowledge
  * Resources. Direct-to-Supabase: LIST calls `rag.fn_list_data_store_grants`
- * (owner/org-member/super-admin gated, identity from auth.uid() only — a
- * different visibility rule than the consumer-facing `dsg_select_entitled`
- * RLS policy). Publish/revoke call the existing super-admin-gated
+ * (Decision 2, 2026-07-23: super-admin OR store owner (`created_by`) ONLY;
+ * identity from auth.uid() only — a different visibility rule than the
+ * consumer-facing `dsg_select_entitled` RLS policy). Publish/revoke call
+ * the existing super-admin-gated
  * `rag.library_grant_publish`/`library_grant_revoke` SECURITY DEFINER RPCs
  * directly. Lazy by design — nothing fires until a consumer mounts.
  */
@@ -48,6 +49,24 @@ function toGrant(g: RpcGrantRow): DataStoreGrant {
   };
 }
 
+/**
+ * One-shot grants fetch for a store via `rag.fn_list_data_store_grants`
+ * (super-admin OR store owner — the Decision-2 gate). Shared by the hook
+ * below and multi-store consumers (the admin Access Explorer batches this
+ * across every library store).
+ */
+export async function fetchDataStoreGrants(
+  storeId: string,
+): Promise<DataStoreGrant[]> {
+  const supabase = createClient();
+  const { data, error } = await ragDb(supabase).rpc(
+    "fn_list_data_store_grants",
+    { p_store_id: storeId },
+  );
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as RpcGrantRow[]).map(toGrant);
+}
+
 export function useDataStoreGrants(storeId: string | null) {
   const [grants, setGrants] = useState<DataStoreGrant[]>([]);
   const [loading, setLoading] = useState(false);
@@ -65,13 +84,8 @@ export function useDataStoreGrants(storeId: string | null) {
     setError(null);
     (async () => {
       try {
-        const supabase = createClient();
-        const { data, error: rpcError } = await ragDb(supabase).rpc(
-          "fn_list_data_store_grants",
-          { p_store_id: storeId },
-        );
-        if (rpcError) throw rpcError;
-        if (!cancelled) setGrants(((data ?? []) as RpcGrantRow[]).map(toGrant));
+        const rows = await fetchDataStoreGrants(storeId);
+        if (!cancelled) setGrants(rows);
       } catch (e) {
         if (!cancelled)
           setError(e instanceof Error ? e.message : "Could not load grants");

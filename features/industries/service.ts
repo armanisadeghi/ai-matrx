@@ -65,6 +65,25 @@ export async function fetchOrgIndustries(
   }));
 }
 
+/**
+ * All org↔industry assignments platform-wide. RLS on `iam.org_industries`
+ * admits members of each org OR super-admins — so for a super-admin this is
+ * the complete assignment table (used by the Shared Knowledge admin console);
+ * for anyone else it degrades to their own orgs' rows.
+ */
+export async function fetchAllOrgIndustries(): Promise<OrgIndustry[]> {
+  const { data, error } = await supabase
+    .schema("iam")
+    .from("org_industries")
+    .select("organization_id, industry_id, is_primary");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({
+    organizationId: r.organization_id,
+    industryId: r.industry_id,
+    isPrimary: Boolean(r.is_primary),
+  }));
+}
+
 export async function upsertIndustry(input: {
   slug: string;
   name: string;

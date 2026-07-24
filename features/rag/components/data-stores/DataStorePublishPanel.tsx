@@ -3,12 +3,19 @@
 /**
  * DataStorePublishPanel — publish a Matrx Library data store to an audience
  * (Shared Knowledge Resources). Mirrors the ShareModal Dialog/Tabs structure,
- * but the axis is AUDIENCE (industry / everyone), not user/org/public, and it
- * writes via the grant RPCs over HTTP (super-admin gated server-side) rather
- * than the `permissions` table. Super-admin only; render behind selectIsSuperAdmin.
+ * but the axis is AUDIENCE (industry / organization / everyone), and it
+ * writes via the grant RPCs (`rag.library_grant_publish` / `_revoke`,
+ * super-admin gated in the DB) — never the `permissions` table.
+ * Super-admin only; render behind selectIsSuperAdmin.
+ *
+ * Organization audience: pass `organizationOptions` when the caller has a
+ * platform-wide org directory (the Shared Knowledge admin console loads it
+ * server-side via the super-admin loader). Without the prop the panel falls
+ * back to the caller's own organizations (`getUserOrganizations`) — the only
+ * org list a client can see under RLS.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -29,12 +36,26 @@ import { Globe, Building2, Layers, Loader2, X, Library } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useDataStoreGrants } from "@/features/rag/hooks/useDataStoreGrants";
 import { useIndustries } from "@/features/industries/hooks";
+import { getUserOrganizations } from "@/features/organizations/service";
+
+export interface PublishOrganizationOption {
+  id: string;
+  name: string;
+}
 
 interface DataStorePublishPanelProps {
   isOpen: boolean;
   onClose: () => void;
   storeId: string;
   storeName: string;
+  /**
+   * Org choices for the Organization audience tab. Supply the full
+   * directory from a super-admin server loader when available; omitted,
+   * the panel falls back to the caller's own organizations.
+   */
+  organizationOptions?: PublishOrganizationOption[];
+  /** Notify the caller after a successful publish/revoke (refresh lists). */
+  onChanged?: () => void;
 }
 
 export function DataStorePublishPanel({
@@ -42,20 +63,53 @@ export function DataStorePublishPanel({
   onClose,
   storeId,
   storeName,
+  organizationOptions,
+  onChanged,
 }: DataStorePublishPanelProps) {
   const { grants, loading, publish, revoke } = useDataStoreGrants(
     isOpen ? storeId : null,
   );
-  const { industries } = useIndustries();
+  const { industries, refresh: refreshIndustries } = useIndustries();
   const [industryId, setIndustryId] = useState<string>("");
+  const [organizationId, setOrganizationId] = useState<string>("");
+  const [fallbackOrgs, setFallbackOrgs] = useState<
+    PublishOrganizationOption[]
+  >([]);
   const [busy, setBusy] = useState(false);
+
+  const orgOptions = organizationOptions ?? fallbackOrgs;
+
+  // The panel can stay mounted across taxonomy edits — refetch the industry
+  // list every time it opens so a just-created industry is publishable.
+  useEffect(() => {
+    if (isOpen) refreshIndustries();
+  }, [isOpen, refreshIndustries]);
+
+  useEffect(() => {
+    if (!isOpen || organizationOptions) return;
+    let cancelled = false;
+    getUserOrganizations()
+      .then((orgs) => {
+        if (!cancelled)
+          setFallbackOrgs(orgs.map((o) => ({ id: o.id, name: o.name })));
+      })
+      .catch((e) => {
+        console.error("[DataStorePublishPanel] could not load orgs:", e);
+        if (!cancelled) toast.error("Could not load organizations");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, organizationOptions]);
 
   const onPublishGlobal = async () => {
     setBusy(true);
     const ok = await publish({ audience: "global" });
     setBusy(false);
-    if (ok) toast.success("Published to everyone");
-    else toast.error("Could not publish");
+    if (ok) {
+      toast.success("Published to everyone");
+      onChanged?.();
+    } else toast.error("Could not publish");
   };
 
   const onPublishIndustry = async () => {
@@ -66,6 +120,21 @@ export function DataStorePublishPanel({
     if (ok) {
       toast.success("Published to industry");
       setIndustryId("");
+      onChanged?.();
+    } else {
+      toast.error("Could not publish");
+    }
+  };
+
+  const onPublishOrganization = async () => {
+    if (!organizationId) return;
+    setBusy(true);
+    const ok = await publish({ audience: "organization", organizationId });
+    setBusy(false);
+    if (ok) {
+      toast.success("Published to organization");
+      setOrganizationId("");
+      onChanged?.();
     } else {
       toast.error("Could not publish");
     }
@@ -73,8 +142,10 @@ export function DataStorePublishPanel({
 
   const onRevoke = async (id: string) => {
     const ok = await revoke(id);
-    if (ok) toast.success("Access revoked");
-    else toast.error("Could not revoke");
+    if (ok) {
+      toast.success("Access revoked");
+      onChanged?.();
+    } else toast.error("Could not revoke");
   };
 
   return (
@@ -141,9 +212,12 @@ export function DataStorePublishPanel({
         </div>
 
         <Tabs defaultValue="industry" className="mt-1">
-          <TabsList className="grid grid-cols-2">
+          <TabsList className="grid grid-cols-3">
             <TabsTrigger value="industry">
               <Layers className="mr-1.5 h-3.5 w-3.5" /> Industry
+            </TabsTrigger>
+            <TabsTrigger value="organization">
+              <Building2 className="mr-1.5 h-3.5 w-3.5" /> Organization
             </TabsTrigger>
             <TabsTrigger value="global">
               <Globe className="mr-1.5 h-3.5 w-3.5" /> Everyone
@@ -178,6 +252,33 @@ export function DataStorePublishPanel({
             >
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Publish to industry
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="organization" className="space-y-3 pt-3">
+            <p className="text-sm text-muted-foreground">
+              One specific organization gets read access — no industry
+              membership required.
+            </p>
+            <Select value={organizationId} onValueChange={setOrganizationId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose an organization…" />
+              </SelectTrigger>
+              <SelectContent>
+                {orgOptions.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={onPublishOrganization}
+              disabled={!organizationId || busy}
+              className="w-full"
+            >
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Publish to organization
             </Button>
           </TabsContent>
 

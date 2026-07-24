@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   assignOrgIndustry,
+  fetchAllOrgIndustries,
   fetchIndustries,
   fetchOrgIndustries,
   unassignOrgIndustry,
@@ -43,6 +44,43 @@ export function useIndustries(includeInactive = false) {
   }, [includeInactive, bumper]);
 
   return { industries, loading, error, refresh };
+}
+
+/**
+ * Every org↔industry assignment the caller can see (complete for
+ * super-admins — see `fetchAllOrgIndustries`). Powers the Shared Knowledge
+ * admin console's per-industry org lists and the access explorer.
+ */
+export function useAllOrgIndustries() {
+  const [assignments, setAssignments] = useState<OrgIndustry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [bumper, setBumper] = useState(0);
+  const refresh = useCallback(() => setBumper((b) => b + 1), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetchAllOrgIndustries()
+      .then((r) => {
+        if (!cancelled) setAssignments(r);
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setError(
+            e instanceof Error ? e.message : "Could not load assignments",
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bumper]);
+
+  return { assignments, loading, error, refresh };
 }
 
 export function useOrgIndustries(orgId: string | null) {
