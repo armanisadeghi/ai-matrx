@@ -77,6 +77,11 @@ export interface EntityModeHeaderProps {
   entityOptions?: EntityOption[];
   /** Sub-view nav (View | Edit | …). Center pill on desktop; drawer rows on mobile. */
   modes?: RouteNavItem[];
+  /**
+   * Explicit active mode href. Required when modes differ only by query string
+   * (`?view=grid`) — pathname matching alone cannot tell those apart.
+   */
+  activeModeHref?: string;
   /** Declarative actions — glass tap targets on desktop, drawer rows on mobile. */
   actions?: EntityHeaderAction[];
   /** Desktop-only extra controls (e.g. a Switch). Hidden below sm. */
@@ -108,6 +113,7 @@ export function EntityModeHeader({
   entityLabel,
   entityOptions,
   modes,
+  activeModeHref,
   actions,
   right,
 }: EntityModeHeaderProps) {
@@ -177,7 +183,7 @@ export function EntityModeHeader({
         center={
           modes && modes.length > 0 ? (
             <div className="hidden sm:flex w-full min-w-0 justify-center">
-              <RouteModeNav items={modes} />
+              <RouteModeNav items={modes} activeHref={activeModeHref} />
             </div>
           ) : undefined
         }
@@ -223,8 +229,9 @@ export function EntityModeHeader({
           <BottomSheetBody>
             {modes?.map((m) => {
               const Icon = m.icon;
-              const isActive =
-                m.href === pathname ||
+              const isActive = activeModeHref
+                ? m.href === activeModeHref
+                : m.href === pathname ||
                 (pathname.startsWith(m.href) &&
                   !modes.some(
                     (o) =>

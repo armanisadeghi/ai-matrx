@@ -21,6 +21,9 @@ The set's name/description ARE the orchestrator agent's — no duplicated identi
 
 - `/agents/sets` — list of all sets (the savior list view). Entry from `/agents/all` ("Sets") and the per-agent **Add to set** card action.
 - `/agents/sets/[orchestratorId]` — the **builder**: library rail (drag/click to add) + a **React Flow hub-and-spoke canvas** (orchestrator hub, member spokes, animated edges; drag to reposition — positions persist) **or** a `@dnd-kit` sortable **Grid** view + a **member inspector** (author each member's role/gap).
+  - **Header:** the builder owns NO in-body header. It consumes the shared `EntityModeHeader` template (back → `/agents/sets`, set-name dropdown over the user's other sets, `Canvas | Grid` mode nav, actions: library toggle / Run / Sync agent listings / Orchestrator / Set settings) which portals into the shell header; on mobile everything collapses into the one `…` bottom sheet. Body is `h-full` + `pt-[var(--shell-header-h)]` — never a `calc(100vh − header)` (that produced the overlap + dead bottom strip fixed 2026-07-24).
+  - **Canvas/Grid lives in the URL** (`?view=grid`), because the mode nav is href-driven; `activeModeHref` is passed explicitly since the two modes share a pathname.
+  - **The library rail is a static column on `md+` and a slide-over below it**, toggled from the header (`PanelLeft`). 16rem of fixed rail on a phone left no canvas at all.
 
 ## Generating an orchestrator (for users without one)
 

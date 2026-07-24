@@ -8,25 +8,30 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
   ExternalLink,
   LayoutGrid,
   Loader2,
   MousePointerClick,
   Network,
+  PanelLeft,
   Play,
   RefreshCw,
   Settings2,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  EntityModeHeader,
+  type EntityHeaderAction,
+} from "@/features/shell/components/header/templates/EntityModeHeader";
 import { useAgentSet } from "../hooks/useAgentSet";
+import { useAgentSetsList } from "../hooks/useAgentSetsList";
 import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
 import { useOrchestratorPromptStatus } from "../hooks/useOrchestratorPromptStatus";
 import { addAgentToSet, createAgentSet } from "@/features/agents/redux/agent-sets/thunks";
@@ -47,13 +52,27 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   const accent = config.accent ?? DEFAULT_SET_ACCENT;
   const a = accentClasses(accent);
 
-  const [view, setView] = useState<"canvas" | "grid">("canvas");
+  // The canvas/grid choice lives in the URL so the header's ONE mode nav (and
+  // its mobile drawer) can drive it like any other sub-view.
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view") === "grid" ? "grid" : "canvas";
+  const basePath = `/agents/sets/${orchestratorId}`;
+
+  // The library rail is a static column on desktop and a slide-over below md —
+  // 16rem of fixed rail on a phone left the canvas unusable. `null` = follow the
+  // viewport default; the header toggle takes over once the user decides.
+  const isMobile = useIsMobile();
+  const [libraryOverride, setLibraryOverride] = useState<boolean | null>(null);
+  const libraryOpen = libraryOverride ?? !isMobile;
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   useEnsureAgentsLoaded();
+  // Sibling sets power the header's entity dropdown (switch set without a round trip to the list).
+  const { sets } = useAgentSetsList();
 
   const memberIds = useMemo(() => members.map((m) => m.agentId), [members]);
   const promptStatus = useOrchestratorPromptStatus(orchestratorId, memberIds);
@@ -76,7 +95,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
 
   if (loading) {
     return (
-      <div className="bg-textured flex h-[calc(100vh-2.5rem)] items-center justify-center">
+      <div className="bg-textured flex h-full items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -85,7 +104,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   // The agent is not (yet) an orchestrator — offer to make it one.
   if (status === "ready" && !exists && members.length === 0) {
     return (
-      <div className="bg-textured flex h-[calc(100vh-2.5rem)] flex-col items-center justify-center p-6 text-center">
+      <div className="bg-textured flex h-full flex-col items-center justify-center p-6 pt-[var(--shell-header-h)] text-center">
         <div className={cn("mb-4 flex h-14 w-14 items-center justify-center rounded-2xl", a.glyph)}>
           <Network className="h-7 w-7" />
         </div>
@@ -117,118 +136,85 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
     );
   }
 
+  const headerActions: EntityHeaderAction[] = [
+    {
+      label: libraryOpen ? "Hide agent library" : "Show agent library",
+      icon: PanelLeft,
+      onPress: () => setLibraryOverride(!libraryOpen),
+    },
+    {
+      label: "Run",
+      icon: Play,
+      primary: true,
+      href: `/agents/${orchestratorId}/run`,
+    },
+    // Only for TEMPLATE orchestrators (their prompt has the <available_agents>
+    // section our system fills). Out-of-sync promotes it to a solid labelled
+    // pill — the header's replacement for the old amber pulse dot.
+    ...(promptStatus.isTemplate
+      ? [
+          {
+            label: syncing ? "Syncing agent listings" : "Sync agent listings",
+            icon: syncing ? Loader2 : RefreshCw,
+            onPress: handleSyncPrompt,
+            primary: promptStatus.outOfSync,
+            disabled: syncing || members.length === 0,
+          } satisfies EntityHeaderAction,
+        ]
+      : []),
+    {
+      label: "Orchestrator",
+      icon: ExternalLink,
+      href: `/agents/${orchestratorId}/build`,
+    },
+    { label: "Set settings", icon: Settings2, onPress: () => setSettingsOpen(true) },
+  ];
+
   return (
-    <div className="bg-textured flex h-[calc(100vh-2.5rem)] flex-col overflow-hidden">
-      {/* header */}
-      <header className="flex shrink-0 items-center gap-3 border-b border-border px-3 py-2.5 pr-14">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/agents/sets")}
-          aria-label="Back to sets"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg shadow-sm", a.glyph)}>
-          <Network className="h-4.5 w-4.5" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="truncate text-sm font-semibold text-foreground" title={title}>
-            {title}
-          </h1>
-          <p className="text-[11px] text-muted-foreground">
-            {members.length} {members.length === 1 ? "agent" : "agents"}
-            {config.tagline ? ` · ${config.tagline}` : ""}
-          </p>
-        </div>
+    <div className="bg-textured flex h-full flex-col overflow-hidden">
+      <EntityModeHeader
+        backHref="/agents/sets"
+        entityLabel={title}
+        entityOptions={sets.map((s) => ({
+          label: s.label?.trim() || s.name,
+          href: `/agents/sets/${s.orchestratorId}`,
+          active: s.orchestratorId === orchestratorId,
+        }))}
+        modes={[
+          { name: "Canvas", href: basePath, icon: Network },
+          { name: "Grid", href: `${basePath}?view=grid`, icon: LayoutGrid },
+        ]}
+        activeModeHref={view === "grid" ? `${basePath}?view=grid` : basePath}
+        actions={headerActions}
+      />
 
-        <div className="ml-auto flex items-center gap-1.5">
-          {/* Run the orchestrator — it delegates to its members (member-as-tool). */}
-          <Button
-            size="sm"
-            className="gap-1.5"
-            onClick={() => router.push(`/agents/${orchestratorId}/run`)}
-            title="Run this orchestrator — it delegates the task to its member agents"
+      {/* body — builder chrome (rail search, canvas Arrange panel) is static top
+          UI, so it clears the glass header instead of scrolling behind it. */}
+      <div className="flex flex-1 overflow-hidden pt-[var(--shell-header-h)]">
+        {libraryOpen && isMobile && (
+          <button
+            type="button"
+            aria-label="Close agent library"
+            className="fixed inset-0 z-30 bg-black/40"
+            onClick={() => setLibraryOverride(false)}
+          />
+        )}
+        {libraryOpen && (
+          <div
+            className={cn(
+              isMobile &&
+                // Opaque: the rail's own bg-card/40 is a tint, not a surface —
+                // as a slide-over it would show the canvas straight through.
+                "fixed bottom-0 left-0 top-[var(--shell-header-h)] z-40 bg-background shadow-2xl",
+            )}
           >
-            <Play className="h-3.5 w-3.5" />
-            Run
-          </Button>
-          {/* view toggle */}
-          <div className="flex items-center rounded-lg border border-border p-0.5">
-            <button
-              type="button"
-              onClick={() => setView("canvas")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                view === "canvas"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Network className="h-3.5 w-3.5" /> Canvas
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("grid")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                view === "grid"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" /> Grid
-            </button>
+            <AgentLibraryRail
+              orchestratorId={orchestratorId}
+              memberIds={memberIds}
+              onAdd={handleAdd}
+            />
           </div>
-
-          {/* Only for TEMPLATE orchestrators (their prompt has the <available_agents>
-              section our system fills). The amber pulse flags "listings ≠ members". */}
-          {promptStatus.isTemplate && (
-            <Button
-              variant={promptStatus.outOfSync ? "default" : "outline"}
-              size="sm"
-              className="relative gap-1.5"
-              onClick={handleSyncPrompt}
-              disabled={syncing || members.length === 0}
-              title="Regenerate the orchestrator's <available_agents> prompt to match the current members"
-            >
-              {syncing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
-              Sync agent listings
-              {promptStatus.outOfSync && !syncing && (
-                <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5" aria-hidden>
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
-                </span>
-              )}
-            </Button>
-          )}
-          <Link href={`/agents/${orchestratorId}/build`} target="_blank">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ExternalLink className="h-3.5 w-3.5" /> Orchestrator
-            </Button>
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Set settings"
-          >
-            <Settings2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
-
-      {/* body */}
-      <div className="flex flex-1 overflow-hidden">
-        <AgentLibraryRail
-          orchestratorId={orchestratorId}
-          memberIds={memberIds}
-          onAdd={handleAdd}
-        />
+        )}
 
         <main className="relative flex-1 overflow-hidden">
           {view === "canvas" ? (
