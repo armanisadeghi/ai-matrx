@@ -4029,6 +4029,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/spend/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Seo Spend Summary
+         * @description M-9 / WS-7 follow-up: provider-by-provider spend rollup for the
+         *     caller's org (this month + last month + a 30-day daily series) plus the
+         *     configured ceilings and any recent `seo_budget_exceeded` rejections —
+         *     backs the `/marketing/cost` provider-spend panel. Read-only, ordinary
+         *     JSON (sub-second) — the same "status panel, not a streamed command"
+         *     ruling `schedule-status` follows above.
+         */
+        get: operations["seo_spend_summary_seo_spend_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/pages/{page_id}/pagespeed/sync": {
         parameters: {
             query?: never;
@@ -4095,6 +4120,67 @@ export interface paths {
         get: operations["site_schedule_status_seo_sites__site_id__schedule_status_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/public/structured-data/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Structured Data Validate
+         * @description Public one-shot schema.org/JSON-LD validator (M-42).
+         */
+        post: operations["structured_data_validate_seo_public_structured_data_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/public/page-audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Page Audit
+         * @description Public one-shot page SEO audit (M-42) — reuses the canonical
+         *     ``matrx_scraper.seo_audit`` single-page auditor, never a second one.
+         */
+        post: operations["page_audit_seo_public_page_audit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/public/robots-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Robots Check
+         * @description Public one-shot robots.txt tester (M-42).
+         */
+        post: operations["robots_check_seo_public_robots_check_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6051,30 +6137,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18846,6 +18908,26 @@ export interface components {
             /** Expires At */
             expires_at: number;
         };
+        /** BudgetRejectionRow */
+        BudgetRejectionRow: {
+            /** Run Id */
+            run_id: string;
+            /** Provider */
+            provider: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Ceiling */
+            ceiling?: string | null;
+            /** Limit Usd */
+            limit_usd?: string | null;
+            /** Spent Usd */
+            spent_usd?: string | null;
+            /** Projected Usd */
+            projected_usd?: string | null;
+        };
         /** BuildOnceResponse */
         BuildOnceResponse: {
             /** Name */
@@ -21537,13 +21619,6 @@ export interface components {
             /** Output Tokens */
             output_tokens: number;
         };
-        /** DailySpendPoint */
-        DailySpendPoint: {
-            /** Date */
-            date: string;
-            /** Cost Usd */
-            cost_usd: number;
-        };
         /** DataForSeoEndpointExampleOut */
         DataForSeoEndpointExampleOut: {
             /** Endpoint */
@@ -22157,33 +22232,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -28470,7 +28518,7 @@ export interface components {
             /** Window Start */
             window_start: string | null;
             /** Daily Series */
-            daily_series: components["schemas"]["DailySpendPoint"][];
+            daily_series: components["schemas"]["aidream__services__knowledge_graph__wire__DailySpendPoint"][];
             /** Top Sources */
             top_sources: components["schemas"]["TopSourceRow"][];
             /** Batch Summary */
@@ -28702,6 +28750,22 @@ export interface components {
             task_id?: string | null;
             /** Page Id */
             page_id: string;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
+        /** PageAuditBody */
+        PageAuditBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Url */
+            url: string;
             /**
              * Force Refresh
              * @default false
@@ -30141,6 +30205,23 @@ export interface components {
             next_due_at?: string | null;
             /** Next Due Reason */
             next_due_reason?: string | null;
+        };
+        /** ProviderSpendRow */
+        ProviderSpendRow: {
+            /** Provider */
+            provider: string;
+            /** Reported Cost */
+            reported_cost: string;
+            /** Estimated Cost */
+            estimated_cost: string;
+            /** Effective Cost */
+            effective_cost: string;
+            /** Run Count */
+            run_count: number;
+            /** Ceiling Usd */
+            ceiling_usd: string;
+            /** Pct Used */
+            pct_used: string;
         };
         /** ProviderTaskEvidenceOut */
         ProviderTaskEvidenceOut: {
@@ -31776,6 +31857,26 @@ export interface components {
             /** Members */
             members: components["schemas"]["RichDataStoreMember"][];
         };
+        /** RobotsCheckBody */
+        RobotsCheckBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Url */
+            url: string;
+            /** Paths */
+            paths?: string[] | null;
+            /** User Agents */
+            user_agents?: string[] | null;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
         /** RotatePageBody */
         RotatePageBody: {
             /**
@@ -32970,6 +33071,28 @@ export interface components {
          * @enum {string}
          */
         SeoCapability: "serp_rank" | "keyword_metrics" | "search_performance" | "web_analytics" | "page_performance" | "backlinks" | "competitors" | "raw_provider";
+        /** SeoSpendSummaryResponse */
+        SeoSpendSummaryResponse: {
+            /** Organization Id */
+            organization_id: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** This Month */
+            this_month: components["schemas"]["ProviderSpendRow"][];
+            /** Last Month */
+            last_month: components["schemas"]["ProviderSpendRow"][];
+            /** Daily Series */
+            daily_series: components["schemas"]["aidream__services__seo__spend__DailySpendPoint"][];
+            /** Org Provider Monthly Ceiling Usd */
+            org_provider_monthly_ceiling_usd: string;
+            /** Global Provider Monthly Ceiling Usd */
+            global_provider_monthly_ceiling_usd: string;
+            /** Recent Budget Rejections */
+            recent_budget_rejections: components["schemas"]["BudgetRejectionRow"][];
+        };
         /** SerpLandscape */
         SerpLandscape: {
             /** Snapshot Id */
@@ -33999,6 +34122,22 @@ export interface components {
              * @default 0.5
              */
             min_confidence?: number;
+        };
+        /** StructuredDataValidateBody */
+        StructuredDataValidateBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Url */
+            url: string;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
         };
         /**
          * StuckRow
@@ -37750,6 +37889,13 @@ export interface components {
             /** Compaction Group Id */
             compaction_group_id: string;
         };
+        /** DailySpendPoint */
+        aidream__services__knowledge_graph__wire__DailySpendPoint: {
+            /** Date */
+            date: string;
+            /** Cost Usd */
+            cost_usd: number;
+        };
         /** IngestRequest */
         aidream__services__rag__library_streams__IngestRequest: {
             /**
@@ -37771,6 +37917,18 @@ export interface components {
              * @default false
              */
             run_enrich?: boolean;
+        };
+        /** DailySpendPoint */
+        aidream__services__seo__spend__DailySpendPoint: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Effective Cost */
+            effective_cost: string;
+            /** Run Count */
+            run_count: number;
         };
         /** DeletedResponse */
         matrx_scheduler__api__schemas__DeletedResponse: {
@@ -37831,7 +37989,7 @@ export interface components {
             error_message?: string | null;
         };
         /** RunListResponse */
-        matrx_seo__standalone__app__RunListResponse: {
+        matrx_seo__api_contracts__RunListResponse: {
             /** Organization Id */
             organization_id: string;
             /** Runs */
@@ -44236,7 +44394,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["matrx_seo__standalone__app__RunListResponse"];
+                    "application/json": components["schemas"]["matrx_seo__api_contracts__RunListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -44955,6 +45113,37 @@ export interface operations {
             };
         };
     };
+    seo_spend_summary_seo_spend_summary_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeoSpendSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sync_page_pagespeed_seo_pages__page_id__pagespeed_sync_post: {
         parameters: {
             query?: never;
@@ -45043,6 +45232,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiteScheduleStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    structured_data_validate_seo_public_structured_data_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StructuredDataValidateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    page_audit_seo_public_page_audit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageAuditBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    robots_check_seo_public_robots_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RobotsCheckBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -48609,41 +48897,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

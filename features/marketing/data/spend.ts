@@ -10,12 +10,8 @@
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { useQuery } from "@tanstack/react-query";
-import type { paths } from "@/types/python-generated/api-types";
 
-// TODO(deploy): new backend route, not yet regenerated into api-types.ts.
-// Drop this cast once the backend deploys and the OpenAPI type sync runs
-// (same pattern as ScheduleStatusPanel.tsx / RanksWorkspace.tsx).
-const SPEND_SUMMARY_PATH = "/seo/spend/summary" as unknown as keyof paths;
+const SPEND_SUMMARY_PATH = "/seo/spend/summary";
 
 export interface SeoProviderSpendRow {
   provider: string;

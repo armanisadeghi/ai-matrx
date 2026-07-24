@@ -9261,7 +9261,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/matrx_seo__standalone__app__RunListResponse"
+                  "$ref": "#/components/schemas/matrx_seo__api_contracts__RunListResponse"
                 }
               }
             }
@@ -10193,6 +10193,56 @@
         }
       }
     },
+    "/seo/spend/summary": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Seo Spend Summary",
+        "description": "M-9 / WS-7 follow-up: provider-by-provider spend rollup for the\ncaller's org (this month + last month + a 30-day daily series) plus the\nconfigured ceilings and any recent `seo_budget_exceeded` rejections —\nbacks the `/marketing/cost` provider-spend panel. Read-only, ordinary\nJSON (sub-second) — the same \"status panel, not a streamed command\"\nruling `schedule-status` follows above.",
+        "operationId": "seo_spend_summary_seo_spend_summary_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeoSpendSummaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/pages/{page_id}/pagespeed/sync": {
       "post": {
         "tags": [
@@ -10322,6 +10372,126 @@
                 "schema": {
                   "$ref": "#/components/schemas/SiteScheduleStatusResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/public/structured-data/validate": {
+      "post": {
+        "tags": [
+          "SEO Public Tools"
+        ],
+        "summary": "Structured Data Validate",
+        "description": "Public one-shot schema.org/JSON-LD validator (M-42).",
+        "operationId": "structured_data_validate_seo_public_structured_data_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StructuredDataValidateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/public/page-audit": {
+      "post": {
+        "tags": [
+          "SEO Public Tools"
+        ],
+        "summary": "Page Audit",
+        "description": "Public one-shot page SEO audit (M-42) — reuses the canonical\n``matrx_scraper.seo_audit`` single-page auditor, never a second one.",
+        "operationId": "page_audit_seo_public_page_audit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageAuditBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/public/robots-check": {
+      "post": {
+        "tags": [
+          "SEO Public Tools"
+        ],
+        "summary": "Robots Check",
+        "description": "Public one-shot robots.txt tester (M-42).",
+        "operationId": "robots_check_seo_public_robots_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RobotsCheckBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -15915,66 +16085,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -43905,15 +44015,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -44032,29 +44142,29 @@
           },
           "max_attempts": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Attempts",
             "default": 3
           },
           "lease_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 30.0,
+            "maximum": 86400,
+            "minimum": 30,
             "title": "Lease Seconds",
             "default": 900
           },
           "max_concurrency": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrency",
             "default": 5
           },
           "retry_delay_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 0.0,
+            "maximum": 86400,
+            "minimum": 0,
             "title": "Retry Delay Seconds",
             "default": 0
           },
@@ -45421,15 +45531,15 @@
           },
           "max_iterations": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Iterations",
             "default": 100
           },
           "max_retries_per_iteration": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 0.0,
+            "maximum": 10,
+            "minimum": 0,
             "title": "Max Retries Per Iteration",
             "default": 2
           }
@@ -45544,15 +45654,15 @@
           },
           "max_runtime_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 1.0,
+            "maximum": 86400,
+            "minimum": 1,
             "title": "Max Runtime Seconds",
             "default": 600
           },
           "max_concurrent": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrent",
             "default": 1
           }
@@ -46095,8 +46205,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
@@ -46127,8 +46237,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -47184,8 +47294,8 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
@@ -47359,7 +47469,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -48525,7 +48635,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
             "default": 262144
@@ -49122,32 +49232,32 @@
           },
           "total_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Total Items"
           },
           "pending_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Pending Items"
           },
           "running_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Running Items"
           },
           "completed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Completed Items"
           },
           "failed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failed Items"
           },
           "cancelled_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Cancelled Items"
           },
           "created_at": {
@@ -49203,8 +49313,8 @@
         "properties": {
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -49424,7 +49534,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -49444,7 +49554,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -49500,8 +49610,8 @@
           },
           "detail_limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Detail Limit",
             "default": 1000
           },
@@ -50404,22 +50514,22 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
           "max_query_fanout": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Max Query Fanout",
             "default": 50
           },
           "max_calls": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Calls",
             "default": 100
           },
@@ -50509,8 +50619,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Level",
             "default": 3
           },
@@ -50527,7 +50637,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -50552,7 +50662,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -50744,8 +50854,8 @@
           },
           "signed_url_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Url Ttl",
             "default": 3600
           },
@@ -51440,6 +51550,78 @@
         ],
         "title": "BrokeredGrant",
         "description": "What was granted — embedded in every credential for client display\nand debugging; the authoritative copy lives in the signed token."
+      },
+      "BudgetRejectionRow": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "ceiling": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ceiling"
+          },
+          "limit_usd": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Usd"
+          },
+          "spent_usd": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spent Usd"
+          },
+          "projected_usd": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "provider",
+          "occurred_at"
+        ],
+        "title": "BudgetRejectionRow"
       },
       "BuildOnceResponse": {
         "properties": {
@@ -52447,8 +52629,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000.0,
-                "minimum": 1.0
+                "maximum": 100000,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -57978,7 +58160,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -58127,7 +58309,7 @@
           "estimated_cost_usd": {
             "type": "number",
             "title": "Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -58191,8 +58373,8 @@
           },
           "max_pages": {
             "type": "integer",
-            "maximum": 50000.0,
-            "minimum": 1.0,
+            "maximum": 50000,
+            "minimum": 1,
             "title": "Max Pages",
             "default": 200
           },
@@ -58200,8 +58382,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 0.0
+                "maximum": 20,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -58211,8 +58393,8 @@
           },
           "concurrency": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Concurrency",
             "default": 8
           },
@@ -58261,26 +58443,26 @@
           },
           "politeness_delay_ms": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 0.0,
+            "maximum": 10000,
+            "minimum": 0,
             "title": "Politeness Delay Ms",
             "default": 0
           },
           "host_rps": {
             "type": "number",
-            "maximum": 50.0,
+            "maximum": 50,
             "minimum": 0.1,
             "title": "Host Rps",
             "description": "Per-host steady-state request-per-second cap. Applied across all workers.",
-            "default": 4.0
+            "default": 4
           },
           "host_burst": {
             "type": "number",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Host Burst",
             "description": "Per-host token-bucket burst capacity.",
-            "default": 8.0
+            "default": 8
           },
           "render_mode": {
             "type": "string",
@@ -58655,8 +58837,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -59071,15 +59253,15 @@
           },
           "limit_per_side": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Limit Per Side",
             "default": 4
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 4.0,
-            "minimum": 1.0,
+            "maximum": 4,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 2
           },
@@ -59393,25 +59575,6 @@
         ],
         "title": "DailyCostBreakdown",
         "description": "One day's slice of the workflow cost rollup."
-      },
-      "DailySpendPoint": {
-        "properties": {
-          "date": {
-            "type": "string",
-            "title": "Date"
-          },
-          "cost_usd": {
-            "type": "number",
-            "title": "Cost Usd"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "date",
-          "cost_usd"
-        ],
-        "title": "DailySpendPoint"
       },
       "DataForSeoEndpointExampleOut": {
         "properties": {
@@ -61269,15 +61432,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -61345,61 +61508,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 60.0,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -61538,15 +61646,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -62254,8 +62362,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -62747,8 +62855,8 @@
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -63159,8 +63267,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Count",
             "default": 1
           }
@@ -64346,8 +64454,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 3
           },
@@ -65124,7 +65232,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -67393,7 +67501,7 @@
           },
           "attempt_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Attempt Count",
             "default": 0
           },
@@ -67431,7 +67539,7 @@
           },
           "chunk_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Chunk Count",
             "default": 0
           },
@@ -68102,8 +68210,8 @@
           },
           "max_hits_per_page": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Hits Per Page",
             "default": 5
           }
@@ -68337,15 +68445,15 @@
         "properties": {
           "x": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "X",
             "description": "0=left, 1=right"
           },
           "y": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Y",
             "description": "0=top, 1=bottom"
           }
@@ -68908,8 +69016,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -69771,8 +69879,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "default": 90
           },
@@ -70390,8 +70498,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Count"
           },
           "uniqueness": {
@@ -72251,8 +72359,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 200
           }
@@ -74041,8 +74149,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -75262,8 +75370,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           }
@@ -75988,7 +76096,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -75999,8 +76107,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -76438,7 +76546,7 @@
           "cost": {
             "type": "number",
             "title": "Cost",
-            "default": 0.0
+            "default": 0
           },
           "input_tokens": {
             "type": "integer",
@@ -77028,29 +77136,29 @@
         "properties": {
           "chunk_count": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Chunk Count",
             "default": 10
           },
           "chunk_delay_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 0.0,
+            "maximum": 60000,
+            "minimum": 0,
             "title": "Chunk Delay Ms",
             "default": 200
           },
           "heartbeat_interval_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 1000.0,
+            "maximum": 60000,
+            "minimum": 1000,
             "title": "Heartbeat Interval Ms",
             "default": 10000
           },
           "max_lifetime_ms": {
             "type": "integer",
-            "maximum": 600000.0,
-            "minimum": 1000.0,
+            "maximum": 600000,
+            "minimum": 1000,
             "title": "Max Lifetime Ms",
             "default": 120000
           },
@@ -78704,7 +78812,7 @@
           },
           "daily_series": {
             "items": {
-              "$ref": "#/components/schemas/DailySpendPoint"
+              "$ref": "#/components/schemas/aidream__services__knowledge_graph__wire__DailySpendPoint"
             },
             "type": "array",
             "title": "Daily Series"
@@ -79482,16 +79590,16 @@
           },
           "fill_opacity": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Fill Opacity",
             "default": 0.18
           },
           "stroke_width": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Stroke Width",
-            "default": 2.0
+            "default": 2
           },
           "label": {
             "anyOf": [
@@ -79506,9 +79614,9 @@
           },
           "font_size": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Font Size",
-            "default": 10.0
+            "default": 10
           }
         },
         "type": "object",
@@ -79594,6 +79702,59 @@
           "page_id"
         ],
         "title": "PageAnalyzeBody"
+      },
+      "PageAuditBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "PageAuditBody"
       },
       "PageDetail": {
         "properties": {
@@ -80200,7 +80361,7 @@
           },
           "use_ocr_threshold": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Use Ocr Threshold",
             "default": 100
           }
@@ -80305,12 +80466,12 @@
         "properties": {
           "output_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Output Page"
           },
           "source_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page"
           }
         },
@@ -80325,12 +80486,12 @@
         "properties": {
           "start": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Start"
           },
           "end": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "End"
           }
         },
@@ -80373,8 +80534,8 @@
           },
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -80406,14 +80567,14 @@
           },
           "source_page_count": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page Count"
           },
           "source_size_bytes": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -80423,7 +80584,7 @@
           },
           "source_bytes_fetched": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Source Bytes Fetched",
             "default": 0
           },
@@ -81958,8 +82119,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 1.0
+                "maximum": 20,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -82042,7 +82203,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -82054,7 +82215,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -82501,8 +82662,8 @@
           },
           "n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "N",
             "default": 5
           }
@@ -82594,12 +82755,12 @@
           },
           "width": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Width"
           },
           "height": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Height"
           },
           "format": {
@@ -82615,8 +82776,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Ignored for png",
             "default": 85
@@ -82844,7 +83005,7 @@
           "heartbeat_interval_s": {
             "type": "number",
             "title": "Heartbeat Interval S",
-            "default": 15.0
+            "default": 15
           },
           "debug": {
             "type": "boolean",
@@ -83331,6 +83492,55 @@
         ],
         "title": "ProviderScheduleStatus"
       },
+      "ProviderSpendRow": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "reported_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Reported Cost"
+          },
+          "estimated_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Estimated Cost"
+          },
+          "effective_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Effective Cost"
+          },
+          "run_count": {
+            "type": "integer",
+            "title": "Run Count"
+          },
+          "ceiling_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Ceiling Usd"
+          },
+          "pct_used": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pct Used"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "reported_cost",
+          "estimated_cost",
+          "effective_cost",
+          "run_count",
+          "ceiling_usd",
+          "pct_used"
+        ],
+        "title": "ProviderSpendRow"
+      },
       "ProviderTaskEvidenceOut": {
         "properties": {
           "id": {
@@ -83758,8 +83968,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -84091,8 +84301,8 @@
           },
           "cadence_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Cadence Days",
             "default": 7
           },
@@ -84269,8 +84479,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -84717,8 +84927,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence"
           },
           "run_id": {
@@ -85058,15 +85268,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           },
@@ -85086,7 +85296,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "x0": {
@@ -85149,7 +85359,7 @@
           },
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -85282,7 +85492,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -85759,8 +85969,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 300.0,
-            "minimum": 8.0,
+            "maximum": 300,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -85778,8 +85988,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -85849,14 +86059,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
-            "maximum": 600.0,
-            "minimum": 8.0,
+            "maximum": 600,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -85874,8 +86084,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -85927,8 +86137,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 400.0,
-            "minimum": 36.0,
+            "maximum": 400,
+            "minimum": 36,
             "title": "Dpi",
             "default": 144
           },
@@ -86038,14 +86248,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
-            "maximum": 2048.0,
-            "minimum": 16.0,
+            "maximum": 2048,
+            "minimum": 16,
             "title": "Max Side",
             "default": 256
           },
@@ -86062,8 +86272,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -86352,8 +86562,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Limit",
             "default": 100
           },
@@ -86556,8 +86766,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -86786,8 +86996,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -87049,8 +87259,8 @@
           },
           "max_chars": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Max Chars",
             "default": 5000
           }
@@ -87499,8 +87709,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -87619,7 +87829,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -87630,8 +87840,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -87801,6 +88011,87 @@
           "members"
         ],
         "title": "RichMembersResponse"
+      },
+      "RobotsCheckBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          },
+          "paths": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paths"
+          },
+          "user_agents": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agents"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "RobotsCheckBody"
       },
       "RotatePageBody": {
         "properties": {
@@ -88111,7 +88402,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "total_input_tokens": {
             "type": "integer",
@@ -88355,8 +88646,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -88368,8 +88659,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 1.0
+                "maximum": 20,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -89233,8 +89524,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -89242,8 +89533,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 256.0,
-                "minimum": 1.0
+                "maximum": 256,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -89292,7 +89583,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           }
         },
         "type": "object",
@@ -89367,7 +89658,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           },
           "idempotency_key": {
             "anyOf": [
@@ -90374,8 +90665,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -90390,8 +90681,8 @@
           },
           "max_page_read": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Page Read",
             "default": 10
           },
@@ -90471,8 +90762,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -90490,8 +90781,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 30.0,
-            "minimum": 10.0,
+            "maximum": 30,
+            "minimum": 10,
             "title": "Total Results Per Keyword",
             "default": 10
           },
@@ -90580,8 +90871,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Total Results Per Keyword",
             "default": 5
           },
@@ -90675,6 +90966,70 @@
           "raw_provider"
         ],
         "title": "SeoCapability"
+      },
+      "SeoSpendSummaryResponse": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "this_month": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderSpendRow"
+            },
+            "type": "array",
+            "title": "This Month"
+          },
+          "last_month": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderSpendRow"
+            },
+            "type": "array",
+            "title": "Last Month"
+          },
+          "daily_series": {
+            "items": {
+              "$ref": "#/components/schemas/aidream__services__seo__spend__DailySpendPoint"
+            },
+            "type": "array",
+            "title": "Daily Series"
+          },
+          "org_provider_monthly_ceiling_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Org Provider Monthly Ceiling Usd"
+          },
+          "global_provider_monthly_ceiling_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Global Provider Monthly Ceiling Usd"
+          },
+          "recent_budget_rejections": {
+            "items": {
+              "$ref": "#/components/schemas/BudgetRejectionRow"
+            },
+            "type": "array",
+            "title": "Recent Budget Rejections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "generated_at",
+          "this_month",
+          "last_month",
+          "daily_series",
+          "org_provider_monthly_ceiling_usd",
+          "global_provider_monthly_ceiling_usd",
+          "recent_budget_rejections"
+        ],
+        "title": "SeoSpendSummaryResponse"
       },
       "SerpLandscape": {
         "properties": {
@@ -91212,8 +91567,8 @@
           },
           "event_spacing_ms": {
             "type": "integer",
-            "maximum": 5000.0,
-            "minimum": 0.0,
+            "maximum": 5000,
+            "minimum": 0,
             "title": "Event Spacing Ms",
             "description": "Milliseconds to wait between simulated events.",
             "default": 250
@@ -92288,7 +92643,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -92299,8 +92654,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -92391,7 +92746,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -92399,10 +92754,10 @@
           },
           "expand_pad_pt": {
             "type": "number",
-            "maximum": 20.0,
-            "minimum": 0.0,
+            "maximum": 20,
+            "minimum": 0,
             "title": "Expand Pad Pt",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -93571,7 +93926,7 @@
           "confidence": {
             "type": "number",
             "title": "Confidence",
-            "default": 0.0
+            "default": 0
           },
           "reason": {
             "type": "string",
@@ -93741,21 +94096,74 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
         },
         "type": "object",
         "title": "StripRepeatedRegionsRequest"
+      },
+      "StructuredDataValidateBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "StructuredDataValidateBody"
       },
       "StuckRow": {
         "properties": {
@@ -96972,8 +97380,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -97041,7 +97449,7 @@
           "total_estimated_cost_usd": {
             "type": "number",
             "title": "Total Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "page_analyses": {
             "$ref": "#/components/schemas/CostBreakdownItem"
@@ -100403,8 +100811,8 @@
           },
           "next_n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Next N",
             "default": 5
           }
@@ -102100,18 +102508,18 @@
           "x": {
             "type": "number",
             "title": "X",
-            "default": 0.0
+            "default": 0
           },
           "y": {
             "type": "number",
             "title": "Y",
-            "default": 0.0
+            "default": 0
           },
           "zoom": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Zoom",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -103718,12 +104126,12 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "avg_run_cost_usd": {
             "type": "number",
             "title": "Avg Run Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "runs_per_day": {
             "items": {
@@ -103935,8 +104343,8 @@
           },
           "max_hits": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Max Hits",
             "default": 200
           },
@@ -103971,8 +104379,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -104036,8 +104444,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
             "default": 1
@@ -104299,6 +104707,25 @@
         ],
         "title": "RestoreResponse"
       },
+      "aidream__services__knowledge_graph__wire__DailySpendPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "cost_usd"
+        ],
+        "title": "DailySpendPoint"
+      },
       "aidream__services__rag__library_streams__IngestRequest": {
         "properties": {
           "source_kind": {
@@ -104350,6 +104777,32 @@
           "source_id"
         ],
         "title": "IngestRequest"
+      },
+      "aidream__services__seo__spend__DailySpendPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "effective_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Effective Cost"
+          },
+          "run_count": {
+            "type": "integer",
+            "title": "Run Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "effective_cost",
+          "run_count"
+        ],
+        "title": "DailySpendPoint"
       },
       "matrx_scheduler__api__schemas__DeletedResponse": {
         "properties": {
@@ -104472,7 +104925,7 @@
         ],
         "title": "ScannerStatusResponse"
       },
-      "matrx_seo__standalone__app__RunListResponse": {
+      "matrx_seo__api_contracts__RunListResponse": {
         "properties": {
           "organization_id": {
             "type": "string",

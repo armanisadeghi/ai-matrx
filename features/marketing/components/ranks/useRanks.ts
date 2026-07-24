@@ -15,7 +15,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
-import type { paths } from "@/types/python-generated/api-types";
 import { extractErrorMessage } from "@/utils/errors";
 import type {
   AddRankTargetInput,
@@ -25,18 +24,11 @@ import type {
   UpdateRankTargetInput,
 } from "./types";
 
-// TODO(deploy): WS-10 rank-tracking routes are new backend routes, not yet
-// regenerated into api-types.ts. Drop these casts once the backend deploys
-// and the OpenAPI type sync runs.
-const RANK_TARGETS_PATH =
-  "/seo/sites/{site_id}/rank-targets" as unknown as keyof paths;
-const RANK_TARGET_PATH = "/seo/rank-targets/{target_id}" as unknown as keyof paths;
-const RANK_TARGET_HISTORY_PATH =
-  "/seo/rank-targets/{target_id}/history" as unknown as keyof paths;
-const RANK_TARGET_LANDSCAPE_PATH =
-  "/seo/rank-targets/{target_id}/landscape" as unknown as keyof paths;
-const RANK_TARGET_CHECK_PATH =
-  "/seo/rank-targets/{target_id}/check" as unknown as keyof paths;
+const RANK_TARGETS_PATH = "/seo/sites/{site_id}/rank-targets";
+const RANK_TARGET_PATH = "/seo/rank-targets/{target_id}";
+const RANK_TARGET_HISTORY_PATH = "/seo/rank-targets/{target_id}/history";
+const RANK_TARGET_LANDSCAPE_PATH = "/seo/rank-targets/{target_id}/landscape";
+const RANK_TARGET_CHECK_PATH = "/seo/rank-targets/{target_id}/check";
 
 export function usePortfolio(siteId: string) {
   const dispatch = useAppDispatch();

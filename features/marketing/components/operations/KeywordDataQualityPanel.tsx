@@ -18,14 +18,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import type { paths } from "@/types/python-generated/api-types";
 import { extractErrorMessage } from "@/utils/errors";
 
-// TODO(deploy): these routes are already live server-side (2026-07-23) but
-// were never called from the frontend (DEF-25) so they never made it into
-// api-types.ts. Drop the cast once the OpenAPI sync includes them.
-const CLASSIFY_PATH = "/seo/keywords/classify" as unknown as keyof paths;
-const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics" as unknown as keyof paths;
+const CLASSIFY_PATH = "/seo/keywords/classify";
+const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";
 
 interface ClassifyResult {
   eligible: number;

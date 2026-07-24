@@ -15,13 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import type { paths } from "@/types/python-generated/api-types";
 import { extractErrorMessage } from "@/utils/errors";
 
-// TODO(deploy): new backend route, not yet regenerated into api-types.ts.
-// Drop this cast once the backend deploys and the OpenAPI type sync runs.
-const SCHEDULE_STATUS_PATH =
-  "/seo/sites/{site_id}/schedule-status" as unknown as keyof paths;
+const SCHEDULE_STATUS_PATH = "/seo/sites/{site_id}/schedule-status";
 
 interface ProviderScheduleStatus {
   provider: string;

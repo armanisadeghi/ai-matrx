@@ -17,13 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import type { paths } from "@/types/python-generated/api-types";
 import { extractErrorMessage } from "@/utils/errors";
 
-// TODO(deploy): confirm this path is present in api-types.ts once regenerated
-// against the deployed backend (route already exists server-side today).
-const STRATEGY_INTERVIEW_PATH =
-  "/seo/sites/strategy-interview" as unknown as keyof paths;
+const STRATEGY_INTERVIEW_PATH = "/seo/sites/strategy-interview";
 
 interface StrategyInterviewResult {
   valuations_written: number;

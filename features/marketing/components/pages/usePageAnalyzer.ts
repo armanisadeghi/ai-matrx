@@ -14,12 +14,8 @@ import { useCallback, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
-import type { paths } from "@/types/python-generated/api-types";
 
-// TODO(WS-11 deploy): `/seo/pages/analyze` and `/seo/pages/map-keywords` are
-// new backend routes, not yet regenerated into api-types.ts. Drop this cast
-// once the backend deploys and the OpenAPI type sync runs.
-const PAGE_ANALYZE_PATH = "/seo/pages/analyze" as unknown as keyof paths;
+const PAGE_ANALYZE_PATH = "/seo/pages/analyze";
 
 export interface PageAnalysisKeywordRef {
   phrase: string;

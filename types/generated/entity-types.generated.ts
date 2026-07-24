@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 295 active entity tokens. A token here is FK-valid for
+// 302 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -225,8 +225,15 @@ export type EntityTypeToken =
   | "scraper_run"
   | "scraper_schedule"
   | "scraper_site"
+  | "seo_collection_run"
   | "seo_keyword"
+  | "seo_keyword_edge"
+  | "seo_keyword_market"
+  | "seo_keyword_topic"
   | "seo_rank_target"
+  | "seo_site_keyword_value"
+  | "seo_site_topic_value"
+  | "seo_topic"
   | "share_link"
   | "shared_canvas_item"
   | "shortcut_category"
@@ -406,6 +413,7 @@ export type ReferencePickableEntityToken =
   | "scraper_preset"
   | "scraper_schedule"
   | "scraper_site"
+  | "seo_topic"
   | "shared_canvas_item"
   | "skill"
   | "skill_render_definition"
@@ -502,6 +510,8 @@ export type ComponentEntityToken =
   | "sch_agent_task"
   | "sch_run"
   | "sch_trigger"
+  | "seo_site_keyword_value"
+  | "seo_site_topic_value"
   | "sms_message"
   | "sms_message_media"
   | "studio_documents"
@@ -715,8 +725,15 @@ export type ScopeableEntityToken =
   | "scraper_run"
   | "scraper_schedule"
   | "scraper_site"
+  | "seo_collection_run"
   | "seo_keyword"
+  | "seo_keyword_edge"
+  | "seo_keyword_market"
+  | "seo_keyword_topic"
   | "seo_rank_target"
+  | "seo_site_keyword_value"
+  | "seo_site_topic_value"
+  | "seo_topic"
   | "shared_canvas_item"
   | "shortcut_category"
   | "skill"
@@ -1037,8 +1054,15 @@ export const ENTITY_TYPE_METADATA = {
   "scraper_run": { token: "scraper_run", schema: "scraper", table: "crawl_runs", label: "Crawl Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "scraper_schedule": { token: "scraper_schedule", schema: "scraper", table: "crawl_schedules", label: "Crawl Schedule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "scraper_site": { token: "scraper_site", schema: "scraper", table: "sites", label: "Tracked Website", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
-  "seo_keyword": { token: "seo_keyword", schema: "seo", table: "keyword", label: "SEO Keyword", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_collection_run": { token: "seo_collection_run", schema: "seo", table: "collection_run", label: "SEO Collection Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_keyword": { token: "seo_keyword", schema: "seo", table: "keyword", label: "SEO Keyword", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: "phrase", contentRole: null, referenceCategory: null },
+  "seo_keyword_edge": { token: "seo_keyword_edge", schema: "seo", table: "keyword_edge", label: "Keyword Edge", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_keyword_market": { token: "seo_keyword_market", schema: "seo", table: "keyword_market", label: "Keyword Market Data", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_keyword_topic": { token: "seo_keyword_topic", schema: "seo", table: "keyword_topic", label: "Keyword Topic Assignment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_rank_target": { token: "seo_rank_target", schema: "seo", table: "rank_target", label: "SEO Rank Target", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_site_keyword_value": { token: "seo_site_keyword_value", schema: "seo", table: "site_keyword_value", label: "Site Keyword Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_site_topic_value": { token: "seo_site_topic_value", schema: "seo", table: "site_topic_value", label: "Site Topic Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_topic": { token: "seo_topic", schema: "seo", table: "topic", label: "SEO Topic", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "share_link": { token: "share_link", schema: "graveyard", table: "files_share_links", label: "Share Link", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "System", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "shared_canvas_item": { token: "shared_canvas_item", schema: "canvas", table: "shared_canvas_items", label: "Shared Canvas Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "shortcut_category": { token: "shortcut_category", schema: "graveyard", table: "shortcut_categories_legacy", label: "Shortcut Category", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1336,8 +1360,15 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "scraper_run",
   "scraper_schedule",
   "scraper_site",
+  "seo_collection_run",
   "seo_keyword",
+  "seo_keyword_edge",
+  "seo_keyword_market",
+  "seo_keyword_topic",
   "seo_rank_target",
+  "seo_site_keyword_value",
+  "seo_site_topic_value",
+  "seo_topic",
   "share_link",
   "shared_canvas_item",
   "shortcut_category",

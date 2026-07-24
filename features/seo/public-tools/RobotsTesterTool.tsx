@@ -8,8 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { postNdjson } from "@/lib/python-client";
-import { getFingerprint } from "@/lib/services/fingerprint-service";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { callApi } from "@/lib/api/call-api";
 
 interface RobotsPathCheck {
   path: string;
@@ -35,6 +35,7 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 export function RobotsTesterTool() {
+  const dispatch = useAppDispatch();
   const [url, setUrl] = useState("");
   const [path, setPath] = useState("/");
   const [running, setRunning] = useState(false);
@@ -50,35 +51,39 @@ export function RobotsTesterTool() {
     setResult(null);
     setStage("Connecting");
     try {
-      const fingerprint = await getFingerprint();
       const paths = path.trim() ? [path.trim()] : ["/"];
-      for await (const evt of postNdjson(
-        "/seo/public/robots-check",
-        { url: target, paths, user_agents: ["*", "Googlebot"] },
-        { guestFingerprint: fingerprint },
-      )) {
-        if (evt.event === "error") {
-          setError(evt.data.user_message ?? evt.data.message);
-          continue;
-        }
-        if (evt.event !== "data") continue;
-        const data = evt.data as unknown as Record<string, unknown>;
-        const kind = typeof data.kind === "string" ? data.kind : null;
-        if (!kind) continue;
-        if (kind === "seo.robots_check_result") {
-          const final = data.result as RobotsCheckResult | undefined;
-          if (final) setResult(final);
-          continue;
-        }
-        setStage(STAGE_LABELS[kind] ?? kind);
-      }
+      const response = await dispatch(
+        callApi({
+          path: "/seo/public/robots-check",
+          method: "POST",
+          body: { url: target, paths, user_agents: ["*", "Googlebot"] },
+          stream: true,
+          onStreamEvent: (evt) => {
+            if (evt.event === "error") {
+              setError(evt.data.user_message ?? evt.data.message);
+              return;
+            }
+            if (evt.event !== "data") return;
+            const data = evt.data as unknown as Record<string, unknown>;
+            const kind = typeof data.kind === "string" ? data.kind : null;
+            if (!kind) return;
+            if (kind === "seo.robots_check_result") {
+              const final = data.result as RobotsCheckResult | undefined;
+              if (final) setResult(final);
+              return;
+            }
+            setStage(STAGE_LABELS[kind] ?? kind);
+          },
+        }),
+      );
+      if (response.error) throw new Error(response.error.message);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setRunning(false);
       setStage(null);
     }
-  }, [url, path, running]);
+  }, [url, path, running, dispatch]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
