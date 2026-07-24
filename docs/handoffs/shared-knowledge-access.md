@@ -96,6 +96,41 @@ README §1). What remains:
    container access (P4 left them unregistered, documented in `features/rag/FEATURE.md`) —
    confirm or change.
 
+## Session-2 (2026-07-23 PM) — landed + two open decisions
+
+**Landed this session (all live + ledgered):** aidream confirmed deployed (prod container on the
+commit carrying P1/P2/P4 server work; ingest + gated-grants endpoints respond). D-G closed the
+clean way — `/health/version` reads Coolify's runtime `SOURCE_COMMIT` (no build-arg wiring
+needed). **Admin gating lowered to ANY admin** across the shared-knowledge issuance + admin-read
+surface per Arman's directive (`migrations/library_issuance_any_admin_gate.sql`, aidream
+`179af9d6a`; verified developer-tier admin now lists grants, non-admin refused). **Industry
+soft-delete** shipped (`industry_set_active` RPC + console Archive/Restore, browser+DB verified).
+D89 fixed. Access doc-truth corrected (conveyance is not read-only). Final adversarial pass found
++ fixed a cross-user oracle and a service-role regression.
+
+**Open decision A — `/administration` FE layout is super-admin-only.** The DB/HTTP authorization
+for shared-knowledge is now any-admin, but `app/(admin)/layout.tsx` still hard-redirects every
+non-super-admin away from the *entire* `/administration` tree — so a senior_admin/developer still
+can't reach the console UI. Lowering that layout to any-admin is a platform-wide posture change
+affecting every admin page (not just shared-knowledge), so it was NOT flipped unilaterally.
+**Arman's call:** lower the whole admin tree to any-admin (pages needing super-admin self-gate;
+protected resources are already DB-gated), or keep it super-admin and give shared-knowledge its
+own any-admin route outside the layout.
+
+**Open decision B — project/task access conveyance.** Audit finding: project membership ALREADY
+conveys full read+edit to notes, agents, research topics, and (via FK) tasks — live-verified, so
+collaboration on those works today. Gaps: `file`, `data_store`, `working_document`,
+`processed_document`, `thread` have no project/task containment edge (attached files/docs don't
+inherit project access), and `project→task→note` isn't transitive (`task→project` is an FK edge
+the reachability builder doesn't walk). Arman's directive ("projects/tasks convey everything, at
+the member's level, read+edit") authorizes registering these as `conveys_max='editor'` edges — but
+three things need his explicit ruling before touching the access spine: (1) `file→project/task`
+at **editor** means a project editor can edit/delete any attached file — confirm editor vs viewer
+per type; (2) his blanket directive conflicts with the deliberate 2026-07-16 ruling that
+`project→scope` conveys **viewer only** — keep or override; (3) `chat→project` is intentionally
+personal-by-default (attached chats stay private) — keep or override. Registering the edges is a
+reachability-closure change requiring adversarial review, not a rushed end-of-session flip.
+
 ## Done
 
 - Grant → reachability → judge cascade live and prod-proven — see `migrations/library_store_file_reachability_cascade.sql` + `migrations/library_reachability_cascade_hardening.sql`.
