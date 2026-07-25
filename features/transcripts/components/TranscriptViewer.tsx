@@ -89,6 +89,7 @@ export function TranscriptViewer() {
   const buildSurfaceScope = useTranscriptsSurfaceScope({
     audioRef,
     isEditingMetadata,
+    isEditingContent,
     contentContainerRef: segmentContainerRef,
   });
   const surfaceScope = buildSurfaceScope();
@@ -126,8 +127,12 @@ export function TranscriptViewer() {
         ? !audioRef.current.paused && !audioRef.current.ended
         : false,
       playbackSpeed: audioRef.current?.playbackRate ?? 1,
+      volume: audioRef.current?.volume,
+      audioDurationSeconds: audioRef.current?.duration,
       selectionText: selectedText,
       isEditingMetadata,
+      // This callback IS the inline body editor's scope path.
+      isEditingContent: true,
     });
     // The editable buffer is the plain in-flight text; the surface `content`
     // baseline must reflect what the user is editing, not the timecoded

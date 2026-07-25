@@ -100,6 +100,12 @@ export interface BuildTranscriptsContextDataArgs {
   selectionText?: string;
   /** True when the title/description metadata editor is open. */
   isEditingMetadata?: boolean;
+  /** True when the inline transcript-body editor is open (drives `editor_mode: "edit-segments"`). */
+  isEditingContent?: boolean;
+  /** Audio player volume (0-1), read off the `<audio>` element. */
+  volume?: number;
+  /** Loaded audio duration in seconds, read off the `<audio>` element. Undefined until metadata loads. */
+  audioDurationSeconds?: number;
 }
 
 /**
@@ -122,6 +128,9 @@ export function buildTranscriptsContextData(
     playbackSpeed,
     selectionText = "",
     isEditingMetadata = false,
+    isEditingContent = false,
+    volume,
+    audioDurationSeconds,
   } = args;
 
   const transcriptOpen = transcript != null;
@@ -156,7 +165,26 @@ export function buildTranscriptsContextData(
       : undefined;
 
   const editorMode: "view" | "edit-metadata" | "edit-segments" =
-    isEditingMetadata ? "edit-metadata" : "view";
+    isEditingContent
+      ? "edit-segments"
+      : isEditingMetadata
+        ? "edit-metadata"
+        : "view";
+
+  const recordingDate =
+    typeof transcript?.metadata?.recordingDate === "string"
+      ? transcript.metadata.recordingDate
+      : undefined;
+  const storedWordCount =
+    typeof transcript?.metadata?.wordCount === "number"
+      ? transcript.metadata.wordCount
+      : undefined;
+  const audioDuration =
+    typeof audioDurationSeconds === "number" &&
+    Number.isFinite(audioDurationSeconds) &&
+    audioDurationSeconds > 0
+      ? audioDurationSeconds
+      : undefined;
 
   const surround: Record<string, unknown> = {
     active_scope_kind: activeScopeKind,
@@ -172,6 +200,8 @@ export function buildTranscriptsContextData(
     // Required (alwaysAvailable: true)
     active_scope_kind: activeScopeKind,
     speaker_list: speakerList,
+    speaker_count: speakerList.length,
+    segment_count: segments.length,
     has_video: Boolean(transcript?.video_file_path),
     editor_mode: editorMode,
 
@@ -189,6 +219,15 @@ export function buildTranscriptsContextData(
     current_segment_timecode: currentSegment
       ? formatTimecode(currentSegment.seconds)
       : undefined,
+    current_segment: currentSegment
+      ? {
+          id: currentSegment.id,
+          text: currentSegment.text,
+          speaker: currentSegment.speaker || undefined,
+          seconds: currentSegment.seconds,
+          timecode: formatTimecode(currentSegment.seconds),
+        }
+      : undefined,
     current_playback_time: transcriptOpen ? currentTime : undefined,
 
     // Transcript identity & metadata
@@ -197,8 +236,13 @@ export function buildTranscriptsContextData(
     transcript_description: transcript?.description || undefined,
     transcript_source_type: transcript?.source_type,
     transcript_duration_seconds: durationFromMetadata,
+    transcript_recording_date: recordingDate,
+    transcript_word_count: storedWordCount,
     transcript_tags: transcript?.tags ?? undefined,
     transcript_folder: transcript?.folder_name || undefined,
+    transcript_created_at: transcript?.created_at,
+    transcript_updated_at: transcript?.updated_at,
+    transcript_is_draft: transcriptOpen ? transcript.is_draft : undefined,
 
     // Speaker dimension
     per_speaker_text:
@@ -216,10 +260,22 @@ export function buildTranscriptsContextData(
       : undefined,
     all_segments_text: transcriptOpen ? joinedText : undefined,
 
-    // Media + editor state
+    // Media + player state
     audio_file_path: transcript?.audio_file_path ?? undefined,
+    video_file_path: transcript?.video_file_path ?? undefined,
     is_playing: transcriptOpen ? isPlaying : undefined,
     playback_speed: transcriptOpen ? playbackSpeed : undefined,
+    audio_duration_seconds: transcriptOpen ? audioDuration : undefined,
+    playback_volume: transcriptOpen ? volume : undefined,
+    playback_state: transcriptOpen
+      ? {
+          is_playing: isPlaying,
+          current_time: currentTime,
+          playback_speed: playbackSpeed,
+          volume,
+          duration: audioDuration,
+        }
+      : undefined,
   });
 
   return scope as Record<string, unknown>;

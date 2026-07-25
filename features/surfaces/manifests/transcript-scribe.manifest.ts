@@ -19,6 +19,18 @@
  * speakers) that the live studio does not emit; inheriting would advertise
  * values this surface never supplies. Generic baselines are auto-injected by
  * the registry.
+ *
+ * Groups audit (2026-07-24): this manifest's five resolved values are all
+ * registry-injected baselines, which land in the reserved synthesized
+ * `baseline` group — there are no own values to curate, so no `groups` are
+ * declared. The studio's rich per-turn context (recording_NN_raw /
+ * session_cleaned / working_document, built in
+ * `features/transcript-studio/service/assistantContextBuilder.ts`) reaches the
+ * assistant via named instance-context entries through `smartExecute`, NOT via
+ * a surface `applicationScope` emitter. Declaring those as surface values
+ * without an emitter would advertise values the launch path never supplies;
+ * when a real surface-scope emitter lands, declare them (with curated groups)
+ * in the same change.
  */
 
 import type { SurfaceManifest } from "@/features/surfaces/types";

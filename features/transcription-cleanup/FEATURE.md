@@ -164,6 +164,7 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-07-24 — Surface-manifest canonicalization: `matrx-user/transcripts-cleanup` now declares canonical value groups (`session` / `texts` / `counts` / `recording_state` / `agents_wiring` / `custom_slots`) with every value assigned; `is_transcript_locked`'s description corrected to match live behavior (the pane stays editable during recording, so the emitter's constant `false` is honest). No emitter changes. DB manifest sync pending.
 - 2026-07-08 — **CleanupPad can be a VIEW over a host-owned recording controller (D14).**
   New optional `externalRecording` prop (`CleanupExternalRecording`: `start` /
   `stop(mode)` / `registerView`). When set, the pad does NOT own the recording

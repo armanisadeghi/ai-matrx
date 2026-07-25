@@ -12,6 +12,9 @@
  * context-menu launches, `content` / `active_pane_text` carry the text of the
  * pane the menu was opened in, and `active_pane` names it.
  *
+ * Canonical value groups: session / texts / counts / recording_state /
+ * agents_wiring / custom_slots (see `groups` below).
+ *
  * Runtime emitter: `CleanupPad.tsx` (`buildScope` + `menuContextData`).
  * Baseline `selection` / `text_before` / `text_after` are captured by
  * `UnifiedAgentContextMenu` itself at trigger time.
@@ -21,6 +24,7 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -42,6 +46,49 @@ export interface CleanupContextItemValue {
   value: string;
 }
 
+const groups: SurfaceValueGroup[] = [
+  {
+    key: "session",
+    label: "Session",
+    sortOrder: 100,
+    description:
+      "The active cleanup session and its structured context blocks.",
+  },
+  {
+    key: "texts",
+    label: "Container texts",
+    sortOrder: 200,
+    description:
+      "The three container texts (raw / clean / custom) and the pane an action fired from.",
+  },
+  {
+    key: "counts",
+    label: "Counts",
+    sortOrder: 300,
+    description: "Derived word/character counts over the container texts.",
+  },
+  {
+    key: "recording_state",
+    label: "Recording state",
+    sortOrder: 400,
+    description:
+      "Live mic capture: recording/transcribing flags, the in-flight stream, and queued inserts.",
+  },
+  {
+    key: "agents_wiring",
+    label: "Agents wiring",
+    sortOrder: 500,
+    description: "The Clean container's assigned agent and its run status.",
+  },
+  {
+    key: "custom_slots",
+    label: "Custom slots",
+    sortOrder: 600,
+    description:
+      "The user-configured custom output slots and the active slot's wiring.",
+  },
+];
+
 const surfaceSpecific: SurfaceValue[] = [
   // ── Active pane (menu launches only) ──────────────────────────────────────
   {
@@ -53,6 +100,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 10,
     sortOrder: 210,
+    group: "texts",
   },
   {
     name: "active_pane_text",
@@ -63,6 +111,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 6000,
     sortOrder: 220,
+    group: "texts",
   },
 
   // ── Session identity ──────────────────────────────────────────────────────
@@ -75,6 +124,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 36,
     sortOrder: 300,
+    group: "session",
   },
   {
     name: "session_title",
@@ -84,6 +134,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 60,
     sortOrder: 310,
+    group: "session",
   },
   {
     name: "session_started_at",
@@ -94,6 +145,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 30,
     sortOrder: 315,
+    group: "session",
   },
 
   // ── Container texts ───────────────────────────────────────────────────────
@@ -106,6 +158,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 8000,
     sortOrder: 320,
+    group: "texts",
   },
   {
     name: "cleaned_transcript_text",
@@ -116,6 +169,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 8000,
     sortOrder: 330,
+    group: "texts",
   },
   {
     name: "custom_output_text",
@@ -126,6 +180,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 6000,
     sortOrder: 340,
+    group: "texts",
   },
   {
     name: "all_custom_outputs",
@@ -136,6 +191,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 8000,
     sortOrder: 345,
+    group: "texts",
   },
 
   // ── Derived stats ─────────────────────────────────────────────────────────
@@ -147,6 +203,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 360,
+    group: "counts",
   },
   {
     name: "raw_char_count",
@@ -156,6 +213,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 6,
     sortOrder: 365,
+    group: "counts",
   },
   {
     name: "cleaned_word_count",
@@ -166,6 +224,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 370,
+    group: "counts",
   },
 
   // ── Recording state ───────────────────────────────────────────────────────
@@ -177,6 +236,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 400,
+    group: "recording_state",
   },
   {
     name: "is_transcribing",
@@ -187,16 +247,18 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 410,
+    group: "recording_state",
   },
   {
     name: "is_transcript_locked",
     label: "Transcript locked",
     description:
-      "True while recording or transcribing — the transcript pane is read-only and text writes to it are blocked.",
+      "True when the transcript pane blocks text writes. Currently always false — the pad allows typing during recording (live chunks merge with edits); retained for bindings and future lock modes.",
     valueType: "boolean",
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 415,
+    group: "recording_state",
   },
   {
     name: "live_transcript_text",
@@ -207,6 +269,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 500,
     sortOrder: 420,
+    group: "recording_state",
   },
   {
     name: "pending_insert_start",
@@ -217,6 +280,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 200,
     sortOrder: 430,
+    group: "recording_state",
   },
   {
     name: "pending_insert_end",
@@ -227,6 +291,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 200,
     sortOrder: 435,
+    group: "recording_state",
   },
 
   // ── Agent wiring ──────────────────────────────────────────────────────────
@@ -239,6 +304,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 36,
     sortOrder: 500,
+    group: "agents_wiring",
   },
   {
     name: "clean_agent_name",
@@ -249,6 +315,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 30,
     sortOrder: 505,
+    group: "agents_wiring",
   },
   {
     name: "clean_run_status",
@@ -259,6 +326,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 10,
     sortOrder: 510,
+    group: "agents_wiring",
   },
   {
     name: "active_slot_index",
@@ -268,6 +336,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 1,
     sortOrder: 515,
+    group: "custom_slots",
   },
   {
     name: "active_slot_agent_id",
@@ -278,6 +347,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 36,
     sortOrder: 520,
+    group: "custom_slots",
   },
   {
     name: "active_slot_agent_name",
@@ -288,6 +358,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 30,
     sortOrder: 525,
+    group: "custom_slots",
   },
   {
     name: "active_slot_source",
@@ -298,6 +369,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 530,
+    group: "custom_slots",
   },
   {
     name: "active_slot_auto_run",
@@ -308,6 +380,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 535,
+    group: "custom_slots",
   },
   {
     name: "active_slot_run_status",
@@ -318,6 +391,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 10,
     sortOrder: 540,
+    group: "custom_slots",
   },
   {
     name: "custom_slot_count",
@@ -327,6 +401,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 1,
     sortOrder: 550,
+    group: "custom_slots",
   },
   {
     name: "custom_slots_summary",
@@ -337,6 +412,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 400,
     sortOrder: 555,
+    group: "custom_slots",
   },
 
   // ── Context items ─────────────────────────────────────────────────────────
@@ -349,6 +425,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 1500,
     sortOrder: 600,
+    group: "session",
   },
   {
     name: "context_item_count",
@@ -358,6 +435,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 1,
     sortOrder: 610,
+    group: "session",
   },
 ];
 
@@ -367,6 +445,7 @@ export const transcriptsCleanupManifest: SurfaceManifest = {
   // bindings declared on the parent; page-specific values below override.
   inheritsFrom: "matrx-user/transcripts",
   label: "Transcript Cleanup",
+  groups,
   values: mergeBaselineValues(
     pickBaseline(
       "selection",

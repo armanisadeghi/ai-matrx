@@ -33,6 +33,11 @@ export interface UseTranscriptsSurfaceScopeParams {
    */
   isEditingMetadata: boolean;
   /**
+   * True while the inline transcript-body editor is open. Drives
+   * `editor_mode: "edit-segments"`. Defaults to false.
+   */
+  isEditingContent?: boolean;
+  /**
    * Optional container element. When provided, browser text selections are
    * only honored if the selection's anchor is inside it (avoids reading a
    * sidebar selection as if it were transcript content).
@@ -60,7 +65,12 @@ function getSelectionInside(
 export function useTranscriptsSurfaceScope(
   params: UseTranscriptsSurfaceScopeParams,
 ): () => SurfaceScopePayload {
-  const { audioRef, isEditingMetadata, contentContainerRef } = params;
+  const {
+    audioRef,
+    isEditingMetadata,
+    isEditingContent = false,
+    contentContainerRef,
+  } = params;
   const { activeTranscript } = useTranscriptsContext();
 
   return useCallback(() => {
@@ -74,8 +84,17 @@ export function useTranscriptsSurfaceScope(
       currentTime,
       isPlaying,
       playbackSpeed,
+      volume: audio?.volume,
+      audioDurationSeconds: audio?.duration,
       selectionText: getSelectionInside(contentContainerRef),
       isEditingMetadata,
+      isEditingContent,
     }) as SurfaceScopePayload;
-  }, [activeTranscript, audioRef, contentContainerRef, isEditingMetadata]);
+  }, [
+    activeTranscript,
+    audioRef,
+    contentContainerRef,
+    isEditingMetadata,
+    isEditingContent,
+  ]);
 }

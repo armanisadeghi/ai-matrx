@@ -26,25 +26,64 @@
  * existing agent integrations whose scope vocabulary must be preserved.
  * That manifest is intentionally NOT a child of this one.
  *
- * Sort order groups (drives binding-editor grouping):
+ * Canonical value groups (drives binding-editor + on-page chrome grouping):
  *
- *   100-200   Baseline (selection, content, context)
- *   210-260   Selection / segment / playback mirror
- *   300-349   Transcript identity & metadata
- *   350-369   Speaker dimension
- *   370-389   Segments dimension
- *   400-449   Media + editor state
+ *   transcript_identity — which transcript is open + its stored metadata
+ *   playback            — the audio timeline: cursor segment + player state
+ *   segments            — the body as structured segments / joined text
+ *   speakers            — the speaker dimension
+ *   editor_state        — what the user is acting on and which editor is open
+ *
+ * Runtime emitter: `useTranscriptsSurfaceScope` (TranscriptViewer) →
+ * `buildTranscriptsContextData` → `createTranscriptsScope`.
  */
 
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
+const groups: SurfaceValueGroup[] = [
+  {
+    key: "transcript_identity",
+    label: "Transcript identity",
+    sortOrder: 100,
+    description: "Which transcript is open and its stored metadata.",
+  },
+  {
+    key: "playback",
+    label: "Playback",
+    sortOrder: 200,
+    description:
+      "The audio timeline: the segment under the playback cursor plus live player and media state.",
+  },
+  {
+    key: "segments",
+    label: "Segments",
+    sortOrder: 300,
+    description:
+      "The transcript body as structured segments and as joined text.",
+  },
+  {
+    key: "speakers",
+    label: "Speakers",
+    sortOrder: 400,
+    description: "The speaker dimension rolled up across segments.",
+  },
+  {
+    key: "editor_state",
+    label: "Editor state",
+    sortOrder: 500,
+    description:
+      "What the user is acting on right now and which editor (if any) is open.",
+  },
+];
+
 const surfaceSpecific: SurfaceValue[] = [
-  // ── Selection / segment / playback mirror (210-260) ───────────────────
+  // ── Editor state / active focus ────────────────────────────────────────
   {
     name: "active_text",
     label: "Active text",
@@ -54,6 +93,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 4000,
     sortOrder: 210,
+    group: "editor_state",
   },
   {
     name: "active_scope_kind",
@@ -64,7 +104,21 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 10,
     sortOrder: 220,
+    group: "editor_state",
   },
+  {
+    name: "editor_mode",
+    label: "Editor mode",
+    description:
+      '"view" when the user is reading, "edit-metadata" when the title/description editor is open, "edit-segments" when the inline transcript-body editor is open. Lets actions adapt or refuse based on what the user is currently doing.',
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 16,
+    sortOrder: 430,
+    group: "editor_state",
+  },
+
+  // ── Playback — cursor segment ──────────────────────────────────────────
   {
     name: "current_segment_id",
     label: "Current segment ID",
@@ -74,6 +128,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 36,
     sortOrder: 230,
+    group: "playback",
   },
   {
     name: "current_segment_text",
@@ -84,6 +139,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 200,
     sortOrder: 235,
+    group: "playback",
   },
   {
     name: "current_segment_speaker",
@@ -94,6 +150,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 30,
     sortOrder: 240,
+    group: "playback",
   },
   {
     name: "current_segment_start_seconds",
@@ -104,6 +161,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 8,
     sortOrder: 245,
+    group: "playback",
   },
   {
     name: "current_segment_timecode",
@@ -114,6 +172,19 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 8,
     sortOrder: 250,
+    group: "playback",
+  },
+  {
+    name: "current_segment",
+    label: "Current segment",
+    description:
+      "Composite object for the segment under the playback cursor: { id, text, speaker, seconds, timecode }. Mirrors the individual current_segment_* values as one group value (completeness law). Empty when no current segment.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 255,
+    autoContext: false,
+    group: "playback",
   },
   {
     name: "current_playback_time",
@@ -124,9 +195,10 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 8,
     sortOrder: 260,
+    group: "playback",
   },
 
-  // ── Transcript identity & metadata (300-349) ──────────────────────────
+  // ── Transcript identity & metadata ─────────────────────────────────────
   {
     name: "transcript_id",
     label: "Active transcript ID",
@@ -136,6 +208,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 36,
     sortOrder: 300,
+    group: "transcript_identity",
   },
   {
     name: "transcript_title",
@@ -146,6 +219,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 80,
     sortOrder: 310,
+    group: "transcript_identity",
   },
   {
     name: "transcript_description",
@@ -156,6 +230,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 300,
     sortOrder: 315,
+    group: "transcript_identity",
   },
   {
     name: "transcript_source_type",
@@ -166,6 +241,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 12,
     sortOrder: 320,
+    group: "transcript_identity",
   },
   {
     name: "transcript_duration_seconds",
@@ -176,6 +252,29 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 8,
     sortOrder: 325,
+    group: "transcript_identity",
+  },
+  {
+    name: "transcript_recording_date",
+    label: "Recording date",
+    description:
+      "ISO date the source was recorded, when the transcript metadata carries one (`metadata.recordingDate`). Empty when unknown or no transcript is open.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 25,
+    sortOrder: 326,
+    group: "transcript_identity",
+  },
+  {
+    name: "transcript_word_count",
+    label: "Stored word count",
+    description:
+      "Word count stored on the transcript's metadata (`metadata.wordCount`), stamped at creation/import time. Empty when the metadata doesn't carry one or no transcript is open.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 327,
+    group: "transcript_identity",
   },
   {
     name: "transcript_tags",
@@ -186,6 +285,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 100,
     sortOrder: 330,
+    group: "transcript_identity",
   },
   {
     name: "transcript_folder",
@@ -196,9 +296,45 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 32,
     sortOrder: 335,
+    group: "transcript_identity",
+  },
+  {
+    name: "transcript_created_at",
+    label: "Created at",
+    description:
+      "ISO timestamp the active transcript row was created. Empty when no transcript is open.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 25,
+    sortOrder: 340,
+    autoContext: false,
+    group: "transcript_identity",
+  },
+  {
+    name: "transcript_updated_at",
+    label: "Updated at",
+    description:
+      "ISO timestamp the active transcript row was last updated. Empty when no transcript is open.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 25,
+    sortOrder: 342,
+    autoContext: false,
+    group: "transcript_identity",
+  },
+  {
+    name: "transcript_is_draft",
+    label: "Is draft",
+    description:
+      "True when the active transcript is still a recording draft (`is_draft`), false once finalized. Empty when no transcript is open.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    sortOrder: 344,
+    group: "transcript_identity",
   },
 
-  // ── Speaker dimension (350-369) ───────────────────────────────────────
+  // ── Speakers ───────────────────────────────────────────────────────────
   {
     name: "speaker_list",
     label: "Speakers",
@@ -208,6 +344,18 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 200,
     sortOrder: 350,
+    group: "speakers",
+  },
+  {
+    name: "speaker_count",
+    label: "Speaker count",
+    description:
+      "Number of distinct speaker labels across the segments. Always populated — 0 when the transcript has no speaker labels or no transcript is open.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 2,
+    sortOrder: 355,
+    group: "speakers",
   },
   {
     name: "per_speaker_text",
@@ -218,9 +366,10 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 4000,
     sortOrder: 360,
+    group: "speakers",
   },
 
-  // ── Segments dimension (370-389) ──────────────────────────────────────
+  // ── Segments ───────────────────────────────────────────────────────────
   {
     name: "all_segments",
     label: "All segments",
@@ -230,6 +379,18 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 8000,
     sortOrder: 370,
+    group: "segments",
+  },
+  {
+    name: "segment_count",
+    label: "Segment count",
+    description:
+      "Number of segments in the active transcript. Always populated — 0 when no transcript is open.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 4,
+    sortOrder: 375,
+    group: "segments",
   },
   {
     name: "all_segments_text",
@@ -240,9 +401,10 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 12000,
     sortOrder: 380,
+    group: "segments",
   },
 
-  // ── Media + editor state (400-449) ────────────────────────────────────
+  // ── Playback — media + player state ────────────────────────────────────
   {
     name: "audio_file_path",
     label: "Audio file path",
@@ -252,6 +414,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 100,
     sortOrder: 400,
+    group: "playback",
   },
   {
     name: "has_video",
@@ -262,6 +425,19 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 410,
+    group: "playback",
+  },
+  {
+    name: "video_file_path",
+    label: "Video file path",
+    description:
+      "Canonical Files UUID for the source video (`video_file_path` column). Empty when the transcript has no associated video or no transcript is open.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 100,
+    sortOrder: 412,
+    autoContext: false,
+    group: "playback",
   },
   {
     name: "is_playing",
@@ -272,6 +448,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 5,
     sortOrder: 420,
+    group: "playback",
   },
   {
     name: "playback_speed",
@@ -282,22 +459,49 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 5,
     sortOrder: 425,
+    group: "playback",
   },
   {
-    name: "editor_mode",
-    label: "Editor mode",
+    name: "audio_duration_seconds",
+    label: "Audio duration (seconds)",
     description:
-      '"view" when the user is reading, "edit-metadata" when the title/description editor is open, "edit-segments" reserved for future inline segment editing. Lets actions adapt or refuse based on what the user is currently doing.',
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 16,
-    sortOrder: 430,
+      "Duration of the loaded audio as reported by the player element — the live media truth, distinct from the stored `transcript_duration_seconds` metadata. Empty until the audio's metadata has loaded or when no audio exists.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 8,
+    sortOrder: 427,
+    group: "playback",
+  },
+  {
+    name: "playback_volume",
+    label: "Playback volume",
+    description:
+      "Audio player volume from 0 to 1. Empty when no audio is loaded or no transcript is open.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    sortOrder: 428,
+    autoContext: false,
+    group: "playback",
+  },
+  {
+    name: "playback_state",
+    label: "Playback state",
+    description:
+      "Composite player snapshot: { is_playing, current_time, playback_speed, volume, duration }. Mirrors the individual player values as one group value (completeness law). Empty when no transcript is open.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 150,
+    sortOrder: 440,
+    autoContext: false,
+    group: "playback",
   },
 ];
 
 export const transcriptsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts",
   label: "Transcripts",
+  groups,
   values: mergeBaselineValues(
     // Baseline:
     //   `selection` — browser text selection on the rendered segments. Lazily
@@ -314,6 +518,24 @@ export const transcriptsManifest: SurfaceManifest = {
   ),
 };
 
+/** Composite segment entry emitted as `current_segment`. */
+export interface TranscriptCurrentSegmentValue {
+  id: string;
+  text: string;
+  speaker?: string;
+  seconds: number;
+  timecode: string;
+}
+
+/** Composite player snapshot emitted as `playback_state`. */
+export interface TranscriptPlaybackStateValue {
+  is_playing: boolean;
+  current_time: number;
+  playback_speed: number;
+  volume?: number;
+  duration?: number;
+}
+
 /**
  * Type-safe payload helper. The Transcripts viewer calls this when emitting
  * its surface scope so TypeScript catches missing required keys and unknown
@@ -326,6 +548,8 @@ export function createTranscriptsScope(values: {
   // alwaysAvailable: true → required
   active_scope_kind: "selection" | "segment" | "transcript" | "empty";
   speaker_list: string[];
+  speaker_count: number;
+  segment_count: number;
   has_video: boolean;
   editor_mode: "view" | "edit-metadata" | "edit-segments";
   // alwaysAvailable: false → optional
@@ -338,14 +562,20 @@ export function createTranscriptsScope(values: {
   current_segment_speaker?: string;
   current_segment_start_seconds?: number;
   current_segment_timecode?: string;
+  current_segment?: TranscriptCurrentSegmentValue;
   current_playback_time?: number;
   transcript_id?: string;
   transcript_title?: string;
   transcript_description?: string;
   transcript_source_type?: string;
   transcript_duration_seconds?: number;
+  transcript_recording_date?: string;
+  transcript_word_count?: number;
   transcript_tags?: string[];
   transcript_folder?: string;
+  transcript_created_at?: string;
+  transcript_updated_at?: string;
+  transcript_is_draft?: boolean;
   per_speaker_text?: Record<string, string>;
   all_segments?: Array<{
     id: string;
@@ -356,8 +586,12 @@ export function createTranscriptsScope(values: {
   }>;
   all_segments_text?: string;
   audio_file_path?: string;
+  video_file_path?: string;
   is_playing?: boolean;
   playback_speed?: number;
+  audio_duration_seconds?: number;
+  playback_volume?: number;
+  playback_state?: TranscriptPlaybackStateValue;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

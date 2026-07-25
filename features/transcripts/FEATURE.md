@@ -120,6 +120,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-07-24` — Surface-manifest canonicalization: `matrx-user/transcripts` now declares canonical value groups (`transcript_identity` / `playback` / `segments` / `speakers` / `editor_state`) and 12 previously-undeclared loaded values (created/updated timestamps, draft flag, metadata recordingDate/wordCount, segment/speaker counts, video file id, live audio duration/volume, plus `current_segment` and `playback_state` composites). Emitter (`buildTranscriptsContextData` / `useTranscriptsSurfaceScope` / `TranscriptViewer`) emits them all, and `editor_mode` now truthfully reports `edit-segments` while the inline body editor is open. DB manifest sync pending.
 - `2026-07-22` — Mine-scoped `searchTranscripts` / `getTranscriptsByFolder` / `getTranscriptsByTag` in `transcriptsService.ts` (`.eq("user_id", userId)`) and added `// VIEW LAW:` comments in `transcriptsHubService.ts`, clearing THE VIEW LAW's bare-RLS guard findings for this feature.
 - `2026-07-20` — Removed the obsolete Audio Recorder Test suite from the transcripts admin resource map after the demo tree was deleted.
 - `2026-07-15` — Routed upload and recording transcription through aidream's authenticated catalog STT endpoints; removed the duplicate Next Groq middle tier.
