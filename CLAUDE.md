@@ -89,6 +89,18 @@ App code has **no DDL path** (Supabase JS / PostgREST only); agents apply DDL vi
 
 **Invoke the `finalize-and-ship` skill** at the end of any task — it runs migrations + type sync + the other pre-push checks before committing.
 
+### YOU commit and YOU deploy — code on your disk has changed nothing
+
+Same rule as migrations, one layer up: **a commit that is not pushed, and a push that is not deployed, has delivered zero value.** Finishing the code is the middle of the job. Work left sitting locally is worse than not started, because the next agent reads it as shipped. Commit as you go, in small commits; don't ask permission for routine work, and don't end a turn with a dirty tree or unpushed commits.
+
+- **Deploy:** `./scripts/release.sh` (applies pending FE migrations, bumps; Vercel deploys on push). Sibling repos: `aidream` → its own `./scripts/release.sh` (Coolify auto-deploys on push; `/health/version` returns the deployed git SHA — compare to `origin/main`). `my-matrx` → push to `main` (Vercel GitHub integration).
+- **Report deployed state, never intended state.** "Built and verified" ≠ "shipped". If you didn't deploy, say so in the same breath as the completion claim.
+- **Verify against production, not localhost** — hit the real URL and confirm your change answers there.
+- **Half-deployed is the dangerous state.** For a cross-repo feature, shipping only some repos can break a surface that previously worked (page JS calling a global that exists only in the undeployed half fails harder than the old code did).
+- Ask first only when the blast radius is outside the task — a live client site, a destructive migration. Otherwise ship it.
+
+This is written because it was violated: CMS per-site collections was fully built, hardened across four adversarial rounds and documented as "shipped" while the entire visitor half sat in 13 unpushed commits — production served none of it, and the demo page was *actively broken* there, referencing a helper that existed only on a laptop.
+
 ---
 
 ## File Organization
