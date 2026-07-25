@@ -522,6 +522,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-page",
+  readiness: "verified",
   label: "Marketing Page Workspace",
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]",
   inheritsFrom: "matrx-user/marketing-site",

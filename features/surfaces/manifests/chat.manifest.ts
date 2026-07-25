@@ -298,6 +298,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const chatManifest: SurfaceManifest = {
   surfaceName: "matrx-user/chat",
+  readiness: "verified",
   label: "Chat",
   urlPattern: "/chat",
   intro: `<surface_intro>

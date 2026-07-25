@@ -43433,7 +43433,10 @@ export type Database = {
           is_active: boolean
           label: string | null
           name: string
+          overlay_id: string | null
           parent_surface_name: string | null
+          readiness: string | null
+          readiness_note: string | null
           sort_order: number
           supports_dictionary: boolean
           updated_at: string
@@ -43451,7 +43454,10 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           name: string
+          overlay_id?: string | null
           parent_surface_name?: string | null
+          readiness?: string | null
+          readiness_note?: string | null
           sort_order?: number
           supports_dictionary?: boolean
           updated_at?: string
@@ -43469,7 +43475,10 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           name?: string
+          overlay_id?: string | null
           parent_surface_name?: string | null
+          readiness?: string | null
+          readiness_note?: string | null
           sort_order?: number
           supports_dictionary?: boolean
           updated_at?: string

@@ -305,6 +305,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const scraperManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scraper",
+  readiness: "verified",
   label: "Scraper",
   urlPattern: "/scraper",
   intro: `<surface_intro>

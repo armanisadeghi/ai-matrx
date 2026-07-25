@@ -22,6 +22,8 @@ import {
 
 export const scratchpadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scratchpad",
+  readiness: "partial",
+  readinessNote: "Shared value set + emitter; no groups, completeness not audited",
   label: "Scratchpad",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),

@@ -5,7 +5,7 @@
  * dispatch sequence process-stream.ts produces.
  *
  * Pins:
- *  - FIX 2/3: rewindContentForFailedHandoff drops everything the specialist
+ *  - FIX 2/3: rewindContentToBoundary drops everything the specialist
  *    streamed after the handoff tool boundary — from the live slots AND from
  *    the committed parts (a stale text_end.rawText must not resurrect it) —
  *    while the caller's pre-handoff text, the tool card, and the post-failure
@@ -24,7 +24,7 @@ import activeRequestsReducer, {
   closeTextRun,
   upsertRenderBlock,
   appendTimeline,
-  rewindContentForFailedHandoff,
+  rewindContentToBoundary,
 } from "../active-requests.slice";
 import { selectUnifiedSlots } from "../active-requests.selectors";
 import { StreamBlockAccumulator } from "../../utils/stream-block-accumulator";
@@ -125,7 +125,7 @@ test("failed handoff rewinds to the handoff boundary; caller text, tool card, an
   // process-stream order at failure: breakTextBlock, then the rewind.
   acc.breakTextBlock(dispatch);
   dispatch(
-    rewindContentForFailedHandoff({ requestId: REQ, ...decision.snapshot }) as never,
+    rewindContentToBoundary({ requestId: REQ, ...decision.snapshot }) as never,
   );
 
   // The caller continues with its correction after the failure.

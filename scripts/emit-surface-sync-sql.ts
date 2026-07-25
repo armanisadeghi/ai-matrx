@@ -78,6 +78,9 @@ function main() {
     sets.push(
       `value_groups = ${sqlString(JSON.stringify(m.groups ?? []))}::jsonb`,
     );
+    sets.push(`readiness = ${sqlString(m.readiness)}`);
+    sets.push(`readiness_note = ${sqlStringOrNull(m.readinessNote)}`);
+    if (m.overlayId) sets.push(`overlay_id = ${sqlString(m.overlayId)}`);
     if (urlPattern) sets.push(`url_pattern = ${sqlString(urlPattern)}`);
     if (intro) sets.push(`intro = ${sqlStringOrNull(intro)}`);
     if (parent) sets.push(`parent_surface_name = ${sqlString(parent)}`);

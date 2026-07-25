@@ -388,6 +388,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const notesEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/notes",
+  readiness: "verified",
   label: "Notes",
   urlPattern: "/notes/[id]",
   intro: `<surface_intro>

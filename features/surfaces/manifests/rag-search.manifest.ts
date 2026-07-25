@@ -103,6 +103,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const ragSearchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/rag-search",
+  readiness: "partial",
+  readinessNote: "Emitter live; no groups, completeness not audited",
   label: "RAG Search",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),

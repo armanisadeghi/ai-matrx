@@ -319,6 +319,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const tasksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/tasks",
+  readiness: "verified",
   label: "Tasks",
   urlPattern: "/tasks",
   intro: `<surface_intro>

@@ -69,6 +69,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const scannerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scanner",
+  readiness: "partial",
+  readinessNote: "No groups; completeness not audited",
   inheritsFrom: "matrx-user/pdf-extractor",
   label: "Scanner",
   values: mergeBaselineValues(

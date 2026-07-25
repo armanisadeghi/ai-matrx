@@ -74,6 +74,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const agentAdvancedEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-advanced-editor",
+  readiness: "stub",
+  readinessNote: "Declared vocabulary only; never audited against the live page, no runtime emitter",
   label: "Agent Advanced Editor",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),

@@ -110,6 +110,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const messagesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/messages",
+  readiness: "stub",
+  readinessNote: "Declared vocabulary only; never audited against the live page, no runtime emitter",
   label: "Messages",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),

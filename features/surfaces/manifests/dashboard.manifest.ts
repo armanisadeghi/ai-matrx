@@ -188,6 +188,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const dashboardManifest: SurfaceManifest = {
   surfaceName: "matrx-user/dashboard",
+  readiness: "verified",
   label: "Dashboard",
   urlPattern: "/dashboard",
   intro: `<surface_intro>

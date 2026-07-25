@@ -110,6 +110,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const cmsSiteManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-site",
+  readiness: "stub",
+  readinessNote: "Declared vocabulary only; never audited against the live page, no runtime emitter",
   label: "CMS Site",
   urlPattern: "/cms/[siteId]",
   values: mergeBaselineValues(

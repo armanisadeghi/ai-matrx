@@ -71,7 +71,7 @@ import {
   appendRawEvent,
   markTextStreamStart,
   closeTextRun,
-  rewindContentForFailedHandoff,
+  rewindContentToBoundary,
   markReasoningStreamStart,
   closeReasoningRun,
   finalizeAccumulatedReasoning,
@@ -362,6 +362,14 @@ export async function processStream({
   // INIT was observed — handoffs suppress INIT), or loudly keep content
   // when no boundary exists.
   const handoffTracker = new HandoffRewindTracker();
+  const providerAttemptBoundaries = new Map<
+    string,
+    {
+      blockCount: number;
+      reasoningChunkCount: number;
+      timelineLength: number;
+    }
+  >();
 
   let clientFirstChunkAt: number | null = null;
   let totalEvents = 0;
@@ -729,7 +737,7 @@ export async function processStream({
             // to (and thereby resurrecting) the specialist's removed one.
             blockAccumulator.breakTextBlock(dispatch);
             dispatch(
-              rewindContentForFailedHandoff({
+              rewindContentToBoundary({
                 requestId,
                 ...rewindDecision.snapshot,
               }),
@@ -1701,6 +1709,18 @@ export async function processStream({
             }),
           );
         } else if (isCxRequestReservation(d)) {
+          const activeRequest =
+            getState().activeRequests.byRequestId[requestId];
+          if (activeRequest) {
+            providerAttemptBoundaries.set(
+              owningConvId(d.parent_refs.conversation_id),
+              {
+                blockCount: activeRequest.renderBlockOrder.length,
+                reasoningChunkCount: activeRequest.reasoningChunks.length,
+                timelineLength: activeRequest.timeline.length,
+              },
+            );
+          }
           const { iteration } = d.metadata;
           const { conversation_id, user_request_id } = d.parent_refs;
           const nowIso = new Date().toISOString();
@@ -1982,6 +2002,34 @@ export async function processStream({
       } else if (isProviderRetryEvent(event)) {
         providerRetryEvents++;
         const d = event.data;
+        if (d.discard_partial_output) {
+          const providerAttemptBoundary = providerAttemptBoundaries.get(
+            owningConvId(d.conversation_id),
+          );
+          if (providerAttemptBoundary) {
+            blockAccumulator.rewindToBlockCount(
+              providerAttemptBoundary.blockCount,
+            );
+            dispatch(
+              rewindContentToBoundary({
+                requestId,
+                ...providerAttemptBoundary,
+              }),
+            );
+            isInTextRun = false;
+            isInReasoningRun = false;
+            runJsonExtraction(false);
+          } else {
+            captureError({
+              source: "agent-stream-provider-retry",
+              message:
+                "Provider requested partial-output discard before a cx_request boundary was observed; content was retained to avoid deleting a prior iteration.",
+              requestId,
+              conversationId,
+              raw: d,
+            });
+          }
+        }
         dispatch(setProviderRetry({ requestId, retry: d }));
         if (d.state === "suspended") {
           dispatch(setInstanceStatus({ conversationId, status: "paused" }));

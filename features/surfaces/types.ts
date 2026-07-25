@@ -207,9 +207,38 @@ export type SurfaceEvidenceSource = SurfaceProcessedDocumentEvidenceSource;
 // SurfaceManifest — what a single surface declares.
 // ---------------------------------------------------------------------------
 
+/**
+ * Where a surface stands on the road to "verified correct and complete".
+ * REQUIRED on every manifest — the platform's tracking of the canonicalization
+ * campaign. Mirrored to `ui_surface.readiness`; DB rows with no manifest are
+ * implicitly `unregistered` (never declared in code).
+ *
+ * - `verified` — full completeness audit done: every piece of page data
+ *   declared (fields + natural composites), groups curated, emitter wired and
+ *   live-checked. The end state.
+ * - `partial`  — real manifest + emitter exist but known gaps remain
+ *   (un-audited values, missing groups, or an incomplete emitter).
+ * - `stub`     — placeholder vocabulary; never audited against the page.
+ */
+export type SurfaceReadiness = "verified" | "partial" | "stub";
+
 export interface SurfaceManifest {
   /** Matches `ui_surface.name`. */
   surfaceName: string;
+  /**
+   * Campaign tracking — REQUIRED. See `SurfaceReadiness`. Only flip to
+   * `verified` after the surface-authoring checklist passes end-to-end.
+   */
+  readiness: SurfaceReadiness;
+  /** One line on what is missing (required when readiness != "verified"). */
+  readinessNote?: string;
+  /**
+   * For OVERLAY/WINDOW surfaces (no route of their own): the overlay id from
+   * `features/window-panels/registry/overlay-ids.ts` this surface belongs to.
+   * Identifies the surface's home unambiguously (the overlay twin of
+   * `urlPattern`). Mirrored to `ui_surface.overlay_id`.
+   */
+  overlayId?: string;
   /**
    * The ONE canonical human display name for this surface (e.g.
    * "PDF Extractor"). REQUIRED — this exact string is used byte-identically

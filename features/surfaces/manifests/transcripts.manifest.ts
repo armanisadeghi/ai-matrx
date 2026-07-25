@@ -500,6 +500,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const transcriptsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts",
+  readiness: "verified",
   label: "Transcripts",
   groups,
   values: mergeBaselineValues(

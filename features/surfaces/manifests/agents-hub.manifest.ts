@@ -302,6 +302,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const agentsHubManifest: SurfaceManifest = {
   surfaceName: AGENTS_HUB_SURFACE_NAME,
+  readiness: "verified",
   label: "Agents Hub",
   urlPattern: "/agents",
   intro: `<surface_intro>

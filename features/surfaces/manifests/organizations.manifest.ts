@@ -321,6 +321,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const organizationsManifest: SurfaceManifest = {
   surfaceName: ORGANIZATIONS_SURFACE_NAME,
+  readiness: "verified",
   label: "Organizations",
   urlPattern: "/organizations",
   intro: `<surface_intro>

@@ -57,6 +57,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing",
+  readiness: "partial",
+  readinessNote: "Hub values emitted; no groups",
   label: "Marketing Hub",
   urlPattern: "/marketing",
   intro: `<surface_intro>

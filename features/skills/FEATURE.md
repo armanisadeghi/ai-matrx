@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-27`
+**Last updated:** `2026-07-24`
 
 ---
 
@@ -18,13 +18,15 @@ delete / categorise / ingest, plus the per-agent `skill_config` picker.
 ## Entry points
 
 **Routes**
+
 - `app/(admin)/administration/agents/skills/` — super-admin registry view + category
   tree editor + filesystem ingest panel.
-- *(no top-level `/skills` route — full management lives inside the
+- _(no top-level `/skills` route — full management lives inside the
   agent-connections window panel; see `(a)/agent-connections/skills` in
-  features/agent-connections.)*
+  features/agent-connections.)_
 
 **Hooks**
+
 - `useSkills({ types?, projectId?, isPublicOnly? })` — canonical "give me
   the visible skills list" hook (`features/skills/hooks/useSkills.ts`).
   Subscribes to the stream-event `lastIngestAt` and reloads + toasts
@@ -37,7 +39,18 @@ delete / categorise / ingest, plus the per-agent `skill_config` picker.
 - `useSkillProjects(skillId)` — many-to-many associations via
   `skl_skill_projects` (`features/skills/hooks/useSkillProjects.ts`).
 
+**Components**
+
+- `SkillConfigPicker` — full-catalogue agent assignment workspace with
+  weighted search, hierarchical category filtering, assignment filters,
+  direct tier controls, and a persistent configuration review pane
+  (`features/skills/components/SkillConfigPicker.tsx`).
+- `AgentSkillsModal` — large desktop dialog / bounded mobile drawer that
+  hosts `SkillConfigPicker` in the agent builder
+  (`features/agents/components/skills-management/AgentSkillsModal.tsx`).
+
 **Services**
+
 - `features/skills/service/skillsStreamHandler.ts` — called from the
   central stream pump (`process-stream.ts`) when a `resource_changed`
   event has `kind` starting in `"skill"`.
@@ -60,6 +73,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
   operation; stays on Python).
 
 **Redux slice(s)**
+
 - `features/skills/redux/skillsSlice.ts` — state shape: `skills`,
   `categories`, `ingest`. Registered as `skills` in the root reducer.
 
@@ -68,6 +82,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
 ## Data model
 
 **Database tables** (Supabase, project `txzxabzwovsujtloxrus`)
+
 - `public.skl_definitions` — one row per skill. Composite-unique on
   `(skill_id, user_id, organization_id, project_id)` so the same business
   key can exist for different scopes. RLS gates writes to owners / org +
@@ -83,6 +98,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
   Structural CHECK constraint enforced by migration 0095.
 
 **Key types** (`features/skills/types.ts`)
+
 - `SkillRow` / `SkillDraft` — view model + form draft.
 - `CategoryRow` — flat category shape; the tree is computed by the hook.
 - `SkillConfig` — `{ included, listed, forbidden, disabled }` UUID arrays.
@@ -122,18 +138,30 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
 1. Super-admin opens `/administration/agents/skills/ingest`.
 2. They paste one or more paths and click "Dry run".
 3. `useSkillsIngest().preview(roots)` → `POST /api/skills/ingest` with
-   `dry_run: true`. Report shows what *would* land.
+   `dry_run: true`. Report shows what _would_ land.
 4. Click "Apply" → same hook, `dry_run: false`. Slice's `ingest.lastReport`
    updates; `fetchSkills` reloads to surface the new rows.
+
+### 4. Configure an agent's skills
+
+1. The builder opens `AgentSkillsModal`; desktop uses a near-viewport
+   workspace and mobile uses a 94dvh drawer.
+2. `SkillConfigPicker` consumes the canonical `useSkills()` and
+   `useSkillCategories()` hooks. Search uses `filterAndSortBySearch`;
+   category selection includes descendants.
+3. Each catalogue row moves directly among `included`, `listed`,
+   `forbidden`, and unassigned. A persistent review pane exposes every
+   configured skill without opening a nested popover.
+4. `setAgentSkillConfig` marks the definition dirty; the existing agent
+   save flow persists `skill_config`.
 
 ---
 
 ## Invariants & gotchas
 
-- **Never read `skl_definitions` directly from Supabase on the frontend.**
-  All reads go through `/api/skills` (the Python backend owns ownership
-  filtering: system + public + own). The migration of the legacy
-  `features/agent-connections/redux/skl/` slice is in progress.
+- **Frontend skill reads are Supabase-direct.** Use `useSkills()` /
+  `fetchSkills`; RLS owns visibility. Do not recreate the retired Python
+  list hop or read the table from a component.
 - **`is_system=true` cannot be set by non-admins.** The backend forces it
   to `false` on POST regardless of payload. Admin-only paths (the
   filesystem ingest endpoint, the registry "System skill" toggle) are the
@@ -168,6 +196,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
 ## Doctrine compliance
 
 **Primitives reused**
+
 - HTTP transport: `callApi()` from `lib/api/call-api.ts`.
 - Reducer registration / typed hooks: `lib/redux/store.ts` + `lib/redux/hooks.ts`.
 - Toast: `sonner` (global mount).
@@ -175,6 +204,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
 - Stream pump: `features/agents/redux/execution-system/thunks/process-stream.ts`.
 
 **Primitives introduced**
+
 - `SkillRow` / `SkillDraft` / `CategoryRow` / `IngestReport` /
   `SkillConfig` view-model types — needed a camelCase mirror of the
   Python wire shape; could not extend the Supabase-generated `Database`
@@ -209,8 +239,10 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
   inline rename, color + icon pickers, "+ New" / "Delete" / "+ Add child".
 - ✅ Resources panel: Supabase-direct CRUD mounted in
   `SkillDetailEditor` with drag-to-reorder and 256 KB content soft-cap.
-- ✅ Per-agent picker: `AgentSkillsModal` mounted next to
-  `AgentToolsModal` on the builder; `setAgentSkillConfig` round-trips
+- ✅ Per-agent picker: `AgentSkillsModal` is a large catalogue workspace
+  mounted next to `AgentToolsModal`; weighted search, hierarchical
+  categories, assignment filters, direct tier controls, and persistent
+  review replace the per-tier popovers. `setAgentSkillConfig` round-trips
   through Supabase via `agentDefinitionToUpdate`.
 - ✅ Legacy slice strip: `definitions` + `categories` removed from
   `features/agent-connections/redux/skl/`. Render-blocks /
@@ -226,6 +258,11 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
 
 ## Change log
 
+- `2026-07-24` — codex: Rebuilt the agent-builder skill picker as a
+  near-viewport catalogue workspace with weighted search, hierarchical
+  category filters, direct tier assignment, persistent configuration
+  review, and a bounded mobile drawer; removed the 50-result nested
+  popovers that could escape the modal.
 - `2026-06-13` — claude: **reads + owned-row writes moved to Supabase-direct.**
   `fetchSkills` / `fetchSkillById` (list/get) now read `skl_definitions`
   straight from Supabase (RLS-gated, with the `skl_skill_projects(project_id)`
@@ -238,7 +275,7 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
   New `supabaseRowToSkillRow` converter in `skillsConverters.ts`. Ingest stays
   on Python (genuine filesystem op).
 - `2026-05-27` — claude: finishing pass (phases H–K). Full category CRUD
-  + drag-to-reparent via @dnd-kit; admin category POST/PATCH/DELETE
+  and drag-to-reparent via @dnd-kit; admin category POST/PATCH/DELETE
   endpoints on the Python router; SkillResourcesPanel with Supabase-
   direct CRUD mounted in SkillDetailEditor; `as never` cast cleanup
   using generated OpenAPI types via `satisfies`; legacy `skl` slice

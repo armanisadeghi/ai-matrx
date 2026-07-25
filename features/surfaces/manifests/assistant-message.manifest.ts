@@ -146,6 +146,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const assistantMessageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/assistant-message",
+  readiness: "verified",
   label: "Assistant Message",
   urlPattern: "/chat",
   intro: `<surface_intro>

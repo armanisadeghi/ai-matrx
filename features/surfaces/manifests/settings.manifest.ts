@@ -162,6 +162,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const settingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/settings",
+  readiness: "verified",
   label: "Settings",
   urlPattern: "/user-settings",
   intro: `<surface_intro>

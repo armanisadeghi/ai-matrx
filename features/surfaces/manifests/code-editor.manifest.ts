@@ -258,6 +258,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const codeEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/code-editor",
+  readiness: "verified",
   label: "Code Editor",
   urlPattern: "/code",
   intro: `<surface_intro>

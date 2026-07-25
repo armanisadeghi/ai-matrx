@@ -3,9 +3,8 @@
 /**
  * AgentSkillsModal
  *
- * Trigger button + Dialog (desktop) / Drawer (mobile) for editing the
- * per-agent `skill_config` JSONB. Mirrors the AgentToolsModal pattern so
- * the builder's model row stays consistent.
+ * Trigger button + large catalogue workspace (desktop) / Drawer (mobile)
+ * for editing the per-agent `skill_config` JSONB.
  *
  * The skill_config save piggybacks on the existing agent save flow —
  * setAgentSkillConfig marks the field dirty, and the next saveAgent thunk
@@ -83,19 +82,16 @@ export function AgentSkillsModal({ agentId }: AgentSkillsModalProps) {
       <>
         {trigger}
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="max-h-[90dvh] flex flex-col">
+          <DrawerContent className="h-[94dvh] max-h-[94dvh] flex flex-col">
             <DrawerHeader className="px-4 pt-4 pb-2 shrink-0">
               <DrawerTitle>Agent Skills</DrawerTitle>
               <DrawerDescription>
-                Choose which skills this agent includes, lists, or is
-                forbidden from. Saved with the next agent save.
+                Search and organize the full skills catalogue. Changes are saved
+                with the next agent save.
               </DrawerDescription>
             </DrawerHeader>
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-              <SkillConfigPicker
-                value={skillConfig}
-                onChange={handleChange}
-              />
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <SkillConfigPicker value={skillConfig} onChange={handleChange} />
             </div>
           </DrawerContent>
         </Drawer>
@@ -107,21 +103,18 @@ export function AgentSkillsModal({ agentId }: AgentSkillsModalProps) {
     <>
       {trigger}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl w-full max-h-[88dvh] flex flex-col overflow-hidden p-0">
-          <DialogHeader className="px-6 pt-5 pb-4 shrink-0 border-b border-border">
-            <DialogTitle className="text-base font-semibold">
+        <DialogContent className="flex h-[min(92dvh,960px)] w-[calc(100vw-2rem)] max-w-[min(96vw,1440px)] flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
+            <DialogTitle className="text-lg font-semibold">
               Agent Skills
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Choose which skills this agent includes, lists, or is
-              forbidden from. Saved with the next agent save.
+            <DialogDescription className="text-sm text-muted-foreground">
+              Search and organize the full skills catalogue. Changes are saved
+              with the next agent save.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            <SkillConfigPicker
-              value={skillConfig}
-              onChange={handleChange}
-            />
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <SkillConfigPicker value={skillConfig} onChange={handleChange} />
           </div>
         </DialogContent>
       </Dialog>

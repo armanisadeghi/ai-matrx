@@ -119,6 +119,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const mermaidEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/mermaid-editor",
+  readiness: "partial",
+  readinessNote: "Bound-agent flow live; completeness not audited",
   label: "Mermaid Editor",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),

@@ -121,6 +121,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const aiResultsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/ai-results",
+  readiness: "stub",
+  readinessNote: "Declared vocabulary only; never audited against the live page, no runtime emitter",
   label: "AI Results",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),

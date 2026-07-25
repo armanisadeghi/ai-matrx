@@ -40,6 +40,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const warRoomManifest: SurfaceManifest = {
   surfaceName: "matrx-user/war-room",
+  readiness: "partial",
+  readinessNote: "Manifest + route now mapped; emitter/completeness not audited",
   label: "War Room",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),

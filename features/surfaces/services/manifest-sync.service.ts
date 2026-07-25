@@ -805,6 +805,9 @@ export async function applyManifestSync(
       .update({
         label: manifest.label,
         value_groups: (manifest.groups ?? []) as unknown as Json,
+        readiness: manifest.readiness,
+        readiness_note: manifest.readinessNote ?? null,
+        ...(manifest.overlayId ? { overlay_id: manifest.overlayId } : {}),
         ...(urlPattern ? { url_pattern: urlPattern } : {}),
         ...(intro ? { intro } : {}),
       })

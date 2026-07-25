@@ -60,6 +60,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingBatchesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-batches",
+  readiness: "partial",
+  readinessNote: "Values emitted; no groups",
   label: "Marketing Batch Operations",
   urlPattern: "/marketing/batches",
   intro: `<surface_intro>

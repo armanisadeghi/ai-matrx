@@ -21,6 +21,8 @@ import {
 
 export const workingDocumentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/working-document",
+  readiness: "partial",
+  readinessNote: "Shared value set + emitter; no groups, completeness not audited",
   label: "Working Document",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),

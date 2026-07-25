@@ -135,6 +135,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingBrandManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-brand",
+  readiness: "verified",
   label: "Marketing Brand Cockpit",
   urlPattern: "/marketing/brands/[brandId]",
   intro: `<surface_intro>

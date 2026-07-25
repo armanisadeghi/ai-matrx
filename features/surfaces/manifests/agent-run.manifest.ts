@@ -225,6 +225,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const agentRunManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-run",
+  readiness: "partial",
+  readinessNote: "Values declared 2026-05; emitter deferred, no groups",
   label: "Agent Run",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),

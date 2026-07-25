@@ -41,6 +41,8 @@ export const TRANSCRIPT_SCRIBE_SURFACE = "matrx-user/transcript-scribe";
 
 export const transcriptScribeManifest: SurfaceManifest = {
   surfaceName: TRANSCRIPT_SCRIBE_SURFACE,
+  readiness: "partial",
+  readinessNote: "Context flows via smartExecute (useStudioAssistant), no surface-scope emitter",
   label: "Transcript Scribe",
   urlPattern: "/transcripts/scribe/:sessionId",
   // Baselines (selection / text_before / text_after / content / context) are

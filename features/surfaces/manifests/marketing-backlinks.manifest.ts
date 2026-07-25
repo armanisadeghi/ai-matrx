@@ -59,6 +59,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingBacklinksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-backlinks",
+  readiness: "partial",
+  readinessNote: "Values emitted; no groups",
   label: "Marketing Backlinks",
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/backlinks",
   inheritsFrom: "matrx-user/marketing-site",

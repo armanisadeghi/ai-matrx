@@ -168,6 +168,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const dataTablesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/data-tables",
+  readiness: "stub",
+  readinessNote: "Declared vocabulary only; never audited against the live page, no runtime emitter",
   label: "Data Tables",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),

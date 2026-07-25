@@ -107,6 +107,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const htmlPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/html-page",
+  readiness: "stub",
+  readinessNote: "Declared vocabulary only; never audited against the live page, no runtime emitter",
   label: "HTML Page",
   urlPattern: "/cms/html-pages/[pageId]",
   values: mergeBaselineValues(

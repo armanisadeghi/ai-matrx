@@ -336,6 +336,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const agentAppsManifest: SurfaceManifest = {
   surfaceName: AGENT_APPS_SURFACE_NAME,
+  readiness: "partial",
+  readinessNote: "Hub catalog values declared but the server-rendered grid has no emitter yet",
   label: "Agent Apps",
   urlPattern: "/agent-apps",
   intro: `<surface_intro>

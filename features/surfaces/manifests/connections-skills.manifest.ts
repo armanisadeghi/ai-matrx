@@ -133,6 +133,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const connectionsSkillsManifest: SurfaceManifest = {
   surfaceName: CONNECTIONS_SKILLS_SURFACE_NAME,
+  readiness: "verified",
   label: "Connections Skills",
   urlPattern: "/agent-connections/skills",
   inheritsFrom: AGENT_CONNECTIONS_SURFACE_NAME,

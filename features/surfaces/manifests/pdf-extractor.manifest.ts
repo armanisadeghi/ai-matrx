@@ -187,6 +187,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const pdfExtractorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/pdf-extractor",
+  readiness: "partial",
+  readinessNote: "Evidence sources + emitter live; no groups, completeness not audited",
   label: "PDF Extractor",
   evidenceSources: [
     {

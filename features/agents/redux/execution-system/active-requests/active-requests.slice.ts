@@ -989,21 +989,12 @@ const activeRequestsSlice = createSlice({
     },
 
     /**
-     * Agent-handoff rewind: a `completion` event `operation:"sub_agent",
-     * status:"failed"` (the NEVER-suppressed failure signal — see
-     * aidream services/agent_handoff/FEATURE.md) means the specialist died
-     * mid-stream. Everything it streamed after the handoff tool call must
-     * vanish from the live bubble — the caller continues streaming its
-     * correction/retry AFTER, and the DB never persists the partial text.
-     *
-     * The payload is a snapshot process-stream captured at the handoff
-     * boundary (the tool_started that preceded the specialist's tokens):
-     * render blocks, reasoning chunks, and CONTENT-bearing timeline entries
-     * past the snapshot are dropped. Bookkeeping timeline entries
-     * (record_reserved/record_update/heartbeat/…) are kept — they describe
-     * real server state, not content.
+     * Rewind content to a captured execution boundary. Used by failed agent
+     * handoffs and provider retries so an abandoned generation cannot be
+     * concatenated with the replacement output. Bookkeeping timeline entries
+     * remain because they describe real server state.
      */
-    rewindContentForFailedHandoff(
+    rewindContentToBoundary(
       state,
       action: PayloadAction<{
         requestId: string;
@@ -1065,7 +1056,7 @@ const activeRequestsSlice = createSlice({
         const dropped = before - request.liveCitations.length;
         if (dropped > 0) {
           console.warn(
-            `[citations] handoff rewind dropped ${dropped} live citation(s) anchored to rewound/unattributable blocks (request ${request.requestId})`,
+            `[citations] content rewind dropped ${dropped} live citation(s) anchored to rewound/unattributable blocks (request ${request.requestId})`,
           );
         }
       }
@@ -1273,7 +1264,7 @@ export const {
   appendRawEvent,
   markTextStreamStart,
   closeTextRun,
-  rewindContentForFailedHandoff,
+  rewindContentToBoundary,
   finalizeClientMetrics,
   updateExtractedJson,
   removeRequest,

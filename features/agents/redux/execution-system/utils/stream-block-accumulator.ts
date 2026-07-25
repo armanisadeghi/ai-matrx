@@ -453,6 +453,31 @@ export class StreamBlockAccumulator {
   }
 
   /**
+   * Forget every in-flight parser/block byte at and after a durable content
+   * boundary. Redux owns removal of the already-dispatched suffix; this resets
+   * the local streaming state so the replacement provider attempt cannot
+   * concatenate onto or resurrect the failed attempt.
+   */
+  rewindToBlockCount(blockCount: number): void {
+    this.irDisposeAll();
+    this.currentBlockIndex = Math.max(0, blockCount);
+    this.currentBlockType = "text";
+    this.currentBlockContent = "";
+    this.currentBlockLineCount = 0;
+    this.pendingLineFragment = "";
+    this.currentBlockEmitted = false;
+    this.subState = { kind: "none" };
+    this.pendingMediaData = null;
+    this.irSession = null;
+    this.irRegionLineCount = 0;
+    this.irFedFragmentLen = 0;
+    this.irEnvelope = null;
+    this.fenceClosedCleanly = false;
+    this.xmlClosedCleanly = false;
+    this.regionContinuesAfterClose = false;
+  }
+
+  /**
    * Close the current text block at an interleaved-content boundary — a tool
    * call that lands BETWEEN two text runs. The NEXT text run then opens a
    * FRESH render block instead of appending onto the block that held the text

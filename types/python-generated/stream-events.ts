@@ -149,6 +149,7 @@ export interface ProviderRetryPayload {
   max_retries: number;
   retry_delay?: number | null;
   retry_at?: number | null;
+  discard_partial_output?: boolean;
   schedule?: number[];
   can_cancel?: boolean;
   can_retry_now?: boolean;

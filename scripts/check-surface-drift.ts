@@ -64,6 +64,10 @@ async function main() {
   const ALL_MANIFESTS: ReadonlyArray<{
     surfaceName: string;
     label?: string;
+    readiness?: string;
+    readinessNote?: string;
+    urlPattern?: string;
+    overlayId?: string;
     skipBaselineValues?: boolean;
     groups?: ReadonlyArray<{
       key: string;
@@ -133,6 +137,22 @@ async function main() {
       }
       clientLabels.set(label.toLowerCase(), m.surfaceName);
       labelsByClient.set(client, clientLabels);
+    }
+
+    // Readiness tracking — required; non-verified surfaces must say what's
+    // missing; a "verified" surface must not carry a gap note.
+    if (
+      m.readiness !== "verified" &&
+      m.readiness !== "partial" &&
+      m.readiness !== "stub"
+    ) {
+      errors.push(
+        `Surface "${m.surfaceName}" has invalid readiness "${m.readiness}" (expected verified | partial | stub).`,
+      );
+    } else if (m.readiness !== "verified" && !m.readinessNote?.trim()) {
+      errors.push(
+        `Surface "${m.surfaceName}" is readiness "${m.readiness}" but has no readinessNote — say what's missing.`,
+      );
     }
 
     // Canonical groups: curated keys snake_case + author band 0–899; every

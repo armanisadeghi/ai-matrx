@@ -71,6 +71,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingFindingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-findings",
+  readiness: "partial",
+  readinessNote: "Values emitted; no groups",
   label: "Marketing Findings Register",
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/findings",
   inheritsFrom: "matrx-user/marketing-site",

@@ -109,6 +109,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const agentConnectionsManifest: SurfaceManifest = {
   surfaceName: AGENT_CONNECTIONS_SURFACE_NAME,
+  readiness: "verified",
   label: "Agent Connections",
   urlPattern: "/agent-connections",
   intro: `<surface_intro>

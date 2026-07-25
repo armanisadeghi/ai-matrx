@@ -127,6 +127,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const filesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/files",
+  readiness: "stub",
+  readinessNote: "Declared vocabulary only; never audited against the live page, no runtime emitter",
   label: "Files",
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
