@@ -40,7 +40,8 @@ import {
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
 import {
-  GOOGLE_SEARCH_CONSOLE_SCOPES,
+  GOOGLE_CONNECTION_SCOPES,
+  type GoogleConnectionResource,
   type GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
 import {
@@ -52,7 +53,7 @@ import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
 export function MarketingConnectionsWorkspace() {
   return (
-    <LazyGoogleAPIProvider scopes={[...GOOGLE_SEARCH_CONSOLE_SCOPES]}>
+    <LazyGoogleAPIProvider scopes={[...GOOGLE_CONNECTION_SCOPES]}>
       <MarketingConnectionsContent />
     </LazyGoogleAPIProvider>
   );
@@ -83,34 +84,58 @@ function MarketingConnectionsContent() {
   const searchConsoleProperties = inventory.data?.resources.filter(
     (resource) => resource.resource_type === "search_console_property",
   );
+  const analyticsProperties = inventory.data?.resources.filter(
+    (resource) => resource.resource_type === "analytics_property",
+  );
+  const youtubeChannels = inventory.data?.resources.filter(
+    (resource) => resource.resource_type === "youtube_channel",
+  );
   const pageSpeedEnabledCount = (sites.data ?? []).filter(
     (site) =>
       parseSiteIntegrations(site.integrations).pageSpeedInsights.enabled,
   ).length;
   const searchResourcesByConnection = new Map<string, number>();
+  const analyticsResourcesByConnection = new Map<string, number>();
+  const youtubeChannelsByConnection = new Map<
+    string,
+    GoogleConnectionResource[]
+  >();
   for (const resource of inventory.data?.resources ?? []) {
-    if (resource.resource_type !== "search_console_property") continue;
-    searchResourcesByConnection.set(
-      resource.connection_id,
-      (searchResourcesByConnection.get(resource.connection_id) ?? 0) + 1,
-    );
+    if (resource.resource_type === "search_console_property") {
+      searchResourcesByConnection.set(
+        resource.connection_id,
+        (searchResourcesByConnection.get(resource.connection_id) ?? 0) + 1,
+      );
+    } else if (resource.resource_type === "analytics_property") {
+      analyticsResourcesByConnection.set(
+        resource.connection_id,
+        (analyticsResourcesByConnection.get(resource.connection_id) ?? 0) + 1,
+      );
+    } else {
+      youtubeChannelsByConnection.set(resource.connection_id, [
+        ...(youtubeChannelsByConnection.get(resource.connection_id) ?? []),
+        resource,
+      ]);
+    }
   }
 
   const connectionsCopy = webCopy({
     kind: "web-google-connections",
     label: "Google connections",
     description:
-      "The Google connection inventory: connected accounts and their discovered Search Console/GA4 resources (metadata only — never credentials).",
+      "The Google connection inventory: connected accounts and their discovered Search Console, GA4, and YouTube resources (metadata only — never credentials).",
     surface: "Google connections",
     data: inventory.data ?? { connections: [], resources: [] },
     lines: [
       ["Connected accounts", connectedGoogleAccounts?.length ?? 0],
       ["Search Console properties", searchConsoleProperties?.length ?? 0],
+      ["Analytics properties", analyticsProperties?.length ?? 0],
+      ["YouTube channels", youtubeChannels?.length ?? 0],
       ["PageSpeed-enabled sites", pageSpeedEnabledCount],
       ...(availableGoogleAccounts ?? []).map(
         (connection): [string, string] => [
           connection.account_name || connection.account_email || "Google account",
-          `${connection.status} · ${connection.owner_type} · ${searchResourcesByConnection.get(connection.id) ?? 0} Search Console propert${(searchResourcesByConnection.get(connection.id) ?? 0) === 1 ? "y" : "ies"}`,
+          `${connection.status} · ${connection.owner_type} · ${searchResourcesByConnection.get(connection.id) ?? 0} Search Console · ${analyticsResourcesByConnection.get(connection.id) ?? 0} Analytics · ${youtubeChannelsByConnection.get(connection.id)?.length ?? 0} YouTube`,
         ],
       ),
     ],
@@ -121,7 +146,7 @@ function MarketingConnectionsContent() {
     setConnectingOwner(owner);
     try {
       const code = await google.requestAuthorizationCode([
-        ...GOOGLE_SEARCH_CONSOLE_SCOPES,
+        ...GOOGLE_CONNECTION_SCOPES,
       ]);
       await connect.mutateAsync({
         code,
@@ -133,7 +158,7 @@ function MarketingConnectionsContent() {
               }
             : { type: "user" },
       });
-      toast.success("Search Console connected and properties discovered.");
+      toast.success("Google services connected and resources discovered.");
     } catch (error) {
       // Show the actual reason — a generic "please try again" hides expired
       // consent, denied scopes, and vault write failures behind one sentence.
@@ -307,6 +332,12 @@ function MarketingConnectionsContent() {
                     searchConsoleCount={
                       searchResourcesByConnection.get(connection.id) ?? 0
                     }
+                    analyticsCount={
+                      analyticsResourcesByConnection.get(connection.id) ?? 0
+                    }
+                    youtubeChannels={
+                      youtubeChannelsByConnection.get(connection.id) ?? []
+                    }
                     busy={disconnect.isPending}
                     onDisconnect={async () => {
                       try {
@@ -470,6 +501,8 @@ function MarketingConnectionsContent() {
 function ConnectionRow({
   connection,
   searchConsoleCount,
+  analyticsCount,
+  youtubeChannels,
   busy,
   reconnecting,
   onDisconnect,
@@ -477,6 +510,8 @@ function ConnectionRow({
 }: {
   connection: GoogleConnectionSummary;
   searchConsoleCount: number;
+  analyticsCount: number;
+  youtubeChannels: GoogleConnectionResource[];
   busy: boolean;
   reconnecting: boolean;
   onDisconnect: () => void;
@@ -508,8 +543,17 @@ function ConnectionRow({
         </div>
         <p className="mt-0.5 text-[10px] text-muted-foreground">
           Search Console: {searchConsoleCount} propert
-          {searchConsoleCount === 1 ? "y" : "ies"}
+          {searchConsoleCount === 1 ? "y" : "ies"} · Analytics: {analyticsCount}{" "}
+          propert{analyticsCount === 1 ? "y" : "ies"} · YouTube:{" "}
+          {youtubeChannels.length} channel
+          {youtubeChannels.length === 1 ? "" : "s"}
         </p>
+        {youtubeChannels.length ? (
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            YouTube channels:{" "}
+            {youtubeChannels.map((channel) => channel.display_name).join(", ")}
+          </p>
+        ) : null}
         {/* The exact reason, always — never "needs attention" with no cause. */}
         <p
           className={cn(

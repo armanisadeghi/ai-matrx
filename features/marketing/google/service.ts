@@ -41,7 +41,7 @@ type ConnectionRow = {
   vault_secret_key: string | null;
 };
 
-type ResourceRow = {
+export type GoogleConnectionResourceRow = {
   id: string;
   connection_id: string;
   resource_type: string;
@@ -77,13 +77,21 @@ function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
   };
 }
 
-function connectionResource(row: ResourceRow): GoogleConnectionResource {
+export function connectionResource(
+  row: GoogleConnectionResourceRow,
+): GoogleConnectionResource {
+  if (
+    row.resource_type !== "search_console_property" &&
+    row.resource_type !== "analytics_property" &&
+    row.resource_type !== "youtube_channel"
+  ) {
+    throw new Error(
+      `Unknown Google connection resource type: ${row.resource_type}`,
+    );
+  }
   return {
     ...row,
-    resource_type:
-      row.resource_type === "analytics_property"
-        ? "analytics_property"
-        : "search_console_property",
+    resource_type: row.resource_type,
     metadata: recordValue(row.metadata),
   };
 }

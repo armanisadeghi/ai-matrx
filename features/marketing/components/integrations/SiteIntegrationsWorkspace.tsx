@@ -71,7 +71,7 @@ import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
-import { GOOGLE_SEARCH_CONSOLE_SCOPES } from "@/features/marketing/google/types";
+import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
 import type { MarketingSite } from "@/features/marketing/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
@@ -120,7 +120,7 @@ const builtIns: Array<{
 export function SiteIntegrationsWorkspace() {
   const { site } = useMarketingSite();
   return (
-    <LazyGoogleAPIProvider scopes={[...GOOGLE_SEARCH_CONSOLE_SCOPES]}>
+    <LazyGoogleAPIProvider scopes={[...GOOGLE_CONNECTION_SCOPES]}>
       <SiteIntegrationsEditor key={`${site.id}:${site.version}`} site={site} />
     </LazyGoogleAPIProvider>
   );
@@ -214,7 +214,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     setGoogleConnectionOwner(owner);
     try {
       const code = await google.requestAuthorizationCode([
-        ...GOOGLE_SEARCH_CONSOLE_SCOPES,
+        ...GOOGLE_CONNECTION_SCOPES,
       ]);
       const result = await connectGoogle.mutateAsync({
         code,

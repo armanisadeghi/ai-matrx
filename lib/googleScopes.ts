@@ -1,12 +1,13 @@
 // lib/googleScopes.ts
 //
-// Scopes registered on the AI Matrx GCP OAuth consent screen (non-sensitive).
+// Scopes registered on the AI Matrx GCP OAuth consent screen.
 // Keep this list in sync with Google Cloud Console → Data Access.
 
 export const REGISTERED_GOOGLE_SCOPE_URLS = [
   "https://www.googleapis.com/auth/webmasters",
   "https://www.googleapis.com/auth/webmasters.readonly",
   "https://www.googleapis.com/auth/analytics.readonly",
+  "https://www.googleapis.com/auth/youtube.readonly",
   "https://www.googleapis.com/auth/calendar.app.created",
   "https://www.googleapis.com/auth/drive.file",
 ] as const;
@@ -35,6 +36,14 @@ export const googleServices = {
     description: "Read Analytics accounts, properties, and reporting data.",
     color: "#E37400",
     icon: "analytics",
+  },
+  youtube_readonly: {
+    name: "YouTube (read-only)",
+    scope: "https://www.googleapis.com/auth/youtube.readonly",
+    description:
+      "View the connected account's YouTube channels and owner-visible content.",
+    color: "#FF0000",
+    icon: "youtube",
   },
   calendar_app_created: {
     name: "App-created Calendars",

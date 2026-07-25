@@ -15,6 +15,16 @@ export const MARKETING_GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/analytics.readonly",
 ] as const;
 
+export const GOOGLE_YOUTUBE_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  "https://www.googleapis.com/auth/youtube.readonly",
+] as const;
+
+export const GOOGLE_CONNECTION_SCOPES = [
+  ...MARKETING_GOOGLE_SCOPES,
+  "https://www.googleapis.com/auth/youtube.readonly",
+] as const;
+
 export type GoogleConnectionOwner =
   { type: "user" } | { type: "organization"; organizationId: string };
 
@@ -58,7 +68,10 @@ export type GoogleConnectionHealth = "connected" | "needs_reauth" | "revoked";
 export interface GoogleConnectionResource {
   id: string;
   connection_id: string;
-  resource_type: "search_console_property" | "analytics_property";
+  resource_type:
+    | "search_console_property"
+    | "analytics_property"
+    | "youtube_channel";
   resource_ref: string;
   display_name: string;
   permission_level: string | null;
