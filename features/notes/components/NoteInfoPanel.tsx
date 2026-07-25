@@ -43,6 +43,8 @@ import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { createFolder } from "../service/notesService";
+import { notesEditorManifest } from "@/features/surfaces/manifests/notes-editor.manifest";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 
 interface NoteInfoPanelProps {
   noteId: string;
@@ -61,6 +63,10 @@ function formatTimestamp(value: string | null | undefined): string {
     minute: "2-digit",
   });
 }
+
+// THE NAMING LAW: labels for declared surface values render byte-identical to
+// the `matrx-user/notes` manifest — never hand-typed.
+const L = surfaceValueLabels(notesEditorManifest);
 
 function SectionHeader({
   icon: Icon,
@@ -228,8 +234,8 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       </div>
 
       {/* ── Folder ────────────────────────────────────────────────────── */}
-      <SectionHeader icon={FolderOpen} label="Folder" />
-      <div className="relative px-3 pb-1">
+      <SectionHeader icon={FolderOpen} label={L.current_note_folder} />
+      <div className="relative px-3 pb-1" data-surface-value="current_note_folder">
         <button
           onClick={() => setFolderOpen((v) => !v)}
           className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-xs rounded-md border border-border/50 bg-muted/30 hover:bg-accent/50 transition-colors cursor-pointer"
@@ -271,15 +277,18 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
 
       {/* ── Context (org → scopes → project → task) ──────────────────── */}
       <SectionHeader icon={Hash} label="Context" />
-      <div className="px-1">
+      <div className="px-1" data-surface-value="note_scope_assignments">
         <NoteContextSection noteId={noteId} />
       </div>
 
       {/* ── Tags ──────────────────────────────────────────────────────── */}
       {tags.length > 0 && (
         <>
-          <SectionHeader icon={Hash} label="Tags" />
-          <div className="flex flex-wrap gap-1 px-3 pb-1">
+          <SectionHeader icon={Hash} label={L.current_note_tags} />
+          <div
+            className="flex flex-wrap gap-1 px-3 pb-1"
+            data-surface-value="current_note_tags"
+          >
             {tags.map((tag) => (
               <span
                 key={tag}

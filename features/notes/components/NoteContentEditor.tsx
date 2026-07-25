@@ -726,7 +726,10 @@ export function NoteContentEditor({
         undoHint={undoHint}
         redoHint={redoHint}
       >
-        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+        <div
+          className="flex-1 flex flex-col min-h-0 min-w-0"
+          data-surface-value="current_note"
+        >
           {readOnly && (
             <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
               <Eye className="w-3.5 h-3.5 shrink-0" />

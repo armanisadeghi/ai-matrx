@@ -263,6 +263,7 @@ export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
   return (
     <div
       className="notes-tab-bar-scroll flex items-stretch h-8 min-h-[2rem] overflow-hidden border-b border-border shrink-0"
+      data-surface-value="open_note_ids"
       role="tablist"
       aria-label="Open notes"
       onDragOver={(e) => {
