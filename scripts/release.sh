@@ -9,6 +9,12 @@
 #   This repo has no DDL path of its own — aidream holds the Postgres creds.
 #   Override checkout with AIDREAM_DIR; skip with --no-migrate.
 #
+# Protocol mirror (docs/protocol):
+#   After migrations, verifies the byte-identical pact with aidream's
+#   docs/protocol (envelope doc, references doc, generated registry). On drift
+#   it auto-syncs aidream → here and commits, loudly, before the version bump.
+#   Same co-located checkout / AIDREAM_DIR as migrations; missing = warn+skip.
+#
 # Remote sync is handled automatically and safely:
 #   - Before anything is changed, it fetches origin/main and either fast-forwards
 #     (remote ahead), proceeds (local ahead), or cleanly rebases (diverged).
@@ -271,6 +277,36 @@ Fix the failures above (or re-run from aidream:
 }
 
 apply_frontend_migrations
+
+# ── Protocol mirror sync (docs/protocol ↔ aidream, byte-identical pact) ──────
+# MATRX_ENVELOPE.md + MATRX_REFERENCES.md + matrx_envelope_registry.generated.json
+# are contractually byte-identical across both repos; aidream is canonical
+# (registry emitted by its generate_envelope_registry.py). Drift here once sat
+# unnoticed at 11/87 shapes. Same co-located-checkout assumption as the
+# migration applier above (AIDREAM_DIR override; missing checkout = warn+skip).
+sync_protocol_mirror() {
+    info "Checking docs/protocol mirror against aidream..."
+    if pnpm check:protocol-sync:strict; then
+        return 0
+    fi
+    if $DRY_RUN; then
+        warn "Protocol mirror has drifted (see above). A real release would auto-sync from aidream."
+        return 0
+    fi
+    echo "" >&2
+    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}" >&2
+    echo -e "${RED}║  PROTOCOL MIRROR DRIFT — auto-syncing from aidream           ║${NC}" >&2
+    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}" >&2
+    echo -e "${YELLOW}  This firing means drift got past a session. If the FE copy held${NC}" >&2
+    echo -e "${YELLOW}  an intentional edit, it is being overwritten (recover from git${NC}" >&2
+    echo -e "${YELLOW}  history) — protocol edits land in aidream FIRST, then sync here.${NC}" >&2
+    pnpm check:protocol-sync:fix
+    git add docs/protocol/
+    git commit -m "chore(protocol): sync docs/protocol mirror from aidream (release.sh auto-sync)"
+    ok "Protocol mirror re-synced and committed."
+}
+
+sync_protocol_mirror
 
 # A source_app/source_feature typo is persisted permanently and corrupts every
 # attribution view downstream. ADVISORY ONLY — no check ever blocks a release;

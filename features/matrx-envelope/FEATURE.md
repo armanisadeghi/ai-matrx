@@ -4,6 +4,15 @@ The client mirror of the [Matrx Envelope](../../docs/protocol/MATRX_ENVELOPE.md)
 `{ matrx_version, kind, type, items: [...] }`. Recognize the outer canonical shell once,
 route internal parts through a registry, render them, fall back gracefully.
 
+**Protocol mirror pact:** `docs/protocol/MATRX_ENVELOPE.md` + `MATRX_REFERENCES.md` +
+`matrx_envelope_registry.generated.json` are **byte-identical** with aidream's copies;
+aidream is canonical (registry emitted by its `scripts/generate_envelope_registry.py` —
+never edit the JSON by hand, and doc edits land in aidream FIRST). Guarded by
+`pnpm check:protocol-sync` (in `check:release-gates`; `release.sh` auto-syncs + commits
+on drift). `MATRX_ACTIONS.md` + `matrx_action_catalog.generated.json` are deliberately
+NOT mirrored — pointer-only (`features/agents/types/matrx-actions.types.ts` names the
+aidream doc as canonical); mirror them only if the FE gains a catalog consumer.
+
 ## The canonical reference item — FLAT identity (the load-bearing invariant)
 
 A reference item is **pure flat identity ids + optional, non-authoritative display
@@ -127,6 +136,13 @@ render through the SAME live chip renderer.
 
 ## Change Log
 
+- 2026-07-25 — Claude: **Protocol mirror drift check.** `MATRX_REFERENCES.md` re-synced
+  from aidream (FE copy was a 6KB ancestor of aidream's 18KB current doc). New
+  `scripts/check-protocol-sync.ts` (`pnpm check:protocol-sync` / `:strict` / `:fix`)
+  byte-compares the three mirrored files against the co-located aidream checkout
+  (`AIDREAM_DIR` override); wired into `run-release-gates.sh` and `release.sh`
+  (auto-sync + commit on drift, before the version bump). MATRX_ACTIONS decided
+  pointer-only, not mirrored.
 - 2026-07-25 — Claude: **Content Planning directives** —
   `directives/planTree/` renders `output_directive:plan_tree` /
   `plan_node_patch` receipts (tolerant parse, 0/2/5s read-only resolve
