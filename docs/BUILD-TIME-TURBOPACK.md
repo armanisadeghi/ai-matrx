@@ -52,6 +52,27 @@ The file pattern matches ~19,946 files in [project]/
 - Input source on Vercel worker: **~2.3 GB** (per build report).
 - These warnings correlate with tracing **the entire project** into server bundles — fixing them should reduce Turbopack graph size materially.
 
+## Local: time which chunks are slow (`pnpm build:trace`)
+
+Guessing is useless. Turbopack can write a module-level timeline:
+
+```bash
+pnpm build:trace
+```
+
+That sets `NEXT_TURBOPACK_TRACING=1` and runs a full production build. When it
+finishes (or OOMs), open [https://ui.perfetto.dev/](https://ui.perfetto.dev/)
+and drag in the newest file under `.next-profiles/` (or `.next/trace*` —
+Next’s path has moved between versions). The longest / fattest spans are the
+slow chunks; expand one to see the exact module path.
+
+What to hunt for: admin routes that import `typescript`, walk `process.cwd()`
+with `fs`, or pull giant JSON at the top level. The Vercel warning
+`The file pattern … matches N files` is the same class of signal.
+
+Bisect locally: delete or lazy-load one suspect → re-run `pnpm build:trace` →
+compare wall-clock + Perfetto. No deploy required.
+
 ## Verification after fix
 
 ```bash
@@ -68,6 +89,12 @@ Expect: zero “Overly broad patterns” / “unexpected file in NFT list” war
 
 ## Change log
 
+- `2026-07-25` — **Deleted the OOM offenders.** Removed
+  `app/api/admin/typescript-errors/regenerate` + the admin TypeScript Error
+  Analyzer UI (CLI replacement: `pnpm capture-errors`), and
+  `app/api/admin/local-logs` + the localhost entries in the server-log viewer
+  (Coolify logs remain). Added `pnpm build:trace` for local Perfetto timing.
+  Shape-doctor stays — it is a live admin feature, not dead tooling.
 - `2026-07-25` — Added the `check:turbopack-fs` release gate and marked the
   dynamic roots used by the shape doctor and TypeScript-error admin endpoint.
   Before the fix Turbopack traced 24,000+ files through each root, compiled for

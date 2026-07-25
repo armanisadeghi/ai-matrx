@@ -65,61 +65,38 @@ export const APPS = [
     key: "ai-dream-server",
     label: "AI Dream Server",
     env: "production",
-    source: "coolify" as const,
   },
   {
     key: "ai-dream-server-dev",
     label: "AI Dream Server",
     env: "development",
-    source: "coolify" as const,
   },
   {
     key: "scraper-service",
     label: "Scraper Service",
     env: "production",
-    source: "coolify" as const,
   },
   {
     key: "scraper-service-dev",
     label: "Scraper Service",
     env: "development",
-    source: "coolify" as const,
   },
   {
     key: "matrx-ai",
     label: "Matrx AI",
     env: "production",
-    source: "coolify" as const,
   },
   {
     key: "matrx-ai-dev",
     label: "Matrx AI",
     env: "development",
-    source: "coolify" as const,
-  },
-  {
-    key: "local-python-run",
-    label: "Python Server",
-    env: "localhost",
-    source: "local" as const,
-  },
-  {
-    key: "local-python-dev",
-    label: "Python Server (dev log)",
-    env: "localhost",
-    source: "local" as const,
   },
 ] as const;
 
 export type AppKey = (typeof APPS)[number]["key"];
 
 function logsApiUrl(appKey: AppKey, lines: number): string {
-  const app = APPS.find((a) => a.key === appKey);
-  const base =
-    app?.source === "local"
-      ? "/api/admin/local-logs"
-      : "/api/admin/coolify-logs";
-  return `${base}?app=${appKey}&lines=${lines}`;
+  return `/api/admin/coolify-logs?app=${appKey}&lines=${lines}`;
 }
 
 const LINE_OPTIONS = [50, 100, 200, 500, 1000, 2000, 5000, 10000];
@@ -1146,18 +1123,12 @@ export default function CoolifyLogViewer({
                     <Badge
                       variant="outline"
                       className={
-                        app.source === "local"
-                          ? "text-[10px] py-0 border-success/60 text-success"
-                          : app.env === "production"
-                            ? "text-[10px] py-0 border-warning/60 text-warning"
-                            : "text-[10px] py-0 border-border text-muted-foreground"
+                        app.env === "production"
+                          ? "text-[10px] py-0 border-warning/60 text-warning"
+                          : "text-[10px] py-0 border-border text-muted-foreground"
                       }
                     >
-                      {app.source === "local"
-                        ? "local"
-                        : app.env === "production"
-                          ? "prod"
-                          : "dev"}
+                      {app.env === "production" ? "prod" : "dev"}
                     </Badge>
                   </span>
                 </SelectItem>

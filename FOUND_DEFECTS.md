@@ -13,39 +13,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D103 — production builds are OOM-flipping: nothing since 21:30 UTC has deployed (2026-07-25)
-
-**Live impact:** the last READY production deploy is `1019b1269` (21:30 UTC). Every
-build after it — `e00253a30` (release v0.4.32), `1132050ab`, and others — died
-`out_of_memory` / `Command "pnpm run build" exited with SIGKILL`. Work is landing
-on `main` and NOT reaching users; the tag v0.4.32 is not what production serves.
-
-Not a compile failure: Turbopack reports `✓ Compiled successfully in 16.9min`,
-then the SIGKILL lands during **`Collecting page data using 29 workers`**. So the
-peak is 29 parallel workers each holding the app graph, not any one module.
-
-Two smoking guns in the same build log, both pre-existing:
-1. `./next.config.js` → `Encountered unexpected file in NFT list — A file was
-   traced that indicates that the whole project was traced unintentionally`,
-   import trace `next.config.js → app/api/admin/typescript-errors/regenerate/route.ts`.
-2. That route's `resolveTsconfig` matches **12,369 files**: the `path.join` already
-   carries `/* turbopackIgnore: true */` but the `fs.existsSync(p)` on the next
-   line does not, so the trace still fans out. The same route also does a
-   top-level `import * as ts from "typescript"`.
-
-It flips rather than fails outright — several builds earlier the same day went
-READY — so it is a ceiling, not a wall, and every added route pushes it. Two
-recent commits already fought this class (`fix(build): bound Turbopack filesystem
-traces`, `release: eliminate Turbopack trace OOM`).
-
-Candidate fixes, in order: add `turbopackIgnore` to the `existsSync` call and
-lazy-`require("typescript")` inside the handler (both scoped to that admin route);
-cap page-data worker concurrency; or enable Vercel Enhanced Builds for more RAM
-(the log recommends it). **NOT attempted here** — it is shared build config, the
-fix is unverified against the build container's memory, several sessions were
-pushing concurrently, and guessing during an outage makes it worse. Needs one
-owner and a real before/after build.
-
 ### D102 — a structured server validation error reaches the user as bare "HTTP 422" (2026-07-25)
 
 Every aidream 4xx with a validation body is surfaced to the user as just the
@@ -347,6 +314,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D103** — Production build OOM from unused admin TypeScript-error analyzer (whole-repo fs scan + TypeScript compiler in the app graph). Deleted the route/UI + local-logs API; old bookmarks redirect to `/administration/utilities`; CLI replacement `pnpm capture-errors`; `pnpm build:trace` for local Perfetto timing; `check:turbopack-fs` now bans value-imports of `typescript` in the app graph. (2026-07-25)
 - **D62** — React Compiler re-enabled (`reactCompiler: true`) with A/B build proof: core-profile build 10.6min off / 12.0min on (+13%), 3,669 chunks carry compiled components, built app boots clean — CLAUDE.md doctrine is true again. (`next.config.js`, 2026-07-18)
 - **D63** — Doc-vs-config drift sweep after D62. Built `pnpm check:doc-claims` (10 machine-verified CLAUDE.md claims, negative-tested, wired into release gates); un-excluded 485 shipped files from `tsconfig.typecheck.json` at zero error cost; restored `removeConsole` (743 `console.log` were shipping to prod); closed the `storage_uri` template-literal lint hole; migrated 28 skills out of the Claude-Code-invisible `.cursor/skills/` (incl. `finalize-and-ship`, instructed on every task) and repointed 34 files; corrected route groups, stack versions, `'use cache'`, dead cross-repo path, and three false enforcement claims. Residue filed as D64-D70. (`scripts/check-doc-claims.ts`, 2026-07-18)
 

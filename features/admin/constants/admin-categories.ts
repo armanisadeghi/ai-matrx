@@ -1130,13 +1130,6 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "RefreshCw",
         link: "/administration/utilities/server-cache",
       },
-      {
-        title: "TypeScript Error Analyzer",
-        description:
-          "View, filter, and analyze TypeScript compilation errors across the project",
-        iconName: "Code",
-        link: "/administration/utilities/typescript-errors",
-      },
     ],
   },
   {

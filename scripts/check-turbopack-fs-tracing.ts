@@ -19,6 +19,11 @@ const TEST_FILE =
 const FS_IMPORT =
   /(?:from\s+["'](?:node:)?fs["']|import\s*\(\s*["'](?:node:)?fs["']\s*\))/;
 const TRACE_BOUNDARY = /\/\*\s*turbopackIgnore:\s*true\s*\*\//;
+// Value-import of the TypeScript compiler into the Next app graph is forbidden
+// (D103): it dragged ~10MB of tooling into every page-data worker and OOM'd
+// production builds. Type-only imports (`import type …`) are fine.
+const TYPESCRIPT_VALUE_IMPORT =
+  /(?:^|\n)\s*import\s+(?!type\b)[^;]*\bfrom\s+["']typescript["']/;
 const REVIEWED_STATIC_ROOTS = new Set([
   // Statically anchored under public/ before the dynamic subdirectory.
   "components/ssr/StaticFilesIndexPage.tsx",
@@ -39,7 +44,7 @@ function sourceFiles(dir: string): string[] {
   return files;
 }
 
-const violations = PRODUCT_ROOTS.flatMap((root) =>
+const fsViolations = PRODUCT_ROOTS.flatMap((root) =>
   sourceFiles(join(ROOT, root)).flatMap((path) => {
     const source = readFileSync(path, "utf8");
     const relPath = relative(ROOT, path);
@@ -54,20 +59,42 @@ const violations = PRODUCT_ROOTS.flatMap((root) =>
   }),
 );
 
-if (violations.length > 0) {
-  console.error(
-    [
+const typescriptViolations = ["app", "components", "features"].flatMap((root) =>
+  sourceFiles(join(ROOT, root)).flatMap((path) => {
+    const source = readFileSync(path, "utf8");
+    if (!TYPESCRIPT_VALUE_IMPORT.test(source)) return [];
+    return [relative(ROOT, path)];
+  }),
+);
+
+if (fsViolations.length > 0 || typescriptViolations.length > 0) {
+  const parts: string[] = [];
+  if (fsViolations.length > 0) {
+    parts.push(
       "TURBOPACK FILESYSTEM TRACE BOUNDARY MISSING",
       "",
-      ...violations.map((path) => `  - ${path}`),
+      ...fsViolations.map((path) => `  - ${path}`),
       "",
       "Product runtime filesystem access must explicitly bound dynamic roots",
       "with /* turbopackIgnore: true */. See docs/BUILD-TIME-TURBOPACK.md.",
-    ].join("\n"),
-  );
+      "",
+    );
+  }
+  if (typescriptViolations.length > 0) {
+    parts.push(
+      "TYPESCRIPT COMPILER VALUE-IMPORTED INTO THE APP GRAPH (D103)",
+      "",
+      ...typescriptViolations.map((path) => `  - ${path}`),
+      "",
+      "Do not import 'typescript' as a value from app/components/features.",
+      "Use `pnpm capture-errors` (CLI) or `import type` only. See D103 /",
+      "docs/BUILD-TIME-TURBOPACK.md.",
+    );
+  }
+  console.error(parts.join("\n"));
   process.exit(1);
 }
 
 console.log(
-  "check-turbopack-fs: OK — product runtime fs imports declare tracing boundaries.",
+  "check-turbopack-fs: OK — fs boundaries present; no typescript value imports in app graph.",
 );

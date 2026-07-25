@@ -53,7 +53,10 @@ const ADMIN_ROUTE_FAMILY_MOVES = [
     ["/administration/all-routes", "/administration/utilities/all-routes"],
     ["/administration/capture-inspector", "/administration/utilities/capture-inspector"],
     ["/administration/server-cache", "/administration/utilities/server-cache"],
-    ["/administration/typescript-errors", "/administration/utilities/typescript-errors"],
+    // Retired 2026-07-25 (D103): in-app TS analyzer OOM'd production builds.
+    // CLI replacement: `pnpm capture-errors`. Old bookmarks land on the utilities hub.
+    ["/administration/typescript-errors", "/administration/utilities"],
+    ["/administration/utilities/typescript-errors", "/administration/utilities"],
     ["/administration/utils", "/administration/utilities/utils"],
     ["/administration/feature-docs", "/administration/documentation/feature-docs"],
     ["/administration/reports", "/administration/reporting/reports"],

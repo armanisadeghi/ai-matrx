@@ -113,7 +113,6 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   { name: "matrx-admin/podcasts",                client_name: "matrx-admin", description: "Podcast management",                        sort_order: 490, is_active: false, group: "page" },
   { name: "matrx-admin/sandbox-infra",           client_name: "matrx-admin", description: "Sandbox infrastructure admin",              sort_order: 500, is_active: false, group: "page" },
   { name: "matrx-admin/resilience-lab",          client_name: "matrx-admin", description: "Resilience testing tools",                  sort_order: 510, is_active: false, group: "page" },
-  { name: "matrx-admin/typescript-errors",       client_name: "matrx-admin", description: "TypeScript error tracker",                  sort_order: 520, is_active: false, group: "page" },
   { name: "matrx-admin/invitation-requests",     client_name: "matrx-admin", description: "User invitation request queue",             sort_order: 530, is_active: false, group: "page" },
   { name: "matrx-admin/all-routes",              client_name: "matrx-admin", description: "Full route index",                          sort_order: 540, is_active: false, group: "page" },
   { name: "matrx-admin/experimental-routes",     client_name: "matrx-admin", description: "Experimental routes index",                 sort_order: 550, is_active: false, group: "page" },
