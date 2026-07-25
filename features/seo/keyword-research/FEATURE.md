@@ -88,6 +88,13 @@ market enrichment remain explicit compute operations.
 
 ## Change Log
 
+- 2026-07-25 — Extracted the private sparkline / competition badge / volume+CPC
+  formatters out of `KeywordResearchWorkbench` into `components/KeywordMetrics.tsx`
+  (generalized from `KeywordMarketRow` to primitives) so the workbench and the
+  `seo` tool renderer share ONE implementation and can never drift. Added the
+  `seo` tool's `keyword_data` payload shapes + `parseSeoKeywordData` /
+  `normalizeMonthlySearches` to `types.ts`.
+
 - 2026-07-23 — WS-1: consume the durable run identity (`seo.command_run`), persist the
   active run id in sessionStorage, and auto-rejoin by run id on mount
   (`/seo/collections/{runId}/rejoin` — live replay or durable snapshot).

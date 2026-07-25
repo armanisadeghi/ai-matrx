@@ -1,11 +1,17 @@
 /**
  * The one normalized shape the SERP primitive renders, plus the raw backend
- * item shapes the three SEO tools emit and the normalizers between them.
+ * item shapes the SEO meta checks emit and the normalizers between them.
  *
- * Backend source of truth: aidream `seo/utils/meta_calculators.py`
- *   - seo_check_meta_tags_batch -> { batch_analysis: MetaTagBatchItem[], count }
- *   - seo_check_meta_titles      -> { title_analysis: TitleAnalysisItem[], count }
- *   - seo_check_meta_descriptions-> { description_analysis: DescriptionAnalysisItem[], count }
+ * Backend source of truth: aidream `seo/utils/meta_calculators.py`, reached
+ * through the unified `seo` tool's meta actions (the standalone
+ * `seo_check_meta_*` tools were consolidated into it; their payloads survive in
+ * persisted history and normalize identically):
+ *   - action=check_batch        -> { batch_analysis: MetaTagBatchItem[], count }
+ *   - action=check_titles       -> { title_analysis: TitleAnalysisItem[], count }
+ *   - action=check_descriptions -> { description_analysis: DescriptionAnalysisItem[], count }
+ *
+ * The envelopes themselves are read defensively in the renderer's shape
+ * resolver (`renderers/seo/resolve.ts`), so only the ITEM shapes live here.
  *
  * Tool checks already precompute pixels / chars / *_ok server-side, so the
  * renderers TRUST those values and never re-measure. The live calculator page
@@ -76,21 +82,6 @@ export interface DescriptionAnalysisItem {
   too_short?: boolean;
   issues?: string[];
   description_ok: boolean;
-}
-
-export interface SeoMetaTagsResult {
-  batch_analysis: MetaTagBatchItem[];
-  count: number;
-}
-
-export interface SeoTitlesResult {
-  title_analysis: TitleAnalysisItem[];
-  count: number;
-}
-
-export interface SeoDescriptionsResult {
-  description_analysis: DescriptionAnalysisItem[];
-  count: number;
 }
 
 // ─── Normalizers (raw item -> SerpEntry) ────────────────────────────────────

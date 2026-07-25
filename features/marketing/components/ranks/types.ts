@@ -5,6 +5,8 @@
  * until the deploy sync runs.
  */
 
+import type { SeoCollectionReceipt } from "@/features/seo/rank/types";
+
 export type RankProvider = "brave" | "serpapi";
 
 export interface RankPortfolioItem {
@@ -82,6 +84,7 @@ export interface UpdateRankTargetInput {
 export interface RankCheckCompletedEvent {
   kind: "seo.rank_check_completed";
   run_id: string;
-  receipt: Record<string, unknown>;
+  /** Canonical shape — shared with the `seo` tool's collect_rank result. */
+  receipt: SeoCollectionReceipt;
   portfolio_item: RankPortfolioItem | null;
 }

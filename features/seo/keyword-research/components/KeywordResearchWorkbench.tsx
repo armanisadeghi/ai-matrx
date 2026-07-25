@@ -23,12 +23,19 @@ import {
 import { toast } from "@/lib/toast";
 
 import { useKeywordResearch } from "../useKeywordResearch";
+import { normalizeMonthlySearches } from "../types";
 import type {
   KeywordEdgeView,
   KeywordMarketRow,
   KeywordWithMarket,
   MonthlySearchPoint,
 } from "../types";
+import {
+  KeywordCompetitionBadge,
+  KeywordTrendSparkline,
+  formatCpc,
+  formatSearchVolume,
+} from "./KeywordMetrics";
 
 const EDGE_TYPE_LABELS: Record<string, string> = {
   refines: "Refines",
@@ -45,20 +52,9 @@ function usMarket(row: KeywordWithMarket): KeywordMarketRow | null {
   );
 }
 
+/** Oldest-first, capped at the last 12 months — the shape the sparkline reads. */
 function monthlyPoints(market: KeywordMarketRow | null): MonthlySearchPoint[] {
-  const raw = market?.monthly_searches;
-  if (!Array.isArray(raw)) return [];
-  return (raw as unknown as MonthlySearchPoint[])
-    .filter((point) => point && typeof point.search_volume === "number")
-    .slice(0, 12)
-    .reverse();
-}
-
-function formatVolume(volume: number | null | undefined): string {
-  if (volume === null || volume === undefined) return "—";
-  if (volume >= 1_000_000) return `${(volume / 1_000_000).toFixed(1)}M`;
-  if (volume >= 1_000) return `${(volume / 1_000).toFixed(1)}k`;
-  return String(volume);
+  return normalizeMonthlySearches(market?.monthly_searches).slice(0, 12).reverse();
 }
 
 function TrajectoryBadge({ value }: { value: string | null }) {
@@ -81,35 +77,6 @@ function TrajectoryBadge({ value }: { value: string | null }) {
       ) : null}
       {label}
     </span>
-  );
-}
-
-function CompetitionBadge({ market }: { market: KeywordMarketRow | null }) {
-  if (!market?.competition) return <span className="text-muted-foreground">—</span>;
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs">
-      <span className="font-medium text-foreground">{market.competition}</span>
-      {market.competition_index !== null && (
-        <span className="text-muted-foreground">{market.competition_index}</span>
-      )}
-    </span>
-  );
-}
-
-function TrendSparkline({ points }: { points: MonthlySearchPoint[] }) {
-  if (points.length < 2) return <span className="text-muted-foreground text-xs">—</span>;
-  const max = Math.max(...points.map((point) => point.search_volume), 1);
-  return (
-    <div className="flex h-6 items-end gap-px" aria-hidden>
-      {points.map((point) => (
-        <div
-          key={`${point.year}-${point.month}`}
-          className="w-1.5 rounded-sm bg-primary/60"
-          style={{ height: `${Math.max(8, (point.search_volume / max) * 100)}%` }}
-          title={`${point.year}-${String(point.month).padStart(2, "0")}: ${point.search_volume.toLocaleString()}`}
-        />
-      ))}
-    </div>
   );
 }
 
@@ -478,18 +445,19 @@ function FragmentRow({
         </td>
         <td className="px-2 py-1.5 font-medium text-foreground">{row.phrase}</td>
         <td className="px-2 py-1.5 text-right tabular-nums text-foreground">
-          {formatVolume(market?.search_volume)}
+          {formatSearchVolume(market?.search_volume)}
         </td>
         <td className="px-2 py-1.5">
-          <TrendSparkline points={monthlyPoints(market)} />
+          <KeywordTrendSparkline points={monthlyPoints(market)} />
         </td>
         <td className="px-2 py-1.5">
-          <CompetitionBadge market={market} />
+          <KeywordCompetitionBadge
+            competition={market?.competition}
+            competitionIndex={market?.competition_index}
+          />
         </td>
         <td className="px-2 py-1.5 text-right tabular-nums text-foreground">
-          {market?.cpc !== null && market?.cpc !== undefined
-            ? `$${Number(market.cpc).toFixed(2)}`
-            : "—"}
+          {formatCpc(market?.cpc)}
         </td>
         <td className="px-2 py-1.5">
           <TrajectoryBadge value={market?.demand_trajectory ?? null} />

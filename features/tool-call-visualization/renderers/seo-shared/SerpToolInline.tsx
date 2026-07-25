@@ -1,27 +1,25 @@
 "use client";
 
-import { CheckCircle, AlertTriangle, FileText } from "lucide-react";
+/**
+ * Shared inline BODY for every SEO meta check. Brings the agent's output to
+ * life as a stack of real simulated Google results — the same `SerpResult`
+ * primitive the public calculator page and the marketing workspace render —
+ * with a thin validation footer per row.
+ *
+ * Body only: the `seo` renderer wraps this in the canonical `ToolResultCard`,
+ * whose header carries the count and the passed/needs-attention summary. This
+ * component must never draw its own title or repeat that summary.
+ */
+
+import { AlertTriangle, CheckCircle, FileText } from "lucide-react";
+
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { cn } from "@/lib/utils";
 import { SerpResult } from "@/features/seo/serp/SerpResult";
 import { SerpFieldChips } from "@/features/seo/serp/SerpValidation";
 import type { SerpEntry } from "@/features/seo/serp/types";
 
-/**
- * Shared inline renderer for every SEO meta check. Brings the agent's output
- * to life as a stack of real simulated Google results — the same `SerpResult`
- * primitive the calculator page uses — with a thin validation footer per row.
- *
- * The three SEO tool entry points (tags / titles / descriptions) normalize
- * their server payload to `SerpEntry[]` and delegate here, so there is exactly
- * one inline implementation instead of three near-identical copies.
- */
-
 const MAX_INLINE = 6;
-
-function titleCase(noun: string): string {
-  return noun.replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function plural(n: number, noun: string): string {
   return `${noun}${n === 1 ? "" : "s"}`;
@@ -35,8 +33,8 @@ export interface SerpToolInlineProps {
   titlePlaceholder?: string | null;
   /** Stand-in description when an entry has none. `null` omits it. */
   descriptionPlaceholder?: string | null;
-  onOpenOverlay?: (initialTab?: string) => void;
-  toolGroupId?: string;
+  /** Opens the full Google-results view. Omitted -> the footer link is hidden. */
+  onOpenFullView?: () => void;
 }
 
 export function SerpToolInline({
@@ -44,39 +42,16 @@ export function SerpToolInline({
   noun,
   titlePlaceholder,
   descriptionPlaceholder,
-  onOpenOverlay,
-  toolGroupId = "default",
+  onOpenFullView,
 }: SerpToolInlineProps) {
   if (!entries.length) return null;
 
-  const passed = entries.filter((e) => e.overallOk).length;
-  const failed = entries.length - passed;
   const shown = entries.slice(0, MAX_INLINE);
-  const hasMore = entries.length > shown.length;
+  const hidden = entries.length - shown.length;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-medium text-foreground/90">
-        <FileText className="h-4 w-4 text-primary" />
-        <span>
-          {entries.length} {plural(entries.length, titleCase(noun))} Analyzed
-        </span>
-      </div>
-
-      <div className="flex items-center gap-3 text-xs">
-        <div className="flex items-center gap-1.5 text-success">
-          <CheckCircle className="h-4 w-4" />
-          <span className="font-medium">{passed} passed</span>
-        </div>
-        {failed > 0 ? (
-          <div className="flex items-center gap-1.5 text-warning">
-            <AlertTriangle className="h-4 w-4" />
-            <span className="font-medium">{failed} need attention</span>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="space-y-2">
+    <div>
+      <div className="space-y-2 p-3">
         {shown.map((entry, i) => (
           <div
             key={i}
@@ -127,11 +102,7 @@ export function SerpToolInline({
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {entry.title ? (
-                  <CopyButton
-                    content={entry.title}
-                    size="icon"
-                    tooltip="Copy title"
-                  />
+                  <CopyButton content={entry.title} size="icon" tooltip="Copy title" />
                 ) : null}
                 {entry.description ? (
                   <CopyButton
@@ -146,20 +117,19 @@ export function SerpToolInline({
         ))}
       </div>
 
-      {onOpenOverlay ? (
+      {onOpenFullView ? (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onOpenOverlay(`tool-group-${toolGroupId}`);
+            onOpenFullView();
           }}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          className="flex w-full items-center justify-center gap-2 border-t border-border/60 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
         >
-          <FileText className="h-4 w-4" />
-          <span>
-            {hasMore
-              ? `View all ${entries.length} ${plural(entries.length, noun)} in Google view`
-              : `Open Google results view`}
-          </span>
+          <FileText className="h-3.5 w-3.5" />
+          {hidden > 0
+            ? `${hidden} more ${plural(hidden, noun)} — open Google view`
+            : "Open Google view"}
         </button>
       ) : null}
     </div>

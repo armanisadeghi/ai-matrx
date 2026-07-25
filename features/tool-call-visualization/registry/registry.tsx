@@ -57,12 +57,9 @@ import { WebInline } from "../renderers/web/WebInline";
 import { WebOverlay } from "../renderers/web/WebOverlay";
 import { resolveWebActionKind } from "../renderers/web/webAction";
 import { NewsInline, NewsOverlay } from "../renderers/news-api";
-import { SeoMetaTagsInline } from "../renderers/seo-meta-tags/SeoMetaTagsInline";
-import { SeoMetaTagsOverlay } from "../renderers/seo-meta-tags/SeoMetaTagsOverlay";
-import { SeoMetaTitlesInline } from "../renderers/seo-meta-titles/SeoMetaTitlesInline";
-import { SeoMetaTitlesOverlay } from "../renderers/seo-meta-titles/SeoMetaTitlesOverlay";
-import { SeoMetaDescriptionsInline } from "../renderers/seo-meta-descriptions/SeoMetaDescriptionsInline";
-import { SeoMetaDescriptionsOverlay } from "../renderers/seo-meta-descriptions/SeoMetaDescriptionsOverlay";
+import { SeoInline } from "../renderers/seo/SeoInline";
+import { SeoOverlay } from "../renderers/seo/SeoOverlay";
+import { resolveSeoVariant, seoVariantSub } from "../renderers/seo/resolve";
 import { PicklistInline } from "../renderers/picklist/PicklistInline";
 import { PicklistOverlay } from "../renderers/picklist/PicklistOverlay";
 import { TaskInline } from "../renderers/task/TaskInline";
@@ -115,87 +112,36 @@ import {
 } from "../db-renderer/toolRendererCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SEO header extras helpers
+// SEO header extras — ONE helper for every `seo` action + legacy tool name.
+// Reads the resolved variant, so it can never disagree with what the body
+// renders.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function seoMetaTagsHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
-  const result = resultAsObject(entry);
-  if (!result) return null;
-  const batch = result.batch_analysis as
-    Array<{ overall_ok: boolean }> | undefined;
-  if (!batch) return null;
-  const total = (result.count as number | undefined) ?? batch.length;
-  const passed = batch.filter((a) => a.overall_ok).length;
-  const failed = total - passed;
-  return (
-    <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
-      <span className="flex items-center gap-1">
-        <CheckCircle className="w-3.5 h-3.5" />
-        {passed} Passed
-      </span>
-      {failed > 0 && (
-        <span className="flex items-center gap-1">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          {failed} Need Attention
-        </span>
-      )}
-      <span className="ml-auto text-white/60">Total: {total}</span>
-    </div>
-  );
-}
+function seoHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
+  const variant = resolveSeoVariant(entry);
+  if (!variant) return null;
 
-function seoTitlesHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
-  const result = resultAsObject(entry);
-  if (!result) return null;
-  const analysis = result.title_analysis as
-    Array<{ title_ok: boolean }> | undefined;
-  if (!analysis) return null;
-  const total = (result.count as number | undefined) ?? analysis.length;
-  const passed = analysis.filter((a) => a.title_ok).length;
-  const failed = total - passed;
-  return (
-    <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
-      <span className="flex items-center gap-1">
-        <CheckCircle className="w-3.5 h-3.5" />
-        {passed} Passed
-      </span>
-      {failed > 0 && (
+  if (variant.kind === "meta") {
+    return (
+      <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
         <span className="flex items-center gap-1">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          {failed} Need Attention
+          <CheckCircle className="w-3.5 h-3.5" />
+          {variant.passed} Passed
         </span>
-      )}
-      <span className="ml-auto text-white/60">Total: {total}</span>
-    </div>
-  );
-}
+        {variant.failed > 0 && (
+          <span className="flex items-center gap-1">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {variant.failed} Need Attention
+          </span>
+        )}
+        <span className="ml-auto text-white/60">Total: {variant.entries.length}</span>
+      </div>
+    );
+  }
 
-function seoDescriptionsHeaderExtras(
-  entry: ToolLifecycleEntry,
-): React.ReactNode {
-  const result = resultAsObject(entry);
-  if (!result) return null;
-  const analysis = result.description_analysis as
-    Array<{ description_ok: boolean }> | undefined;
-  if (!analysis) return null;
-  const total = (result.count as number | undefined) ?? analysis.length;
-  const passed = analysis.filter((a) => a.description_ok).length;
-  const failed = total - passed;
-  return (
-    <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
-      <span className="flex items-center gap-1">
-        <CheckCircle className="w-3.5 h-3.5" />
-        {passed} Passed
-      </span>
-      {failed > 0 && (
-        <span className="flex items-center gap-1">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          {failed} Need Attention
-        </span>
-      )}
-      <span className="ml-auto text-white/60">Total: {total}</span>
-    </div>
-  );
+  const sub = seoVariantSub(variant);
+  if (!sub) return null;
+  return <div className="text-white/90 text-xs mt-1">{sub}</div>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -379,8 +325,52 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
+  // ─── SEO ──────────────────────────────────────────────────────────────────
+  // The backend consolidated five SEO tools into ONE `seo` tool that dispatches
+  // on an `action` argument. SeoInline/SeoOverlay resolve on RESULT SHAPE, so
+  // the same pair also serves the legacy tool names still present in persisted
+  // conversation history. One renderer, every SEO payload.
+
+  seo: {
+    toolName: "seo",
+    chrome: "card",
+    displayName: "SEO",
+    phaseLabels: {
+      running: "Running SEO analysis",
+      complete: "Ran SEO analysis",
+      errorPrefix: "SEO analysis failed",
+    },
+    resultsLabel: "SEO Results",
+    InlineComponent: SeoInline,
+    OverlayComponent: SeoOverlay,
+    keepExpandedOnStream: true,
+    getHeaderExtras: seoHeaderExtras,
+    getHeaderSubtitle: (entry) => {
+      const action = getArg<string>(entry, "action");
+      switch (action) {
+        case "check_batch":
+          return "Meta tag check";
+        case "check_titles":
+          return "Title check";
+        case "check_descriptions":
+          return "Description check";
+        case "keyword_data":
+          return "Keyword research";
+        case "collect_rank": {
+          const keyword = getArg<string>(entry, "keyword");
+          return keyword ? `Rank check — ${keyword}` : "Rank check";
+        }
+        default:
+          return null;
+      }
+    },
+  },
+
+  // Legacy names — same components, resolved by shape (persisted history only;
+  // the backend no longer emits these).
   seo_check_meta_tags_batch: {
     toolName: "seo_check_meta_tags_batch",
+    chrome: "card",
     displayName: "SEO Meta Tags",
     phaseLabels: {
       running: "Checking SEO meta tags",
@@ -388,14 +378,15 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "SEO meta-tag check failed",
     },
     resultsLabel: "Meta Tags Results",
-    InlineComponent: SeoMetaTagsInline,
-    OverlayComponent: SeoMetaTagsOverlay,
+    InlineComponent: SeoInline,
+    OverlayComponent: SeoOverlay,
     keepExpandedOnStream: true,
-    getHeaderExtras: seoMetaTagsHeaderExtras,
+    getHeaderExtras: seoHeaderExtras,
   },
 
   seo_check_meta_titles: {
     toolName: "seo_check_meta_titles",
+    chrome: "card",
     displayName: "SEO Title Checker",
     phaseLabels: {
       running: "Checking SEO titles",
@@ -403,14 +394,15 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "SEO title check failed",
     },
     resultsLabel: "Title Results",
-    InlineComponent: SeoMetaTitlesInline,
-    OverlayComponent: SeoMetaTitlesOverlay,
+    InlineComponent: SeoInline,
+    OverlayComponent: SeoOverlay,
     keepExpandedOnStream: true,
-    getHeaderExtras: seoTitlesHeaderExtras,
+    getHeaderExtras: seoHeaderExtras,
   },
 
   seo_check_meta_descriptions: {
     toolName: "seo_check_meta_descriptions",
+    chrome: "card",
     displayName: "SEO Description Checker",
     phaseLabels: {
       running: "Checking SEO descriptions",
@@ -418,10 +410,26 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "SEO description check failed",
     },
     resultsLabel: "Description Results",
-    InlineComponent: SeoMetaDescriptionsInline,
-    OverlayComponent: SeoMetaDescriptionsOverlay,
+    InlineComponent: SeoInline,
+    OverlayComponent: SeoOverlay,
     keepExpandedOnStream: true,
-    getHeaderExtras: seoDescriptionsHeaderExtras,
+    getHeaderExtras: seoHeaderExtras,
+  },
+
+  seo_get_keyword_data: {
+    toolName: "seo_get_keyword_data",
+    chrome: "card",
+    displayName: "SEO Keyword Data",
+    phaseLabels: {
+      running: "Researching keywords",
+      complete: "Researched keywords",
+      errorPrefix: "Keyword research failed",
+    },
+    resultsLabel: "Keyword Results",
+    InlineComponent: SeoInline,
+    OverlayComponent: SeoOverlay,
+    keepExpandedOnStream: true,
+    getHeaderExtras: seoHeaderExtras,
   },
 
   picklist: {
@@ -1511,9 +1519,11 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "knowledge_browse", // the inventory / passage / store / entity map IS the answer
   "document_content", // the fetched pages/text ARE the answer
   "get_user_lists",
+  "seo", // the analyzed SERP previews / keyword table ARE the deliverable
   "seo_check_meta_tags_batch",
   "seo_check_meta_titles",
   "seo_check_meta_descriptions",
+  "seo_get_keyword_data",
   "picklist", // the created/loaded list is the deliverable
   "document",
   "dataset",
@@ -1600,6 +1610,7 @@ const TOOL_GLYPHS: Record<string, ToolGlyphSpec> = {
   context: { icon: Layers, accent: "primary" },
   context_patch: { icon: Layers, accent: "primary" },
   // seo
+  seo: { icon: Gauge, accent: "green" },
   seo_check_meta_tags_batch: { icon: Gauge, accent: "green" },
   seo_check_meta_titles: { icon: Gauge, accent: "green" },
   seo_check_meta_descriptions: { icon: Gauge, accent: "green" },
