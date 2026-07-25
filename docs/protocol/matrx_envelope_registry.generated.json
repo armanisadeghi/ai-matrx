@@ -554,6 +554,19 @@
                   "default": null,
                   "title": "Primary Keyword Id"
                 },
+                "primary_keyword_phrase": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Plain-text target keyword \u2014 matched to an existing seo.keyword by phrase or created automatically. Prefer this over primary_keyword_id.",
+                  "title": "Primary Keyword Phrase"
+                },
                 "priority": {
                   "anyOf": [
                     {
@@ -659,7 +672,7 @@
     },
     {
       "category": "side_effect",
-      "doc": "Apply a declarative content-plan tree to a site (plan.node get-or-create by site+parent+slug \u2014 naturally idempotent, never duplicates; topics/sources land as edges). One item = one site's tree.",
+      "doc": "Apply a declarative content-plan tree to a site (plan.node get-or-create by site+parent+slug \u2014 naturally idempotent, never duplicates; topics/sources land as edges). Keywords and topics are plain text \u2014 resolved to existing rows or created automatically (entity-owned name resolution). One item = one site's tree.",
       "item_model": "PlanTreeItem",
       "kind": "output_directive",
       "purposes": [],
@@ -726,6 +739,7 @@
                 "type": "object"
               },
               "brief": {
+                "description": "Short bullet points describing what the page must cover.",
                 "items": {
                   "type": "string"
                 },
@@ -740,6 +754,7 @@
                 "type": "array"
               },
               "label": {
+                "description": "Human page title, e.g. 'What is platelet-rich plasma?'",
                 "title": "Label",
                 "type": "string"
               },
@@ -749,6 +764,7 @@
                 "type": "boolean"
               },
               "node_type": {
+                "description": "home = site root \u00b7 pillar = top-level hub \u00b7 cluster = grouping hub under a pillar \u00b7 article = an individual page \u00b7 index = a listing/directory page.",
                 "enum": [
                   "home",
                   "pillar",
@@ -793,6 +809,7 @@
                   }
                 ],
                 "default": null,
+                "description": "The page's target keyword as PLAIN TEXT (e.g. 'prp injection for knee'). Matched to an existing seo.keyword or created automatically \u2014 never pass an id here, and never omit the keyword because you don't know its id.",
                 "title": "Primary Keyword Phrase"
               },
               "priority": {
@@ -807,6 +824,7 @@
                   }
                 ],
                 "default": null,
+                "description": "1 = build first, 3 = build last.",
                 "title": "Priority"
               },
               "slug": {
@@ -819,6 +837,7 @@
                   }
                 ],
                 "default": null,
+                "description": "kebab-case URL segment (required for every node except home). The full route is derived from the tree \u2014 never include slashes.",
                 "title": "Slug"
               },
               "sources": {
@@ -855,9 +874,11 @@
                   }
                 ],
                 "default": null,
+                "description": "high = genuinely technical/authority content most competitors skip.",
                 "title": "Technical Depth"
               },
               "topics": {
+                "description": "Topic names as plain text \u2014 matched or created automatically.",
                 "items": {
                   "type": "string"
                 },
