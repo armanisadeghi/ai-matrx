@@ -126,7 +126,7 @@ function visibilityFilter(
     : null;
 }
 
-function assertData<T>(data: T | null, error: unknown): T {
+export function assertData<T>(data: T | null, error: unknown): T {
   if (error) throw error;
   if (data === null) throw new Error("Supabase returned no data.");
   return data;

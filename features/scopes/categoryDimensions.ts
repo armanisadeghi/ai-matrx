@@ -20,6 +20,14 @@ export const CATEGORY_DIMENSIONS = {
   contextItem: "context-item",
   /** Flashcard set folders/tags (fc_set → category via EDGE_ROLE.theme). */
   flashcardFolder: "flashcard-folder",
+  /** Content Planning (`plan` schema) — plan.node.page_type_id. System seeds, public. */
+  planPageType: "plan_page_type",
+  /** Content Planning — plan.node.status_id (idea → … → retired). System seeds, public. */
+  planStatus: "plan_status",
+  /** Content Planning — person roles for plan.entity (author/reviewer/…). System seeds, public. */
+  planPersonRole: "plan_person_role",
+  /** Content Planning — plan.entity.source_type_id. System seeds, public. */
+  planSourceType: "plan_source_type",
 } as const;
 
 export type KnownCategoryDimension =

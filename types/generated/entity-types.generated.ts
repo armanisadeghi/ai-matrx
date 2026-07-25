@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 302 active entity tokens. A token here is FK-valid for
+// 305 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -194,6 +194,9 @@ export type EntityTypeToken =
   | "pc_studio_run"
   | "pc_studio_run_asset"
   | "pdf_redaction_audit"
+  | "plan_entity"
+  | "plan_node"
+  | "plan_profile"
   | "processed_document"
   | "processed_document_page"
   | "profile"
@@ -694,6 +697,9 @@ export type ScopeableEntityToken =
   | "pc_studio_run"
   | "pc_studio_run_asset"
   | "pdf_redaction_audit"
+  | "plan_entity"
+  | "plan_node"
+  | "plan_profile"
   | "processed_document"
   | "processed_document_page"
   | "profile"
@@ -857,6 +863,8 @@ export type ListedEntityToken =
   | "content_ir_kind_instance"
   | "dataset"
   | "learn_doc"
+  | "plan_entity"
+  | "plan_node"
   | "structured_list"
   | "surface"
   | "workbook";
@@ -1023,6 +1031,9 @@ export const ENTITY_TYPE_METADATA = {
   "pc_studio_run": { token: "pc_studio_run", schema: "podcast", table: "pc_studio_runs", label: "Podcast Studio Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "pc_studio_run_asset": { token: "pc_studio_run_asset", schema: "podcast", table: "pc_studio_run_assets", label: "Podcast Studio Run Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "pdf_redaction_audit": { token: "pdf_redaction_audit", schema: "pdf", table: "pdf_redaction_audits", label: "PDF Redaction Audit", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "plan_entity": { token: "plan_entity", schema: "plan", table: "entity", label: "Plan Entity", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
+  "plan_node": { token: "plan_node", schema: "plan", table: "node", label: "Plan Node", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
+  "plan_profile": { token: "plan_profile", schema: "plan", table: "profile", label: "Plan Vertical Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "vertical", contentRole: null, referenceCategory: null },
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "profile": { token: "profile", schema: "user", table: "profiles", label: "User Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1329,6 +1340,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "pc_studio_run",
   "pc_studio_run_asset",
   "pdf_redaction_audit",
+  "plan_entity",
+  "plan_node",
+  "plan_profile",
   "processed_document",
   "processed_document_page",
   "profile",
@@ -1508,6 +1522,7 @@ export const SCHEMA_DISPLAY: Record<
   "education": { label: "Education", sortOrder: 75, isActive: true },
   "research": { label: "Research", sortOrder: 80, isActive: true },
   "rag": { label: "Knowledge", sortOrder: 85, isActive: true },
+  "plan": { label: "Content Planning", sortOrder: 88, isActive: true },
   "web": { label: "Marketing & Web", sortOrder: 90, isActive: true },
   "scraper": { label: "Web Scraper", sortOrder: 95, isActive: true },
   "docproc": { label: "Document Processing", sortOrder: 100, isActive: true },

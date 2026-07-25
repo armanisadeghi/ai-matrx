@@ -267,6 +267,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | **PDF domain** (viewer, ops, extraction, analysis, redaction — surfaces: extractor studio, Analysis Studio, demos) | `features/pdf/FEATURE.md` — canonical parts table; **never create a sibling `features/pdf-*`** |
 | War Room (session-based multitask command center — tile gallery of task+notes+audio, context-aware) | `features/war-room/FEATURE.md` (consumes tasks/notes/transcription/scopes; gallery engine in `lib/layout/galleryLayout.ts`) |
 | Research (web pipeline: search→scrape→analyze→synthesize→document; live "orchestra" + stat-square rail) | `features/research/FEATURE.md` |
+| Content Plan (`plan` schema client: tree editor + node panel + pillar map at `/content-plan`; cross-repo SoR `common-docs/systems/content-planning/FEATURE.md`) | `features/content-plan/FEATURE.md` |
 
 ### Tier 2 — secondary features
 

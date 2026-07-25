@@ -21282,6 +21282,228 @@ export type Database = {
       [_ in never]: never
     }
   }
+  plan: {
+    Tables: {
+      entity: {
+        Row: {
+          attributes: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          entity_type: string
+          id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          site_id: string
+          source_type_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entity_type: string
+          id?: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          site_id: string
+          source_type_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entity_type?: string
+          id?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          site_id?: string
+          source_type_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      node: {
+        Row: {
+          attributes: Json
+          brief: string[]
+          cluster_label: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          depth: number
+          id: string
+          label: string
+          metadata: Json
+          needs_reviewer: boolean
+          node_type: string
+          organization_id: string
+          page_type_id: string | null
+          parent_id: string | null
+          pillar_label: string | null
+          primary_keyword_id: string | null
+          priority: number | null
+          route: string | null
+          site_id: string
+          slug: string | null
+          status_id: string | null
+          technical_depth: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          attributes?: Json
+          brief?: string[]
+          cluster_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: number
+          id?: string
+          label: string
+          metadata?: Json
+          needs_reviewer?: boolean
+          node_type: string
+          organization_id: string
+          page_type_id?: string | null
+          parent_id?: string | null
+          pillar_label?: string | null
+          primary_keyword_id?: string | null
+          priority?: number | null
+          route?: string | null
+          site_id: string
+          slug?: string | null
+          status_id?: string | null
+          technical_depth?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          attributes?: Json
+          brief?: string[]
+          cluster_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: number
+          id?: string
+          label?: string
+          metadata?: Json
+          needs_reviewer?: boolean
+          node_type?: string
+          organization_id?: string
+          page_type_id?: string | null
+          parent_id?: string | null
+          pillar_label?: string | null
+          primary_keyword_id?: string | null
+          priority?: number | null
+          route?: string | null
+          site_id?: string
+          slug?: string | null
+          status_id?: string | null
+          technical_depth?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile: {
+        Row: {
+          attribute_schemas: Json
+          cadences: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          schema_org_map: Json
+          template_map: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          vertical: string
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          attribute_schemas?: Json
+          cadences?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          schema_org_map?: Json
+          template_map?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          vertical: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          attribute_schemas?: Json
+          cadences?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          schema_org_map?: Json
+          template_map?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          vertical?: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   platform: {
     Tables: {
       _base_entity: {
@@ -50140,6 +50362,9 @@ export const Constants = {
     },
   },
   pdf: {
+    Enums: {},
+  },
+  plan: {
     Enums: {},
   },
   platform: {

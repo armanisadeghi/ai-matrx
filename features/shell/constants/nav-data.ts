@@ -1189,6 +1189,16 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Content Plan",
+        href: "/content-plan",
+        iconName: "ListTree",
+        description:
+          "Plan every URL a site should have — pillars, clusters, briefs, keywords",
+        color: "green",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "Data Connections",
         href: "/marketing/connections",
         iconName: "Plug",

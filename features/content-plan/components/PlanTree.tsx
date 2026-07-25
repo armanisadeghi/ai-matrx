@@ -1,0 +1,281 @@
+"use client";
+
+/**
+ * features/content-plan/components/PlanTree.tsx
+ *
+ * The plan tree — every planned URL as an indented, collapsible row.
+ * Drag a row and drop it ONTO another row to reparent (one `parent_id`
+ * write; the DB recomputes the whole subtree's routes/labels — the client
+ * renders what comes back, it never computes). Drop on the "root" strip to
+ * make a node top-level. Cycle / cross-site / duplicate-slug violations are
+ * DB errors surfaced verbatim by the caller.
+ */
+import { useMemo, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+import { planStatusColor } from "../constants";
+import type { PlanNodeRow, PlanNodeTreeItem } from "../types";
+import { buildPlanTree } from "../types";
+
+interface FlatRow {
+  node: PlanNodeRow;
+  depth: number;
+  hasChildren: boolean;
+}
+
+function flatten(
+  items: PlanNodeTreeItem[],
+  collapsed: Set<string>,
+  depth = 0,
+  out: FlatRow[] = [],
+): FlatRow[] {
+  for (const item of items) {
+    out.push({ node: item.node, depth, hasChildren: item.children.length > 0 });
+    if (!collapsed.has(item.node.id)) {
+      flatten(item.children, collapsed, depth + 1, out);
+    }
+  }
+  return out;
+}
+
+export interface PlanTreeProps {
+  nodes: PlanNodeRow[];
+  selectedId: string | null;
+  statusSlugById: Map<string, string>;
+  onSelect: (id: string) => void;
+  onReparent: (id: string, parentId: string | null) => void;
+  onAddChild: (parentId: string | null) => void;
+}
+
+export function PlanTree({
+  nodes,
+  selectedId,
+  statusSlugById,
+  onSelect,
+  onReparent,
+  onAddChild,
+}: PlanTreeProps) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
+  const tree = useMemo(() => buildPlanTree(nodes), [nodes]);
+  const rows = useMemo(() => flatten(tree, collapsed), [tree, collapsed]);
+  const byId = useMemo(() => {
+    const map = new Map<string, PlanNodeRow>();
+    for (const node of nodes) map.set(node.id, node);
+    return map;
+  }, [nodes]);
+
+  const toggleCollapse = (id: string) => {
+    setCollapsed((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over) return;
+    const draggedId = String(active.id);
+    if (over.id === "plan-tree-root") {
+      const dragged = byId.get(draggedId);
+      if (dragged && dragged.parent_id !== null) onReparent(draggedId, null);
+      return;
+    }
+    const targetId = String(over.id);
+    if (targetId === draggedId) return;
+    const dragged = byId.get(draggedId);
+    if (!dragged || dragged.parent_id === targetId) return;
+    // Client-side guard for the obvious cycle (dropping onto own descendant)
+    // so the common case never round-trips; the DB trigger remains the
+    // authority and still rejects anything this walk misses.
+    let cursor: string | null = targetId;
+    while (cursor) {
+      if (cursor === draggedId) return;
+      cursor = byId.get(cursor)?.parent_id ?? null;
+    }
+    onReparent(draggedId, targetId);
+  };
+
+  const activeNode = activeId ? byId.get(activeId) : null;
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={pointerWithin}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex h-full flex-col">
+        <RootDropStrip onAddRoot={() => onAddChild(null)} />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {rows.length === 0 ? (
+            <p className="px-3 py-6 text-xs text-muted-foreground">
+              No nodes planned yet. Add the first pillar or the home node.
+            </p>
+          ) : (
+            rows.map((row) => (
+              <TreeRow
+                key={row.node.id}
+                row={row}
+                selected={row.node.id === selectedId}
+                collapsed={collapsed.has(row.node.id)}
+                statusSlug={statusSlugById.get(row.node.status_id ?? "")}
+                dragging={row.node.id === activeId}
+                onSelect={() => onSelect(row.node.id)}
+                onToggle={() => toggleCollapse(row.node.id)}
+                onAddChild={() => onAddChild(row.node.id)}
+              />
+            ))
+          )}
+        </div>
+      </div>
+      <DragOverlay>
+        {activeNode ? (
+          <div className="rounded border border-border bg-card px-2 py-1 text-xs shadow-md">
+            {activeNode.label}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+function RootDropStrip({ onAddRoot }: { onAddRoot: () => void }) {
+  const { isOver, setNodeRef } = useDroppable({ id: "plan-tree-root" });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex items-center justify-between border-b border-border px-2 py-1",
+        isOver && "bg-accent",
+      )}
+    >
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        Site root — drop here for top level
+      </span>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 px-1.5 text-xs"
+        onClick={onAddRoot}
+      >
+        <Plus className="mr-1 h-3 w-3" /> Root node
+      </Button>
+    </div>
+  );
+}
+
+function TreeRow({
+  row,
+  selected,
+  collapsed,
+  statusSlug,
+  dragging,
+  onSelect,
+  onToggle,
+  onAddChild,
+}: {
+  row: FlatRow;
+  selected: boolean;
+  collapsed: boolean;
+  statusSlug: string | undefined;
+  dragging: boolean;
+  onSelect: () => void;
+  onToggle: () => void;
+  onAddChild: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDragRef,
+  } = useDraggable({ id: row.node.id });
+  const { isOver, setNodeRef: setDropRef } = useDroppable({ id: row.node.id });
+
+  return (
+    <div
+      ref={setDropRef}
+      className={cn(
+        "group flex items-center gap-1 border-b border-border/40 px-1 py-0.5 text-sm",
+        selected && "bg-accent",
+        isOver && !dragging && "bg-primary/10 outline outline-1 outline-primary/40",
+        dragging && "opacity-40",
+      )}
+      style={{ paddingLeft: `${row.depth * 16 + 4}px` }}
+    >
+      <button
+        type="button"
+        aria-label={collapsed ? "Expand" : "Collapse"}
+        className={cn(
+          "flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground",
+          !row.hasChildren && "invisible",
+        )}
+        onClick={onToggle}
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronDown className="h-3.5 w-3.5" />
+        )}
+      </button>
+      <div
+        ref={setDragRef}
+        {...attributes}
+        {...listeners}
+        className="flex min-w-0 flex-1 cursor-grab items-center gap-1.5"
+        onClick={onSelect}
+      >
+        <span
+          className={cn(
+            "h-2 w-2 shrink-0 rounded-full",
+            planStatusColor(statusSlug),
+          )}
+          title={statusSlug ?? "no status"}
+        />
+        <span className="truncate font-medium text-foreground">
+          {row.node.label}
+        </span>
+        <span className="truncate text-xs text-muted-foreground">
+          {row.node.route}
+        </span>
+        <span className="ml-auto shrink-0 rounded bg-muted px-1 text-[10px] uppercase text-muted-foreground">
+          {row.node.node_type}
+        </span>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-5 w-5 shrink-0 p-0 opacity-0 group-hover:opacity-100"
+        aria-label="Add child node"
+        onClick={onAddChild}
+      >
+        <Plus className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
