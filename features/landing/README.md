@@ -4,6 +4,10 @@
 
 The AI Matrx landing page provides an exclusive, invitation-only experience for new users. The system includes a beautiful, modern landing page with three primary user flows:
 
+The page must render the exact product name **AI Matrx** as visible text.
+Google OAuth verification compares the consent-screen app name with the public
+homepage; metadata-only branding is insufficient.
+
 1. **Login** - Existing users can sign in
 2. **Enter Invitation Code** - New users with an invitation code can sign up
 3. **Request Access** - Prospective users can request an invitation
@@ -394,4 +398,3 @@ For issues or questions:
 **Last Updated:** November 20, 2024  
 **Version:** 1.0.0  
 **Status:** Production Ready
-

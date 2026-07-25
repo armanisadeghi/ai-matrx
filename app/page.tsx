@@ -48,7 +48,9 @@ export default function LandingPage() {
           <div className="flex justify-center mb-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">
               <Lock className="h-4 w-4" />
-              <span className="text-sm font-medium">Invitation Only</span>
+              <span className="text-sm font-medium">
+                AI Matrx · Invitation Only
+              </span>
             </div>
           </div>
 
