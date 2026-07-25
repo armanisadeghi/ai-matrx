@@ -100,6 +100,12 @@ export class MessagingService {
   private messageHandlersAdded = new Set<string>();
   // Typing callback registry - allows updating callbacks without recreating channels
   private typingCallbacks = new Map<string, Map<string, TypingCallback>>();
+  // Online-presence callbacks per channel, same registry shape as typing:
+  // the `.on("presence")` handler is attached EXACTLY ONCE per channel (at
+  // creation, before `subscribe()`), and every additional consumer just adds
+  // its callback. Re-attaching after `subscribe()` throws in supabase-js and
+  // crashed the /messages/[id] route on React 19's double-invoked effects.
+  private presenceCallbacks = new Map<string, Map<string, PresenceCallback>>();
   // Bridge listener registry — multiple `useExtensionBridgeChannel()`
   // callers share one Supabase channel. Stored per channel name; the
   // handler attached to Supabase fans out to every listener.
@@ -577,6 +583,12 @@ export class MessagingService {
     onPresenceUpdate: PresenceCallback,
   ): () => void {
     const channelName = `presence:${conversationId}`;
+    const subscriberId = `${currentUserId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    if (!this.presenceCallbacks.has(channelName)) {
+      this.presenceCallbacks.set(channelName, new Map());
+    }
+    this.presenceCallbacks.get(channelName)!.set(subscriberId, onPresenceUpdate);
 
     // Create a separate presence channel (not the message channel)
     const existingChannel = this.channels.get(channelName);
@@ -589,51 +601,69 @@ export class MessagingService {
           },
         },
       });
+
     if (!existingChannel) {
       this.channels.set(channelName, channel);
-    }
 
-    // Listen to presence sync events
-    channel.on("presence", { event: "sync" }, () => {
-      const presenceState =
-        channel.presenceState() as RealtimePresenceState<OnlineUser>;
-      const onlineUsers: OnlineUser[] = [];
+      // Handlers BEFORE subscribe, once per channel. Fan out to every
+      // registered callback rather than adding a second `.on` per consumer.
+      channel.on("presence", { event: "sync" }, () => {
+        const presenceState =
+          channel.presenceState() as RealtimePresenceState<OnlineUser>;
+        const onlineUsers: OnlineUser[] = [];
 
-      Object.values(presenceState).forEach((presences) => {
-        (presences as OnlineUser[]).forEach((presence) => {
-          if (presence.user_id !== currentUserId) {
-            onlineUsers.push({
-              user_id: presence.user_id,
-              display_name: presence.display_name,
-              online_at: presence.online_at,
-            });
-          }
+        Object.values(presenceState).forEach((presences) => {
+          (presences as OnlineUser[]).forEach((presence) => {
+            if (presence.user_id !== currentUserId) {
+              onlineUsers.push({
+                user_id: presence.user_id,
+                display_name: presence.display_name,
+                online_at: presence.online_at,
+              });
+            }
+          });
         });
+
+        this.presenceCallbacks
+          .get(channelName)
+          ?.forEach((callback) => callback(onlineUsers));
       });
 
-      onPresenceUpdate(onlineUsers);
-    });
+      // Subscribe and track presence
+      channel.subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          this.subscribedChannels.add(channelName);
+          await channel.track({
+            user_id: currentUserId,
+            display_name: displayName,
+            online_at: Date.now(),
+          });
+        }
+      });
+    } else {
+      // Channel already live — just (re)track this viewer.
+      void channel.track({
+        user_id: currentUserId,
+        display_name: displayName,
+        online_at: Date.now(),
+      });
+    }
 
-    // Subscribe and track presence
-    channel.subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
-        this.subscribedChannels.add(channelName);
-        await channel.track({
-          user_id: currentUserId,
-          display_name: displayName,
-          online_at: Date.now(),
-        });
-      }
-    });
-
-    // Return unsubscribe function
+    // Unsubscribe: drop this consumer's callback and, when it was the last
+    // one, stop broadcasting our presence. The CHANNEL itself is deliberately
+    // retained (same as the typing channel above): `supabase.channel(topic)`
+    // REUSES a channel with the same topic, and `removeChannel()` tears down
+    // asynchronously — so removing it here handed the next mount (React 19
+    // double-invoked effects, Fast Refresh, a second open view) a channel that
+    // was still subscribed, and `.on()` on a subscribed channel throws and
+    // crashed the whole /messages/[id] route.
     return () => {
-      if (channel) {
-        channel.untrack();
-        this.getSupabase().removeChannel(channel);
-        this.channels.delete(channelName);
-        this.subscribedChannels.delete(channelName);
-      }
+      const callbacks = this.presenceCallbacks.get(channelName);
+      callbacks?.delete(subscriberId);
+      if (callbacks && callbacks.size > 0) return;
+
+      this.presenceCallbacks.delete(channelName);
+      void channel.untrack();
     };
   }
 

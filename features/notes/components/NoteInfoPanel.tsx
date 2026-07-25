@@ -16,7 +16,7 @@
 // a WindowPanel (see NoteInfoWindow) but is a plain component with no window
 // chrome of its own, so it can be embedded anywhere.
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FileText,
   FolderOpen,
@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { moveNoteToFolder } from "../redux/thunks";
+import { fetchNoteContent, moveNoteToFolder } from "../redux/thunks";
 import {
   selectNoteById,
   selectNoteContent,
@@ -150,6 +150,16 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
   const tags = useAppSelector(selectNoteTags(noteId));
   const allFolders = useAppSelector(selectAllFolders);
 
+  // Self-hydrate: this panel is opened from surfaces that never load the
+  // notes list (a reference chip in a direct message, a search hit), so the
+  // note is usually absent from Redux. `fetchNoteContent` has its own
+  // already-loaded guard, making this a no-op on the /notes route.
+  useEffect(() => {
+    if (!note && noteId) {
+      void dispatch(fetchNoteContent(noteId));
+    }
+  }, [dispatch, note, noteId]);
+
   const [folderOpen, setFolderOpen] = useState(false);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
 
@@ -179,7 +189,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
   if (!note) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-        Note not loaded
+        Loading note…
       </div>
     );
   }

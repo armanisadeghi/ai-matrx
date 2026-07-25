@@ -108,6 +108,22 @@ A message can carry a generic **`action_data`** envelope `{ kind, version, paylo
 
 Identity rules (`2026-07-15`): `get_dm_unread_count` accepts only the signed-in user (or service role) and requires that user to be an active participant. `get_dm_user_info` exposes another user's profile only for self, platform admins, shared active DM participants, or shared active organization members. Global new-conversation search uses the guarded search/lookup response directly; it must not turn a discovered UUID into an unrestricted `auth.users` lookup.
 
+### Matrx references in messages (attach without pasting JSON)
+
+A message body is plain text that may embed canonical ` ```matrx ` reference fences
+(`docs/protocol/MATRX_REFERENCES.md`). Messaging owns none of that machinery — it consumes
+`features/matrx-envelope`:
+
+- **Render:** `MessageBubble` uses `<TextWithReferences>` — prose stays prose, each fence
+  becomes the same live, clickable reference chip the chat markdown pipeline renders. A raw
+  fence printed as code in a bubble is a defect (it was, until 2026-07-25).
+- **Attach:** `MessageInput` mounts `<AttachReferenceButton>` (the paperclip). Picks land as
+  chips above the composer — never fence JSON in the textarea — and are serialized on send
+  with `composeTextWithAttachments()`. A message with only attachments is sendable.
+- **Preview text:** anything that shows a message outside a bubble (`ConversationList`,
+  desktop notifications) runs `summarizeMatrxText()` so a fence collapses to its human
+  label. Never render `last_message.content` raw.
+
 ### Real-time Architecture
 
 ```
@@ -134,6 +150,13 @@ Identity rules (`2026-07-15`): `get_dm_unread_count` accepts only the signed-in 
 │(fast)   │ │(reliable)       │
 └───────┘ └─────────────────┘
 ```
+
+**Presence channels are shared and never removed.** `supabase.channel(topic)` REUSES a
+channel with the same topic and `removeChannel()` tears down asynchronously, so both
+presence paths (`subscribeToPresence`, typing) attach their `.on("presence")` handler EXACTLY
+once at channel creation, fan out through a per-channel callback registry, and on the last
+unsubscribe only `untrack()`. Re-attaching `.on()` to a subscribed channel throws and used to
+crash the entire `/messages/[id]` route on React 19's double-invoked effects.
 
 **Dual Subscription Pattern:**
 1. **Broadcast** - Immediate delivery when sender broadcasts

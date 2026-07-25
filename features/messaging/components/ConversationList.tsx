@@ -21,6 +21,7 @@ import { formatDistanceToNow } from "date-fns";
 import { parseTimestamp } from "@/utils/datetime";
 import type { ConversationWithDetails } from "../types";
 import { NewConversationDialog } from "./NewConversationDialog";
+import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
 
 interface ConversationListProps {
   userId?: string;
@@ -66,7 +67,9 @@ export function ConversationList({
     return (
       conv.display_name?.toLowerCase().includes(query) ||
       conv.group_name?.toLowerCase().includes(query) ||
-      conv.last_message?.content?.toLowerCase().includes(query) ||
+      summarizeMatrxText(conv.last_message?.content)
+        .toLowerCase()
+        .includes(query) ||
       idMatchesQuery(conv, query)
     );
   });
@@ -316,7 +319,7 @@ function ConversationItem({
                 : "text-zinc-500 dark:text-zinc-400",
             )}
           >
-            {last_message?.content || "No messages yet"}
+            {summarizeMatrxText(last_message?.content) || "No messages yet"}
           </p>
           <time className="text-[11px] text-zinc-400 dark:text-zinc-500">
             {formatTime(last_message?.created_at || updated_at)}

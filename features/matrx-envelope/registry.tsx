@@ -47,6 +47,7 @@ import type {
 import {
   coerceRefToStrings,
   getReferenceResolver,
+  referenceChipLabel,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
 import CreateProjectWithTasksRenderer from "@/features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer";
@@ -167,6 +168,9 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
   const ref = coerceRefToStrings(item, `${type} chip`);
   const resolver = getReferenceResolver(type);
   const { display, status } = useResolvedReferenceLabel(item, type);
+  // A chip is a NAME: record resolvers return "heading\nbody" — print the
+  // heading, keep the whole value for the tooltip.
+  const label = referenceChipLabel(display);
 
   const Icon = chipIcon(type);
 
@@ -184,7 +188,7 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
       return;
     }
     if (canOpen && openId && openType) {
-      open(openType, openId, { name: display });
+      open(openType, openId, { name: label });
     }
   };
 
@@ -193,17 +197,17 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
       type="button"
       onClick={handleClick}
       disabled={!canOpen}
-      title={isExternalUrl ? ref.url : canOpen ? `Open ${openType}` : display}
+      title={isExternalUrl ? ref.url : canOpen ? `Open ${openType}` : label}
       className={cn(
         "inline-flex items-center gap-1 rounded-md border border-border",
-        "bg-muted px-2 py-0.5 text-sm text-foreground align-middle max-w-full",
+        "bg-muted px-2 py-0.5 text-sm text-foreground align-middle min-w-0 max-w-full",
         canOpen
           ? "cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
           : "cursor-default",
       )}
     >
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <span className="truncate">{display}</span>
+      <span className="truncate">{label}</span>
       {status === "loading" ? (
         <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
       ) : null}

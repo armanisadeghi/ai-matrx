@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { MessageWithSender, MessageStatus } from "../types";
 import { MessageActionChips } from "./MessageActionChips";
+import { TextWithReferences } from "@/features/matrx-envelope/components/TextWithReferences";
 
 interface MessageBubbleProps {
   message: MessageWithSender;
@@ -137,7 +138,9 @@ export function MessageBubble({
               : "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-md"
           )}
         >
-          <span className="text-sm whitespace-pre-wrap break-words block">{content}</span>
+          {/* Prose + any ```matrx reference fences → the SAME live chips the
+              chat markdown pipeline renders (never raw envelope JSON). */}
+          <TextWithReferences content={content} className="text-sm" />
           <MessageActionChips actionData={action_data} isOwn={isOwn} />
         </div>
       </div>

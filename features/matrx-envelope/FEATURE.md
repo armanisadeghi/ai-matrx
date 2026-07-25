@@ -81,6 +81,29 @@ render through the SAME live chip renderer.
   render the registered component; (3) none registered → a neutral muted card (kind/type
   + item count). **Graceful fallback at both layers** (unparseable, and unknown shape).
 
+- `referenceText.ts` — **prose ↔ fence** for surfaces that carry raw text and do NOT run
+  the markdown pipeline (direct messages, notifications, list previews):
+  `splitMatrxFences(text)` (ordered text/envelope segments, unparseable fences stay literal
+  text), `hasMatrxFence`, `summarizeMatrxText(text)` (one line, each fence collapsed to its
+  human label — a preview must NEVER show envelope JSON), and the authoring side
+  `buildFencesFromAttachments(refs)` / `composeTextWithAttachments(text, refs)` (one fence
+  per `type`, in first-pick order).
+- `components/TextWithReferences.tsx` — render a plain-text string with its fences as the
+  SAME live chips the markdown pipeline renders. Never hand-parse a fence at a callsite.
+- `components/AttachReferenceButton.tsx` — THE generic "attach a reference" `+`: type chips
+  (note / file / link / task / project / agent / … from `curatedTokens()`) over the shared
+  `ReferenceTypeAdder`, `file` opening THE canonical `FilePickerWindow`. Emits
+  `{type, item}` picks; the caller serializes with `buildFencesFromAttachments`. It exists
+  so a human never copies fence JSON between surfaces.
+- `components/ReferenceTypeAdder.tsx` + `components/ReferencePickerChip.tsx` — the per-type
+  sub-picker (file / url / scope / entity-search) and the authoring chip, extracted from
+  `features/scopes/.../ReferenceValuePicker.tsx` (2026-07-25) so scope reference cells and
+  every new authoring surface share ONE implementation. `ReferenceValuePicker` still owns
+  cell semantics (`max_items`, one type per cell, fence ↔ `value_text`).
+- Chip labels: `referenceChipLabel(display)` (`referenceResolvers.ts`) — a chip is a NAME,
+  and record resolvers return `"heading\nbody"`, so both chips print the first line and keep
+  the full value in the tooltip.
+
 ## Recognition contract (the four guarantees)
 
 1. **Outer first** — `isMatrxEnvelope` recognizes `{matrx_version,kind,type,items}` before
@@ -131,10 +154,29 @@ render through the SAME live chip renderer.
   task card from envelope items; polls Supabase at 0s / 2s / 5s by slug (or name); resolves
   to clickable project (`ItemDetailWindow` + route) and tasks (`taskEditorWindow`). Bare
   JSON envelopes (`matrx_version` root) classify as `matrx` blocks via `detectJsonBlockType`.
-- Next: renderers for `secret` / other `output_directive` types if needed; the
-  reference-insert authoring picker; a table/cell authoring picker emitting the flat fence.
+- Done: **generic reference attach + prose rendering** (2026-07-25) — `AttachReferenceButton`
+  (the reference-insert authoring picker) + `TextWithReferences` / `referenceText.ts`; first
+  consumer is direct messaging (`features/messaging`).
+- Next: renderers for `secret` / other `output_directive` types if needed; a table/cell
+  authoring picker emitting the flat fence; adopt `AttachReferenceButton` in the remaining
+  composers (notes, tasks, comments).
 
 ## Change Log
+
+- 2026-07-25 — Claude: **References work in prose, and are attached without copy-pasting JSON.**
+  A ```matrx fence pasted into a direct message rendered as raw code — the messaging surface
+  printed `content` as plain text and never ran fence detection. New shared primitives:
+  `referenceText.ts` (split / summarize / build-from-attachments),
+  `components/TextWithReferences.tsx`, `components/AttachReferenceButton.tsx`, plus
+  `ReferenceTypeAdder` / `ReferencePickerChip` extracted out of `ReferenceValuePicker` (one
+  implementation, not a second). Chips now show `referenceChipLabel(display)` (first line)
+  instead of a note's whole body. Consumers: `MessageBubble` (chips), `MessageInput`
+  (paperclip → chips → fences on send), `ConversationList` + desktop notifications
+  (`summarizeMatrxText`). Also fixed along the way: `NoteInfoPanel` self-hydrates via
+  `fetchNoteContent` (opening a note from a DM chip showed "Note not loaded"), and
+  `MessagingService.subscribeToPresence` crashed the whole `/messages/[id]` route
+  ("cannot add `presence` callbacks after `subscribe()`") — presence now uses the same
+  callback registry as typing and never removes the shared channel.
 
 - 2026-07-25 — Claude: **Protocol mirror drift check.** `MATRX_REFERENCES.md` re-synced
   from aidream (FE copy was a 6KB ancestor of aidream's 18KB current doc). New

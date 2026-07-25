@@ -864,6 +864,17 @@ export function referenceFallbackLabel(
   return humanizeType(type);
 }
 
+/**
+ * A CHIP shows a name, not a record. `resolveValue` returns the live value —
+ * "heading\nbody" for record types — so every chip renders its first line and
+ * keeps the full value for the tooltip. Without this a note chip printed the
+ * note's entire body into the composer / message bubble.
+ */
+export function referenceChipLabel(display: string): string {
+  const first = display.split("\n").find((line) => line.trim().length > 0);
+  return (first ?? display).trim();
+}
+
 export type ReferenceResolutionStatus = "idle" | "loading" | "ready" | "fallback";
 
 /**

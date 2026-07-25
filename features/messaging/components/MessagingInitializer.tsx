@@ -14,6 +14,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import type { Database } from "@/types/database.types";
+import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
 import type {
   ConversationType,
   ConversationWithDetails,
@@ -395,9 +396,12 @@ export function MessagingInitializer() {
           // Show desktop notification if enabled
           if (prefs?.showDesktopNotifications) {
             const senderName = newMessage.sender_id.substring(0, 8); // Placeholder
+            // Reference fences collapse to their human label — a desktop
+            // notification must never show envelope JSON.
+            const preview = summarizeMatrxText(newMessage.content);
             showDesktopNotification(
               "New Message",
-              `${senderName}: ${newMessage.content.substring(0, 50)}${newMessage.content.length > 50 ? "..." : ""}`,
+              `${senderName}: ${preview.substring(0, 50)}${preview.length > 50 ? "..." : ""}`,
             );
           }
         }
