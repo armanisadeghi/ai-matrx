@@ -78,6 +78,8 @@ export interface EntityModeHeaderProps {
   backHref: string;
   /** Current entity's name — small, in the top row, never an h1. */
   entityLabel: string;
+  /** Compact status beside the identity, visible at every breakpoint. */
+  entityStatus?: React.ReactNode;
   /** Sibling entities for the name dropdown. Omit for a plain label. */
   entityOptions?: EntityOption[];
   /** Sub-view nav (View | Edit | …). Center pill on desktop; drawer rows on mobile. */
@@ -118,6 +120,7 @@ function DesktopAction({ action }: { action: EntityHeaderAction }) {
 export function EntityModeHeader({
   backHref,
   entityLabel,
+  entityStatus,
   entityOptions,
   modes,
   activeModeHref,
@@ -132,8 +135,11 @@ export function EntityModeHeader({
   );
 
   const label = (
-    <span className="truncate max-w-[55vw] sm:max-w-[180px] text-sm font-medium text-foreground">
-      {entityLabel}
+    <span className="flex min-w-0 max-w-[55vw] items-center gap-1.5 sm:max-w-[220px]">
+      <span className="truncate text-sm font-medium text-foreground">
+        {entityLabel}
+      </span>
+      {entityStatus}
     </span>
   );
 
@@ -239,13 +245,13 @@ export function EntityModeHeader({
               const isActive = activeModeHref
                 ? m.href === activeModeHref
                 : m.href === pathname ||
-                (pathname.startsWith(m.href) &&
-                  !modes.some(
-                    (o) =>
-                      o.href !== m.href &&
-                      o.href.length > m.href.length &&
-                      pathname.startsWith(o.href),
-                  ));
+                  (pathname.startsWith(m.href) &&
+                    !modes.some(
+                      (o) =>
+                        o.href !== m.href &&
+                        o.href.length > m.href.length &&
+                        pathname.startsWith(o.href),
+                    ));
               return (
                 <button
                   key={m.href}

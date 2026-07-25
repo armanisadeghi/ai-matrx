@@ -40,6 +40,7 @@ import {
   deleteSite,
   deleteSitemap,
   dismissDiscoveredItem,
+  getActiveCrawl,
   getCoverageMatrix,
   getCrawl,
   getHomepageObservedMeta,
@@ -51,6 +52,7 @@ import {
   listCrawlEvents,
   listCrawls,
   listCrawlUrls,
+  listRecentLiveCrawlEvents,
   listDiscoveredItems,
   listPages,
   listPageScreenshots,
@@ -116,9 +118,15 @@ export const marketingKeys = {
   snapshot: (siteId: string, pageId: string, snapshotId: string) =>
     [...marketingKeys.page(siteId, pageId), "snapshot", snapshotId] as const,
   crawls: (siteId: string, state: MatrxDataTableQueryState) =>
-    [...marketingKeys.site(siteId), "crawls", state] as const,
+    [...marketingKeys.crawlSessions(siteId), state] as const,
+  crawlSessions: (siteId: string) =>
+    [...marketingKeys.site(siteId), "crawls"] as const,
+  activeCrawl: (siteId: string) =>
+    [...marketingKeys.crawlSessions(siteId), "active"] as const,
   crawl: (siteId: string, crawlId: string) =>
     [...marketingKeys.site(siteId), "crawl", crawlId] as const,
+  liveCrawlEvents: (siteId: string, crawlId: string) =>
+    [...marketingKeys.crawl(siteId, crawlId), "live-events"] as const,
   crawlUrls: (
     siteId: string,
     crawlId: string,
@@ -263,7 +271,8 @@ export function usePagePerformance(siteId: string, pageId: string) {
 export function usePageWebAnalytics(siteId: string, pageId: string) {
   return useQuery({
     queryKey: [...marketingKeys.page(siteId, pageId), "web-analytics"] as const,
-    queryFn: ({ signal }) => listWebAnalyticsDailyForPage(siteId, pageId, signal),
+    queryFn: ({ signal }) =>
+      listWebAnalyticsDailyForPage(siteId, pageId, signal),
     enabled: Boolean(siteId && pageId),
   });
 }
@@ -299,6 +308,33 @@ export function useCrawls(siteId: string, state: MatrxDataTableQueryState) {
     queryFn: ({ signal }) => listCrawls(siteId, state, signal),
     enabled: Boolean(siteId),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useActiveCrawl(siteId: string, fallbackPolling: boolean) {
+  return useQuery({
+    queryKey: marketingKeys.activeCrawl(siteId),
+    queryFn: ({ signal }) => getActiveCrawl(siteId, signal),
+    enabled: Boolean(siteId),
+    refetchInterval: fallbackPolling ? 3_000 : false,
+  });
+}
+
+export function useRecentLiveCrawlEvents(
+  siteId: string,
+  crawlId: string | null,
+  fallbackPolling: boolean,
+) {
+  return useQuery({
+    queryKey: marketingKeys.liveCrawlEvents(siteId, crawlId ?? "none"),
+    queryFn: ({ signal }) => {
+      if (!crawlId) {
+        throw new Error("A crawl session is required to load live events.");
+      }
+      return listRecentLiveCrawlEvents(siteId, crawlId, signal);
+    },
+    enabled: Boolean(siteId && crawlId),
+    refetchInterval: fallbackPolling ? 3_000 : false,
   });
 }
 

@@ -2,10 +2,13 @@ import {
   crawlerErrorMessage,
   crawlerCommandUrl,
   crawlEventFromStream,
+  crawlLiveEventFromDurableRow,
   defaultCrawlOptions,
+  mergeCrawlLiveEvents,
 } from "@/features/marketing/crawler/direct-client";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
+import type { CrawlEvent } from "@/features/marketing/types";
 
 jest.mock("@/lib/api/resolve-service-url", () => ({
   resolveServiceBaseUrl: jest.fn(),
@@ -65,5 +68,66 @@ describe("direct marketing crawler transport", () => {
         data: { phase: "connected" },
       } as TypedStreamEvent),
     ).toBeNull();
+  });
+
+  it("restores canonical live events from durable crawl rows", () => {
+    const row: CrawlEvent = {
+      id: "event-1",
+      organization_id: "org-1",
+      created_at: "2026-07-25T03:00:00.000Z",
+      updated_at: "2026-07-25T03:00:00.000Z",
+      created_by: null,
+      updated_by: null,
+      deleted_at: null,
+      version: 1,
+      metadata: {},
+      site_id: "site-1",
+      session_id: "session-1",
+      sequence: 42,
+      event_type: "crawl_progress",
+      phase: null,
+      level: "info",
+      message: null,
+      page_id: null,
+      crawl_url_id: null,
+      payload: {
+        event_type: "wrong_payload_value",
+        run_id: "session-1",
+        sequence: 999,
+        pages_fetched: 12,
+      },
+      occurred_at: "2026-07-25T03:00:01.000Z",
+    };
+
+    expect(crawlLiveEventFromDurableRow(row)).toEqual(
+      expect.objectContaining({
+        event_type: "crawl_progress",
+        run_id: "session-1",
+        session_id: "session-1",
+        site_id: "site-1",
+        sequence: 42,
+        pages_fetched: 12,
+      }),
+    );
+  });
+
+  it("deduplicates stream and durable replay by canonical sequence", () => {
+    const durable = {
+      event_type: "crawl_progress" as const,
+      run_id: "session-1",
+      sequence: 8,
+      pages_fetched: 4,
+    };
+    const fresherStreamCopy = {
+      ...durable,
+      pages_fetched: 5,
+    };
+
+    expect(
+      mergeCrawlLiveEvents(
+        [durable],
+        [fresherStreamCopy, { ...durable, sequence: 9 }],
+      ),
+    ).toEqual([fresherStreamCopy, { ...durable, sequence: 9 }]);
   });
 });

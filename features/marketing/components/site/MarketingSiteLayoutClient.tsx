@@ -21,6 +21,7 @@ import {
   Settings,
   ShieldCheck,
   TrendingUp,
+  Loader2,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -28,16 +29,22 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { useSite, useSiteOptions } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
 import {
+  jsonNumber,
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { MarketingSiteSurfaceProvider } from "@/features/marketing/lib/scopes/site-surface-base";
+import {
+  useSiteCrawlActivity,
+  type SiteCrawlActivity,
+} from "@/features/marketing/data/useSiteCrawlActivity";
 
 interface MarketingSiteContextValue {
   site: MarketingSite;
   /** Canonical brand-first base path for this site (no trailing slash). */
   sitePath: string;
+  crawlActivity: SiteCrawlActivity;
 }
 
 const MarketingSiteContext = createContext<MarketingSiteContextValue | null>(
@@ -103,6 +110,7 @@ export function MarketingSiteLayoutClient({
   const siteId = params.siteId;
   const site = useSite(siteId);
   const options = useSiteOptions();
+  const crawlActivity = useSiteCrawlActivity(siteId);
 
   if (site.isLoading) {
     return (
@@ -140,11 +148,32 @@ export function MarketingSiteLayoutClient({
     );
   }
   const base = marketingRoutes.site(brandId, siteId);
+  const activeCrawl = crawlActivity.activeCrawl;
+  const fetched = activeCrawl
+    ? jsonNumber(activeCrawl.stats, ["pages_fetched"])
+    : 0;
   return (
-    <MarketingSiteContext.Provider value={{ site: current, sitePath: base }}>
+    <MarketingSiteContext.Provider
+      value={{ site: current, sitePath: base, crawlActivity }}
+    >
       <EntityModeHeader
         backHref={marketingRoutes.brand(brandId)}
         entityLabel={current.name}
+        entityStatus={
+          activeCrawl ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/12 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              Crawling
+            </span>
+          ) : crawlActivity.error ? (
+            <span
+              className="inline-flex shrink-0 items-center rounded-full bg-destructive/10 px-1.5 py-0.5 text-[9px] font-semibold text-destructive"
+              title={crawlActivity.error.message}
+            >
+              Crawl status unavailable
+            </span>
+          ) : undefined
+        }
         entityOptions={(options.data ?? []).map((option) => ({
           label: option.name,
           href: `${marketingRoutes.site(option.brand_id, option.id)}${sectionSuffix(pathname, brandId, siteId)}`,
@@ -234,6 +263,16 @@ export function MarketingSiteLayoutClient({
           },
         ]}
         actions={[
+          ...(activeCrawl
+            ? [
+                {
+                  label: `Crawl running · ${fetched.toLocaleString()} fetched`,
+                  icon: ScanSearch,
+                  href: `${base}/crawls/new`,
+                  primary: true,
+                },
+              ]
+            : []),
           {
             label: "Open live site",
             icon: ExternalLink,

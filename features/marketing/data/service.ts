@@ -1115,6 +1115,29 @@ export async function listCrawls(
   };
 }
 
+/** Return the newest crawl that still owns work for this site, if any. */
+export async function getActiveCrawl(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<CrawlSession | null> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("crawl_session")
+    .select(
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, status, trigger, scope, stats, started_at, finished_at, error",
+    )
+    .eq("site_id", siteId)
+    .in("status", ["queued", "running"])
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  return response.data;
+}
+
 export async function getCrawl(
   siteId: string,
   crawlId: string,
@@ -1210,6 +1233,46 @@ export async function listCrawlUrls(
     rows: assertData(response.data, response.error),
     total: response.count ?? 0,
   };
+}
+
+const LIVE_CRAWL_EVENT_TYPES = [
+  "crawl_session_created",
+  "crawl_started",
+  "page_discovered",
+  "url_classified",
+  "page_fetched",
+  "page_failed",
+  "crawl_progress",
+  "issue_detected",
+  "crawl_completed",
+  "crawl_warning",
+  "initialize_step",
+] as const;
+
+/**
+ * Catch-up feed for an active crawl. Deliberately excludes page_parsed: its
+ * payload can contain an entire document and the live UI never renders it.
+ */
+export async function listRecentLiveCrawlEvents(
+  siteId: string,
+  crawlId: string,
+  signal?: AbortSignal,
+): Promise<CrawlEvent[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("crawl_event")
+    .select(
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, session_id, sequence, event_type, phase, level, message, page_id, crawl_url_id, payload, occurred_at",
+    )
+    .eq("site_id", siteId)
+    .eq("session_id", crawlId)
+    .in("event_type", [...LIVE_CRAWL_EVENT_TYPES])
+    .is("deleted_at", null)
+    .order("sequence", { ascending: false })
+    .limit(250)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error).reverse();
 }
 
 export async function listCrawlEvents(

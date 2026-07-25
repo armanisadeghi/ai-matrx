@@ -20,6 +20,7 @@ import {
 } from "@/features/marketing/components/crawls/live-crawl-event-presenter";
 import type { CrawlLiveEvent } from "@/features/marketing/crawler/direct-client";
 import { cn } from "@/lib/utils";
+import type { CrawlRealtimeStatus } from "@/features/marketing/data/useSiteCrawlActivity";
 
 type LiveStatus =
   | "idle"
@@ -45,12 +46,14 @@ export function LiveCrawlFeed({
   status,
   sessionId,
   siteId,
+  realtimeStatus,
   className,
 }: {
   events: CrawlLiveEvent[];
   status: LiveStatus;
   sessionId: string | null;
   siteId?: string;
+  realtimeStatus?: CrawlRealtimeStatus;
   className?: string;
 }) {
   const { sitePath } = useMarketingSite();
@@ -100,6 +103,23 @@ export function LiveCrawlFeed({
           <Badge variant="outline" className="h-5 text-[10px] capitalize">
             {status}
           </Badge>
+          {sessionId && isActive && realtimeStatus ? (
+            <Badge
+              variant="outline"
+              className={cn(
+                "h-5 text-[10px]",
+                realtimeStatus === "connected"
+                  ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                  : "border-amber-500/40 text-amber-600 dark:text-amber-400",
+              )}
+            >
+              {realtimeStatus === "connected"
+                ? "Live"
+                : realtimeStatus === "reconnecting"
+                  ? "Reconnecting"
+                  : "Connecting"}
+            </Badge>
+          ) : null}
         </div>
         {sessionId ? (
           <span className="font-mono text-[10px] text-muted-foreground">

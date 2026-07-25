@@ -9,6 +9,7 @@ import {
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { supabase } from "@/utils/supabase/client";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
+import { isJsonRecord, type CrawlEvent } from "@/features/marketing/types";
 
 /**
  * Feed every scraper-boundary failure to the admin Error Inspector.
@@ -65,26 +66,84 @@ export interface CrawlStartOptions {
   host_burst: number;
 }
 
+export const CRAWL_LIVE_EVENT_TYPES = [
+  "crawl_session_created",
+  "crawl_started",
+  "page_discovered",
+  "url_classified",
+  "page_fetched",
+  "page_parsed",
+  "page_failed",
+  "crawl_progress",
+  "issue_detected",
+  "crawl_completed",
+  "crawl_warning",
+  "initialize_step",
+] as const;
+
+export type CrawlLiveEventType = (typeof CRAWL_LIVE_EVENT_TYPES)[number];
+
 export interface CrawlLiveEvent {
-  event_type:
-    | "crawl_session_created"
-    | "crawl_started"
-    | "page_discovered"
-    | "url_classified"
-    | "page_fetched"
-    | "page_parsed"
-    | "page_failed"
-    | "crawl_progress"
-    | "issue_detected"
-    | "crawl_completed"
-    | "crawl_warning"
-    | "initialize_step";
+  event_type: CrawlLiveEventType;
   run_id: string;
   session_id?: string | null;
   site_id?: string | null;
   sequence?: number | null;
   ts?: string;
   [key: string]: unknown;
+}
+
+function isCrawlLiveEventType(value: string): value is CrawlLiveEventType {
+  return CRAWL_LIVE_EVENT_TYPES.some((eventType) => eventType === value);
+}
+
+/**
+ * Restore the scraper wire event from its durable web.crawl_event row.
+ * Canonical row identity wins over duplicated JSON payload fields.
+ */
+export function crawlLiveEventFromDurableRow(
+  row: CrawlEvent,
+): CrawlLiveEvent | null {
+  if (!isCrawlLiveEventType(row.event_type) || !isJsonRecord(row.payload)) {
+    return null;
+  }
+  const payloadRunId = row.payload.run_id;
+  return {
+    ...row.payload,
+    event_type: row.event_type,
+    run_id: typeof payloadRunId === "string" ? payloadRunId : row.session_id,
+    session_id: row.session_id,
+    site_id: row.site_id,
+    sequence: row.sequence,
+    ts: row.occurred_at,
+  };
+}
+
+/**
+ * Merge stream and durable catch-up events without replay duplicates.
+ * Sequence is canonical; unsequenced events retain arrival order.
+ */
+export function mergeCrawlLiveEvents(
+  ...groups: readonly CrawlLiveEvent[][]
+): CrawlLiveEvent[] {
+  const sequenced = new Map<number, CrawlLiveEvent>();
+  const unsequenced: CrawlLiveEvent[] = [];
+  for (const group of groups) {
+    for (const event of group) {
+      if (
+        typeof event.sequence === "number" &&
+        Number.isFinite(event.sequence)
+      ) {
+        sequenced.set(event.sequence, event);
+      } else {
+        unsequenced.push(event);
+      }
+    }
+  }
+  return [...sequenced.values()]
+    .sort((left, right) => (left.sequence ?? 0) - (right.sequence ?? 0))
+    .concat(unsequenced)
+    .slice(-250);
 }
 
 /** The four concurrent initialize steps, in display order. */
