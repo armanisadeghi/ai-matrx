@@ -68,7 +68,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
   wizardId `research-init`) and survives refresh/idle/step-nav; it clears on
   successful creation. Wizard Back is deterministic: previous step, never
   `router.back()`; the header "Back to Topics" link is the only exit.
-- **Run pipeline** — overview `Run pipeline` → `api.runPipeline(topicId, topic.organization_id)` → `useResearchStream.startStream` → events `dispatch`ed into `usePipelineProgress`. The organization is an assertion copied from the loaded topic, never the active sidebar organization; the backend reloads the topic as authority and rejects a mismatch before paid work. `onEnd` calls `pipeline.finalize()` + `refresh()`. Document is NOT produced here.
+- **Run pipeline** — overview `Run pipeline` → `api.runPipeline(topicId, topic.organization_id)` → `useResearchStream.startStream` → events `dispatch`ed into `usePipelineProgress`. The organization is an assertion copied from the loaded topic, never the active sidebar organization; the backend reloads the topic as authority and rejects a mismatch before paid work. Every durable completion event identified by `shouldRefreshTopicOverview` immediately runs the lightweight `refreshProgress()` RPC reconciliation, while `onEnd` calls `pipeline.finalize()` + the full `refresh()`. Document is NOT produced here.
 - **Live render** — `PipelineOrchestra` (graph) + `LivePipelineActivity`: finished stages → `StageStatSquare` rail (click to expand inline detail; external-link opens results route), active stage(s) → large card, writing streams via `StreamingTextPanel` (MarkdownStream). Completed keywords / scrape+analyze item batches / source feed auto-fold via `FoldableSection`; when the run finishes the whole drawer (metrics + stages + activity log) collapses together — user can reopen.
 - **Live cost** — each `analysis_complete` / `synthesis_complete` event carries the backend's catalog-priced `cost_usd`; `usePipelineProgress` sums only those authoritative values. If any completed AI operation has unknown pricing, the live metric shows unknown instead of guessing from provider/model names. The persisted `cost_summary` replaces the live total after completion.
 - **Document** — `/document` → `DocumentViewer` auto-generates (`api.generateDocument`, streams `chunk`+`document_complete`) when report-ready and none exists; persists to `rs_document`.
@@ -81,7 +81,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 ## Invariants & gotchas
 
 - **A full `/run` emits NO per-stage "all-complete" event** — only a final `pipeline_complete` (per `app/(core)/research/RESEARCH_STREAMING_GUIDE.md`; `search_complete`/`analyze_all_complete` fire only from the single-stage endpoints). So `usePipelineProgress.finalizeStages` **must** sweep every non-terminal stage/item to terminal on `pipeline_complete` AND on the stream `onEnd`. Without it, spinners run forever. A started stage with items but 0 succeeded/0 failed → `partial`, not a false green `complete`. A stage activated only by phase/info with **zero items and zero outcomes** → `skipped` (hide it — never green "0 sources" / "0 scraped").
-- **Orchestra graph = lifetime DB progress; Live Stream = this browser session.** The vertical pipeline nodes read `get_topic_overview` / `progress`. The "This run" strip reads the `usePipelineProgress` reducer. They are not the same numbers — do not make the strip show topic totals, and never label a session strip "Last run" in a way that invites comparison to the graph. Labels: Search stage → **Sources** (search results), Scrape stage → **Content** (scrape results).
+- **Orchestra graph = lifetime DB progress; Live Stream = this browser session.** The vertical pipeline nodes read `get_topic_overview` / `progress`; durable stream completions re-query that lightweight RPC immediately so the lifetime counts stay live without borrowing session-only counters. The RPC counts current content, the latest page-summary outcome per source, current keyword/topic syntheses, and document versions. The "This run" strip reads the `usePipelineProgress` reducer. They are not the same numbers — do not make the strip show topic totals, and never label a session strip "Last run" in a way that invites comparison to the graph. Labels: Search stage → **Sources** (search results), Scrape stage → **Content** (scrape results).
 - **The orchestra graph animates ONLY when live.** `statusFor` (`PipelineOrchestra`) returns animating `queued`/`active` only when `isLive` (`stream.isStreaming || activeStage`); at rest it returns static `empty`/`gated`/`complete`. CSS animates only `data-status` `queued`/`active` + `active` edges. Never let a finished/reloaded graph pulse or "flow."
 - **All generated content renders via `MarkdownStream`** (`@/components/MarkdownStream`, the rich-document engine) — synthesis, analysis, the live writing panel. **Exception:** the *loaded* document uses `ReactMarkdown` to keep heading-slug `#anchor` TOC links (the canonical renderer has no rehype-slug). Never render generated content as plain `whitespace-pre-wrap`.
 - **The backend always persists `result`/`content` on success.** Empty content is a real "produced nothing" state, not data loss — render it honestly (explicit "no content", never a perpetual spinner or a green check). Synthesis falls back to `result_structured` when `result` is empty.
@@ -119,6 +119,15 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
+- `2026-07-25` — **Orchestra counts are accurate and live.** The top graph used
+  a cold `get_topic_overview` snapshot and refreshed only for search/end
+  events, so Sources moved while Content, Analysis, Synthesis, Report, and
+  Document stayed stale throughout the run. Every durable mutation event now
+  triggers a race-safe lightweight progress refresh. The RPC was also
+  corrected to count current content, the latest page-summary outcome per
+  source (not duplicate historical analysis rows), current keyword syntheses,
+  canonical `scope='topic'` reports (with legacy compatibility), and document
+  versions. Regression coverage pins durable-vs-transient refresh routing.
 - `2026-07-24` — **Outputs Studio preserves the topic organization on every
   output run without trusting the browser as scope authority.** Podcast, blog,
   slides, and SEO pass a stable

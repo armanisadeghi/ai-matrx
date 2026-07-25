@@ -85,11 +85,17 @@ export function useStreamDebug(): StreamDebugBus {
 // Refresh function — needs access to the store and the API hook
 // ============================================================================
 
-const RefreshContext = createContext<(() => Promise<void>) | null>(null);
+interface TopicRefreshActions {
+  refresh: () => Promise<void>;
+  refreshProgress: () => Promise<void>;
+}
 
-function useRefresh(): () => Promise<void> {
+const RefreshContext = createContext<TopicRefreshActions | null>(null);
+
+function useRefreshActions(): TopicRefreshActions {
   const ctx = useContext(RefreshContext);
-  if (!ctx) throw new Error("useRefresh must be used within a TopicProvider");
+  if (!ctx)
+    throw new Error("useRefreshActions must be used within a TopicProvider");
   return ctx;
 }
 
@@ -104,6 +110,7 @@ interface TopicContextValue {
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  refreshProgress: () => Promise<void>;
 }
 
 export function useTopicContext(): TopicContextValue {
@@ -112,8 +119,16 @@ export function useTopicContext(): TopicContextValue {
   const progress = useTopicStore((s) => s.progress);
   const isLoading = useTopicStore((s) => s.isLoading);
   const error = useTopicStore((s) => s.error);
-  const refresh = useRefresh();
-  return { topicId, topic, progress, isLoading, error, refresh };
+  const { refresh, refreshProgress } = useRefreshActions();
+  return {
+    topicId,
+    topic,
+    progress,
+    isLoading,
+    error,
+    refresh,
+    refreshProgress,
+  };
 }
 
 // ============================================================================
@@ -136,6 +151,22 @@ export function TopicProvider({
     storeRef.current = createTopicStore(topicId, initialData);
   }
   const store = storeRef.current;
+  const progressRefreshSequenceRef = useRef(0);
+
+  const refreshProgressRef = useRef(async () => {
+    const requestId = ++progressRefreshSequenceRef.current;
+    const s = store.getState();
+    try {
+      const overview = await service.getTopicOverview(s.topicId);
+      if (requestId === progressRefreshSequenceRef.current && overview) {
+        s.setProgress(overview);
+      }
+    } catch (err) {
+      if (requestId === progressRefreshSequenceRef.current) {
+        console.error("[research-progress-sync] overview refresh failed", err);
+      }
+    }
+  });
 
   const refreshRef = useRef(async () => {
     const s = store.getState();
@@ -164,7 +195,12 @@ export function TopicProvider({
 
   return (
     <TopicStoreContext.Provider value={store}>
-      <RefreshContext.Provider value={refreshRef.current}>
+      <RefreshContext.Provider
+        value={{
+          refresh: refreshRef.current,
+          refreshProgress: refreshProgressRef.current,
+        }}
+      >
         {children}
       </RefreshContext.Provider>
     </TopicStoreContext.Provider>

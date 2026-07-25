@@ -58,7 +58,10 @@ import {
   type StageKind,
   type PipelineState,
 } from "../../../hooks/usePipelineProgress";
-import { TOPIC_SYNTHESIS_WIRE_SCOPE } from "../../../types";
+import {
+  shouldRefreshTopicOverview,
+  TOPIC_SYNTHESIS_WIRE_SCOPE,
+} from "../../../types";
 import { LivePipelineActivity } from "../live-pipeline/LivePipelineActivity";
 import { TopicSettingsPanel } from "../TopicSettingsPanel";
 
@@ -153,7 +156,8 @@ function edgeStateFor(
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function PipelineOrchestra() {
-  const { topicId, topic, progress, refresh, isLoading } = useTopicContext();
+  const { topicId, topic, progress, refresh, refreshProgress, isLoading } =
+    useTopicContext();
   const api = useResearchApi();
   const isMobile = useIsMobile();
   const debug = useStreamDebug();
@@ -192,15 +196,11 @@ export function PipelineOrchestra() {
   const handleStreamData = useCallback(
     (payload: import("../../../types").ResearchDataEvent) => {
       pipeline.dispatch(payload);
-      if (
-        payload.type === "search_sources_stored" ||
-        payload.type === "search_complete" ||
-        payload.type === "pipeline_complete"
-      ) {
-        refresh();
+      if (shouldRefreshTopicOverview(payload.type)) {
+        void refreshProgress();
       }
     },
-    [pipeline, refresh],
+    [pipeline, refreshProgress],
   );
 
   const handleStreamInfo = useCallback(
@@ -859,9 +859,7 @@ export function PipelineOrchestra() {
               icon={ScrollText}
               label="Report"
               count={p.topic_syntheses > 0 ? "Ready" : "—"}
-              hint={
-                p.topic_syntheses > 0 ? "topic-wide" : "awaiting syntheses"
-              }
+              hint={p.topic_syntheses > 0 ? "topic-wide" : "awaiting syntheses"}
               status={reportStatus}
               href={`${base}/synthesis`}
               onAction={handleSynthesize}

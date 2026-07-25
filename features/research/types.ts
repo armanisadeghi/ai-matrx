@@ -1423,6 +1423,35 @@ export type ResearchDataEvent =
   | TagSuggestionsComplete
   | PipelineComplete;
 
+const TOPIC_OVERVIEW_MUTATION_EVENT_TYPES = new Set<ResearchDataEvent["type"]>([
+  "search_sources_stored",
+  "search_complete",
+  "scrape_complete",
+  "scrape_failed",
+  "rescrape_complete",
+  "analysis_complete",
+  "analysis_failed",
+  "analyze_all_complete",
+  "retry_complete",
+  "retry_all_complete",
+  "synthesis_complete",
+  "synthesis_failed",
+  "document_complete",
+  "pipeline_complete",
+]);
+
+/**
+ * True when a durable stream event can change `get_topic_overview`.
+ *
+ * The event is emitted after its database write, so consumers can immediately
+ * reconcile lifetime progress without confusing it with session-only counters.
+ */
+export function shouldRefreshTopicOverview(
+  eventType: ResearchDataEvent["type"],
+): boolean {
+  return TOPIC_OVERVIEW_MUTATION_EVENT_TYPES.has(eventType);
+}
+
 /** Every valid `ResearchDataEvent["type"]` discriminator tag, derived from the
  *  union so it cannot drift: adding/removing a member without updating this
  *  list is a compile error (the `satisfies` below enforces exact coverage). */
