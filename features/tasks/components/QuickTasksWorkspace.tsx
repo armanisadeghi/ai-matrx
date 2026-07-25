@@ -52,6 +52,39 @@ function normalizeProjectIdForCreate(projectId: string | null): string | null {
   return projectId;
 }
 
+/**
+ * Pure org-scope filter for the Quick Tasks window — ONE implementation
+ * shared by the sidebar list hook and the surface-scope emitter in
+ * `QuickTasksWindow` (surface `matrx-user/quick-tasks`).
+ */
+export function filterQuickTasksByOrg<T extends { id: string }>(
+  filtered: readonly T[],
+  allTaskRecords: ReadonlyArray<{ id: string; organization_id: string }>,
+  selectedOrgId: string | null,
+): T[] {
+  if (!selectedOrgId) return [...filtered];
+  const byId = new Map(allTaskRecords.map((r) => [r.id, r] as const));
+  return filtered.filter((t) => {
+    const rec = byId.get(t.id);
+    return rec ? rec.organization_id === selectedOrgId : true;
+  });
+}
+
+/**
+ * Pure search filter for the Quick Tasks window — shared by the sidebar and
+ * the surface-scope emitter, so agents see exactly what the user sees.
+ */
+export function filterQuickTasksBySearch<T extends { id: string; title: string }>(
+  tasks: readonly T[],
+  searchQuery: string,
+): T[] {
+  if (!searchQuery) return [...tasks];
+  const q = searchQuery.toLowerCase();
+  return tasks.filter(
+    (t) => t.title.toLowerCase().includes(q) || idMatchesQuery(t, q),
+  );
+}
+
 /** Tasks visible in the Quick Tasks window — org-scoped, hierarchy-hydrated. */
 function useQuickTasksList() {
   const { isLoading, isSuccess, isError } = useEnsureHierarchyLoaded();
@@ -61,14 +94,10 @@ function useQuickTasksList() {
   const filtered = useAppSelector(selectFilteredTasks);
   const allTaskRecords = useAppSelector(selectAllTasks);
 
-  const tasks = useMemo(() => {
-    if (!selectedOrgId) return filtered;
-    const byId = new Map(allTaskRecords.map((r) => [r.id, r] as const));
-    return filtered.filter((t) => {
-      const rec = byId.get(t.id);
-      return rec ? rec.organization_id === selectedOrgId : true;
-    });
-  }, [filtered, selectedOrgId, allTaskRecords]);
+  const tasks = useMemo(
+    () => filterQuickTasksByOrg(filtered, allTaskRecords, selectedOrgId),
+    [filtered, selectedOrgId, allTaskRecords],
+  );
 
   return {
     tasks,
@@ -134,13 +163,10 @@ export function QuickTasksSidebar() {
   const searchQuery = useAppSelector(selectQuickTasksSearchQuery);
   const { tasks, isLoading, showAllProjects } = useQuickTasksList();
 
-  const tasksToDisplay = useMemo(() => {
-    if (!searchQuery) return tasks;
-    const q = searchQuery.toLowerCase();
-    return tasks.filter(
-      (t) => t.title.toLowerCase().includes(q) || idMatchesQuery(t, q),
-    );
-  }, [tasks, searchQuery]);
+  const tasksToDisplay = useMemo(
+    () => filterQuickTasksBySearch(tasks, searchQuery),
+    [tasks, searchQuery],
+  );
 
   return (
     <div className="flex flex-col min-h-0 h-full bg-card">

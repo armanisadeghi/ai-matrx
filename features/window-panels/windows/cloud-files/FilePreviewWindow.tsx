@@ -24,9 +24,16 @@
 
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { PreviewPane } from "@/features/files";
+import { getFileFromState } from "@/features/files/redux/selectors";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  FILE_PREVIEW_SURFACE_NAME,
+  createFilePreviewScope,
+} from "@/features/surfaces/manifests/file-preview.manifest";
+import { useAppStore } from "@/lib/redux/hooks";
 
 export interface FilePreviewWindowProps {
   isOpen: boolean;
@@ -82,40 +89,62 @@ function FilePreviewWindowContent({
     requestedPage,
   );
 
+  // Surface emitter (`matrx-user/file-preview`): file identity + page from
+  // window state, metadata from the cloud-files store row at trigger time.
+  // Nested provider out-depths the hosting page's surface while the window
+  // is open (deepest wins, by design).
+  const store = useAppStore();
+  const getScope = useCallback(() => {
+    const file = getFileFromState(store.getState(), fileId);
+    return createFilePreviewScope({
+      file_id: fileId,
+      file_name: file?.fileName,
+      file_mime_type: file?.mimeType ?? undefined,
+      file_size_bytes: file?.fileSize ?? undefined,
+      file_visibility: file?.visibility,
+      page_number: activePage,
+    });
+  }, [store, fileId, activePage]);
+
   return (
-    <WindowPanel
-      title="File preview"
-      width={900}
-      height={680}
-      urlSyncKey="file_preview"
-      urlSyncId={fileId}
-      urlSyncArgs={
-        activePage != null ? { p: String(activePage) } : undefined
-      }
-      onClose={onClose}
-      overlayId="filePreviewWindow"
-      onCollectData={() => ({
-        fileId,
-        pageNumber: activePage ?? null,
-        navigationRequestId: navigationRequestId ?? null,
-      })}
+    <SurfaceRuntimeProvider
+      surfaceName={FILE_PREVIEW_SURFACE_NAME}
+      getScope={getScope}
     >
-      {/*
-        The canonical PreviewPane. Passing `onClose` so the pane's own
-        X button + Esc handler close the WindowPanel instead of
-        dispatching `setActiveFileId(null)` (which would be a no-op
-        here — the WindowPanel doesn't read that field, and clearing
-        it would silently close the cloud-files PageShell preview if
-        it happens to be open in another tab/route).
-        Cloud-files realtime is mounted globally in app/Providers.tsx.
-      */}
-      <PreviewPane
-        fileId={fileId}
-        pageNumber={activePage}
-        onPageChange={setActivePage}
+      <WindowPanel
+        title="File preview"
+        width={900}
+        height={680}
+        urlSyncKey="file_preview"
+        urlSyncId={fileId}
+        urlSyncArgs={
+          activePage != null ? { p: String(activePage) } : undefined
+        }
         onClose={onClose}
-        className="h-full w-full"
-      />
-    </WindowPanel>
+        overlayId="filePreviewWindow"
+        onCollectData={() => ({
+          fileId,
+          pageNumber: activePage ?? null,
+          navigationRequestId: navigationRequestId ?? null,
+        })}
+      >
+        {/*
+          The canonical PreviewPane. Passing `onClose` so the pane's own
+          X button + Esc handler close the WindowPanel instead of
+          dispatching `setActiveFileId(null)` (which would be a no-op
+          here — the WindowPanel doesn't read that field, and clearing
+          it would silently close the cloud-files PageShell preview if
+          it happens to be open in another tab/route).
+          Cloud-files realtime is mounted globally in app/Providers.tsx.
+        */}
+        <PreviewPane
+          fileId={fileId}
+          pageNumber={activePage}
+          onPageChange={setActivePage}
+          onClose={onClose}
+          className="h-full w-full"
+        />
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }

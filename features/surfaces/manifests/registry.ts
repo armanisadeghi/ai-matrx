@@ -87,6 +87,25 @@ import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
+import { quickTasksManifest } from "./quick-tasks.manifest";
+import { taskCreateManifest } from "./task-create.manifest";
+import { quickNoteSaveManifest } from "./quick-note-save.manifest";
+import { filePreviewManifest } from "./file-preview.manifest";
+import { imageViewerManifest } from "./image-viewer.manifest";
+import { imageUploaderManifest } from "./image-uploader.manifest";
+import { galleryManifest } from "./gallery.manifest";
+import { shareManifest } from "./share.manifest";
+import { feedbackManifest } from "./feedback.manifest";
+import { markdownEditorManifest } from "./markdown-editor.manifest";
+import { listManagerManifest } from "./list-manager.manifest";
+import { canvasViewerManifest } from "./canvas-viewer.manifest";
+import { voicePadManifest } from "./voice-pad.manifest";
+import { transcriptStudioManifest } from "./transcript-studio.manifest";
+import { observationalMemoryManifest } from "./observational-memory.manifest";
+import { agentGateManifest } from "./agent-gate.manifest";
+import { agentRunHistoryManifest } from "./agent-run-history.manifest";
+import { agentSettingsManifest } from "./agent-settings.manifest";
+import { smartCodeEditorManifest } from "./smart-code-editor.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -159,6 +178,27 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentAppsManifest,
   agentConnectionsManifest,
   connectionsSkillsManifest,
+  // 2026-07-24 overlay-surface fleet — window panels are surfaces too
+  // (identified by overlayId, emitters nested inside the window components).
+  quickTasksManifest,
+  taskCreateManifest,
+  quickNoteSaveManifest,
+  filePreviewManifest,
+  imageViewerManifest,
+  imageUploaderManifest,
+  galleryManifest,
+  shareManifest,
+  feedbackManifest,
+  markdownEditorManifest,
+  listManagerManifest,
+  canvasViewerManifest,
+  voicePadManifest,
+  transcriptStudioManifest,
+  observationalMemoryManifest,
+  agentGateManifest,
+  agentRunHistoryManifest,
+  agentSettingsManifest,
+  smartCodeEditorManifest,
 ];
 
 // ---------------------------------------------------------------------------

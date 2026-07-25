@@ -14,6 +14,8 @@ import { ViewId, getViewSelectOptions } from "./custom-views/view-registry";
 import { processMarkdownForRendering } from "./markdown-processor-util";
 import { AstNode } from "./processors/types";
 import { PROCESSOR_CONFIG_TYPE_MAP } from "./processors/processor-registry";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarkdownEditorScope } from "@/features/surfaces/manifests/markdown-editor.manifest";
 
 
 interface MarkdownClassificationTesterProps {
@@ -193,7 +195,26 @@ const MarkdownClassificationTester = ({
     // Check if config selection should be disabled
     const isConfigDisabled = !PROCESSOR_CONFIG_TYPE_MAP[selectedProcessorId];
 
+    // Live surface scope for the universal Agents chrome. Called at Run time
+    // only — reads the current editor + pipeline state.
+    const getSurfaceScope = () =>
+        createMarkdownEditorScope({
+            content: markdown,
+            coordinator_id: selectedCoordinatorId,
+            sample_id: selectedSampleId || undefined,
+            processor_id: selectedProcessorId || undefined,
+            config_id: selectedConfigId || undefined,
+            view_id: selectedViewId ?? undefined,
+            processed_data: processedData ?? undefined,
+            ast: ast ?? undefined,
+        });
+
     return (
+        <SurfaceRuntimeProvider
+            surfaceName="matrx-user/markdown-editor"
+            getScope={getSurfaceScope}
+            isEditable
+        >
         <div className="flex flex-col h-full overflow-hidden bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Controls */}
             {showSelectors && (
@@ -311,6 +332,7 @@ const MarkdownClassificationTester = ({
                 />
             </div>
         </div>
+        </SurfaceRuntimeProvider>
     );
 };
 

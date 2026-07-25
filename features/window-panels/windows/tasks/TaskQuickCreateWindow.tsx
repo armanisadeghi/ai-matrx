@@ -9,6 +9,11 @@ import type {
 } from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
 import { TaskCreatePanel } from "@/features/tasks/widgets/quick-create/TaskCreatePanel";
 import { emitTaskQuickCreateSaved } from "@/features/overlays/openers/taskQuickCreateWindow";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  TASK_CREATE_SURFACE_NAME,
+  createTaskCreateScope,
+} from "@/features/surfaces/manifests/task-create.manifest";
 
 export interface TaskQuickCreateWindowProps {
   isOpen: boolean;
@@ -70,6 +75,25 @@ function TaskQuickCreateWindowInner({
     onClose();
   };
 
+  // Surface emitter (`matrx-user/task-create`): the window's opener payload.
+  // Live form state lives inside TaskQuickCreateCore and is not emitted yet
+  // (manifest readiness: partial). Nested provider out-depths the hosting
+  // page's surface while the window is open (deepest wins, by design).
+  const getScope = React.useCallback(
+    () =>
+      createTaskCreateScope({
+        has_source: !!source,
+        source_entity_type: source?.entity_type,
+        source_entity_id: source?.entity_id,
+        source_label: source?.label,
+        prefill_title: prePopulate?.title,
+        prefill_description: prePopulate?.description,
+        prefill_priority: prePopulate?.priority,
+        content: prePopulate?.description,
+      }),
+    [source, prePopulate],
+  );
+
   const title = source ? "Create task from source" : "Create task";
 
   // Match the QuickNoteSaveWindow footprint: near-fullscreen with a 24px
@@ -81,29 +105,34 @@ function TaskQuickCreateWindowInner({
     typeof window !== "undefined" ? window.innerHeight - viewportPad : 1000;
 
   return (
-    <WindowPanel
-      title={title}
-      id={windowId}
-      overlayId={OVERLAY_ID}
-      minWidth={520}
-      minHeight={480}
-      width="90vw"
-      height="85dvh"
-      maxWidth={maxWidth}
-      maxHeight={maxHeight}
-      position="center"
-      onClose={onClose}
-      footerRight={<div ref={setFooterHost} className="flex items-center" />}
+    <SurfaceRuntimeProvider
+      surfaceName={TASK_CREATE_SURFACE_NAME}
+      getScope={getScope}
     >
-      <div className="h-full min-h-0 p-3">
-        <TaskCreatePanel
-          source={source}
-          prePopulate={prePopulate}
-          onSaved={handleSaved}
-          onCancel={onClose}
-          footerHost={footerHost}
-        />
-      </div>
-    </WindowPanel>
+      <WindowPanel
+        title={title}
+        id={windowId}
+        overlayId={OVERLAY_ID}
+        minWidth={520}
+        minHeight={480}
+        width="90vw"
+        height="85dvh"
+        maxWidth={maxWidth}
+        maxHeight={maxHeight}
+        position="center"
+        onClose={onClose}
+        footerRight={<div ref={setFooterHost} className="flex items-center" />}
+      >
+        <div className="h-full min-h-0 p-3">
+          <TaskCreatePanel
+            source={source}
+            prePopulate={prePopulate}
+            onSaved={handleSaved}
+            onCancel={onClose}
+            footerHost={footerHost}
+          />
+        </div>
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }

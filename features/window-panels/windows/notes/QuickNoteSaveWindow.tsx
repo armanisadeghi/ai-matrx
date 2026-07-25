@@ -8,6 +8,11 @@ import {
 } from "@/features/notes/actions/quick-save/QuickNoteSaveCore";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import type { Note } from "@/features/notes/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  QUICK_NOTE_SAVE_SURFACE_NAME,
+  createQuickNoteSaveScope,
+} from "@/features/surfaces/manifests/quick-note-save.manifest";
 
 export interface QuickNoteSaveWindowProps {
   isOpen: boolean;
@@ -88,6 +93,21 @@ function QuickNoteSaveWindowInner({
     if (action !== "none") onClose();
   };
 
+  // Surface emitter (`matrx-user/quick-note-save`): the window's opener
+  // payload. Live form state lives inside QuickNoteSaveCore and is not
+  // emitted yet (manifest readiness: partial). Nested provider out-depths
+  // the hosting page's surface while the window is open (deepest wins).
+  const getScope = React.useCallback(
+    () =>
+      createQuickNoteSaveScope({
+        content: initialContent,
+        default_folder: defaultFolder,
+        default_note_name: defaultNoteName,
+        initial_editor_mode: initialEditorMode,
+      }),
+    [initialContent, defaultFolder, defaultNoteName, initialEditorMode],
+  );
+
   const viewportPad = 24;
   const maxWidth =
     typeof window !== "undefined" ? window.innerWidth - viewportPad : 1400;
@@ -95,31 +115,36 @@ function QuickNoteSaveWindowInner({
     typeof window !== "undefined" ? window.innerHeight - viewportPad : 900;
 
   return (
-    <WindowPanel
-      title="Quick Save Note"
-      id={windowId}
-      overlayId={OVERLAY_ID}
-      minWidth={520}
-      minHeight={420}
-      width="90vw"
-      height="85dvh"
-      maxWidth={maxWidth}
-      maxHeight={maxHeight}
-      position="center"
-      onClose={onClose}
-      footerRight={<div ref={setFooterHost} className="flex items-center" />}
+    <SurfaceRuntimeProvider
+      surfaceName={QUICK_NOTE_SAVE_SURFACE_NAME}
+      getScope={getScope}
     >
-      <div className="h-full min-h-0 p-3">
-        <QuickNoteSaveCore
-          initialContent={initialContent}
-          defaultFolder={defaultFolder}
-          defaultNoteName={defaultNoteName}
-          initialEditorMode={initialEditorMode}
-          onSaved={handleSaved}
-          onCancel={onClose}
-          footerHost={footerHost}
-        />
-      </div>
-    </WindowPanel>
+      <WindowPanel
+        title="Quick Save Note"
+        id={windowId}
+        overlayId={OVERLAY_ID}
+        minWidth={520}
+        minHeight={420}
+        width="90vw"
+        height="85dvh"
+        maxWidth={maxWidth}
+        maxHeight={maxHeight}
+        position="center"
+        onClose={onClose}
+        footerRight={<div ref={setFooterHost} className="flex items-center" />}
+      >
+        <div className="h-full min-h-0 p-3">
+          <QuickNoteSaveCore
+            initialContent={initialContent}
+            defaultFolder={defaultFolder}
+            defaultNoteName={defaultNoteName}
+            initialEditorMode={initialEditorMode}
+            onSaved={handleSaved}
+            onCancel={onClose}
+            footerHost={footerHost}
+          />
+        </div>
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }

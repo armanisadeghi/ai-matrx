@@ -9,6 +9,11 @@ import { CreateListDialog } from "./CreateListDialog";
 import { Loader2, ListFilter, Plus } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createListManagerScope,
+  type ListManagerItemEntry,
+} from "@/features/surfaces/manifests/list-manager.manifest";
 
 export function ListManagerFloatingWorkspace() {
   const [lists, setLists] = useState<UserList[]>([]);
@@ -72,7 +77,48 @@ export function ListManagerFloatingWorkspace() {
     return () => clearInterval(interval);
   }, [activeListId, fetchLists]);
 
+  // Live surface scope for the universal Agents chrome. Called at Run time
+  // only — reads the sidebar lists + the active list's loaded items.
+  const getSurfaceScope = () => {
+    const grouped = activeListData?.items_grouped ?? null;
+    const allItems: ListManagerItemEntry[] = grouped
+      ? Object.entries(grouped).flatMap(([group, items]) =>
+          items.map((item) => ({
+            id: item.id,
+            label: item.label,
+            description: item.description,
+            help_text: item.help_text,
+            group,
+          })),
+        )
+      : [];
+    return createListManagerScope({
+      list_count: lists.length,
+      lists: lists.map((l) => ({
+        id: l.id,
+        name: l.list_name,
+        item_count: l.item_count ?? null,
+      })),
+      active_list_id: activeListId ?? undefined,
+      active_list_name: activeListData?.list_name,
+      active_list_description: activeListData?.description ?? undefined,
+      list_visibility: activeListData
+        ? activeListData.is_public
+          ? "public"
+          : "personal"
+        : undefined,
+      active_list_item_count: activeListData ? allItems.length : undefined,
+      all_items: activeListData ? allItems : undefined,
+      items_grouped: grouped ?? undefined,
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/list-manager"
+      getScope={getSurfaceScope}
+      isEditable
+    >
     <div className="flex h-full w-full overflow-hidden bg-background">
       <ListsSidebar
         lists={lists}
@@ -105,5 +151,6 @@ export function ListManagerFloatingWorkspace() {
         onOpenChange={setCreateListOpen}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
