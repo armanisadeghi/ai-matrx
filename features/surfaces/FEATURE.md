@@ -208,6 +208,12 @@ After the user-requested "go all in" pass, the page picks up:
 - **Keyboard shortcuts**: `/` focuses the search input; `Esc` closes the open drawer / dialog / clears selection (in that priority order).
 - The candidate-count badge on the "Candidates" button shows how many catalog rows aren't yet seeded — naturally trends to 0 over time.
 
+## Readiness tracking + overlay surfaces (2026-07-24, Arman-ruled)
+
+- **`SurfaceManifest.readiness`** (`verified | partial | stub`, REQUIRED) + `readinessNote` — the campaign tracker for "verified correct and complete". Mirrored to `ui_surface.readiness`; NULL = unregistered (no manifest). Code-owned; the admin board at `/administration/ui/surfaces` rolls up the four states. `verified` is earned via the full surface-authoring checklist, never aspirational.
+- **Overlay surfaces**: every window-panel overlay gets its own surface, identified by `SurfaceManifest.overlayId` → `ui_surface.overlay_id` (the overlay twin of `url_pattern`). Emitters mount `SurfaceRuntimeProvider` inside the window component — nested providers out-depth the page, so the window's scope wins while open.
+- 11 zero-reference stale `ui_surface` rows hard-deleted 2026-07-24 (ai-voice, browser-workbench, code-workspace, multi-file-smart-editor, news, notes-beta, prompt-apps, applets, voice-pad-advanced, voice-pad-ai, custom-apps — all had 0 values/roles/bindings/tool-defaults).
+
 ## Change Log
 
 - **2026-07-24 (fleet push)** — 53 → **60 manifests / 1,270 values**, all DB-synced. Upgraded to the canonical standard (groups + completeness + emitters): notes (15→30), chat (15→25) + assistant-message, tasks (13→23) + projects (8→22), transcripts family (12 new viewer values + truth fixes), code-editor (diagnostics/open_files/filesystem; dead `current_function_name` removed), scraper (config+results exposed; 2 never-emitted values removed). NEW registered surfaces with emitters: agents-hub, organizations, dashboard, settings, agent-apps, agent-connections, connections-skills (child, inherits). Route fixes activated 8 orphaned manifests (`/cms`, `/war-room`, `/data` prefixes) and corrected fictional prefixes + DB url_patterns (`/agent-apps`, `/agent-connections`, `/agent-connections/skills`, `/sandbox`, `/user-settings`). Remaining rollout: `docs/handoffs/surface-canonical-fleet.md`.

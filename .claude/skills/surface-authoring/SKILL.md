@@ -41,6 +41,18 @@ A **surface** exists to bind **highly custom agents to a specific place** and ha
 
 Undeclared runtime keys show loudly in the Surface Context window under **"Undeclared (runtime only)"** — every entry there is a defect: either declare the value or stop emitting it. Use `autoContext: false` to keep declared-but-rarely-needed values out of automatic agent context; never use non-declaration for that.
 
+## READINESS TRACKING — the campaign field
+
+Every manifest declares `readiness: "verified" | "partial" | "stub"` (REQUIRED — the compiler enforces it) plus `readinessNote` saying what's missing whenever it isn't `verified`. This is the platform's tracker for "which surfaces are verified correct and complete". Rules:
+
+- `verified` is EARNED: full completeness audit against the live page, curated groups, emitter wired, checklist green. Never stamp it aspirationally.
+- Any change that adds page data without declaring it, or declares without emitting, demotes the surface — update `readiness` in the same edit.
+- Mirrored to `ui_surface.readiness`; the admin board at `/administration/ui/surfaces` rolls up Verified / Partial / Stub / Unregistered (DB rows with no manifest). Readiness is code-owned — never edited in the DB.
+
+## OVERLAY SURFACES — windows are surfaces too
+
+Overlay/window panels (file preview, quick tasks, markdown editor, …) get their own surfaces: they are among the most interaction-heavy UIs. An overlay surface declares `overlayId` (the id from `features/window-panels/registry/overlay-ids.ts`) INSTEAD of `urlPattern` — the overlay twin of the route. Its emitter is a `<SurfaceRuntimeProvider>` mounted INSIDE the window component: nested providers out-depth the page's provider, so while the window is open ITS scope wins (by design — deepest wins). Values are "available while mounted": a window that always shows a file can promise `file_id` with `alwaysAvailable: true`.
+
 ## The 4-step add (canonical)
 
 ```

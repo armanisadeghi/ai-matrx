@@ -65,6 +65,7 @@ Verify like the owner does:
 
 ## Ship checklist
 
+- [ ] `readiness` stamped honestly (verified only after the full checklist; note required otherwise); overlay surfaces carry `overlayId`
 - [ ] Manifest + scope builder; required `label`; groups declared + every value grouped; completeness sweep clean; honest values; baselines not duplicated
 - [ ] Roles/namespaces declared where the surface plugs in agents/config
 - [ ] Registered in `registry.ts`; `pnpm check:surface-drift` green

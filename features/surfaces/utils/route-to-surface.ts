@@ -91,7 +91,6 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   // Legacy path aliases (old surface names / bookmarks)
   { prefix: "/content-extractor", surface: "matrx-user/extractor-chunker" },
   { prefix: "/pdf-widgets", surface: "matrx-user/pdf-extractor" },
-  { prefix: "/custom-apps", surface: "matrx-user/custom-apps" },
 
   // Admin routes — prefer matrx-admin/* when on the admin section.
   { prefix: "/administration", surface: "matrx-admin/system-agents" },
