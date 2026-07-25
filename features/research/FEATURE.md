@@ -233,6 +233,26 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- `2026-07-25` — **A topic's whole holdings are now selectable agent input
+  (resource catalog → context bundles → agents).** Every output had exactly ONE
+  input — the report as a single blob — while search results, raw payloads,
+  scraped bodies, page analyses, scoring, syntheses and media sat unreachable.
+  Added: the `research_topic_resource_manifest` RPC (measured sizes, no bodies,
+  one round trip — truth-checked against direct counts on the 3,303-item topic),
+  the catalog/selector/resolver core, `research.rs_context_bundle` (rules not row
+  ids; templates via `entity_id IS NULL`), the `/context` Context Builder, and
+  seven system bundles + six domain agents (brand profile, reputation
+  business/personal, gap analysis, literature review, competitive landscape).
+  Publishing outputs now read the report through `research-report-only`;
+  verified it picks the identical row and length as the old direct read on all
+  17 topics that have a report. Live end-to-end: Brand Profile consumed 105,969
+  input tokens and returned a cited profile whose facts appear only in the
+  scraped pages. That run also **falsified the token estimator** — the textbook
+  4 chars/token under-counted by 23%, so `lib/tokens/estimate.ts` now uses
+  measured 2.9/2.4 divisors and a regression test pins the measurement. Two
+  UI-honesty fixes fell out of the build: filter exclusions are no longer
+  reported as "context was trimmed" (only involuntary drops are), and a freshly
+  loaded bundle no longer shows a false "edited" badge.
 - `2026-07-25` — **Adding a keyword to a finished topic is now a first-class,
   fully-visible flow (Phase 1 of the incremental-research work).** Adding a 4th
   keyword to a completed topic previously left it inert and invisible: the

@@ -290,8 +290,15 @@ describe("budget enforcement", () => {
 
 describe("token estimation", () => {
   it("round-trips a budget to the char ceiling the resolver cuts at", () => {
-    expect(charsForTokenBudget(1_000)).toBe(4_000);
-    expect(estimateTokens(4_000)).toBe(1_000);
+    expect(charsForTokenBudget(1_000)).toBe(2_900);
+    expect(estimateTokens(2_900)).toBe(1_000);
+  });
+
+  it("does not under-count real research context", () => {
+    // Pinned to a measured run: 316,200 chars of research context billed
+    // 105,969 input tokens. An estimator that comes in under that is the
+    // dangerous direction — it promises a payload fits when it does not.
+    expect(estimateTokens(316_200, "prose")).toBeGreaterThanOrEqual(105_969);
   });
 
   it("counts structured payloads as denser than prose", () => {

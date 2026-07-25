@@ -22,15 +22,27 @@
 /**
  * Characters per token, by content shape.
  *
- * English prose runs ~4 chars/token. Machine-shaped text (JSON payloads, URL
- * lists, markdown tables) tokenizes worse — punctuation and identifiers split
- * aggressively — so it gets a lower divisor, i.e. more tokens per character.
+ * MEASURED, not assumed. The textbook figure for English prose is ~4
+ * chars/token, and using it here under-counted a real run by 23%: a research
+ * context of 316,200 characters was estimated at 81.7k tokens and the provider
+ * actually billed **105,969** input tokens (2.98 chars/token overall) — see the
+ * Context Builder's first live Brand Profile run, 2026-07-25.
+ *
+ * The reason is what this content IS: research text is dense with URLs,
+ * hostnames, markdown tables, headings and citation markup, all of which
+ * tokenize far worse than flowing prose. The divisors below sit just BELOW that
+ * measured 2.98, so the estimate errs toward "too big". Erring the other way is
+ * the dangerous one — it silently overflows a model's context window after the
+ * UI promised the payload would fit.
+ *
+ * Re-measure and adjust when the content mix changes; do not restore a
+ * textbook constant over a measurement.
  */
 export const CHARS_PER_TOKEN = {
-  /** Ordinary prose: articles, analyses, syntheses, reports. */
-  prose: 4,
+  /** Ordinary prose with markup: articles, analyses, syntheses, reports. */
+  prose: 2.9,
   /** JSON / structured payloads / URL and link lists. */
-  structured: 3,
+  structured: 2.4,
 } as const;
 
 export type ContentShape = keyof typeof CHARS_PER_TOKEN;
