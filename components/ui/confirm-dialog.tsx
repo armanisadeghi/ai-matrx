@@ -29,7 +29,12 @@ export interface ConfirmDialogProps {
   /** Extra classes for the dialog content (e.g. a wider max-w for diffs). */
   contentClassName?: string;
   confirmLabel?: string;
-  cancelLabel?: string;
+  /**
+   * `null` hides the cancel button entirely — for acknowledge-only dialogs
+   * (e.g. `announceComingSoon`) where there is nothing to cancel. Anything
+   * else labels it.
+   */
+  cancelLabel?: string | null;
   variant?: "default" | "destructive";
   busy?: boolean;
   onConfirm: () => void | Promise<void>;
@@ -66,7 +71,9 @@ export function ConfirmDialog({
         </AlertDialogHeader>
         {content ?? null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
+          {cancelLabel === null ? null : (
+            <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
+          )}
           <AlertDialogAction
             disabled={busy}
             onClick={(event) => {

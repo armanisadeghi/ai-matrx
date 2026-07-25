@@ -359,6 +359,36 @@ export interface SiteWorkbenchPreferences {
   bookmarks: SiteWorkbenchUserBookmark[];
 }
 
+/**
+ * How ONE feature-entry list surface is presented for this user — the "style"
+ * half of list state, deliberately separate from the "query" half.
+ *
+ * Persisted (style, survives reload + follows the user across devices):
+ *   view mode, density, sort, page size, hidden columns.
+ * NOT persisted (query, always starts clean): search text, column filters,
+ *   page number, and the active scope tab — a stale search silently showing
+ *   "no results" on next visit is a bug, not a convenience.
+ *
+ * Written through `useListViewPrefs(surfaceKey)` — see lib/list-views/.
+ */
+export interface ListViewPrefs {
+  /** "table" is the canonical default for every list surface. */
+  view: "table" | "cards" | "rows";
+  density: "compact" | "comfortable";
+  sort: "updated" | "created" | "name" | "category";
+  direction: "asc" | "desc";
+  pageSize: number;
+  /** Column ids the user switched OFF. Absent id = visible. */
+  hiddenColumns: string[];
+}
+
+/**
+ * Keyed by list surface (e.g. "agents-browse"). Every list surface that adopts
+ * the canonical entry-list shell gets one entry here, so a user's list-style
+ * choices are one synced blob instead of N localStorage keys.
+ */
+export type ListViewsPreferences = Record<string, ListViewPrefs>;
+
 export interface OrganizationPreferences {
   /**
    * The user's DEFAULT active organization. When set, the active-org bootstrap
@@ -543,6 +573,7 @@ export interface UserPreferences {
   organization: OrganizationPreferences;
   scratchpad: ScratchpadPreferences;
   siteWorkbench: SiteWorkbenchPreferences;
+  listViews: ListViewsPreferences;
 }
 
 // Add state interface for async operations
@@ -984,6 +1015,9 @@ export const initializeUserPreferencesState = (
     siteWorkbench: {
       bookmarks: [],
     },
+    // Empty = every list surface falls back to its own declared defaults
+    // (lib/list-views/defaults.ts). Keep in sync with defaultUserPreferences.ts.
+    listViews: {},
   };
 
   // Merge with defaults to ensure all properties exist
@@ -1053,6 +1087,10 @@ export const initializeUserPreferencesState = (
     siteWorkbench: {
       ...defaultPreferences.siteWorkbench,
       ...preferences.siteWorkbench,
+    },
+    listViews: {
+      ...defaultPreferences.listViews,
+      ...preferences.listViews,
     },
   };
 
@@ -1172,6 +1210,9 @@ const userPreferencesSlice = createSlice({
         };
         state.siteWorkbench = {
           ...state._meta.loadedPreferences.siteWorkbench,
+        };
+        state.listViews = {
+          ...state._meta.loadedPreferences.listViews,
         };
         state._meta.hasUnsavedChanges = false;
         state._meta.error = null;
@@ -1325,6 +1366,11 @@ const userPreferencesSlice = createSlice({
           ...state.siteWorkbench,
           ...loaded.siteWorkbench,
         };
+      if (loaded.listViews)
+        state.listViews = {
+          ...state.listViews,
+          ...loaded.listViews,
+        };
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works.
       const { _meta, ...currentPreferences } = state;
@@ -1400,6 +1446,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "organization",
   "scratchpad",
   "siteWorkbench",
+  "listViews",
 ] as const;
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({

@@ -337,6 +337,16 @@ export function ItemMenu({
         <DropdownMenuContent
           align={align}
           side={side}
+          // A rich menu (a full record-action registry is 20+ entries) is
+          // taller than a short viewport. Without this the overflow is simply
+          // UNREACHABLE — Radix positions the panel but does not scroll it, so
+          // Delete silently falls off the bottom of the screen.
+          //
+          // Bound to Radix's OWN available-height var, not a vh fraction: a
+          // plain `max-h-[70vh]` still overhangs, because 70vh is measured
+          // against the viewport while the panel starts partway down it.
+          collisionPadding={12}
+          className="max-h-[min(var(--radix-dropdown-menu-content-available-height),32rem)] overflow-y-auto"
           style={{ minWidth: contentMinWidth }}
           onCloseAutoFocus={onCloseAutoFocus}
           onKeyDown={makeShortcutHandler(resolved, () => handleOpenChange(false))}

@@ -24,7 +24,8 @@ export interface ConfirmOptions {
   title: ReactNode;
   description?: ReactNode;
   confirmLabel?: string;
-  cancelLabel?: string;
+  /** `null` hides the cancel button (acknowledge-only dialogs). */
+  cancelLabel?: string | null;
   variant?: "default" | "destructive";
 }
 

@@ -227,4 +227,8 @@ export const defaultUserPreferences: UserPreferences = {
   siteWorkbench: {
     bookmarks: [],
   },
+  // Empty = every list surface falls back to its own declared defaults
+  // (lib/list-views/defaults.ts). Keep in sync with the in-slice defaults at
+  // lib/redux/preferences/userPreferencesSlice.ts.
+  listViews: {},
 };

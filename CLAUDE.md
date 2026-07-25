@@ -220,6 +220,24 @@ A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days lat
 
 Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Four-file task system: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks). **Invoke the `task-hygiene` skill** to triage, promote, or clean any of them.
 
+## "Coming Soon" is a promise — track it like a found defect
+
+We deliberately advertise actions we intend to build so users see where the product is going and engineers feel the debt. **Growing the list is encouraged.** That only works if every promise is declared in ONE registry — `lib/coming-soon/registry.ts` — and handled with the same reflex as [FOUND_DEFECTS.md](./FOUND_DEFECTS.md): **report it, and ask to solve it.**
+
+- **Never render a bare "coming soon" string, toast, or stub modal.** Register the entry, then call `announceComingSoon(id)`. An unregistered id throws in dev — an untracked promise is exactly what this prevents.
+- **Touching a feature that owns a Coming Soon entry? Name it in your summary and offer to build it.** Never leave it silently.
+- `stage: "blocked"` requires `blockedBy`. Delete the entry in the same change that ships the feature.
+
+Rules + stages: [`lib/coming-soon/FEATURE.md`](./lib/coming-soon/FEATURE.md).
+
+## Feature entry lists — the canonical shell
+
+`/agents/browse` ([`features/agents/browse/FEATURE.md`](./features/agents/browse/FEATURE.md)) is the proving ground for the list page every feature should have: table-first with ONE `…` menu carrying every record action, plus card and dense views, and **Mine / My Orgs / Shared / Public** scopes with true server counts. Building or fixing a feature's list page? Read it first and consume its primitives rather than starting a fifth variant:
+
+- **View style persistence** → `useListViewPrefs` ([`lib/list-views/FEATURE.md`](./lib/list-views/FEATURE.md)). Style persists (view, density, sort, page size, columns); query never does (search, filters, page, scope). Four hand-rolled `localStorage` copies are pending migration onto it.
+- **Row actions** → one `ItemMenuConfig` builder per entity (`components/official/item/`), consumed identically by table, cards, rows, and right-click. Three divergent hard-coded action lists for one entity is the defect this kills.
+- **Table** → `MatrxDataTable` in **controlled** mode when paging server-side. A column filter the server can't serve is `filter: false`, never a control that silently filters one page.
+
 ## Agent Review Queue — anything you build that Arman must see
 
 Built a demo page, new route, or reviewable UI surface Arman didn't watch you make? **Register it in `agent.review_queue` before ending the turn** — a "please test /demos/foo" buried in a chat message will never be seen. He reviews at `/administration/users/agent-review`; his feedback comes back through the same table, and you archive the row once handled. **Invoke the `agent-review-queue` skill** for the exact INSERT/feedback/status contract.
