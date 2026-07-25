@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as ts from "typescript";
+// TYPE-ONLY. The TypeScript compiler is ~10MB of JS that only this admin route
+// ever runs, and a top-level VALUE import drags it into the build's module
+// graph — where `Collecting page data` loads it in each of 29 parallel workers.
+// That is memory this build cannot spare (FOUND_DEFECTS D103). The runtime copy
+// is loaded on demand inside `runTypeCheck`.
+import type * as TS from "typescript";
 import * as fs from "fs";
 import * as path from "path";
 import { createClient } from "@/utils/supabase/server";
@@ -27,7 +32,10 @@ const PREFERRED_TSCONFIGS = ["tsconfig.typecheck.json", "tsconfig.json"];
 function resolveTsconfig(root: string): string | null {
   for (const name of PREFERRED_TSCONFIGS) {
     const p = path.join(/* turbopackIgnore: true */ root, name);
-    if (fs.existsSync(p)) return p;
+    // The ignore has to be on the existsSync too: with it only on the join,
+    // Turbopack still traced this as a filesystem read over the whole project
+    // ("matches 12369 files" / "Encountered unexpected file in NFT list").
+    if (fs.existsSync(/* turbopackIgnore: true */ p)) return p;
   }
   return null;
 }
@@ -67,7 +75,13 @@ function validateCodebaseRoot(
   return { ok: true, tsconfig };
 }
 
-function runTypeCheck(root: string, tsconfigPath: string): TypeScriptError[] {
+async function runTypeCheck(
+  root: string,
+  tsconfigPath: string,
+): Promise<TypeScriptError[]> {
+  // Loaded here, not at module scope — see the import note above.
+  const ts: typeof TS = await import("typescript");
+
   const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
   if (configFile.error) {
     throw new Error(
@@ -85,7 +99,7 @@ function runTypeCheck(root: string, tsconfigPath: string): TypeScriptError[] {
 
   // Normalize options so a diagnostics-only program never emits config noise
   // (e.g. TS5074 "--incremental can only be specified..." from noEmit + incremental).
-  const options: ts.CompilerOptions = {
+  const options: TS.CompilerOptions = {
     ...parsedConfig.options,
     noEmit: true,
     incremental: false,
@@ -165,7 +179,7 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
 
   try {
-    const errors = runTypeCheck(codebasePath, valid.tsconfig);
+    const errors = await runTypeCheck(codebasePath, valid.tsconfig);
     const durationMs = Date.now() - startedAt;
 
     const { data, error: dbError } = await supabase
