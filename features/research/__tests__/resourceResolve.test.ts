@@ -85,6 +85,28 @@ function rawManifest(): {
         f: { good_scrape: true, included: true, hostname: "a.com", authority: 40, tier: "medium" },
       },
       {
+        k: "document.report",
+        id: "doc-1",
+        p: null,
+        l: "Assembled document",
+        s: null,
+        c: 5_000,
+        st: "success",
+        t: "2026-07-10T00:00:00Z",
+        f: { current: true, version: 2 },
+      },
+      {
+        k: "synthesis.topic",
+        id: "synth-topic-1",
+        p: null,
+        l: "Topic report",
+        s: null,
+        c: 4_000,
+        st: "success",
+        t: "2026-07-09T00:00:00Z",
+        f: { current: true, version: 1 },
+      },
+      {
         k: "page.content",
         id: "content-b",
         p: "src-b",
@@ -285,6 +307,59 @@ describe("budget enforcement", () => {
     const pages = preview.perKind.find((k) => k.kind === "page.content");
     expect(pages?.chars).toBe(30_000);
     expect(pages?.tokens).toBe(estimateTokens(30_000, "prose"));
+  });
+});
+
+describe("binding strategy \"first\"", () => {
+  /**
+   * "The report" means the assembled document if one exists, ELSE the current
+   * topic report — never both. Four live topics have both rows, so a resolver
+   * that concatenated them would send the same research twice in one variable
+   * and silently change what every publishing output reads.
+   */
+  const reportOnly = (): ContextBundle => ({
+    ...bundle([
+      {
+        kind: "document.report",
+        mode: "filtered",
+        filter: { currentOnly: true },
+        order: "recent",
+        limit: { maxItems: 1 },
+      },
+      {
+        kind: "synthesis.topic",
+        mode: "filtered",
+        filter: { currentOnly: true, successOnly: true },
+        order: "recent",
+        limit: { maxItems: 1 },
+      },
+    ]),
+    bindings: [
+      {
+        variable: "research_report",
+        kinds: ["document.report", "synthesis.topic"],
+        strategy: "first",
+      },
+    ],
+  });
+
+  it("plans both kinds — the resolver, not the planner, decides which wins", () => {
+    const m = parseManifest(rawManifest(), TOPIC);
+    const { planned } = planResolution(m, reportOnly());
+    expect(planned.map((p) => p.kind)).toEqual([
+      "document.report",
+      "synthesis.topic",
+    ]);
+    expect(planned.every((p) => p.items.length === 1)).toBe(true);
+  });
+
+  it("preview counts both kinds' sizes, so the estimate is never optimistic", () => {
+    // The preview deliberately does NOT apply the strategy: showing the smaller
+    // number would promise a payload the run might not produce.
+    const m = parseManifest(rawManifest(), TOPIC);
+    const preview = previewBundle(m, reportOnly());
+    const doc = preview.perKind.find((k) => k.kind === "document.report");
+    expect(doc?.chars).toBe(5_000);
   });
 });
 
