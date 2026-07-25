@@ -6,8 +6,8 @@
  *
  * Design:
  *  - WindowPanel provides the OS-style frame (drag, resize, maximize, minimize).
- *  - WindowPanelShell provides the internal Tabs (Browse / Recent / Shared /
- *    Trash) + the Browse tab's own sidebar + main area.
+ *  - WindowPanelShell provides the internal Tabs (Browse / Upload / Recent /
+ *    Shared / Trash) + the Browse tab's own sidebar + main area.
  *  - We do NOT pass `sidebar` to WindowPanel — the Browse tab has its own
  *    Resizable sidebar embedded. Passing WindowPanel's sidebar would conflict.
  *  - `onCollectData` persists the active tab so the window reopens to the
@@ -21,10 +21,7 @@
 
 import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import {
-  WindowPanelShell,
-  type CloudFilesWindowTab,
-} from "@/features/files";
+import { WindowPanelShell, type CloudFilesWindowTab } from "@/features/files";
 
 export interface CloudFilesWindowProps {
   isOpen: boolean;

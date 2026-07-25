@@ -8,6 +8,7 @@
  *
  * Tabs:
  *   • Browse  — full FileTree + FileList, matches PageShell main.
+ *   • Upload  — dedicated drag/drop, paste, and file-picker surface.
  *   • Recent  — list of recent files (most-recently updated).
  *   • Shared  — files shared with me (visibility=shared and owner≠me).
  *   • Trash   — soft-deleted files (deleted_at != null).
@@ -18,7 +19,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock, FolderOpen, Trash2, Users } from "lucide-react";
+import { Clock, FolderOpen, Trash2, Upload, Users } from "lucide-react";
 import { DndContext } from "@dnd-kit/core";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -33,10 +34,15 @@ import { FilePreview } from "@/features/files/components/core/FilePreview/FilePr
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
+import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { setActiveFileId, setActiveFolderId } from "@/features/files/redux/slice";
+import {
+  setActiveFileId,
+  setActiveFolderId,
+} from "@/features/files/redux/slice";
 
-export type CloudFilesWindowTab = "browse" | "recent" | "shared" | "trash";
+export type CloudFilesWindowTab =
+  "browse" | "upload" | "recent" | "shared" | "trash";
 
 export interface WindowPanelShellProps {
   /** Tab controlled externally (so WindowPanel's data persistence can store it). */
@@ -76,49 +82,59 @@ export function WindowPanelShell({
           onValueChange={(value) => setTab(value as CloudFilesWindowTab)}
           className="flex flex-1 flex-col overflow-hidden"
         >
-        <TabsList className="mx-2 mt-2 shrink-0 self-start">
-          <TabsTrigger value="browse" className="gap-1.5">
-            <FolderOpen className="h-3.5 w-3.5" />
-            Browse
-          </TabsTrigger>
-          <TabsTrigger value="recent" className="gap-1.5">
-            <Clock className="h-3.5 w-3.5" />
-            Recent
-          </TabsTrigger>
-          <TabsTrigger value="shared" className="gap-1.5">
-            <Users className="h-3.5 w-3.5" />
-            Shared
-          </TabsTrigger>
-          <TabsTrigger value="trash" className="gap-1.5">
-            <Trash2 className="h-3.5 w-3.5" />
-            Trash
-          </TabsTrigger>
-        </TabsList>
+          <TabsList className="mx-2 mt-2 shrink-0 self-start">
+            <TabsTrigger value="browse" className="gap-1.5">
+              <FolderOpen className="h-3.5 w-3.5" />
+              Browse
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="gap-1.5">
+              <Upload className="h-3.5 w-3.5" />
+              Upload
+            </TabsTrigger>
+            <TabsTrigger value="recent" className="gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              Recent
+            </TabsTrigger>
+            <TabsTrigger value="shared" className="gap-1.5">
+              <Users className="h-3.5 w-3.5" />
+              Shared
+            </TabsTrigger>
+            <TabsTrigger value="trash" className="gap-1.5">
+              <Trash2 className="h-3.5 w-3.5" />
+              Trash
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent
-          value="browse"
-          className="flex-1 mt-2 mx-0 overflow-hidden data-[state=inactive]:hidden"
-        >
-          <BrowseTab />
-        </TabsContent>
-        <TabsContent
-          value="recent"
-          className="flex-1 mt-2 mx-2 overflow-hidden data-[state=inactive]:hidden"
-        >
-          <RecentTab />
-        </TabsContent>
-        <TabsContent
-          value="shared"
-          className="flex-1 mt-2 mx-2 overflow-hidden data-[state=inactive]:hidden"
-        >
-          <SharedTab />
-        </TabsContent>
-        <TabsContent
-          value="trash"
-          className="flex-1 mt-2 mx-2 overflow-hidden data-[state=inactive]:hidden"
-        >
-          <TrashTab />
-        </TabsContent>
+          <TabsContent
+            value="browse"
+            className="flex-1 mt-2 mx-0 overflow-hidden data-[state=inactive]:hidden"
+          >
+            <BrowseTab />
+          </TabsContent>
+          <TabsContent
+            value="upload"
+            className="flex-1 mt-2 mx-2 overflow-auto data-[state=inactive]:hidden"
+          >
+            <UploadTab />
+          </TabsContent>
+          <TabsContent
+            value="recent"
+            className="flex-1 mt-2 mx-2 overflow-hidden data-[state=inactive]:hidden"
+          >
+            <RecentTab />
+          </TabsContent>
+          <TabsContent
+            value="shared"
+            className="flex-1 mt-2 mx-2 overflow-hidden data-[state=inactive]:hidden"
+          >
+            <SharedTab />
+          </TabsContent>
+          <TabsContent
+            value="trash"
+            className="flex-1 mt-2 mx-2 overflow-hidden data-[state=inactive]:hidden"
+          >
+            <TrashTab />
+          </TabsContent>
         </Tabs>
       </div>
     </DndContext>
@@ -177,6 +193,37 @@ function BrowseTab() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function UploadTab() {
+  const dispatch = useAppDispatch();
+  const activeFolderId = useAppSelector(selectActiveFolderId);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-4 p-4">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">Upload files</h2>
+        <p className="text-sm text-muted-foreground">
+          Add files to the selected folder, or choose another destination from
+          Browse.
+        </p>
+      </div>
+      <div className="rounded-md border bg-muted/20 px-3 py-2">
+        <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Destination
+        </div>
+        <FileBreadcrumbs
+          folderId={activeFolderId}
+          onNavigate={(id) => dispatch(setActiveFolderId(id))}
+        />
+      </div>
+      <FileUploadDropzone
+        parentFolderId={activeFolderId}
+        mode="inline"
+        className="min-h-64 flex-1"
+      />
     </div>
   );
 }

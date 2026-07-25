@@ -560,15 +560,15 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "browserWorkbenchWindow",
   },
   {
-    // The legacy `fileUploadWindow` was removed in Phase 11. Upload now
-    // happens inside the main Cloud Files window via the dropzone, so this
-    // tile opens the same window as `tile.quick-files`.
+    // Upload is a dedicated tab in the canonical Cloud Files window. Keep one
+    // files surface while honoring the upload-specific entry point.
     id: "tile.file-upload",
     label: "Upload",
     icon: ArrowUp,
     category: "dupes",
     gate: "admin",
     overlayId: "cloudFilesWindow",
+    seedData: () => ({ initialTab: "upload" }),
   },
   {
     // Route-navigation tile — escapes the overlay model entirely.

@@ -244,7 +244,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     overlayId: "cloudFilesWindow",
     kind: "window",
     label: "Cloud Files",
-    defaultData: { activeTab: "browse" },
+    defaultData: { initialTab: "browse" },
     mobilePresentation: "fullscreen",
     mobileSidebarAs: "drawer",
     urlSync: { key: "cloud_files" },

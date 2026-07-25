@@ -49,8 +49,7 @@ import {
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
 import { FolderIconWithMembers } from "./FolderIconWithMembers";
-import { AccessBadge } from "./AccessBadge";
-import { SharedAvatarStack } from "./SharedAvatarStack";
+import { AccessCell } from "./AccessCell";
 import { FileTypeBadge } from "./FileTypeBadge";
 import { OwnerCell } from "./OwnerCell";
 import { RagStatusCell } from "./RagStatusCell";
@@ -347,15 +346,14 @@ function FileCell({
     case "access":
       return (
         <td className="px-4 py-2 whitespace-nowrap">
-          <div className="flex items-center gap-2">
-            {isShared && granteeIds.length > 0 ? (
-              <SharedAvatarStack granteeIds={granteeIds} max={2} size="sm" />
-            ) : null}
-            <AccessBadge
-              visibility={file.visibility}
-              memberCount={memberCount}
-            />
-          </div>
+          <AccessCell
+            entityType="file"
+            entityId={file.id}
+            visibility={file.visibility}
+            memberCount={memberCount}
+            isShared={isShared}
+            granteeIds={granteeIds}
+          />
         </td>
       );
     case "rag_status":
@@ -582,15 +580,14 @@ function FolderCell({
     case "access":
       return (
         <td className="px-4 py-2 whitespace-nowrap">
-          <div className="flex items-center gap-2">
-            {isShared && granteeIds.length > 0 ? (
-              <SharedAvatarStack granteeIds={granteeIds} max={2} size="sm" />
-            ) : null}
-            <AccessBadge
-              visibility={folder.visibility}
-              memberCount={memberCount}
-            />
-          </div>
+          <AccessCell
+            entityType="folder"
+            entityId={folder.id}
+            visibility={folder.visibility}
+            memberCount={memberCount}
+            isShared={isShared}
+            granteeIds={granteeIds}
+          />
         </td>
       );
   }

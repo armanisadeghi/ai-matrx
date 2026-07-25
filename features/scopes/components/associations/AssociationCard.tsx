@@ -27,6 +27,7 @@ import {
   type PrimaryEntity,
 } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { AssociationPicker } from "@/features/scopes/components/associations/AssociationPicker";
+import { AttachedItemsSheet } from "@/features/scopes/components/associations/AttachedItemsSheet";
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
@@ -50,7 +51,9 @@ export function AssociationCard({
   const info = getEntityInfo(token);
   const role = getContentRoleMeta(info.contentRole);
 
-  const { status, countFor, attachedIdsFor, attach, detach } =
+  const [listOpen, setListOpen] = useState(false);
+
+  const { status, countFor, attachedIdsFor, linksFor, attach, detach } =
     useContainerLinks({
       containerType: container?.type ?? "organization",
       containerId: container?.id ?? null,
@@ -69,11 +72,15 @@ export function AssociationCard({
   const loading = status === "loading" || status === "idle";
   const canAttach = info.canListCandidates;
 
+  // The count is only useful if you can find out WHICH ones. The card body
+  // drills into the attached list; the "+" stays a direct shortcut to attach.
+  const canDrillIn = count > 0;
+
   return (
     <>
       <div
         className={cn(
-          "group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border bg-card px-3 py-2.5 transition-all hover:border-primary/30 hover:bg-accent/40",
+          "group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-primary/30 hover:bg-accent/40",
           className,
         )}
       >
@@ -85,43 +92,77 @@ export function AssociationCard({
           )}
         />
 
-        <span
+        <button
+          type="button"
+          disabled={!canDrillIn}
+          onClick={() => setListOpen(true)}
+          title={
+            canDrillIn
+              ? `View the ${info.labelPlural.toLowerCase()} attached to ${container.label ?? "this"}`
+              : undefined
+          }
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-            role.accentBg,
-            role.accentText,
+            "flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left",
+            canDrillIn ? "cursor-pointer" : "cursor-default",
           )}
         >
-          <info.Icon className="h-4 w-4" />
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">
-            {info.labelPlural}
-          </p>
-          <p className="text-[11px] text-muted-foreground tabular-nums">
-            {loading ? (
-              <span className="inline-flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Loading…
-              </span>
-            ) : (
-              `${count} attached`
+          <span
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+              role.accentBg,
+              role.accentText,
             )}
-          </p>
-        </div>
+          >
+            <info.Icon className="h-4 w-4" />
+          </span>
+
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-foreground">
+              {info.labelPlural}
+            </span>
+            <span className="block text-[11px] text-muted-foreground tabular-nums">
+              {loading ? (
+                <span className="inline-flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading…
+                </span>
+              ) : (
+                `${count} attached`
+              )}
+            </span>
+          </span>
+        </button>
 
         {canAttach && (
           <button
             type="button"
             onClick={() => setOpen(true)}
             title={`Attach ${info.labelPlural.toLowerCase()}`}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
+            className="mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
           >
             <Plus className="h-4 w-4" />
           </button>
         )}
       </div>
+
+      {canDrillIn && (
+        <AttachedItemsSheet
+          open={listOpen}
+          onOpenChange={setListOpen}
+          token={token}
+          containerLabel={container.label}
+          links={linksFor(token)}
+          onAdd={
+            canAttach
+              ? () => {
+                  setListOpen(false);
+                  setOpen(true);
+                }
+              : undefined
+          }
+          onDetach={(resourceId) => detach(token, resourceId)}
+        />
+      )}
 
       {canAttach && (
         <AssociationPicker

@@ -41,6 +41,7 @@ import { formatFileSize } from "@/features/files/utils/format";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import { FileRagStatusChip } from "@/features/rag/components/FileRagStatusChip";
+import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import {
   fileInfoHumanSummary,
   type FileInfoSnapshot,
@@ -218,16 +219,21 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
           </Section>
 
           <Section title="Sharing">
-            <Row
-              label="Visibility"
-              value={
-                file.visibility === "public"
-                  ? "Public — anyone with a link"
-                  : file.visibility === "shared"
-                    ? "Shared — specific grantees + share links"
-                    : "Private — only you"
-              }
-            />
+            {/*
+             * Visibility is only ONE of the ways this file can be reached. A
+             * `personal` file attached to an org-internal scope is readable by
+             * that whole org — so the effective answer is computed live from
+             * grants + memberships + reachability containers, never inferred
+             * from the visibility column alone. One entity at a time; this is
+             * exactly the surface where it is worth doing right.
+             */}
+            {file.source.kind === "real" ? (
+              <AccessSummaryPanel entityType="file" entityId={fileId} />
+            ) : (
+              // Virtual rows have no entity row to ask about, so all we can
+              // honestly report is the client-side setting.
+              <Row label="Visibility" value={visibilityLabel(file.visibility)} />
+            )}
             {shareLink ? (
               <CopyableShareLink
                 fileId={fileId}
@@ -373,6 +379,18 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
 // ---------------------------------------------------------------------------
 // Building blocks
 // ---------------------------------------------------------------------------
+
+/**
+ * Fallback for VIRTUAL rows only. It reads the client-side `Visibility` union,
+ * which `toVisibility()` collapses (`internal` → `personal`), so it cannot be
+ * trusted for real files — those get <AccessSummaryPanel>, which reports the
+ * DB's true visibility alongside every reason access is granted.
+ */
+function visibilityLabel(visibility: string): string {
+  if (visibility === "public") return "Public — anyone with a link";
+  if (visibility === "shared") return "Shared — specific grantees + share links";
+  return "Not published or directly shared";
+}
 
 function Section({
   title,

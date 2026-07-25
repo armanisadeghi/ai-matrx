@@ -246,17 +246,20 @@ export function FileTable({
     );
   }, [ragColumnVisible, ragFileIds, dispatch]);
 
-  // Prime the Context column's row-scope store: ONE bulk
-  // ctx_scope_assignments query per page of files in view
-  // (primeEntityScopes itself skips already-known ids).
-  const contextColumnVisible = visibleIds.includes("context");
+  // Prime the row-scope store: ONE bulk association query per page of files in
+  // view (primeEntityScopes itself skips already-known ids). Both the Context
+  // column AND the Access column read it — Access needs it because a file
+  // reachable through a scope is NOT "only you", and this is the only container
+  // signal a list can afford.
+  const rowScopesNeeded =
+    visibleIds.includes("context") || visibleIds.includes("access");
   useEffect(() => {
-    if (!contextColumnVisible || files.length === 0) return;
+    if (!rowScopesNeeded || files.length === 0) return;
     primeEntityScopes(
       "file",
       files.map((f) => f.id),
     );
-  }, [contextColumnVisible, files]);
+  }, [rowScopesNeeded, files]);
 
   const refreshRagStatuses = useCallback(() => {
     if (ragFileIds.length === 0) return;

@@ -4,10 +4,6 @@
     "name": "applet-tests"
   },
   {
-    "path": "/demos/tests/camera-test",
-    "name": "camera-test"
-  },
-  {
     "path": "/demos/tests/direct-chat-test",
     "name": "direct-chat-test"
   },
