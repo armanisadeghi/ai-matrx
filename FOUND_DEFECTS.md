@@ -13,6 +13,24 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D102 — a structured server validation error reaches the user as bare "HTTP 422" (2026-07-25)
+
+Every aidream 4xx with a validation body is surfaced to the user as just the
+status line. The server's response is precise and actionable — for an
+unregistered `source_feature` it returns
+`{"error":"validation_error","user_message":"Request validation failed with 1
+issue: \`body.source_feature\`: … add the real feature to
+source_attribution.SOURCE_FEATURES or fix the caller","details":[{field,
+message,help,rejected_input}]}` — and NONE of it is shown or logged; the toast
+says "HTTP 422" and the Error Inspector entry carries no more. Cost three
+failed agent runs and a manual `fetch` replay in the browser console to
+discover, and it will cost the same again every time. Fix: in the `callApi`
+error path (`lib/api/call-api.ts`), parse the JSON body and prefer
+`user_message` / `message` / `details[].message` over the status line, the way
+the stream `error` event is already handled in
+`features/agents/run/useRunAgent.ts`. Found while wiring the research Context
+Builder; unrelated to that feature, and it affects every Python call in the app.
+
 ### D101 (partial) — `agx_get_list` has no org scope; the delete path is a HARD delete (2026-07-25)
 
 Soft-delete gap FIXED live on the two gallery readers — `migrations/agx_get_list_excludes_soft_deleted.sql` AND `migrations/agx_search_excludes_soft_deleted.sql` (`agx_search` had copied the missing predicate verbatim and merges into the SAME grid via `mergeAgentListRows`, so fixing only the list would have left search able to resurrect a deleted agent permanently). **Severity correction:** D101 said "1 such row live today" — that row is `agent_type='builtin'` with `user_id=NULL` and no grants, which no arm could return, so the gap was LATENT, not a live leak. Three halves remain: (1) `agx_get_list` returns only rows you own or were explicitly granted, but every user agent is `visibility='internal'` with an `organization_id`, so **agents your own teammates created in your own org are invisible**; that is a behaviour WIDENING and belongs with retiring `/agents/all` onto the replacement `public.agx_list_scoped` (`migrations/agx_list_scoped.sql`, live, used by `/agents/browse`) once `/agents/browse` is ratified. (2) `features/agents/redux/agent-definition/thunks.ts:805` deletes agents with a **hard** `.delete()`, so no soft-delete/undo exists on this path at all — the predicate just added has nothing to protect there. (3) ~6 more SECURITY DEFINER readers of `agent.definition` carry the same missing predicate — `agx_get_shared_with_me`, `agx_get_shared_for_chat`, `get_agents_for_chat`, `agx_get_access_level`, `agx_duplicate_agent`, `agx_get_shortcuts_for_context`/`_initial`, plus `agx_get_list_full`'s builtin arm; none is on the gallery path, so sweeping them is its own change.
