@@ -55,6 +55,14 @@ export interface ProjectsContextTaskCounts {
   done: number;
 }
 
+/** One project member as the host passes it (camelCase; mapped to the scope shape). */
+export interface ProjectsContextMember {
+  userId: string;
+  role: string;
+  displayName?: string | null;
+  email?: string | null;
+}
+
 export interface BuildProjectsContextDataArgs {
   /** Active project, or null when none is resolved (e.g. while loading). */
   project: Project | null;
@@ -65,10 +73,21 @@ export interface BuildProjectsContextDataArgs {
   org?: ProjectsContextOrgInfo | null;
   /** Number of members on the active project, when known. */
   memberCount?: number;
+  /** The active project's members, when loaded (empty while loading). */
+  members?: ProjectsContextMember[];
   /** Open / done task counts for the active project, when known. */
   taskCounts?: ProjectsContextTaskCounts;
   /** The viewer's role on the project (`owner` | `admin` | `member`), if any. */
   viewerRole?: string | null;
+  /**
+   * Per-kind counts of catalogue resources attached to the project (tasks and
+   * projects already excluded by the host). Omit while the inventory loads.
+   */
+  resourceCounts?: Record<string, number>;
+  /** Sum of `resourceCounts`. Omit while the inventory loads. */
+  totalResourceCount?: number;
+  /** Number of projects visible to the user in the current context, when known. */
+  projectCount?: number;
   /** Browser text selection scoped to the surface. Empty when none. */
   selectionText?: string;
 }
@@ -77,17 +96,19 @@ export interface BuildProjectsContextDataArgs {
  * Canonical `contextData` for `matrx-user/projects`.
  *
  * PURE map of the active project's live workspace state → `createProjectsScope`,
- * using the EXACT SurfaceValue names the manifest declares. Emits the
- * auto-injected baselines with real values where the surface has them
- * (`content` = the project description — the primary body the user reads/edits;
- * `selection` = the browser selection; `context` = a small surface blob with
- * status / priority / counts / role) plus every custom value the manifest
- * declares that the workspace can source from the single active project + org.
+ * using the EXACT SurfaceValue names the manifest declares. Emits the baselines
+ * with real values where the surface has them (`content` = the project
+ * description — the primary body the user reads/edits; `selection` = the
+ * browser selection; `context` = a small surface blob with status / priority /
+ * counts / role) plus every custom value the manifest declares that the
+ * workspace can source: the full project identity + composite, people
+ * (members / member_count / viewer_role), activity (task counts / resource
+ * counts), and org context.
  *
- * List-level values (`selected_project_ids`, `project_count`) are intentionally
- * omitted — the single-project workspace doesn't own the project list and must
- * not lie about it (same discipline as the Tasks single-task editor omitting
- * list values). They belong to a future list-surface mount (e.g. ProjectsHub).
+ * `selected_project_ids` is intentionally omitted — multi-select only exists on
+ * list-level mounts; the single-project workspace doesn't own it and must not
+ * lie about it. `project_count` IS emitted when the host knows the user's
+ * visible project list (the workspace loads sibling projects for its switcher).
  *
  * Demo + production share this one shape.
  */
@@ -98,8 +119,12 @@ export function buildProjectsContextData(
     project,
     org = null,
     memberCount,
+    members,
     taskCounts,
     viewerRole,
+    resourceCounts,
+    totalResourceCount,
+    projectCount,
     selectionText = "",
   } = args;
 
@@ -127,34 +152,72 @@ export function buildProjectsContextData(
     target_date: project?.targetDate ?? undefined,
   };
 
-  const scope = createProjectsScope({
-    // ── Baselines + selection (the projects manifest declares `selection` +
-    //    `context`) ────────────────────────────────────────────────────────
+  const mappedMembers = members?.map((m) => ({
+    user_id: m.userId,
+    role: m.role,
+    display_name: m.displayName || undefined,
+    email: m.email || undefined,
+  }));
+
+  // Composite active-project object (completeness law: the natural group value
+  // alongside its constituent fields).
+  const activeProject = projectOpen
+    ? {
+        id: project.id,
+        name: project.name || undefined,
+        slug: project.slug || undefined,
+        description: description || undefined,
+        status: project.status || undefined,
+        priority: project.priority || undefined,
+        start_date: project.startDate || undefined,
+        target_date: project.targetDate || undefined,
+        is_personal: isPersonal,
+        organization_id: project.organizationId || undefined,
+        organization_name: org?.name || undefined,
+        created_at: project.createdAt || undefined,
+      }
+    : undefined;
+
+  return createProjectsScope({
+    // ── Baselines (`content` = the project description — the primary body the
+    //    user reads/edits on the workspace) ────────────────────────────────
     selection: hasSelection ? selectionText : undefined,
+    content: projectOpen ? description || undefined : undefined,
     context: surround,
 
     // ── Active project identity ──────────────────────────────────────────
     active_project_id: projectOpen ? project.id : undefined,
     active_project_name: projectOpen ? project.name || undefined : undefined,
+    active_project_slug: projectOpen ? project.slug || undefined : undefined,
     active_project_description: projectOpen ? description || undefined : undefined,
+    active_project_status: projectOpen ? project.status || undefined : undefined,
+    active_project_priority: project?.priority || undefined,
+    active_project_start_date: project?.startDate || undefined,
+    active_project_target_date: project?.targetDate || undefined,
+    active_project_created_at: projectOpen
+      ? project.createdAt || undefined
+      : undefined,
     is_personal_project: isPersonal,
+    active_project: activeProject,
+
+    // ── People ───────────────────────────────────────────────────────────
+    member_count: memberCount,
+    members: mappedMembers,
+    viewer_role: viewerRole || undefined,
+
+    // ── Activity & resources ─────────────────────────────────────────────
+    open_task_count: taskCounts?.open,
+    done_task_count: taskCounts?.done,
+    resource_counts: resourceCounts,
+    total_resource_count: totalResourceCount,
 
     // ── Active organization context ──────────────────────────────────────
     active_organization_id: project?.organizationId || undefined,
     active_organization_name: org?.name || undefined,
+
+    // ── List context ─────────────────────────────────────────────────────
+    project_count: projectCount,
   }) as Record<string, unknown>;
-
-  // `content` is a platform baseline (always bindable + auto-floored by
-  // `withBaselineScope` at launch), so the manifest's typed `createProjectsScope`
-  // helper doesn't list it. We still emit the REAL value — the project
-  // description, the primary body the user reads/edits — so any agent binding
-  // to `content` gets it instead of the empty floor. Set only when a project is
-  // open and has a description; otherwise the launch-time floor provides "".
-  if (projectOpen && description) {
-    scope.content = description;
-  }
-
-  return scope;
 }
 
 /**

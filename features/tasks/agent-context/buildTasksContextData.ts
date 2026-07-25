@@ -33,6 +33,14 @@ export interface TasksContextSubtask {
   status?: string;
 }
 
+/** One comment as the host passes it (camelCase; mapped to the scope shape). */
+export interface TasksContextComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  authorName?: string | null;
+}
+
 export interface BuildTasksContextDataArgs {
   /** UUID of the active task, or empty when none is open. */
   taskId: string;
@@ -58,6 +66,16 @@ export interface BuildTasksContextDataArgs {
   projectName?: string | null;
   /** Child tasks of the active task. */
   subtasks?: TasksContextSubtask[];
+  /** Label strings applied to the active task (its tag chips). */
+  labels?: string[];
+  /** Assignee user id, or null when unassigned. */
+  assigneeId?: string | null;
+  /** ISO timestamp the task record was created (null while metadata loads). */
+  createdAt?: string | null;
+  /** UUID of the task's creator (null while metadata loads). */
+  createdBy?: string | null;
+  /** The task's comment thread, oldest first (empty while loading). */
+  comments?: TasksContextComment[];
 }
 
 /**
@@ -89,10 +107,11 @@ function deriveSurfaceStatus(
  * PURE map of the active task's live editor state → `createTasksScope(...)`,
  * using the EXACT SurfaceValue names the manifest declares. Real baselines
  * (`selection`/`content`/`context`) come from the description editor; the
- * task customs (id/title/description/priority/status/due/project/subtasks)
- * come from the active task. List-level values (`task_list`, `project_list`,
- * `task_count`, `search_query`) are intentionally omitted — the single-task
- * editor doesn't own the list and must not lie about it.
+ * task customs (identity + composite `active_task`, description, subtasks +
+ * counts, status/priority/due/labels/assignee, comments + count, project
+ * link) come from the active task. List-level values (`task_list`,
+ * `project_list`, `task_count`, `search_query`) are intentionally omitted —
+ * the single-task editor doesn't own the list and must not lie about it.
  *
  * Demo + production share this one shape.
  */
@@ -111,6 +130,11 @@ export function buildTasksContextData(
     projectId,
     projectName,
     subtasks = [],
+    labels = [],
+    assigneeId,
+    createdAt,
+    createdBy,
+    comments = [],
   } = args;
 
   const text = description ?? "";
@@ -127,22 +151,68 @@ export function buildTasksContextData(
 
   const surfaceStatus = deriveSurfaceStatus(status, dueDate);
 
+  const mappedSubtasks = subtasks.map((s) => ({
+    id: s.id,
+    title: s.title,
+    status: s.status,
+  }));
+  const completedSubtaskCount = subtasks.filter(
+    (s) => s.status === "completed",
+  ).length;
+  const mappedComments = comments.map((c) => ({
+    id: c.id,
+    body: c.body,
+    created_at: c.createdAt,
+    author_name: c.authorName || undefined,
+  }));
+
+  // Composite active-task object (completeness law: the natural group value
+  // alongside its constituent fields).
+  const activeTask = taskOpen
+    ? {
+        id: taskId,
+        title: title || undefined,
+        description: text || undefined,
+        status: surfaceStatus || undefined,
+        priority: priority || undefined,
+        due_date: dueDate || undefined,
+        labels,
+        assignee_id: assigneeId || undefined,
+        project_id: projectId || undefined,
+        project_name: projectName || undefined,
+        created_at: createdAt || undefined,
+      }
+    : undefined;
+
   const scope = createTasksScope({
     // ── Baselines (live editor) ──────────────────────────────────────────
     selection: selectedText || undefined,
     content: taskOpen ? text || undefined : undefined,
     context: surround,
 
-    // ── Active task ──────────────────────────────────────────────────────
+    // ── Task identity ────────────────────────────────────────────────────
     active_task_id: taskOpen ? taskId : undefined,
     active_task_title: taskOpen ? title || undefined : undefined,
+    active_task_created_at: taskOpen ? createdAt || undefined : undefined,
+    active_task_owner_id: taskOpen ? createdBy || undefined : undefined,
+    active_task: activeTask,
+
+    // ── Task content ─────────────────────────────────────────────────────
     active_task_description: taskOpen ? text || undefined : undefined,
+    subtasks: taskOpen ? mappedSubtasks : undefined,
+    subtask_count: taskOpen ? subtasks.length : undefined,
+    completed_subtask_count: taskOpen ? completedSubtaskCount : undefined,
+
+    // ── Task metadata ────────────────────────────────────────────────────
     active_task_priority: priority || undefined,
     active_task_status: surfaceStatus || undefined,
     active_task_due_date: dueDate || undefined,
-    subtasks: subtasks.length
-      ? subtasks.map((s) => ({ id: s.id, title: s.title, status: s.status }))
-      : undefined,
+    active_task_labels: taskOpen ? labels : undefined,
+    active_task_assignee_id: assigneeId || undefined,
+
+    // ── Collaboration ────────────────────────────────────────────────────
+    comments: taskOpen ? mappedComments : undefined,
+    comment_count: taskOpen ? mappedComments.length : undefined,
 
     // ── Project context ──────────────────────────────────────────────────
     active_project_id: projectId || undefined,

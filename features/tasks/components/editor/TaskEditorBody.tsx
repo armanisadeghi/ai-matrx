@@ -68,9 +68,14 @@ import {
   TASKS_CONTEXT_MENU_PROPS,
 } from "@/features/tasks/agent-context/buildTasksContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { tasksManifest } from "@/features/surfaces/manifests/tasks.manifest";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useTaskEditorControllerCtx } from "./TaskEditorControllerContext";
 import { SectionHeader, PropertyRow } from "./editorPrimitives";
+
+// Canonical on-page labels (THE NAMING LAW) — byte-identical to the manifest.
+const L = surfaceValueLabels(tasksManifest);
 
 export function TaskEditorBody({
   compact,
@@ -202,6 +207,16 @@ export function TaskEditorBody({
       id: s.id,
       title: s.title,
       status: s.status,
+    })),
+    labels: effective.labels,
+    assigneeId: effective.assigneeId ?? null,
+    createdAt: task.created_at ?? null,
+    createdBy: task.created_by ?? null,
+    comments: comments.map((c) => ({
+      id: c.id,
+      body: c.body,
+      createdAt: c.createdAt,
+      authorName: c.author.displayName ?? c.author.email ?? null,
     })),
   });
 
@@ -495,10 +510,10 @@ export function TaskEditorBody({
           </div>
 
           {/* Subtasks */}
-          <section>
+          <section data-surface-value="subtasks">
             <SectionHeader
               icon={CheckSquare}
-              label="Subtasks"
+              label={L.subtasks}
               count={subtasks.length}
               className="mb-1"
             />

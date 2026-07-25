@@ -237,12 +237,31 @@ export function ProjectWorkspace() {
   // `project` is non-null past the guards above, so these are plain values /
   // functions — NOT hooks (a useCallback here would sit after an early return
   // and break rules-of-hooks). React Compiler memoizes the build for free.
+  // Resource counts, excluding tasks/projects (they have their own values) and
+  // still-loading nulls — same discipline as the on-page `totalResources` stat.
+  const resourceCounts: Record<string, number> = {};
+  if (!countsLoading) {
+    for (const [key, c] of Object.entries(counts)) {
+      if (EXCLUDE_FROM_RESOURCES.has(key) || typeof c !== "number") continue;
+      resourceCounts[key] = c;
+    }
+  }
+
   const contextData = buildProjectsContextData({
     project,
     org: org ? { name: org.name, isPersonal: org.isPersonal } : null,
     memberCount: members.length,
+    members: members.map((m) => ({
+      userId: m.userId,
+      role: m.role,
+      displayName: m.user?.displayName ?? null,
+      email: m.user?.email ?? null,
+    })),
     taskCounts,
     viewerRole: role,
+    resourceCounts: countsLoading ? undefined : resourceCounts,
+    totalResourceCount: countsLoading ? undefined : totalResources,
+    projectCount: siblingProjects.length,
   });
 
   // Reads the live DOM selection at click time (a Pro field or the hero text)
