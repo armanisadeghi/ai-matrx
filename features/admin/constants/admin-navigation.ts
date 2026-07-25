@@ -221,7 +221,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
       {
         name: "Research",
         iconName: "Search",
-        destinations: [destination("/administration/knowledge/research-system")],
+        destinations: [
+          destination("/administration/knowledge/research-system"),
+        ],
       },
       {
         name: "Podcasts",
@@ -311,9 +313,13 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/database/canonicalization"),
           destination("/administration/database/canonicalization/summary"),
           destination("/administration/database/canonicalization/findings"),
-          destination("/administration/database/canonicalization/broken-functions"),
+          destination(
+            "/administration/database/canonicalization/broken-functions",
+          ),
           destination("/administration/database/canonicalization/candidates"),
-          destination("/administration/database/canonicalization/function-deps"),
+          destination(
+            "/administration/database/canonicalization/function-deps",
+          ),
           destination("/administration/database/canonicalization/table-impact"),
           destination("/administration/database/canonicalization/verify"),
         ],
@@ -587,7 +593,9 @@ export function getAdminNavigationArchitectureErrors(): string[] {
     for (const section of domain.sections) {
       for (const item of section.destinations) {
         if (item.link.includes("?domain=")) {
-          errors.push(`${item.title}: query-parameter domain route ${item.link}`);
+          errors.push(
+            `${item.title}: query-parameter domain route ${item.link}`,
+          );
         }
 
         for (const route of [item.link, ...item.ownedRoutes]) {
@@ -616,7 +624,8 @@ export function getDeclaredAdminRoutePatterns(): string[] {
     routes.add(adminDomainHref(domain));
   }
   for (const { destination: item } of getAdminNavigationLocations()) {
-    if (item.link.startsWith("/administration")) routes.add(pathOnly(item.link));
+    if (item.link.startsWith("/administration"))
+      routes.add(pathOnly(item.link));
     for (const route of item.ownedRoutes) routes.add(pathOnly(route));
   }
   return [...routes].sort();

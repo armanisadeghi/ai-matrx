@@ -1038,7 +1038,9 @@ export default function CoolifyLogViewer({
     (app: AppKey) => {
       setSelectedApp(app);
       if (!hideAppSelector) {
-        router.replace(`/administration/compute/server-logs/${app}`, { scroll: false });
+        router.replace(`/administration/compute/server-logs/${app}`, {
+          scroll: false,
+        });
       }
     },
     [router, hideAppSelector],
