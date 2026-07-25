@@ -141,6 +141,8 @@ function rowToBundle(row: BundleRow): ContextBundle {
 export async function listBundlesForTopic(
   topicId: string,
 ): Promise<ContextBundle[]> {
+  // VIEW LAW: container-scoped to this topic + reusable templates
+  // (entity_id IS NULL). Never a bare "everything RLS admits".
   const { data, error } = await supabase
     .schema("research")
     .from("rs_context_bundle")

@@ -247,6 +247,9 @@ export type SourceFeature =
   // ── Tool call visualization (admin) ──────────────────────────────────────
   /** Admin tool UI component generator (`useToolComponentAgent`). */
   | "tool-call-visualization"
+  /** Ephemeral conversations created by the tool-testing harness
+   *  (`/demos/api-tests/tool-testing`, `app/api/tool-testing/conversation`). */
+  | "tool-testing"
   /** Rendered kind content firing its declared agent action through the
    *  platform primitive (features/content-ir/react/actions/
    *  KindAgentActionButton) — e.g. video_prompt_options' Generate button. */
@@ -368,6 +371,7 @@ export const SOURCE_FEATURES = [
   "pro-textarea",
   "surface-chrome",
   "tool-call-visualization",
+  "tool-testing",
   "kind-action",
   "education-flashcards",
   "education-fastfire-grade",

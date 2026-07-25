@@ -9,6 +9,7 @@ import {
   countWords,
   findCurrentHeading,
 } from "@/features/notes/utils/markdown-headings";
+import type { PermissionLevel } from "@/utils/permissions/types";
 
 /** Placements for the notes editor (target wiring with surfaceName). */
 export const NOTES_EDITOR_CONTEXT_MENU_PLACEMENTS = [
@@ -45,9 +46,10 @@ export interface NotesEditorNotesMapEntry {
   is_deleted?: boolean;
 }
 
-/** Shared-with-me access metadata for the active note (absent for own notes). */
+/** Shared-with-me access metadata for the active note (absent for own notes).
+ *  Display/context only — never gates reads/writes; access is via iam.has_access. */
 export interface NotesEditorSharedAccess {
-  permission_level: "viewer" | "editor" | "admin";
+  permission_level: PermissionLevel;
   owner_email: string | null;
 }
 

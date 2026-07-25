@@ -67,10 +67,11 @@ reviewed like code, and an unjustified entry should be rejected in review.
 
 ## Known current findings (informational, tracked here so a re-run isn't a surprise)
 
-As of 2026-07-22, a full-tree run reports **0 findings** — the bare-RLS fix wave
-landed and the hand-rolled-ladder hits are resolved. **Any finding from here on
-is a real regression, not known noise.** Do not hardcode a count as a target;
-re-run the script for the live list.
+As of 2026-07-25, a full-tree run should report **0 FAIL** after the
+`research_context_bundle` default was corrected to `internal` (and notes
+context types switched to the canonical `PermissionLevel`). **Any FAIL from
+here on is a real regression, not known noise.** Do not hardcode a count as a
+target; re-run the script for the live list.
 
 **Scan scope (2026-07-22):** the walker skips every dot-dir. This matters more
 than it sounds — `.claude/worktrees/` holds *full repo copies* from parallel

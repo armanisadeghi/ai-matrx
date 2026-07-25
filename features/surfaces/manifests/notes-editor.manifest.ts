@@ -43,6 +43,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
+import type { PermissionLevel } from "@/utils/permissions/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -476,7 +477,8 @@ export function createNotesScope(values: {
   };
   shared_access?: {
     shared_with_me: true;
-    permission_level: "viewer" | "editor" | "admin";
+    /** Display/context only — never gates access; iam.has_access is authoritative. */
+    permission_level: PermissionLevel;
     owner_email: string | null;
   };
   current_folder_note_ids?: string[];

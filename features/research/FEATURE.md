@@ -233,6 +233,12 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- `2026-07-25` — **`rs_context_bundle` default visibility corrected to
+  `internal`.** The CREATE migration shipped with `DEFAULT 'personal'`, which
+  locks out org collaborators (THE SECURITY PHILOSOPHY). Live default +
+  `platform.entity_types.default_visibility` flipped via
+  `migrations/research_context_bundle_visibility_internal.sql`; CREATE file
+  corrected for fresh installs. System templates remain `public`.
 - `2026-07-25` — **A topic's whole holdings are now selectable agent input
   (resource catalog → context bundles → agents).** Every output had exactly ONE
   input — the report as a single blob — while search results, raw payloads,

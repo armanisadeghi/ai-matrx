@@ -59,7 +59,9 @@ CREATE TABLE IF NOT EXISTS research.rs_context_bundle (
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
   version         integer NOT NULL DEFAULT 1,
-  visibility      platform.visibility NOT NULL DEFAULT 'personal',
+  -- Org research work — not chats/DMs. System templates set visibility='public'
+  -- explicitly at insert time (see research_system_context_bundles.sql).
+  visibility      platform.visibility NOT NULL DEFAULT 'internal',
   deleted_at      timestamptz
 );
 
@@ -85,7 +87,7 @@ INSERT INTO platform.entity_types
    is_component, is_versioned, has_soft_delete, is_active, is_listed, category,
    title_column)
 SELECT 'research_context_bundle', 'research', 'rs_context_bundle',
-       'Research Context Bundle', 'personal', false, false, true, true, true,
+       'Research Context Bundle', 'internal', false, false, true, true, true,
        'research', 'name'
 WHERE NOT EXISTS (
   SELECT 1 FROM platform.entity_types WHERE token = 'research_context_bundle'
