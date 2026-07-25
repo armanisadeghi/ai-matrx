@@ -53,7 +53,9 @@ export async function POST(request: NextRequest) {
         let query = db
           .from(EXCEPTIONS_TABLE)
           .select("*")
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+          .order("id", { ascending: false });
         if (status) query = query.eq("status", status);
         if (siteId) query = query.eq("scope_site_id", siteId);
 

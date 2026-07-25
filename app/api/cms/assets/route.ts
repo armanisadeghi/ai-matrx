@@ -181,7 +181,9 @@ export async function POST(request: NextRequest) {
           .from("client_assets")
           .select("*")
           .eq("client_id", siteId)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+          .order("id", { ascending: false });
         if (folder) query = query.eq("folder", folder);
         if (fileType) query = query.eq("file_type", fileType);
         if (!includeInactive) query = query.neq("is_active", false);
@@ -198,7 +200,12 @@ export async function POST(request: NextRequest) {
         // the sibling admin_* actions on /api/cms/sites.
         await requireSuperAdmin(); // throws → caught below as 500 with message
         const { siteId } = params;
-        let query = db.from("client_assets").select("*").order("created_at", { ascending: false });
+        let query = db
+          .from("client_assets")
+          .select("*")
+          .order("created_at", { ascending: false })
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+          .order("id", { ascending: false });
         if (siteId) query = query.eq("client_id", siteId);
         const { data, error } = await query;
         if (error) {

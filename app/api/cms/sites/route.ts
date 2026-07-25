@@ -391,6 +391,8 @@ export async function POST(request: NextRequest) {
           .from("client_activity_log")
           .select("*")
           .order("created_at", { ascending: false })
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+          .order("id", { ascending: false })
           .limit(typeof limit === "number" ? Math.min(limit, 500) : 200);
 
         if (siteId) query = query.eq("client_id", siteId);

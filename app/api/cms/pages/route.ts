@@ -80,7 +80,9 @@ export async function POST(request: NextRequest) {
         }
         query = query
           .order("sort_order")
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+          .order("id", { ascending: false });
 
         const { data, error } = await query;
 
@@ -268,6 +270,8 @@ export async function POST(request: NextRequest) {
             .eq("client_id", siteId)
             .eq("source_html_page_id", htmlPageId)
             .order("created_at", { ascending: false })
+            // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+            .order("id", { ascending: false })
             .limit(1);
           if (existing && existing.length > 0) {
             return NextResponse.json({
