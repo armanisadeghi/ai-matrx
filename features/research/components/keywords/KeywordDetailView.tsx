@@ -10,6 +10,8 @@ import {
   ChevronUp,
   Globe,
   BookOpen,
+  Loader2,
+  Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +25,7 @@ import {
   useSourceImportance,
 } from "../../hooks/useResearchState";
 import { SourceResultsTable } from "../sources/SourceResultsTable";
+import { useRunPipeline } from "../../hooks/useRunPipeline";
 import type { ResearchSource, ResearchSynthesis } from "../../types";
 
 /**
@@ -44,6 +47,7 @@ export function KeywordDetailView({
 }) {
   const router = useRouter();
   const [resultsExpanded, setResultsExpanded] = useState(false);
+  const runPipeline = useRunPipeline();
 
   const { data: keywords } = useResearchKeywords(topicId);
   const { data: sources, isLoading: srcLoading } = useResearchSources(topicId, {
@@ -95,9 +99,14 @@ export function KeywordDetailView({
           <h1 className="text-base font-semibold truncate">
             {keyword?.keyword ?? "Keyword"}
           </h1>
-          {keyword?.is_stale && (
-            <Badge variant="secondary" className="text-[10px]">
-              Stale
+          {/* `is_stale` is a dead column — nothing writes it. `last_searched_at`
+              is the real gate `/run` uses (aidream research/service.py:1687). */}
+          {keyword && !keyword.last_searched_at && (
+            <Badge
+              variant="secondary"
+              className="bg-amber-500/12 text-[10px] text-amber-600 dark:text-amber-400"
+            >
+              Not researched
             </Badge>
           )}
         </div>
@@ -133,6 +142,42 @@ export function KeywordDetailView({
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-5">
+        {/* This keyword has never been searched. Previously the page simply
+            showed three zeros with no explanation and no way to act. */}
+        {keyword && !keyword.last_searched_at && (
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-foreground">
+                This keyword has not been researched yet
+              </p>
+              <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                Running searches it, scrapes what is missing, and writes its
+                synthesis. Sources this topic already holds are reused — pages
+                already scraped are not fetched again and existing analyses are
+                not re-run. Your other keywords are left untouched.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void runPipeline.run()}
+              disabled={runPipeline.isRunning}
+              className="inline-flex shrink-0 items-center gap-1.5 h-7 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none transition-all"
+            >
+              {runPipeline.isRunning ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Play className="h-3 w-3" />
+              )}
+              {runPipeline.isRunning ? "Researching…" : "Research this keyword"}
+            </button>
+            {runPipeline.isRunning && runPipeline.message && (
+              <p className="w-full truncate text-[10px] text-muted-foreground">
+                {runPipeline.message}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Synthesis for this keyword — the distilled output */}
         <section className="space-y-2">
           <div className="flex items-center gap-1.5">

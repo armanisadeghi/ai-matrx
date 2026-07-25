@@ -21,6 +21,8 @@ import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
+import { SynthesisVersionHistory } from "./SynthesisVersionHistory";
+import { deriveReadiness } from "../../readiness";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
@@ -223,12 +225,26 @@ function SynthesisCard({
           )}
         </div>
       )}
+
+      {/* Superseded versions. A rebuild flips the old row's `is_current` and
+          inserts a new version — nothing is destroyed. Showing them is what
+          makes "your previous version is kept" a claim the user can verify. */}
+      {expanded && (
+        <SynthesisVersionHistory
+          topicId={synthesis.topic_id}
+          scope={synthesis.scope}
+          keywordId={synthesis.keyword_id ?? undefined}
+          label={synthesis.keyword_id ? "keyword synthesis" : "topic report"}
+        />
+      )}
     </div>
   );
 }
 
 export default function SynthesisList() {
-  const { topicId } = useTopicContext();
+  const { topicId, progress, refreshProgress } = useTopicContext();
+  // Shared ledger — never re-derived locally (see `readiness.ts`).
+  const reportStale = deriveReadiness(progress).report.readiness === "stale";
   const api = useResearchApi();
   const debug = useStreamDebug();
   const stream = useResearchStream();
@@ -343,13 +359,25 @@ export default function SynthesisList() {
     kwList.length,
   ]);
 
-  const handleRunTopicSynthesis = async () => {
+  /**
+   * Write the topic report.
+   *
+   * `initial` is the plain "produce one" path. `update` folds new material
+   * into the existing report; `rebuild` rewrites it from every included
+   * source. Both of the latter mark the current row superseded and insert a
+   * new version — the prior text survives and is readable via
+   * `SynthesisVersionHistory`, which is what lets the UI honestly promise the
+   * old report is kept.
+   */
+  const handleRunTopicSynthesis = async (
+    iterationMode: "initial" | "update" | "rebuild" = "initial",
+  ) => {
     setStreamingText("");
     setStreamingLabel("");
     const res = await api.synthesize(topicId, {
       // Wire scope is the compat constant until backend Phase 3 accepts "topic".
       scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
-      iteration_mode: "initial",
+      iteration_mode: iterationMode,
       use_user_agent_overrides: false,
     });
     stream.startStream(res, {
@@ -378,8 +406,10 @@ export default function SynthesisList() {
       onEnd: () => {
         setStreamingText("");
         setStreamingLabel("");
-        // Final sync
+        // Final sync — including the readiness ledger, so the out-of-date
+        // banner clears the moment the new report lands.
         refetchSyntheses();
+        void refreshProgress();
       },
     });
     debug.pushEvents(stream.rawEvents, "synthesize");
@@ -387,7 +417,7 @@ export default function SynthesisList() {
 
   const runButton = (
     <button
-      onClick={handleRunTopicSynthesis}
+      onClick={() => void handleRunTopicSynthesis("initial")}
       disabled={stream.isStreaming}
       className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full matrx-glass-card text-[11px] font-medium text-primary disabled:opacity-50 transition-colors shrink-0"
     >
@@ -415,6 +445,46 @@ export default function SynthesisList() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
+        {/* The topic report predates the newest keyword synthesis — it was
+            written without that material. `/run` will NOT fix this on its own
+            (aidream research/service.py:2014 refuses a second topic synthesis
+            once one exists), so the choice has to be offered here explicitly.
+            Both options preserve the current report as a previous version. */}
+        {reportStale && (
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-2.5">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground">
+              <span className="font-medium text-foreground">
+                Your topic report is out of date.
+              </span>{" "}
+              It was written before the newest keyword synthesis. Update folds
+              the new material in; Rebuild rewrites from scratch. Either way the
+              current one is kept as a previous version.
+            </p>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => void handleRunTopicSynthesis("rebuild")}
+                disabled={stream.isStreaming}
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full matrx-glass-card text-[11px] font-medium text-foreground/80 hover:text-foreground disabled:opacity-40 transition-colors"
+              >
+                Rebuild
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRunTopicSynthesis("update")}
+                disabled={stream.isStreaming}
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 disabled:opacity-40 transition-all"
+              >
+                {stream.isStreaming && (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                )}
+                Update
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Live streaming synthesis card — shown while LLM is writing */}
         {stream.isStreaming && (streamingText || streamingLabel) && (
           <div className="rounded-xl border border-primary/30 bg-card/60 overflow-hidden">
@@ -456,7 +526,7 @@ export default function SynthesisList() {
             </div>
             {synthList.length === 0 && (
               <button
-                onClick={handleRunTopicSynthesis}
+                onClick={() => void handleRunTopicSynthesis("initial")}
                 disabled={stream.isStreaming}
                 className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all min-h-[44px]"
               >

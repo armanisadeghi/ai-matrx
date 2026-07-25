@@ -131,6 +131,19 @@
     );
   }
 
+  /* Outstanding work — same amber family as `partial`, deliberately a touch
+     stronger on the border so "you still have work here" reads at a glance
+     across a row of otherwise-green nodes. Never animated: staleness is a
+     resting state, not a run in progress. */
+  .orchestra-node[data-status="stale"] {
+    border-color: hsl(43 96% 56% / 0.7);
+    background: linear-gradient(
+      135deg,
+      hsl(43 96% 56% / 0.1),
+      hsl(var(--card) / 0.7)
+    );
+  }
+
   .orchestra-node[data-status="failed"] {
     border-color: hsl(var(--destructive) / 0.5);
     background: linear-gradient(

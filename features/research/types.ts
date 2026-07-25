@@ -377,7 +377,61 @@ export interface ResearchProgress {
   failed_topic_syntheses: number;
   total_tags: number;
   total_documents: number;
+  /**
+   * READINESS LEDGER — what work is still OUTSTANDING, and which downstream
+   * artifacts were built before the newest input they should hold.
+   *
+   * Counts alone cannot answer "is this topic done?": a topic with 4 keywords,
+   * 3 researched, has data at every stage and looked uniformly complete while a
+   * whole keyword sat unprocessed. Every field here mirrors a real gate in the
+   * aidream orchestrator, so the UI never offers work the pipeline would
+   * refuse to do (see `migrations/research_overview_readiness_ledger.sql`).
+   */
+  pending: ResearchPending;
 }
+
+/**
+ * Per-stage outstanding work + quota headroom. Keyword-stage figures count
+ * KEYWORDS with outstanding work, never a sum of per-keyword source debt —
+ * sources are shared across keywords, so a summed figure would double-count.
+ */
+export interface ResearchPending {
+  /** Keywords never searched (`rs_keyword.last_searched_at IS NULL`). */
+  keywords_unsearched: number;
+  /** Searched keywords still below their `scrapes_per_keyword` quota. */
+  keywords_pending_scrape: number;
+  /** Keywords with good scrapes still below their `analyses_per_keyword` quota. */
+  keywords_pending_analysis: number;
+  /** Keywords holding analyses but no current successful keyword synthesis. */
+  keywords_pending_synthesis: number;
+  /** Topic report written BEFORE the newest current keyword synthesis. */
+  report_stale: boolean;
+  /** Assembled document written BEFORE the newest current topic report. */
+  document_stale: boolean;
+  /**
+   * Quota headroom. A zero means the next add of that kind is silently dropped
+   * by the orchestrator unless the cap is raised first — never let a zero pass
+   * without telling the user.
+   */
+  keyword_slots_remaining: number;
+  keyword_synthesis_slots_remaining: number;
+  topic_synthesis_slots_remaining: number;
+  document_slots_remaining: number;
+}
+
+/** Zeroed ledger — the shape a pre-ledger RPC response degrades to. */
+export const EMPTY_RESEARCH_PENDING: ResearchPending = {
+  keywords_unsearched: 0,
+  keywords_pending_scrape: 0,
+  keywords_pending_analysis: 0,
+  keywords_pending_synthesis: 0,
+  report_stale: false,
+  document_stale: false,
+  keyword_slots_remaining: 0,
+  keyword_synthesis_slots_remaining: 0,
+  topic_synthesis_slots_remaining: 0,
+  document_slots_remaining: 0,
+};
 
 /**
  * Boundary parser for a raw progress payload (the `get_topic_overview` RPC
@@ -414,6 +468,34 @@ export function researchProgressFromJson(
     ),
     total_tags: num(o.total_tags),
     total_documents: num(o.total_documents),
+    pending: researchPendingFromJson(o.pending),
+  };
+}
+
+/**
+ * Boundary parser for the readiness ledger. A payload from a database that has
+ * not yet had `research_overview_readiness_ledger.sql` applied has no `pending`
+ * key at all — it degrades to an all-zero ledger, which renders as "nothing
+ * outstanding" rather than as a false alarm.
+ */
+export function researchPendingFromJson(raw: unknown): ResearchPending {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return EMPTY_RESEARCH_PENDING;
+  }
+  const o = raw as Record<string, unknown>;
+  const num = (v: unknown): number => (typeof v === "number" ? v : 0);
+  const bool = (v: unknown): boolean => v === true;
+  return {
+    keywords_unsearched: num(o.keywords_unsearched),
+    keywords_pending_scrape: num(o.keywords_pending_scrape),
+    keywords_pending_analysis: num(o.keywords_pending_analysis),
+    keywords_pending_synthesis: num(o.keywords_pending_synthesis),
+    report_stale: bool(o.report_stale),
+    document_stale: bool(o.document_stale),
+    keyword_slots_remaining: num(o.keyword_slots_remaining),
+    keyword_synthesis_slots_remaining: num(o.keyword_synthesis_slots_remaining),
+    topic_synthesis_slots_remaining: num(o.topic_synthesis_slots_remaining),
+    document_slots_remaining: num(o.document_slots_remaining),
   };
 }
 

@@ -770,6 +770,43 @@ export async function getSynthesis(
   return data ?? [];
 }
 
+/**
+ * Every SUPERSEDED synthesis for a scope — the versions `getSynthesis` hides
+ * behind its `is_current` filter.
+ *
+ * Rewriting a topic report does not destroy the old one: the backend flips
+ * `is_current` and inserts a new version (aidream research/synthesis.py:830).
+ * But nothing in the product ever read those rows, so "your previous report is
+ * kept" was a promise the UI could not show. This is what makes it true —
+ * without it, offering "Update / Rebuild" would be offering an irreversible
+ * choice while calling it reversible.
+ */
+export async function getSynthesisVersions(
+  topicId: string,
+  params: { scope: string; keyword_id?: string },
+): Promise<ResearchSynthesis[]> {
+  let query = supabase
+    .schema("research")
+    .from("rs_synthesis")
+    .select("*")
+    .eq("topic_id", topicId)
+    .eq("is_current", false);
+
+  // PHASE-4 COMPAT: topic-wide rows exist under both spellings (see
+  // `getSynthesis`); a topic-scope read must match both until the data
+  // migration rewrites them.
+  if (normalizeSynthesisScope(params.scope) === "topic") {
+    query = query.in("scope", ["topic", "project"]);
+  } else {
+    query = query.eq("scope", params.scope);
+  }
+  if (params.keyword_id) query = query.eq("keyword_id", params.keyword_id);
+
+  const { data, error } = await query.order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 // ============================================================================
 // Tags
 // ============================================================================

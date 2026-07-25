@@ -18,6 +18,7 @@ import {
   Pause,
   ArrowRight,
   Lock,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -35,8 +36,12 @@ import { cn } from "@/lib/utils";
  *  - `gated`     manual mode + upstream finished — waiting on the user
  *  - `queued`    will run automatically when upstream completes
  *  - `active`    currently running — animated ring + flowing edge into next
- *  - `partial`   finished but some items failed
- *  - `complete`  finished cleanly
+ *  - `partial`   finished but some items FAILED
+ *  - `stale`     has data, nothing failed, but work is OUTSTANDING — upstream
+ *                grew (a new keyword) or this artifact predates its newest
+ *                input. Deliberately distinct from `partial`: "you have more to
+ *                do" must never read as "something broke".
+ *  - `complete`  finished cleanly and caught up with everything upstream
  *  - `failed`    hard error
  */
 export type OrchestraStatus =
@@ -46,6 +51,7 @@ export type OrchestraStatus =
   | "queued"
   | "active"
   | "partial"
+  | "stale"
   | "complete"
   | "failed";
 
@@ -116,6 +122,11 @@ const STATUS_BADGE: Record<
     icon: AlertTriangle,
     className: "text-amber-600 dark:text-amber-400",
     label: "Some failures",
+  },
+  stale: {
+    icon: RefreshCw,
+    className: "text-amber-600 dark:text-amber-400",
+    label: "Work outstanding",
   },
   complete: {
     icon: CheckCircle2,
@@ -255,7 +266,9 @@ export function OrchestraNode({
                   ? "bg-primary/15 text-primary"
                   : status === "complete"
                     ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400"
-                    : status === "partial" || status === "gated"
+                    : status === "partial" ||
+                        status === "stale" ||
+                        status === "gated"
                       ? "bg-amber-500/12 text-amber-600 dark:text-amber-400"
                       : status === "failed"
                         ? "bg-destructive/12 text-destructive"

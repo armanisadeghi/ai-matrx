@@ -64,6 +64,7 @@ import {
 } from "../../../types";
 import { LivePipelineActivity } from "../live-pipeline/LivePipelineActivity";
 import { TopicSettingsPanel } from "../TopicSettingsPanel";
+import { PipelineNextSteps } from "../PipelineNextSteps";
 
 import { OrchestraNode, type OrchestraStatus } from "./OrchestraNode";
 import {
@@ -77,7 +78,16 @@ import { LastRunSummary } from "./LastRunSummary";
 
 import "./orchestra.css";
 import type { ResearchProgress, ResearchTopic } from "../../../types";
+import { EMPTY_RESEARCH_PENDING } from "../../../types";
+import {
+  deriveReadiness,
+  hasRunnableWork,
+  runnableSummary,
+  type StageReadiness,
+} from "../../../readiness";
 import { addKeywords } from "../../../service";
+import { evaluateKeywordQuota, type QuotaVerdict } from "../../../keywordQuota";
+import { KeywordQuotaDialog } from "../../keywords/KeywordQuotaDialog";
 
 // ─── Status derivation ────────────────────────────────────────────────────────
 
@@ -93,6 +103,13 @@ function statusFor(args: {
   target?: number;
   /** True if this node has hard failures recorded. */
   hasFailures?: boolean;
+  /**
+   * Readiness for this node from the shared ledger (`readiness.ts`). When it
+   * reports outstanding work, the node renders amber `stale` INSTEAD of green
+   * `complete` — the fix for a topic that looked finished while a whole
+   * keyword sat unprocessed. Failures still outrank staleness.
+   */
+  readiness?: StageReadiness;
   /** Live stage tied to this node, if any. */
   liveStage?: PipelineState["stages"][StageKind];
   /** True if this node depends on prior nodes that have not produced data. */
@@ -109,6 +126,7 @@ function statusFor(args: {
     have,
     target,
     hasFailures,
+    readiness,
     liveStage,
     upstreamReady,
     autonomy,
@@ -127,8 +145,13 @@ function statusFor(args: {
     }
   }
 
+  // Outstanding work outranks "we have rows" — this is the whole point of the
+  // readiness ledger. A stage that owes work is amber even with data present,
+  // and a stage that owes work with NO data yet is amber rather than blank.
+  if (hasFailures && have > 0) return "partial";
+  if (readiness === "behind" || readiness === "stale") return "stale";
+
   if (have > 0) {
-    if (hasFailures) return "partial";
     if (target != null && have >= target) return "complete";
     return "complete";
   }
@@ -190,6 +213,13 @@ export function PipelineOrchestra() {
   const [keywordModalOpen, setKeywordModalOpen] = useState(false);
   const [newKeyword, setNewKeyword] = useState("");
   const [addingKeyword, setAddingKeyword] = useState(false);
+  const [quotaPrompt, setQuotaPrompt] = useState<{
+    keyword: string;
+    verdict: QuotaVerdict;
+  } | null>(null);
+  // Read before the loading guard so the add-keyword callback can close over
+  // it; the guarded `p` snapshot below is the same number.
+  const keywordCount = progress?.total_keywords ?? 0;
 
   // ── Stream wiring (mirrors prior ResearchOverview behavior) ──────────────
 
@@ -335,21 +365,40 @@ export function PipelineOrchestra() {
     });
   }, [api, topicId, startStream]);
 
+  const commitAddKeyword = useCallback(
+    async (kw: string) => {
+      setAddingKeyword(true);
+      try {
+        await addKeywords(topicId, { keywords: [kw] });
+        setNewKeyword("");
+        setKeywordModalOpen(false);
+        refresh();
+        void refreshProgress();
+        toast.success("Keyword added");
+      } catch (err) {
+        toast.error((err as Error).message ?? "Could not add keyword");
+      } finally {
+        setAddingKeyword(false);
+      }
+    },
+    [topicId, refresh, refreshProgress],
+  );
+
   const handleAddKeyword = useCallback(async () => {
-    if (!newKeyword.trim()) return;
-    setAddingKeyword(true);
-    try {
-      await addKeywords(topicId, { keywords: [newKeyword.trim()] });
-      setNewKeyword("");
-      setKeywordModalOpen(false);
-      refresh();
-      toast.success("Keyword added");
-    } catch (err) {
-      toast.error((err as Error).message ?? "Could not add keyword");
-    } finally {
-      setAddingKeyword(false);
+    const kw = newKeyword.trim();
+    if (!kw) return;
+    // Same gate as the keywords page — the caps are enforced by the backend
+    // either way, so the ONE thing that must never happen is enforcing them
+    // without telling the user (see `keywordQuota.ts`).
+    if (topic) {
+      const verdict = evaluateKeywordQuota(topic, keywordCount + 1);
+      if (verdict.shortfalls.length > 0) {
+        setQuotaPrompt({ keyword: kw, verdict });
+        return;
+      }
     }
-  }, [topicId, newKeyword, refresh]);
+    await commitAddKeyword(kw);
+  }, [newKeyword, topic, keywordCount, commitAddKeyword]);
 
   // ── Loading + empty topic ───────────────────────────────────────────────
 
@@ -384,7 +433,25 @@ export function PipelineOrchestra() {
     failed_topic_syntheses: 0,
     total_tags: 0,
     total_documents: 0,
+    pending: EMPTY_RESEARCH_PENDING,
   };
+
+  // The single source of truth for "is each stage caught up?" — see
+  // `features/research/readiness.ts`. No status decision below re-derives it.
+  const readiness = deriveReadiness(p);
+  const pendingWork = hasRunnableWork(readiness);
+  const pendingSummary = runnableSummary(readiness);
+
+  /**
+   * A node's hint line. When the stage owes work, the reason REPLACES the
+   * static descriptor — "1 keyword never searched" is the only thing worth the
+   * line at that moment. Applied in both the horizontal and vertical layouts so
+   * the two can never disagree about what a stage is saying.
+   */
+  const hintFor = (
+    stage: keyof typeof readiness,
+    fallback: React.ReactNode,
+  ): React.ReactNode => readiness[stage].reason ?? fallback;
 
   const anyStageActive = pipeline.state.activeStage != null;
   // "Live" = a run is genuinely in flight. Gates every animated node/edge state
@@ -403,6 +470,7 @@ export function PipelineOrchestra() {
 
   const sourcesStatus = statusFor({
     have: p.total_sources,
+    readiness: readiness.sources.readiness,
     liveStage: pipeline.state.stages.search,
     upstreamReady: p.total_keywords > 0,
     autonomy,
@@ -411,6 +479,7 @@ export function PipelineOrchestra() {
 
   const contentStatus = statusFor({
     have: p.total_content,
+    readiness: readiness.content.readiness,
     liveStage: pipeline.state.stages.scrape,
     upstreamReady: p.total_sources > 0,
     autonomy,
@@ -421,6 +490,7 @@ export function PipelineOrchestra() {
     have: p.total_analyses,
     target: p.total_eligible_for_analysis || undefined,
     hasFailures: p.failed_analyses > 0,
+    readiness: readiness.analysis.readiness,
     liveStage: pipeline.state.stages.analyze,
     upstreamReady: p.total_content > 0,
     autonomy,
@@ -431,6 +501,7 @@ export function PipelineOrchestra() {
     have: p.keyword_syntheses,
     target: p.total_keywords || undefined,
     hasFailures: p.failed_keyword_syntheses > 0,
+    readiness: readiness.synthesis.readiness,
     liveStage: pipeline.state.stages.synthesize,
     upstreamReady: p.total_analyses > 0,
     autonomy,
@@ -440,6 +511,7 @@ export function PipelineOrchestra() {
   const reportStatus = statusFor({
     have: p.topic_syntheses,
     hasFailures: p.failed_topic_syntheses > 0,
+    readiness: readiness.report.readiness,
     liveStage: pipeline.state.stages.report,
     upstreamReady: p.keyword_syntheses > 0,
     autonomy,
@@ -448,6 +520,7 @@ export function PipelineOrchestra() {
 
   const documentStatus = statusFor({
     have: p.total_documents,
+    readiness: readiness.document.readiness,
     upstreamReady: p.topic_syntheses > 0,
     autonomy,
     isLive,
@@ -490,17 +563,26 @@ export function PipelineOrchestra() {
             "h-1.5 w-1.5 rounded-full shrink-0",
             stream.isStreaming
               ? "bg-primary animate-pulse"
-              : reportStatus === "complete"
-                ? "bg-emerald-500"
-                : "bg-muted-foreground/40",
+              : pendingWork || readiness.report.readiness === "stale"
+                ? "bg-amber-500"
+                : reportStatus === "complete"
+                  ? "bg-emerald-500"
+                  : "bg-muted-foreground/40",
           )}
         />
+        {/* The headline must never say "Report ready" while a keyword sits
+            unprocessed — that single line is what made an incomplete topic look
+            finished. Outstanding work outranks a green report. */}
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground/80 truncate">
           {stream.isStreaming
             ? `${pipeline.state.activeStage ?? "Working"}…`
-            : reportStatus === "complete"
-              ? "Report ready"
-              : "Pipeline idle"}
+            : pendingWork
+              ? "Work pending"
+              : readiness.report.readiness === "stale"
+                ? "Report out of date"
+                : reportStatus === "complete"
+                  ? "Report ready"
+                  : "Pipeline idle"}
         </span>
 
         <div className="flex-1" />
@@ -612,6 +694,16 @@ export function PipelineOrchestra() {
         )}
       </div>
 
+      {/* ── Outstanding work + stale-artifact decisions ───────────────── */}
+      {/* Sits ABOVE the graph on purpose: the graph shows what happened, this
+          shows what still has to happen. Self-hides when nothing is pending. */}
+      <PipelineNextSteps
+        onRunAll={handleRunAll}
+        onUpdateReport={handleUpdateReport}
+        onRebuildReport={handleRebuildReport}
+        isBusy={stream.isStreaming}
+      />
+
       {/* ── The orchestra ─────────────────────────────────────────────── */}
       {/*
         Layout is driven by a CONTAINER query (`@container/orch`), not the
@@ -647,7 +739,10 @@ export function PipelineOrchestra() {
               icon={Globe}
               label="Sources"
               count={p.total_sources}
-              hint={`${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw scraped`}
+              hint={hintFor(
+                "sources",
+                `${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw scraped`,
+              )}
               status={sourcesStatus}
               href={`${base}/sources`}
               onAction={handleScrape}
@@ -659,7 +754,7 @@ export function PipelineOrchestra() {
               icon={FileText}
               label="Content"
               count={p.total_content}
-              hint={`top ${topic.scrapes_per_keyword ?? 5}/kw`}
+              hint={hintFor("content", `top ${topic.scrapes_per_keyword ?? 5}/kw`)}
               status={contentStatus}
               href={`${base}/content`}
               onAction={handleAnalyze}
@@ -711,7 +806,7 @@ export function PipelineOrchestra() {
               icon={Layers}
               label="Synthesis"
               count={`${p.keyword_syntheses}${p.total_keywords ? ` / ${p.total_keywords}` : ""}`}
-              hint="per keyword"
+              hint={hintFor("synthesis", "per keyword")}
               status={synthesisStatus}
               href={`${base}/synthesis`}
               onAction={handleSynthesize}
@@ -783,7 +878,10 @@ export function PipelineOrchestra() {
               icon={Globe}
               label="Sources"
               count={p.total_sources}
-              hint={`${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw scraped`}
+              hint={hintFor(
+                "sources",
+                `${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw scraped`,
+              )}
               status={sourcesStatus}
               href={`${base}/sources`}
               onAction={handleScrape}
@@ -800,7 +898,10 @@ export function PipelineOrchestra() {
               icon={FileText}
               label="Content"
               count={p.total_content}
-              hint={`${p.total_sources > 0 ? Math.round((p.total_content / p.total_sources) * 100) : 0}% scraped`}
+              hint={hintFor(
+                "content",
+                `${p.total_sources > 0 ? Math.round((p.total_content / p.total_sources) * 100) : 0}% scraped`,
+              )}
               status={contentStatus}
               href={`${base}/content`}
               onAction={handleAnalyze}
@@ -859,7 +960,10 @@ export function PipelineOrchestra() {
               icon={ScrollText}
               label="Report"
               count={p.topic_syntheses > 0 ? "Ready" : "—"}
-              hint={p.topic_syntheses > 0 ? "topic-wide" : "awaiting syntheses"}
+              hint={hintFor(
+                "report",
+                p.topic_syntheses > 0 ? "topic-wide" : "awaiting syntheses",
+              )}
               status={reportStatus}
               href={`${base}/synthesis`}
               onAction={handleSynthesize}
@@ -1087,6 +1191,32 @@ export function PipelineOrchestra() {
             />
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* ── Quota gate (shared with the keywords page) ───────────────── */}
+      {quotaPrompt && (
+        <KeywordQuotaDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setQuotaPrompt(null);
+          }}
+          topicId={topicId}
+          keywords={[quotaPrompt.keyword]}
+          verdict={quotaPrompt.verdict}
+          onResolved={async (raised) => {
+            const kw = quotaPrompt.keyword;
+            setQuotaPrompt(null);
+            await commitAddKeyword(kw);
+            if (raised) {
+              refresh();
+              void refreshProgress();
+            } else {
+              toast.warning(
+                "Added, but it is past your pipeline limit and will not be researched until you raise it.",
+              );
+            }
+          }}
+        />
       )}
     </div>
   );

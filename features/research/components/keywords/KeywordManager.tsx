@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
+  Play,
   Plus,
   Trash2,
   Loader2,
@@ -18,16 +19,19 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   useResearchKeywords,
   useCurationData,
 } from "../../hooks/useResearchState";
-import { useResearchApi } from "../../hooks/useResearchApi";
 import {
   addKeywords,
   deleteKeyword as deleteKeywordService,
 } from "../../service";
+import { evaluateKeywordQuota, type QuotaVerdict } from "../../keywordQuota";
+import { useRunPipeline } from "../../hooks/useRunPipeline";
+import { KeywordQuotaDialog } from "./KeywordQuotaDialog";
 import { fmtCount } from "../../format";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
@@ -50,9 +54,8 @@ const INLINE_RESULTS = 4;
 const MAX_RESULTS = 10;
 
 export default function KeywordManager() {
-  const { topicId } = useTopicContext();
+  const { topicId, topic, refreshProgress } = useTopicContext();
   const { data: keywords, isLoading, refresh } = useResearchKeywords(topicId);
-  const api = useResearchApi();
 
   const [newKeyword, setNewKeyword] = useState("");
   const [adding, setAdding] = useState(false);
@@ -60,8 +63,21 @@ export default function KeywordManager() {
   const [search, setSearch] = useState("");
   const [staleFilter, setStaleFilter] = useState<string | null>(null);
   const [providerFilter, setProviderFilter] = useState<string | null>(null);
+  const [quotaPrompt, setQuotaPrompt] = useState<{
+    keyword: string;
+    verdict: QuotaVerdict;
+  } | null>(null);
 
   const items = keywords ?? [];
+  const runPipeline = useRunPipeline();
+  // `last_searched_at IS NULL` is the exact gate `/run` uses to decide whether
+  // a keyword is searched (aidream research/service.py:1687) — the same truth
+  // the readiness ledger reports, read here straight off the rows we already
+  // have rather than through a second round trip.
+  const unresearched = useMemo(
+    () => items.filter((k) => !k.last_searched_at),
+    [items],
+  );
 
   const { data: curation } = useCurationData(topicId);
   // Expanded result sets, keyed by keyword id. Collapsed = top INLINE_RESULTS
@@ -109,8 +125,14 @@ export default function KeywordManager() {
 
   const filtered = useMemo(() => {
     let list = items;
-    if (staleFilter === "stale") list = list.filter((k) => k.is_stale);
-    else if (staleFilter === "fresh") list = list.filter((k) => !k.is_stale);
+    // `rs_keyword.is_stale` is DEAD: nothing in the backend has ever written
+    // it, so the old Fresh/Stale filter silently matched everything. The real
+    // signal is `last_searched_at` — the exact gate `/run` uses to decide
+    // whether a keyword gets searched (aidream research/service.py:1687).
+    if (staleFilter === "unresearched")
+      list = list.filter((k) => !k.last_searched_at);
+    else if (staleFilter === "researched")
+      list = list.filter((k) => !!k.last_searched_at);
     if (providerFilter)
       list = list.filter((k) => k.search_provider === providerFilter);
     if (search) {
@@ -126,19 +148,41 @@ export default function KeywordManager() {
     return list;
   }, [items, staleFilter, providerFilter, search]);
 
+  /**
+   * Commit the add. Split out so both paths — straight through, and "the user
+   * has seen the quota dialog" — share one implementation.
+   */
+  const commitAdd = useCallback(
+    async (kw: string) => {
+      setAdding(true);
+      try {
+        await addKeywords(topicId, { keywords: [kw] });
+        setNewKeyword("");
+        refresh();
+        refreshProgress();
+      } catch (err) {
+        toast.error((err as Error).message ?? "Could not add the keyword");
+      } finally {
+        setAdding(false);
+      }
+    },
+    [topicId, refresh, refreshProgress],
+  );
+
   const handleAdd = async () => {
     const kw = newKeyword.trim();
     if (!kw) return;
-    setAdding(true);
-    try {
-      await addKeywords(topicId, { keywords: [kw] });
-      setNewKeyword("");
-      refresh();
-    } catch {
-      // silent
-    } finally {
-      setAdding(false);
+    // Check the caps BEFORE writing. Adding past `max_keywords` writes a row
+    // the pipeline will never touch, and past `max_keyword_syntheses` a keyword
+    // that gets researched but never written up — both silently, until now.
+    if (topic) {
+      const verdict = evaluateKeywordQuota(topic, items.length + 1);
+      if (verdict.shortfalls.length > 0) {
+        setQuotaPrompt({ keyword: kw, verdict });
+        return;
+      }
     }
+    await commitAdd(kw);
   };
 
   const handleDelete = async (keyword: ResearchKeyword) => {
@@ -146,16 +190,17 @@ export default function KeywordManager() {
     try {
       await deleteKeywordService(keyword.id);
       refresh();
-    } catch {
-      // silent
+      refreshProgress();
+    } catch (err) {
+      toast.error((err as Error).message ?? "Could not delete the keyword");
     } finally {
       setDeletingId(null);
     }
   };
 
   const freshnessOptions: FilterOption[] = [
-    { id: "fresh", label: "Fresh" },
-    { id: "stale", label: "Stale" },
+    { id: "researched", label: "Researched" },
+    { id: "unresearched", label: "Not researched" },
   ];
   const providerOptions: FilterOption[] = useMemo(
     () => providers.map((p) => ({ id: p, label: p })),
@@ -166,7 +211,7 @@ export default function KeywordManager() {
     const defs: FilterDef[] = [
       {
         key: "freshness",
-        label: "Freshness",
+        label: "Research state",
         allLabel: "All",
         options: freshnessOptions,
         selectedId: staleFilter,
@@ -194,6 +239,44 @@ export default function KeywordManager() {
 
   return (
     <div className="p-3 sm:p-4 space-y-3">
+      {/* Unresearched keywords — the state that was previously invisible.
+          Adding a keyword after a completed run left it sitting here forever
+          with nothing anywhere in the product saying so, and no way to act. */}
+      {unresearched.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-foreground">
+              {unresearched.length === 1
+                ? `“${unresearched[0].keyword}” has not been researched`
+                : `${unresearched.length} keywords have not been researched`}
+            </p>
+            <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+              Running picks these up and reuses everything already captured —
+              pages already scraped are not fetched again, and existing analyses
+              are not re-run.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void runPipeline.run()}
+            disabled={runPipeline.isRunning}
+            className="inline-flex shrink-0 items-center gap-1.5 h-7 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none transition-all"
+          >
+            {runPipeline.isRunning ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Play className="h-3 w-3" />
+            )}
+            {runPipeline.isRunning ? "Researching…" : "Research now"}
+          </button>
+          {runPipeline.isRunning && runPipeline.message && (
+            <p className="w-full text-[10px] text-muted-foreground truncate">
+              {runPipeline.message}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Add keyword — matrx-glass-thin-border toolbar (renders instantly) */}
       <div className="flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border">
         <div className="flex-1 flex items-center gap-1.5 min-w-0 h-6 px-2 rounded-full matrx-glass-card">
@@ -309,9 +392,12 @@ export default function KeywordManager() {
                       <span className="font-medium text-sm leading-tight truncate">
                         {kw.keyword}
                       </span>
-                      {kw.is_stale && (
-                        <span className="shrink-0 text-[10px] font-medium text-yellow-600 dark:text-yellow-400">
-                          Stale
+                      {/* The signal that used to be invisible. A keyword with
+                          no `last_searched_at` has never been researched and
+                          never will be until a run picks it up — say so. */}
+                      {!kw.last_searched_at && (
+                        <span className="shrink-0 rounded-full bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                          Not researched
                         </span>
                       )}
                     </div>
@@ -404,6 +490,37 @@ export default function KeywordManager() {
             );
           })}
         </div>
+      )}
+
+      {/* Quota gate. Mounted at the component root (not inside the toolbar) so
+          it survives the add-input resetting, and so a "raise" applies the caps
+          BEFORE the keyword row is written — never leaving behind a row the
+          pipeline silently ignores. */}
+      {quotaPrompt && topic && (
+        <KeywordQuotaDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setQuotaPrompt(null);
+          }}
+          topicId={topicId}
+          keywords={[quotaPrompt.keyword]}
+          verdict={quotaPrompt.verdict}
+          onResolved={async (raised) => {
+            const kw = quotaPrompt.keyword;
+            setQuotaPrompt(null);
+            await commitAdd(kw);
+            if (raised) {
+              refresh();
+              refreshProgress();
+            } else {
+              // Added under the cap deliberately — say what that means once,
+              // rather than letting it be discovered as a missing result.
+              toast.warning(
+                "Added, but it is past your pipeline limit and will not be researched until you raise it.",
+              );
+            }
+          }}
+        />
       )}
     </div>
   );

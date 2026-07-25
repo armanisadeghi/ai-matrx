@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   RefreshCw,
   Download,
@@ -31,6 +31,7 @@ import { tokenUsageFromJson } from "../../types";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
+import { deriveReadiness } from "../../readiness";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
   buildResearchContextData,
@@ -59,8 +60,6 @@ export default function DocumentViewer() {
 
   // Live streaming document text — accumulated chunk by chunk
   const [streamingDocText, setStreamingDocText] = useState("");
-  // Guards the one-shot auto-generation so it never loops or double-charges.
-  const autoGenAttempted = useRef(false);
 
   const [showHistory, setShowHistory] = useState(false);
   const [diffDocs, setDiffDocs] = useState<
@@ -109,29 +108,16 @@ export default function DocumentViewer() {
     debug.pushEvents(stream.rawEvents, "document");
   }, [api, topicId, stream, refetchDoc, refresh, debug]);
 
-  // Auto-generate the document the first time the topic is report-ready (a
-  // project synthesis exists) but no document has been assembled yet — so the
-  // user never has to manually click "Generate" after running the pipeline.
-  // Fires at most once per mount, after the initial fetch resolves to no doc.
+  // NO AUTO-GENERATION. Merely opening this tab used to fire a full
+  // document-assembly call — one of the most expensive operations in the
+  // product — with no warning, no confirmation, and no way to decline. Clicking
+  // a navigation item must never spend money. Generation is an explicit,
+  // labeled action; the empty state below asks for it.
   const reportReady = (progress?.topic_syntheses ?? 0) > 0;
-  useEffect(() => {
-    if (
-      autoGenAttempted.current ||
-      docLoading ||
-      stream.isStreaming ||
-      document ||
-      !reportReady
-    ) {
-      return undefined;
-    }
-    autoGenAttempted.current = true;
-    // Defer out of the effect body so generation's initial setState doesn't run
-    // synchronously during commit (react-hooks/set-state-in-effect).
-    const t = setTimeout(() => {
-      void handleRegenerate();
-    }, 0);
-    return () => clearTimeout(t);
-  }, [docLoading, stream.isStreaming, document, reportReady, handleRegenerate]);
+  // The assembled document predates the topic report it was built from — the
+  // readiness ledger's `document_stale`, surfaced as a banner, never a silent
+  // regeneration.
+  const documentStale = deriveReadiness(progress).document.readiness === "stale";
 
   const handleExport = useCallback(
     async (format: string) => {
@@ -196,19 +182,6 @@ export default function DocumentViewer() {
     );
   }
 
-  // Report-ready and about to auto-generate: show a calm "assembling" state
-  // instead of flashing the manual "Generate" button.
-  if (!document && !docLoading && reportReady) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[320px] gap-3 p-6 text-center">
-        <Loader2 className="h-6 w-6 text-primary/50 animate-spin" />
-        <p className="text-xs font-medium text-foreground/70">
-          Assembling your research document…
-        </p>
-      </div>
-    );
-  }
-
   // Initial fetch still in flight — use the shared skeleton, never bare text.
   if (!document && docLoading) {
     return <DocumentSkeleton />;
@@ -224,14 +197,15 @@ export default function DocumentViewer() {
           <p className="text-xs font-medium text-foreground/70">
             No document yet
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1 max-w-[260px]">
-            Generate a comprehensive research document from your sources,
-            content, and syntheses.
+          <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">
+            {reportReady
+              ? "Assembles your topic report and every analysis into one long-form document. This is a single large AI call — it runs only when you ask for it."
+              : "A document is assembled from your topic report. Run the pipeline far enough to produce one first."}
           </p>
         </div>
         <button
           onClick={handleRegenerate}
-          disabled={stream.isStreaming}
+          disabled={stream.isStreaming || !reportReady}
           className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all min-h-[44px]"
         >
           <FileText className="h-3 w-3" />
@@ -341,6 +315,32 @@ export default function DocumentViewer() {
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-4">
+        {/* Out-of-date document. Stated, never silently repaired: regenerating
+            is a full document-assembly call, so it stays the user's call. */}
+        {documentStale && (
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-2.5">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground">
+              <span className="font-medium text-foreground">
+                This document is out of date.
+              </span>{" "}
+              Your topic report has been rewritten since it was assembled.
+              Regenerating is one large AI call — it runs only when you ask.
+            </p>
+            <button
+              onClick={handleRegenerate}
+              disabled={stream.isStreaming}
+              className="inline-flex shrink-0 items-center gap-1.5 h-7 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 disabled:opacity-40 transition-all"
+            >
+              {stream.isStreaming ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              Regenerate
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5 mb-4">
           <span className="text-xs font-medium text-foreground/80 truncate">
             {document.title ?? "Document"}
