@@ -593,19 +593,6 @@
                   "default": null,
                   "title": "Route"
                 },
-                "site": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "description": "The site as a plain-text domain or name (alternative to site_id when addressing by route). Must already exist.",
-                  "title": "Site"
-                },
                 "site_id": {
                   "anyOf": [
                     {
@@ -925,33 +912,13 @@
                   "title": "Nodes",
                   "type": "array"
                 },
-                "site": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "description": "The site as a plain-text domain (preferred, e.g. 'prpguide.com') or name \u2014 found or created automatically. Use this when you don't have a site_id; one of the two is required.",
-                  "title": "Site"
-                },
                 "site_id": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Site Id"
+                  "title": "Site Id",
+                  "type": "string"
                 }
               },
               "required": [
+                "site_id",
                 "nodes"
               ],
               "title": "PlanTreeItem",
