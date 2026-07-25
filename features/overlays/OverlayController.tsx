@@ -494,6 +494,16 @@ const NoteInfoWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/notes/NoteInfoWindow"),
   { ssr: false },
 );
+// Type-only: the controller must not pull the research module graph in.
+import type { ContextBundle as ContextBundleForPreview } from "@/features/research/resources/types";
+
+const ResearchContextPreviewWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/research/ResearchContextPreviewWindow"
+    ),
+  { ssr: false },
+);
 const FullScreenMarkdownEditorBridge = lazyOverlay(
   () =>
     import("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge").then(
@@ -1078,6 +1088,9 @@ export default function OverlayController() {
     itemDetailWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "itemDetailWindow"),
     ),
+    researchContextPreviewWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "researchContextPreviewWindow"),
+    ),
     noteInfoWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "noteInfoWindow"),
     ),
@@ -1393,6 +1406,9 @@ export default function OverlayController() {
     itemDetailWindow: useAppSelector((s) =>
       selectOverlayData(s, "itemDetailWindow"),
     ) as Record<string, unknown> | null,
+    researchContextPreviewWindow: useAppSelector((s) =>
+      selectOverlayData(s, "researchContextPreviewWindow"),
+    ),
     noteInfoWindow: useAppSelector((s) =>
       selectOverlayData(s, "noteInfoWindow"),
     ) as Record<string, unknown> | null,
@@ -3416,6 +3432,29 @@ export default function OverlayController() {
             initialAbout={
               typeof data?.initialAbout === "string" ? data.initialAbout : null
             }
+          />
+        );
+      })()}
+
+      {/* researchContextPreviewWindow */}
+      {(() => {
+        const isOpen = isOpenById.researchContextPreviewWindow;
+        const data = dataById.researchContextPreviewWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <ResearchContextPreviewWindow
+            isOpen
+            onClose={() =>
+              dispatch(
+                closeOverlay({ overlayId: "researchContextPreviewWindow" }),
+              )
+            }
+            topicId={typeof data?.topicId === "string" ? data.topicId : null}
+            bundle={
+              (data?.bundle ?? null) as ContextBundleForPreview | null
+            }
+            title={typeof data?.title === "string" ? data.title : undefined}
           />
         );
       })()}

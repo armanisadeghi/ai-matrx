@@ -110,6 +110,7 @@ export const OVERLAY_IDS = [
   "multiFileSmartCodeEditorWindow",
   "newsWindow",
   "noteInfoWindow",
+  "researchContextPreviewWindow",
   "noteKnowledgePanel",
   "notesWindow",
   "observationalMemoryWindow",

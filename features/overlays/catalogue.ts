@@ -505,6 +505,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  researchContextPreviewWindow: {
+    label: "Context Preview",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   noteKnowledgePanel: {
     label: "Note Knowledge",
     instanceMode: "singleton",

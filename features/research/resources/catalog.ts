@@ -185,7 +185,7 @@ function deriveInventory(manifest: ResourceManifest): string {
   const stale = manifest.keywords.filter((k) => k.stale);
   const sources = itemsOf(manifest, "search.result");
   const excluded = sources.filter((s) => !s.included).length;
-  const scraped = itemsOf(manifest, "page.content").length;
+  const pagesRead = itemsOf(manifest, "page.content").length;
   const analyzed = new Set(
     itemsOf(manifest, "page.analysis")
       .filter((a) => a.flags.latest === true && a.status === "success")
@@ -195,7 +195,7 @@ function deriveInventory(manifest: ResourceManifest): string {
   const coverage = [
     `- Keywords: ${manifest.keywords.length} (${unsearched.length} never searched, ${stale.length} stale)`,
     `- Sources discovered: ${sources.length} (${excluded} excluded during curation)`,
-    `- Sources with scraped content: ${scraped}`,
+    `- Sources whose page was read: ${pagesRead}`,
     `- Sources with a successful AI analysis: ${analyzed}`,
     `- Tags: ${manifest.tags.length}`,
   ];
@@ -298,7 +298,7 @@ export const CATALOG: ResourceKindDef[] = [
     key: "topic.inventory",
     label: "Inventory & coverage",
     description:
-      "What this research holds and what it is missing — counts per resource, unsearched keywords, unscraped and unanalyzed sources.",
+      "What this research holds and what it is missing — counts per resource, unsearched keywords, unread and unanalyzed sources.",
     icon: ListTree,
     group: "brief",
     granularity: "topic",
@@ -311,9 +311,9 @@ export const CATALOG: ResourceKindDef[] = [
   // ── Search ────────────────────────────────────────────────────────────────
   {
     key: "search.result",
-    label: "Search results",
+    label: "Sources",
     description:
-      "Every SERP entry: title, description, snippets, rank and site. Broad coverage, cheap per item.",
+      "Every search result: title, description, snippets, rank and site. The same rows the Sources page lists. Broad coverage, cheap per item.",
     icon: Globe,
     group: "search",
     granularity: "source",
@@ -389,7 +389,7 @@ export const CATALOG: ResourceKindDef[] = [
     key: "search.keyword_serp",
     label: "Keyword SERP payloads",
     description:
-      "The full search API response for each keyword, including results we never scraped. Very large.",
+      "The full search API response for each keyword, including results we never read. Very large.",
     icon: Braces,
     group: "search",
     granularity: "keyword",
@@ -424,9 +424,9 @@ export const CATALOG: ResourceKindDef[] = [
   // ── Pages ─────────────────────────────────────────────────────────────────
   {
     key: "page.content",
-    label: "Scraped page content",
+    label: "Content",
     description:
-      "The full text of each scraped page. The richest input there is, and by far the largest — ~46k characters per page on a real topic.",
+      "The full text of each page that was read. The same rows the Content page lists — the richest input there is, and by far the largest at ~46k characters per page.",
     icon: FileText,
     group: "pages",
     granularity: "source",
@@ -448,9 +448,9 @@ export const CATALOG: ResourceKindDef[] = [
   },
   {
     key: "page.analysis",
-    label: "Page analyses",
+    label: "Analysis",
     description:
-      "The AI write-up produced for each page — already distilled, far smaller than the page itself.",
+      "The AI write-up produced for each page — the same rows the Analysis page lists. Already distilled, far smaller than the page itself.",
     icon: Sparkles,
     group: "pages",
     granularity: "source",
@@ -485,7 +485,7 @@ export const CATALOG: ResourceKindDef[] = [
     key: "page.scoring",
     label: "Page scoring",
     description:
-      "Pre-read and post-read scores with the recommended use for each source — the pipeline's own judgement of what a page is good for.",
+      "The pre-read / post-read / final scores and recommended use shown on a source's detail page — the pipeline's own judgement of what a page is good for.",
     icon: Gauge,
     group: "pages",
     granularity: "source",
@@ -519,9 +519,9 @@ export const CATALOG: ResourceKindDef[] = [
   },
   {
     key: "page.links",
-    label: "Outbound links",
+    label: "Links",
     description:
-      "Links extracted from each scraped page — useful for mapping an entity's own properties and partners.",
+      "Links found on each page that was read — the same set the Links explorer shows. Useful for mapping an entity's own properties and partners.",
     icon: Link2,
     group: "pages",
     granularity: "source",
@@ -554,9 +554,9 @@ export const CATALOG: ResourceKindDef[] = [
   },
   {
     key: "page.images",
-    label: "Page images",
+    label: "Page images (raw)",
     description:
-      "Images found on each scraped page, as URLs with alt text. Text only — the model does not see the pixels.",
+      "The RAW image list found on each page, before curation — this is what the Media library was built from, so it overlaps Media and is larger (59 raw vs 35 curated on a live topic). Text only: URLs and alt text, never pixels.",
     icon: ImageIcon,
     group: "pages",
     granularity: "source",
@@ -761,7 +761,7 @@ export const CATALOG: ResourceKindDef[] = [
     key: "media.items",
     label: "Media inventory",
     description:
-      "Every image and video the pipeline captured, as URLs with alt text and captions. Text only — the model reads the descriptions, not the pixels.",
+      "The curated Media library — the same items the Media page shows. Text only: the model reads URLs, alt text and captions, never the pixels.",
     icon: ImageIcon,
     group: "media",
     granularity: "asset",

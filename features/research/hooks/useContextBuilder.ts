@@ -23,6 +23,7 @@ import type {
   SelectorOrder,
 } from "../resources/types";
 import { getResourceManifest } from "../service/resources";
+import { DEFAULT_BUDGET_TOKENS } from "../components/resources/BudgetMeter";
 
 /** Per-kind selection state. Absent from the map = not selected at all. */
 export interface KindSelection {
@@ -184,7 +185,12 @@ export function useContextBuilder(topicId: string): UseContextBuilder {
   const [variables, setVariables] = useState<
     Partial<Record<ResourceKey, string>>
   >({});
-  const [budgetTokens, setBudgetTokens] = useState<number | null>(120_000);
+  // The default ceiling is deliberately named and surfaced in the meter — an
+  // unexplained cap that silently drops resources is the exact complaint this
+  // system exists to avoid.
+  const [budgetTokens, setBudgetTokens] = useState<number | null>(
+    DEFAULT_BUDGET_TOKENS,
+  );
 
   useEffect(() => {
     let cancelled = false;

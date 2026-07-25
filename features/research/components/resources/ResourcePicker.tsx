@@ -71,7 +71,7 @@ const FILTER_CHIPS: Array<{
   },
   {
     key: "goodScrapeOnly",
-    label: "Good scrapes",
+    label: "Read cleanly",
     applies: (k) => k === "page.content",
   },
   {

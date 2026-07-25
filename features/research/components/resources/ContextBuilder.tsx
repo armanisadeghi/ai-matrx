@@ -23,8 +23,9 @@ import {
   RefreshCw,
   Play,
   AlertTriangle,
-  Bot,
+  Cpu,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -40,13 +41,8 @@ import {
   fetchAgentsListFull,
   fetchAgentExecutionMinimal,
 } from "@/features/agents/redux/agent-definition/thunks";
-import {
-  SearchableAgentSelect,
-  type AgentOption,
-} from "@/features/agent-apps/components/SearchableAgentSelect";
-import { useRunAgent } from "@/features/agents/run/useRunAgent";
-import MarkdownStream from "@/components/MarkdownStream";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   bundleToSelection,
@@ -69,6 +65,9 @@ import { BundleBar } from "./BundleBar";
 import { VariablePreview } from "./VariablePreview";
 
 /** What the agent is asked to do when the user does not say otherwise. */
+/** The research surface, for agent-surface binding value mappings. */
+const RESEARCH_SURFACE_NAME = "matrx-user/research";
+
 const DEFAULT_INSTRUCTION =
   "Produce your standard output using the research provided in the variables. Ground every claim in that material and name what is missing rather than filling gaps.";
 
@@ -85,11 +84,32 @@ export default function ContextBuilder() {
 
   const searchParams = useSearchParams();
   const requestedSlug = searchParams.get("bundle");
-  const appliedSlugRef = useRef<string | null>(null);
+  /** Consumed once by the first bundle load that can satisfy it. */
+  const pendingSlugRef = useRef<string | null>(requestedSlug);
+  /** Set below; lets the loader call the applier without ordering games. */
+  const applyBundleRef = useRef<((b: ContextBundle) => void) | null>(null);
 
+  /**
+   * Load the saved selections, and — on the FIRST load that can satisfy it —
+   * apply the `?bundle=<slug>` deep link.
+   *
+   * The apply happens here, in the promise callback where the data actually
+   * arrives, rather than in an effect watching `bundles`. An effect that calls
+   * setState synchronously is a cascading render (react-hooks/set-state-in-effect),
+   * and this is not a synchronisation problem: it is "when the list lands, if a
+   * slug was requested, select it once".
+   */
   const reloadBundles = useCallback(() => {
     listBundlesForTopic(topicId)
-      .then(setBundles)
+      .then((loaded) => {
+        setBundles(loaded);
+        const slug = pendingSlugRef.current;
+        if (!slug) return;
+        pendingSlugRef.current = null;
+        const match = loaded.find((b) => b.slug === slug);
+        if (match) applyBundleRef.current?.(match);
+        else toast.error(`No saved selection named "${slug}"`);
+      })
       .catch((e: unknown) => {
         toast.error(
           e instanceof Error ? e.message : "Could not load saved selections",
@@ -138,22 +158,12 @@ export default function ContextBuilder() {
     toast.success(`Loaded "${bundle.name}"`);
   };
 
-  // `?bundle=<slug>` preloads a saved selection — how Outputs Studio hands a
-  // domain report over with its inputs already chosen and its agent selected.
-  // Applied ONCE per slug so it never fights the user's later edits.
+  // Kept current in an effect (a ref may not be written during render). This
+  // effect is declared BEFORE the loader effect below, so the ref is always set
+  // by the time a bundle list can arrive.
   useEffect(() => {
-    if (!requestedSlug || bundles.length === 0) return;
-    if (appliedSlugRef.current === requestedSlug) return;
-    appliedSlugRef.current = requestedSlug;
-    const match = bundles.find((b) => b.slug === requestedSlug);
-    if (!match) {
-      toast.error(`No saved selection named "${requestedSlug}"`);
-      return;
-    }
-    applyBundle(match);
-    // Re-running on applyBundle's identity would re-apply over user edits.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestedSlug, bundles]);
+    applyBundleRef.current = applyBundle;
+  });
 
   const handleSave = async () => {
     if (!loaded || loaded.isSystem) return;
@@ -314,6 +324,7 @@ export default function ContextBuilder() {
               budgetTokens={builder.budgetTokens}
               onBudgetChange={builder.setBudgetTokens}
               perKind={builder.preview?.perKind ?? []}
+              droppedByBudget={builder.preview?.droppedByBudget ?? 0}
             />
 
             <div>
@@ -321,8 +332,10 @@ export default function ContextBuilder() {
                 What the agent receives
               </div>
               <VariablePreview
-                manifest={manifest}
+                topicId={topicId}
                 bundle={builder.draft}
+                title={topic?.name ?? undefined}
+                estimatedTokens={builder.preview?.tokens ?? 0}
                 disabled={selectionCount === 0}
               />
             </div>
@@ -341,12 +354,27 @@ export default function ContextBuilder() {
 }
 
 /**
- * Run any agent with the current selection.
+ * Run any agent with the current selection — through the CANONICAL execution
+ * system, not a bespoke one-shot call.
  *
- * The variable contract is shown BEFORE the run: which of the agent's declared
- * variables this selection fills, and which it leaves empty. An unfilled
- * variable is not an error (the agent may have a default) but it is never
- * hidden — a brand-profile agent silently receiving no scraped pages would
+ * The first version of this used `useRunAgent` (one-shot text accumulation) and
+ * rendered the result with `<MarkdownStream content=…>`. That is the wrong path
+ * for a surface a human watches: it concatenates every `chunk` event into one
+ * string, so a reasoning model's THINKING tokens land in the visible output as
+ * plain prose, tool calls never render as cards, and the result is a dead blob
+ * with no actions on it.
+ *
+ * `launchAgent` is the platform's universal entry point. It creates a real
+ * conversation + message, streams through the execution system, and the
+ * `flexible-panel` display mode renders it with the same components chat uses:
+ * live streaming, collapsible thinking, inline tool cards, the assistant action
+ * bar and its options menu (copy, edit, send to notes, save), and the ability
+ * to keep talking to the agent about what it produced.
+ *
+ * The variable contract is still shown BEFORE the run: which of the agent's
+ * declared variables this selection fills, and which it leaves empty. An
+ * unfilled variable is not an error (the agent may have a default) but it is
+ * never hidden — a brand-profile agent silently receiving no page content would
  * produce a confident, sourceless profile.
  */
 function AgentRunner({
@@ -363,22 +391,21 @@ function AgentRunner({
 }) {
   const dispatch = useAppDispatch();
   const { topicId } = useTopicContext();
+  const { launchAgent } = useAgentLauncher();
   const liveAgents = useAppSelector(selectLiveAgents);
-  const [agentId, setAgentId] = useState<string | null>(null);
-  const [picking, setPicking] = useState(false);
+  // The bundle's own agent is a DEFAULT, not state to synchronise: derive it.
+  // (An effect that setState'd on `suggestedAgentId` was a cascading render,
+  // and it could also fight a choice the user had already made.)
+  const [pickedAgentId, setPickedAgentId] = useState<string | null>(null);
+  const agentId = pickedAgentId ?? suggestedAgentId;
+  const setAgentId = setPickedAgentId;
+  const [launching, setLaunching] = useState(false);
   /**
    * The run instruction. Variables carry the RESEARCH; this carries the ASK, and
    * the two are not interchangeable — a user who wants "focus on the founders,
    * skip the offerings" has nowhere else to say it.
    */
   const [instruction, setInstruction] = useState(DEFAULT_INSTRUCTION);
-
-  // Adopt the bundle's own agent, but never overwrite a choice the user made.
-  useEffect(() => {
-    if (suggestedAgentId && agentId === null) setAgentId(suggestedAgentId);
-  }, [suggestedAgentId, agentId]);
-  const [output, setOutput] = useState("");
-  const { run, running, error } = useRunAgent();
 
   const payload = useAppSelector((s: RootState) =>
     agentId ? selectAgentExecutionPayload(s, agentId) : null,
@@ -392,98 +419,91 @@ function AgentRunner({
     }
   }, [agentId, payload, dispatch]);
 
-  const options: AgentOption[] = useMemo(
-    () =>
-      liveAgents.map((a) => ({
-        id: a.id,
-        name: a.name ?? a.id,
-        description: a.description ?? null,
-        category: a.category ?? null,
-      })),
-    [liveAgents],
+  const selectedAgentName = useMemo(
+    () => liveAgents.find((a) => a.id === agentId)?.name ?? null,
+    [liveAgents, agentId],
   );
-
-  const selectedAgent = options.find((o) => o.id === agentId) ?? null;
   const declared = payload?.variableDefinitions ?? null;
   const bundleVars = new Set(bundle.bindings.map((b) => b.variable));
 
   const doRun = async () => {
     if (!agentId) return;
-    setOutput("");
+    setLaunching(true);
     try {
       const resolved = await resolveBundle(manifest, bundle);
       if (resolved.report.truncated || resolved.report.exceedsBudget) {
-        // Loud, not silent: the user is told what the model did NOT get.
+        // Loud, not silent: the user is told what the model did NOT get, and
+        // the budget meter above already names which resources lost items.
         toast.warning(
-          `Context trimmed — ${resolved.report.notes.length} adjustment(s). See the preview for details.`,
+          `Context trimmed before sending — ${resolved.report.notes.join("; ")}`,
         );
       }
-      const text = await run({
-        agentId,
-        userInput: instruction.trim() || DEFAULT_INSTRUCTION,
-        variables: resolved.variables,
-        sourceApp: "matrx-frontend",
+      await launchAgent(agentId, {
+        surfaceKey: `research-context:${topicId}`,
         sourceFeature: "research",
-        contextAnchor: { resource_type: "research_topic", resource_id: topicId },
-        onChunk: setOutput,
+        config: {
+          // The platform's resizable, fullscreen-capable panel — the same one
+          // every other agent surface uses. Nothing hand-rolled here.
+          displayMode: "flexible-panel",
+          autoRun: true,
+          allowChat: true,
+          showPreExecutionGate: false,
+        },
+        runtime: {
+          variables: resolved.variables,
+          userInput: instruction.trim() || DEFAULT_INSTRUCTION,
+          surfaceName: RESEARCH_SURFACE_NAME,
+        },
       });
-      setOutput(text);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "The run failed");
+    } finally {
+      setLaunching(false);
     }
   };
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-2.5 space-y-2">
       <div className="flex items-center gap-1.5">
-        <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+        <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-xs font-medium text-foreground">Run an agent</span>
       </div>
 
-      {picking ? (
-        <div className="space-y-1.5">
-          <SearchableAgentSelect
-            agents={options}
-            value={agentId}
-            onChange={(id) => {
-              setAgentId(id);
-              setPicking(false);
-            }}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-[11px]"
-            onClick={() => setPicking(false)}
-          >
-            Cancel
-          </Button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 flex-1 justify-start text-xs truncate"
-            onClick={() => setPicking(true)}
-          >
-            {selectedAgent ? selectedAgent.name : "Choose an agent…"}
-          </Button>
-          <Button
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
-            disabled={disabled || !agentId || running}
-            onClick={doRun}
-          >
-            {running ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-            Run
-          </Button>
-        </div>
-      )}
+      <div className="flex items-center gap-1.5">
+        {/* The canonical agent picker — search, sort, categories, tags and a
+            detail card, with a mobile drawer. A plain <select> is unusable at
+            300+ agents, and a second bespoke picker is a second thing to fix. */}
+        <AgentListDropdown
+          activeAgentId={agentId}
+          onSelect={(id) => setAgentId(id)}
+          className="flex-1 min-w-0"
+          triggerSlot={
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 w-full justify-between gap-1.5 text-xs"
+            >
+              <span className="truncate">
+                {selectedAgentName ?? "Choose an agent…"}
+              </span>
+              <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+            </Button>
+          }
+        />
+        <Button
+          size="sm"
+          className="h-7 gap-1.5 text-xs shrink-0"
+          disabled={disabled || !agentId || launching}
+          onClick={doRun}
+        >
+          {launching ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Play className="h-3.5 w-3.5" />
+          )}
+          Run
+        </Button>
+      </div>
 
       {agentId && (
         <label className="block space-y-1">
@@ -547,18 +567,10 @@ function AgentRunner({
         </div>
       )}
 
-      {error && (
-        <div className="text-[11px] text-destructive">{error}</div>
-      )}
-
-      {output && (
-        <div className="space-y-1 pt-1">
-          <ContentActionBar content={output} />
-          <div className="max-h-96 overflow-y-auto rounded border border-border/50 bg-background/60 p-2">
-            <MarkdownStream content={output} isStreamActive={running} />
-          </div>
-        </div>
-      )}
+      <p className="text-[10px] text-muted-foreground">
+        Opens in the standard agent panel: live streaming, thinking and tool
+        cards, and the usual message actions (copy, send to notes, save).
+      </p>
     </div>
   );
 }

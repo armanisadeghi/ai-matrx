@@ -130,6 +130,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Research context preview ──────────────────────────────────────────────
+  // Shows exactly what an agent will receive for a research context bundle.
+  // EPHEMERAL by design: the payload is a live resolution of the current
+  // selection (often 300k+ characters), not restorable state — and only the
+  // small bundle DESCRIPTOR crosses the overlay boundary; the window resolves
+  // it itself rather than pushing megabytes of text through Redux.
+  {
+    slug: "research-context-preview-window",
+    overlayId: "researchContextPreviewWindow",
+    kind: "window",
+    label: "Context Preview",
+    defaultData: { topicId: null, bundle: null, title: undefined },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Notes ─────────────────────────────────────────────────────────────────
   {
     slug: "notes-window",

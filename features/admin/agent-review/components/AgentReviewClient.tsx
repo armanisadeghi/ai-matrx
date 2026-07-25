@@ -260,9 +260,14 @@ export default function AgentReviewClient() {
 
   const archived = grouped.get("archived") ?? [];
 
+  // The queue grows without bound, so the page MUST own a scroll container:
+  // `.shell-main` is a fixed-height, overflow-hidden box, so a plain
+  // `max-w-4xl` page simply clipped everything below the fold and no amount of
+  // scrolling reached it. Same shape as the other admin clients (header
+  // pinned, list scrolls) — see SharedKnowledgeAdminClient.
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-5">
-      <div className="flex items-center gap-2">
+    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden">
+      <div className="mx-auto flex w-full max-w-4xl items-center gap-2 px-4 pt-4 pb-3">
         <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
         <h1 className="text-lg font-semibold text-foreground">Agent Review Queue</h1>
         <span className="text-xs text-muted-foreground">
@@ -278,6 +283,9 @@ export default function AgentReviewClient() {
           Refresh
         </Button>
       </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-4xl space-y-5 px-4 pb-8">
 
       {error && (
         <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
@@ -331,6 +339,8 @@ export default function AgentReviewClient() {
             ))}
         </section>
       )}
+        </div>
+      </div>
     </div>
   );
 }

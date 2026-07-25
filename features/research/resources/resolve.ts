@@ -385,14 +385,37 @@ function dropLabel(reason: DropReason): string {
  * Preview totals for a selection, with no reads — what the budget meter shows.
  * Uses the same planner as `resolveBundle`, so the meter and the run agree.
  */
+export interface PreviewKind {
+  kind: ResourceKey;
+  items: number;
+  chars: number;
+  tokens: number;
+  /**
+   * Items the BUDGET will drop, known before anything runs.
+   *
+   * This is the whole point of previewing: a budget that silently eats half a
+   * selection and only admits it afterwards is worse than no budget. The
+   * planner already computes the drops, so the meter can name them up front.
+   */
+  droppedByBudget: number;
+}
+
+export interface BundlePreview {
+  chars: number;
+  tokens: number;
+  perKind: PreviewKind[];
+  /** Total items the budget will drop across every kind. */
+  droppedByBudget: number;
+}
+
 export function previewBundle(
   manifest: ResourceManifest,
   bundle: ContextBundle,
-): { chars: number; tokens: number; perKind: Array<{ kind: ResourceKey; items: number; chars: number; tokens: number }> } {
+): BundlePreview {
   const ctx = renderContextFor(manifest);
   deriveAll(manifest, ctx);
   const { planned } = planResolution(manifest, bundle);
-  const perKind = planned.map((entry) => {
+  const perKind: PreviewKind[] = planned.map((entry) => {
     const def = kindDef(entry.kind);
     const derivedKind = def !== undefined && isDerived(def);
     const chars = derivedKind
@@ -403,12 +426,14 @@ export function previewBundle(
       items: derivedKind ? (chars > 0 ? 1 : 0) : entry.items.length,
       chars,
       tokens: estimateTokens(chars, def?.shape ?? "prose"),
+      droppedByBudget: entry.dropped.over_budget ?? 0,
     };
   });
   return {
     chars: perKind.reduce((s, k) => s + k.chars, 0),
     tokens: perKind.reduce((s, k) => s + k.tokens, 0),
     perKind,
+    droppedByBudget: perKind.reduce((s, k) => s + k.droppedByBudget, 0),
   };
 }
 
