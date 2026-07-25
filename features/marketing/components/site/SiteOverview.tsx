@@ -86,7 +86,11 @@ const stateDotClass: Record<SiteConnectionState, string> = {
 export function SiteOverview() {
   const { site, sitePath } = useMarketingSite();
   const overview = useSiteOverview(site.id);
-  const hero = useSiteHeroScreenshot(site.id, site.homepage_screenshot_id);
+  const hero = useSiteHeroScreenshot(
+    site.id,
+    site.root_url,
+    site.homepage_screenshot_id,
+  );
   const pendingDiscovered = usePendingDiscoveredCount(site.brand_id);
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();

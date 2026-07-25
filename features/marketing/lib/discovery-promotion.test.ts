@@ -1,4 +1,7 @@
-import { inferDiscoveredPropertyType } from "@/features/marketing/lib/discovery-promotion";
+import {
+  describeDiscoveredSocialProfile,
+  inferDiscoveredPropertyType,
+} from "@/features/marketing/lib/discovery-promotion";
 
 describe("inferDiscoveredPropertyType", () => {
   it.each([
@@ -34,4 +37,46 @@ describe("inferDiscoveredPropertyType", () => {
       }),
     ).toBe("other");
   });
+
+  it.each([
+    [
+      "https://www.instagram.com/datadestruction/",
+      "instagram",
+      "@datadestruction",
+      "Profile",
+    ],
+    [
+      "https://www.linkedin.com/in/arman-sadeghi-8b176627/",
+      "linkedin",
+      "arman-sadeghi-8b176627",
+      "Personal profile",
+    ],
+    [
+      "https://www.linkedin.com/company/acme/",
+      "linkedin",
+      "acme",
+      "Company page",
+    ],
+    [
+      "https://www.youtube.com/channel/UCF4Ku_RBslqV3A36j6KddZQ",
+      "youtube",
+      "UCF4Ku_RBslqV3A36j6KddZQ",
+      "Channel ID",
+    ],
+    ["https://twitter.com/armantitanium", "x", "@armantitanium", "Profile"],
+  ] as const)(
+    "describes %s as a verifiable %s identity",
+    (url, expectedKind, expectedIdentity, expectedProfileType) => {
+      expect(
+        describeDiscoveredSocialProfile({
+          guessed_kind: "social_profile",
+          url,
+        }),
+      ).toMatchObject({
+        kind: expectedKind,
+        identity: expectedIdentity,
+        profileType: expectedProfileType,
+      });
+    },
+  );
 });

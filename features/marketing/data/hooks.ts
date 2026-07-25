@@ -171,11 +171,11 @@ export function useSiteOverview(siteId: string) {
   });
 }
 
-export function useHomepageObservedMeta(siteId: string) {
+export function useHomepageObservedMeta(siteId: string, rootUrl: string) {
   return useQuery({
-    queryKey: marketingKeys.homepageMeta(siteId),
-    queryFn: ({ signal }) => getHomepageObservedMeta(siteId, signal),
-    enabled: Boolean(siteId),
+    queryKey: [...marketingKeys.homepageMeta(siteId), rootUrl] as const,
+    queryFn: ({ signal }) => getHomepageObservedMeta(siteId, rootUrl, signal),
+    enabled: Boolean(siteId && rootUrl),
   });
 }
 
@@ -339,16 +339,18 @@ export function useCrawlEvents(
 
 export function useSiteHeroScreenshot(
   siteId: string,
+  rootUrl: string,
   screenshotId: string | null,
 ) {
   return useQuery({
     queryKey: [
       ...marketingKeys.heroScreenshot(siteId),
+      rootUrl,
       screenshotId ?? "unselected",
     ],
     queryFn: ({ signal }) =>
-      getSiteHeroScreenshot(siteId, screenshotId, signal),
-    enabled: Boolean(siteId),
+      getSiteHeroScreenshot(siteId, rootUrl, screenshotId, signal),
+    enabled: Boolean(siteId && rootUrl),
   });
 }
 

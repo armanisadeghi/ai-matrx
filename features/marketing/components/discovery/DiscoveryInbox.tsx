@@ -4,10 +4,13 @@ import { useMemo, useState } from "react";
 import {
   AtSign,
   Check,
+  ExternalLink,
   FileQuestion,
+  Globe2,
   Image as ImageIcon,
   Link2,
   MapPin,
+  MapPinned,
   Phone,
   Share2,
   Trash2,
@@ -15,8 +18,18 @@ import {
   Undo2,
   X,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  Facebook,
+  Instagram,
+  Linkedin,
+  Pinterest,
+  Tiktok,
+  Twitter,
+  Youtube,
+} from "@/components/icons/brand-icons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,10 +71,14 @@ import {
   isJsonRecord,
   type DiscoveredItem,
   type DiscoveredItemStatus,
+  type PropertyKind,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
-import { inferDiscoveredPropertyType } from "@/features/marketing/lib/discovery-promotion";
+import {
+  describeDiscoveredSocialProfile,
+  inferDiscoveredPropertyType,
+} from "@/features/marketing/lib/discovery-promotion";
 
 const STATUS_TABS: Array<{ value: DiscoveredItemStatus; label: string }> = [
   { value: "pending", label: "Pending" },
@@ -94,6 +111,18 @@ const FACT_KINDS = BUSINESS_FACT_KINDS.map((value) => ({
 const PROPERTY_TYPE_OPTIONS = PROPERTY_KINDS.filter(
   (value) => value !== "website",
 ).map((value) => ({ value, label: PROPERTY_KIND_LABELS[value] }));
+
+const SOCIAL_ICONS: Partial<Record<PropertyKind, LucideIcon>> = {
+  instagram: Instagram,
+  facebook: Facebook,
+  x: Twitter,
+  tiktok: Tiktok,
+  youtube: Youtube,
+  linkedin: Linkedin,
+  pinterest: Pinterest,
+  google_business_profile: MapPinned,
+  other: Globe2,
+};
 
 function isMediaCategory(category: string): boolean {
   return category === "media";
@@ -321,6 +350,10 @@ function DiscoveryRow({
   const [customLabel, setCustomLabel] = useState("");
   const media = isMediaCategory(item.category);
   const social = isSocialCategory(item.category);
+  const socialPreview = social ? describeDiscoveredSocialProfile(item) : null;
+  const SocialIcon = socialPreview
+    ? (SOCIAL_ICONS[socialPreview.kind] ?? AtSign)
+    : AtSign;
   const kindOptions = media
     ? ASSET_KINDS
     : social
@@ -435,7 +468,11 @@ function DiscoveryRow({
 
   return (
     <li className="flex flex-wrap items-center gap-3 px-3 py-2">
-      {previewUrl ? (
+      {socialPreview ? (
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-muted/40 text-foreground shadow-sm">
+          <SocialIcon className="h-5 w-5" aria-hidden />
+        </span>
+      ) : previewUrl ? (
         <span className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded border border-border/60 bg-muted/30">
           {/* Discovered candidates are external public URLs, not our media. */}
           <img
@@ -461,7 +498,9 @@ function DiscoveryRow({
         <div className="flex items-center gap-1.5">
           {item.guessed_kind ? (
             <Badge variant="outline" className="text-[10px]">
-              {item.guessed_kind.replace(/_/g, " ")}
+              {socialPreview
+                ? socialPreview.providerLabel
+                : item.guessed_kind.replace(/_/g, " ")}
             </Badge>
           ) : null}
           {typeof item.confidence === "number" ? (
@@ -470,9 +509,33 @@ function DiscoveryRow({
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 truncate font-mono text-xs text-foreground">
-          {display}
-        </p>
+        {socialPreview ? (
+          <div className="mt-0.5 flex min-w-0 items-baseline gap-2">
+            <p className="truncate text-sm font-medium text-foreground">
+              {socialPreview.identity}
+            </p>
+            <span className="shrink-0 text-[10px] text-muted-foreground">
+              {socialPreview.profileType}
+            </span>
+          </div>
+        ) : null}
+        {item.url ? (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "block truncate font-mono text-xs text-muted-foreground transition-colors hover:text-primary",
+              !socialPreview && "mt-0.5 text-foreground",
+            )}
+          >
+            {display}
+          </a>
+        ) : (
+          <p className="mt-0.5 truncate font-mono text-xs text-foreground">
+            {display}
+          </p>
+        )}
         {context ? (
           <p className="truncate text-[11px] text-muted-foreground">
             {context}
@@ -483,6 +546,24 @@ function DiscoveryRow({
       <span className="shrink-0">
         <CopyButtons size="icon" {...itemCopy} />
       </span>
+      {item.url ? (
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
+        >
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${socialPreview?.providerLabel ?? "discovered link"} in a new tab`}
+            title="Open in new tab"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </Button>
+      ) : null}
 
       {readOnly ? (
         <div className="flex shrink-0 items-center gap-1.5">
@@ -535,9 +616,7 @@ function DiscoveryRow({
             value={customLabel}
             onChange={(event) => setCustomLabel(event.target.value)}
             className="h-8 w-40 text-xs"
-            placeholder={
-              customLabelRequired ? "Custom label (required)" : "Label (optional)"
-            }
+            placeholder={customLabelRequired ? "Custom label (required)" : "Label (optional)"}
             aria-label={
               media ? "Asset label" : social ? "Property label" : "Fact label"
             }

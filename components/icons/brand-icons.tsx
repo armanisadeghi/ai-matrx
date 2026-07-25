@@ -8,6 +8,8 @@ import {
     FaFacebook,
     FaLinkedin,
     FaInstagram,
+    FaPinterest,
+    FaTiktok,
     FaChrome,
     FaTrello,
     FaGitlab,
@@ -44,6 +46,8 @@ export const Twitter = asLucideIcon(FaXTwitter, "Twitter");
 export const Facebook = asLucideIcon(FaFacebook, "Facebook");
 export const Linkedin = asLucideIcon(FaLinkedin, "Linkedin");
 export const Instagram = asLucideIcon(FaInstagram, "Instagram");
+export const Pinterest = asLucideIcon(FaPinterest, "Pinterest");
+export const Tiktok = asLucideIcon(FaTiktok, "Tiktok");
 export const Chrome = asLucideIcon(FaChrome, "Chrome");
 export const Trello = asLucideIcon(FaTrello, "Trello");
 export const Gitlab = asLucideIcon(FaGitlab, "Gitlab");

@@ -373,6 +373,7 @@ export async function getSiteOverview(
 /** Read observed homepage `<title>` and meta description from the latest snapshot. */
 export async function getHomepageObservedMeta(
   siteId: string,
+  rootUrl: string,
   signal?: AbortSignal,
 ): Promise<HomepageObservedMeta | null> {
   const db = await authenticatedWebDb(supabase);
@@ -381,7 +382,7 @@ export async function getHomepageObservedMeta(
     .from("page")
     .select("id, latest_snapshot_id")
     .eq("site_id", siteId)
-    .eq("path", "/")
+    .eq("url", rootUrl)
     .is("deleted_at", null)
     .abortSignal(abortSignal)
     .maybeSingle();
@@ -1297,6 +1298,7 @@ const SCREENSHOT_COLUMNS =
 /** Read the above-the-fold homepage hero capture. */
 export async function getSiteHeroScreenshot(
   siteId: string,
+  rootUrl: string,
   screenshotId: string | null,
   signal?: AbortSignal,
 ): Promise<SiteScreenshot | null> {
@@ -1323,7 +1325,7 @@ export async function getSiteHeroScreenshot(
     .from("page")
     .select("id")
     .eq("site_id", siteId)
-    .eq("path", "/")
+    .eq("url", rootUrl)
     .is("deleted_at", null)
     .abortSignal(abort)
     .maybeSingle();
