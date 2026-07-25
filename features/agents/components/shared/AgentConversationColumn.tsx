@@ -195,11 +195,15 @@ export function AgentConversationColumn({
   // transcript to the bottom: expanding a "Worked for 26s" fold, every
   // streamed token) and kept OlderMessagesSentinel permanently disabled.
   const hasMoreOlderRef = useRef(hasMoreOlder);
-  hasMoreOlderRef.current = hasMoreOlder;
   const isLoadingOlderRef = useRef(isLoadingOlder);
-  isLoadingOlderRef.current = isLoadingOlder;
   const messageCountRef = useRef(messageCount);
-  messageCountRef.current = messageCount;
+  // Refreshed in an effect (never during render) so the reveal chain reads the
+  // latest values without those values being effect deps that would re-arm it.
+  useEffect(() => {
+    hasMoreOlderRef.current = hasMoreOlder;
+    isLoadingOlderRef.current = isLoadingOlder;
+    messageCountRef.current = messageCount;
+  });
 
   const hasMessages = messageCount > 0;
 
