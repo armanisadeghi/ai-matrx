@@ -1,5 +1,8 @@
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import { createCodeEditorScope } from "@/features/surfaces/manifests/code-editor.manifest";
+import {
+  createCodeEditorScope,
+  type CodeOpenFileEntry,
+} from "@/features/surfaces/manifests/code-editor.manifest";
 import type { EditorDiagnostic } from "../redux/diagnosticsSlice";
 import type { CodeTabsState } from "../redux/tabsSlice";
 import { isPreviewTab } from "../types";
@@ -12,6 +15,7 @@ import { isPreviewTab } from "../types";
 export function summarizeOpenTabs(tabs: CodeTabsState): {
   openFilePaths: string[];
   modifiedFilePaths: string[];
+  openFiles: CodeOpenFileEntry[];
 } {
   const editable = tabs.order
     .map((id) => tabs.byId[id])
@@ -22,6 +26,14 @@ export function summarizeOpenTabs(tabs: CodeTabsState): {
       .filter((t) => t.dirty)
       .map((t) => t.path)
       .filter(Boolean),
+    openFiles: editable
+      .filter((t) => Boolean(t.path))
+      .map((t) => ({
+        path: t.path,
+        name: t.name,
+        language: t.language,
+        modified: !!t.dirty,
+      })),
   };
 }
 
@@ -58,20 +70,33 @@ export interface BuildCodeWorkspaceContextDataArgs {
   textAfter?: string;
   /** Line/column rectangle of the live selection (empty when nothing selected). */
   selectionRange?: CodeSelectionRange | null;
-  /** Best-effort enclosing function/symbol name at the caret. */
-  currentFunctionName?: string;
   /** Paths of every open tab. Defaults to `[filePath]` when not supplied. */
   openFilePaths?: string[];
   /** Paths of open tabs with unsaved edits. */
   modifiedFilePaths?: string[];
-  /** Absolute path of the workspace root, when one is loaded. */
+  /**
+   * Full open-tab entries (`{ path, name, language, modified }`). When not
+   * supplied (embedded single-file editors), derived from the active file.
+   */
+  openFiles?: CodeOpenFileEntry[];
+  /** Root path of the active filesystem, when one is mounted. */
   workspaceRoot?: string;
+  /** Adapter id (`${kind}:${instanceId}`) of the active filesystem. */
+  filesystemId?: string;
+  /** Human-friendly label of the active filesystem. */
+  filesystemLabel?: string;
   /**
    * Localized surround context (`<TEXT_BEFORE>…</TEXT_BEFORE>` / `<TEXT_AFTER>…`)
    * for the baseline `context` value. When omitted, a small JSON blob with the
    * active-file metadata is used so a `context` binding never resolves empty.
    */
   surroundContext?: string;
+}
+
+/** Basename of a path for the synthesized single-file `open_files` entry. */
+function baseName(path: string): string {
+  const idx = path.lastIndexOf("/");
+  return idx >= 0 ? path.slice(idx + 1) : path;
 }
 
 /**
@@ -82,15 +107,18 @@ export interface BuildCodeWorkspaceContextDataArgs {
  *     `text_after` / `context`) so any baseline binding resolves from real
  *     editor state.
  *  2. The surface's declared SurfaceValue names (`current_file_*`,
- *     `current_line_number`, `selection_range`, `open_file_paths`, …) — these
- *     are what agent↔surface binding value_mappings (platform.associations edge metadata) bind against. Built through
- *     `createCodeEditorScope` so a typo or missing required key is a TS error.
+ *     `current_line_number`, `selection_range`, `open_file_paths`,
+ *     `open_files`, `active_file_diagnostics`, …) — these are what
+ *     agent↔surface binding value_mappings (platform.associations edge
+ *     metadata) bind against. Built through `createCodeEditorScope` so a typo
+ *     or missing required key is a TS error.
  *  3. The cross-editor `vsc_*` contract (kept byte-for-byte) so legacy
  *     Shortcuts whose `scopeMappings` reference `vsc_active_file_content` etc.
  *     keep working in BOTH the `/code` workspace and the embedded editor.
+ *     These are legacy aliases of declared values, not surface values.
  *
- * Shared by `CodeWorkspaceContextMenu`, `CodeEditorContextMenu`, and any
- * harness that must mirror the surface.
+ * Shared by `CodeWorkspaceContextMenu`, `CodeReadonlyContextMenu`,
+ * `CodeEditorContextMenu`, and any harness that must mirror the surface.
  */
 export function buildCodeWorkspaceContextData(
   args: BuildCodeWorkspaceContextDataArgs,
@@ -110,10 +138,12 @@ export function buildCodeWorkspaceContextData(
     textBefore,
     textAfter,
     selectionRange,
-    currentFunctionName,
     openFilePaths,
     modifiedFilePaths,
+    openFiles,
     workspaceRoot,
+    filesystemId,
+    filesystemLabel,
     surroundContext,
   } = args;
 
@@ -126,12 +156,27 @@ export function buildCodeWorkspaceContextData(
   const hasFile = filePath.length > 0 || fullContent.length > 0;
   const openPaths =
     openFilePaths ?? (filePath ? [filePath] : ([] as string[]));
+  const openFileEntries =
+    openFiles ??
+    (filePath
+      ? [
+          {
+            path: filePath,
+            name: baseName(filePath),
+            language,
+            modified: isModified,
+          },
+        ]
+      : ([] as CodeOpenFileEntry[]));
 
   // Surface-declared values — type-checked against the manifest. Empty/zero
   // values are omitted so the resolver floors them rather than binding "".
   const surfaceScope = createCodeEditorScope({
     open_file_paths: openPaths,
     open_file_count: openPaths.length,
+    open_files: openFileEntries,
+    active_file_diagnostics: activeTabDiagnostics,
+    workspace_diagnostics: allDiagnostics,
 
     selection: hasSelection ? selectedText : undefined,
     text_before: textBefore || undefined,
@@ -145,14 +190,16 @@ export function buildCodeWorkspaceContextData(
     current_file_language: language || undefined,
     current_file_content: hasFile ? fullContent : undefined,
     current_file_modified: hasFile ? isModified : undefined,
+    current_file_line_count: lineCount || undefined,
     current_line_number: currentLine || undefined,
     current_column_number: currentColumn || undefined,
     selection_range: hasSelection ? (selectionRange ?? undefined) : undefined,
-    current_function_name: currentFunctionName || undefined,
     modified_file_paths: modifiedFilePaths?.length
       ? modifiedFilePaths
       : undefined,
     workspace_root: workspaceRoot || undefined,
+    filesystem_id: filesystemId || undefined,
+    filesystem_label: filesystemLabel || undefined,
   });
 
   return {

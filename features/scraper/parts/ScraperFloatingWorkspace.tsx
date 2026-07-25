@@ -153,6 +153,13 @@ export function ScraperFloatingWorkspace({
     selected: selectedScraped,
     activeTab,
     failureReason: activeError,
+    targetUrl: mode === "url" ? url : undefined,
+    searchKeyword: mode === "web" ? keywordForm.keywords : keyword,
+    maxPages: mode === "batch" ? parseInt(maxPages, 10) || 5 : undefined,
+    results: scrapedResults,
+    selectedIndex: safeScrapedIndex,
+    searchHits: keywordForm.flatResults,
+    isScraping: isAnyLoading,
   });
 
   // Editable inputs: read the live field value at call time so a bound agent

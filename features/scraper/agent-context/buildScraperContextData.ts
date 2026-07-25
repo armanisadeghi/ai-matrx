@@ -1,7 +1,13 @@
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import { createScraperScope } from "@/features/surfaces/manifests/scraper.manifest";
+import {
+  createScraperScope,
+  type ScraperResultOverviewEntry,
+  type ScraperSearchHitEntry,
+} from "@/features/surfaces/manifests/scraper.manifest";
 import type { ScraperResult } from "@/features/scraper/hooks/useScraperApi";
+import type { SearchResultItem } from "@/features/scraper/types/scraper-api";
 import type { ScrapedDetailTabId } from "@/features/scraper/parts/ScrapedResultDetailTabs";
+import { contentLength } from "@/features/scraper/utils/scraper-floating-helpers";
 
 /**
  * Placements offered by the scraper context menu (target wiring with
@@ -70,6 +76,27 @@ function buildLinkGroups(links: ScraperResult["links"] | undefined): {
   };
 }
 
+/** One row of the sidebar's page list → the `results_overview` entry shape. */
+function toOverviewEntry(r: ScraperResult): ScraperResultOverviewEntry {
+  const chars = contentLength(r);
+  return {
+    url: r.url,
+    title: r.overview?.page_title || "",
+    char_count: chars,
+    has_content: chars > 0,
+  };
+}
+
+/** One web-search hit → the `search_hits` entry shape. */
+function toSearchHitEntry(hit: SearchResultItem): ScraperSearchHitEntry {
+  return {
+    title: hit.title || "",
+    url: hit.url || "",
+    snippet: hit.description || hit.snippet || undefined,
+    rank: typeof hit.rank === "number" ? hit.rank : undefined,
+  };
+}
+
 export interface BuildScraperContextDataArgs {
   /** Current workspace input mode. */
   mode: ScraperWorkspaceMode;
@@ -84,6 +111,20 @@ export interface BuildScraperContextDataArgs {
    * failed. Per-row failures surface here (the workspace forwards `activeError`).
    */
   failureReason?: string | null;
+  /** The URL typed in the single-URL input (may not be scraped yet). */
+  targetUrl?: string;
+  /** The keyword typed for web-search / deep mode. */
+  searchKeyword?: string;
+  /** Max pages configured for deep (search + scrape) mode. */
+  maxPages?: number;
+  /** Every scraped page in this session's sidebar list. */
+  results?: ScraperResult[];
+  /** Zero-based index of `selected` within `results`. */
+  selectedIndex?: number;
+  /** Web-search hits from keyword mode (not yet scraped). */
+  searchHits?: SearchResultItem[];
+  /** True while any scrape/search request is in flight. */
+  isScraping?: boolean;
 }
 
 /**
@@ -91,20 +132,58 @@ export interface BuildScraperContextDataArgs {
  * workspace state → `createScraperScope(...)` using the manifest's exact value
  * names. Baselines emitted real: `content` = the scraped text the user reads,
  * `selection` = highlighted text, `context` = a compact scrape summary blob.
+ *
+ * Intentionally NOT emitted (nothing in the FE holds them): raw HTML — the FE
+ * `ScraperResult` (useScraperApi) only retains text/markdown variants — and
+ * the target server's HTTP status code, which the hook surfaces via
+ * diagnostics, not a code.
  */
 export function buildScraperContextData(
   args: BuildScraperContextDataArgs,
 ): Record<string, unknown> {
-  const { mode, selected, activeTab, selection = "", failureReason } = args;
+  const {
+    mode,
+    selected,
+    activeTab,
+    selection = "",
+    failureReason,
+    targetUrl,
+    searchKeyword,
+    maxPages,
+    results = [],
+    selectedIndex,
+    searchHits = [],
+    isScraping = false,
+  } = args;
 
   const scrapeMode = MODE_TO_SCRAPE_MODE[mode];
+  const resultsOverview = results.map(toOverviewEntry);
+  const hitEntries = searchHits.map(toSearchHitEntry);
+
+  // Guaranteed keys — emitted on every launch regardless of scrape state.
+  const base = {
+    scrape_mode: scrapeMode,
+    active_result_tab: activeTab as string,
+    results_overview: resultsOverview,
+    result_count: resultsOverview.length,
+    search_hit_count: hitEntries.length,
+    is_scraping: isScraping,
+    target_url: targetUrl?.trim() || undefined,
+    search_keyword: searchKeyword?.trim() || undefined,
+    max_pages: maxPages || undefined,
+    search_hits: hitEntries.length > 0 ? hitEntries : undefined,
+    selected_result_index:
+      results.length > 0 && typeof selectedIndex === "number"
+        ? selectedIndex
+        : undefined,
+  };
 
   if (!selected) {
-    // Nothing scraped yet — emit only the always-honest mode/tab + an empty
-    // context blob so a binding to a generic value never resolves to nothing.
+    // Nothing scraped yet — emit the always-honest run/target state + an
+    // empty context blob so a binding to a generic value never resolves to
+    // nothing.
     return createScraperScope({
-      scrape_mode: scrapeMode,
-      active_result_tab: activeTab,
+      ...base,
       scrape_success: false,
       scrape_failure_reason: failureReason || undefined,
       context: { surface: "scraper", mode: scrapeMode, hasResult: false },
@@ -141,13 +220,11 @@ export function buildScraperContextData(
   };
 
   return createScraperScope({
+    ...base,
     scraped_url: selected.url || undefined,
     scraped_title: title || undefined,
-    scrape_mode: scrapeMode,
     scraped_content_text: text || undefined,
     scraped_content_markdown: markdown || undefined,
-    // `scraped_content_html` is intentionally omitted — the FE `ScraperResult`
-    // (useScraperApi) never retains raw HTML, only text/markdown variants.
     scraped_metadata: selected.metadata as Record<string, unknown>,
     scraped_main_image: selected.mainImage || undefined,
     scraped_links: links,
@@ -155,10 +232,7 @@ export function buildScraperContextData(
     scrape_failure_reason: succeeded
       ? undefined
       : failureReason || undefined,
-    // `scrape_http_status` is intentionally omitted — not present on the FE
-    // `ScraperResult`; the hook surfaces failures via diagnostics, not a code.
     scrape_execution_time_ms: executionTimeMs,
-    active_result_tab: activeTab,
 
     // Baselines — real values from the surface.
     selection: selection || undefined,

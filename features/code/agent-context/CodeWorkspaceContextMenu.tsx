@@ -22,6 +22,11 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
 import { selectActiveTab, selectCodeTabs } from "../redux/tabsSlice";
 import {
+  selectActiveFilesystemId,
+  selectActiveFilesystemLabel,
+  selectActiveFilesystemRoot,
+} from "../redux/codeWorkspaceSlice";
+import {
   selectAllDiagnostics,
   selectDiagnosticsByTabId,
 } from "../redux/diagnosticsSlice";
@@ -70,6 +75,9 @@ export function CodeWorkspaceContextMenu({
   const activeTabDiagnostics = useAppSelector((state) =>
     selectDiagnosticsByTabId(state, activeTab?.id ?? null),
   );
+  const filesystemId = useAppSelector(selectActiveFilesystemId);
+  const filesystemLabel = useAppSelector(selectActiveFilesystemLabel);
+  const filesystemRoot = useAppSelector(selectActiveFilesystemRoot);
 
   const [selectedText, setSelectedText] = useState("");
 
@@ -99,7 +107,8 @@ export function CodeWorkspaceContextMenu({
   }, [editorRef, editorReadyTick]);
 
   // Open editable tabs (Monaco-backed; preview tabs have no buffer).
-  const { openFilePaths, modifiedFilePaths } = summarizeOpenTabs(tabs);
+  const { openFilePaths, modifiedFilePaths, openFiles } =
+    summarizeOpenTabs(tabs);
 
   // Build the live scope keyset. Re-derived on every call because Monaco model
   // state can change at any time — never cached in render-triggering state.
@@ -163,6 +172,10 @@ export function CodeWorkspaceContextMenu({
       selectionRange,
       openFilePaths,
       modifiedFilePaths,
+      openFiles,
+      workspaceRoot: filesystemRoot ?? undefined,
+      filesystemId: filesystemId ?? undefined,
+      filesystemLabel: filesystemLabel ?? undefined,
       surroundContext,
     });
   };

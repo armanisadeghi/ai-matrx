@@ -22,6 +22,11 @@ import React from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveTab, selectCodeTabs } from "../redux/tabsSlice";
 import {
+  selectActiveFilesystemId,
+  selectActiveFilesystemLabel,
+  selectActiveFilesystemRoot,
+} from "../redux/codeWorkspaceSlice";
+import {
   selectAllDiagnostics,
   selectDiagnosticsByTabId,
 } from "../redux/diagnosticsSlice";
@@ -51,7 +56,12 @@ export function CodeReadonlyContextMenu({
     selectDiagnosticsByTabId(state, activeTab?.id ?? null),
   );
 
-  const { openFilePaths, modifiedFilePaths } = summarizeOpenTabs(tabs);
+  const filesystemId = useAppSelector(selectActiveFilesystemId);
+  const filesystemLabel = useAppSelector(selectActiveFilesystemLabel);
+  const filesystemRoot = useAppSelector(selectActiveFilesystemRoot);
+
+  const { openFilePaths, modifiedFilePaths, openFiles } =
+    summarizeOpenTabs(tabs);
 
   const contextData = buildCodeWorkspaceContextData({
     fullContent: activeTab?.content ?? "",
@@ -66,6 +76,10 @@ export function CodeReadonlyContextMenu({
     isModified: !!activeTab?.dirty,
     openFilePaths,
     modifiedFilePaths,
+    openFiles,
+    workspaceRoot: filesystemRoot ?? undefined,
+    filesystemId: filesystemId ?? undefined,
+    filesystemLabel: filesystemLabel ?? undefined,
   });
 
   return (
