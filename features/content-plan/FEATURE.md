@@ -130,6 +130,18 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-25 — Claude: **agent-write path live end-to-end** — plan_tree /
+  plan_node_patch envelopes (applied server-side by aidream; receipts render
+  via `features/matrx-envelope/directives/planTree/`, resolving through THIS
+  feature's read service — the client never applies). Adversarial-review
+  fixes: brief textarea raw-text draft (spaces/blank lines typed normally),
+  NodePanel keyed by node id + draft survives background refetches,
+  controlled React Flow (`onNodesChange`; drop detection on live positions),
+  org-scoped site auto-select only (stale `?site=` still resolves), bulk
+  status single-pass + one invalidation, entity dialog remounts per open,
+  >10k-node loud cap, late-bound status default, canonical error/type
+  narrowing, dead exports removed.
+
 - 2026-07-25 — Claude: surface manifest `matrx-user/content-plan` (21 values,
   5 curated groups, 3 agent roles), runtime emitter in the workbench
   (`lib/content-plan-scope.ts`), `/content-plan` route→surface mapping, DB

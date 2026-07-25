@@ -255,6 +255,9 @@ const surfaceSpecific: SurfaceValue[] = [
 export const contentPlanManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan",
   label: "Content Plan",
+  readiness: "partial",
+  readinessNote:
+    "Runtime emitter live (workbench getScope over loaded query data); agent roles declared but no default agents bound yet.",
   urlPattern: "/content-plan",
   intro: `<surface_intro>
 You are on the Content Plan workspace: the editable tree of every URL a managed website SHOULD have (pillars → clusters → articles), with per-node briefs, a primary keyword, topics, and the people/sources behind the content (E-E-A-T). The user sees, decides, and corrects here — agents do the bulk writing; plan rows land directly in the database and appear on refetch.

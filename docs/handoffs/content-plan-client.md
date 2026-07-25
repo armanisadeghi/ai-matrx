@@ -50,6 +50,38 @@
   site→vertical binding exists in the DB, so the attributes editor uses an
   explicit profile picker (SoR open item).
 
+## Status update 2 (2026-07-25, Claude — agent-write path CONFIRMED end-to-end)
+
+- **AI-generated entries WORK from the agent pipeline (the user's #1 concern).**
+  Live E2E against PRODUCTION aidream: a stored agent ("Content Plan Writer
+  (E2E test)", id 0315e53f-54ab-40fe-aa66-0dc003badce3, admin@admin.com) with
+  `matrx_actions {actions:["plan_tree"], apply_policy:"auto"}` was run via
+  `POST /api/ai/agents/{id}` (the same route chat uses); the model emitted the
+  plan_tree envelope as structured output, the dispatcher streamed
+  `directive_apply.started/item/completed`, and 4 plan.node rows landed under
+  `/aesthetics` on prpinjectionmd.com with trigger-computed routes/labels and
+  model-authored briefs. (Content-IR was confirmed the WRONG home for this —
+  it's a render/validation registry; kinds never auto-apply. The envelope is
+  the canonical write path.)
+- **FE half shipped**: protocol manifest re-synced from aidream, plan_tree /
+  plan_node_patch in directiveOptions + DIRECTIVE_ITEM_SCHEMAS (depth-
+  flattened), receipt renderers + read-only resolvers registered in the
+  envelope registry, `matrx-user/content-plan` surface manifest live in code
+  + DB.
+- **RELAY TO THE AIDREAM SESSION (server defects found during E2E):**
+  1. aidream's injected canonical `plan_tree` output schema is RECURSIVE
+     (`PlanNode -> PlanNode` $defs). Anthropic structured outputs reject it:
+     "Circular reference detected… not supported" — plan_tree agents FAIL on
+     every Anthropic model; OpenAI models work. Fix: emit a depth-flattened
+     schema (4 levels) from `directive_output_schema('plan_tree')` — the
+     Pydantic apply side needs no change. The FE builder already flattened
+     its copy (applyDirectives.ts).
+  2. `/api/ai/agents/{id}` served a stale agent definition after a direct
+     `agent.definition` update until `cache_bypass {agent:true}` was sent —
+     expected behavior, but worth noting for agent-authoring flows.
+- Test data note: the `/aesthetics` pillar (4 nodes) on prpinjectionmd.com is
+  the E2E's real output — plausible content, left in place; delete if unwanted.
+
 ## Deliverables (in order)
 
 ### 1. `features/content-plan/` — tree editor + node panel (the workhorse)

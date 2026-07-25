@@ -54,41 +54,53 @@ const TASK_SCHEMA: JsonSchema = {
 // manifest docs/protocol/matrx_envelope_registry.generated.json is
 // canonical). Derived plan.node cache (route/depth/pillar/cluster labels)
 // is DB-trigger-owned and deliberately absent from both schemas.
-const PLAN_TREE_NODE_SCHEMA: JsonSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: ["label", "node_type"],
-  properties: {
-    label: { type: "string" },
-    node_type: { enum: ["home", "pillar", "cluster", "article", "index"] },
-    slug: { type: ["string", "null"], description: "kebab-case; null only for home." },
-    status: { type: ["string", "null"], description: "plan_status slug (idea|planned|…)." },
-    page_type: { type: ["string", "null"], description: "plan_page_type slug." },
-    priority: { type: ["integer", "null"], minimum: 1, maximum: 3 },
-    technical_depth: { type: ["string", "null"], enum: ["low", "medium", "high", null] },
-    needs_reviewer: { type: "boolean" },
-    brief: { type: "array", items: { type: "string" } },
-    attributes: { type: "object" },
-    primary_keyword_id: { type: ["string", "null"] },
-    primary_keyword_phrase: { type: ["string", "null"] },
-    topics: { type: "array", items: { type: "string" } },
-    sources: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["label"],
-        properties: {
-          label: { type: "string" },
-          url: { type: ["string", "null"] },
-          source_type: { type: ["string", "null"] },
-          notes: { type: ["string", "null"] },
+//
+// DEPTH-FLATTENED, NOT RECURSIVE: Anthropic structured outputs reject
+// self-referencing $defs ("Circular reference detected: PlanNode ->
+// PlanNode" — hit live 2026-07-25 running plan_tree on an Anthropic model;
+// OpenAI accepts recursion). Four explicit levels (pillar → cluster →
+// article + one spare) cover every real plan; aidream's Pydantic side
+// accepts arbitrary depth regardless. aidream's own injected schema has
+// the same recursion bug — flagged in the content-plan handoff.
+function planTreeNodeSchema(childRef: string | null): JsonSchema {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["label", "node_type"],
+    properties: {
+      label: { type: "string" },
+      node_type: { enum: ["home", "pillar", "cluster", "article", "index"] },
+      slug: { type: ["string", "null"], description: "kebab-case; null only for home." },
+      status: { type: ["string", "null"], description: "plan_status slug (idea|planned|…)." },
+      page_type: { type: ["string", "null"], description: "plan_page_type slug." },
+      priority: { type: ["integer", "null"], minimum: 1, maximum: 3 },
+      technical_depth: { type: ["string", "null"], enum: ["low", "medium", "high", null] },
+      needs_reviewer: { type: "boolean" },
+      brief: { type: "array", items: { type: "string" } },
+      attributes: { type: "object" },
+      primary_keyword_id: { type: ["string", "null"] },
+      primary_keyword_phrase: { type: ["string", "null"] },
+      topics: { type: "array", items: { type: "string" } },
+      sources: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["label"],
+          properties: {
+            label: { type: "string" },
+            url: { type: ["string", "null"] },
+            source_type: { type: ["string", "null"] },
+            notes: { type: ["string", "null"] },
+          },
         },
       },
+      ...(childRef
+        ? { children: { type: "array", items: { $ref: childRef } } }
+        : {}),
     },
-    children: { type: "array", items: { $ref: "#/$defs/plan_tree_node" } },
-  },
-};
+  };
+}
 
 /** The JSON schema for ONE item of each directive (becomes `items[]`). */
 export const DIRECTIVE_ITEM_SCHEMAS: Record<BuiltinDirective, JsonSchema> = {
@@ -96,11 +108,16 @@ export const DIRECTIVE_ITEM_SCHEMAS: Record<BuiltinDirective, JsonSchema> = {
     type: "object",
     additionalProperties: false,
     required: ["site_id", "nodes"],
-    $defs: { plan_tree_node: PLAN_TREE_NODE_SCHEMA },
+    $defs: {
+      plan_node_l1: planTreeNodeSchema("#/$defs/plan_node_l2"),
+      plan_node_l2: planTreeNodeSchema("#/$defs/plan_node_l3"),
+      plan_node_l3: planTreeNodeSchema("#/$defs/plan_node_l4"),
+      plan_node_l4: planTreeNodeSchema(null),
+    },
     properties: {
       site_id: { type: "string", description: "web.site uuid the plan belongs to." },
       default_status: { type: ["string", "null"], description: "plan_status slug for nodes without one." },
-      nodes: { type: "array", items: { $ref: "#/$defs/plan_tree_node" } },
+      nodes: { type: "array", items: { $ref: "#/$defs/plan_node_l1" } },
     },
   },
   plan_node_patch: {

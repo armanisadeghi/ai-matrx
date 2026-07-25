@@ -127,6 +127,19 @@ render through the SAME live chip renderer.
 
 ## Change Log
 
+- 2026-07-25 — Claude: **Content Planning directives** —
+  `directives/planTree/` renders `output_directive:plan_tree` /
+  `plan_node_patch` receipts (tolerant parse, 0/2/5s read-only resolve
+  against the content-plan service, live routes + `/content-plan` deep
+  link); both registered in `registry.tsx`. Protocol manifest +
+  MATRX_ENVELOPE.md re-synced from aidream (FE copy had drifted to 11/87
+  shapes). This is now the THIRD copy of the 0/2/5s poll-until-resolved
+  pattern (`resolveCreatedProject`, `resolvePlanTree`) — extract a shared
+  scheduler before adding a fourth. E2E verified against production
+  aidream (plan.node rows applied from an agent run). Provider gotcha:
+  Anthropic structured outputs reject RECURSIVE $defs — directive item
+  schemas must be depth-flattened (see applyDirectives.ts `plan_tree`).
+
 - 2026-07-12 — **Conversation Value Store + groom fences (backend Pattern 2).**
   `registry.tsx` gained `output_directive:context_groom` — the inline groom fence an
   agent emits in its prose renders as a quiet "Context compacted · N results stubbed"

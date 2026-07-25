@@ -9,25 +9,36 @@ import type {
   ResolvedCreatedProject,
 } from "./types";
 
+interface ResolveState {
+  key: string | null;
+  status: ResolveStatus;
+  data: ResolvedCreatedProject | null;
+}
+
 export function useResolveCreatedProject(
   item: CreateProjectWithTasksItem | null,
 ): { status: ResolveStatus; data: ResolvedCreatedProject | null } {
-  const [status, setStatus] = useState<ResolveStatus>("idle");
-  const [data, setData] = useState<ResolvedCreatedProject | null>(null);
-
   const lookupKey = item
     ? `${item.slug ?? ""}:${item.name}:${item.tasks?.length ?? 0}`
     : null;
 
-  useEffect(() => {
-    if (!item || !lookupKey) {
-      setStatus("idle");
-      setData(null);
-      return undefined;
-    }
+  // Item identity change → reset via adjust-state-during-render (react.dev
+  // pattern); the effect below only schedules timers — no sync setState.
+  const [state, setState] = useState<ResolveState>({
+    key: lookupKey,
+    status: lookupKey ? "polling" : "idle",
+    data: null,
+  });
+  if (state.key !== lookupKey) {
+    setState({
+      key: lookupKey,
+      status: lookupKey ? "polling" : "idle",
+      data: null,
+    });
+  }
 
-    setStatus("polling");
-    setData(null);
+  useEffect(() => {
+    if (!item || !lookupKey) return undefined;
 
     let cancelled = false;
     let resolved = false;
@@ -41,8 +52,7 @@ export function useResolveCreatedProject(
         if (cancelled || resolved) return;
         if (result) {
           resolved = true;
-          setStatus("resolved");
-          setData(result);
+          setState({ key: lookupKey, status: "resolved", data: result });
           return;
         }
       } catch {
@@ -50,7 +60,7 @@ export function useResolveCreatedProject(
       }
 
       if (attemptIndex === POLL_DELAYS_MS.length - 1 && !resolved) {
-        setStatus("exhausted");
+        setState({ key: lookupKey, status: "exhausted", data: null });
       }
     };
 
@@ -64,5 +74,5 @@ export function useResolveCreatedProject(
     };
   }, [item, lookupKey]);
 
-  return { status, data };
+  return { status: state.status, data: state.data };
 }
