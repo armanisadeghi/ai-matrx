@@ -18,6 +18,7 @@ import {
   Settings2,
   Brain,
   ListChecks,
+  ListTree,
   Sparkles,
   Info,
   ChevronDown,
@@ -47,6 +48,7 @@ const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   Settings2,
   Brain,
   ListChecks,
+  ListTree,
   Sparkles,
 };
 

@@ -242,6 +242,17 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
     mobileVisible: false,
   },
   {
+    // Everything this topic holds, as selectable agent input. Sits before
+    // Outputs because curating the inputs is the step that precedes generating
+    // anything from them.
+    key: "context",
+    label: "Context",
+    icon: "ListTree",
+    href: (id) => `/research/topics/${id}/context`,
+    group: "primary",
+    mobileVisible: true,
+  },
+  {
     key: "outputs",
     label: "Outputs",
     icon: "Sparkles",

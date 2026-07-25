@@ -15,6 +15,7 @@ import {
   Settings2,
   Brain,
   ListChecks,
+  ListTree,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -35,6 +36,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Settings2,
   Brain,
   ListChecks,
+  ListTree,
   Sparkles,
 };
 

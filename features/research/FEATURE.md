@@ -18,7 +18,8 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 - `/research` — landing.
 - `/research/topics` · `/research/topics/new` — list + creation wizard.
-- `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `outputs` (**Outputs Studio** — content engine: generate podcast/blog/slides/SEO from the report), `media`, `costs`, `settings`, `agents`, `tasks`.
+- `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `context` (**Context Builder** — the resource catalog: pick what an agent reads, see the token cost, save it as a bundle, run any agent), `outputs` (**Outputs Studio** — publishing formats from the report + the domain-report launchpad), `media`, `costs`, `settings`, `agents`, `tasks`.
+- `/research/topics/[topicId]/context?bundle=<slug>` — Context Builder with a saved bundle preloaded (and its agent preselected). How Outputs Studio hands over a domain report.
 - `/research/topics/new?mode=ai&topic=...` — AI-assisted creation with the subject prefilled; used by `/demos/matrx-entry` for the new workflow entryway handoff.
 - Admin surface: `app/(admin)/administration/knowledge/research-system/` (super-admin). Standardized `/research/admin` `FeatureAdminMap` not yet built — TODO.
 
@@ -59,6 +60,97 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 **Key types** (`types.ts`): `PipelineState`/`StageState`/`WorkItem` (`hooks/usePipelineProgress.ts`), `ResearchSource` (has `rank` = Google position, + `authority_score`/`authority_tier`/`authority_reasoning`/`authority_ranked_at` = AI source authority), `ResearchAnalysis`/`ResearchSynthesis` (`result` text + `result_structured` json), `ResearchDocument`, `ResearchTag`/`SourceTag`.
 
 **Source authority columns** (`rs_source`): `authority_score` (0-100), `authority_tier` (`high|medium|low`), `authority_reasoning` (one sentence), `authority_ranked_at` (null = not yet ranked). Written by the backend Source Authority Ranker; read straight through `getSources` (`select *`).
+
+---
+
+## Resource catalog → context bundles → agents
+
+> **The report was never the only thing worth giving an agent.** Before this
+> system, every output consumed ONE input: the assembled document (or the topic
+> synthesis) as a single markdown blob, and the three generator agents declared
+> no variables at all. A topic also holds search results, raw provider payloads,
+> 46k-chars-per-page scraped bodies, per-page AI write-ups, page scoring,
+> keyword syntheses, tag consolidations, documents and media — none of it
+> reachable. This is how a human (or a system bundle) curates that material and
+> hands it to any agent.
+
+**Four pieces, in dependency order.**
+
+1. **The catalog** (`resources/catalog.ts`) — one `ResourceKindDef` entry per
+   thing an agent can be given. Adding a kind is ONE entry; the picker, budget
+   meter, resolver and every saved bundle pick it up with no other change.
+   Nothing outside the catalog may hard-code a resource type. DB kinds declare
+   `fetchBodies` + `render`; **derived** kinds (`topic.brief`,
+   `topic.inventory`, `source.authority`, `source.importance`, `tag.map`)
+   compute their text from the manifest already in hand and cost no extra reads.
+   `heavy: true` kinds (full page bodies, raw payloads, link dumps) are labelled
+   **Large** and never pre-selected.
+2. **The manifest** (`public.research_topic_resource_manifest` RPC →
+   `resources/manifest.ts`) — every selectable item with its **measured** char
+   count and NO bodies, in one round trip, plus the source⇄keyword rank graph
+   and source⇄tag edges. Sizes come from `length(...)` / `rs_content.char_count`
+   — never estimated. Items carry their own timestamp so "newest" means newest.
+   INVOKER rights: RLS is the only gate (same as `get_topic_overview`).
+3. **Selectors + bundles** (`resources/selector.ts`, `research.rs_context_bundle`)
+   — a bundle stores **rules**, not row ids: `{kind, mode, filter, order, limit}`.
+   `mode: "explicit"` pins ids only when a human hand-picked them. `entity_id IS
+   NULL` = a template usable on any topic; `is_system` = shipped, read-only in
+   the UI (Save as makes your own copy).
+4. **The resolver** (`resources/resolve.ts`) — the ONLY place that fetches
+   bodies and the ONLY place that truncates, so the `ResolutionReport` can be
+   trusted. Returns `{variables, report}` ready for `useRunAgent`.
+
+**Invariants — these are the ones that bite:**
+
+- **One estimator.** `lib/tokens/estimate.ts` is the only char→token function in
+  the repo. The picker, the budget meter and the resolver's truncation all call
+  it, so a preview cannot disagree with the run. Every figure renders as an
+  estimate ("~81.7k"), never as a fact.
+- **Truncation is always reported, and only real truncation is.** `report.notes`
+  and `truncated` cover INVOLUNTARY losses (budget cut, empty body, unloadable
+  row). Filter exclusions and Top-N caps are the selection's own rules — they
+  are counted per kind (`dropped.filtered`) but NEVER flagged as a loss, because
+  a warning that fires on every normal run is a warning nobody reads
+  (`VOLUNTARY_DROPS`). `exceedsBudget` is separate and loud: the planner never
+  returns nothing, so one resource larger than the whole budget is kept AND
+  announced.
+- **Budget is enforced twice on purpose** — pre-flight against manifest chars
+  (so we never fetch 4.98M chars to use 200k), then post-render against the real
+  assembled text (rendering adds ~200 chars of provenance per block). Whole
+  blocks are dropped, never half a block.
+- **Every rendered block carries its provenance** (URL, site, authority, best
+  rank) via `render.ts#block`. Rich context with no attribution is how
+  unsourced claims get written.
+- **`strategy: "first"` on a binding** means "the first kind that produced
+  anything wins" — that is how `research-report-only` means "the assembled
+  document, ELSE the current topic report" instead of sending both.
+- **Authority ≠ importance ≠ recency.** Three separate ordering axes, never
+  conflated (see the authority note above). A limit makes the order load-bearing.
+- **TS↔Python parity law.** Resolution is client-side only today (Supabase-direct
+  reads; Python is the compute boundary, not a DB gateway). When a scheduled or
+  background run needs server-side resolution, aidream implements the SAME
+  selector semantics over the Matrx ORM against the SAME bundle rows — the
+  bundle descriptor is already the wire format. A second, divergent shape is a
+  defect.
+- **Media is text-only in this wave.** `media.items` renders URLs, alt text and
+  captions; the model does not see pixels. Real multimodal attachment is not
+  built — say so in the UI rather than implying it.
+
+**Shipped bundles + agents** (`migrations/research_system_context_bundles.sql`,
+`components/outputs/outputDefinitions.ts`). Seven system templates, keyed by
+slug: `research-report-only` (feeds podcast/blog/slides/SEO — byte-identical to
+the pre-bundle input, verified against every topic that has a report),
+`research-brand-profile`, `research-reputation-business`,
+`research-reputation-personal`, `research-gap-analysis`,
+`research-literature-review`, `research-competitive-landscape`. Each domain
+bundle points at its own `agent.definition` row, and those agents declare real
+variables (`scraped_pages`, `page_analyses`, `source_quality`, …) whose names
+match the catalog's `defaultVariable` values.
+
+**Adding a domain output is DATA:** create the agent (declaring variables named
+after catalog kinds), insert a bundle row selecting the resources it needs, add
+one entry to `DOMAIN_OUTPUTS`. No new component, no new resolver branch. If you
+find yourself writing code to add an output, something above is wrong.
 
 ---
 

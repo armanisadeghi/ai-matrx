@@ -21,6 +21,7 @@ import {
   Clapperboard,
   Film,
   ChevronDown,
+  ListTree,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,13 @@ import {
   type OutputKind,
   type PodcastMedia,
 } from "./outputs";
+import {
+  DOMAIN_OUTPUTS,
+  REPORT_ONLY_BUNDLE_SLUG,
+  contextBuilderHref,
+} from "./outputDefinitions";
+import { getBundleBySlug, getResourceManifest } from "../../service/resources";
+import { resolveBundle } from "../../resources/resolve";
 
 /** Research content-engine generator agents (created as data; run live via
  *  /ai/agents/{id}). Each forks the runnable config of the blog generator. */
@@ -117,19 +125,43 @@ const PODCAST_TYPES: { value: PodcastType; label: string }[] = [
 export default function OutputsStudio() {
   const { topicId, topic, refresh } = useTopicContext();
 
-  // The report that feeds every output: prefer the assembled document, fall
-  // back to the current project synthesis. Self-contained client fetch (runs
-  // after mount when the Supabase session is ready) — more reliable here than
-  // the shared query hook, which got stuck loading on this surface.
+  // The report that feeds every publishing output. It now arrives through the
+  // SAME resource-bundle path the domain outputs use: the `research-report-only`
+  // system bundle (assembled document, else the newest successful topic report).
+  // One mechanism for both families — a second hand-rolled "get the report"
+  // fetch here is exactly how the two paths would drift.
+  //
+  // Falls back to the direct read if the bundle is missing (a database that has
+  // not been seeded must still generate a podcast), and says so out loud rather
+  // than silently rendering "no report yet".
   const [reportMarkdown, setReportMarkdown] = useState("");
   const [reportLoading, setReportLoading] = useState(true);
+  const [bundleFallback, setBundleFallback] = useState(false);
 
   useEffect(() => {
     if (!topicId) return undefined;
     let cancelled = false;
     setReportLoading(true);
+    setBundleFallback(false);
     void (async () => {
       try {
+        const bundle = await getBundleBySlug(REPORT_ONLY_BUNDLE_SLUG).catch(
+          () => null,
+        );
+        if (bundle) {
+          const manifest = await getResourceManifest(topicId);
+          const resolved = await resolveBundle(manifest, bundle);
+          if (cancelled) return;
+          const md = resolved.variables.research_report ?? "";
+          if (md.trim()) {
+            setReportMarkdown(md);
+            return;
+          }
+        } else {
+          setBundleFallback(true);
+        }
+
+        // Direct read — the pre-bundle path, kept as the safety net only.
         const [doc, synth] = await Promise.all([
           getDocument(topicId).catch(() => null),
           getSynthesis(topicId).catch(() => [] as ResearchSynthesis[]),
@@ -187,6 +219,21 @@ export default function OutputsStudio() {
             Turn this research into publishable formats
           </span>
         </div>
+
+        <DomainReportsCard topicId={topicId} />
+
+        {bundleFallback && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              The <code>{REPORT_ONLY_BUNDLE_SLUG}</code> system bundle is missing
+              from the database, so the report was read the old way. Outputs still
+              work; apply{" "}
+              <code>migrations/research_system_context_bundles.sql</code> to
+              restore the canonical path.
+            </span>
+          </div>
+        )}
 
         {reportLoading && (
           <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2.5 text-xs text-muted-foreground">
@@ -258,6 +305,55 @@ export default function OutputsStudio() {
           existing={assetsFor(outputs, "seo")}
           onPersisted={(asset) => persistOutput("seo", asset)}
         />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * DOMAIN REPORTS — the outputs that read the RESEARCH, not the report.
+ *
+ * Each one is an agent plus a system bundle (see `outputDefinitions.ts`), and
+ * each opens in the Context Builder with its bundle preloaded. That is
+ * deliberate: the builder shows exactly which resources the agent will receive
+ * and what they cost before a token is spent. A "just generate it" button here
+ * would be a second run path whose inputs are invisible — precisely the problem
+ * this whole system exists to fix.
+ */
+function DomainReportsCard({ topicId }: { topicId: string }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+      <div className="flex items-start gap-2 px-3 py-2.5 border-b border-border/50">
+        <ListTree className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-foreground">
+            Domain reports
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            Built from the research itself — search results, scraped pages,
+            analyses and syntheses — not from the finished report. Each opens with
+            its inputs already selected so you can see the cost before running.
+          </div>
+        </div>
+      </div>
+      <div className="divide-y divide-border/50">
+        {DOMAIN_OUTPUTS.map((def) => (
+          <Link
+            key={def.slug}
+            href={contextBuilderHref(topicId, def.bundleSlug)}
+            className="flex items-center gap-2 px-3 py-2 hover:bg-accent/40 transition-colors"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-medium text-foreground">
+                {def.label}
+              </div>
+              <div className="text-[11px] text-muted-foreground line-clamp-2">
+                {def.description}
+              </div>
+            </div>
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          </Link>
+        ))}
       </div>
     </div>
   );

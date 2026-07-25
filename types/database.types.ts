@@ -22404,6 +22404,7 @@ export type Database = {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: Record<string, unknown>
       }
+      entity_title: { Args: { p_id: string; p_type: string }; Returns: string }
       log_activity:
         | {
             Args: {
@@ -29665,6 +29666,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
       }
+      entity_access_summary: {
+        Args: { p_id: string; p_type: string }
+        Returns: Json
+      }
       entity_schemas_list: {
         Args: never
         Returns: {
@@ -29677,6 +29682,13 @@ export type Database = {
       entity_soft_delete: {
         Args: { p_id: string; p_token: string }
         Returns: boolean
+      }
+      entity_titles: {
+        Args: { p_ids: string[]; p_type: string }
+        Returns: {
+          id: string
+          title: string
+        }[]
       }
       entity_types_list: {
         Args: never
@@ -32366,6 +32378,10 @@ export type Database = {
           p_message: string
           p_sender_name?: string
         }
+        Returns: Json
+      }
+      research_topic_resource_manifest: {
+        Args: { p_topic_id: string }
         Returns: Json
       }
       reset_daily_guest_counters: { Args: never; Returns: undefined }
@@ -35961,6 +35977,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rs_context_bundle: {
+        Row: {
+          agent_id: string | null
+          bindings: Json
+          budget: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          is_system: boolean
+          name: string
+          organization_id: string | null
+          selectors: Json
+          slug: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          agent_id?: string | null
+          bindings?: Json
+          budget?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          is_system?: boolean
+          name: string
+          organization_id?: string | null
+          selectors?: Json
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          agent_id?: string | null
+          bindings?: Json
+          budget?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          is_system?: boolean
+          name?: string
+          organization_id?: string | null
+          selectors?: Json
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       rs_document: {
         Row: {
