@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { getAgentApp } from "@/lib/agent-apps/data";
 import { AgentAppHydratorServer } from "@/features/agent-apps/route/AgentAppHydratorServer";
+import { AgentAppSurfaceRuntime } from "@/features/agent-apps/route/AgentAppSurfaceRuntime";
 
 export async function generateMetadata({
   params,
@@ -43,7 +44,10 @@ export default async function AgentAppIdLayout({
       <Suspense fallback={null}>
         <AgentAppHydratorServer appId={id} />
       </Suspense>
-      {children}
+      {/* Surface Values: register `matrx-user/agent-apps` for every sub-route.
+          The scope is read live from Redux at Run time — see the manifest at
+          features/surfaces/manifests/agent-apps.manifest.ts. */}
+      <AgentAppSurfaceRuntime>{children}</AgentAppSurfaceRuntime>
     </>
   );
 }

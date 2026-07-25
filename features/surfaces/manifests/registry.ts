@@ -79,6 +79,13 @@ import { marketingSitemapsManifest } from "./marketing-sitemaps.manifest";
 import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
 import { marketingBatchesManifest } from "./marketing-batches.manifest";
+import { agentsHubManifest } from "./agents-hub.manifest";
+import { organizationsManifest } from "./organizations.manifest";
+import { dashboardManifest } from "./dashboard.manifest";
+import { settingsManifest } from "./settings.manifest";
+import { agentAppsManifest } from "./agent-apps.manifest";
+import { agentConnectionsManifest } from "./agent-connections.manifest";
+import { connectionsSkillsManifest } from "./connections-skills.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -141,6 +148,14 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingDiscoveryManifest,
   marketingIntegrationsManifest,
   marketingBatchesManifest,
+  // 2026-07-24 fleet push — hub/list + workspace surfaces.
+  agentsHubManifest,
+  organizationsManifest,
+  dashboardManifest,
+  settingsManifest,
+  agentAppsManifest,
+  agentConnectionsManifest,
+  connectionsSkillsManifest,
 ];
 
 // ---------------------------------------------------------------------------
