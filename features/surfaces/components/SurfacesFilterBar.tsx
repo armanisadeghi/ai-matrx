@@ -26,9 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { SurfaceReadinessBucket } from "@/features/surfaces/services/surfaces.service";
 
 export type StatusFilter = "all" | "active" | "inactive";
 export type ManifestFilter = "all" | "with_manifest" | "without_manifest";
+export type ReadinessFilter = SurfaceReadinessBucket | "all";
 
 export interface SurfacesFilterState {
   search: string;
@@ -37,6 +39,8 @@ export interface SurfacesFilterState {
   manifest: ManifestFilter;
   /** `__all__` | `__none__` (roots) | a parent surface name */
   parent: string;
+  /** Readiness bucket, driven by the rollup tiles above the filter bar. */
+  readiness: ReadinessFilter;
 }
 
 export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
@@ -45,6 +49,7 @@ export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
   client: "__all__",
   manifest: "all",
   parent: "__all__",
+  readiness: "all",
 };
 
 interface Props {

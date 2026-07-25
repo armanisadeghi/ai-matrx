@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  AppWindow,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
@@ -22,8 +23,10 @@ import {
 import { toast } from "@/lib/toast";
 import {
   tierFor,
+  readinessBucketOf,
   type SurfaceWithStats,
 } from "@/features/surfaces/services/surfaces.service";
+import { SurfaceReadinessBadge } from "@/features/surfaces/components/SurfaceReadinessBadge";
 
 type SortKey =
   | "name"
@@ -34,7 +37,16 @@ type SortKey =
   | "surfaceValueCount"
   | "agentCount"
   | "toolCount"
+  | "readiness"
   | "is_active";
+
+/** Sort weight so readiness orders verified → partial → stub → unregistered. */
+const READINESS_SORT_WEIGHT: Record<string, number> = {
+  verified: 0,
+  partial: 1,
+  stub: 2,
+  unregistered: 3,
+};
 type SortDir = "asc" | "desc";
 
 interface Props {
@@ -112,6 +124,11 @@ export function SurfacesTable({
   const sorted = useMemo(() => {
     const out = [...rows];
     out.sort((a, b) => {
+      if (sortKey === "readiness") {
+        const aw = READINESS_SORT_WEIGHT[readinessBucketOf(a)];
+        const bw = READINESS_SORT_WEIGHT[readinessBucketOf(b)];
+        return (aw - bw) * (sortDir === "asc" ? 1 : -1);
+      }
       const av = (a as unknown as Record<string, unknown>)[sortKey];
       const bv = (b as unknown as Record<string, unknown>)[sortKey];
       const sign = sortDir === "asc" ? 1 : -1;
@@ -130,7 +147,11 @@ export function SurfacesTable({
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "name" || key === "client_name" ? "asc" : "desc");
+      setSortDir(
+        key === "name" || key === "client_name" || key === "readiness"
+          ? "asc"
+          : "desc",
+      );
     }
   };
 
@@ -209,6 +230,15 @@ export function SurfacesTable({
               </th>
               <th className={headerClass}>
                 <SortHeader
+                  label="Readiness"
+                  active={sortKey === "readiness"}
+                  dir={sortDir}
+                  onClick={() => handleSort("readiness")}
+                  align="center"
+                />
+              </th>
+              <th className={headerClass}>
+                <SortHeader
                   label="Active"
                   active={sortKey === "is_active"}
                   dir={sortDir}
@@ -223,7 +253,7 @@ export function SurfacesTable({
             {isLoading && sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="px-3 py-6 text-center text-muted-foreground"
                 >
                   Loading surfaces…
@@ -233,7 +263,7 @@ export function SurfacesTable({
             {!isLoading && sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="px-3 py-6 text-center text-muted-foreground"
                 >
                   No surfaces match these filters.
@@ -260,9 +290,36 @@ export function SurfacesTable({
                 >
                   <td className={cellClass}>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-foreground truncate max-w-[260px]">
-                        {row.name}
-                      </span>
+                      {row.label ? (
+                        <span className="min-w-0 max-w-[280px]">
+                          <span className="block font-medium text-foreground truncate">
+                            {row.label}
+                          </span>
+                          <span className="block font-mono text-[10px] text-muted-foreground truncate">
+                            {row.name}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="font-mono text-foreground truncate max-w-[260px]">
+                          {row.name}
+                        </span>
+                      )}
+                      {row.overlay_id && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] gap-1 shrink-0"
+                            >
+                              <AppWindow className="h-3 w-3" />
+                              overlay
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <code className="font-mono">{row.overlay_id}</code>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                       {isNavigating && (
                         <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />
                       )}
@@ -335,6 +392,9 @@ export function SurfacesTable({
                   </td>
                   <td className={`${cellClass} text-right tabular-nums`}>
                     {row.toolCount > 0 ? row.toolCount : "—"}
+                  </td>
+                  <td className={`${cellClass} text-center`}>
+                    <SurfaceReadinessBadge row={row} />
                   </td>
                   <td className={`${cellClass} text-center`}>
                     {row.is_active ? (

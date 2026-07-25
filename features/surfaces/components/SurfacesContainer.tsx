@@ -17,6 +17,10 @@ import {
   RefreshCw,
   Zap,
   UserPlus,
+  CircleCheck,
+  CircleDashed,
+  Circle,
+  CircleAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,8 +54,11 @@ import {
   deleteSurface,
   listClientNames,
   listSurfacesWithStats,
+  readinessBucketOf,
   type SurfaceWithStats,
+  type SurfaceReadinessBucket,
 } from "@/features/surfaces/services/surfaces.service";
+import { READINESS_META } from "@/features/surfaces/components/SurfaceReadinessBadge";
 import { getRegisteredSurfaceNames } from "@/features/surfaces/manifests/registry";
 import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates";
 import { listParentFilterOptions } from "@/features/surfaces/utils/surface-hierarchy";
@@ -154,6 +161,12 @@ export function SurfacesContainer() {
       if (filters.status === "active" && !s.is_active) return false;
       if (filters.status === "inactive" && s.is_active) return false;
       if (
+        filters.readiness !== "all" &&
+        readinessBucketOf(s) !== filters.readiness
+      ) {
+        return false;
+      }
+      if (
         filters.manifest === "with_manifest" &&
         !manifestedSurfaceNames.has(s.name)
       )
@@ -166,6 +179,7 @@ export function SurfacesContainer() {
       if (q) {
         if (
           !s.name.toLowerCase().includes(q) &&
+          !(s.label ?? "").toLowerCase().includes(q) &&
           !(s.description ?? "").toLowerCase().includes(q)
         ) {
           return false;
@@ -189,6 +203,24 @@ export function SurfacesContainer() {
       surfaces.filter((s) => s.toolCount === 0 && s.agentCount === 0).length,
     [surfaces],
   );
+  // Readiness rollup — scoped to the active client filter (before the other
+  // filters) so the tiles always describe the client you're looking at.
+  const readinessCounts = useMemo(() => {
+    const counts: Record<SurfaceReadinessBucket, number> = {
+      verified: 0,
+      partial: 0,
+      stub: 0,
+      unregistered: 0,
+    };
+    for (const s of surfaces) {
+      if (filters.client !== "__all__" && s.client_name !== filters.client) {
+        continue;
+      }
+      counts[readinessBucketOf(s)] += 1;
+    }
+    return counts;
+  }, [surfaces, filters.client]);
+
   const candidatesAvailable = useMemo(
     () =>
       SURFACE_CANDIDATES.filter((c) => !surfaces.some((s) => s.name === c.name))
@@ -312,6 +344,54 @@ export function SurfacesContainer() {
             <Plus className="h-3.5 w-3.5" />
             New surface
           </Button>
+        </div>
+      </div>
+
+      {/* Readiness rollup — the surface tracking board. Counts follow the
+          client filter; clicking a tile filters the list by that bucket. */}
+      <div className="shrink-0 px-3 py-1.5 border-b border-border bg-background">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+          {(
+            [
+              { bucket: "verified", icon: CircleCheck },
+              { bucket: "partial", icon: CircleDashed },
+              { bucket: "stub", icon: Circle },
+              { bucket: "unregistered", icon: CircleAlert },
+            ] as const
+          ).map(({ bucket, icon: Icon }) => {
+            const meta = READINESS_META[bucket];
+            const active = filters.readiness === bucket;
+            return (
+              <button
+                key={bucket}
+                onClick={() =>
+                  setFilters((f) => ({
+                    ...f,
+                    readiness: active ? "all" : bucket,
+                  }))
+                }
+                title={`${meta.description} — click to ${active ? "clear the" : "filter by this"} readiness filter`}
+                aria-pressed={active}
+                className={`rounded-md border px-2.5 py-1.5 text-left transition-colors flex items-center justify-between gap-2 ${
+                  active
+                    ? "border-primary ring-1 ring-primary bg-muted/40"
+                    : "border-border bg-card hover:bg-muted/30"
+                }`}
+              >
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <Icon
+                    className={`h-3.5 w-3.5 shrink-0 ${meta.iconClassName}`}
+                  />
+                  <span className="text-[11px] font-medium capitalize truncate">
+                    {meta.label}
+                  </span>
+                </span>
+                <span className="text-base font-semibold tabular-nums leading-none">
+                  {readinessCounts[bucket]}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

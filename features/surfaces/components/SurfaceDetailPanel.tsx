@@ -27,8 +27,13 @@ import {
   listToolBindings,
   tierFor,
   updateSurface,
+  readinessBucketOf,
   type SurfaceWithStats,
 } from "@/features/surfaces/services/surfaces.service";
+import {
+  SurfaceReadinessBadge,
+  READINESS_META,
+} from "@/features/surfaces/components/SurfaceReadinessBadge";
 import { SurfaceValuesTable } from "@/features/surfaces/components/SurfaceValuesTable";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { SurfaceValue } from "@/features/surfaces/types";
@@ -165,7 +170,19 @@ export function SurfaceDetailPanel({
       <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-sm truncate">{surface.name}</span>
+            {surface.label ? (
+              <span className="min-w-0 flex items-baseline gap-1.5">
+                <span className="text-sm font-medium truncate">
+                  {surface.label}
+                </span>
+                <code className="font-mono text-[10px] text-muted-foreground truncate">
+                  {surface.name}
+                </code>
+              </span>
+            ) : (
+              <span className="font-mono text-sm truncate">{surface.name}</span>
+            )}
+            <SurfaceReadinessBadge row={surface} />
             <Badge variant="outline" className="text-[10px]">
               {surface.client_name}
             </Badge>
@@ -315,6 +332,38 @@ export function SurfaceDetailPanel({
                 {surface.sort_order}
               </p>
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Readiness
+            </Label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <SurfaceReadinessBadge row={surface} />
+              <span className="text-[11px] text-muted-foreground">
+                {READINESS_META[readinessBucketOf(surface)].description}
+              </span>
+            </div>
+            {surface.readiness_note && (
+              <p className="text-xs text-foreground/80">
+                {surface.readiness_note}
+              </p>
+            )}
+            {surface.overlay_id && (
+              <p className="text-[11px] text-muted-foreground">
+                Overlay:{" "}
+                <code className="bg-muted px-1 py-0.5 rounded font-mono">
+                  {surface.overlay_id}
+                </code>
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              Readiness is code-owned — edit the manifest&apos;s{" "}
+              <code className="bg-muted px-1 py-0.5 rounded font-mono">
+                readiness
+              </code>{" "}
+              field and re-sync.
+            </p>
           </div>
 
           <div className="space-y-1">

@@ -22,6 +22,31 @@ export type ToolSurfaceDefaultsRow = ToolTables["surface_defaults"]["Row"];
 export type ToolSurfaceDefaultsUpsert =
   ToolTables["surface_defaults"]["Insert"];
 
+/**
+ * Code-owned readiness levels stored in `ui.ui_surface.readiness`. NULL means
+ * the surface has no code manifest at all — "unregistered" in the tracking
+ * board. Readiness is set from the manifest's `readiness` field via sync;
+ * there is deliberately NO DB write path from the admin UI.
+ */
+export const SURFACE_READINESS_LEVELS = [
+  "verified",
+  "partial",
+  "stub",
+] as const;
+export type SurfaceReadiness = (typeof SURFACE_READINESS_LEVELS)[number];
+/** A surface's tracking bucket: its readiness, or "unregistered" when NULL. */
+export type SurfaceReadinessBucket = SurfaceReadiness | "unregistered";
+
+/** Narrow a DB readiness string to its tracking bucket. */
+export function readinessBucketOf(
+  row: Pick<UiSurfaceRow, "readiness">,
+): SurfaceReadinessBucket {
+  const r = row.readiness;
+  return r && (SURFACE_READINESS_LEVELS as readonly string[]).includes(r)
+    ? (r as SurfaceReadiness)
+    : "unregistered";
+}
+
 export interface SurfaceWithStats extends UiSurfaceRow {
   /**
    * Tools force-included on this surface (length of
