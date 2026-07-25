@@ -7,7 +7,7 @@
 
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import type { ChangeExample, OperationCard } from "@/lib/content-cleanup/review";
+import type { ChangeExample, ReviewCard } from "@/lib/content-cleanup/review";
 
 /** Render whitespace visibly (spaces -> middots, tabs -> arrow). */
 function visible(value: string): string {
@@ -20,6 +20,16 @@ const CHIP_AFTER =
   "rounded-[3px] bg-emerald-100 px-1 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300";
 
 function NowCell({ example }: { example: ChangeExample }) {
+  if (example.kind === "region") {
+    return (
+      <>
+        <span className={cn(MARK_NOW, "italic")}>{example.nowLabel}</span>
+        <pre className="mt-1 overflow-x-auto whitespace-pre text-[0.6875rem] leading-snug text-foreground/70">
+          {example.before}
+        </pre>
+      </>
+    );
+  }
   if (example.kind === "block") {
     return (
       <span className={cn(MARK_NOW, "italic")}>{example.nowLabel}</span>
@@ -36,6 +46,16 @@ function NowCell({ example }: { example: ChangeExample }) {
 }
 
 function AfterCell({ example }: { example: ChangeExample }) {
+  if (example.kind === "region") {
+    return (
+      <>
+        <span className={cn(CHIP_AFTER, "italic")}>{example.afterLabel}</span>
+        <pre className="mt-1 overflow-x-auto whitespace-pre text-[0.6875rem] leading-snug text-foreground/70">
+          {example.after}
+        </pre>
+      </>
+    );
+  }
   if (example.kind === "block") {
     return <span className={cn(CHIP_AFTER, "italic")}>{example.afterLabel}</span>;
   }
@@ -45,14 +65,14 @@ function AfterCell({ example }: { example: ChangeExample }) {
   return <span>{example.after}</span>;
 }
 
-export function CleanupChangeCard({
+export function CleanupChangeCard<TId extends string>({
   card,
   accepted,
   onToggle,
 }: {
-  card: OperationCard;
+  card: ReviewCard<TId>;
   accepted: boolean;
-  onToggle: (id: OperationCard["id"], accepted: boolean) => void;
+  onToggle: (id: TId, accepted: boolean) => void;
 }) {
   const more = card.count - card.examples.length;
   return (

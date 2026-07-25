@@ -26,10 +26,14 @@ import { DiffViewer } from "@/components/diff/DiffViewer";
 import { cn } from "@/lib/utils";
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { cleanContent } from "@/lib/content-cleanup/clean";
-import { buildOperationCards } from "@/lib/content-cleanup/review";
+import {
+  buildOperationCards,
+  buildRegionOperationCards,
+} from "@/lib/content-cleanup/review";
 import { buildCleanupDebugXml } from "@/lib/content-cleanup/debug";
 import type {
   CleanupOperationId,
+  CleanupRegionOperationId,
   CleanupReport,
 } from "@/lib/content-cleanup/types";
 import { CleanupChangeCard } from "./CleanupChangeCard";
@@ -92,11 +96,19 @@ export function CleanupReviewDialog({
     .map((o) => o.id);
   // Compiler-memoized against `report`; stable across Apply/Skip toggles.
   const cards = buildOperationCards(report.original, enabledIds);
+  // Region cards (JSON re-prints) come from the frozen report, not a re-derive:
+  // a region rewrite is a parse + re-print, so the recorded before/after IS it.
+  const regionCards = buildRegionOperationCards(report);
+  const cardCount = cards.length + regionCards.length;
 
   // Every change applied by default (one-click great result).
   const [accepted, setAccepted] = useState<Set<CleanupOperationId>>(
     () => new Set(cards.map((c) => c.id)),
   );
+  const [acceptedRegions, setAcceptedRegions] = useState<
+    Set<CleanupRegionOperationId>
+  >(() => new Set(regionCards.map((c) => c.id)));
+  const acceptedCount = accepted.size + acceptedRegions.size;
 
   const toggle = (id: CleanupOperationId, isAccepted: boolean) => {
     setAccepted((prev) => {
@@ -106,8 +118,25 @@ export function CleanupReviewDialog({
       return next;
     });
   };
-  const applyAll = () => setAccepted(new Set(cards.map((c) => c.id)));
-  const skipAll = () => setAccepted(new Set());
+  const toggleRegion = (
+    id: CleanupRegionOperationId,
+    isAccepted: boolean,
+  ) => {
+    setAcceptedRegions((prev) => {
+      const next = new Set(prev);
+      if (isAccepted) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+  const applyAll = () => {
+    setAccepted(new Set(cards.map((c) => c.id)));
+    setAcceptedRegions(new Set(regionCards.map((c) => c.id)));
+  };
+  const skipAll = () => {
+    setAccepted(new Set());
+    setAcceptedRegions(new Set());
+  };
 
   // "By type" = the per-operation cards (the control surface); "Full diff" = the
   // canonical DiffViewer of the actual before→after, reflecting the currently
@@ -115,7 +144,11 @@ export function CleanupReviewDialog({
   const [mode, setMode] = useState<"cards" | "diff">("cards");
 
   // The real engine produces the final content from the accepted operations.
-  const finalContent = cleanContent(report.original, accepted).cleaned;
+  const finalContent = cleanContent(
+    report.original,
+    accepted,
+    acceptedRegions,
+  ).cleaned;
   const willWrite = finalContent !== report.original;
   const protectedCount = report.protectedRegions.length;
 
@@ -140,8 +173,8 @@ export function CleanupReviewDialog({
 
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2">
           <span className="text-xs text-muted-foreground">
-            {cards.length} type{cards.length !== 1 ? "s" : ""} of change ·{" "}
-            <span className="text-foreground">{accepted.size} applied</span>
+            {cardCount} type{cardCount !== 1 ? "s" : ""} of change ·{" "}
+            <span className="text-foreground">{acceptedCount} applied</span>
           </span>
           <div className="flex items-center overflow-hidden rounded-md border border-border">
             <button
@@ -179,7 +212,7 @@ export function CleanupReviewDialog({
               size="sm"
               className="h-6 text-[0.6875rem]"
               onClick={applyAll}
-              disabled={accepted.size === cards.length}
+              disabled={acceptedCount === cardCount}
             >
               Apply all
             </Button>
@@ -188,7 +221,7 @@ export function CleanupReviewDialog({
               size="sm"
               className="h-6 text-[0.6875rem]"
               onClick={skipAll}
-              disabled={accepted.size === 0}
+              disabled={acceptedCount === 0}
             >
               Skip all
             </Button>
@@ -214,19 +247,29 @@ export function CleanupReviewDialog({
           </div>
         ) : (
           <div className="flex-1 min-h-0 space-y-2.5 overflow-y-auto bg-textured px-4 py-3">
-            {cards.length === 0 ? (
+            {cardCount === 0 ? (
               <div className="rounded-md border border-border bg-card px-3 py-6 text-center text-sm text-muted-foreground">
                 No textual changes were produced.
               </div>
             ) : (
-              cards.map((card) => (
-                <CleanupChangeCard
-                  key={card.id}
-                  card={card}
-                  accepted={accepted.has(card.id)}
-                  onToggle={toggle}
-                />
-              ))
+              <>
+                {regionCards.map((card) => (
+                  <CleanupChangeCard
+                    key={card.id}
+                    card={card}
+                    accepted={acceptedRegions.has(card.id)}
+                    onToggle={toggleRegion}
+                  />
+                ))}
+                {cards.map((card) => (
+                  <CleanupChangeCard
+                    key={card.id}
+                    card={card}
+                    accepted={accepted.has(card.id)}
+                    onToggle={toggle}
+                  />
+                ))}
+              </>
             )}
 
             {protectedCount > 0 && (
@@ -279,7 +322,7 @@ export function CleanupReviewDialog({
               disabled={!willWrite}
               onClick={handleApply}
             >
-              {accepted.size === 0 ? "Nothing applied" : "Apply changes"}
+              {acceptedCount === 0 ? "Nothing applied" : "Apply changes"}
             </Button>
           </div>
         </div>

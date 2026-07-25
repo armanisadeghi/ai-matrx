@@ -61,6 +61,29 @@ export function buildCleanupDebugXml(
   }
   lines.push("  </operations>");
 
+  lines.push("  <region-operations>");
+  for (const op of report.regionOperations) {
+    lines.push(
+      `    <region-operation id="${escapeAttr(op.id)}" label="${escapeAttr(op.label)}" ` +
+        `enabled="${op.enabled}" changes="${op.changes}" />`,
+    );
+  }
+  lines.push("  </region-operations>");
+
+  lines.push(`  <region-changes count="${report.regionChanges.length}">`);
+  for (const c of report.regionChanges) {
+    lines.push(
+      `    <region-change op="${escapeAttr(c.opId)}" kind="${escapeAttr(c.region.kind)}" ` +
+        `start="${c.region.start}" end="${c.region.end}" ` +
+        `linesBefore="${c.linesBefore}" linesAfter="${c.linesAfter}" ` +
+        `charsBefore="${c.charsBefore}" charsAfter="${c.charsAfter}">`,
+    );
+    lines.push(`      <before>${cdata(c.before)}</before>`);
+    lines.push(`      <after>${cdata(c.after)}</after>`);
+    lines.push("    </region-change>");
+  }
+  lines.push("  </region-changes>");
+
   lines.push(`  <protected-regions count="${report.protectedRegions.length}">`);
   for (const r of report.protectedRegions) {
     lines.push(

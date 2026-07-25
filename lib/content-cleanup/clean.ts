@@ -7,8 +7,11 @@
 //   2. Replace each region with an opaque sentinel placeholder so the cleanup
 //      operations see a single non-whitespace token where structured content
 //      used to be — they can reflow the prose around it but cannot touch it.
+//      Any enabled REGION operations (`region-operations.ts`) get their turn
+//      here, on the region text itself — the one sanctioned way to rewrite
+//      protected content, always through a real parser.
 //   3. Run the enabled operations, in canonical order, on the masked text.
-//   4. Restore the protected regions verbatim.
+//   4. Restore the protected regions verbatim (as rewritten in step 2).
 //
 // The sentinels are Private-Use-Area characters (U+E000/U+E001) which:
 //   - contain no whitespace, so trimming / space collapsing ignore them,
@@ -19,14 +22,27 @@
 
 import { getProtectedRegions } from "./segment";
 import { CLEANUP_OPERATIONS } from "./operations";
+import {
+  CLEANUP_REGION_OPERATIONS,
+  applyRegionOperations,
+} from "./region-operations";
 import type {
   CleanupOperationId,
+  CleanupRegionOperationId,
   CleanupReport,
   OperationOutcome,
+  RegionChange,
+  RegionOperationOutcome,
 } from "./types";
 
 const PH_OPEN = String.fromCodePoint(0xe000);
 const PH_CLOSE = String.fromCodePoint(0xe001);
+
+function countLines(s: string): number {
+  let n = s === "" ? 0 : 1;
+  for (let i = 0; i < s.length; i++) if (s[i] === "\n") n++;
+  return n;
+}
 
 export class ContentCleanupReservedCharError extends Error {
   constructor() {
@@ -46,8 +62,10 @@ export class ContentCleanupReservedCharError extends Error {
 export function cleanContent(
   content: string,
   enabledIds: Iterable<CleanupOperationId>,
+  enabledRegionIds: Iterable<CleanupRegionOperationId> = [],
 ): CleanupReport {
   const enabled = new Set(enabledIds);
+  const enabledRegions = new Set(enabledRegionIds);
 
   if (content.includes(PH_OPEN) || content.includes(PH_CLOSE)) {
     throw new ContentCleanupReservedCharError();
@@ -55,14 +73,37 @@ export function cleanContent(
 
   const protectedRegions = getProtectedRegions(content);
 
-  // Mask protected regions out.
+  // Mask protected regions out. While each region is in hand, give the REGION
+  // operations their only chance at it — they are the sole code path allowed
+  // to rewrite protected content, and they do it with a real parser, never a
+  // regex. The rewritten text goes into the placeholder, so the restore step
+  // below stays a verbatim substitution and cannot desync.
   const placeholders: string[] = [];
+  const regionChanges: RegionChange[] = [];
   let masked = "";
   let cursor = 0;
   for (const region of protectedRegions) {
     masked += content.slice(cursor, region.start);
     masked += PH_OPEN + placeholders.length + PH_CLOSE;
-    placeholders.push(content.slice(region.start, region.end));
+
+    const originalRegion = content.slice(region.start, region.end);
+    const rewritten =
+      enabledRegions.size > 0
+        ? applyRegionOperations(region, originalRegion, enabledRegions)
+        : null;
+    if (rewritten) {
+      regionChanges.push({
+        opId: rewritten.opId,
+        region,
+        before: originalRegion,
+        after: rewritten.text,
+        linesBefore: countLines(originalRegion),
+        linesAfter: countLines(rewritten.text),
+        charsBefore: originalRegion.length,
+        charsAfter: rewritten.text.length,
+      });
+    }
+    placeholders.push(rewritten ? rewritten.text : originalRegion);
     cursor = region.end;
   }
   masked += content.slice(cursor);
@@ -99,11 +140,20 @@ export function cleanContent(
     return original;
   });
 
+  const regionOperations: RegionOperationOutcome[] =
+    CLEANUP_REGION_OPERATIONS.map((op) => ({
+      id: op.id,
+      label: op.label,
+      enabled: enabledRegions.has(op.id),
+      changes: regionChanges.filter((c) => c.opId === op.id).length,
+    }));
+
   const protectedChars = protectedRegions.reduce(
     (sum, r) => sum + (r.end - r.start),
     0,
   );
-  const totalChanges = operations.reduce((sum, op) => sum + op.changes, 0);
+  const totalChanges =
+    operations.reduce((sum, op) => sum + op.changes, 0) + regionChanges.length;
 
   return {
     original: content,
@@ -111,6 +161,8 @@ export function cleanContent(
     changed: cleaned !== content,
     protectedRegions,
     operations,
+    regionOperations,
+    regionChanges,
     stats: {
       charsBefore: content.length,
       charsAfter: cleaned.length,

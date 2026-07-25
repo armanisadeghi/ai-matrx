@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2` (shared primitive)
-**Last updated:** `2026-07-24`
+**Last updated:** `2026-07-25`
 
 ---
 
@@ -18,7 +18,7 @@ There are **two engines** here because there are two genuinely different problem
 | Input | a document (a note, a transcript, prose with structure) | one scalar value (a table cell, a field) |
 | Danger | destroying code/JSON/tables embedded in the prose | destroying meaning by stripping markup that was interior, not wrapping |
 | Strategy | **detect + mask** protected regions, clean only around them | **whole-value vs interior** — an unwrap fires only when the marker encloses everything |
-| Files | `segment.ts` → `operations.ts` → `clean.ts` → `review.ts` → `debug.ts` | `value-operations.ts` → `clean-cells.ts` |
+| Files | `segment.ts` → `operations.ts` + `region-operations.ts` → `clean.ts` → `review.ts` → `debug.ts` | `value-operations.ts` → `clean-cells.ts` |
 | Types | `types.ts` | `value-types.ts` |
 | Consumers | Notes (`features/notes/components/cleanup/`) | User data tables (`/data/[id]`) |
 
@@ -30,9 +30,11 @@ Both are **pure** — no React, Redux, DOM, or Supabase. A consumer supplies con
 ## Entry points
 
 **Document engine**
-- `cleanContent(content, enabledIds) → CleanupReport` — `clean.ts`
+- `cleanContent(content, enabledIds, enabledRegionIds?) → CleanupReport` — `clean.ts`
 - `buildOperationCards(content, enabledIds) → OperationCard[]` — `review.ts`
+- `buildRegionOperationCards(report) → RegionOperationCard[]` — `review.ts`
 - `CLEANUP_OPERATIONS` / `DEFAULT_ENABLED_OPERATIONS` — `operations.ts`
+- `CLEANUP_REGION_OPERATIONS` / `CLEANUP_REGION_OPERATION_META` / `countJsonRegions` — `region-operations.ts`
 
 **Value engine**
 - `cleanValue(value, enabledIds) → ValueCleanupResult` — `clean-cells.ts`
@@ -46,6 +48,34 @@ Both are **pure** — no React, Redux, DOM, or Supabase. A consumer supplies con
 - `<CellCleanupOptionsPopover>` / `<CellCleanupReviewDialog>` — the two steps, usable directly if a surface needs its own trigger.
 
 ---
+
+## Region operations — the ONLY way protected content gets rewritten
+
+An ordinary operation runs on the **cleanable** text and may never touch a
+protected region. A **region operation** (`region-operations.ts`) is the exact
+mirror: it runs *only* on a protected region, and only on the kinds it declares.
+
+Why the class exists: a fenced JSON blob is protected precisely because
+collapsing its whitespace with a regex would destroy it. Re-printing it through
+a real parser + writer (`lib/json-format`) is the opposite — it is the only safe
+way to condense one. The safety rule stays intact ("never regex inside a
+protected region") while the capability arrives.
+
+Shipped ops (all `group: "structured"`, all **off by default** — a note's JSON is
+the user's text): `condense-json` (compact fill), `minify-json` (one line),
+`expand-json` (2-space pretty).
+
+Rules on top of the shared invariants:
+
+- **Mutually exclusive per region.** The first *enabled* op that produces a
+  change wins, so condense and expand can never fight and yield order-dependent
+  nonsense. Surfaces render them as a single choice, not independent toggles.
+- **Strict JSON only.** An op refuses anything that needed JSON5 to parse —
+  re-emitting it would silently delete the user's comments and trailing commas.
+  That is a rewrite wearing a cleanup's clothes.
+- **The report is the review.** A region rewrite is a parse + re-print, so there
+  are no character-range edits to re-derive; `report.regionChanges` records the
+  real before/after and `buildRegionOperationCards` renders exactly that.
 
 ## Invariants
 
@@ -90,6 +120,18 @@ Both are **pure** — no React, Redux, DOM, or Supabase. A consumer supplies con
 
 ## Change log
 
+- `2026-07-25` — **Region operations added** (`region-operations.ts`): `condense-json`
+  / `minify-json` / `expand-json`, the first ops allowed to rewrite a *protected*
+  region — always through the new `lib/json-format` parser+writer, never a regex,
+  and never on JSON that only parsed tolerantly. `cleanContent` gained a third
+  arg (`enabledRegionIds`, defaulted to `[]` so every existing caller is
+  unchanged); `CleanupReport` gained `regionOperations` + `regionChanges`; the
+  debug XML carries both. Review cards for them come from the frozen report
+  (`buildRegionOperationCards`) with a new `"region"` `ChangeExample` kind showing
+  real before/after text, and `OperationCard` generalized to `ReviewCard<TId>` so
+  one card component renders both families. Notes surfaces it as an exclusive
+  "JSON blocks" choice in the cleanup popover, shown only when the note actually
+  contains re-printable JSON (`countJsonRegions`).
 - `2026-07-24` — **`strip-inline-markdown` op added** (Extra, off by default).
   Strips inline markdown ANYWHERE in a value — `**bold**`, `*italic*`, `` `code` ``,
   `[text](url)` — the interior counterpart to the whole-value unwrappers, which only

@@ -87,6 +87,10 @@ import {
   type ResolvedActionText,
 } from "../value-resolution";
 import { spliceInputValue } from "../utils/selection-tracking";
+import {
+  buildJsonMenuSection,
+  type JsonMenuSection,
+} from "../utils/json-menu-actions";
 import type {
   MenuContentProps,
   PlacementKey,
@@ -195,6 +199,8 @@ export interface ContextMenuActions {
   // Resolved model
   scope: ApplicationScope;
   actionText: ResolvedActionText;
+  /** JSON verbs for a JSON-shaped selection/content. `null` = not JSON. */
+  jsonSection: JsonMenuSection | null;
   resolvedPlacementMode: Record<PlacementKey, PlacementVisibility>;
   categoryGroups: AgentMenuCategoryGroup[];
   grouped: Record<string, AgentMenuCategoryGroup[]>;
@@ -446,6 +452,56 @@ export function useContextMenuActions(
       console.error("[ContextMenuV3] paste failed", err);
     }
   };
+
+  // ── JSON ──────────────────────────────────────────────────────────────────
+  // Selection-aware: when the text the menu is acting on parses as JSON (with
+  // or without a code fence), offer the JSON verbs. Detection + formatting are
+  // the shared `lib/json-format` primitive, so this menu and the notes cleanup
+  // pass produce byte-identical output. Read-only surfaces get the same verbs
+  // as copies.
+  const editableTarget =
+    isEditable && selectionRange?.type === "editable"
+      ? selectionRange.element
+      : null;
+  const canWriteJson =
+    editableTarget instanceof HTMLTextAreaElement ||
+    editableTarget instanceof HTMLInputElement;
+
+  const jsonSection: JsonMenuSection | null = buildJsonMenuSection({
+    text: actionText.text,
+    canWrite: canWriteJson,
+    onReplace: (next) => {
+      if (!canWriteJson || !selectionRange || selectionRange.type !== "editable")
+        return;
+      const element = selectionRange.element;
+      if (
+        !(element instanceof HTMLTextAreaElement) &&
+        !(element instanceof HTMLInputElement)
+      )
+        return;
+      // A real selection is rewritten in place; with no selection the menu is
+      // acting on the whole field, so the whole value is replaced.
+      const { start, end } =
+        actionText.source === "selection"
+          ? selectionRange
+          : { start: 0, end: element.value.length };
+      if (onTextReplace) {
+        onTextReplace(
+          element.value.substring(0, start) + next + element.value.substring(end),
+        );
+      } else {
+        spliceInputValue(element, start, end, next);
+      }
+    },
+    onCopy: async (next) => {
+      try {
+        await navigator.clipboard.writeText(next);
+        toast({ title: "Copied", description: "JSON copied to clipboard." });
+      } catch (err) {
+        console.error("[ContextMenuV3] json copy failed", err);
+      }
+    },
+  });
 
   const handleSelectAll = () => {
     if (!selectionRange) return;
@@ -711,6 +767,7 @@ export function useContextMenuActions(
   return {
     scope,
     actionText,
+    jsonSection,
     resolvedPlacementMode,
     categoryGroups,
     grouped: groupsByPlacement(categoryGroups),

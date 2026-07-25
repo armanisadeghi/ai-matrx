@@ -47,7 +47,17 @@ export type CleanupOperationId =
   | "collapse-blank-lines"
   | "trim-document-edges";
 
-export type CleanupOperationGroup = "recommended" | "extra";
+/**
+ * Region operations act ON a protected region instead of around it (see
+ * `region-operations.ts`). They live in their own id space because they are a
+ * different KIND of change — a structural re-print, not a whitespace tidy.
+ */
+export type CleanupRegionOperationId =
+  | "condense-json"
+  | "minify-json"
+  | "expand-json";
+
+export type CleanupOperationGroup = "recommended" | "extra" | "structured";
 
 export interface CleanupOperationMeta {
   id: CleanupOperationId;
@@ -56,6 +66,35 @@ export interface CleanupOperationMeta {
   description: string;
   defaultEnabled: boolean;
   group: CleanupOperationGroup;
+}
+
+export interface CleanupRegionOperationMeta {
+  id: CleanupRegionOperationId;
+  label: string;
+  description: string;
+  defaultEnabled: boolean;
+  group: CleanupOperationGroup;
+}
+
+export interface CleanupRegionOperationDef extends CleanupRegionOperationMeta {
+  /** Plain-language, past-tense phrase for the review cards. */
+  human: string;
+  /** Whether this op is willing to look at that region at all. */
+  appliesTo(region: ProtectedRegion, text: string): boolean;
+  /** Rewritten region text, or `null` to decline (never "" for "no change"). */
+  run(regionText: string): string | null;
+}
+
+/** One protected region a region op rewrote — the unit of its review card. */
+export interface RegionChange {
+  opId: CleanupRegionOperationId;
+  region: ProtectedRegion;
+  before: string;
+  after: string;
+  linesBefore: number;
+  linesAfter: number;
+  charsBefore: number;
+  charsAfter: number;
 }
 
 /** Result of running a single operation over a (masked) string. */
@@ -68,6 +107,14 @@ export interface OperationRunResult {
 /** Per-operation outcome recorded in the report (run order preserved). */
 export interface OperationOutcome {
   id: CleanupOperationId;
+  label: string;
+  enabled: boolean;
+  changes: number;
+}
+
+/** Per-region-operation outcome. `changes` counts regions rewritten. */
+export interface RegionOperationOutcome {
+  id: CleanupRegionOperationId;
   label: string;
   enabled: boolean;
   changes: number;
@@ -92,5 +139,9 @@ export interface CleanupReport {
   changed: boolean;
   protectedRegions: ProtectedRegion[];
   operations: OperationOutcome[];
+  /** Region ops that ran (JSON condense / minify / expand). */
+  regionOperations: RegionOperationOutcome[];
+  /** Every protected region a region op rewrote, in document order. */
+  regionChanges: RegionChange[];
   stats: CleanupStats;
 }

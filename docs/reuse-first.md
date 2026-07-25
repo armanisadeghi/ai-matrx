@@ -121,6 +121,8 @@ delete yours and extend ours.
 | Document shell with actions + context menu | `RichDocument` | `features/rich-document/RichDocument.tsx` |
 | Floating content action rail (copy, TTS, export…) | `ContentActionBar` | `components/content-actions/ContentActionBar.tsx` |
 | Inspect / edit large JSON | `JsonInspector` | `components/official-candidate/json-inspector/JsonInspector.tsx` |
+| Detect JSON in text (fenced or bare) / re-print it minified, condensed, or pretty | `detectJson` / `formatJsonText` | `lib/json-format/detect.ts` · `lib/json-format/format.ts` |
+| Clean up a document (whitespace, typography, JSON blocks) without harming code | `cleanContent` | `lib/content-cleanup/clean.ts` |
 
 ### Components — chat & messages
 

@@ -68,11 +68,13 @@ import {
   Share2,
   Link2,
   Bug,
+  Braces,
 } from "lucide-react";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import type { RichDocumentAction } from "@/features/rich-document/types";
 import type { AgentMenuCategoryGroup } from "../hooks/useUnifiedAgentContextMenu";
 import { BoundAgentsMenuSection } from "./BoundAgentsMenuSection";
+import { jsonSectionLabel } from "../utils/json-menu-actions";
 import {
   useContextMenuActions,
   getPlacementIcon,
@@ -443,6 +445,33 @@ export default function MenuContent(props: MenuContentProps) {
           </SubTrigger>
           <SubContent className="z-[9999] w-60">
             {copyVariantActions.map(renderRichAction)}
+          </SubContent>
+        </Sub>
+      )}
+      {/* JSON — appears only when the acted-on text parses as JSON (fenced or
+          bare). Built by the shared engine hook; both renderers show the same
+          verbs, and the formatting is `lib/json-format`, never a local copy. */}
+      {m.jsonSection && (
+        <Sub>
+          <SubTrigger>
+            <Braces className="h-4 w-4 mr-2 text-amber-500" />
+            {jsonSectionLabel(m.jsonSection)}
+          </SubTrigger>
+          <SubContent className="z-[9999] w-72">
+            {m.jsonSection.actions.map((action) => (
+              <Item
+                key={action.id}
+                disabled={action.disabled}
+                onSelect={() => void action.run()}
+              >
+                <span className="flex-1 truncate">{action.label}</span>
+                {action.hint && (
+                  <span className="ml-2 shrink-0 text-[0.6875rem] text-muted-foreground">
+                    {action.hint}
+                  </span>
+                )}
+              </Item>
+            ))}
           </SubContent>
         </Sub>
       )}

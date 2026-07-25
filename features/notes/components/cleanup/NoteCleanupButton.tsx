@@ -20,6 +20,7 @@ import { cleanContent } from "@/lib/content-cleanup/clean";
 import { DEFAULT_ENABLED_OPERATIONS } from "@/lib/content-cleanup/operations";
 import type {
   CleanupOperationId,
+  CleanupRegionOperationId,
   CleanupReport,
 } from "@/lib/content-cleanup/types";
 import { useNoteCleanup } from "./useNoteCleanup";
@@ -51,6 +52,11 @@ export function NoteCleanupButton({
   const [enabled, setEnabled] = useState<Set<CleanupOperationId>>(
     () => new Set(DEFAULT_ENABLED_OPERATIONS),
   );
+  // Region ops (JSON condense/minify/expand) are mutually exclusive and all
+  // off by default — a note's JSON is the user's text until they say otherwise.
+  const [regionOp, setRegionOp] = useState<CleanupRegionOperationId | null>(
+    null,
+  );
   const [run, setRun] = useState<{ report: CleanupReport; id: number } | null>(
     null,
   );
@@ -62,7 +68,7 @@ export function NoteCleanupButton({
   let preview: CleanupReport | null = null;
   if (popoverOpen && hasContent) {
     try {
-      preview = cleanContent(content, enabled);
+      preview = cleanContent(content, enabled, regionOp ? [regionOp] : []);
     } catch (err) {
       console.error("[note-cleanup] preview failed", err);
       preview = null;
@@ -78,7 +84,10 @@ export function NoteCleanupButton({
     });
   };
 
-  const onResetDefaults = () => setEnabled(new Set(DEFAULT_ENABLED_OPERATIONS));
+  const onResetDefaults = () => {
+    setEnabled(new Set(DEFAULT_ENABLED_OPERATIONS));
+    setRegionOp(null);
+  };
 
   const onRun = () => {
     if (!preview || !preview.changed) {
@@ -143,6 +152,8 @@ export function NoteCleanupButton({
           <CleanupOptionsPopover
             enabled={enabled}
             onToggle={onToggle}
+            regionOp={regionOp}
+            onRegionOpChange={setRegionOp}
             preview={preview}
             onRun={onRun}
             onResetDefaults={onResetDefaults}

@@ -43,6 +43,35 @@ A menu that opens but Copy does nothing and the selection bar is empty is a **bu
 
 ---
 
+## Content-aware sections — the menu reads the selection
+
+Some verbs only make sense for a *kind* of content, so the menu inspects what it
+is about to act on and offers them when they apply. The first (and the pattern
+for any future one) is **JSON**.
+
+Highlight JSON anywhere — fenced or bare, in an editor or a read-only view — and
+a **JSON** submenu appears: Condense · Minify (one line) · Expand · Sort keys A-Z
+· add/remove the code fence · Copy minified. Each row carries a REAL before/after
+hint ("11 lines → 1 line") computed from the actual output, and any action that
+would be a no-op is dropped rather than shown greyed out.
+
+- **Built in the engine hook** (`useContextMenuActions` → `jsonSection`), rendered
+  identically by both renderers. `utils/json-menu-actions.ts` holds the builder.
+- **Detection and formatting are `lib/json-format`** — the same primitive the
+  notes cleanup pass uses, so a note cleaned there and a selection condensed here
+  are byte-identical. The menu never sniffs JSON itself.
+- **Editable surfaces rewrite in place** (the exact selection when there is one,
+  the whole field otherwise, through `onTextReplace` / `spliceInputValue` like
+  Cut/Paste). **Read-only surfaces copy instead** — same intent, the only verb
+  available; every label reads "Copy …" so nothing lies about what it will do.
+- **Broken JSON still gets a section** — one disabled row carrying the parse
+  error. Showing nothing on a selection the user clearly believes is JSON is the
+  fake-menu failure this file kills on sight.
+
+Adding another content-aware section follows the same shape: detect in a shared
+primitive, build the action list in the hook, render it in both renderers. Never
+a per-surface menu, never a detector living in a renderer.
+
 ## Value mapping — known values are ALWAYS present; surface values pass through without exception
 
 `resolveApplicationScope` (`value-resolution.ts`) builds the `ApplicationScope` the menu acts on:

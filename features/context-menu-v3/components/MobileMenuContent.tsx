@@ -49,6 +49,7 @@ import {
   ChevronLeft,
   X,
   Replace,
+  Braces,
 } from "lucide-react";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import type { RichDocumentAction } from "@/features/rich-document/types";
@@ -61,6 +62,7 @@ import {
   hasItemsRecursive,
   resolveRichActionView,
 } from "../hooks/useContextMenuActions";
+import { jsonSectionLabel } from "../utils/json-menu-actions";
 import type {
   MenuContentProps,
   PlacementKey,
@@ -369,6 +371,25 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       icon: Copy,
       iconClass: "text-emerald-500",
       children: copyVariantActions.map(richActionNode),
+    });
+  // JSON — same section, same engine, same formatting as desktop.
+  if (m.jsonSection)
+    push({
+      kind: "submenu",
+      id: "json",
+      label: jsonSectionLabel(m.jsonSection),
+      icon: Braces,
+      iconClass: "text-amber-500",
+      children: m.jsonSection.actions.map((action) => ({
+        kind: "action" as const,
+        id: action.id,
+        label: action.label,
+        icon: Braces,
+        iconClass: "text-amber-500",
+        disabled: action.disabled,
+        hint: action.hint,
+        onSelect: close(() => void action.run()),
+      })),
     });
   if (isEditable) {
     push({
