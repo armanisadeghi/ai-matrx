@@ -76,6 +76,16 @@ END;
 $function$;
 
 -- An anonymous caller has no "my feed" — it is defined by a follow graph that
--- requires an identity. Removing the grant closes the spoof surface entirely
--- rather than relying on the in-body guard alone.
+-- requires an identity. Removing the grant is the second layer, so the in-body
+-- guard is not the only thing standing between anon and the function.
+--
+-- ⚠️ REVOKE FROM anon IS A NO-OP HERE, and that was this migration's own first
+-- bug (caught by adversarial review). The EXECUTE grant is held by PUBLIC (the
+-- leading `=X/postgres` in proacl), which `anon` INHERITS — you cannot revoke
+-- from a role a privilege it never held directly. The revoke ran, changed
+-- nothing, and the file claimed a second layer that did not exist. Revoke from
+-- PUBLIC and re-grant the roles that should actually have it.
+REVOKE EXECUTE ON FUNCTION public.get_user_feed(uuid, integer, integer) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.get_user_feed(uuid, integer, integer) FROM anon;
+GRANT  EXECUTE ON FUNCTION public.get_user_feed(uuid, integer, integer) TO authenticated;
+GRANT  EXECUTE ON FUNCTION public.get_user_feed(uuid, integer, integer) TO service_role;

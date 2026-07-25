@@ -1,9 +1,17 @@
 -- D101 (partial) — `public.agx_get_list` returns SOFT-DELETED agents.
 --
 -- The function has no `deleted_at IS NULL` predicate on ANY of its three arms
--- (owned / user-granted / org-granted), so a deleted agent keeps appearing in
--- the `/agents/all` gallery. One such row is live today. A user who deletes an
+-- (owned / user-granted / org-granted), so a soft-deleted agent a user can
+-- otherwise reach comes back in the `/agents/all` gallery. A user who deletes an
 -- agent and still sees it has been told a lie by the product.
+--
+-- ⚠️ CORRECTION (adversarial review): this file first claimed "one such row is
+-- live today", quoting D101. It is not reachable. The single soft-deleted row
+-- (`564573d5…`) is `agent_type='builtin'` with `user_id = NULL` and zero
+-- `iam.permissions` rows — arm 1 requires `agent_type='user'`, and arms 2 and 3
+-- test `a.user_id != v_uid`, which is NULL (never true) for a NULL owner. So the
+-- gap is LATENT, not a live leak. Recording it as live would be the same
+-- overstatement this repo's ledger rules exist to prevent.
 --
 -- This is the backport the defect names as the interim fix. `agx_get_list` and
 -- `/agents/all` were being left untouched until `/agents/browse` (which uses the
@@ -73,6 +81,7 @@ BEGIN
       AND NOT EXISTS (SELECT 1 FROM iam.permissions p2 WHERE p2.resource_type = 'agent' AND p2.resource_id = a.id AND p2.granted_to_user_id = v_uid)
   )
   SELECT * FROM all_agents
+  -- `id` is the unique tiebreaker that makes this a TOTAL order. Do not remove it.
   ORDER BY all_agents.is_favorite DESC, all_agents.updated_at DESC, all_agents.id
   LIMIT p_limit OFFSET p_offset;
 END;
