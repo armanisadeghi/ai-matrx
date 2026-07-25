@@ -108,51 +108,63 @@ export function syncOrchestratorPrompt(args: {
       };
     });
 
-    // ── Describe: one headless pass over the whole set ──────────────────────
+    // ── Describe: one headless pass over the whole set, with bounded retry ───
+    // A headless agent run can transiently return nothing (cold start, a flaky
+    // turn, a rate-limited provider). The describe is idempotent and cheap, so
+    // retry a couple of times before giving up rather than silently doing the
+    // wrong thing. `lastDetail` carries the most specific failure reason for the
+    // final loud error.
+    const DESCRIBE_ATTEMPTS = 3;
     let responseText = "";
-    let requestId: string | undefined;
-    try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: AGENT_SET_ROLE_DESCRIBER_ID,
-          surfaceKey: "orchestrator-role-describer",
-          sourceFeature: "agent-generator",
-          isEphemeral: true,
-          autoClearConversation: true,
-          config: { displayMode: "background", autoRun: true, allowChat: false },
-          runtime: {
-            variables: {
-              [ROLE_DESCRIBER_INPUT_VAR]: JSON.stringify(dump, null, 2),
+    let lastDetail = "the AI run didn't execute";
+    for (let attempt = 1; attempt <= DESCRIBE_ATTEMPTS; attempt++) {
+      let requestId: string | undefined;
+      try {
+        const launch = await dispatch(
+          launchAgentExecution({
+            agentId: AGENT_SET_ROLE_DESCRIBER_ID,
+            surfaceKey: "orchestrator-role-describer",
+            sourceFeature: "agent-generator",
+            isEphemeral: true,
+            autoClearConversation: true,
+            config: { displayMode: "background", autoRun: true, allowChat: false },
+            runtime: {
+              variables: {
+                [ROLE_DESCRIBER_INPUT_VAR]: JSON.stringify(dump, null, 2),
+              },
             },
-          },
-        }),
-      ).unwrap();
-      responseText = launch.responseText ?? "";
-      requestId = launch.requestId;
-    } catch (e) {
-      return {
-        ok: false,
-        error: e instanceof Error ? e.message : "Describing members failed",
-      };
+          }),
+        ).unwrap();
+        responseText = launch.responseText ?? "";
+        requestId = launch.requestId;
+      } catch (e) {
+        lastDetail = e instanceof Error ? e.message : "the describe run threw";
+      }
+
+      if (responseText.trim().length > 0) break;
+
+      const req = requestId ? selectRequest(requestId)(getState()) : null;
+      lastDetail =
+        req?.error?.user_message ||
+        req?.error?.message ||
+        (req?.status === "error" ? "the run ended in an error" : lastDetail);
+      if (attempt < DESCRIBE_ATTEMPTS) {
+        console.warn(
+          `[agent-sets] role describer attempt ${attempt}/${DESCRIBE_ATTEMPTS} produced no output (${lastDetail}); retrying`,
+        );
+        await new Promise((r) => setTimeout(r, 700 * attempt));
+      }
     }
 
     // LOUD failure, never a silent fallback: if the describer produced nothing
-    // usable, the AI run did not actually execute. We change NOTHING (no member
-    // writes, no prompt injection) so the UI and the prompt can never diverge —
-    // better a clear error the user can retry than a prompt quietly filled with
-    // the wrong data. The describer itself is proven to work at scale; an empty
-    // result here is a run/backend failure, so surface its actual error.
+    // usable after retries, the AI run did not execute. We change NOTHING (no
+    // member writes, no prompt injection) so the UI and the prompt can never
+    // diverge — better a clear error the user can retry than a prompt quietly
+    // filled with the wrong data.
     if (responseText.trim().length === 0) {
-      const req = requestId ? selectRequest(requestId)(getState()) : null;
-      const detail =
-        req?.error?.user_message ||
-        req?.error?.message ||
-        (req?.status === "error"
-          ? "the run ended in an error"
-          : "the AI run didn't execute");
       return {
         ok: false,
-        error: `The role describer produced no output — ${detail}. Nothing was changed; check the AI runtime/endpoint and try Sync again.`,
+        error: `The role describer produced no output — ${lastDetail}. Nothing was changed; check the AI runtime/endpoint and try Sync again.`,
       };
     }
     const described = parseRoleDescriberOutput(responseText);
