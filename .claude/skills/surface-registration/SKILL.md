@@ -7,14 +7,16 @@ description: The layered recipe for registering a UI surface end-to-end in the S
 
 A **surface** is one UI the platform knows by name (`ui_surface.name`, e.g. `matrx-user/transcripts-cleanup`). Registering one is a LAYERED recipe — each layer is independently shippable, and a manifest with no emitter is still useful (bindings work; live values land later). Reference consumer for every layer: **`features/transcription-cleanup/`** (`/transcripts/cleanup`).
 
-**Read first:** `features/surfaces/FEATURE.md` (binding model, inheritance, roles/config) · `features/surfaces/manifests/README.md`.
+**Read first:** `features/surfaces/FEATURE.md` (binding model, inheritance, roles/config) · `features/surfaces/manifests/README.md`. **Field-level rules + the full-contract template → invoke the `surface-authoring` skill.**
 
 ## Layer 1 — Manifest (values)
 
 - Create `features/surfaces/manifests/<slug>.manifest.ts` exporting a `SurfaceManifest` (`features/surfaces/types.ts`).
-- `surfaceName` = `<client>/<local>` and MUST match `ui_surface.name`. `label` = pretty chrome name. `urlPattern` = canonical route (or add to `utils/surface-url-pattern.ts`).
+- `surfaceName` = `<client>/<local>` and MUST match `ui_surface.name`. `urlPattern` = canonical route (or add to `utils/surface-url-pattern.ts`).
+- **THE NAMING LAW: `label` is REQUIRED** — the ONE canonical display name, unique per client. All chrome derives it via `getSurfaceDisplayLabel`; on-page value/group text renders via `surfaceValueLabels` / `surfaceGroupLabels` (`utils/surface-display.ts`). The `surfaceLabel` override prop is DELETED (ESLint `surfaceLabelOverrideBan`).
+- **Canonical groups**: declare `groups` (`SurfaceValueGroup {key,label,sortOrder 0–899}`); every value's `group` references one. `general`/`baseline`/`inherited:*` are registry-synthesized — declaring them throws.
 - Values are **lower_snake_case**, honest (`alwaysAvailable` only when GUARANTEED), with real `typicalCharCount` — mapping UIs warn on context-blowers.
-- **Never declare a value nothing emits.** No speculative vocabulary; declare it when the emitter lands (worked example: cleanup shipped 8 values, expanded to 36 WITH `buildScope`).
+- **THE COMPLETENESS LAW: every piece of data the page loads is declared** — fields AND natural composites (e.g. marketing-page's `page_intent` object beside its four fields). Undeclared runtime keys show as "Undeclared (runtime only)" in the Surface Context window — defects. Optional convenience packs are the only discretionary part; still **never declare speculative vocabulary nothing loads or emits**. Reference implementation: `marketing-page.manifest.ts` (40+ values, 7 groups, inherits marketing-site).
 - Baselines (`selection`/`text_before`/`text_after`/`content`/`context`) are **auto-injected** by the registry — don't re-declare unless customizing (use `pickBaseline`/`mergeBaselineValues` from `_baseline.manifest.ts`). Opt out only via `skipBaselineValues` (metadata-only widgets).
 - Export a **type-safe scope builder** (`createXScope(values): SurfaceScopePayload`) so the emitter can't drift from the declarations.
 
@@ -39,9 +41,10 @@ A **surface** is one UI the platform knows by name (`ui_surface.name`, e.g. `mat
 
 The manifest is code; the DB mirror is what binding UIs and launch resolution read. A manifest **not synced is not registered**.
 
-- A `ui_surface` row must EXIST first (surfaces admin `/administration/surfaces`, or SQL insert with client + sort_order tier).
-- Canonical sync: **`POST /api/admin/surfaces/sync-manifests`** (surfaces admin button). From an agent shell: `pnpm tsx scripts/emit-surface-sync-sql.ts` → run the upsert via Supabase MCP, plus manual upserts for `ui_surface_agent_role`, `url_pattern`, and `parent_surface_name` (mirror what `manifest-sync.service.ts` writes).
-- **Verify live** — count `ui_surface_value` / `ui_surface_agent_role` rows for the surface; then `pnpm check:surface-drift` again (it reads code only, so the live count is the real check).
+- A `ui_surface` row must EXIST first (surfaces admin `/administration/ui/surfaces`, or SQL insert with client + sort_order tier).
+- Canonical sync: **`POST /api/admin/surfaces/sync-manifests`** (surfaces admin button). From an agent shell: `pnpm tsx scripts/emit-surface-sync-sql.ts` → run the upsert via Supabase MCP (it mirrors what `manifest-sync.service.ts` writes).
+- Sync mirrors **`ui_surface.label` + `value_groups` (ALWAYS written)**, per-value `group_key` + `auto_context`, `url_pattern`, `intro`, `parent_surface_name`, `ui_surface_agent_role`. Drift report covers `surfaceLabelDrifts` / `valueGroupsDrifts`.
+- **Verify live** — count `ui_surface_value` / `ui_surface_agent_role` rows for the surface; then `pnpm check:surface-drift` again (it also enforces label presence + per-client uniqueness and group key/band rules — code-side; the live count is the real DB check).
 
 ## Layer 5 — Runtime emitter (`buildScope`)
 
@@ -62,7 +65,7 @@ Verify like the owner does:
 
 ## Ship checklist
 
-- [ ] Manifest + scope builder; honest values; baselines not duplicated
+- [ ] Manifest + scope builder; required `label`; groups declared + every value grouped; completeness sweep clean; honest values; baselines not duplicated
 - [ ] Roles/namespaces declared where the surface plugs in agents/config
 - [ ] Registered in `registry.ts`; `pnpm check:surface-drift` green
 - [ ] DB synced AND live row counts verified

@@ -1,11 +1,13 @@
 ---
 name: surface-authoring
-description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration, baseline-vs-specific values, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the manifest drift check. Use whenever the task touches `features/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values".
+description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration (required canonical label, value groups, baseline-vs-specific values), THE NAMING LAW and THE COMPLETENESS LAW, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", the runtime scope-builder module pattern, manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the manifest drift check. Use whenever the task touches `features/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "surface label", "surface groups", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values".
 ---
 
 # Surface authoring
 
-Adding a surface to the matrx Surface Values system is **code-first, DB-mirror**. Code is the single source of truth — the DB is a synced reflection. Get the manifest right and everything downstream (binding UIs, drift report, RLS-gated agent + tool bindings, the runtime resolver) just works.
+**End-to-end layered registration process (roles, config namespaces, DB sync, emitter, verification) → invoke the `surface-registration` skill.** This skill owns the manifest itself: fields, values, groups, labels, scope builders.
+
+Adding a surface is **code-first, DB-mirror**. Code is the single source of truth — the DB is a synced reflection. Get the manifest right and everything downstream (binding UIs, chrome labels, drift report, RLS-gated agent + tool bindings, the runtime resolver) just works.
 
 ## What a surface is — and the recursion that trips people up
 
@@ -22,6 +24,22 @@ A **surface** exists to bind **highly custom agents to a specific place** and ha
 **Boundaries are a perspective you choose, then commit to.** The chat sidebar (list of chats + agents) and the open chat (one `conversation_id`) can be modeled as **two surfaces** (a list surface + a single-conversation surface) **or one** (a chat surface with an active conversation *and* a list of the others). Both are valid. Pick the framing that matches how agents will be bound, then design to it.
 
 **Same shape ≠ same surface.** Two surfaces can share an identical value set and still be two surfaces when the *purpose* — and therefore the bound agents — differ. `matrx-user/working-document` and `matrx-user/scratchpad` share one value set (`_conversation-document.manifest.ts`) but stay separate because a co-author agent belongs on one and not the other. Conversely, only merge kinds into one surface when the values AND the relevant agents are ~identical.
+
+## THE NAMING LAW — one canonical label, everywhere
+
+**`SurfaceManifest.label` is REQUIRED.** It is the ONE canonical human display name for the surface — unique per client (case-insensitive; `pnpm check:surface-drift` fails on a missing or clashing label). Every value's `label` and every group's `label` is equally canonical.
+
+- **No chrome may hand-type, override, or re-derive a surface/value/group label.** The `surfaceLabel` runtime override prop was DELETED; ESLint bans it (`surfaceLabelOverrideBan` in `eslint.config.mjs`).
+- Chrome derives the surface name via **`getSurfaceDisplayLabel(surfaceName)`** from `features/surfaces/utils/surface-display.ts` (static + synchronous; safe in server and client components). `labelFromName` slug fallback is for manifest-less DB surfaces ONLY.
+- **On-page section titles and field labels for declared values render via `surfaceValueLabels(manifest)` / `surfaceGroupLabels(manifest)`** (same file) — byte-identical to the manifest. A page that hand-writes "Page intent" next to values grouped under `page_intent` is a defect; render `G.page_intent`.
+- `label` is mirrored to `ui_surface.label` by manifest sync (ALWAYS written); DB drift shows in the drift report as `surfaceLabelDrifts`.
+- **Labels never enter agent feeds.** aidream's manifest feed carries machine names + `group_key` only — agents see `name`, humans see `label`.
+
+## THE COMPLETENESS LAW — declare everything the page loads
+
+**Every piece of data/state a page loads MUST be declared as a surface value.** Individual fields AND their natural composite/group values are both mandatory — e.g. `marketing-page` declares the composite `page_intent` object alongside its four constituent fields. Optional convenience packs are the only discretionary part.
+
+Undeclared runtime keys show loudly in the Surface Context window under **"Undeclared (runtime only)"** — every entry there is a defect: either declare the value or stop emitting it. Use `autoContext: false` to keep declared-but-rarely-needed values out of automatic agent context; never use non-declaration for that.
 
 ## The 4-step add (canonical)
 
@@ -40,7 +58,9 @@ Then in the surface's code: emit an `ApplicationScope` via `createXxxScope(...)`
 |---|---|---|
 | `ui_client.name` | Lowercase kebab. One of `matrx-user`, `matrx-admin`, `matrx-public`, `chrome-extension` (current set). New clients are rare — confirm with the user. | DB |
 | `ui_surface.name` | `"<client>/<local>"` — single slash, kebab-case both halves. e.g. `matrx-user/notes`, `matrx-admin/system-agents/agents`. | DB FK + `scripts/check-surface-drift.ts` |
+| `SurfaceManifest.label` | REQUIRED. Canonical display name, unique per client (case-insensitive). | Drift check + sync mirror |
 | `SurfaceValue.name` | `^[a-z][a-z0-9_]*$` — lower snake_case, must be unique within the surface. Becomes the key in `ApplicationScope`. | DB CHECK constraint + drift check |
+| `SurfaceValueGroup.key` | `^[a-z][a-z0-9_]*$`; `general` / `baseline` / `inherited:*` are RESERVED (registry-synthesized). | Registry throws + drift check |
 | Manifest filename | `<local-slug>.manifest.ts` (the part after the slash). Same kebab as the surface. | Convention |
 | Exported manifest const | `<localSlug>Manifest` (camelCase from kebab). | Convention |
 
@@ -50,31 +70,44 @@ If the user asks for a surface name that doesn't match `^[a-z][a-z0-9-]*\/[a-z0-
 
 These are short — read them when the task is non-trivial:
 
-- `features/surfaces/types.ts` — `SurfaceValue`, `SurfaceManifest`, `ValueMapping`, `SurfaceScopePayload`
+- `features/surfaces/types.ts` — `SurfaceValue`, `SurfaceValueGroup`, `SurfaceManifest`, `ValueMapping`, `SurfaceScopePayload`
 - `features/surfaces/manifests/_baseline.manifest.ts` — `BASELINE_VALUES`, `pickBaseline`, `mergeBaselineValues`
-- `features/surfaces/manifests/registry.ts` — register your manifest in **`RAW_MANIFESTS`**; `ALL_MANIFESTS` is derived from it (inheritance resolved + baselines injected) and is what everything consumes
-- `features/surfaces/manifests/notes-editor.manifest.ts` — canonical full example (mix of baseline + specific + scope helper)
-
-The full `SurfaceManifest` also carries `label`, `urlPattern`, `inheritsFrom`, `intro`, `agentRoles`, `configNamespaces`, `evidenceSources` (code-only, never mirrored to DB), and `skipBaselineValues` — this skill covers the values half; for roles, config namespaces, and inheritance, **invoke the `surface-registration` skill**.
+- `features/surfaces/manifests/registry.ts` — register your manifest in **`RAW_MANIFESTS`**; `ALL_MANIFESTS` is derived from it (inheritance resolved, baselines injected, provenance + groupKey stamped) and is what everything consumes
+- `features/surfaces/manifests/marketing-page.manifest.ts` — **THE reference implementation**: 40+ values, 7 curated groups, full contract, `inheritsFrom` chain (marketing-site → marketing-brand), scope builder in a separate runtime module (`features/marketing/lib/marketing-page-scope.ts`), emitter in `PageWorkspace.tsx`
+- `features/surfaces/manifests/notes-editor.manifest.ts` — the simple case (baseline + specific + in-file scope helper)
 
 **`intro` — the surface's self-introduction.** A single XML-ish block (`<surface_intro>…`) telling the agent what this surface IS, what the user does here, and how to read its values. Written from a close understanding of the surface's PURPOSE — this is the first surface-context item the agent sees. Mirrored to `ui_surface.intro`. Every Tier-1 surface should have one.
+
+For `agentRoles`, `configNamespaces`, `evidenceSources`, and `skipBaselineValues` — **invoke the `surface-registration` skill**.
+
+## Value groups — canonical sections
+
+`SurfaceManifest.groups` declares `SurfaceValueGroup { key, label, sortOrder, description? }`:
+
+- **Curated groups author `sortOrder` 0–899.** Everything above is reserved for registry-synthesized groups.
+- Every `SurfaceValue.group` must reference a declared group key. Ungrouped own values land in the synthesized `general` group.
+- **Reserved keys `general`, `baseline`, `inherited:*` may NOT be declared** — the registry synthesizes them (throws at module init if you try).
+- The registry stamps every resolved value with **provenance** (own / inherited / baseline) and a `groupKey`, synthesizes `inherited:<parent>` groups ("Inherited from <parent label>") and the `baseline` group ("Generic baselines"), and **sorts values by (group sortOrder, value sortOrder): curated groups first, inherited next, baselines LAST.**
+- Groups mirror to `ui_surface.value_groups` (JSONB) and per-value `ui_surface_value.group_key` on sync; DB drift shows as `valueGroupsDrifts`.
+- Group like the page reads: identity, intent, evidence, content — see `marketing-page.manifest.ts`'s 7 groups.
 
 ## The `SurfaceValue` shape — every field matters
 
 ```ts
 interface SurfaceValue {
   name: string;              // snake_case, unique in surface, regex-checked
-  label: string;             // short human label, used in binding UI dropdowns
+  label: string;             // canonical human label — THE NAMING LAW applies
   description: string;       // 1-2 sentences. WHEN it's populated AND what it represents
   valueType: "string" | "number" | "boolean" | "object" | "array" | "document";
   alwaysAvailable: boolean;  // true ONLY if the surface guarantees it on every launch
   typicalCharCount: number;  // avg stringified size — drives context-window warnings
   autoContext?: boolean;     // default true — auto-added to agent context; false = bindable-only
-  sortOrder?: number;        // optional, defaults to 1000 in DB
+  group?: string;            // key of a declared SurfaceValueGroup; omitted = general
+  sortOrder?: number;        // optional, defaults to 1000 in DB; orders within the group
 }
 ```
 
-Each field has rules. Don't half-fill the manifest — binding UIs and the LLM both consume this.
+Each field has rules. Don't half-fill the manifest — binding UIs, on-page chrome, and the LLM all consume this.
 
 ### `name`
 
@@ -84,7 +117,7 @@ Each field has rules. Don't half-fill the manifest — binding UIs and the LLM b
 
 ### `label`
 
-- 2-4 words, sentence case. Shows up next to the name in the mapping editor's surface-value picker.
+- 2-4 words, sentence case. THE canonical name — the mapping editor, the Surface Context window, and on-page section/field chrome (via `surfaceValueLabels`) all render exactly this string.
 - Examples: "Current selection", "Active note id", "Open file path".
 
 ### `description`
@@ -99,7 +132,7 @@ Each field has rules. Don't half-fill the manifest — binding UIs and the LLM b
 - Drives the mapping editor's input affordance and validation.
 - Almost everything stringifies for LLMs at runtime — pick what reflects the JS shape the surface emits, not what the LLM "sees."
 - `array` for ID lists, tab lists, file lists.
-- `object` for free-form bags (and **only** when there's no better structure). Prefer named values over `object`.
+- `object` for free-form bags and for composite group values (like `page_intent`) — prefer named values over an unstructured `object`.
 
 ### `alwaysAvailable` — get this right
 
@@ -117,7 +150,7 @@ The `createXxxScope` TS helper uses this to mark keys as required (no `?`) vs op
 
 ### `autoContext` — signal vs noise
 
-Declaring many values is GOOD (binding UIs offer them all); auto-shipping them all to the agent is NOT. Ask: *what does an agent on this surface truly need?* (a note surface: id, content, cursor, open tabs — not everything you could enumerate). Those keep `autoContext: true` (default); everything an agent could **look up from an id** is "inconvenient but resolvable" → `autoContext: false` (bindable-only). Mirrored to `ui_surface_value.auto_context`.
+Declaring many values is MANDATORY (THE COMPLETENESS LAW); auto-shipping them all to the agent is NOT. Ask: *what does an agent on this surface truly need?* (a note surface: id, content, cursor, open tabs — not everything you could enumerate). Those keep `autoContext: true` (default); everything an agent could **look up from an id** is "inconvenient but resolvable" → `autoContext: false` (bindable-only). Mirrored to `ui_surface_value.auto_context`.
 
 ### `alwaysAvailable` is earned by ROUTING
 
@@ -135,10 +168,10 @@ A value can only be *guaranteed* when the surface's identity lives in the URL. `
 
 ### `sortOrder`
 
-- Optional. Defaults to 1000 in the DB.
-- Use to group related values together in the mapping editor. The baseline values are 100/110/120/200/9999 — leave headroom around them and increment by 10 within your own values (300, 310, 320…).
+- Optional. Defaults to 1000 in the DB. Orders values **within their group**.
+- The baseline values are 100/110/120/200/9999 — leave headroom around them and increment by 10 within your own values (300, 310, 320…).
 
-## The manifest file (copy-paste template)
+## The manifest file (full-contract template)
 
 ```ts
 /**
@@ -149,10 +182,16 @@ A value can only be *guaranteed* when the surface's identity lives in the URL. `
 
 import type {
   SurfaceManifest,
-  SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+const groups: SurfaceValueGroup[] = [
+  { key: "thing_identity", label: "Thing identity", sortOrder: 100 },
+  { key: "thing_content", label: "Thing content", sortOrder: 200 },
+  // curated band is 0–899; general/baseline/inherited:* are reserved
+];
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -163,46 +202,54 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
+    group: "thing_identity",
     sortOrder: 300,
   },
-  // ... more
+  // ... EVERY field the page loads (THE COMPLETENESS LAW), plus natural
+  // composite values (e.g. a `thing_summary` object alongside its fields)
 ];
 
 export const <localSlug>Manifest: SurfaceManifest = {
   surfaceName: "<client>/<local>",
+  label: "<Canonical Display Name>",          // REQUIRED — THE NAMING LAW
+  urlPattern: "/things/[thingId]",
+  inheritsFrom: "<client>/<parent>",          // omit when standalone
+  intro: `<surface_intro>
+What this surface IS, what the user does here, how to read its values.
+</surface_intro>`,
+  groups,
   values: mergeBaselineValues(
-    pickBaseline("selection", "text_before", "text_after", "content", "context"),
+    pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  agentRoles: [ /* see surface-registration skill */ ],
 };
-
-/**
- * Type-safe payload helper. Surface code calls this at runtime so TS catches
- * missing required keys and unknown keys. THIS is the "a UI cannot lie"
- * enforcement.
- *
- * Required keys: every `alwaysAvailable: true` value, no `?`.
- * Optional keys: every `alwaysAvailable: false` value, with `?`.
- */
-export function create<LocalSlug>Scope(values: {
-  // alwaysAvailable: true → required (no `?`)
-  // alwaysAvailable: false → optional (with `?`)
-  current_thing_id?: string;
-  selection?: string;
-  text_before?: string;
-  text_after?: string;
-  content?: string;
-  context?: Record<string, unknown>;
-}): SurfaceScopePayload {
-  return values as SurfaceScopePayload;
-}
 ```
 
-Mirror `notes-editor.manifest.ts` if anything is unclear — it's the reference implementation.
+### The scope builder — where it lives
+
+**Simple surface** (few values, trivially assembled): export `create<LocalSlug>Scope(values): SurfaceScopePayload` from the manifest file itself — see `notes-editor.manifest.ts`. Required keys (every `alwaysAvailable: true` value) get no `?`; optional keys get `?`. THIS is the "a UI cannot lie" enforcement.
+
+**Complex surface** (raw workspace data needs parsing/derivation): put a **runtime builder module** beside the feature, not in the manifest — see `features/marketing/lib/marketing-page-scope.ts` (`buildMarketingPageScope`). The pattern:
+
+1. The module takes the page's RAW loaded data (records, snapshots, memberships) and derives the typed values (parse stored JSON, compute availability, map rows).
+2. When inheriting, it builds the parent scope first and spreads it: **`...base` first, child keys after — child wins.**
+3. It returns through the manifest's `create<LocalSlug>Scope(...)` so TS still enforces the declaration.
+4. The page's emitter (e.g. `PageWorkspace.tsx`) calls the builder at **trigger time** with live refs, never stale state.
+
+## INHERITANCE WORKED EXAMPLE — marketing-page → marketing-site
+
+`marketing-page` declares `inheritsFrom: "matrx-user/marketing-site"` (which itself inherits `marketing-brand`). What that means for the child's scope helper:
+
+- **Inherited `alwaysAvailable: true` keys become REQUIRED params in the child's builder.** `site_id` / `brand_id` are guaranteed by the parent, so `buildMarketingPageScope` takes them as non-optional inputs and `createMarketingPageScope` requires them — the child can never launch without its ancestry's identity.
+- **Inherited optionals become `?` params** — `site_context` / `brand_context` flow down when the host loaded them.
+- The child's builder composes: build/receive the parent's scope, `return createMarketingPageScope({ ...base, page_id, page_url, ... })` — spread `...base` FIRST so child keys win on collision.
+- In the resolved registry, inherited values land in synthesized `inherited:matrx-user/marketing-site` / `inherited:matrx-user/marketing-brand` groups, sorted after the child's curated groups and before baselines.
+- Inherit only when the parent's vocabulary is TRUE on the child. A sibling that doesn't emit the parent's values must NOT inherit.
 
 ### Baselines are auto-injected — opting out
 
-The registry **injects the full baseline set into every manifest** (`withInjectedBaselines` in `registry.ts`) so agent authors can bind generic values on any surface. A same-named value you declare wins over the injected one. Passing `[]` to `mergeBaselineValues` does NOT skip baselines — the registry re-adds them. A surface with genuinely no text/content concept (e.g. a metadata-only widget) opts out with **`skipBaselineValues: true`** on the manifest.
+The registry **injects the full baseline set into every manifest** (`withInjectedBaselines` in `registry.ts`) so agent authors can bind generic values on any surface. A same-named value you declare wins over the injected one; baseline-named values always land in the synthesized `baseline` group. Passing `[]` to `mergeBaselineValues` does NOT skip baselines — the registry re-adds them. A surface with genuinely no text/content concept (e.g. a metadata-only widget) opts out with **`skipBaselineValues: true`** on the manifest.
 
 ## Wiring it up
 
@@ -216,22 +263,22 @@ The registry **injects the full baseline set into every manifest** (`withInjecte
      <localSlug>Manifest,
    ];
    ```
-   `ALL_MANIFESTS` is derived from `RAW_MANIFESTS` (inheritance + baseline injection) — never edit it directly.
+   `ALL_MANIFESTS` is derived from `RAW_MANIFESTS` (inheritance + baseline injection + provenance/group resolution) — never edit it directly.
 3. **Run the drift check locally** before pushing:
    ```bash
    pnpm check:surface-drift
    ```
-   It validates manifest invariants (unique names, regex, valueType, surface-name shape) and reports drift before the DB ever sees the change. Fix any issues immediately.
+   It validates manifest invariants (unique names, regex, valueType, surface-name shape, **label presence + per-client uniqueness, group key/band/label rules**) and reports drift before the DB ever sees the change. Fix any issues immediately.
 4. **Sync the DB**:
-   - From the Surfaces admin page (`/administration/surfaces`) → "Sync Manifests" button.
+   - From the Surfaces admin page (`/administration/ui/surfaces`) → "Sync Manifests" button.
    - Or via API: `POST /api/admin/surfaces/sync-manifests` (super-admin gated).
-   - The endpoint diffs `ALL_MANIFESTS` against `ui_surface_value` and applies upserts. If a `ui_surface` row is missing for the surface, it's reported as `skippedMissingSurface` — you must seed the `ui_surface` row first.
+   - The endpoint diffs `ALL_MANIFESTS` against the mirror and upserts — including `ui_surface.label` + `value_groups` (ALWAYS written) and per-value `group_key`. If a `ui_surface` row is missing for the surface, it's reported as `skippedMissingSurface` — you must seed the `ui_surface` row first.
 
 ### Seeding the `ui_surface` row
 
 If you're adding a brand-new surface (not just adding values to an existing one), the `ui_surface` row must exist before the sync will accept SurfaceValues:
 
-- Easiest path: open `/administration/surfaces` → "New Surface" → pick the client + enter the name.
+- Easiest path: open `/administration/ui/surfaces` → "New Surface" → pick the client + enter the name.
 - Or via SQL (admin only, ON CASCADE on the FKs):
   ```sql
   INSERT INTO ui.ui_surface (name, client_name, description, sort_order, is_active)
@@ -274,11 +321,19 @@ dispatch(
 
 The thunk at `features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` reads `runtime.surfaceName`, fetches the agent's binding layers via `fetchSurfaceBindingLayers` (bindings are `platform.associations` edges read through the `agent.menu_surface` view — written ONLY via `features/surfaces/services/bind-agent-to-surface.service.ts`), merges layers weakest→strongest, applies `value_mappings` via the resolver, and falls back to legacy auto-name-matching for unmapped keys. If you skip `surfaceName`, you get the legacy auto-name-match path only — explicit mappings won't apply.
 
+### Highlight-on-page (Locate)
+
+Pages tag the DOM element that renders a value with **`data-surface-value="<value_name>"`**. The Surface Context window's **Locate** button scrolls to and flashes it (`features/surfaces/utils/locate-on-page.ts`). `SectionCard` / `MetricCell` in `features/marketing/components/shared/MarketingUi.tsx` take an `anchor` prop for this. Tag anchors as you build the page — a value with no anchor can't be located.
+
+### Hierarchy chrome
+
+Chrome reads ancestry/children from the REGISTRY — `getSurfaceAncestry` / `getSurfaceChildren` via `getRelatedSurfaces` (`features/surfaces/runtime/fetchRelatedSurfaces.ts`, synchronous). The Agents popover renders the full breadcrumb from it. `ui_surface.parent_surface_name` is a mirror only — never read it for hierarchy in chrome.
+
 ## Updating an existing manifest
 
-- **Adding a value**: append to `surfaceSpecific`, update the `createXxxScope` helper signature, re-sync. Existing bindings keep working — the new value just becomes available to bind against.
+- **Adding a value**: append to `surfaceSpecific` (with its `group`), update the scope-builder signature, re-sync. Existing bindings keep working — the new value just becomes available to bind against.
 - **Removing a value**: delete from the manifest. Sync will mark its DB row as `dbValuesNotInManifest` in the drift report. Any existing `surface_value` bindings whose `target` matches will show up as `brokenAgentMappings` / `brokenToolMappings` — admin uses the drift dialog's "Remap to…" / "Remove" / "Keep & notify" actions. **Never silently delete** DB rows that have bindings against them.
-- **Changing a field on an existing value** (description, label, alwaysAvailable, typicalCharCount): edit in place. Sync upserts. The drift report's `diffs` list will show the field-level diff until the sync is applied. If `alwaysAvailable` flipped from `false` → `true`, also update the `createXxxScope` helper signature so the type system catches missing keys in surface code.
+- **Changing a field on an existing value** (description, label, alwaysAvailable, typicalCharCount, group): edit in place. Sync upserts. The drift report's `diffs` list will show the field-level diff until the sync is applied. If `alwaysAvailable` flipped from `false` → `true`, also update the scope-builder signature so the type system catches missing keys in surface code.
 
 ## Removing a manifest entirely
 
@@ -291,10 +346,13 @@ The thunk at `features/agents/redux/execution-system/thunks/launch-agent-executi
 ## Things to avoid
 
 - **Stuffing everything into `context`.** It's escape-valve only. Each named field is queryable in binding UIs; `context` is opaque to the LLM in mapping previews. If the surface emits 5 obvious things, declare 5 SurfaceValues.
-- **Lying about `alwaysAvailable`.** This breaks the `createXxxScope` type guarantee. If the surface code has any `if` branch that skips writing a key, that key is `false`.
+- **Hand-typing a label anywhere.** THE NAMING LAW: chrome and on-page section/field text render through `getSurfaceDisplayLabel` / `surfaceValueLabels` / `surfaceGroupLabels` — never a string literal that duplicates a manifest label.
+- **Leaving loaded data undeclared.** THE COMPLETENESS LAW: an "Undeclared (runtime only)" entry in the Surface Context window is a defect.
+- **Lying about `alwaysAvailable`.** This breaks the scope-builder type guarantee. If the surface code has any `if` branch that skips writing a key, that key is `false`.
 - **Generic descriptions.** "The user's note" tells the LLM nothing. "Markdown body of the note the user has open. Empty when no note is open." is correct.
+- **Declaring a reserved group key.** `general` / `baseline` / `inherited:*` are registry-synthesized; declaring one throws at module init.
 - **Mismatched `surfaceName`.** `ui_surface.name`, the manifest's `surfaceName`, and the runtime `runtime.surfaceName` must be byte-identical. Binding edges reference the surface by uuid (`platform.associations.target_id`), so a name mismatch doesn't break stored bindings — it silently resolves NO bindings at launch.
-- **Skipping the scope helper.** `dispatch(launchAgentExecution({ runtime: { applicationScope: { selecton: "..." } } }))` — typo, no TS error, silent miss at runtime. Always go through `createXxxScope`.
+- **Skipping the scope helper.** `dispatch(launchAgentExecution({ runtime: { applicationScope: { selecton: "..." } } }))` — typo, no TS error, silent miss at runtime. Always go through the scope builder.
 - **Inventing a baseline-style key.** If you find yourself adding `selection` or `content` to `surfaceSpecific` instead of spreading from baseline, stop — you'll fork the description and confuse mappings. Spread from `BASELINE_VALUES` and override only when the surface's semantics genuinely differ.
 - **Forgetting to update the helper signature when `alwaysAvailable` changes.** The signature is hand-maintained; the drift script doesn't verify it.
 
@@ -302,19 +360,25 @@ The thunk at `features/agents/redux/execution-system/thunks/launch-agent-executi
 
 | What | Where |
 |---|---|
-| `SurfaceManifest` / `SurfaceValue` / `ValueMapping` types | `features/surfaces/types.ts` |
+| `SurfaceManifest` / `SurfaceValue` / `SurfaceValueGroup` / `ValueMapping` types | `features/surfaces/types.ts` |
+| Canonical label helpers (`getSurfaceDisplayLabel`, `surfaceValueLabels`, `surfaceGroupLabels`) | `features/surfaces/utils/surface-display.ts` |
+| Locate-on-page (`data-surface-value` flash) | `features/surfaces/utils/locate-on-page.ts` |
+| Hierarchy (registry-backed, synchronous) | `features/surfaces/runtime/fetchRelatedSurfaces.ts` + `registry.ts` `getSurfaceAncestry`/`getSurfaceChildren` |
 | Baseline values + helpers | `features/surfaces/manifests/_baseline.manifest.ts` |
 | Central registry (`RAW_MANIFESTS` → derived `ALL_MANIFESTS`) | `features/surfaces/manifests/registry.ts` |
+| **Reference implementation (full contract)** | `features/surfaces/manifests/marketing-page.manifest.ts` + `features/marketing/lib/marketing-page-scope.ts` |
+| Simple-case reference | `features/surfaces/manifests/notes-editor.manifest.ts` |
 | Binding service (associations edges) | `features/surfaces/services/bind-agent-to-surface.service.ts` |
 | Per-manifest README | `features/surfaces/manifests/README.md` |
-| Sync service (diff + upsert) | `features/surfaces/services/manifest-sync.service.ts` |
+| Sync service (diff + upsert; mirrors label/value_groups/group_key) | `features/surfaces/services/manifest-sync.service.ts` |
+| Sync SQL emitter (agent-shell path) | `scripts/emit-surface-sync-sql.ts` |
 | Sync API (admin-gated) | `app/api/admin/surfaces/sync-manifests/route.ts` |
 | Drift API (admin-gated) | `app/api/admin/surfaces/drift-report/route.ts` |
 | Runtime resolver | `features/surfaces/utils/value-mapping-resolver.ts` |
 | Launch thunk integration | `features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` |
-| Admin UI | `app/(authenticated)/(admin-auth)/administration/surfaces/` |
+| Admin UI | `app/(authenticated)/(admin-auth)/administration/ui/surfaces/` |
 | Agent-side binding UI | `app/(a)/agents/[id]/surfaces/page.tsx` + `features/surfaces/components/AgentSurfacesPanel.tsx` |
-| Drift check (manual — in `pnpm validate`, NOT commit/CI-run) | `scripts/check-surface-drift.ts` (`pnpm check:surface-drift`) |
+| Drift check (manual — in `pnpm check:release-gates`, NOT commit/CI-run) | `scripts/check-surface-drift.ts` (`pnpm check:surface-drift`) |
 | Candidate catalog (for the admin "add" dialog) | `features/surfaces/data/surface-candidates.ts` |
 
 ## Pre-flight checklist
@@ -325,8 +389,12 @@ Before you say a surface is added:
 - [ ] `ui_surface` row exists with the exact `<client>/<local>` name
 - [ ] `<local-slug>.manifest.ts` created in `features/surfaces/manifests/`
 - [ ] Manifest imported + included in `RAW_MANIFESTS` in `registry.ts`
-- [ ] Every `SurfaceValue` has: a snake_case `name`, a 2-4 word `label`, a 1-2 sentence `description` covering the empty case, a correct `valueType`, an honest `alwaysAvailable`, and a sensible `typicalCharCount`
-- [ ] `createXxxScope` helper exists and its required (no `?`) keys match every `alwaysAvailable: true` value
+- [ ] Full contract present: `label` (canonical, unique per client), `urlPattern`, `intro`, `groups` (curated band 0–899), `inheritsFrom` where true
+- [ ] **Completeness sweep**: every piece of data the page loads is declared — fields AND natural composites; no "Undeclared (runtime only)" entries in the Surface Context window
+- [ ] Every `SurfaceValue` has: a snake_case `name`, a canonical `label`, a 1-2 sentence `description` covering the empty case, a correct `valueType`, an honest `alwaysAvailable`, a sensible `typicalCharCount`, and a `group`
+- [ ] Scope builder exists (in-file for simple surfaces, runtime module for complex ones); required (no `?`) keys match every `alwaysAvailable: true` value INCLUDING inherited ones
+- [ ] On-page section/field chrome renders via `surfaceValueLabels` / `surfaceGroupLabels` — no hand-typed label strings
+- [ ] Page elements tagged `data-surface-value` anchors for Locate
 - [ ] `pnpm check:surface-drift` passes
 - [ ] DB sync applied (admin UI or `POST /api/admin/surfaces/sync-manifests`)
 - [ ] Surface code launches agents via `runtime.surfaceName` + `applicationScope: create<LocalSlug>Scope(...)`
