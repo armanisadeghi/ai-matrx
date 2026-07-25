@@ -34,7 +34,26 @@ export interface GoogleConnectionSummary {
   created_at: string;
   updated_at: string;
   metadata: Record<string, unknown>;
+  /**
+   * True when the row still references a resolvable vault credential — the
+   * stable `credential_item_id` OR the legacy `vault_secret_key`. This mirrors
+   * aidream's `resolve_connection_credential` precondition EXACTLY (it raises
+   * "has no vault credential — it needs re-authentication" only when both are
+   * null), so the UI can state the failure before a sync is ever attempted
+   * instead of discovering it mid-stream.
+   */
+  credential_present: boolean;
+  /** True when the credential is the stable vault item, not the legacy key. */
+  credential_stable: boolean;
+  /**
+   * Derived truth, not the stored `status`: a row can say `connected` while
+   * having lost its credential (the exact state that produced the silent GSC
+   * sync failures on 2026-07-25).
+   */
+  health: GoogleConnectionHealth;
 }
+
+export type GoogleConnectionHealth = "connected" | "needs_reauth" | "revoked";
 
 export interface GoogleConnectionResource {
   id: string;

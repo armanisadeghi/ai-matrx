@@ -1,15 +1,31 @@
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type { TypedStreamEvent } from "@/lib/api/types";
+import {
+  BackendApiError,
+  describeBackendFailure,
+  parseHttpError,
+  parseStreamError,
+} from "@/lib/api/errors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { supabase } from "@/utils/supabase/client";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 
-/** Feed every scraper-boundary failure to the admin Error Inspector. */
+/**
+ * Feed every scraper-boundary failure to the admin Error Inspector.
+ *
+ * `message` MUST be the most specific cause available (the unwrapped upstream
+ * sentence), never the streaming layer's "<Command> failed unexpectedly"
+ * template — that template goes in `userMessage`, where it belongs. Capturing
+ * it as the message is what made these entries unreadable for an admin.
+ */
 function captureCrawlerError(input: {
   path: string;
   message: string;
   userMessage?: string;
+  code?: string;
+  requestId?: string;
   status?: number;
+  details?: string;
   raw?: unknown;
 }): void {
   try {
@@ -18,7 +34,10 @@ function captureCrawlerError(input: {
       relation: `scraper:${input.path}`,
       message: input.message,
       userMessage: input.userMessage,
+      code: input.code,
+      requestId: input.requestId,
       status: input.status,
+      details: input.details,
       raw: input.raw,
     });
   } catch {
@@ -242,32 +261,42 @@ export function crawlerErrorMessage(
     : `The crawler couldn’t complete this request (HTTP ${status}). Please retry.`;
 }
 
+/**
+ * Turn a non-OK scraper response into the canonical `BackendApiError` with the
+ * DEEPEST cause the payload carries as its detail, plus a status-appropriate
+ * headline. Callers render it through `describeBackendFailure` so the exact
+ * server sentence, code, and request id stay one click away.
+ */
 async function responseError(
   response: Response,
   path: string,
-): Promise<Error> {
-  let detail: string | undefined;
-  let raw: unknown;
-  try {
-    const payload = (await response.json()) as {
-      detail?: string;
-      user_message?: string;
-      message?: string;
-    };
-    raw = payload;
-    detail = payload.user_message || payload.detail || payload.message;
-  } catch {
-    /* non-JSON body */
-  }
-  const friendly = crawlerErrorMessage(response.status, detail);
+): Promise<BackendApiError> {
+  const status = response.status;
+  const parsed = await parseHttpError(response);
+  const explanation = describeBackendFailure(parsed);
+  // The status-mapped guidance is only better than the server's own sentence
+  // when the server sent a template (or nothing meaningful).
+  const headline = explanation.headlineWasGeneric
+    ? crawlerErrorMessage(status, explanation.cause)
+    : explanation.headline;
   captureCrawlerError({
     path,
-    message: detail ?? `HTTP ${response.status}`,
-    userMessage: friendly,
-    status: response.status,
-    raw,
+    message: explanation.cause,
+    userMessage: headline,
+    code: explanation.code,
+    requestId: explanation.requestId,
+    status,
+    details: explanation.chain.join("\n↳ "),
+    raw: parsed.toJSON(),
   });
-  return new Error(friendly);
+  return new BackendApiError({
+    code: explanation.code as BackendApiError["code"],
+    detail: explanation.cause,
+    userMessage: headline,
+    details: { chain: explanation.chain, details: parsed.details },
+    requestId: explanation.requestId,
+    status,
+  });
 }
 
 async function streamCommand(
@@ -305,18 +334,33 @@ async function streamCommand(
     }
     callbacks.onEvent?.(event, crawlEvent);
     if (event.event === "error") {
-      const data = event.data as unknown as {
-        user_message?: string;
-        message?: string;
-        detail?: string;
-      };
-      const message =
-        data.user_message ||
-        data.message ||
-        data.detail ||
-        "The crawler reported an error.";
-      captureCrawlerError({ path, message, userMessage: message, raw: data });
-      throw new Error(message);
+      // The server's `user_message` is a per-command TEMPLATE for every
+      // unclassified crash ("CanonicalGscSync failed unexpectedly…") while the
+      // actual cause — often a stringified upstream payload — rides in
+      // `message`. Preferring the template is what produced years of
+      // meaningless failures; the explanation primitive digs out the truth.
+      const explanation = describeBackendFailure(parseStreamError(event.data));
+      // Rebuilt so `error.message` itself is the specific cause — a naive
+      // `extractErrorMessage(error)` callsite can no longer show a template.
+      const failure = new BackendApiError({
+        code: explanation.code as BackendApiError["code"],
+        detail: explanation.cause,
+        userMessage: explanation.headline,
+        details: { chain: explanation.chain },
+        requestId: explanation.requestId,
+        status: explanation.status,
+      });
+      captureCrawlerError({
+        path,
+        message: explanation.cause,
+        userMessage: explanation.headline,
+        code: explanation.code,
+        requestId: explanation.requestId,
+        status: explanation.status ?? undefined,
+        details: explanation.chain.join("\n↳ "),
+        raw: event.data,
+      });
+      throw failure;
     }
     if (event.event === "end") ended = true;
   }

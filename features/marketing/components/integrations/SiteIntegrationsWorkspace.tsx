@@ -56,7 +56,12 @@ import {
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { syncGsc } from "@/features/marketing/crawler/direct-client";
 import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
-import { extractErrorMessage } from "@/utils/errors";
+import {
+  describeBackendFailure,
+  type BackendFailureExplanation,
+} from "@/lib/api/errors";
+import { diagnoseGoogleConnection } from "@/features/marketing/google/health";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
 import {
   useConnectGoogle,
@@ -498,6 +503,12 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
                       draft.googleSearchConsole,
                       true,
                     )}
+                    connection={
+                      googleInventory.data?.connections.find(
+                        (candidate) =>
+                          candidate.id === draft.googleSearchConsole.credentialRef,
+                      ) ?? null
+                    }
                   />
                 ) : undefined
               }
@@ -618,19 +629,35 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   );
 }
 
-/** "Sync now" + freshness for the Search Console card. Command-only path. */
+/**
+ * "Sync now" + freshness + FULL failure disclosure for the Search Console card.
+ *
+ * Two rules this row exists to enforce:
+ *  1. A broken credential is stated BEFORE the click (derived connection
+ *     health), not discovered as a mid-stream crash.
+ *  2. When a sync does fail, the exact server cause, error code, and request id
+ *     stay on screen — the streaming layer's "<Command> failed unexpectedly"
+ *     template is never the whole answer.
+ */
 function GscSyncRow({
   site,
   status,
+  connection,
 }: {
   site: MarketingSite;
   status: ReturnType<typeof providerReferenceStatus>;
+  /** The Google connection this site's Search Console binding points at. */
+  connection: GoogleConnectionSummary | null;
 }) {
   const queryClient = useQueryClient();
   const [syncing, setSyncing] = useState(false);
+  const [failure, setFailure] = useState<BackendFailureExplanation | null>(null);
   const connected = status === "reference_configured";
+  const diagnosis = connection ? diagnoseGoogleConnection(connection) : null;
+  const blocked = Boolean(diagnosis?.blocking);
   const runSync = async () => {
     setSyncing(true);
+    setFailure(null);
     try {
       await syncGsc(site.id);
       await queryClient.invalidateQueries({
@@ -640,43 +667,113 @@ function GscSyncRow({
         description: `Fresh page stats are stored for ${site.domain}.`,
       });
     } catch (error) {
+      const explanation = describeBackendFailure(error);
+      setFailure(explanation);
       toast.error("Search Console sync failed", {
-        description: extractErrorMessage(error),
+        description: explanation.headline,
       });
     } finally {
       setSyncing(false);
     }
   };
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/20 p-2">
-      <p
-        className={cn(
-          "text-[10px] leading-4",
-          connected && !site.gsc_synced_at
-            ? "font-medium text-amber-600 dark:text-amber-400"
-            : "text-muted-foreground",
-        )}
-      >
-        {site.gsc_synced_at
-          ? `Last synced ${formatCompactDate(site.gsc_synced_at)}`
-          : connected
-            ? "Connected, never synced"
-            : "Connect a property to enable sync"}
-      </p>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-7 shrink-0 gap-1.5"
-        disabled={syncing || !connected}
-        onClick={() => void runSync()}
-      >
-        {syncing ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <RefreshCw className="h-3.5 w-3.5" />
-        )}
-        {syncing ? "Syncing…" : "Sync now"}
-      </Button>
+    <div className="space-y-1.5 rounded-md border border-border bg-muted/20 p-2">
+      <div className="flex items-center justify-between gap-2">
+        <p
+          className={cn(
+            "text-[10px] leading-4",
+            connected && !site.gsc_synced_at
+              ? "font-medium text-amber-600 dark:text-amber-400"
+              : "text-muted-foreground",
+          )}
+        >
+          {site.gsc_synced_at
+            ? `Last synced ${formatCompactDate(site.gsc_synced_at)}`
+            : connected
+              ? "Connected, never synced"
+              : "Connect a property to enable sync"}
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 gap-1.5"
+          disabled={syncing || !connected || blocked}
+          onClick={() => void runSync()}
+        >
+          {syncing ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          {syncing ? "Syncing…" : "Sync now"}
+        </Button>
+      </div>
+
+      {/* Pre-flight truth: state the broken credential instead of letting the
+          sync fail with a template. */}
+      {diagnosis && diagnosis.blocking ? (
+        <div className="rounded-sm border border-destructive/40 bg-destructive/5 p-1.5">
+          <p className="text-[10px] font-medium text-destructive">
+            Sync unavailable — {diagnosis.label.toLowerCase()}
+          </p>
+          <p className="mt-0.5 text-[10px] leading-4 text-destructive/90">
+            {diagnosis.reason}
+          </p>
+          {diagnosis.remedy ? (
+            <p className="mt-0.5 text-[10px] leading-4 text-destructive/90">
+              {diagnosis.remedy}{" "}
+              <Link
+                className="underline"
+                href={marketingRoutes.connectionsGoogle()}
+              >
+                Open Google connections
+              </Link>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {failure ? (
+        <div className="rounded-sm border border-destructive/40 bg-destructive/5 p-1.5">
+          <p className="text-[10px] font-medium text-destructive">
+            Last sync failed: {failure.headline}
+          </p>
+          <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
+            {(
+              [
+                ["Cause", failure.cause],
+                ["Error code", failure.code],
+                ["Request id", failure.requestId || "not reported"],
+                ["HTTP status", failure.status ? String(failure.status) : "—"],
+              ] as Array<[string, string]>
+            ).map(([label, value]) => (
+              <div key={label} className="col-span-2 grid grid-cols-subgrid">
+                <dt className="text-[10px] text-muted-foreground">{label}</dt>
+                <dd className="break-words font-mono text-[10px] text-foreground">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {failure.chain.length > 1 ? (
+            <details className="mt-1">
+              <summary className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground">
+                Full service chain ({failure.chain.length} layers)
+              </summary>
+              <ol className="mt-1 space-y-0.5">
+                {failure.chain.map((entry, index) => (
+                  <li
+                    key={`${index}:${entry.slice(0, 24)}`}
+                    className="break-words font-mono text-[10px] text-muted-foreground"
+                  >
+                    {index + 1}. {entry}
+                  </li>
+                ))}
+              </ol>
+            </details>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -858,6 +955,9 @@ function ProviderReferenceFields({
                 {connection.owner_type === "organization"
                   ? " · Organization"
                   : " · Personal"}
+                {connection.health === "connected"
+                  ? ""
+                  : ` · ${diagnoseGoogleConnection(connection).label}`}
               </SelectItem>
             ))}
           </SelectContent>

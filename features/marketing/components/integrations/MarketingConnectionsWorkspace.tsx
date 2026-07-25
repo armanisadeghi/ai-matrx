@@ -15,6 +15,9 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
+import { describeBackendFailure } from "@/lib/api/errors";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +43,10 @@ import {
   GOOGLE_SEARCH_CONSOLE_SCOPES,
   type GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
+import {
+  diagnoseGoogleConnection,
+  googleConnectionDiagnostics,
+} from "@/features/marketing/google/health";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
@@ -68,8 +75,10 @@ function MarketingConnectionsContent() {
   const availableGoogleAccounts = inventory.data?.connections.filter(
     (connection) => connection.status !== "revoked",
   );
+  // DERIVED health, not the stored status: a row that lost its vault
+  // credential cannot authorize anything and must never be counted as usable.
   const connectedGoogleAccounts = inventory.data?.connections.filter(
-    (connection) => connection.status === "connected",
+    (connection) => connection.health === "connected",
   );
   const searchConsoleProperties = inventory.data?.resources.filter(
     (resource) => resource.resource_type === "search_console_property",
@@ -126,8 +135,22 @@ function MarketingConnectionsContent() {
       });
       toast.success("Search Console connected and properties discovered.");
     } catch (error) {
-      console.error("Unable to connect Google Search Console", error);
-      toast.error("Google could not be connected. Please try again.");
+      // Show the actual reason — a generic "please try again" hides expired
+      // consent, denied scopes, and vault write failures behind one sentence.
+      const explanation = describeBackendFailure(error);
+      captureError({
+        source: "marketing-crawler",
+        relation: "google:connect",
+        message: explanation.cause,
+        userMessage: explanation.headline,
+        code: explanation.code,
+        requestId: explanation.requestId,
+        status: explanation.status ?? undefined,
+        raw: { owner, chain: explanation.chain },
+      });
+      toast.error("Google could not be connected", {
+        description: explanation.headline,
+      });
     } finally {
       setConnectingOwner(null);
     }
@@ -290,12 +313,24 @@ function MarketingConnectionsContent() {
                         await disconnect.mutateAsync(connection.id);
                         toast.success("Google account disconnected.");
                       } catch (error) {
-                        console.error("Unable to disconnect Google", error);
-                        toast.error(
-                          "Google could not be disconnected. Please try again.",
-                        );
+                        toast.error("Google could not be disconnected", {
+                          description: describeBackendFailure(error).headline,
+                        });
                       }
                     }}
+                    reconnecting={
+                      connectingOwner ===
+                      (connection.owner_type === "organization"
+                        ? "organization"
+                        : "user")
+                    }
+                    onReconnect={() =>
+                      void startConnection(
+                        connection.owner_type === "organization"
+                          ? "organization"
+                          : "user",
+                      )
+                    }
                   />
                 ))}
               </div>
@@ -436,16 +471,21 @@ function ConnectionRow({
   connection,
   searchConsoleCount,
   busy,
+  reconnecting,
   onDisconnect,
+  onReconnect,
 }: {
   connection: GoogleConnectionSummary;
   searchConsoleCount: number;
   busy: boolean;
+  reconnecting: boolean;
   onDisconnect: () => void;
+  onReconnect: () => void;
 }) {
-  const usable = connection.status === "connected";
+  const diagnosis = diagnoseGoogleConnection(connection);
+  const usable = connection.health === "connected";
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
+    <div className="flex flex-wrap items-start justify-between gap-3 px-3 py-2.5">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-xs font-semibold">
@@ -453,8 +493,12 @@ function ConnectionRow({
               connection.account_email ||
               "Google account"}
           </span>
-          <Badge variant={usable ? "success" : "warning"}>
-            {usable ? "Connected" : "Needs attention"}
+          <Badge
+            variant={
+              usable ? "success" : diagnosis.blocking ? "destructive" : "warning"
+            }
+          >
+            {diagnosis.label}
           </Badge>
           <Badge variant="outline">
             {connection.owner_type === "organization"
@@ -466,31 +510,72 @@ function ConnectionRow({
           Search Console: {searchConsoleCount} propert
           {searchConsoleCount === 1 ? "y" : "ies"}
         </p>
+        {/* The exact reason, always — never "needs attention" with no cause. */}
+        <p
+          className={cn(
+            "mt-1 max-w-3xl text-[10px] leading-4",
+            diagnosis.blocking
+              ? "text-destructive"
+              : usable
+                ? "text-muted-foreground"
+                : "text-amber-700 dark:text-amber-400",
+          )}
+        >
+          {diagnosis.reason}
+          {diagnosis.remedy ? ` ${diagnosis.remedy}` : ""}
+        </p>
         {usable && searchConsoleCount === 0 ? (
           <p className="mt-1 max-w-3xl text-[10px] text-muted-foreground">
-            Connected, but this account has no Search Console properties
-            available.
-          </p>
-        ) : !usable ? (
-          <p className="mt-1 max-w-3xl text-[10px] text-amber-700 dark:text-amber-400">
-            Reconnect this Google account to refresh provider access.
+            No Search Console properties were discovered for this account.
           </p>
         ) : null}
+        <details className="mt-1 max-w-3xl">
+          <summary className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground">
+            Diagnostics
+          </summary>
+          <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
+            {googleConnectionDiagnostics(connection).map(([label, value]) => (
+              <div key={label} className="col-span-2 grid grid-cols-subgrid">
+                <dt className="text-[10px] text-muted-foreground">{label}</dt>
+                <dd className="break-all font-mono text-[10px] text-foreground">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </details>
       </div>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-7 gap-1.5 text-xs text-destructive"
-        disabled={busy}
-        onClick={onDisconnect}
-      >
-        {busy ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Unplug className="h-3.5 w-3.5" />
+      <div className="flex shrink-0 items-center gap-1.5">
+        {usable ? null : (
+          <Button
+            size="sm"
+            className="h-7 gap-1.5 text-xs"
+            disabled={reconnecting}
+            onClick={onReconnect}
+          >
+            {reconnecting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Reconnect
+          </Button>
         )}
-        Disconnect
-      </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1.5 text-xs text-destructive"
+          disabled={busy}
+          onClick={onDisconnect}
+        >
+          {busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Unplug className="h-3.5 w-3.5" />
+          )}
+          Disconnect
+        </Button>
+      </div>
     </div>
   );
 }

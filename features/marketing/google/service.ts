@@ -7,8 +7,11 @@ import type {
   GoogleConnectionResult,
 } from "@/features/marketing/google/types";
 
+// `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
+// vault item id and a key name). Reading them is what lets the UI tell the
+// truth about a connection's health without a server round-trip.
 const CONNECTION_SELECT =
-  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata";
+  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_item_id, vault_secret_key";
 const RESOURCE_SELECT =
   "id, connection_id, resource_type, resource_ref, display_name, permission_level, discovered_at, metadata";
 
@@ -34,6 +37,8 @@ type ConnectionRow = {
   created_at: string;
   updated_at: string;
   metadata: unknown;
+  credential_item_id: string | null;
+  vault_secret_key: string | null;
 };
 
 type ResourceRow = {
@@ -48,15 +53,27 @@ type ResourceRow = {
 };
 
 function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
+  const status =
+    row.status === "needs_attention" || row.status === "revoked"
+      ? row.status
+      : "connected";
+  const credentialPresent = Boolean(row.credential_item_id || row.vault_secret_key);
   return {
     ...row,
     owner_type: row.owner_type === "organization" ? "organization" : "user",
     provider: "google",
-    status:
-      row.status === "needs_attention" || row.status === "revoked"
-        ? row.status
-        : "connected",
+    status,
     metadata: recordValue(row.metadata),
+    credential_present: credentialPresent,
+    credential_stable: Boolean(row.credential_item_id),
+    // A row whose credential reference is gone CANNOT authorize anything, no
+    // matter what `status` claims — parity with aidream's precondition.
+    health:
+      status === "revoked"
+        ? "revoked"
+        : credentialPresent && status === "connected"
+          ? "connected"
+          : "needs_reauth",
   };
 }
 

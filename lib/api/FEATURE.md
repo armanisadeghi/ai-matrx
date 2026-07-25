@@ -99,6 +99,33 @@ active-server URL resolution, auth, request IDs, structured HTTP parsing, and
 Error Inspector capture. Feature code does not import it directly; add a
 contract-bound wrapper in `typed-client.ts` or use `callApi`.
 
+## Failure disclosure — a template is NEVER the answer
+
+`errors.ts` owns error shaping: `BackendApiError`, `parseHttpError`,
+`parseStreamError`, and the anti-secrecy layer
+**`describeBackendFailure(error)`** (+ `unwrapUpstreamError`,
+`isGenericUserMessage`).
+
+The server's `user_message` is frequently a per-command TEMPLATE — the
+streaming layer (`matrx-connect/streaming/response.py`) emits
+`"<DebugLabel> failed unexpectedly. Please try again or adjust your settings."`
+for **every unclassified crash** — while the real cause travels in the same
+payload's `message`, often as a stringified upstream service payload
+(`… HTTP 409 {"message":"…has no vault credential…","request_id":"…"}`).
+
+**Rules for any surface that reports a backend failure:**
+
+1. Never headline a raw `user_message`. Run the error through
+   `describeBackendFailure` and headline `explanation.headline` — it falls
+   back to the deepest specific sentence when the server was generic.
+2. Keep `cause`, `code`, `requestId`, and `chain` reachable on screen (a
+   diagnostics block or `<details>`), so an admin never has to guess.
+3. `captureError` gets the SPECIFIC cause as `message` and the template as
+   `userMessage` — reversing them is what made Error Inspector rows unreadable.
+
+Guard: [`__tests__/failure-explanation.test.ts`](./__tests__/failure-explanation.test.ts)
+pins the real 2026-07-25 GSC payload end-to-end.
+
 ## Proof / guardrail
 
 [`typed-client.contract-test.ts`](./typed-client.contract-test.ts) is a
@@ -190,3 +217,12 @@ query GETs (unblocked by `apiGet`'s `query` support), and
   in-stream app error, never an abort) — logging a loud `ai_v2_downgrade`
   record to the Error Inspector. Resume/tool_results/cancel deliberately stay
   v1 (the v1 resume route itself runs on the runtime spine server-side).
+
+- **2026-07-25 — Failure disclosure layer.** Added `describeBackendFailure`,
+  `unwrapUpstreamError`, and `isGenericUserMessage` to `errors.ts` so a
+  templated `user_message` can no longer be the whole story: nested upstream
+  payloads are unwrapped, the deepest specific sentence becomes the headline,
+  and `code`/`requestId`/`chain` survive to the UI. First consumer:
+  `features/marketing/crawler/direct-client.ts` (was throwing a lossy
+  `new Error(user_message)`), which now throws `BackendApiError` and captures
+  the real cause as the Error Inspector `message`.

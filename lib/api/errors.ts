@@ -234,6 +234,161 @@ export function parseStreamError(data: unknown): BackendApiError {
     });
 }
 
+// ============================================================================
+// FAILURE EXPLANATION — never let a templated non-answer be the whole story
+// ============================================================================
+
+/**
+ * Server messages that carry ZERO diagnostic value. The streaming layer
+ * (`matrx-connect/streaming/response.py`) emits the first one for every
+ * unclassified crash — "CanonicalGscSync failed unexpectedly. Please try
+ * again or adjust your settings." — while the REAL cause travels in the same
+ * payload's `message`. Treating those as the answer is what makes failures
+ * feel secretive.
+ */
+const GENERIC_MESSAGE_PATTERNS: readonly RegExp[] = [
+    /failed unexpectedly/i,
+    /^\s*something went wrong/i,
+    /please try again(\s+later)?\.?\s*$/i,
+    /^\s*request failed\b/i,
+    /^\s*unknown (streaming )?error/i,
+    /^\s*internal server error\.?\s*$/i,
+];
+
+/** True when a message tells the reader nothing about what actually broke. */
+export function isGenericUserMessage(message: string | null | undefined): boolean {
+    const value = (message ?? '').trim();
+    if (!value) return true;
+    return GENERIC_MESSAGE_PATTERNS.some((pattern) => pattern.test(value));
+}
+
+export interface UpstreamErrorPayload {
+    message: string;
+    code: string | null;
+    userMessage: string | null;
+    requestId: string | null;
+    status: number | null;
+}
+
+/**
+ * Recover an upstream service's structured error that a downstream service
+ * stringified into its own message.
+ *
+ * Real example (scraper wrapping aidream):
+ *   `aidream could not resolve GSC credential 7223…: HTTP 409 {"error":"conflict",
+ *    "message":"Google connection 7223… has no vault credential — it needs
+ *    re-authentication","user_message":"Something went wrong…","request_id":"9002…"}`
+ *
+ * Without this, the only actionable sentence on the whole hop is invisible.
+ */
+export function unwrapUpstreamError(message: string): UpstreamErrorPayload | null {
+    const start = message.indexOf('{');
+    const end = message.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(message.slice(start, end + 1));
+    } catch {
+        return null;
+    }
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const body = parsed as Record<string, unknown>;
+    const inner =
+        (typeof body.message === 'string' && body.message) ||
+        (typeof body.detail === 'string' && body.detail) ||
+        '';
+    if (!inner) return null;
+    const statusMatch = /\bHTTP (\d{3})\b/.exec(message.slice(0, start));
+    return {
+        message: inner,
+        code:
+            (typeof body.error_type === 'string' && body.error_type) ||
+            (typeof body.error === 'string' && body.error) ||
+            null,
+        userMessage: typeof body.user_message === 'string' ? body.user_message : null,
+        requestId: typeof body.request_id === 'string' ? body.request_id : null,
+        status: statusMatch ? Number(statusMatch[1]) : null,
+    };
+}
+
+export interface BackendFailureExplanation {
+    /** Machine code from the deepest layer that classified the failure. */
+    code: string;
+    /** The most specific human-readable cause available — never a template. */
+    cause: string;
+    /** What to headline in the UI: the cause when the server was generic. */
+    headline: string;
+    /** True when every user-facing message the server sent was a template. */
+    headlineWasGeneric: boolean;
+    /** Message chain, outermost (closest service) first. */
+    chain: string[];
+    /** Deepest request id available, for cross-service log correlation. */
+    requestId: string;
+    status: number | null;
+}
+
+/**
+ * THE anti-secrecy primitive: turn any thrown backend/stream failure into the
+ * most specific explanation the payload can support — unwrapping every nested
+ * upstream error and refusing to let a templated `user_message` be the answer.
+ *
+ * Every surface that reports a backend failure to a human should headline
+ * `explanation.headline` and always keep `cause` + `requestId` reachable.
+ */
+export function describeBackendFailure(error: unknown): BackendFailureExplanation {
+    const chain: string[] = [];
+    let code = 'internal_error';
+    let requestId = '';
+    let status: number | null = null;
+    let userFacing: string | null = null;
+
+    if (error instanceof BackendApiError) {
+        code = error.code;
+        requestId = error.requestId;
+        status = error.status;
+        userFacing = error.userMessage;
+        if (error.detail) chain.push(error.detail);
+        if (error.userMessage && error.userMessage !== error.detail) {
+            chain.push(error.userMessage);
+        }
+    } else if (error instanceof Error) {
+        chain.push(error.message);
+        userFacing = error.message;
+    } else if (typeof error === 'string') {
+        chain.push(error);
+        userFacing = error;
+    } else {
+        chain.push('Unknown error');
+    }
+
+    // Walk the nesting: ANY message in the chain may have stringified the
+    // service above it (the technical `detail` usually does, the templated
+    // `user_message` never does), so every layer gets unwrapped.
+    for (let cursor = 0; cursor < chain.length && cursor < 12; cursor += 1) {
+        const upstream = unwrapUpstreamError(chain[cursor]);
+        if (!upstream || chain.includes(upstream.message)) continue;
+        chain.push(upstream.message);
+        if (upstream.code) code = upstream.code;
+        if (upstream.requestId) requestId = upstream.requestId;
+        if (upstream.status !== null) status = upstream.status;
+    }
+
+    const specific = [...chain]
+        .reverse()
+        .find((message) => !isGenericUserMessage(message));
+    const cause = specific ?? chain[0] ?? 'Unknown error';
+    const headlineWasGeneric = isGenericUserMessage(userFacing);
+    return {
+        code,
+        cause,
+        headline: headlineWasGeneric ? cause : (userFacing ?? cause),
+        headlineWasGeneric,
+        chain,
+        requestId,
+        status,
+    };
+}
+
 /**
  * Extract a user-visible message from any error object.
  * Utility for components that just need the display string.
