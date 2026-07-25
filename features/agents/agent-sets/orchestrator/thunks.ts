@@ -11,6 +11,7 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { selectRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { saveMemberMeta, loadAgentSet } from "@/features/agents/redux/agent-sets/thunks";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -109,6 +110,7 @@ export function syncOrchestratorPrompt(args: {
 
     // ── Describe: one headless pass over the whole set ──────────────────────
     let responseText = "";
+    let requestId: string | undefined;
     try {
       const launch = await dispatch(
         launchAgentExecution({
@@ -126,6 +128,7 @@ export function syncOrchestratorPrompt(args: {
         }),
       ).unwrap();
       responseText = launch.responseText ?? "";
+      requestId = launch.requestId;
     } catch (e) {
       return {
         ok: false,
@@ -134,16 +137,22 @@ export function syncOrchestratorPrompt(args: {
     }
 
     // LOUD failure, never a silent fallback: if the describer produced nothing
-    // usable, the AI likely did not run. We change NOTHING (no member writes, no
-    // prompt injection) so the UI and the prompt can never diverge — better a
-    // clear error the user can retry than a prompt quietly filled with the wrong
-    // data. (The describer itself is proven to work; an empty result here means
-    // the run didn't execute — check the AI runtime/endpoint toggle.)
+    // usable, the AI run did not actually execute. We change NOTHING (no member
+    // writes, no prompt injection) so the UI and the prompt can never diverge —
+    // better a clear error the user can retry than a prompt quietly filled with
+    // the wrong data. The describer itself is proven to work at scale; an empty
+    // result here is a run/backend failure, so surface its actual error.
     if (responseText.trim().length === 0) {
+      const req = requestId ? selectRequest(requestId)(getState()) : null;
+      const detail =
+        req?.error?.user_message ||
+        req?.error?.message ||
+        (req?.status === "error"
+          ? "the run ended in an error"
+          : "the AI run didn't execute");
       return {
         ok: false,
-        error:
-          "The role describer returned no output — the AI run didn't execute (check the AI runtime/endpoint). Nothing was changed.",
+        error: `The role describer produced no output — ${detail}. Nothing was changed; check the AI runtime/endpoint and try Sync again.`,
       };
     }
     const described = parseRoleDescriberOutput(responseText);
