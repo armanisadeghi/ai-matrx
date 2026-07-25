@@ -190,7 +190,12 @@ what stops many coding agents from sprouting parallel sub-systems.
     `picklist_ref`, `<<<MATRX_START>>>`, the private-use `…` tokens, bare inline
     reference JSON) outside the back-compat decoder;
   - the `matrx` fence missing from `SPECIAL_CODE_LANGUAGES` or the TS mirror;
-  - the two repos' manifests diverging.
+  - the two repos' protocol mirror set diverging — this doc, `MATRX_REFERENCES.md`,
+    and the generated manifest byte-compared against the co-located frontend
+    checkout (`$MATRX_FRONTEND_DIR`, else the `../ai-matrx` sibling; missing
+    checkout = loud warn + skip). The FE half of the pact is ai-matrx
+    `scripts/check-protocol-sync.ts` (`pnpm check:protocol-sync`, `--fix` copies
+    aidream → FE), so drift screams no matter which repo ships first.
 
 **The one rule for every contributor (human or agent):** add a kind/type via the registry,
 never inline. There is no second place to put one.
