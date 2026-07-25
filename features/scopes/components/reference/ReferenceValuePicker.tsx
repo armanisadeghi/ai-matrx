@@ -552,6 +552,7 @@ function RecordTypeAdder({
     query,
     tokens: [token],
     perTokenLimit: 20,
+    emptyQueryMode: "candidates",
   });
 
   return (
@@ -587,7 +588,7 @@ function RecordTypeAdder({
           <p className="px-1 py-2 text-xs text-muted-foreground">
             {query.trim()
               ? "No matches."
-              : `Type to search ${info.labelPlural.toLowerCase()}.`}
+              : `No ${info.labelPlural.toLowerCase()} available.`}
           </p>
         )}
         {results.map((c, index) => (

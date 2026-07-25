@@ -32,6 +32,12 @@ export interface UseUniversalEntitySearchArgs {
   ownerId?: string | null;
   enabled?: boolean;
   perTokenLimit?: number;
+  /**
+   * What an empty query loads. Universal attach surfaces default to recents;
+   * constrained value pickers use candidates so opening the picker immediately
+   * shows the records that are available to select.
+   */
+  emptyQueryMode?: "recents" | "candidates";
 }
 
 export interface UseUniversalEntitySearchReturn {
@@ -51,6 +57,7 @@ export function useUniversalEntitySearch(
     ownerId,
     enabled = true,
     perTokenLimit = 5,
+    emptyQueryMode = "recents",
   } = args;
   const [results, setResults] = useState<UniversalCandidate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,7 +78,7 @@ export function useUniversalEntitySearch(
         : curatedTokens();
 
       let next: UniversalCandidate[] = [];
-      if (trimmed) {
+      if (trimmed || emptyQueryMode === "candidates") {
         next = await searchCandidatesAcrossTokens({
           tokens: activeTokens,
           search: trimmed,
@@ -83,12 +90,12 @@ export function useUniversalEntitySearch(
       }
       if (runRef.current !== run) return; // stale response — drop
       setResults(next);
-      setIsRecents(!trimmed);
+      setIsRecents(!trimmed && emptyQueryMode === "recents");
       setLoading(false);
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [query, tokensKey, ownerId, enabled, perTokenLimit]);
+  }, [query, tokensKey, ownerId, enabled, perTokenLimit, emptyQueryMode]);
 
   return { results, loading, isRecents };
 }
