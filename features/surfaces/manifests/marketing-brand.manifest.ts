@@ -18,8 +18,32 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+const groups: SurfaceValueGroup[] = [
+  {
+    key: "brand_identity",
+    label: "Brand identity",
+    sortOrder: 100,
+    description: "Which client brand this is — id and display name.",
+  },
+  {
+    key: "brand_context",
+    label: "Brand context",
+    sortOrder: 200,
+    description:
+      "The ground-truth client dossier: the XML context snapshot and the raw editorial profile.",
+  },
+  {
+    key: "brand_portfolio",
+    label: "Brand portfolio",
+    sortOrder: 300,
+    description:
+      "What the brand owns and what awaits review: sites, social properties, pending discoveries.",
+  },
+];
 
 const surfaceSpecific: SurfaceValue[] = [
   // ── Shared brand context (200-299) ────────────────────────────────────
@@ -32,6 +56,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 2500,
     sortOrder: 205,
+    group: "brand_context",
   },
   {
     name: "brand_profile",
@@ -43,6 +68,7 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 800,
     autoContext: false,
     sortOrder: 215,
+    group: "brand_context",
   },
 
   // ── Identity (300-349) ────────────────────────────────────────────────
@@ -55,6 +81,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 36,
     sortOrder: 300,
+    group: "brand_identity",
   },
   {
     name: "brand_name",
@@ -65,6 +92,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 40,
     sortOrder: 302,
+    group: "brand_identity",
   },
 
   // ── Workspace signals (600-649) ───────────────────────────────────────
@@ -77,6 +105,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 3,
     sortOrder: 605,
+    group: "brand_portfolio",
   },
   {
     name: "sites_summary",
@@ -88,6 +117,7 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 600,
     autoContext: false,
     sortOrder: 615,
+    group: "brand_portfolio",
   },
   {
     name: "properties_summary",
@@ -99,6 +129,7 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 600,
     autoContext: false,
     sortOrder: 625,
+    group: "brand_portfolio",
   },
 ];
 
@@ -112,6 +143,7 @@ The load-bearing rule here is ownership of truth: confirmed facts, assets, and p
 The editorial brand profile (embedded in brand_context, raw in brand_profile) is the voice-of-the-client document that downstream content and SEO agents rely on; when drafting or refining it, ground every claim in confirmed facts and crawl evidence, and clearly separate inference from evidence.
 All values except brand_id populate only after the workspace loads — treat empty values as not-yet-loaded, never as "this brand has nothing".
 </surface_intro>`,
+  groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,

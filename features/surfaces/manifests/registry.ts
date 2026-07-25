@@ -210,14 +210,17 @@ const BASELINE_GROUP_ORDER = 9900;
  * Decide the canonical group key for a resolved value.
  * A baseline-named value with no explicit group ALWAYS lands in `baseline`
  * (regardless of which layer authored it) so generic values sink to the
- * bottom by construction. Inherited values collapse into their supplying
- * parent's `inherited:<parent>` group; own ungrouped values go to `general`.
+ * bottom by construction. Inherited values ALWAYS collapse into their
+ * supplying parent's `inherited:<parent>` group — a parent-declared `group`
+ * key only applies on the parent's own surface (children don't declare it, so
+ * honoring it here would orphan the value into an unresolvable group). Own
+ * ungrouped values go to `general`.
  */
 function groupKeyFor(
   value: SurfaceManifest["values"][number],
   provenance: SurfaceValueProvenance,
 ): string {
-  if (value.group) return value.group;
+  if (provenance.kind === "own" && value.group) return value.group;
   if (BASELINE_NAME_SET.has(value.name)) return RESERVED_GROUP_KEYS.baseline;
   if (provenance.kind === "inherited") {
     return `${RESERVED_GROUP_KEYS.inheritedPrefix}${provenance.from}`;

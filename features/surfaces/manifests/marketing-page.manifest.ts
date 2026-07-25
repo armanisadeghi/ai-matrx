@@ -610,6 +610,7 @@ export function createMarketingPageScope(values: {
   site_name?: string;
   site_root_url?: string;
   site_context?: string;
+  gsc_synced_at?: string;
   // alwaysAvailable: false → optional
   page_status?: string;
   page_provenance?: string;

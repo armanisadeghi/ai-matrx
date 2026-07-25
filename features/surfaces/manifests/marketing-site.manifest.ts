@@ -23,8 +23,32 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+const groups: SurfaceValueGroup[] = [
+  {
+    key: "site_identity",
+    label: "Site identity",
+    sortOrder: 100,
+    description: "Which managed website this is — id, name, root URL.",
+  },
+  {
+    key: "site_context",
+    label: "Site context",
+    sortOrder: 200,
+    description:
+      "The compact XML ground-truth snapshot of this website, shared with every site vertical.",
+  },
+  {
+    key: "site_health",
+    label: "Site health",
+    sortOrder: 300,
+    description:
+      "Observed health evidence: connections, initialization, registry counts, and data freshness.",
+  },
+];
 
 const surfaceSpecific: SurfaceValue[] = [
   // ── Shared site context (200-299) — inherited by every site vertical ──
@@ -37,6 +61,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 2000,
     sortOrder: 225,
+    group: "site_context",
   },
 
   // ── Identity (300-349) ────────────────────────────────────────────────
@@ -49,6 +74,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 36,
     sortOrder: 310,
+    group: "site_identity",
   },
   {
     name: "site_name",
@@ -59,6 +85,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 40,
     sortOrder: 312,
+    group: "site_identity",
   },
   {
     name: "site_root_url",
@@ -69,6 +96,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 60,
     sortOrder: 314,
+    group: "site_identity",
   },
 
   // ── Observed evidence (400-499) ───────────────────────────────────────
@@ -81,6 +109,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 600,
     sortOrder: 405,
+    group: "site_health",
   },
   {
     name: "initialization_state",
@@ -92,6 +121,7 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 500,
     sortOrder: 415,
     autoContext: false,
+    group: "site_health",
   },
 
   // ── Workspace signals (600-649) ───────────────────────────────────────
@@ -104,6 +134,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 4,
     sortOrder: 635,
+    group: "site_health",
   },
   {
     name: "pages_total",
@@ -114,6 +145,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 5,
     sortOrder: 645,
+    group: "site_health",
   },
   {
     name: "last_crawl_at",
@@ -124,6 +156,18 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 25,
     sortOrder: 655,
+    group: "site_health",
+  },
+  {
+    name: "gsc_synced_at",
+    label: "GSC last synced at",
+    description:
+      "When the site's Google Search Console collection last completed (`web.site.gsc_synced_at`, ISO timestamp). Empty when GSC is not connected or never synced.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 25,
+    sortOrder: 665,
+    group: "site_health",
   },
 ];
 
@@ -138,6 +182,7 @@ Read brand_context first (the ground truth about the client), then site_context 
 Sites belong to a brand; when advising, keep recommendations consistent with the brand profile and confirmed business facts embedded in brand_context. Confirmed brand truth is human-owned — you propose, you never fabricate.
 Empty values mean the workspace has not finished loading or the data genuinely does not exist yet (never initialized, never crawled) — say so plainly instead of guessing.
 </surface_intro>`,
+  groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
@@ -195,6 +240,7 @@ export function createMarketingSiteScope(values: {
   open_findings_total?: number;
   pages_total?: number;
   last_crawl_at?: string;
+  gsc_synced_at?: string;
   selection?: string;
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {

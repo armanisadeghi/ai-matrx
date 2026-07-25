@@ -57,6 +57,7 @@ export interface MarketingSiteBaseValues {
   site_name?: string;
   site_root_url?: string;
   site_context?: string;
+  gsc_synced_at?: string;
 }
 
 export function useMarketingSiteSurfaceBase(): {
@@ -122,6 +123,7 @@ export function useMarketingSiteSurfaceBase(): {
         site,
         statuses: siteConnectionStatuses(site),
       }),
+      gsc_synced_at: site.gsc_synced_at ?? undefined,
     };
   }, [site, brandRow, brandId, queryClient]);
 
