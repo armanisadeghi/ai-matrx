@@ -133,7 +133,27 @@ export function syncOrchestratorPrompt(args: {
       };
     }
 
+    // LOUD failure, never a silent fallback: if the describer produced nothing
+    // usable, the AI likely did not run. We change NOTHING (no member writes, no
+    // prompt injection) so the UI and the prompt can never diverge — better a
+    // clear error the user can retry than a prompt quietly filled with the wrong
+    // data. (The describer itself is proven to work; an empty result here means
+    // the run didn't execute — check the AI runtime/endpoint toggle.)
+    if (responseText.trim().length === 0) {
+      return {
+        ok: false,
+        error:
+          "The role describer returned no output — the AI run didn't execute (check the AI runtime/endpoint). Nothing was changed.",
+      };
+    }
     const described = parseRoleDescriberOutput(responseText);
+    if (described.length === 0) {
+      return {
+        ok: false,
+        error:
+          "Couldn't read the role describer's output, so nothing was changed. Try Sync again.",
+      };
+    }
     const roleById = new Map(described.map((d) => [d.id, d]));
 
     // ── Write each member's corrected Role title + gap to its edge ──────────
@@ -142,7 +162,7 @@ export function syncOrchestratorPrompt(args: {
     let membersUpdated = 0;
     for (const m of members) {
       const d = roleById.get(m.agentId);
-      if (!d) continue;
+      if (!d || (!d.roleTitle && !d.gap)) continue;
       const nextRole = d.roleTitle || m.roleTitle || "";
       const nextGap = d.gap || m.gap || "";
       if (nextRole === (m.roleTitle ?? "") && nextGap === (m.gap ?? "")) continue;
@@ -162,9 +182,12 @@ export function syncOrchestratorPrompt(args: {
       }
     }
 
-    // ── Build <available_agents> from the corrected role/gap + declared I/O ──
-    // Read the members back from Redux so we format exactly what was persisted
-    // (saveMemberMeta updated the store), falling back to the describer output.
+    // ── Build <available_agents> from EXACTLY the persisted member edges ─────
+    // Reload the set from the server first, then format ONLY the persisted role/
+    // gap (never the agent's name/description). This makes the prompt identical
+    // to what the member inspector shows by construction — the XML cannot carry
+    // data the UI doesn't, and vice versa.
+    await dispatch(loadAgentSet(args.orchestratorId, { force: true }));
     const savedMembers: AgentSetMember[] =
       getState().agentSets.byId[args.orchestratorId]?.members ?? members;
     const entries: AvailableAgentEntry[] = savedMembers
@@ -172,11 +195,10 @@ export function syncOrchestratorPrompt(args: {
       .sort((a, b) => a.position - b.position)
       .map((m) => {
         const c = configById.get(m.agentId);
-        const d = roleById.get(m.agentId);
         return {
           id: m.agentId,
-          roleTitle: m.roleTitle || d?.roleTitle || c?.name || "",
-          gap: m.gap || d?.gap || c?.description || "",
+          roleTitle: m.roleTitle ?? "",
+          gap: m.gap ?? "",
           inputs: inputNamesOf(c?.variable_definitions),
           output: outputLabelOf(c?.output_schema),
         };
@@ -191,13 +213,12 @@ export function syncOrchestratorPrompt(args: {
       return { ok: false, error: inj.error.message, membersUpdated };
     }
 
-    // Refresh: the orchestrator's new prompt + the set's members (role/gap).
+    // Refresh the orchestrator's new prompt (the set was already reloaded above).
     try {
       await dispatch(fetchFullAgent(args.orchestratorId)).unwrap();
     } catch {
       /* non-fatal — the write succeeded; Redux refresh is best-effort */
     }
-    await dispatch(loadAgentSet(args.orchestratorId, { force: true }));
 
     return { ok: true, membersUpdated };
   };
