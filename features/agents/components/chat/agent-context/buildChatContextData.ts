@@ -1,5 +1,10 @@
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import { createChatScope } from "@/features/surfaces/manifests/chat.manifest";
+import {
+  createChatScope,
+  type ChatAttachedResourceEntry,
+  type ChatScratchpadRef,
+  type ChatWorkingDocumentRef,
+} from "@/features/surfaces/manifests/chat.manifest";
 
 /**
  * Canonical `contextData` + menu props for the `matrx-user/chat` surface
@@ -7,15 +12,20 @@ import { createChatScope } from "@/features/surfaces/manifests/chat.manifest";
  * so every region (composer + presentational display) and any future demo
  * share one shape. See `features/agents/components/chat/FEATURE.md`.
  *
- * The surface emits three kinds of value:
+ * The surface emits five kinds of value (mirroring the manifest's groups):
  *   1. Baselines (`selection` / `text_before` / `text_after` / `content` /
  *      `context`) — from the live composer draft, so agent actions can target
  *      what the user is typing right now.
- *   2. Conversation customs — id / title / message count / agent id+name /
- *      status / streaming flag.
+ *   2. Conversation customs — id / title / message count / agent id+name.
  *   3. Message customs — the targeted message (`current_message_*`), the last
  *      user / assistant turn, and the full transcript (`full_conversation_text`
  *      / `all_messages`).
+ *   4. Composer customs — the draft (`input_draft`), attached resource chips
+ *      (`attached_resources`), and resolved agent variables (`variable_values`).
+ *   5. Session state + context-document refs — `is_streaming` /
+ *      `conversation_status` / `model`, and the lean `working_document` /
+ *      `scratchpad` references (never the bodies — those are their own
+ *      surfaces).
  *
  * Callers pass only what they can honestly source. The pre-first-message
  * landing composer (`NewChatLandingInput`) sources just the draft + agent;
@@ -78,6 +88,17 @@ export interface BuildChatContextDataArgs {
   lastUserMessage?: string | null;
   lastAssistantMessage?: string | null;
   messages?: ChatMessageEntry[];
+
+  /** Composer attachments (lean chip refs) + resolved agent variables. */
+  attachedResources?: ChatAttachedResourceEntry[];
+  variableValues?: Record<string, unknown> | null;
+
+  /** Session state: the model in effect after instance overrides. */
+  model?: string | null;
+
+  /** Lean refs to the conversation's context documents (never the bodies). */
+  workingDocument?: ChatWorkingDocumentRef | null;
+  scratchpad?: ChatScratchpadRef | null;
 }
 
 function joinTranscript(messages: ChatMessageEntry[]): string {
@@ -114,6 +135,11 @@ export function buildChatContextData(
     lastUserMessage,
     lastAssistantMessage,
     messages = [],
+    attachedResources,
+    variableValues,
+    model,
+    workingDocument,
+    scratchpad,
   } = args;
 
   // Composer baselines — selection/neighbors taken from the live draft so an
@@ -160,8 +186,18 @@ export function buildChatContextData(
 
     // Composer / runtime state.
     input_draft: draft || undefined,
+    attached_resources: attachedResources?.length ? attachedResources : undefined,
+    variable_values:
+      variableValues && Object.keys(variableValues).length
+        ? variableValues
+        : undefined,
     is_streaming: isStreaming || undefined,
     conversation_status: conversationStatus || undefined,
+    model: model || undefined,
+
+    // Context documents — lean refs only; bodies belong to their own surfaces.
+    working_document: workingDocument || undefined,
+    scratchpad: scratchpad || undefined,
   });
 
   return scope as Record<string, unknown>;

@@ -47,6 +47,14 @@ import {
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import {
+  selectActiveScratchpadId,
+  selectAttachedScratchpadIds,
+  selectWorkingDocEntry,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 
 interface ChatRoomClientProps {
   agentId: string;
@@ -467,6 +475,46 @@ export function ChatRoomClient({
       selectionEnd = active.selectionEnd ?? 0;
     }
 
+    // Composer attachments, resolved variables, effective model, and lean
+    // context-document refs — all plain ref-reads off the store at trigger
+    // time (no subscriptions; this fn only runs when a launch is assembled).
+    const attachedResources = selectInstanceResources(conversationId)(state).map(
+      (r) => ({
+        id: r.resourceId,
+        block_type: r.blockType,
+        status: r.status,
+      }),
+    );
+    const variableValues = selectResolvedVariables(conversationId)(state);
+    const settings = selectCurrentSettings(conversationId)(state);
+    const model = typeof settings?.model === "string" ? settings.model : null;
+
+    const workingEntry = selectWorkingDocEntry(conversationId, "working")(state);
+    const workingDocument = workingEntry
+      ? {
+          enabled: workingEntry.enabled,
+          title: workingEntry.title ?? "",
+          materialized: workingEntry.materialized ?? false,
+          version: workingEntry.version ?? 0,
+          char_count: workingEntry.content?.length ?? 0,
+        }
+      : null;
+
+    const scratchEntry = selectWorkingDocEntry(conversationId, "scratch")(state);
+    const activeScratchpadId = selectActiveScratchpadId(state);
+    const attachedScratchpadIds =
+      selectAttachedScratchpadIds(conversationId)(state);
+    const scratchpad =
+      scratchEntry || activeScratchpadId || attachedScratchpadIds.length
+        ? {
+            enabled: scratchEntry?.enabled ?? false,
+            title: scratchEntry?.title ?? "",
+            char_count: scratchEntry?.content?.length ?? 0,
+            active_scratchpad_id: activeScratchpadId,
+            attached_scratchpad_ids: attachedScratchpadIds,
+          }
+        : null;
+
     const contextData = buildChatContextData({
       inputDraft: draft,
       selectionStart,
@@ -481,6 +529,11 @@ export function ChatRoomClient({
       lastUserMessage,
       lastAssistantMessage,
       messages,
+      attachedResources,
+      variableValues,
+      model,
+      workingDocument,
+      scratchpad,
     });
 
     const selectedText =

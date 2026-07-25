@@ -27,11 +27,15 @@ export interface MarkdownMenuContext extends Record<string, unknown> {
   content?: string;
   // ── snake_case aliases: the `matrx-user/assistant-message` surface-value
   //    names agent/shortcut bindings resolve against (mirror the camelCase
-  //    keys above, which drive the menu's own action handlers). ──
+  //    keys above, which drive the menu's own action handlers). `language`
+  //    and `diagram_source` above are already the declared surface names. ──
   conversation_id?: string;
   message_id?: string;
   block_type?: string;
+  block_id?: string;
   tool_name?: string;
+  artifact_type?: string;
+  artifact_id?: string;
 }
 
 export function resolveMarkdownContext(
@@ -55,7 +59,10 @@ export function resolveMarkdownContext(
   const blockEl = target.closest<HTMLElement>('[data-mtx-ctx="block"]');
   if (blockEl) {
     const d = blockEl.dataset;
-    if (d.blockId) ctx.blockId = d.blockId;
+    if (d.blockId) {
+      ctx.blockId = d.blockId;
+      ctx.block_id = d.blockId;
+    }
     if (d.blockType) {
       ctx.blockType = d.blockType;
       ctx.block_type = d.blockType;
@@ -65,8 +72,14 @@ export function resolveMarkdownContext(
       ctx.tool_name = d.toolName;
     }
     if (d.language) ctx.language = d.language;
-    if (d.artifactType) ctx.artifactType = d.artifactType;
-    if (d.artifactId) ctx.artifactId = d.artifactId;
+    if (d.artifactType) {
+      ctx.artifactType = d.artifactType;
+      ctx.artifact_type = d.artifactType;
+    }
+    if (d.artifactId) {
+      ctx.artifactId = d.artifactId;
+      ctx.artifact_id = d.artifactId;
+    }
     if (d.blockSource) {
       // Mermaid: the diagram DSL, NOT the SVG's label text — feed agents the
       // real source so "edit this diagram" works, and use it for content too.
