@@ -70,7 +70,10 @@ const SOURCE_FILES = {
 
 function readSource(relPath: string): string | null {
   try {
-    return readFileSync(join(process.cwd(), relPath), "utf8");
+    return readFileSync(
+      join(/* turbopackIgnore: true */ process.cwd(), relPath),
+      "utf8",
+    );
   } catch {
     return null;
   }

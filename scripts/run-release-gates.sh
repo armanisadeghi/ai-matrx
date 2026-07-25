@@ -39,6 +39,7 @@ if $STRICT; then
     declare -a GATES=(
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
+        "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts --strict"
@@ -54,6 +55,7 @@ else
     declare -a GATES=(
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts"
+        "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"

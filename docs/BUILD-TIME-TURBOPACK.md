@@ -1,7 +1,15 @@
-# Build-time Turbopack warnings (review before fixing)
+# Build-time Turbopack filesystem tracing
 
-> **Status:** Documented 2026-06-28 — build succeeds but ~8 min on Vercel due in part to these patterns.
-> **Do not fix blindly** — read each trace and confirm the scoped fix won't break admin docs or local-logs.
+> **Status:** Guarded. Product runtime files that import `node:fs` / `fs` must
+> carry an explicit `/* turbopackIgnore: true */` boundary on every dynamic
+> filesystem root. `pnpm check:turbopack-fs` enforces the file-level contract
+> and runs in the release gates.
+
+Dynamic filesystem roots inside Next.js bundles are a deployment-critical
+boundary. Without an explicit tracing exclusion, Turbopack can conservatively
+trace the entire repository into a server bundle. This is not a harmless
+warning: the 2026-07-25 production build expanded to 2.5 GB and was OOM-killed
+after a 20-minute compile.
 
 ## Symptoms (from Vercel `MATRX_PROFILE=full` build)
 
@@ -47,6 +55,7 @@ The file pattern matches ~19,946 files in [project]/
 ## Verification after fix
 
 ```bash
+pnpm check:turbopack-fs
 MATRX_PROFILE=full pnpm run build
 ```
 
@@ -59,6 +68,10 @@ Expect: zero “Overly broad patterns” / “unexpected file in NFT list” war
 
 ## Change log
 
+- `2026-07-25` — Added the `check:turbopack-fs` release gate and marked the
+  dynamic roots used by the shape doctor and TypeScript-error admin endpoint.
+  Before the fix Turbopack traced 24,000+ files through each root, compiled for
+  20.1 minutes, then Vercel OOM-killed page-data collection.
 - `2026-06-29` — Resolved: admin docs moved to DB-backed `/administration/documentation/feature-docs` + `scripts/sync-feature-docs.ts`. Filesystem route and `outputFileTracingIncludes` removed.
 - `2026-06-29` — `local-logs`: prod 404 gate, dynamic `node:fs` import, `turbopackIgnore` on `$HOME` paths. Admin docs viewer left unchanged pending manual review.
 - `2026-06-28` — Initial doc from failed-then-fixed Vercel build log (`TEMP-CLEANUP.md`).

@@ -26,7 +26,7 @@ const PREFERRED_TSCONFIGS = ["tsconfig.typecheck.json", "tsconfig.json"];
  */
 function resolveTsconfig(root: string): string | null {
   for (const name of PREFERRED_TSCONFIGS) {
-    const p = path.join(root, name);
+    const p = path.join(/* turbopackIgnore: true */ root, name);
     if (fs.existsSync(p)) return p;
   }
   return null;

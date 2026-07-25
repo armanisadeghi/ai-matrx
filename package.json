@@ -53,6 +53,7 @@
     "check:doctrine:strict": "tsx scripts/check-doctrine.ts --strict",
     "check:reuse-index": "tsx scripts/check-reuse-index.ts",
     "check:reuse-index:strict": "tsx scripts/check-reuse-index.ts --strict",
+    "check:turbopack-fs": "tsx scripts/check-turbopack-fs-tracing.ts",
     "check:page-headers": "tsx scripts/check-page-headers.ts",
     "check:page-headers:strict": "tsx scripts/check-page-headers.ts --strict",
     "check:hatches": "tsx scripts/check-type-hatches.ts",
