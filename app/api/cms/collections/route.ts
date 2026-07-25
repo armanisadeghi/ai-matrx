@@ -436,7 +436,9 @@ export async function POST(request: NextRequest) {
           .from("site_collections")
           .select("*")
           .eq("client_id", siteId)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+          .order("id", { ascending: false });
         if (!includeDeleted) query = query.is("deleted_at", null);
 
         const { data, error } = await query;
@@ -1018,6 +1020,8 @@ export async function POST(request: NextRequest) {
           scanQuery = applyItemFilter(scanQuery, filter);
           const { data: scanned, error: scanError } = await scanQuery
             .order("created_at", { ascending: false })
+            // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+            .order("id", { ascending: false })
             .limit(SEARCH_SCAN_CAP);
           if (scanError) {
             console.error("[cms/collections] items_list scan error:", scanError);
@@ -1071,6 +1075,8 @@ export async function POST(request: NextRequest) {
         const from = (page - 1) * perPage;
         const { data, error, count } = await query
           .order("created_at", { ascending: false })
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+          .order("id", { ascending: false })
           .range(from, from + perPage - 1);
         if (error) {
           console.error("[cms/collections] items_list error:", error);
@@ -1481,6 +1487,8 @@ export async function POST(request: NextRequest) {
           query = applyItemFilter(query, filter);
           const { data: chunk, error } = await query
             .order("created_at", { ascending: false })
+            // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+            .order("id", { ascending: false })
             .range(offset, Math.min(offset + EXPORT_CHUNK, EXPORT_CAP) - 1);
           if (error) {
             console.error("[cms/collections] items_export error:", error);
@@ -1529,7 +1537,9 @@ export async function POST(request: NextRequest) {
           .from("site_collections")
           .select("*")
           .is("deleted_at", null)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
+          .order("id", { ascending: false });
         if (siteId) query = query.eq("client_id", siteId);
         const { data, error } = await query;
         if (error) {
