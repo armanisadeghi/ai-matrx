@@ -28114,6 +28114,61 @@ export type Database = {
           variables_panel_style: string
         }[]
       }
+      agx_list_scope_counts: {
+        Args: {
+          p_archived?: string
+          p_category?: string
+          p_deep?: boolean
+          p_favorites_only?: boolean
+          p_search?: string
+        }
+        Returns: {
+          org_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      agx_list_scoped: {
+        Args: {
+          p_archived?: string
+          p_category?: string
+          p_deep?: boolean
+          p_dir?: string
+          p_favorites_only?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          access_level: string
+          agent_type: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          is_archived: boolean
+          is_favorite: boolean
+          is_owner: boolean
+          model_id: string
+          name: string
+          organization_id: string
+          organization_name: string
+          owner_email: string
+          project_id: string
+          source_agent_id: string
+          tags: string[]
+          task_id: string
+          total_count: number
+          updated_at: string
+          user_id: string
+          version: number
+          visibility: string
+        }[]
+      }
       agx_promote_shortcut_to_global: {
         Args: {
           p_label?: string
