@@ -17,14 +17,13 @@ import {
   AVAILABLE_AGENTS_CLOSE,
   AVAILABLE_AGENTS_OPEN,
   AVAILABLE_AGENTS_RE,
-  DUMP_COLUMNS,
-  NAMER_DUMP_COLUMNS,
+  MEMBER_CONFIG_COLUMNS,
   ORCHESTRATOR_TEMPLATE_ID,
 } from "./constants";
 
 type DefinitionUpdate = Database["agent"]["Tables"]["definition"]["Update"];
 
-/** A member row + config, as read for the "backfill missing identity" pass. */
+/** A member agent's config, as read to describe its role and list its I/O. */
 export interface MemberConfigRow {
   id: string;
   name: string | null;
@@ -34,25 +33,70 @@ export interface MemberConfigRow {
   output_schema: unknown;
 }
 
-/** The Agent Namer's per-agent output. */
-export interface NamedAgent {
+/** The Agent Set Role Describer's per-member output. */
+export interface DescribedMemberRole {
   id: string;
-  name: string;
-  description: string;
+  roleTitle: string;
+  gap: string;
 }
 
-/** True when a member field is blank and should be backfilled (never overwrite an author's value). */
-export function isBlankIdentity(value: string | null | undefined): boolean {
-  return !value || value.trim().length === 0;
+/** Pull the `system` message's text out of a member's `messages` jsonb (best-effort). */
+export function systemPromptOf(messages: unknown): string {
+  if (!Array.isArray(messages)) return "";
+  const sys = messages.find(
+    (m): m is { role?: unknown; content?: unknown } =>
+      !!m && typeof m === "object" && (m as { role?: unknown }).role === "system",
+  );
+  const content = sys?.content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((b) =>
+      b && typeof b === "object" && (b as { type?: unknown }).type === "text"
+        ? String((b as { text?: unknown }).text ?? "")
+        : "",
+    )
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+/** The declared input variable names for a member (from `variable_definitions`). */
+export function inputNamesOf(variableDefinitions: unknown): string[] {
+  if (!Array.isArray(variableDefinitions)) return [];
+  return variableDefinitions
+    .map((v) =>
+      v && typeof v === "object" ? String((v as { name?: unknown }).name ?? "") : "",
+    )
+    .filter(Boolean);
+}
+
+/** A short label for a member's output shape: "Text" or "JSON { keyA, keyB }". */
+export function outputLabelOf(outputSchema: unknown): string {
+  if (!outputSchema || typeof outputSchema !== "object") return "Text";
+  const s = outputSchema as { type?: unknown; properties?: unknown; items?: unknown };
+  const props =
+    s.properties && typeof s.properties === "object"
+      ? Object.keys(s.properties as Record<string, unknown>)
+      : s.items &&
+          typeof s.items === "object" &&
+          (s.items as { properties?: unknown }).properties &&
+          typeof (s.items as { properties?: unknown }).properties === "object"
+        ? Object.keys(
+            (s.items as { properties: Record<string, unknown> }).properties,
+          )
+        : [];
+  if (props.length === 0) return "JSON";
+  const shown = props.slice(0, 6).join(", ");
+  return `JSON { ${shown}${props.length > 6 ? ", …" : ""} }`;
 }
 
 /**
- * Parse the Agent Namer's output into `{id,name,description}` rows. Robust to a
- * stray code fence or surrounding prose: takes the first `[` … last `]` span and
- * JSON-parses it. Returns [] on anything unparseable (caller treats as "no
- * updates") — we never write a malformed identity.
+ * Parse the Agent Set Role Describer's output into `{id,roleTitle,gap}` rows.
+ * Robust to a stray code fence or surrounding prose: takes the first `[` … last
+ * `]` span and JSON-parses it. Returns [] on anything unparseable (caller treats
+ * as "no updates") — we never write a malformed role.
  */
-export function parseNamerOutput(raw: string): NamedAgent[] {
+export function parseRoleDescriberOutput(raw: string): DescribedMemberRole[] {
   const t = (raw ?? "").trim();
   if (!t) return [];
   const first = t.indexOf("[");
@@ -65,50 +109,47 @@ export function parseNamerOutput(raw: string): NamedAgent[] {
     return [];
   }
   if (!Array.isArray(parsed)) return [];
-  const out: NamedAgent[] = [];
+  const out: DescribedMemberRole[] = [];
   for (const row of parsed) {
     if (!row || typeof row !== "object") continue;
     const r = row as Record<string, unknown>;
     const id = typeof r.id === "string" ? r.id.trim() : "";
-    const name = typeof r.name === "string" ? r.name.trim() : "";
-    const description =
-      typeof r.description === "string" ? r.description.trim() : "";
-    if (id) out.push({ id, name, description });
+    const roleTitle = typeof r.role_title === "string" ? r.role_title.trim() : "";
+    const gap = typeof r.gap === "string" ? r.gap.trim() : "";
+    if (id) out.push({ id, roleTitle, gap });
   }
   return out;
 }
 
+/** One member's fully-resolved listing entry — role/gap plus declared I/O. */
+export interface AvailableAgentEntry {
+  id: string;
+  roleTitle: string;
+  gap: string;
+  inputs: string[];
+  output: string;
+}
+
 /**
- * Pull just the <agent> blocks out of the generator's raw output, robust to:
- * prose before/after, one or more markdown fences, an <agents> wrapper (with or
- * without attributes), and stray <available_agents> tags in the model output.
- * The result is what goes INSIDE the orchestrator's <available_agents> section.
+ * Build the orchestrator's `<available_agents>` INNER content deterministically
+ * from each member's resolved role/gap + declared inputs/outputs. One clean
+ * `<agent id>` block per member, no duplicated id, no LLM prose. The role/gap have
+ * already been made correct by the Role Describer; here we only format them.
  */
-export function extractAgentBlocks(raw: string): string {
-  const t = (raw ?? "").trim();
-  let out = t;
-
-  // 1) Prefer the inner content of an <agents ...> wrapper if present.
-  const wrapped = t.match(/<agents\b[^>]*>\s*([\s\S]*?)<\/agents>/i);
-  if (wrapped?.[1]) {
-    out = wrapped[1].trim();
-  } else {
-    // 2) Else take the span from the first <agent to the last </agent> — this
-    //    ignores any prose / code fences the model wrapped around the blocks.
-    const first = t.search(/<agent\b/i);
-    const lastClose = t.toLowerCase().lastIndexOf("</agent>");
-    if (first !== -1 && lastClose !== -1 && lastClose >= first) {
-      out = t.slice(first, lastClose + "</agent>".length).trim();
-    } else {
-      // 3) Fallback: unwrap a single fenced block.
-      const fence = t.match(/```(?:[a-z]+)?\s*([\s\S]*?)\s*```/i);
-      if (fence?.[1]) out = fence[1].trim();
-    }
-  }
-
-  // Never let the model's own <available_agents> tags leak in — they'd break the
-  // injection marker on re-sync.
-  return out.replace(/<\/?available_agents\b[^>]*>/gi, "").trim();
+export function buildAvailableAgentsBlock(entries: AvailableAgentEntry[]): string {
+  return entries
+    .map((e) => {
+      const inputs = e.inputs.length ? e.inputs.join(", ") : "none";
+      return [
+        `<agent id="${e.id}">`,
+        `  Role: ${e.roleTitle || "(unspecified)"}`,
+        `  Fills: ${e.gap || "(unspecified)"}`,
+        `  Inputs: ${inputs}`,
+        `  Output: ${e.output}`,
+        `</agent>`,
+      ].join("\n");
+    })
+    .join("\n");
 }
 
 export const orchestratorService = {
@@ -130,27 +171,10 @@ export const orchestratorService = {
     }
   },
 
-  /** JSON dump of the selected agents' {id,name,description,output_schema,variable_definitions}. */
-  async fetchAgentDump(memberIds: string[]): Promise<ScopesRpcResult<string>> {
-    try {
-      if (memberIds.length === 0) return err("invalid_argument", "No agents selected");
-      const { data, error } = await supabase
-        .schema("agent")
-        .from("definition")
-        .select(DUMP_COLUMNS)
-        .in("id", memberIds);
-      if (error) return err(...mapPgErrorPair(error));
-      const rows = Array.isArray(data) ? data : [];
-      if (rows.length === 0) return err("internal", "None of the selected agents were readable");
-      return ok(JSON.stringify(rows, null, 2));
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
   /**
-   * Read the member rows' identity + config for the "backfill missing name/
-   * description" pass. Includes the system prompt so the namer has real signal.
+   * Read each member agent's config — identity, system prompt (`messages`),
+   * declared inputs, and output shape — to both describe its set role and list
+   * its I/O in `<available_agents>`.
    */
   async fetchMemberConfigs(
     memberIds: string[],
@@ -160,37 +184,10 @@ export const orchestratorService = {
       const { data, error } = await supabase
         .schema("agent")
         .from("definition")
-        .select(NAMER_DUMP_COLUMNS)
+        .select(MEMBER_CONFIG_COLUMNS)
         .in("id", memberIds);
       if (error) return err(...mapPgErrorPair(error));
       return ok((Array.isArray(data) ? data : []) as unknown as MemberConfigRow[]);
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /**
-   * Write a generated name/description to a member — ONLY the fields passed. The
-   * caller decides per-field (blank-only) so an author's existing value is never
-   * touched. No-op (ok) when `patch` is empty. RLS may reject a member the caller
-   * can't edit (e.g. a shared, foreign-org agent); that surfaces as an error the
-   * backfill loop tolerates per-member.
-   */
-  async updateAgentIdentity(
-    agentId: string,
-    patch: { name?: string; description?: string },
-  ): Promise<ScopesRpcResult<null>> {
-    try {
-      if (patch.name === undefined && patch.description === undefined) {
-        return ok(null);
-      }
-      const { error } = await supabase
-        .schema("agent")
-        .from("definition")
-        .update(patch as DefinitionUpdate)
-        .eq("id", agentId);
-      if (error) return err(...mapPgErrorPair(error));
-      return ok(null);
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

@@ -88,11 +88,11 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
     const res = await dispatch(syncOrchestratorPrompt({ orchestratorId, memberIds }));
     setSyncing(false);
     if (res.ok) {
-      const named = res.membersUpdated ?? 0;
+      const updated = res.membersUpdated ?? 0;
       toast.success(
-        named > 0
-          ? `Orchestrator prompt synced — named ${named} agent${named === 1 ? "" : "s"} that were missing a name or description.`
-          : "Orchestrator prompt synced with the current members.",
+        updated > 0
+          ? `Synced — updated the role for ${updated} agent${updated === 1 ? "" : "s"} and refreshed the orchestrator listing.`
+          : "Synced — member roles confirmed and the orchestrator listing refreshed.",
       );
     } else toast.error(res.error ?? "Could not sync the orchestrator prompt.");
   };
@@ -172,6 +172,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
       label: "Orchestrator",
       icon: ExternalLink,
       href: `/agents/${orchestratorId}/build`,
+      newTab: true,
     },
     { label: "Set settings", icon: Settings2, onPress: () => setSettingsOpen(true) },
   ];

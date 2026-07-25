@@ -66,6 +66,11 @@ export interface EntityHeaderAction {
   /** Solid destructive pill (delete/remove). */
   destructive?: boolean;
   disabled?: boolean;
+  /**
+   * Open `href` in a new tab. The icon (e.g. an up-right arrow) must match the
+   * behavior — a "leaves this page" glyph on a same-tab link is a lie.
+   */
+  newTab?: boolean;
 }
 
 export interface EntityModeHeaderProps {
@@ -95,6 +100,8 @@ function DesktopAction({ action }: { action: EntityHeaderAction }) {
     onClick: action.onPress,
     href: action.href,
     disabled: action.disabled,
+    target: action.newTab ? ("_blank" as const) : undefined,
+    rel: action.newTab ? "noopener noreferrer" : undefined,
   };
   // Primary + destructive show their NAME inline (like the demo's Send /
   // Delete pills); plain glass actions stay icon-only with a tooltip
@@ -279,7 +286,7 @@ export function EntityModeHeader({
                   onClick={() => {
                     setSheetOpen(false);
                     if (a.href) {
-                      if (EXTERNAL_HREF_RE.test(a.href)) {
+                      if (a.newTab || EXTERNAL_HREF_RE.test(a.href)) {
                         window.open(a.href, "_blank", "noopener,noreferrer");
                       } else {
                         router.push(a.href);

@@ -11,36 +11,28 @@
 export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
 
 /**
- * The "Agent Description Generator" builtin system agent. Given a JSON dump of the
- * selected agents (`{id,name,description,output_schema,variable_definitions}`), it
- * returns the `<agent>` blocks that go inside `<available_agents>`. Run headlessly via
- * `launchAgentExecution` (raw UUID; not in the FE SYSTEM_AGENTS registry).
+ * The "Agent Set Role Describer" builtin system agent. "Sync agent listings" runs
+ * it once per click over the WHOLE set: it reads every member's current config
+ * (name, description, system prompt, inputs, output) AND its current set role
+ * (`current_role_title` / `current_gap`), then returns a strict JSON array of
+ * `{id,role_title,gap}` for EVERY member — filling the ones that are blank, fixing
+ * the ones that are wrong, and confirming/keeping the ones already accurate. The
+ * result is written to each member EDGE (not the agent) and is the source of truth
+ * for the `<available_agents>` listing. Run headlessly via `launchAgentExecution`
+ * (raw UUID; not in the FE SYSTEM_AGENTS registry). Seeded by
+ * `migrations/agent_set_role_describer_builtin.sql`.
  */
-export const AGENT_DESCRIPTION_GENERATOR_ID = "62d56534-b4e2-47a4-9d97-d0759f68ee21";
+export const AGENT_SET_ROLE_DESCRIBER_ID = "a3e9d1c4-7b62-4f08-9c5a-2d6e8f0b1a37";
 
-/** The variable the Agent Description Generator reads (the agents dump JSON). */
-export const GENERATOR_INPUT_VAR = "agent_config";
+/** The variable the Agent Set Role Describer reads (the members dump JSON). */
+export const ROLE_DESCRIBER_INPUT_VAR = "agent_config";
 
 /**
- * The "Agent Namer" builtin system agent. Given a JSON dump of agent configs
- * ({id,name,description,messages,variable_definitions,output_schema}), it returns
- * a strict JSON array of `{id,name,description}`. Used by "Sync agent listings"
- * to BACKFILL member agents that are missing a name and/or description — only the
- * empty fields are written, never an author's existing value. Run headlessly via
- * `launchAgentExecution` (raw UUID; not in the FE SYSTEM_AGENTS registry).
- * Seeded by `migrations/agent_namer_builtin_seed.sql`.
+ * Columns read per member to build the describer dump AND the listing block —
+ * the agent's identity, system prompt (`messages`, the strongest signal for the
+ * role), declared inputs (`variable_definitions`), and output shape.
  */
-export const AGENT_NAMER_ID = "a3e9d1c4-7b62-4f08-9c5a-2d6e8f0b1a37";
-
-/** The variable the Agent Namer reads (the agents dump JSON). */
-export const NAMER_INPUT_VAR = "agent_config";
-
-/**
- * Columns fed to the Agent Namer for each member missing an identity. Unlike the
- * orchestrator dump this INCLUDES `messages` — the system prompt is the strongest
- * signal for a good name, and there is no orchestrator prompt to keep terse here.
- */
-export const NAMER_DUMP_COLUMNS =
+export const MEMBER_CONFIG_COLUMNS =
   "id, name, description, messages, variable_definitions, output_schema" as const;
 
 /**
@@ -52,9 +44,6 @@ export const NAMER_DUMP_COLUMNS =
 export const AVAILABLE_AGENTS_RE = /<available_agents>[\s\S]*?<\/available_agents>/;
 export const AVAILABLE_AGENTS_OPEN = "<available_agents>";
 export const AVAILABLE_AGENTS_CLOSE = "</available_agents>";
-
-/** Columns fed to the generator for each selected agent (the "dump"). */
-export const DUMP_COLUMNS = "id, name, description, output_schema, variable_definitions" as const;
 
 /**
  * The supervisor system prompt applied to a GENERATED orchestrator (replaces the
