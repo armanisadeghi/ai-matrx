@@ -13,6 +13,39 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D103 — production builds are OOM-flipping: nothing since 21:30 UTC has deployed (2026-07-25)
+
+**Live impact:** the last READY production deploy is `1019b1269` (21:30 UTC). Every
+build after it — `e00253a30` (release v0.4.32), `1132050ab`, and others — died
+`out_of_memory` / `Command "pnpm run build" exited with SIGKILL`. Work is landing
+on `main` and NOT reaching users; the tag v0.4.32 is not what production serves.
+
+Not a compile failure: Turbopack reports `✓ Compiled successfully in 16.9min`,
+then the SIGKILL lands during **`Collecting page data using 29 workers`**. So the
+peak is 29 parallel workers each holding the app graph, not any one module.
+
+Two smoking guns in the same build log, both pre-existing:
+1. `./next.config.js` → `Encountered unexpected file in NFT list — A file was
+   traced that indicates that the whole project was traced unintentionally`,
+   import trace `next.config.js → app/api/admin/typescript-errors/regenerate/route.ts`.
+2. That route's `resolveTsconfig` matches **12,369 files**: the `path.join` already
+   carries `/* turbopackIgnore: true */` but the `fs.existsSync(p)` on the next
+   line does not, so the trace still fans out. The same route also does a
+   top-level `import * as ts from "typescript"`.
+
+It flips rather than fails outright — several builds earlier the same day went
+READY — so it is a ceiling, not a wall, and every added route pushes it. Two
+recent commits already fought this class (`fix(build): bound Turbopack filesystem
+traces`, `release: eliminate Turbopack trace OOM`).
+
+Candidate fixes, in order: add `turbopackIgnore` to the `existsSync` call and
+lazy-`require("typescript")` inside the handler (both scoped to that admin route);
+cap page-data worker concurrency; or enable Vercel Enhanced Builds for more RAM
+(the log recommends it). **NOT attempted here** — it is shared build config, the
+fix is unverified against the build container's memory, several sessions were
+pushing concurrently, and guessing during an outage makes it worse. Needs one
+owner and a real before/after build.
+
 ### D102 — a structured server validation error reaches the user as bare "HTTP 422" (2026-07-25)
 
 Every aidream 4xx with a validation body is surfaced to the user as just the
