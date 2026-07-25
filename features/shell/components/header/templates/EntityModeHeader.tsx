@@ -65,6 +65,8 @@ export interface EntityHeaderAction {
   primary?: boolean;
   /** Solid destructive pill (delete/remove). */
   destructive?: boolean;
+  /** Solid warning (amber) pill — an action needed to unblock a feature. */
+  warning?: boolean;
   disabled?: boolean;
   /**
    * Open `href` in a new tab. The icon (e.g. an up-right arrow) must match the
@@ -110,6 +112,17 @@ function DesktopAction({ action }: { action: EntityHeaderAction }) {
   // (tap targets tooltip automatically from ariaLabel when no label).
   if (action.destructive) {
     return <TapTargetButtonDestructive {...shared} label={action.label} />;
+  }
+  if (action.warning) {
+    return (
+      <TapTargetButtonSolid
+        {...shared}
+        label={action.label}
+        bgColor="bg-warning"
+        iconColor="text-warning-foreground"
+        hoverBgColor="hover:bg-warning/90"
+      />
+    );
   }
   if (action.primary) {
     return <TapTargetButtonSolid {...shared} label={action.label} />;
@@ -303,7 +316,11 @@ export function EntityModeHeader({
                   }}
                   className={cn(
                     "flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06] last:border-0",
-                    a.destructive ? "text-destructive" : "text-foreground",
+                    a.destructive
+                      ? "text-destructive"
+                      : a.warning
+                        ? "text-warning"
+                        : "text-foreground",
                     a.disabled && "opacity-50",
                   )}
                 >

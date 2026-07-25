@@ -213,6 +213,62 @@ export const orchestratorService = {
     }
   },
 
+  /**
+   * Ensure the orchestrator's system prompt HAS an `<available_agents>` section
+   * so "Sync agent listings" can fill it. Idempotent — a no-op when the marker
+   * already exists. Otherwise appends a labelled EMPTY section to the end of the
+   * system message (Sync fills it later). LOUD if there is no system message.
+   */
+  async ensureAvailableAgentsSection(
+    orchestratorId: string,
+  ): Promise<ScopesRpcResult<null>> {
+    try {
+      const { data, error } = await supabase
+        .schema("agent")
+        .from("definition")
+        .select("messages")
+        .eq("id", orchestratorId)
+        .single();
+      if (error) return err(...mapPgErrorPair(error));
+
+      const messages = (data?.messages ?? []) as unknown as AgentDefinitionMessage[];
+      const sysIdx = messages.findIndex((m) => m.role === "system");
+      if (sysIdx === -1) {
+        return err("invalid_argument", "This agent has no system message to add the section to.");
+      }
+      const sys = messages[sysIdx];
+      const textIdx = sys.content.findIndex((b) => b.type === "text");
+      if (textIdx === -1) {
+        return err("invalid_argument", "This agent's system message has no text to add the section to.");
+      }
+      const textBlock = sys.content[textIdx];
+      if (textBlock.type !== "text") return err("invalid_argument", "Unexpected content block");
+      // Already has it → nothing to do (idempotent).
+      if (AVAILABLE_AGENTS_RE.test(textBlock.text)) return ok(null);
+
+      const appended =
+        `${textBlock.text.trimEnd()}\n\n` +
+        `Your specialist agents are listed below and kept in sync with your set:\n\n` +
+        `${AVAILABLE_AGENTS_OPEN}\n${AVAILABLE_AGENTS_CLOSE}`;
+      const newContent = sys.content.map((b, i) =>
+        i === textIdx ? { ...b, text: appended } : b,
+      );
+      const newMessages = messages.map((m, i) =>
+        i === sysIdx ? { ...m, content: newContent } : m,
+      );
+
+      const { error: upErr } = await supabase
+        .schema("agent")
+        .from("definition")
+        .update({ messages: newMessages as DefinitionUpdate["messages"] } as DefinitionUpdate)
+        .eq("id", orchestratorId);
+      if (upErr) return err(...mapPgErrorPair(upErr));
+      return ok(null);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   /** Rename an agent (used to name the generated orchestrator). */
   async rename(agentId: string, name: string): Promise<ScopesRpcResult<null>> {
     try {

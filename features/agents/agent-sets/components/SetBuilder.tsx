@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  AlertTriangle,
   ExternalLink,
   LayoutGrid,
   Loader2,
@@ -35,7 +36,8 @@ import { useAgentSetsList } from "../hooks/useAgentSetsList";
 import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
 import { useOrchestratorPromptStatus } from "../hooks/useOrchestratorPromptStatus";
 import { addAgentToSet, createAgentSet } from "@/features/agents/redux/agent-sets/thunks";
-import { syncOrchestratorPrompt } from "../orchestrator/thunks";
+import { enableOrchestratorSync, syncOrchestratorPrompt } from "../orchestrator/thunks";
+import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { AgentLibraryRail } from "./AgentLibraryRail";
 import SetBuilderCanvas from "./SetBuilderCanvas";
 import { SetMemberGrid } from "./SetMemberGrid";
@@ -69,6 +71,8 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [enablingSync, setEnablingSync] = useState(false);
+  const openAgentContentWindow = useOpenAgentContentWindow();
 
   useEnsureAgentsLoaded();
   // Sibling sets power the header's entity dropdown (switch set without a round trip to the list).
@@ -95,6 +99,28 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
           : "Synced — member roles confirmed and the orchestrator listing refreshed.",
       );
     } else toast.error(res.error ?? "Could not sync the orchestrator prompt.");
+  };
+
+  // The orchestrator's prompt has no <available_agents> section, so syncing is
+  // impossible. One click adds the section, then opens the System Instructions
+  // editor (only that tab) so the user can see/adjust it. After that the normal
+  // "Sync agent listings" action appears.
+  const handleEnableSync = async () => {
+    setEnablingSync(true);
+    const res = await dispatch(enableOrchestratorSync({ orchestratorId }));
+    setEnablingSync(false);
+    if (res.ok) {
+      openAgentContentWindow({
+        initialAgentId: orchestratorId,
+        initialTab: "system",
+        tabs: ["system"],
+      });
+      toast.success(
+        "Added an <available_agents> section to the system prompt — opened it for review. Use 'Sync agent listings' to fill it from your members.",
+      );
+    } else {
+      toast.error(res.error ?? "Could not set up syncing for this orchestrator.");
+    }
   };
 
   const loading = status === "idle" || (status === "loading" && members.length === 0 && !exists);
@@ -154,9 +180,8 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
       primary: true,
       href: `/agents/${orchestratorId}/run`,
     },
-    // Only for TEMPLATE orchestrators (their prompt has the <available_agents>
-    // section our system fills). Out-of-sync promotes it to a solid labelled
-    // pill — the header's replacement for the old amber pulse dot.
+    // TEMPLATE orchestrators (prompt HAS the <available_agents> section our
+    // system fills) → the Sync action; out-of-sync promotes it to a solid pill.
     ...(promptStatus.isTemplate
       ? [
           {
@@ -165,6 +190,21 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
             onPress: handleSyncPrompt,
             primary: promptStatus.outOfSync,
             disabled: syncing || members.length === 0,
+          } satisfies EntityHeaderAction,
+        ]
+      : []),
+    // Loaded but NOT a template — the prompt has no <available_agents> section,
+    // so syncing is impossible. Instead of silently hiding everything, show a
+    // yellow "Enable sync" action that adds the section in one click and opens
+    // the system prompt for review.
+    ...(promptStatus.ready && !promptStatus.isTemplate
+      ? [
+          {
+            label: enablingSync ? "Enabling sync" : "Enable sync",
+            icon: enablingSync ? Loader2 : AlertTriangle,
+            onPress: handleEnableSync,
+            warning: true,
+            disabled: enablingSync,
           } satisfies EntityHeaderAction,
         ]
       : []),

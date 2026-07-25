@@ -46,6 +46,29 @@ interface MemberDumpEntry {
 }
 
 /**
+ * One-click "make this orchestrator syncable": insert an empty
+ * `<available_agents>` section into its system prompt when it lacks one, then
+ * refresh Redux so the builder flips from the "Enable sync" (warning) action to
+ * the normal "Sync agent listings" action. Idempotent at the service layer.
+ */
+export function enableOrchestratorSync(args: {
+  orchestratorId: string;
+}): AppThunk<Promise<{ ok: boolean; error?: string }>> {
+  return async (dispatch) => {
+    const res = await orchestratorService.ensureAvailableAgentsSection(
+      args.orchestratorId,
+    );
+    if (isScopesRpcErr(res)) return { ok: false, error: res.error.message };
+    try {
+      await dispatch(fetchFullAgent(args.orchestratorId)).unwrap();
+    } catch {
+      /* non-fatal — the write succeeded; Redux refresh is best-effort */
+    }
+    return { ok: true };
+  };
+}
+
+/**
  * Re-describe every member and re-sync the orchestrator's <available_agents>.
  * The builder's "Sync agent listings" action.
  *
