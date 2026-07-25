@@ -41384,6 +41384,7 @@ export type Database = {
       render_definition: {
         Row: {
           block_id: string
+          block_type: string
           category_id: string | null
           created_at: string
           created_by: string | null
@@ -41407,6 +41408,7 @@ export type Database = {
         }
         Insert: {
           block_id: string
+          block_type?: string
           category_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -41430,6 +41432,7 @@ export type Database = {
         }
         Update: {
           block_id?: string
+          block_type?: string
           category_id?: string | null
           created_at?: string
           created_by?: string | null

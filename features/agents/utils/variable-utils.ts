@@ -36,6 +36,19 @@ export const shouldShowSanitizationPreview = (input: string): boolean => {
 };
 
 /**
+ * True when a `{{token}}` could ever name a real variable.
+ *
+ * Declared names always survive `sanitizeVariableName` unchanged, and the
+ * runtime substitutes by exact name match against the declared set — so a
+ * token that isn't in that grammar (`{{step_N.output.field}}`, `{{a b}}`)
+ * can NEVER be substituted and is literal text the model receives verbatim.
+ * Use this to avoid flagging documentation of the syntax as an undeclared
+ * variable. Names that ARE declared bypass this check entirely.
+ */
+export const isDeclarableVariableName = (name: string): boolean =>
+  name.length > 0 && sanitizeVariableName(name) === name;
+
+/**
  * Checks whether a variable name appears as {{variableName}} in a text string.
  */
 export const isVariableUsedInText = (
