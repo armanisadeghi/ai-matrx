@@ -546,7 +546,6 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
                           resourceType: "conversation",
                           resourceId: shareConversationId!,
                           resourceName: conversationTitle,
-                          isOwner: true,
                         },
                       }),
                     )

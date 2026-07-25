@@ -17,7 +17,8 @@ interface ShareButtonProps {
   resourceType: ResourceType;
   resourceId: string;
   resourceName: string;
-  isOwner: boolean;
+  /** OPTIONAL override — omit it and the modal resolves ownership itself. */
+  isOwner?: boolean;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   showStatus?: boolean;
@@ -34,7 +35,6 @@ interface ShareButtonProps {
  *   resourceType="note"
  *   resourceId={noteId}
  *   resourceName={note.title}
- *   isOwner={isOwner}
  * />
  */
 export function ShareButton({

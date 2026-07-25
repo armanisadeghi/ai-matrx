@@ -120,7 +120,6 @@ export default function ChatHeaderControls() {
           resourceType="conversation"
           resourceId={conversationId}
           resourceName="Chat"
-          isOwner={true}
         />
       )}
     </>

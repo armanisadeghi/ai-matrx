@@ -303,7 +303,6 @@ function ConversationItem({
                           resourceType: "conversation",
                           resourceId: item.id,
                           resourceName: item.title || "Untitled Chat",
-                          isOwner: true,
                         },
                       }),
                     );

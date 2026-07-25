@@ -38,7 +38,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
-import { NoteShareModal } from "../NoteShareModal";
+import { ShareModal } from "@/features/sharing/components/ShareModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -392,11 +392,12 @@ export function NoteEditorDock({
       </BottomSheet>
 
       {shareOpen && (
-        <NoteShareModal
-          open={shareOpen}
-          onOpenChange={setShareOpen}
-          noteId={noteId}
-          noteLabel={noteLabel}
+        <ShareModal
+          isOpen={shareOpen}
+          onClose={() => setShareOpen(false)}
+          resourceType="note"
+          resourceId={noteId}
+          resourceName={noteLabel}
         />
       )}
     </>

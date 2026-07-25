@@ -4871,10 +4871,23 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* TODO: review prop wiring for shareModal */}
       {/* shareModal — multi-instance */}
       {instancesById.shareModal.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
+        const resourceType =
+          typeof data?.resourceType === "string" &&
+          getShareableResource(data.resourceType)
+            ? (data.resourceType as ResourceType)
+            : null;
+        const resourceId =
+          typeof data?.resourceId === "string" ? data.resourceId : "";
+        if (!resourceType || !resourceId) {
+          console.error(
+            "[overlays] Refused to render shareModal without a registered resource type and id.",
+            { resourceType: data?.resourceType, resourceId: data?.resourceId },
+          );
+          return null;
+        }
         return (
           <ShareModal
             key={inst.instanceId}
@@ -4887,14 +4900,17 @@ export default function OverlayController() {
                 }),
               )
             }
-            resourceType={data?.resourceType as ResourceType}
-            resourceId={
-              typeof data?.resourceId === "string" ? data.resourceId : ""
-            }
+            resourceType={resourceType}
+            resourceId={resourceId}
             resourceName={
               typeof data?.resourceName === "string" ? data.resourceName : ""
             }
-            isOwner={typeof data?.isOwner === "boolean" ? data.isOwner : false}
+            // Omitted when the dispatcher didn't resolve ownership — the modal
+            // resolves it itself. Never default this to `false`: that renders a
+            // dead dialog to the record's actual owner.
+            isOwner={
+              typeof data?.isOwner === "boolean" ? data.isOwner : undefined
+            }
           />
         );
       })}

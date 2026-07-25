@@ -64,7 +64,6 @@ export function AgentCard({
   const name = record?.name ?? "Untitled Agent";
   const description = record?.description ?? undefined;
   const isArchived = record?.isArchived ?? false;
-  const isOwner = record?.isOwner ?? true;
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -449,7 +448,6 @@ export function AgentCard({
         resourceType="agent"
         resourceId={id}
         resourceName={name}
-        isOwner={isOwner}
       />
 
       <ComingSoonModal

@@ -19,7 +19,7 @@ import {
   listPermissions,
   getResourcePermissions,
   checkPermission,
-  isResourceOwner,
+  resolveResourceOwnership,
   shareWithUser,
   shareWithOrg,
   makePublic,
@@ -198,31 +198,50 @@ export function useCanAdmin(resourceType: ResourceType, resourceId: string) {
 }
 
 /**
- * Hook to check if current user is owner of a resource
+ * Hook to check if current user is owner of a resource.
+ *
+ * Returns three distinct states — `loading` (still resolving), `error`
+ * (could NOT be determined), and `isOwner` — because collapsing them into one
+ * boolean is what makes owner-gated UI render as if the user were a stranger
+ * to their own record. Never gate a surface on `!isOwner` alone; check
+ * `loading` and `error` first.
+ *
  * @param resourceType Resource type
  * @param resourceId Resource ID
- * @returns Whether user is owner and loading state
  */
 export function useIsOwner(resourceType: ResourceType, resourceId: string) {
   const [isOwner, setIsOwner] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(Boolean(resourceType && resourceId));
 
   useEffect(() => {
-    const check = async () => {
-      setLoading(true);
-      const owner = await isResourceOwner(resourceType, resourceId);
-      setIsOwner(owner);
+    if (!resourceType || !resourceId) {
+      // Nothing to resolve — do NOT sit in a permanent loading state.
+      setIsOwner(false);
+      setError(null);
       setLoading(false);
-    };
-
-    if (resourceType && resourceId) {
-      check();
+      return;
     }
+
+    let cancelled = false;
+    setLoading(true);
+
+    void resolveResourceOwnership(resourceType, resourceId).then((result) => {
+      if (cancelled) return;
+      setIsOwner(result.isOwner);
+      setError(result.error);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [resourceType, resourceId]);
 
   return {
     isOwner,
     loading,
+    error,
   };
 }
 

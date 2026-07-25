@@ -58,7 +58,8 @@ export interface ShareModalSchema {
   resourceType: string;
   resourceId: string;
   resourceName: string;
-  isOwner: boolean;
+  /** Optional override only — ShareModal resolves ownership itself. */
+  isOwner?: boolean;
 }
 
 // ============================================================================
@@ -97,7 +98,8 @@ export const overlaySchemaRegistry: Partial<Record<string, OverlaySchema>> = {
       resourceType: "",
       resourceId: "",
       resourceName: "",
-      isOwner: false,
+      // NO isOwner default. ShareModal resolves ownership itself; a defaulted
+      // `false` renders a dead dialog to the record's own owner.
     } satisfies ShareModalSchema,
   },
 

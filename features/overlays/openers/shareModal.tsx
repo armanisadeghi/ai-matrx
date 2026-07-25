@@ -16,17 +16,21 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type { ResourceType } from "@/utils/permissions";
 
 const OVERLAY_ID = "shareModal" as const;
 
 export interface OpenShareModalOptions {
   /** Optional stable instance id. Omit to spawn a fresh instance. */
   instanceId?: string;
-  /** TODO: tighten to `ResourceType` once that type is imported. */
-  resourceType: unknown;
+  resourceType: ResourceType;
   resourceId: string;
   resourceName: string;
-  isOwner: boolean;
+  /**
+   * OPTIONAL override. Omit it — `ShareModal` resolves ownership itself.
+   * Only pass an authoritative, already-resolved value.
+   */
+  isOwner?: boolean;
 }
 
 export interface ShareModalHandle {

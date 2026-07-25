@@ -359,7 +359,6 @@ export default function TaskDetailsPanel({
         resourceType="task"
         resourceId={task.id}
         resourceName={task.title}
-        isOwner={task.userId === currentUserId}
         size="icon"
         variant="ghost"
       />
@@ -830,7 +829,6 @@ export default function TaskDetailsPanel({
         resourceType="task"
         resourceId={task.id}
         resourceName={task.title}
-        isOwner={task.userId === currentUserId}
       />
     </div>
   );

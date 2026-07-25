@@ -631,13 +631,50 @@ export const getResourcePermissions = listPermissions;
  * column so tables like flashcard_sets (set_id, not id) work correctly the
  * day they're added to the registry — without a code change here.
  */
-export async function isResourceOwner(
+export interface OwnershipResolution {
+  /** True only when the ownership read SUCCEEDED and the caller owns the row. */
+  isOwner: boolean;
+  /**
+   * Non-null when ownership could NOT be determined (unknown resource type,
+   * failed read, no session). `isOwner: false` with a non-null `error` means
+   * "unknown", never "not the owner" — UIs must not present it as a denial.
+   */
+  error: string | null;
+}
+
+/**
+ * Resolve whether the current user owns a resource, distinguishing
+ * "not the owner" from "could not determine".
+ *
+ * LOUD RECOVERY: every failure path returns a message instead of a bare
+ * `false`. A silent `false` here is what renders the canonical ShareModal as a
+ * dead, empty dialog for a user who actually owns the row — the whole class of
+ * bug this function exists to make impossible.
+ *
+ * Reads owner_column directly from the resource row — single index scan, no
+ * RPC round-trip required. Uses the registry to find the canonical table name,
+ * id column, and owner column so tables like flashcard_sets (set_id, not id)
+ * work correctly the day they're added to the registry.
+ */
+export async function resolveResourceOwnership(
   resourceType: ResourceType,
   resourceId: string,
-): Promise<boolean> {
+): Promise<OwnershipResolution> {
+  if (!resourceType || !resourceId) {
+    return {
+      isOwner: false,
+      error: "Missing resource type or id — cannot resolve ownership.",
+    };
+  }
+
   try {
     const entry = getShareableResource(resourceType);
-    if (!entry) return false;
+    if (!entry) {
+      return {
+        isOwner: false,
+        error: `Unknown shareable resource type "${resourceType}". Register it in shareable_resource_registry.`,
+      };
+    }
 
     // The registry is authoritative for the owner column (canonical tables use
     // `created_by`; file satellites `owner_id`; udt/legacy `user_id`). Read it
@@ -648,9 +685,10 @@ export async function isResourceOwner(
     const tableName = entry.tableName;
     const client = resolveDynamicClient(entry.schemaName);
     const [
-      { data: row },
+      { data: row, error: rowError },
       {
         data: { user },
+        error: userError,
       },
     ] = await Promise.all([
       client
@@ -661,10 +699,48 @@ export async function isResourceOwner(
       supabase.auth.getUser(),
     ]);
 
-    return !!user && !!row && row[ownerColumn] === user.id;
-  } catch {
-    return false;
+    if (rowError) {
+      const message = errMessage(rowError);
+      console.error(
+        `[permissions] Ownership read failed for ${resourceType}:${resourceId} ` +
+          `(${entry.schemaName ?? "public"}.${tableName}.${ownerColumn}): ${message}`,
+      );
+      return { isOwner: false, error: `Could not read ${entry.displayLabel}: ${message}` };
+    }
+
+    if (userError || !user) {
+      return { isOwner: false, error: "No signed-in user — cannot resolve ownership." };
+    }
+
+    if (!row) {
+      return {
+        isOwner: false,
+        error: `${entry.displayLabel} not found, or you do not have access to it.`,
+      };
+    }
+
+    return { isOwner: row[ownerColumn] === user.id, error: null };
+  } catch (error) {
+    const message = errMessage(error);
+    console.error(
+      `[permissions] Ownership check threw for ${resourceType}:${resourceId}: ${message}`,
+    );
+    return { isOwner: false, error: message };
   }
+}
+
+/**
+ * Boolean convenience wrapper over {@link resolveResourceOwnership}.
+ *
+ * Prefer `resolveResourceOwnership` anywhere the difference between "not the
+ * owner" and "could not determine" changes what the user sees.
+ */
+export async function isResourceOwner(
+  resourceType: ResourceType,
+  resourceId: string,
+): Promise<boolean> {
+  const { isOwner } = await resolveResourceOwnership(resourceType, resourceId);
+  return isOwner;
 }
 
 /**

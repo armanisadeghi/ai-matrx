@@ -12,7 +12,7 @@ import { NotesSidebar } from "./NotesSidebar";
 import { NoteEditor } from "./NoteEditor";
 import { NoteTabs } from "./NoteTabs";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { NoteShareModal } from "./NoteShareModal";
+import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders } from "../utils/folderUtils";
 import { PHANTOM_NOTE_ID, createPhantomNote } from "../utils/phantomNote";
@@ -455,11 +455,14 @@ export function NotesLayout({
 
         {/* Canonical sharing UI (user search + email lookup, org, public) */}
         {shareNoteId && (
-          <NoteShareModal
-            open={shareNoteId !== null}
-            onOpenChange={(open) => !open && setShareNoteId(null)}
-            noteId={shareNoteId}
-            noteLabel={notes.find((n) => n.id === shareNoteId)?.label || "Note"}
+          <ShareModal
+            isOpen={shareNoteId !== null}
+            onClose={() => setShareNoteId(null)}
+            resourceType="note"
+            resourceId={shareNoteId}
+            resourceName={
+              notes.find((n) => n.id === shareNoteId)?.label || "Note"
+            }
           />
         )}
       </div>

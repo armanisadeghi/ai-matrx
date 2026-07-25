@@ -378,7 +378,6 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
             resourceType="task"
             resourceId={task.id}
             resourceName={task.title}
-            isOwner={task.userId === currentUserId}
             size="icon"
             variant="ghost"
           />
@@ -863,7 +862,6 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
         resourceType="task"
         resourceId={task.id}
         resourceName={task.title}
-        isOwner={task.userId === currentUserId}
       />
     </div>
   );

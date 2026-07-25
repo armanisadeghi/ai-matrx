@@ -44,7 +44,6 @@ import {
 import { isNoteContentEmpty } from "../../utils/noteUtils";
 import { downloadNoteAsMarkdown } from "../../utils/exportNotesMarkdown";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
-import { isResourceOwner } from "@/utils/permissions/service";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 export interface NoteMenuContext {
@@ -68,16 +67,18 @@ export function displayLabel(label: string): string {
 }
 
 /**
- * Resolves ownership on demand (only when Share is actually clicked — not
- * per row) and opens the shared `shareModal` overlay for a note. Used by
- * both the per-row "..." menu and the bulk-selection action bar.
+ * Opens the canonical `shareModal` overlay for a note. Used by both the
+ * per-row "..." menu and the bulk-selection action bar.
+ *
+ * Ownership is deliberately NOT resolved here — `ShareModal` resolves it
+ * itself. Passing a caller-computed `isOwner` is how this dialog ends up
+ * rendering owner-less to the actual owner.
  */
-export async function openNoteShareModal(
+export function openNoteShareModal(
   dispatch: AppDispatch,
   noteId: string,
   label: string,
-): Promise<void> {
-  const owner = await isResourceOwner("note", noteId);
+): void {
   dispatch(
     openOverlay({
       overlayId: "shareModal",
@@ -85,7 +86,6 @@ export async function openNoteShareModal(
         resourceType: "note",
         resourceId: noteId,
         resourceName: displayLabel(label),
-        isOwner: owner,
       },
     }),
   );

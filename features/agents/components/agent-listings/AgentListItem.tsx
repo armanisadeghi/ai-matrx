@@ -70,7 +70,6 @@ export function AgentListItem({
   const record = useAppSelector((state) => selectAgentById(state, id));
   const name = record?.name ?? "Untitled Agent";
   const isArchived = record?.isArchived ?? false;
-  const isOwner = record?.isOwner ?? true;
 
   const isSystemAdmin = useAppSelector((state: RootState) =>
     selectIsSuperAdmin(state),
@@ -396,7 +395,6 @@ export function AgentListItem({
           resourceType="agent"
           resourceId={id}
           resourceName={name}
-          isOwner={isOwner}
         />
       )}
       {isCreateAppModalOpen && (

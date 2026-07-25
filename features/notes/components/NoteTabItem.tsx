@@ -47,7 +47,7 @@ import {
   selectNoteFolder,
 } from "../redux/selectors";
 import { saveNote, copyNote, moveNoteToFolder } from "../redux/thunks";
-import { NoteShareModal } from "./NoteShareModal";
+import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { useNoteIngestStatus } from "../hooks/useNoteIngestStatus";
@@ -580,11 +580,12 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       )}
 
       {/* Share modal */}
-      <NoteShareModal
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-        noteId={noteId}
-        noteLabel={label}
+      <ShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        resourceType="note"
+        resourceId={noteId}
+        resourceName={label}
       />
 
       <MoveNoteDialog

@@ -69,7 +69,7 @@ import { RecentChangeOverlay } from "./RecentChangeOverlay";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { createFolder } from "../service/notesService";
-import { NoteShareModal } from "./NoteShareModal";
+import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { selectFindReplaceState } from "../redux/selectors";
 import { computeMatches } from "../utils/findMatches";
 import { usePreviewFindHighlight } from "../hooks/usePreviewFindHighlight";
@@ -841,11 +841,12 @@ export function NoteContentEditor({
         confirmLabel="Create & Move"
       />
 
-      <NoteShareModal
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        noteId={noteId}
-        noteLabel={noteLabel}
+      <ShareModal
+        isOpen={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        resourceType="note"
+        resourceId={noteId}
+        resourceName={noteLabel}
       />
     </SurfaceRuntimeProvider>
   );

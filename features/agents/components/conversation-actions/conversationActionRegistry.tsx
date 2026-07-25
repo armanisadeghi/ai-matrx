@@ -78,7 +78,6 @@ export interface ConversationMenuContext {
   isFavorite: boolean;
   isArchived: boolean;
   excludeFromKg: boolean;
-  isOwner: boolean;
   /** Canonical href for "Open in new tab" / "Copy link" (surface-specific). */
   href: string;
   /** Agent-run focus key — when set, Duplicate jumps focus to the new copy. */
@@ -234,7 +233,6 @@ export function buildConversationMenu(
                     resourceType: "conversation",
                     resourceId: ctx.conversationId,
                     resourceName: displayTitle(ctx.title),
-                    isOwner: ctx.isOwner,
                   },
                 }),
               );

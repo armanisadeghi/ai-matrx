@@ -18,8 +18,10 @@ import {
   Loader2,
   CheckCircle,
 } from "lucide-react";
-import { useSharing, useIsOwner } from "@/utils/permissions";
+import { useSharing, useIsOwner, getShareableResource } from "@/utils/permissions";
 import type { ResourceType } from "@/utils/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle, Lock } from "lucide-react";
 import { PermissionsList } from "./PermissionsList";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "./tabs/ShareWithOrgTab";
@@ -36,7 +38,15 @@ interface ShareModalProps {
   resourceType: ResourceType;
   resourceId: string;
   resourceName: string;
-  isOwner: boolean;
+  /**
+   * OPTIONAL override. Leave it out — the modal resolves ownership itself.
+   *
+   * Only pass this when the caller already holds an authoritative, resolved
+   * answer (e.g. it just created the row). Passing a stale or defaulted
+   * `false` is what renders this dialog as a dead, empty shell for a user who
+   * owns the record.
+   */
+  isOwner?: boolean;
 }
 
 /**
@@ -45,6 +55,10 @@ interface ShareModalProps {
  * Generic modal that works with ANY resource type.
  * Provides tabs for sharing with users, organizations, or making public.
  *
+ * This is the ONE sharing dialog in the app. Do not build a feature-specific
+ * variant — extend this one. It self-resolves ownership, so every call site is
+ * a three-prop drop-in.
+ *
  * @example
  * <ShareModal
  *   isOpen={isOpen}
@@ -52,7 +66,6 @@ interface ShareModalProps {
  *   resourceType="workflow"
  *   resourceId={workflowId}
  *   resourceName="My Workflow"
- *   isOwner={true}
  * />
  */
 export function ShareModal({
@@ -61,7 +74,7 @@ export function ShareModal({
   resourceType,
   resourceId,
   resourceName,
-  isOwner,
+  isOwner: isOwnerOverride,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
     "users" | "organizations" | "public"
@@ -116,6 +129,28 @@ export function ShareModal({
     }
   };
 
+  // Ownership is resolved HERE, not trusted from a prop. Callers that pass a
+  // defaulted/stale `false` used to silently produce a dialog with no controls.
+  const {
+    isOwner: resolvedIsOwner,
+    loading: ownerLoading,
+    error: ownerError,
+  } = useIsOwner(resourceType, resourceId);
+
+  const hasOverride = typeof isOwnerOverride === "boolean";
+  const isOwner = hasOverride ? isOwnerOverride : resolvedIsOwner;
+  const resolvingOwner = !hasOverride && ownerLoading;
+  const ownerUnknown = !hasOverride && !ownerLoading && ownerError !== null;
+
+  // A resource type missing from the registry can never share — say so loudly
+  // rather than rendering a dialog whose every control silently no-ops.
+  const registryEntry = resourceType ? getShareableResource(resourceType) : undefined;
+  const configError = !resourceId
+    ? "No resource id was supplied to the share dialog."
+    : !registryEntry
+      ? `"${resourceType}" is not a registered shareable resource. Add it to shareable_resource_registry.`
+      : null;
+
   const {
     permissions,
     isPublic: resourceIsPublic,
@@ -127,7 +162,7 @@ export function ShareModal({
     revokeAccess,
     updateLevel,
     refresh,
-  } = useSharing(resourceType, resourceId, isOpen, resourceName);
+  } = useSharing(resourceType, resourceId, isOpen && !configError, resourceName);
 
   // Filter permissions by type for each tab
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
@@ -135,6 +170,33 @@ export function ShareModal({
   const publicPermission = permissions.find((p) => p.isPublic);
 
   const resourceLabel = getResourceTypeLabel(resourceType);
+
+  /**
+   * Shown instead of the grant forms when the caller cannot manage sharing.
+   * An empty area with no explanation reads as a broken dialog — say WHY.
+   */
+  const manageBlockedNotice = ownerUnknown ? (
+    <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/10 flex items-start gap-2">
+      <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+      <div>
+        <p className="text-sm font-medium text-destructive">
+          Couldn&apos;t confirm who owns this {resourceLabel.toLowerCase()}
+        </p>
+        <p className="text-xs text-destructive/80 mt-0.5">{ownerError}</p>
+      </div>
+    </div>
+  ) : (
+    <div className="p-3 rounded-lg border bg-muted/30 flex items-start gap-2">
+      <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+      <div>
+        <p className="text-sm font-medium">Only the owner can change sharing</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          This {resourceLabel.toLowerCase()} was shared with you. Ask its owner to
+          invite others or change access levels.
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -168,6 +230,25 @@ export function ShareModal({
           </div>
         </DialogHeader>
 
+        {/* Misconfigured call site — never render dead controls. */}
+        {configError && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
+            <AlertTriangle className="h-8 w-8 text-destructive" />
+            <p className="text-sm font-medium">Sharing is unavailable</p>
+            <p className="text-xs text-muted-foreground max-w-sm">{configError}</p>
+          </div>
+        )}
+
+        {/* Resolving ownership — show a skeleton, never the non-owner view. */}
+        {!configError && resolvingOwner && (
+          <div className="flex-1 space-y-3 py-4" aria-busy="true">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        )}
+
+        {!configError && !resolvingOwner && (
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as typeof activeTab)}
@@ -218,13 +299,15 @@ export function ShareModal({
               </div>
 
               {/* Add user form */}
-              {isOwner && (
+              {isOwner ? (
                 <ShareWithUserTab
                   onShare={shareWithUser}
                   onSuccess={refresh}
                   resourceType={resourceType}
                   resourceId={resourceId}
                 />
+              ) : (
+                manageBlockedNotice
               )}
             </TabsContent>
 
@@ -242,7 +325,7 @@ export function ShareModal({
               </div>
 
               {/* Add org form */}
-              {isOwner && (
+              {isOwner ? (
                 <ShareWithOrgTab
                   onShare={shareWithOrg}
                   onSuccess={refresh}
@@ -251,6 +334,8 @@ export function ShareModal({
                     .map((p) => p.grantedToOrganizationId)
                     .filter((id): id is string => !!id)}
                 />
+              ) : (
+                manageBlockedNotice
               )}
             </TabsContent>
 
@@ -268,6 +353,7 @@ export function ShareModal({
             </TabsContent>
           </div>
         </Tabs>
+        )}
 
         {error && (
           <div className="mt-3 p-2.5 bg-destructive/10 border border-destructive/20 rounded-md flex-shrink-0">

@@ -199,7 +199,6 @@ export function AgentBrowsePage() {
           resourceType="agent"
           resourceId={actions.shareAgent.id}
           resourceName={actions.shareAgent.name}
-          isOwner={actions.shareAgent.is_owner}
         />
       )}
       {actions.addToSetAgent && (
