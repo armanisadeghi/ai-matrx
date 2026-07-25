@@ -445,21 +445,19 @@ function OverlapGrid({
   model: OverlapModel;
   ordered: { node: KwNode; i: number }[];
 }) {
-  const labelW = 132; // px reserved for the left-hand keyword labels
-
   return (
     <div className="space-y-2">
       <div className="overflow-x-auto">
-        <div className="inline-block min-w-full">
-          {/* Column header row — rotated keyword labels above each column. */}
-          <div className="flex" style={{ paddingLeft: labelW }}>
+        <div className="min-w-full">
+          {/* Column header row — aligned with the left-hand matrix columns. */}
+          <div className="flex w-fit pb-2">
             {ordered.map(({ node }) => (
               <div
                 key={node.id}
-                className="flex h-16 w-9 items-end justify-center"
+                className="flex h-32 w-9 items-end justify-center"
               >
                 <span
-                  className="block max-w-[60px] truncate text-[9px] text-muted-foreground"
+                  className="block max-h-28 truncate text-[9px] text-muted-foreground"
                   style={{
                     writingMode: "vertical-rl",
                     transform: "rotate(180deg)",
@@ -474,14 +472,7 @@ function OverlapGrid({
 
           {/* One row per keyword. */}
           {ordered.map(({ node: rowNode, i: ri }) => (
-            <div key={rowNode.id} className="flex items-center">
-              <div
-                className="truncate pr-2 text-right text-[10px] font-medium text-foreground/80"
-                style={{ width: labelW }}
-                title={rowNode.label}
-              >
-                {rowNode.label}
-              </div>
+            <div key={rowNode.id} className="flex min-w-0 items-center">
               {ordered.map(({ node: colNode, i: ci }) => {
                 const value = model.pair[ri][ci];
                 const isDiagonal = ri === ci;
@@ -495,7 +486,7 @@ function OverlapGrid({
                     <TooltipTrigger asChild>
                       <div
                         className={cn(
-                          "m-px flex h-8 w-8 items-center justify-center rounded-[5px] border text-[10px] tabular-nums transition-transform hover:scale-[1.12] hover:ring-1 hover:ring-primary/40",
+                          "m-px flex h-8 w-8 shrink-0 items-center justify-center rounded-[5px] border text-[10px] tabular-nums transition-transform hover:scale-[1.12] hover:ring-1 hover:ring-primary/40",
                           className,
                         )}
                         style={style}
@@ -534,6 +525,12 @@ function OverlapGrid({
                   </Tooltip>
                 );
               })}
+              <div
+                className="ml-3 min-w-24 flex-1 truncate text-left text-[10px] font-medium text-foreground/80"
+                title={rowNode.label}
+              >
+                {rowNode.label}
+              </div>
             </div>
           ))}
         </div>
