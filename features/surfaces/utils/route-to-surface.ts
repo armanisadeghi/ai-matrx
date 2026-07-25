@@ -33,10 +33,15 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/agents/edit", surface: "matrx-user/agent-advanced-editor" },
   { prefix: "/agents/settings", surface: "matrx-user/agent-settings" },
   { prefix: "/agents/gate", surface: "matrx-user/agent-gate" },
-  { prefix: "/agents/connections", surface: "matrx-user/agent-connections" },
-  { prefix: "/agents/apps", surface: "matrx-user/agent-apps" },
   { prefix: "/agents/shortcuts", surface: "matrx-user/agent-shortcuts" },
   { prefix: "/agents", surface: "matrx-user/agents" },
+  // Real routes for the connections/apps hubs (old /agents/* paths were fiction).
+  {
+    prefix: "/agent-connections/skills",
+    surface: "matrx-user/connections-skills",
+  },
+  { prefix: "/agent-connections", surface: "matrx-user/agent-connections" },
+  { prefix: "/agent-apps", surface: "matrx-user/agent-apps" },
 
   // Standalone top-level pages.
   { prefix: "/chat/a/", surface: "matrx-user/chat" },
@@ -56,12 +61,19 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/tools", surface: "matrx-user/tools" },
   { prefix: "/documents", surface: "matrx-user/documents" },
   { prefix: "/settings", surface: "matrx-user/settings" },
+  { prefix: "/user-settings", surface: "matrx-user/settings" },
   { prefix: "/data-tables", surface: "matrx-user/data-tables" },
+  { prefix: "/data", surface: "matrx-user/data-tables" },
+  // CMS + War Room — manifests existed but were unreachable (no prefix).
+  { prefix: "/cms/html-pages", surface: "matrx-user/html-page" },
+  { prefix: "/cms", surface: "matrx-user/cms" },
+  { prefix: "/war-room/all", surface: "matrx-user/war-room" },
+  { prefix: "/war-room", surface: "matrx-user/war-room-thread" },
   { prefix: "/organizations", surface: "matrx-user/organizations" },
   { prefix: "/canvas", surface: "matrx-user/canvas" },
   { prefix: "/ai-results", surface: "matrx-user/ai-results" },
   { prefix: "/research", surface: "matrx-user/research" },
-  { prefix: "/sandboxes", surface: "matrx-user/sandboxes" },
+  { prefix: "/sandbox", surface: "matrx-user/sandboxes" },
   { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },
   { prefix: "/transcripts/scribe", surface: "matrx-user/transcript-scribe" },
   { prefix: "/transcripts", surface: "matrx-user/transcripts" },
