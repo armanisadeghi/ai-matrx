@@ -14,22 +14,12 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
+import {
+  getSurfaceDisplayLabel,
+  labelFromName,
+} from "@/features/surfaces/utils/surface-display";
 
 const ALL_CLIENTS = "__all__";
-
-function splitSurfaceName(fullName: string): { client: string; local: string } {
-  const idx = fullName.indexOf("/");
-  if (idx < 0) return { client: "", local: fullName };
-  return { client: fullName.slice(0, idx), local: fullName.slice(idx + 1) };
-}
-
-function prettify(s: string): string {
-  return s
-    .split(/[-_/]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 /** An existing shortcut for the agent that can be updated. */
 export interface UpdateCandidate {
@@ -95,7 +85,7 @@ export function BatchSurfaceSelector({
         .map((s) => ({
           key: `create:${s.name}`,
           kind: "create" as const,
-          title: prettify(splitSurfaceName(s.name).local),
+          title: getSurfaceDisplayLabel(s.name),
           subtitle: s.name,
           valueCount: s.surfaceValueCount,
           alreadyHasShortcut: existingSurfaceNames.has(s.name),
@@ -116,7 +106,7 @@ export function BatchSurfaceSelector({
         .map((c) => ({
           key: `update:${c.shortcutId}`,
           kind: "update" as const,
-          title: c.label || prettify(splitSurfaceName(c.surfaceName).local),
+          title: c.label || getSurfaceDisplayLabel(c.surfaceName),
           subtitle: c.surfaceName,
         })),
     [updateCandidates, q],
@@ -163,7 +153,7 @@ export function BatchSurfaceSelector({
             <SelectItem value={ALL_CLIENTS}>All clients</SelectItem>
             {clients.map((c) => (
               <SelectItem key={c} value={c}>
-                {prettify(c)}
+                {labelFromName(c)}
               </SelectItem>
             ))}
           </SelectContent>

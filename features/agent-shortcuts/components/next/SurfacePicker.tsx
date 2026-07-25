@@ -15,6 +15,7 @@ import {
   selectSurfacesStatus,
 } from "@/features/surfaces/redux/selectors";
 import { loadSurfaces } from "@/features/surfaces/redux/thunks";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
 const DEFAULT_CLIENT = "matrx-default";
 const DEFAULT_SURFACE = "matrx-default/default";
@@ -23,14 +24,6 @@ function splitSurfaceName(fullName: string): { client: string; local: string } {
   const idx = fullName.indexOf("/");
   if (idx < 0) return { client: "", local: fullName };
   return { client: fullName.slice(0, idx), local: fullName.slice(idx + 1) };
-}
-
-function prettifyLocal(local: string): string {
-  return local
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 function prettifyClient(client: string): string {
@@ -71,7 +64,7 @@ export function SurfacePicker({
     }
   }, [surfaceName, surfaces, onChange]);
 
-  const { client, local } = splitSurfaceName(surfaceName ?? "");
+  const { client } = splitSurfaceName(surfaceName ?? "");
 
   const clients = useMemo(() => {
     const set = new Set<string>();
@@ -143,18 +136,15 @@ export function SurfacePicker({
         >
           <SelectTrigger className="h-9 text-sm">
             <SelectValue placeholder="Pick a surface">
-              {local ? prettifyLocal(local) : ""}
+              {surfaceName ? getSurfaceDisplayLabel(surfaceName) : ""}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {surfacesForClient.map((s) => {
-              const { local: localName } = splitSurfaceName(s.name);
-              return (
-                <SelectItem key={s.name} value={s.name}>
-                  {prettifyLocal(localName)}
-                </SelectItem>
-              );
-            })}
+            {surfacesForClient.map((s) => (
+              <SelectItem key={s.name} value={s.name}>
+                {getSurfaceDisplayLabel(s.name)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

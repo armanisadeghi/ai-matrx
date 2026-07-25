@@ -17,20 +17,13 @@ import {
   loadSurfaces,
 } from "@/features/surfaces/redux/thunks";
 import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 
 function splitSurfaceName(fullName: string): { client: string; local: string } {
   const idx = fullName.indexOf("/");
   if (idx < 0) return { client: "", local: fullName };
   return { client: fullName.slice(0, idx), local: fullName.slice(idx + 1) };
-}
-
-function prettifyLocal(local: string): string {
-  return local
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 function prettifyClient(client: string): string {
@@ -466,7 +459,6 @@ function ClientSection({
       {isOpen && (
         <ul className="mt-1 mb-2 pl-2 space-y-0.5">
           {surfaces.map((s) => {
-            const { local } = splitSurfaceName(s.name);
             const isActive = s.name === selectedSurface;
             const isBound = boundSet.has(s.name);
             return (
@@ -503,7 +495,7 @@ function ClientSection({
                         isActive && "text-foreground",
                       )}
                     >
-                      {prettifyLocal(local)}
+                      {getSurfaceDisplayLabel(s.name)}
                     </div>
                     {isBound && (
                       <span className="shrink-0 inline-flex items-center px-1.5 h-4 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">

@@ -102,6 +102,7 @@ import { EntityScopeTagger } from "@/features/scopes/components/entity-context/E
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import type { EntityType } from "@/features/scopes/types";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
 /**
  * Canonical entity_type for agent↔surface binding edges rows in the scope-assignments
@@ -316,7 +317,7 @@ export function AgentSurfacesPanel({ agent }: Props) {
   const onDelete = async (binding: AgentSurfaceBinding) => {
     const ok = await confirm({
       title: "Remove binding?",
-      description: `Detach ${agent.name} from ${splitSurfaceName(binding.surfaceName).local}. Auto-binding for matching variable names will still occur, but explicit mappings and custom scope tags are lost.`,
+      description: `Detach ${agent.name} from ${getSurfaceDisplayLabel(binding.surfaceName)}. Auto-binding for matching variable names will still occur, but explicit mappings and custom scope tags are lost.`,
       confirmLabel: "Remove",
       variant: "destructive",
     });
@@ -554,13 +555,14 @@ function SurfaceRow({
   onDelete,
   onCreateShortcut,
 }: SurfaceRowProps) {
-  const { local } = splitSurfaceName(surface.name);
   return (
     <div className="px-3 py-2 space-y-1.5">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-sm text-foreground">{local}</span>
+            <span className="font-medium text-sm text-foreground">
+              {getSurfaceDisplayLabel(surface.name)}
+            </span>
             {bindings.length > 0 && (
               <Badge variant="secondary" className="text-[10px]">
                 {bindings.length} binding{bindings.length === 1 ? "" : "s"}
@@ -1055,7 +1057,7 @@ function SurfacePicker({
     <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger className="text-sm">
         <SelectValue placeholder={placeholder}>
-          {value ? splitSurfaceName(value).local : null}
+          {value ? getSurfaceDisplayLabel(value) : null}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
@@ -1082,7 +1084,7 @@ function SurfacePicker({
           <SelectItem key={s.name} value={s.name}>
             <div className="flex flex-col items-start">
               <span className="font-medium text-xs">
-                {splitSurfaceName(s.name).local}
+                {getSurfaceDisplayLabel(s.name)}
               </span>
               {s.description && (
                 <span className="text-[10px] text-muted-foreground line-clamp-1">

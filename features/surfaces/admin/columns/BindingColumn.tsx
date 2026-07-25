@@ -43,19 +43,8 @@ import {
 import type { ValueMappingMap } from "@/features/surfaces/types";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
-
-function prettifySurfaceLocal(fullName: string): string {
-  const local =
-    fullName.indexOf("/") >= 0
-      ? fullName.slice(fullName.indexOf("/") + 1)
-      : fullName;
-  return local
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 /**
  * Column 3 — Binding form (the center / main column).
@@ -484,7 +473,7 @@ function BindingFormLayout({
           Configuring
         </div>
         <h2 className="mt-1 text-xl font-semibold text-foreground leading-tight">
-          {prettifySurfaceLocal(surfaceName)}
+          {getSurfaceDisplayLabel(surfaceName)}
         </h2>
         {surface?.description ? (
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-2xl">

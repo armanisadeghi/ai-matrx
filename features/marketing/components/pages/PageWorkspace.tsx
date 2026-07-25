@@ -181,7 +181,7 @@ function IntentForm({
 
   const copy = webCopy({
     kind: "web-page-intent",
-    label: "Page intent",
+    label: G.page_intent,
     description:
       "The user-owned editorial intent for this page (target keyword + desired metadata).",
     surface: `Page intent — ${page.url}`,
@@ -194,7 +194,7 @@ function IntentForm({
     },
     lines: [
       ["URL", page.url],
-      ["Target keyword", page.target_keyword ?? "not set"],
+      [L.target_keyword, page.target_keyword ?? "not set"],
       ["Desired title", page.meta_title_desired ?? "not set"],
       ["Desired description", page.meta_description_desired ?? "not set"],
     ],
@@ -776,7 +776,7 @@ function SitemapMembershipsCard({ page }: { page: MarketingPage }) {
   const rows = memberships.data ?? [];
   const copy = webCopy({
     kind: "web-page-sitemap-memberships",
-    label: "Sitemap memberships",
+    label: L.sitemap_memberships,
     description: "Which sitemap documents advertise this canonical URL.",
     surface: `Sitemap memberships — ${page.url}`,
     data: rows,
@@ -1266,7 +1266,7 @@ function PagespeedCard({ page }: { page: MarketingPage }) {
       }
       copy={webCopy({
         kind: "web-page-pagespeed",
-        label: "PageSpeed Insights",
+        label: L.pagespeed,
         description:
           "Persisted Lighthouse lab scores and CrUX field data for this page (desktop + mobile).",
         surface: `PageSpeed Insights — ${page.url}`,
@@ -1452,7 +1452,7 @@ function PageAnalyticsCard({ page }: { page: MarketingPage }) {
       }
       copy={webCopy({
         kind: "web-page-google-analytics",
-        label: "Google Analytics",
+        label: L.ga4_metrics,
         description: "Persisted GA4 landing-page traffic for this canonical page.",
         surface: `Google Analytics — ${page.url}`,
         data: { url: page.url, enabled: ga4Enabled, totals },
@@ -1601,11 +1601,11 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       ["URL", page.url],
       ["Status", page.status],
       ["Provenance", page.provenance],
-      ["Target keyword", page.target_keyword],
+      [L.target_keyword, page.target_keyword],
       ["Observed title", head.title],
       ["Observed description", head.metaDescription],
-      ["Open findings", data.openFindings],
-      ["Last HTTP", page.http_status_last],
+      [L.open_findings, data.openFindings],
+      [L.http_status, page.http_status_last],
       ["Words", snapshot?.word_count ?? null],
       ["Captured", snapshot ? formatDate(snapshot.captured_at) : "never"],
     ],
@@ -1721,7 +1721,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 ["Observed description", head.metaDescription ?? "none"],
                 ["Desired title", page.meta_title_desired],
                 ["Desired description", page.meta_description_desired],
-                ["Target keyword", page.target_keyword],
+                [L.target_keyword, page.target_keyword],
               ],
               attributes: { page_id: page.id },
             })}
@@ -1851,7 +1851,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 }
                 copy={webCopy({
                   kind: "web-page-social-card",
-                  label: "Social share preview",
+                  label: L.social_card,
                   description:
                     "Observed Open Graph and Twitter card tags controlling how shares of this URL render.",
                   surface: `Social share preview — ${page.url}`,
@@ -1888,7 +1888,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 anchor="indexability"
                 copy={webCopy({
                   kind: "web-page-indexability",
-                  label: "Indexability",
+                  label: L.indexability,
                   description:
                     "Crawl/indexing signals observed on this page: HTTP status, robots, canonical, redirects.",
                   surface: `Indexability — ${page.url}`,

@@ -16,6 +16,7 @@ import {
   type BindingTarget,
 } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { ScalarValueControl } from "./BatchFieldControls";
 import { BatchBindingCell } from "./BatchBindingCell";
 import {
@@ -26,18 +27,6 @@ import {
   type BatchRow,
   type BatchScalarFieldKey,
 } from "./batchModel";
-
-function splitLocal(name: string): string {
-  const idx = name.indexOf("/");
-  return idx < 0 ? name : name.slice(idx + 1);
-}
-function prettify(s: string): string {
-  return s
-    .split(/[-_/]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 const BASELINE_ONLY: SurfaceValue[] = Object.values(BASELINE_VALUES).sort(
   (a, b) => (a.sortOrder ?? 1000) - (b.sortOrder ?? 1000),
@@ -190,7 +179,7 @@ export function BatchGrid({
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-foreground truncate">
                           {row.existingLabel ||
-                            prettify(splitLocal(row.surfaceName))}
+                            getSurfaceDisplayLabel(row.surfaceName)}
                         </div>
                         <div className="text-[10px] text-muted-foreground font-mono truncate">
                           {row.surfaceName}

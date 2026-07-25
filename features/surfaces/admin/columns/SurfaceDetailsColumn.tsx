@@ -22,6 +22,7 @@ import {
 import type { SurfaceValue } from "@/features/surfaces/types";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 import { SurfaceRolesSection } from "./SurfaceRolesSection";
 
@@ -36,21 +37,6 @@ const TYPE_ICONS: Record<
   array: List,
   document: FileText,
 };
-
-function splitSurfaceName(fullName: string): { client: string; local: string } {
-  const idx = fullName.indexOf("/");
-  if (idx < 0) return { client: "", local: fullName };
-  return { client: fullName.slice(0, idx), local: fullName.slice(idx + 1) };
-}
-
-function prettifySurfaceLocal(fullName: string): string {
-  const { local } = splitSurfaceName(fullName);
-  return local
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 /**
  * Column 4 — Surface details.
@@ -123,7 +109,7 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
           </div>
         </div>
         <h2 className="text-base font-semibold text-foreground leading-tight">
-          {prettifySurfaceLocal(surfaceName)}
+          {getSurfaceDisplayLabel(surfaceName)}
         </h2>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <span>

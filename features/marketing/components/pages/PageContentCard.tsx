@@ -69,9 +69,12 @@ export function PageContentCard({
     });
   };
 
+  // THE NAMING LAW: labels come from the canonical manifest map.
+  const L = surfaceValueLabels(marketingPageManifest);
+
   const copy = webCopy({
     kind: "web-page-content",
-    label: "Page content",
+    label: L.page_content,
     description:
       "The extracted Markdown content of this page's latest captured snapshot.",
     surface: `Page content — ${page.url}`,
@@ -85,9 +88,6 @@ export function PageContentCard({
     ],
     attributes: { page_id: page.id },
   });
-
-  // THE NAMING LAW: the card title is the canonical `page_content` label.
-  const L = surfaceValueLabels(marketingPageManifest);
 
   return (
     <SectionCard

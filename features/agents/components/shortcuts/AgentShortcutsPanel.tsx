@@ -36,6 +36,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShortcutsByAgentId } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { selectCategoryById } from "@/features/agents/redux/agent-shortcut-categories/selectors";
 import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
 interface AgentShortcutsPanelProps {
   agentId: string;
@@ -227,10 +228,13 @@ function ShortcutRow({
   );
 
   const scopeBadge = getScopeBadge(shortcut);
-  const surface = shortcut.surfaceName
-    ? splitSurfaceName(shortcut.surfaceName)
+  const surfaceLabel = shortcut.surfaceName
+    ? getSurfaceDisplayLabel(shortcut.surfaceName)
     : null;
-  const surfaceLocal = surface ? prettifySurface(surface.local) : null;
+  const surfaceClient =
+    shortcut.surfaceName && shortcut.surfaceName.includes("/")
+      ? shortcut.surfaceName.slice(0, shortcut.surfaceName.indexOf("/"))
+      : "";
 
   return (
     <button
@@ -252,21 +256,21 @@ function ShortcutRow({
       <div className="min-w-0 flex-1">
         {/* Primary value = the surface (the UI the shortcut links to) */}
         <div className="flex items-center gap-2 flex-wrap">
-          {surfaceLocal ? (
+          {surfaceLabel ? (
             <span className="text-sm font-semibold text-foreground truncate">
-              {surfaceLocal}
+              {surfaceLabel}
             </span>
           ) : (
             <span className="text-sm font-semibold text-muted-foreground italic truncate">
               No surface
             </span>
           )}
-          {surface?.client && (
+          {surfaceClient && (
             <Badge
               variant="outline"
               className="text-[10px] h-4 px-1.5 font-mono text-muted-foreground"
             >
-              {surface.client}
+              {surfaceClient}
             </Badge>
           )}
           <Badge
@@ -309,22 +313,6 @@ function ShortcutRow({
       <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
     </button>
   );
-}
-
-/** `matrx-user/notes` → `{ client: "matrx-user", local: "notes" }`. */
-function splitSurfaceName(fullName: string): { client: string; local: string } {
-  const idx = fullName.indexOf("/");
-  if (idx < 0) return { client: "", local: fullName };
-  return { client: fullName.slice(0, idx), local: fullName.slice(idx + 1) };
-}
-
-/** `chat-voice` → `Chat Voice`. */
-function prettifySurface(s: string): string {
-  return s
-    .split(/[-_/]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 function EmptyState({
