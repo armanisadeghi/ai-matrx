@@ -132,6 +132,11 @@ const NEW_TAB_ITEMS: {
   getHref: (agentId: string, basePath: string) => string;
 }[] = [
   {
+    label: "Open in Chat",
+    icon: ExternalLink,
+    getHref: (id) => `/chat/a/${encodeURIComponent(id)}`,
+  },
+  {
     label: "View Agent",
     icon: ExternalLink,
     getHref: (id, base) => `${base}/${id}`,
