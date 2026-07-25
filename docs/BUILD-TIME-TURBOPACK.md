@@ -60,18 +60,34 @@ Guessing is useless. Turbopack can write a module-level timeline:
 pnpm build:trace
 ```
 
-That sets `NEXT_TURBOPACK_TRACING=1` and runs a full production build. When it
-finishes (or OOMs), open [https://ui.perfetto.dev/](https://ui.perfetto.dev/)
-and drag in the newest file under `.next-profiles/` (or `.next/trace*` —
-Next’s path has moved between versions). The longest / fattest spans are the
-slow chunks; expand one to see the exact module path.
+That sets `NEXT_TURBOPACK_TRACING=1` and runs a full production build. On
+Next 16.2 it writes:
+
+| File | What it is |
+|---|---|
+| `.next/trace-turbopack` | Binary Turbopack timeline (can be multi‑GB) |
+| `.next/trace` | Smaller JSON event log |
+| `.next/trace-build` | Tiny build-phase summary |
+
+**Open the Turbopack timeline** (this is the useful one — not Perfetto drag‑drop
+for the binary file):
+
+```bash
+pnpm next internal trace .next/trace-turbopack
+```
+
+That starts a local viewer in your browser. Longest / fattest spans = slow
+chunks; expand one to see the exact module path.
 
 What to hunt for: admin routes that import `typescript`, walk `process.cwd()`
 with `fs`, or pull giant JSON at the top level. The Vercel warning
 `The file pattern … matches N files` is the same class of signal.
 
 Bisect locally: delete or lazy-load one suspect → re-run `pnpm build:trace` →
-compare wall-clock + Perfetto. No deploy required.
+compare wall-clock + the trace viewer. No deploy required.
+
+> Note: older docs mentioned `.next-profiles/` — that path is gone in current
+> Next. Everything lands under `.next/`.
 
 ## Verification after fix
 
