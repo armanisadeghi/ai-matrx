@@ -71,6 +71,12 @@ import type {
   AgentVersionLookup,
 } from "@/features/agents/types/agent-definition.types";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  AGENTS_HUB_SURFACE_NAME,
+  createAgentsHubScope,
+} from "@/features/surfaces/manifests/agents-hub.manifest";
+import { getPeekedAgentId } from "./agent-peek-tracker";
 const CONSUMER_ID = "agents-main";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -334,6 +340,63 @@ export function AgentsGrid() {
     );
   };
 
+  // Surface scope — assembled at trigger time (never on render) from the
+  // consumer state and selectors already loaded above. Every alwaysAvailable
+  // key is written unconditionally; focus keys only while their panel exists.
+  const getHubScope = () => {
+    const peekedId = getPeekedAgentId();
+    const peeked = peekedId
+      ? filteredAgents.find((a) => a.id === peekedId)
+      : undefined;
+    return createAgentsHubScope({
+      visible_agents: filteredAgents.map((a) => ({
+        id: a.id,
+        name: a.name,
+        category: a.category,
+      })),
+      visible_agent_count: filteredAgents.length,
+      owned_agent_count: filteredOwnedAgents.length,
+      shared_agent_count: filteredSharedAgents.length,
+      shared_agents_total: totalSharedAgents,
+      list_loading: isLoading,
+      search_query: searchTerm,
+      deep_search: deepSearch,
+      ownership_tab: activeTab,
+      sort_by: sortBy,
+      included_categories: includedCats,
+      included_tags: includedTags,
+      favorites_filter: favFilter,
+      archived_filter: archFilter,
+      favorites_first: favoritesFirst,
+      has_active_filters: hasActiveFilters,
+      filters: {
+        ownership_tab: activeTab,
+        sort_by: sortBy,
+        search_query: searchTerm,
+        deep_search: deepSearch,
+        included_categories: includedCats,
+        included_tags: includedTags,
+        favorites_filter: favFilter,
+        archived_filter: archFilter,
+        favorites_first: favoritesFirst,
+      },
+      available_categories: allCategories,
+      available_tags: allTags,
+      ...(peekedId ? { peeked_agent_id: peekedId } : {}),
+      ...(peeked ? { peeked_agent_name: peeked.name } : {}),
+      ...(versionLookup && versionLookup.versionId === versionIdQuery
+        ? {
+            version_lookup: {
+              version_id: versionLookup.versionId,
+              agent_id: versionLookup.agentId,
+              agent_name: versionLookup.agentName,
+              version_number: versionLookup.versionNumber,
+            },
+          }
+        : {}),
+    });
+  };
+
   const sortOptions: { value: AgentSortOption; label: string }[] = [
     { value: "updated-desc", label: "Recently Updated" },
     { value: "created-desc", label: "Recently Created" },
@@ -505,7 +568,10 @@ export function AgentsGrid() {
   };
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={AGENTS_HUB_SURFACE_NAME}
+      getScope={getHubScope}
+    >
       {/* Desktop controls — single row: Filter | Search | tabs | result count | New */}
       {!isMobile && (
         <div className="mb-3 pt-8">
@@ -1332,6 +1398,6 @@ export function AgentsGrid() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -59,6 +59,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast-service";
+import { setPeekedAgentId } from "./agent-peek-tracker";
 
 const OVERVIEW_MESSAGE_PREVIEW_CHARS = 200;
 
@@ -813,6 +814,14 @@ export function AgentSneakPeekModal({
   }, [isOpen, agentId]);
 
   const bodyRef = useRef<HTMLDivElement>(null);
+
+  // Surface-runtime visibility: record which agent is being peeked so the
+  // Agents Hub emitter (AgentsGrid getScope) can report it at trigger time.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    setPeekedAgentId(currentId);
+    return () => setPeekedAgentId(null);
+  }, [isOpen, currentId]);
 
   const currentIndex = navigationIds ? navigationIds.indexOf(currentId) : -1;
   const hasNav = navigationIds != null && currentIndex >= 0;

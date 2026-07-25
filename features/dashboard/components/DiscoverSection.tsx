@@ -6,10 +6,12 @@ import ShellIcon from "@/features/shell/components/ShellIcon";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import { cn } from "@/lib/utils";
 import { PinButton } from "@/components/favorites/PinButton";
-import { DISCOVER_POOL, type DiscoverItem } from "../constants/discover";
-import { useDiscoverRotation } from "../hooks/useDiscoverRotation";
+import { type DiscoverItem } from "../constants/discover";
 
-const WINDOW_SIZE = 6;
+/** How many Discover cards show at once. Exported so the rotation hook can be
+ *  driven by `DashboardClient` (which also emits the visible window as the
+ *  `discover_items` surface value). */
+export const DISCOVER_WINDOW_SIZE = 6;
 
 function DiscoverCard({ item }: { item: DiscoverItem }) {
   const chip = iconColorMap[item.color] ?? iconColorMap.slate;
@@ -63,9 +65,15 @@ function DiscoverCard({ item }: { item: DiscoverItem }) {
   );
 }
 
-export function DiscoverSection() {
-  const { items, showMore } = useDiscoverRotation(DISCOVER_POOL, WINDOW_SIZE);
-
+export function DiscoverSection({
+  items,
+  showMore,
+}: {
+  /** The currently-visible rotation window (lifted to `DashboardClient`). */
+  items: DiscoverItem[];
+  /** Advance to the next window. */
+  showMore: () => void;
+}) {
   if (items.length === 0) return null;
 
   return (
