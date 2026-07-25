@@ -52,7 +52,7 @@ NER entities once backfill runs).
   init layout-utilities + minimap, bind events once (latest-callback refs), observe
   resize, `cy.destroy()` on unmount (StrictMode/HMR-safe). Returns `{ containerRef,
   getCy }`.
-- `ops.ts` — imperative operations: `loadGraph` (swap elements → analyse → encode →
+- `ops.ts` — imperative operations: `loadGraph` (swap elements → analyze → encode →
   layout), `applyTheme` (live stylesheet swap, no re-layout), `runLayout`,
   `focusNeighborhood`/`clearFocus`, `applySearch`, `selectNode`, animated
   `fitAll`/`fitTo`/`zoomByFactor`.

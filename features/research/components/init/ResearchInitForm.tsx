@@ -837,7 +837,7 @@ function AiCanvas({
             : variant === "streaming"
               ? hasTitle
                 ? "Composing"
-                : "Analysing your subject"
+                : "Analyzing your topic"
               : "Topic ready"}
         </span>
         {!isReview && (
@@ -926,9 +926,9 @@ function AiCanvas({
                 </p>
                 <p className="text-xs text-destructive/90 leading-relaxed">
                   All {keywordCount} suggested keywords were saved. Raise the
-                  limit in Pipeline settings or remove the highlighted
-                  keywords before starting research — only the first{" "}
-                  {maxKeywords} run in the pipeline.
+                  limit in Pipeline settings or remove the highlighted keywords
+                  before starting research — only the first {maxKeywords} run in
+                  the pipeline.
                 </p>
                 {onOpenSettings && (
                   <Button
@@ -1143,7 +1143,8 @@ export default function ResearchInitForm() {
     const d = draft.data;
     const str = (v: unknown): string | null =>
       typeof v === "string" && v.length > 0 ? v : null;
-    if (!topicName && str(d.topicName)) setTopicName(str(d.topicName) as string);
+    if (!topicName && str(d.topicName))
+      setTopicName(str(d.topicName) as string);
     if (!description && str(d.description))
       setDescription(str(d.description) as string);
     if (!subjectDescription && str(d.subjectDescription))
@@ -1513,7 +1514,10 @@ export default function ResearchInitForm() {
           ? suggestedKeywords
           : fallbackKeywords.length > 0
             ? fallbackKeywords
-            : [...applied.keywords_saved, ...applied.keywords_skipped_duplicate];
+            : [
+                ...applied.keywords_saved,
+                ...applied.keywords_skipped_duplicate,
+              ];
 
       setAiPhase({
         status: "reviewing",

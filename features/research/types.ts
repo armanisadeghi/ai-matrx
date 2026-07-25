@@ -152,15 +152,15 @@ function isStringArray(v: unknown): v is string[] {
  *  reason it was rejected. Never a partial/coerced object, and never a bare
  *  null that forces the caller to invent an explanation. */
 export type ParseResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; reason: string };
+  { ok: true; value: T } | { ok: false; reason: string };
 
 /** Validate a `suggest_applied` stream event payload at ingress. */
-export function parseSuggestApplied(
-  v: unknown,
-): ParseResult<SuggestApplied> {
+export function parseSuggestApplied(v: unknown): ParseResult<SuggestApplied> {
   if (v === null || typeof v !== "object") {
-    return { ok: false, reason: `payload is ${v === null ? "null" : typeof v}, expected object` };
+    return {
+      ok: false,
+      reason: `payload is ${v === null ? "null" : typeof v}, expected object`,
+    };
   }
   const o = v as Record<string, unknown>;
   const bad = (field: string, expected: string) => ({
@@ -169,11 +169,13 @@ export function parseSuggestApplied(
   });
   if (o.type !== "suggest_applied") return bad("type", '"suggest_applied"');
   if (typeof o.topic_id !== "string") return bad("topic_id", "string");
-  if (typeof o.name_updated !== "boolean") return bad("name_updated", "boolean");
+  if (typeof o.name_updated !== "boolean")
+    return bad("name_updated", "boolean");
   if (typeof o.description_updated !== "boolean") {
     return bad("description_updated", "boolean");
   }
-  if (!isStringArray(o.keywords_saved)) return bad("keywords_saved", "string[]");
+  if (!isStringArray(o.keywords_saved))
+    return bad("keywords_saved", "string[]");
   if (!isStringArray(o.keywords_skipped_duplicate)) {
     return bad("keywords_skipped_duplicate", "string[]");
   }
@@ -217,10 +219,7 @@ export type ScrapeStatus =
   | "content_mismatch";
 export type SourceType = "web" | "youtube" | "pdf" | "file" | "manual";
 export type SourceOrigin =
-  | "search"
-  | "manual"
-  | "link_extraction"
-  | "file_upload";
+  "search" | "manual" | "link_extraction" | "file_upload";
 /**
  * Canonical synthesis scopes. `topic` = whole-topic synthesis (formerly
  * misnamed `project`). Legacy `rs_synthesis` rows and not-yet-cut-over
@@ -255,27 +254,19 @@ export function normalizeSynthesisScope(scope: string): SynthesisScope {
 export const TOPIC_SYNTHESIS_WIRE_SCOPE = "topic" as const;
 export type IterationMode = "initial" | "rebuild" | "update";
 export type BulkAction =
-  | "include"
-  | "exclude"
-  | "mark_stale"
-  | "mark_complete"
-  | "scrape";
+  "include" | "exclude" | "mark_stale" | "mark_complete" | "scrape";
 export type MediaType = "image" | "video" | "document";
 export type TagAssignedBy = "manual" | "auto" | "llm_suggestion";
 export type TopicStatus =
-  | "draft"
-  | "searching"
-  | "scraping"
-  | "curating"
-  | "analyzing"
-  | "complete";
+  "draft" | "searching" | "scraping" | "curating" | "analyzing" | "complete";
 
 // ============================================================================
 // RESPONSE TYPES (matching database tables)
 // ============================================================================
 
 /** Database row — canonical shape for `rs_topic` */
-export type ResearchTopicRow = Database["research"]["Tables"]["rs_topic"]["Row"];
+export type ResearchTopicRow =
+  Database["research"]["Tables"]["rs_topic"]["Row"];
 
 /**
  * Quota ladder fields (migration 0013). The generated `database.types.ts` now
@@ -338,7 +329,10 @@ export interface TopicCostSummary {
  * The project relationship is the canonical `research_topic → project`
  * association edge; the physical column was dropped in Phase 4.
  */
-export type ResearchTopic = Omit<ResearchTopicRow, "autonomy_level" | "tag_suggestions"> & {
+export type ResearchTopic = Omit<
+  ResearchTopicRow,
+  "autonomy_level" | "tag_suggestions"
+> & {
   autonomy_level: "auto" | "semi" | "manual";
   tag_suggestions: TagSuggestionsBundle | null;
 };
@@ -800,7 +794,8 @@ export function pageAnalysisFromJson(
 }
 
 /** The live `rs_source` row shape (Supabase-generated, source of truth). */
-export type ResearchSourceRow = Database["research"]["Tables"]["rs_source"]["Row"];
+export type ResearchSourceRow =
+  Database["research"]["Tables"]["rs_source"]["Row"];
 
 /**
  * Map a raw `rs_source` row to the typed `ResearchSource` domain shape. The
@@ -1162,9 +1157,7 @@ export function tagSuggestionsFromJson(
     .map((t) => ({
       name: typeof t.name === "string" ? t.name : "",
       keywords_spanned: Array.isArray(t.keywords_spanned)
-        ? t.keywords_spanned.filter(
-            (k): k is string => typeof k === "string",
-          )
+        ? t.keywords_spanned.filter((k): k is string => typeof k === "string")
         : [],
       confidence: typeof t.confidence === "number" ? t.confidence : 0,
       reason: typeof t.reason === "string" ? t.reason : "",
@@ -1172,8 +1165,7 @@ export function tagSuggestionsFromJson(
     }))
     .filter((t) => t.name.length > 0);
   return {
-    generated_at:
-      typeof o.generated_at === "string" ? o.generated_at : "",
+    generated_at: typeof o.generated_at === "string" ? o.generated_at : "",
     user_input: typeof o.user_input === "string" ? o.user_input : null,
     tags,
   };
