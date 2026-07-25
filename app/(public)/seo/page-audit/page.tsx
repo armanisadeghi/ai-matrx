@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
-import { PageAuditTool } from "@/features/seo/public-tools/PageAuditTool";
+import { PageAuditTool } from "@/features/marketing/seo/public-tools/PageAuditTool";
 
 export const metadata: Metadata = {
   title: "Page SEO Audit — SEO Tools",

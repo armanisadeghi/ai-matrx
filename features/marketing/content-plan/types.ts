@@ -1,5 +1,5 @@
 /**
- * features/content-plan/types.ts
+ * features/marketing/content-plan/types.ts
  *
  * Row types for the `plan` schema (Content Planning — see
  * common-docs/systems/content-planning/FEATURE.md, the cross-repo system of

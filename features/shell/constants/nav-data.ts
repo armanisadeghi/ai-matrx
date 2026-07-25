@@ -1160,16 +1160,27 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
-    label: "Marketing Hub",
-    href: "/marketing/sites",
+    label: "Marketing",
+    href: "/marketing",
     iconName: "TrendingUp",
     section: "primary",
     profileMenu: false,
     dashboard: false,
     description:
-      "Sites, crawls, search data, analysis, and marketing operations",
+      "Brands and websites, content planning, keywords and search, SEO tools, and operations",
     color: "green",
+    // Mirrors the pillars in features/marketing/lib/marketing-nav.ts. Keep the
+    // two in sync — websites are ONE pillar here, not the whole feature.
     children: [
+      {
+        label: "Marketing Hub",
+        href: "/marketing",
+        iconName: "TrendingUp",
+        description: "Every marketing surface in one map",
+        color: "green",
+        profileMenu: true,
+        dashboard: true,
+      },
       {
         label: "Brands",
         href: "/marketing/brands",
@@ -1180,9 +1191,9 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
-        label: "Marketing Sites",
+        label: "Websites",
         href: "/marketing/sites",
-        iconName: "TrendingUp",
+        iconName: "Globe",
         description: "Manage sites, canonical pages, crawls, and findings",
         color: "green",
         profileMenu: true,
@@ -1190,10 +1201,30 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Content Plan",
-        href: "/content-plan",
+        href: "/marketing/content-plan",
         iconName: "ListTree",
         description:
           "Plan every URL a site should have — pillars, clusters, briefs, keywords",
+        color: "green",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Keyword Research",
+        href: "/marketing/keyword-research",
+        iconName: "Search",
+        description:
+          "Map keyword relationships with AI research and live market data",
+        color: "green",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "SEO Tools",
+        href: "/marketing/tools",
+        iconName: "Wrench",
+        description:
+          "Metadata, page audit, social preview, structured data, robots tester",
         color: "green",
         profileMenu: true,
         dashboard: true,
@@ -1222,25 +1253,6 @@ export const primaryNavItems: ShellNavItem[] = [
         href: "/marketing/cost",
         iconName: "CircleDollarSign",
         description: "Review cost across sites and client organizations",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "SEO Tools",
-        href: "/seo",
-        iconName: "Search",
-        description: "AI-powered and scraping-based SEO tool suite",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Meta Title & Description",
-        href: "/seo/metadata",
-        iconName: "FileText",
-        description:
-          "Live Google SERP preview with pixel-width meta calculator",
         color: "green",
         profileMenu: true,
         dashboard: true,

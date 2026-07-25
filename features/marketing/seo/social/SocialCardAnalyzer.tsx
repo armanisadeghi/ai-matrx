@@ -13,13 +13,13 @@ import { usePublicScraperContent } from "@/features/public-chat/hooks/usePublicS
 import {
   extractSocialFromScrapeResponse,
   normalizeScrapeUrl,
-} from "@/features/seo/serp/extract-seo-from-scrape";
+} from "@/features/marketing/seo/serp/extract-seo-from-scrape";
 import {
   evaluateSocialCard,
   cleanTagValue,
   KNOWN_TWITTER_CARDS,
-} from "@/features/seo/audit/social";
-import { AuditIssueList } from "@/features/seo/audit/AuditIssueList";
+} from "@/features/marketing/seo/audit/social";
+import { AuditIssueList } from "@/features/marketing/seo/audit/AuditIssueList";
 import { SocialCard, parseSocialDomain } from "./SocialCard";
 
 /**
@@ -29,7 +29,7 @@ import { SocialCard, parseSocialDomain } from "./SocialCard";
  * Twitter card metadata: the public tool (`/seo/social-preview`), the Social
  * Cards window panel, and any embed. Prop-driven and host-agnostic; layout
  * responds to the CONTAINER via `@container/social`. Validation is the
- * deterministic evaluator in `features/seo/audit/social.ts` (exact parity
+ * deterministic evaluator in `features/marketing/seo/audit/social.ts` (exact parity
  * with the scraper's crawl-time computation).
  */
 export interface SocialCardAnalyzerValues {

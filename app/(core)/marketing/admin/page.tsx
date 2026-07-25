@@ -21,9 +21,34 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
   routes: [
     {
       url: "/marketing",
-      label: "Marketing root",
-      description: "Redirects to the managed-site portfolio.",
+      label: "Marketing hub",
+      description:
+        "List view of every Marketing pillar. Structure declared in features/marketing/lib/marketing-nav.ts.",
       filePath: "app/(core)/marketing/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/content-plan",
+      label: "Content Plan",
+      description:
+        "Editorial plan tree (pillars, clusters, briefs, keywords). Moved here from the root-level /content-plan on 2026-07-25.",
+      filePath: "app/(core)/marketing/content-plan/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/keyword-research",
+      label: "Keyword Research",
+      description:
+        "AI keyword relationship mapping plus live market data. Moved here from /seo/keyword-research on 2026-07-25.",
+      filePath: "app/(core)/marketing/keyword-research/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/tools",
+      label: "SEO Tools index",
+      description:
+        "In-app index of the PUBLIC analyzers, which stay on /seo/* in the (public) route group.",
+      filePath: "app/(core)/marketing/tools/page.tsx",
       status: "Live",
     },
     {
@@ -307,22 +332,22 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "SocialCardAnalyzer (features/seo/social)",
-      filePath: "features/seo/social/SocialCardAnalyzer.tsx",
+      name: "SocialCardAnalyzer (features/marketing/seo/social)",
+      filePath: "features/marketing/seo/social/SocialCardAnalyzer.tsx",
       description:
-        "Canonical social share analyzer: platform-faithful X/Facebook/LinkedIn cards + deterministic OG/Twitter checks (features/seo/audit, TS↔Python parity). Consumed by the page-workspace social section, the Social Cards window panel (overlayId socialCardAnalyzerWindow), and the public /seo/social-preview page.",
+        "Canonical social share analyzer: platform-faithful X/Facebook/LinkedIn cards + deterministic OG/Twitter checks (features/marketing/seo/audit, TS↔Python parity). Consumed by the page-workspace social section, the Social Cards window panel (overlayId socialCardAnalyzerWindow), and the public /seo/social-preview page.",
       tier: "official",
     },
     {
-      name: "Page-audit evaluators (features/seo/audit)",
-      filePath: "features/seo/audit/README.md",
+      name: "Page-audit evaluators (features/marketing/seo/audit)",
+      filePath: "features/marketing/seo/audit/README.md",
       description:
         "Deterministic social/headings/indexability evaluators stamped into web.snapshot.audit_metrics by the scraper on every capture.",
       tier: "official",
     },
     {
-      name: "MetadataAnalyzer (features/seo/serp)",
-      filePath: "features/seo/serp/MetadataAnalyzer.tsx",
+      name: "MetadataAnalyzer (features/marketing/seo/serp)",
+      filePath: "features/marketing/seo/serp/MetadataAnalyzer.tsx",
       description:
         "Canonical SERP/metadata analyzer consumed by the page-workspace SERP section, the Search Appearance window panel (overlayId serpAnalyzerWindow), and the public /seo/metadata page. Deterministic metrics, TS↔Python parity-tested.",
       tier: "official",

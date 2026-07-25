@@ -5,14 +5,14 @@ import { CheckCircle, AlertTriangle, FileText, Filter, Info } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { SerpResult } from "@/features/seo/serp/SerpResult";
-import { SerpSearchChrome } from "@/features/seo/serp/SerpSearchChrome";
+import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
+import { SerpSearchChrome } from "@/features/marketing/seo/serp/SerpSearchChrome";
 import {
   SerpFieldBars,
   type SerpFieldMetrics,
-} from "@/features/seo/serp/SerpValidation";
-import { TITLE_LIMITS, DESCRIPTION_LIMITS } from "@/features/seo/serp/metrics";
-import type { SerpEntry } from "@/features/seo/serp/types";
+} from "@/features/marketing/seo/serp/SerpValidation";
+import { TITLE_LIMITS, DESCRIPTION_LIMITS } from "@/features/marketing/seo/serp/metrics";
+import type { SerpEntry } from "@/features/marketing/seo/serp/types";
 
 /**
  * Shared overlay renderer for every SEO meta check — the agent's results

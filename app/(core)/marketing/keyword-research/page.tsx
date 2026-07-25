@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import KeywordResearchWorkbench from "@/features/seo/keyword-research/components/KeywordResearchWorkbench";
+import KeywordResearchWorkbench from "@/features/marketing/seo/keyword-research/components/KeywordResearchWorkbench";
 
 export const metadata: Metadata = {
   title: "Keyword Research",

@@ -2,7 +2,7 @@
  * Surface manifest — Content Plan workspace (`matrx-user/content-plan`).
  *
  * Drives `/content-plan?site=<web.site id>&view=tree|map|entities` — the
- * client workspace for the `plan` schema (`features/content-plan`): every URL
+ * client workspace for the `plan` schema (`features/marketing/content-plan`): every URL
  * a site *should* have, as an editable tree (pillars → clusters → articles)
  * with briefs, keyword bindings, topics, and the people/sources behind the
  * content (E-E-A-T). `route` / `depth` / `pillar_label` / `cluster_label` on
@@ -10,9 +10,9 @@
  * reads as-is and never recomputes. Site identity rides the `?site=` query
  * param (not a routed segment), so only the view is guaranteed on launch.
  *
- * Runtime emitter: `features/content-plan/lib/content-plan-scope.ts`
+ * Runtime emitter: `features/marketing/content-plan/lib/content-plan-scope.ts`
  * (`buildContentPlanScope`), mounted via `SurfaceRuntimeProvider` in
- * `features/content-plan/components/ContentPlanWorkbench.tsx`.
+ * `features/marketing/content-plan/components/ContentPlanWorkbench.tsx`.
  */
 
 import type {
@@ -258,7 +258,7 @@ export const contentPlanManifest: SurfaceManifest = {
   readiness: "partial",
   readinessNote:
     "Runtime emitter live (workbench getScope over loaded query data); agent roles declared but no default agents bound yet.",
-  urlPattern: "/content-plan",
+  urlPattern: "/marketing/content-plan",
   intro: `<surface_intro>
 You are on the Content Plan workspace: the editable tree of every URL a managed website SHOULD have (pillars → clusters → articles), with per-node briefs, a primary keyword, topics, and the people/sources behind the content (E-E-A-T). The user sees, decides, and corrects here — agents do the bulk writing; plan rows land directly in the database and appear on refetch.
 Read site (or site_id) first to know which website is being planned, then plan_tree for the whole structure and node_counts_by_status for progress. selected_node is the node the user is focused on; selected_node_edges carries its topics, secondary keywords, and entity attachments when loaded.
@@ -306,7 +306,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
  * Required keys ↔ every `alwaysAvailable: true` value (only `view`: the
  * site rides `?site=` and can be absent, so nothing site-derived is
  * guaranteed). Raw-data derivation lives in
- * `features/content-plan/lib/content-plan-scope.ts`.
+ * `features/marketing/content-plan/lib/content-plan-scope.ts`.
  */
 export function createContentPlanScope(values: {
   // alwaysAvailable: true → required

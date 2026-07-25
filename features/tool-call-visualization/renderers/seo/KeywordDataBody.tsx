@@ -4,7 +4,7 @@
  * Keyword-research body for the `seo` tool (action=keyword_data).
  *
  * Built entirely on the core keyword primitives in
- * `features/seo/keyword-research/components/KeywordMetrics` — the SAME
+ * `features/marketing/seo/keyword-research/components/KeywordMetrics` — the SAME
  * sparkline, competition badge and number formats the Keyword Research
  * workbench renders, so the tool result and the workbench can never drift.
  *
@@ -23,11 +23,11 @@ import {
   formatCpc,
   formatSearchVolume,
   monthlySearchTrend,
-} from "@/features/seo/keyword-research/components/KeywordMetrics";
+} from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
 import type {
   SeoKeywordDataResult,
   SeoKeywordDatum,
-} from "@/features/seo/keyword-research/types";
+} from "@/features/marketing/seo/keyword-research/types";
 
 const INLINE_LIMIT = 8;
 

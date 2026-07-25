@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MetadataAnalyzer } from "@/features/seo/serp/MetadataAnalyzer";
+import { MetadataAnalyzer } from "@/features/marketing/seo/serp/MetadataAnalyzer";
 import { GoogleLogo } from "./_components/GoogleLogo";
 
 export const metadata: Metadata = {

@@ -44,7 +44,7 @@ function PatchCard({ item }: { item: PlanNodePatchItem }) {
           href={
             item.site_id
               ? `/content-plan?site=${item.site_id}`
-              : "/content-plan"
+              : "/marketing/content-plan"
           }
           className="ml-auto inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
         >

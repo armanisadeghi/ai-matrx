@@ -223,7 +223,7 @@ const categories: Category[] = [
         description:
           "AI maps a keyword's parents, children, variants and related terms, then pulls live search volume, CPC and demand trends.",
         icon: TrendingUp,
-        href: "/seo/keyword-research",
+        href: "/marketing/keyword-research",
         status: "live",
       },
       {

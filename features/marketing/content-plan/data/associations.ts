@@ -1,5 +1,5 @@
 /**
- * features/content-plan/data/associations.ts
+ * features/marketing/content-plan/data/associations.ts
  *
  * Thin typed wrappers over the CANONICAL association chokepoint
  * (`features/scopes/service/associationsService`) for the registered plan

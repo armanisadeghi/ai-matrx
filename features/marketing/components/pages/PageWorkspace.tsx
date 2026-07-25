@@ -78,28 +78,28 @@ import {
   surfaceGroupLabels,
   surfaceValueLabels,
 } from "@/features/surfaces/utils/surface-display";
-import { SerpResult, type SerpDevice } from "@/features/seo/serp/SerpResult";
-import { SerpFieldChips } from "@/features/seo/serp/SerpValidation";
-import { MetaRecommendations } from "@/features/seo/serp/MetaRecommendations";
+import { SerpResult, type SerpDevice } from "@/features/marketing/seo/serp/SerpResult";
+import { SerpFieldChips } from "@/features/marketing/seo/serp/SerpValidation";
+import { MetaRecommendations } from "@/features/marketing/seo/serp/MetaRecommendations";
 import {
   evaluateMetaTitle,
   evaluateMetaDescription,
   type MetaEvaluation,
-} from "@/features/seo/serp/metrics";
+} from "@/features/marketing/seo/serp/metrics";
 import { useOpenSerpAnalyzerWindow } from "@/features/overlays/openers/serpAnalyzerWindow";
 import { useOpenSocialCardWindow } from "@/features/overlays/openers/socialCardAnalyzerWindow";
 import {
   evaluateHeadingStructure,
   headingInputsFromRaw,
-} from "@/features/seo/audit/headings";
-import { type IndexabilityEvaluation } from "@/features/seo/audit/indexability";
-import { evaluateUrlQuality } from "@/features/seo/audit/url-quality";
-import { AuditIssueList } from "@/features/seo/audit/AuditIssueList";
+} from "@/features/marketing/seo/audit/headings";
+import { type IndexabilityEvaluation } from "@/features/marketing/seo/audit/indexability";
+import { evaluateUrlQuality } from "@/features/marketing/seo/audit/url-quality";
+import { AuditIssueList } from "@/features/marketing/seo/audit/AuditIssueList";
 import {
   SocialCard,
   parseSocialDomain,
   type SocialPlatform,
-} from "@/features/seo/social/SocialCard";
+} from "@/features/marketing/seo/social/SocialCard";
 import { isJsonRecord } from "@/features/marketing/types";
 import {
   parseSnapshotExtracted,
@@ -360,7 +360,7 @@ function IntentDiffRow({
 }
 
 /**
- * Search result preview — renders the canonical SerpResult (features/seo/serp)
+ * Search result preview — renders the canonical SerpResult (features/marketing/seo/serp)
  * for the OBSERVED metadata with a desktop/mobile toggle, deterministic
  * pixel/char chips, the observed-vs-desired editorial diff, and condensed
  * recommendations. The section header carries the "open in Search Appearance"
@@ -462,9 +462,9 @@ function SerpPreview({
 }
 
 /**
- * Social share preview — canonical platform-faithful cards (features/seo/
+ * Social share preview — canonical platform-faithful cards (features/marketing/seo/
  * social) for the OBSERVED share tags, with a platform toggle and the
- * deterministic checks (features/seo/audit, exact parity with the scraper's
+ * deterministic checks (features/marketing/seo/audit, exact parity with the scraper's
  * crawl-time `audit_metrics.social`).
  */
 function SocialCardPreview({

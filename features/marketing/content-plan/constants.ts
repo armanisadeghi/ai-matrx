@@ -1,5 +1,5 @@
 /**
- * features/content-plan/constants.ts
+ * features/marketing/content-plan/constants.ts
  *
  * Display constants for the Content Planning UI. Status colors key on the
  * SEEDED `plan_status` category slugs (platform.categories, dimension

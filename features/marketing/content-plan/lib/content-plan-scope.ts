@@ -1,5 +1,5 @@
 /**
- * features/content-plan/lib/content-plan-scope.ts
+ * features/marketing/content-plan/lib/content-plan-scope.ts
  *
  * Runtime scope builder for the `matrx-user/content-plan` surface — turns the
  * workbench's ALREADY-LOADED query data (never fetches) into the typed values

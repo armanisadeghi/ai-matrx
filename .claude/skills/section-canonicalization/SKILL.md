@@ -11,13 +11,13 @@ serve EVERY consumer: the page it started on, a floating window, other
 features' pages, the database, the Python server, agents, and the public.
 
 **Worked references (mirror them):**
-1. The SEO metadata system — `features/seo/serp/` +
+1. The SEO metadata system — `features/marketing/seo/serp/` +
    `windows/seo/SerpAnalyzerWindow.tsx` + marketing `PageWorkspace` SERP
    section + aidream `matrx_scraper/meta_metrics.py`. Read
-   [`features/seo/serp/README.md`](../../../features/seo/serp/README.md) first.
+   [`features/marketing/seo/serp/README.md`](../../../features/marketing/seo/serp/README.md) first.
 2. The page-audit system (second application, proves the recipe generalizes) —
-   `features/seo/audit/` (three evaluators, ONE stored contract
-   `audit_metrics`) + `features/seo/social/` (platform-faithful share cards) +
+   `features/marketing/seo/audit/` (three evaluators, ONE stored contract
+   `audit_metrics`) + `features/marketing/seo/social/` (platform-faithful share cards) +
    `windows/seo/SocialCardWindow.tsx` + `/seo/social-preview` + aidream
    `matrx_scraper/audit_metrics.py`. Shows how MULTIPLE related evaluators
    share one versioned jsonb contract instead of one column each, and how a
@@ -48,8 +48,8 @@ decision to surface to the user, not a silent omission.
 
 | # | Deliverable | Reference |
 |---|---|---|
-| 1 | **Canonical component library** — pure presentational pieces + ONE prop-driven composite | `features/seo/serp/` (`SerpResult`, `SerpValidation`, `MetaRecommendations`, `MetadataAnalyzer`) |
-| 2 | **Deterministic core utility** — environment-free calculation module | `features/seo/serp/metrics.ts` + `char-widths.ts` |
+| 1 | **Canonical component library** — pure presentational pieces + ONE prop-driven composite | `features/marketing/seo/serp/` (`SerpResult`, `SerpValidation`, `MetaRecommendations`, `MetadataAnalyzer`) |
+| 2 | **Deterministic core utility** — environment-free calculation module | `features/marketing/seo/serp/metrics.ts` + `char-widths.ts` |
 | 3 | **Window panel** — the composite in a floating window, prop-fed, openable from anywhere | `windows/seo/SerpAnalyzerWindow.tsx` + opener `features/overlays/openers/serpAnalyzerWindow.tsx` |
 | 4 | **In-page section upgrades** — replace every hand-rolled version with the canonical pieces + a header launcher into the panel | marketing `PageWorkspace` `SerpPreview` |
 | 5 | **DB persistence** — versioned jsonb contract, auto-written on BOTH triggers (user save + server capture) | `migrations/web_seo_metrics.sql` |
@@ -118,7 +118,7 @@ five touch points are:
   package.
 - **Parity is tested, not asserted**: generate a fixture JSON from Python
   (diverse strings: unicode, CJK, symbols, whitespace-only, too-long) and lock
-  it with a TS test (`features/seo/serp/metrics.parity.test.ts` pattern).
+  it with a TS test (`features/marketing/seo/serp/metrics.parity.test.ts` pattern).
   Numbers, booleans, AND issue strings must match byte-for-byte. Char counts
   use **code points** (`Array.from(s).length` ↔ Python `len`).
 - Wire the computation into the automatic pipeline at its single write

@@ -14,7 +14,16 @@
  */
 
 export const marketingRoutes = {
+  home: () => "/marketing",
   brands: () => "/marketing/brands",
+  /** Editorial plan tree (was the root-level `/content-plan`, moved 2026-07-25). */
+  contentPlan: () => "/marketing/content-plan",
+  /** Keyword research workbench (was `/seo/keyword-research`, moved 2026-07-25). */
+  keywordResearch: () => "/marketing/keyword-research",
+  /** In-app index of the PUBLIC SEO utilities (they live under `/seo/*`). */
+  tools: () => "/marketing/tools",
+  batches: () => "/marketing/batches",
+  cost: () => "/marketing/cost",
   brand: (brandId: string) => `/marketing/brands/${brandId}`,
   sites: () => "/marketing/sites",
   /** Pass a brandId to pre-bind the new site to that brand (`?brand=`). */

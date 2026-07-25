@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * features/content-plan/components/PlanTree.tsx
+ * features/marketing/content-plan/components/PlanTree.tsx
  *
  * The plan tree — every planned URL as an indented, collapsible row.
  * Drag a row and drop it ONTO another row to reparent (one `parent_id`

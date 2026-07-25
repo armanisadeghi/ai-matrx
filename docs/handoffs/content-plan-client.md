@@ -25,7 +25,7 @@
 
 - **DONE + live-verified against prpinjectionmd.com:** Deliverable 1 (tree
   editor + node panel + entities) and Deliverable 2 (pillar map) shipped as
-  `features/content-plan/` + `/content-plan` (see its FEATURE.md). Verified in
+  `features/marketing/content-plan/` + `/content-plan` (see its FEATURE.md). Verified in
   the browser as admin@admin.com: node create (home/pillar/…, DB-computed
   routes visible), one-write cluster reparent with whole-subtree recompute
   (via the panel's Parent select; DB confirmed), primary-keyword pick +
@@ -84,7 +84,7 @@
 
 ## Deliverables (in order)
 
-### 1. `features/content-plan/` — tree editor + node panel (the workhorse)
+### 1. `features/marketing/content-plan/` — tree editor + node panel (the workhorse)
 - Site picker (org's `web.site` rows — note: nodes on brandless sites are REJECTED by
   the DB with a clear message; offer the assign-brand flow, don't mask the error).
 - Tree view of `plan.node` (`parent_id` hierarchy; `route`, `depth`, `pillar_label`,
@@ -128,7 +128,7 @@ dedicated disposition view: legacy URL → target node → keep/merge/redirect/r
   through aidream (workspace architecture rule).
 - Latest stable, strict types (types are already generated — `Database['plan']`),
   no `any`, no swallowed errors; DB trigger errors are the contract — show them.
-- `FEATURE.md` beside `features/content-plan/` in the same change; router CLAUDE.md pointer.
+- `FEATURE.md` beside `features/marketing/content-plan/` in the same change; router CLAUDE.md pointer.
 
 ## Acceptance
 1. Build a 30-node plan for prpinjectionmd.com by hand in <15 minutes: tree + panel +

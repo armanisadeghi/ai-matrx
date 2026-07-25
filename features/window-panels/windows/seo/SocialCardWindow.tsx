@@ -5,7 +5,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   SocialCardAnalyzer,
   type SocialCardAnalyzerValues,
-} from "@/features/seo/social/SocialCardAnalyzer";
+} from "@/features/marketing/seo/social/SocialCardAnalyzer";
 
 /**
  * SocialCardWindow — the canonical Social Card Analyzer in a floating window.

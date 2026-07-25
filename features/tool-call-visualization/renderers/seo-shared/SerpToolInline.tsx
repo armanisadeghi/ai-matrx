@@ -15,9 +15,9 @@ import { AlertTriangle, CheckCircle, FileText } from "lucide-react";
 
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { cn } from "@/lib/utils";
-import { SerpResult } from "@/features/seo/serp/SerpResult";
-import { SerpFieldChips } from "@/features/seo/serp/SerpValidation";
-import type { SerpEntry } from "@/features/seo/serp/types";
+import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
+import { SerpFieldChips } from "@/features/marketing/seo/serp/SerpValidation";
+import type { SerpEntry } from "@/features/marketing/seo/serp/types";
 
 const MAX_INLINE = 6;
 

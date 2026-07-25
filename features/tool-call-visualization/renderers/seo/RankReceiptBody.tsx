@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import {
   formatCacheAge,
   type SeoCollectionReceipt,
-} from "@/features/seo/rank/types";
+} from "@/features/marketing/seo/rank/types";
 
 export interface RankRunArgs {
   keyword?: string;

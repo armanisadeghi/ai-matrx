@@ -5,7 +5,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   MetadataAnalyzer,
   type MetadataAnalyzerValues,
-} from "@/features/seo/serp/MetadataAnalyzer";
+} from "@/features/marketing/seo/serp/MetadataAnalyzer";
 
 /**
  * SerpAnalyzerWindow — the canonical Metadata Analyzer in a floating window.

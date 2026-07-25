@@ -5,7 +5,7 @@
  * until the deploy sync runs.
  */
 
-import type { SeoCollectionReceipt } from "@/features/seo/rank/types";
+import type { SeoCollectionReceipt } from "@/features/marketing/seo/rank/types";
 
 export type RankProvider = "brave" | "serpapi";
 

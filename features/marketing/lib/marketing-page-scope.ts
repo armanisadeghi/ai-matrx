@@ -32,17 +32,17 @@ import {
   parseSnapshotImages,
   parseSnapshotLinksSummary,
 } from "@/features/marketing/lib/snapshot-content";
-import { parseStoredSeoMetrics } from "@/features/seo/serp/metrics";
-import { parseStoredAuditMetrics, socialInputFromRawTags } from "@/features/seo/audit/stored";
+import { parseStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
+import { parseStoredAuditMetrics, socialInputFromRawTags } from "@/features/marketing/seo/audit/stored";
 import {
   evaluateIndexability,
   type IndexabilityEvaluation,
-} from "@/features/seo/audit/indexability";
+} from "@/features/marketing/seo/audit/indexability";
 import {
   evaluateSocialCard,
   type SocialCardEvaluation,
-} from "@/features/seo/audit/social";
-import { evaluateUrlQuality } from "@/features/seo/audit/url-quality";
+} from "@/features/marketing/seo/audit/social";
+import { evaluateUrlQuality } from "@/features/marketing/seo/audit/url-quality";
 import type { PageAnalysisArtifact } from "@/features/marketing/components/pages/usePageAnalyzer";
 import type { PagePerformanceRow } from "@/features/marketing/pagespeed/data";
 import type { WebAnalyticsDailyRow } from "@/features/marketing/analytics/data";

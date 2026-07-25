@@ -21,8 +21,8 @@ plan CRUD through it.
 
 ## Entry points
 
-- `/content-plan?site=<web.site id>&view=tree|map|entities` — the workspace
-  (`app/(core)/content-plan/page.tsx`). Header chrome (site picker, view
+- `/marketing/content-plan?site=<web.site id>&view=tree|map|entities` — the workspace
+  (`app/(core)/marketing/content-plan/page.tsx`). Header chrome (site picker, view
   switch, refresh) injects into the shell PageHeader
   (`components/ContentPlanHeader.tsx`); state rides the URL
   (`hooks/usePlanWorkspaceParams.ts`).
@@ -112,7 +112,7 @@ plan CRUD through it.
 ## Related features
 
 - `features/marketing` — `useSiteOptions` (site picker), brand assignment.
-- `features/seo/keyword-research` — canonical keyword search read.
+- `features/marketing/seo/keyword-research` — canonical keyword search read.
 - `features/scopes` — canonical associations + categories services/hooks
   (this feature added the `plan_*` dimensions to `CATEGORY_DIMENSIONS` and
   `plan_entity`/`seo_topic`/`seo_keyword` to `ASSOCIATION_TARGET_TYPES`).

@@ -8,7 +8,7 @@ import {
   parseSnapshotPerformance,
   parseSnapshotStructuredData,
 } from "@/features/marketing/lib/snapshot-content";
-import { parseStoredSeoMetrics } from "@/features/seo/serp/metrics";
+import { parseStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
 
 export type CanonicalState = "self-referencing" | "canonicalized" | "missing";
 export type IndexabilityState = "indexable" | "noindex";

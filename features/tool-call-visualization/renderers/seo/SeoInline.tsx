@@ -12,9 +12,9 @@
  * so no body repeats it.
  *
  * Every visual comes from core SEO components:
- *   • meta checks   -> `features/seo/serp` (SerpResult, SerpFieldChips) via SerpToolInline
- *   • keyword data  -> `features/seo/keyword-research` KeywordMetrics primitives
- *   • rank receipts -> `features/seo/rank` types
+ *   • meta checks   -> `features/marketing/seo/serp` (SerpResult, SerpFieldChips) via SerpToolInline
+ *   • keyword data  -> `features/marketing/seo/keyword-research` KeywordMetrics primitives
+ *   • rank receipts -> `features/marketing/seo/rank` types
  * Nothing here is a private fork — hardening those cores hardens this view.
  */
 

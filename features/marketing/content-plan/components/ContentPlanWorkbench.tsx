@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * features/content-plan/components/ContentPlanWorkbench.tsx
+ * features/marketing/content-plan/components/ContentPlanWorkbench.tsx
  *
  * The Content Planning workspace body: tree editor + node panel (the
  * workhorse), pillar map (the flagship projection), entity manager. Route

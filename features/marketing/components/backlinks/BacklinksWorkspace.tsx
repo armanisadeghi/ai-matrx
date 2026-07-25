@@ -57,11 +57,11 @@ import { marketingKeys } from "@/features/marketing/data/hooks";
 import {
   refreshSiteBacklinks,
   SeoApiError,
-} from "@/features/seo/dataforseo/client";
+} from "@/features/marketing/seo/dataforseo/client";
 import type {
   BacklinkRefreshProfile,
   BacklinkRefreshReceipt,
-} from "@/features/seo/dataforseo/types";
+} from "@/features/marketing/seo/dataforseo/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
 import { toast } from "@/lib/toast";

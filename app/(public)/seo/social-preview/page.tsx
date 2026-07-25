@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Share2 } from "lucide-react";
-import { SocialCardAnalyzer } from "@/features/seo/social/SocialCardAnalyzer";
+import { SocialCardAnalyzer } from "@/features/marketing/seo/social/SocialCardAnalyzer";
 
 export const metadata: Metadata = {
   title: "Social Card Preview — SEO Tools",

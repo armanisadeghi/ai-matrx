@@ -8,8 +8,8 @@
 import {
   getPlanNode,
   listPlanNodes,
-} from "@/features/content-plan/data/service";
-import type { PlanNodeRow } from "@/features/content-plan/types";
+} from "@/features/marketing/content-plan/data/service";
+import type { PlanNodeRow } from "@/features/marketing/content-plan/types";
 
 import type {
   PlanNodePatchItem,

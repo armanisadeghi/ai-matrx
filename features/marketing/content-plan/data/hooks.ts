@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * features/content-plan/data/hooks.ts
+ * features/marketing/content-plan/data/hooks.ts
  *
  * TanStack Query hooks over the content-plan service layer. Convention:
  * EVERY node mutation invalidates the whole site node list — the DB cascade

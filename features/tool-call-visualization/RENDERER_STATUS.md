@@ -25,7 +25,7 @@ Registered in `registry/registry.tsx`; code in `renderers/<name>/`. ~20 tools.
 | `knowledge_browse` | Browse Knowledge | ✅ | ✅ (=inline) | ✅ | stay-open; dispatches on `action` (`sources`/`stores`/`store`/`chunk`/`entity`) — absorbed `rag_list_sources`, `rag_list_data_stores`, `rag_get_data_store`, `rag_get_chunk`, `knowledge_navigate` 2026-07-18 |
 | `document_content` | Document Content | ✅ | ✅ (=inline) | ✅ | stay-open; dispatches on `action` + `format` via `resolveDocumentContentView`; added 2026-07-17 |
 | `get_user_lists` | User Lists | ✅ | ✅ | ✅ | stay-open |
-| `seo` | SEO | ✅ | ✅ | ✅ | stay-open; card chrome. ONE renderer for all 5 actions, dispatching on RESULT SHAPE (`renderers/seo/resolve.ts`): meta checks → the `features/seo/serp` SERP primitives, `keyword_data` → the `features/seo/keyword-research` KeywordMetrics primitives, `collect_rank` → the collection receipt. Unified 2026-07-25 |
+| `seo` | SEO | ✅ | ✅ | ✅ | stay-open; card chrome. ONE renderer for all 5 actions, dispatching on RESULT SHAPE (`renderers/seo/resolve.ts`): meta checks → the `features/marketing/seo/serp` SERP primitives, `keyword_data` → the `features/marketing/seo/keyword-research` KeywordMetrics primitives, `collect_rank` → the collection receipt. Unified 2026-07-25 |
 | `seo_check_meta_tags_batch` | SEO Meta Tags | ✅ | ✅ | ✅ | legacy name (persisted history only) → same `seo` renderer, resolved by shape |
 | `seo_check_meta_titles` | SEO Titles | ✅ | ✅ | ✅ | legacy name → same `seo` renderer. **Overlay gap CLOSED 2026-07-25** |
 | `seo_check_meta_descriptions` | SEO Descriptions | ✅ | ✅ | ✅ | legacy name → same `seo` renderer. **Overlay gap CLOSED 2026-07-25** |

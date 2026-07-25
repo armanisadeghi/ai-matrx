@@ -18,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { listKeywordsWithMarket } from "@/features/seo/keyword-research/data/queries";
+import { listKeywordsWithMarket } from "@/features/marketing/seo/keyword-research/data/queries";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 

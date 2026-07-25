@@ -1164,7 +1164,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   },
 
   // ── Search Appearance (SERP / metadata analyzer) ──────────────────────────
-  // The canonical MetadataAnalyzer (features/seo/serp) in a floating window:
+  // The canonical MetadataAnalyzer (features/marketing/seo/serp) in a floating window:
   // meta title/description inputs, deterministic pixel/char analysis, Google
   // desktop + mobile SERP previews, recommendations. Open with page data via
   // `useOpenSerpAnalyzerWindow({ url, title, description })`.
@@ -1179,8 +1179,8 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   },
 
   // ── Social Cards (OG/Twitter share analyzer) ──────────────────────────────
-  // The canonical SocialCardAnalyzer (features/seo/social) in a floating
-  // window: editable share tags, deterministic checks (features/seo/audit),
+  // The canonical SocialCardAnalyzer (features/marketing/seo/social) in a floating
+  // window: editable share tags, deterministic checks (features/marketing/seo/audit),
   // platform-faithful X / Facebook / LinkedIn previews. Open with page data
   // via `useOpenSocialCardWindow({ url, title, description, image, ... })`.
   {

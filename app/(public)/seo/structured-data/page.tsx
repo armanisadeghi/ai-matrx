@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Code2 } from "lucide-react";
-import { StructuredDataValidatorTool } from "@/features/seo/public-tools/StructuredDataValidatorTool";
+import { StructuredDataValidatorTool } from "@/features/marketing/seo/public-tools/StructuredDataValidatorTool";
 
 export const metadata: Metadata = {
   title: "Structured Data Validator — SEO Tools",

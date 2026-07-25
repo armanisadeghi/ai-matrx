@@ -32,13 +32,13 @@ async function main() {
     "@/utils/supabase/adminClient"
   );
   const { buildStoredSeoMetrics } = await import(
-    "@/features/seo/serp/metrics"
+    "@/features/marketing/seo/serp/metrics"
   );
   const { buildStoredAuditMetrics, socialInputFromRawTags } = await import(
-    "@/features/seo/audit/stored"
+    "@/features/marketing/seo/audit/stored"
   );
   const { headingInputsFromRaw } = await import(
-    "@/features/seo/audit/headings"
+    "@/features/marketing/seo/audit/headings"
   );
 
   const supabase = createAdminClient();

@@ -39,8 +39,8 @@ narrow the identical payload client-side. Contract doc:
 warning = warning tone, optional success line, `compact` for embeds).
 Consumers: marketing `PageWorkspace` (social section, indexability verdict
 banner, headings outline flags), the Social Card Analyzer
-(`features/seo/social/`), and the public `/seo/social-preview` tool.
+(`features/marketing/seo/social/`), and the public `/seo/social-preview` tool.
 
-Part of the **`section-canonicalization`** system — `features/seo/serp/` is
+Part of the **`section-canonicalization`** system — `features/marketing/seo/serp/` is
 the founding reference; this directory is the second application of the
 recipe.

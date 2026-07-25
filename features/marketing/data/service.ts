@@ -2,8 +2,8 @@ import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-
 import {
   buildStoredSeoMetrics,
   parseStoredSeoMetrics,
-} from "@/features/seo/serp/metrics";
-import { parseStoredAuditMetrics } from "@/features/seo/audit/stored";
+} from "@/features/marketing/seo/serp/metrics";
+import { parseStoredAuditMetrics } from "@/features/marketing/seo/audit/stored";
 import type {
   AuditSourceRow,
   AuditTrendSourceRow,

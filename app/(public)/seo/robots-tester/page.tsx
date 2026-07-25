@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
-import { RobotsTesterTool } from "@/features/seo/public-tools/RobotsTesterTool";
+import { RobotsTesterTool } from "@/features/marketing/seo/public-tools/RobotsTesterTool";
 
 export const metadata: Metadata = {
   title: "Robots.txt Tester — SEO Tools",

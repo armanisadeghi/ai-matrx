@@ -1,5 +1,5 @@
 /**
- * features/content-plan/data/service.ts
+ * features/marketing/content-plan/data/service.ts
  *
  * Direct browser Supabase access for the `plan` schema (Content Planning).
  * ALL plan CRUD goes here — the UI, the pillar map, and any future entrance

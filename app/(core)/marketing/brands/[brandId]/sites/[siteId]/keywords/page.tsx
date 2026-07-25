@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { SiteKeywordPerformanceWorkspace } from "@/features/seo/keyword-research/components/SiteKeywordPerformanceWorkspace";
+import { SiteKeywordPerformanceWorkspace } from "@/features/marketing/seo/keyword-research/components/SiteKeywordPerformanceWorkspace";
 
 export default function MarketingSiteKeywordsPage() {
   return (

@@ -166,6 +166,15 @@ const nextConfig = {
     async redirects() {
         return [
             ...adminLegacyRouteRedirects,
+            // 2026-07-25: Marketing consolidation. Content planning and keyword
+            // research were mistakenly mounted as ROOT routes (`/content-plan`,
+            // `/seo/keyword-research`). Both are marketing surfaces and now live
+            // under the one `/marketing/*` hub. `/seo` stays reserved for the
+            // PUBLIC tool suite (app/(public)/seo) — do not re-add an authed
+            // `/seo/*` route here.
+            { source: '/content-plan', destination: '/marketing/content-plan', permanent: true },
+            { source: '/content-plan/:path*', destination: '/marketing/content-plan/:path*', permanent: true },
+            { source: '/seo/keyword-research', destination: '/marketing/keyword-research', permanent: true },
             // 2026-07-13: Relationships hub consolidation. /administration/sharing
             // (link policy) and /administration/action-catalog moved into the
             // route-tabbed hub at /administration/database/relationships/*.

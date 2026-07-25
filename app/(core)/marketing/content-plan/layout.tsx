@@ -1,6 +1,6 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/content-plan", {
+export const metadata = createRouteMetadata("/marketing/content-plan", {
   title: "Content Plan",
   description:
     "Plan every URL a site should have — pillars, clusters, briefs, keywords, and the people behind them.",

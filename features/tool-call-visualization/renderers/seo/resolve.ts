@@ -28,15 +28,15 @@ import {
   type MetaTagBatchItem,
   type SerpEntry,
   type TitleAnalysisItem,
-} from "@/features/seo/serp/types";
+} from "@/features/marketing/seo/serp/types";
 import {
   parseSeoKeywordData,
   type SeoKeywordDataResult,
-} from "@/features/seo/keyword-research/types";
+} from "@/features/marketing/seo/keyword-research/types";
 import {
   parseSeoCollectionReceipt,
   type SeoCollectionReceipt,
-} from "@/features/seo/rank/types";
+} from "@/features/marketing/seo/rank/types";
 
 /** A meta check (batch / titles / descriptions) reduced to SERP entries. */
 export interface SeoMetaVariant {

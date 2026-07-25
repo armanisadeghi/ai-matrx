@@ -15,7 +15,7 @@
  *     never fabricate observed ones.
  *
  * SEO metrics (pixel widths, char counts, pass flags) are DETERMINISTIC —
- * computed from the shared char-width table (`features/seo/serp/metrics.ts`,
+ * computed from the shared char-width table (`features/marketing/seo/serp/metrics.ts`,
  * mirrored by the scraper's `matrx_scraper.meta_metrics`). The scraper stamps
  * `web.snapshot.seo_metrics` on every capture; the client stamps
  * `web.page.seo_metrics_desired` on every intent save. Agents should trust

@@ -1,6 +1,6 @@
 import { buildSiteAuditRollup } from "./audit-rollup";
-import { buildStoredSeoMetrics } from "@/features/seo/serp/metrics";
-import { buildStoredAuditMetrics } from "@/features/seo/audit/stored";
+import { buildStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
+import { buildStoredAuditMetrics } from "@/features/marketing/seo/audit/stored";
 
 const GOOD_URL = "https://example.com/blog/clean-post";
 

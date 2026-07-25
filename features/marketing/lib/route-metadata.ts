@@ -13,7 +13,7 @@ interface MarketingRouteIdentity {
 
 const MARKETING_ROOT: MarketingRouteIdentity = {
   description:
-    "Manage brands, websites, canonical pages, crawl sessions, and marketing analysis.",
+    "Brands and websites, content planning, keyword and search intelligence, SEO tools, and marketing operations.",
   letter: "Mk",
 };
 
@@ -44,6 +44,23 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     titlePrefix: "Google",
     description: "Connect Google Search Console and Analytics data sources.",
     letter: "Gg",
+  },
+  "/marketing/content-plan": {
+    titlePrefix: "Content Plan",
+    description:
+      "Plan every URL a site should have — pillars, clusters, briefs, keywords.",
+    letter: "Cp",
+  },
+  "/marketing/keyword-research": {
+    titlePrefix: "Keyword Research",
+    description:
+      "Map keyword relationships with AI research and explore live market data.",
+    letter: "Kr",
+  },
+  "/marketing/tools": {
+    titlePrefix: "SEO Tools",
+    description: "Analyzers that run against any public URL.",
+    letter: "Tl",
   },
   "/marketing/cost": {
     titlePrefix: "Cost",
