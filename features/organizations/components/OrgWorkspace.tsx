@@ -74,6 +74,11 @@ import { OrgShareReviewCard } from "@/features/organizations/components/OrgShare
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ORGANIZATIONS_SURFACE_NAME,
+  createOrganizationsScope,
+} from "@/features/surfaces/manifests/organizations.manifest";
 
 export function OrgWorkspace() {
   const params = useParams();
@@ -225,7 +230,61 @@ export function OrgWorkspace() {
   const slug = organization.slug;
   const totalScopes = orgScopes.length;
 
+  // ── Surface runtime (matrx-user/organizations, workspace mode) ─────────
+  // Built at trigger time (the provider calls this only when the user runs an
+  // agent), so it always reads the latest loaded workspace state. Plain
+  // function, not a hook — it sits after the loading/error early returns.
+  const getSurfaceScope = () =>
+    createOrganizationsScope({
+      current_view: "workspace",
+      org_id: organization.id,
+      org_slug: organization.slug,
+      org_name: organization.name,
+      org_abbreviation: organization.abbreviation,
+      org_description: organization.description ?? undefined,
+      org_website: organization.website ?? undefined,
+      org_is_personal: organization.isPersonal,
+      org_created_at: organization.createdAt,
+      org_summary: {
+        id: organization.id,
+        slug: organization.slug,
+        name: organization.name,
+        abbreviation: organization.abbreviation,
+        description: organization.description ?? null,
+        website: organization.website ?? null,
+        is_personal: organization.isPersonal,
+        created_at: organization.createdAt,
+      },
+      viewer_role: userRole ?? undefined,
+      can_manage: userRole ? isAdmin : undefined,
+      member_count: members.length,
+      members_summary: members.map((m) => ({
+        user_id: m.userId,
+        email: m.user?.email ?? null,
+        display_name: m.user?.displayName ?? null,
+        role: m.role,
+        joined_at: m.joinedAt,
+      })),
+      resource_total_count: countsLoading ? undefined : totalResources,
+      resource_counts: inventoryLoading ? undefined : inventoryCounts,
+      scope_type_count: scopeTypes.length,
+      scope_count: orgScopes.length,
+      scope_types_summary: scopeTypes.map((t) => ({
+        id: t.id,
+        label_singular: t.label_singular,
+        label_plural: t.label_plural,
+        description: t.description,
+        scope_count: orgScopes.filter((s) => s.scope_type_id === t.id).length,
+      })),
+      selection: window.getSelection()?.toString() || undefined,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ORGANIZATIONS_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="h-dvh overflow-y-auto bg-textured">
       <div className="max-w-6xl mx-auto px-4 md:px-6 pt-[var(--shell-header-h)] pb-12 space-y-5">
         {/* ─── Hero ─────────────────────────────────────────────────── */}
@@ -516,6 +575,7 @@ export function OrgWorkspace() {
         </>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

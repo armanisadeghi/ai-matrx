@@ -55,6 +55,11 @@ import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSl
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import type { UseScopeSuggestionsResult } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ORGANIZATIONS_SURFACE_NAME,
+  createOrganizationsScope,
+} from "@/features/surfaces/manifests/organizations.manifest";
 
 interface RoleMeta {
   label: string;
@@ -298,8 +303,32 @@ export default function OrganizationsPage() {
   const teams = filtered.filter((o) => !o.isPersonal);
   const teamCount = organizations.filter((o) => !o.isPersonal).length;
 
+  // ── Surface runtime (matrx-user/organizations, list mode) ───────────────
+  // Built at trigger time only; emits the launcher's full org list — no org
+  // is active here, so no org_identity / membership / resources values.
+  const getSurfaceScope = () =>
+    createOrganizationsScope({
+      current_view: "list",
+      organization_count: organizations.length,
+      organizations_summary: organizations.map((o) => ({
+        id: o.id,
+        name: o.name,
+        slug: o.slug,
+        abbreviation: o.abbreviation,
+        role: o.role,
+        is_personal: o.isPersonal,
+        member_count: o.memberCount ?? null,
+      })),
+      search_query: query || undefined,
+      selection: window.getSelection()?.toString() || undefined,
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={ORGANIZATIONS_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
       <RouteHeader
         left={
           <span className="flex items-center gap-1.5 px-1.5 text-sm font-medium text-foreground">
@@ -433,7 +462,7 @@ export default function OrganizationsPage() {
         onClose={() => setCreateOpen(false)}
         onSuccess={() => refresh()}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 
