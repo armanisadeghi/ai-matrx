@@ -150,7 +150,6 @@ export function MarketingSiteSurfaceProvider({
   return (
     <SurfaceRuntimeProvider
       surfaceName={MARKETING_SITE_SURFACE_NAME}
-      surfaceLabel="Marketing site"
       getScope={() => createMarketingSiteScope(getBaseValues())}
     >
       {children}

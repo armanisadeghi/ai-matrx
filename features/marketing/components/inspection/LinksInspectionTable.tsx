@@ -431,7 +431,6 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-links"
-      surfaceLabel="Links"
       getScope={() => {
         const result = graphEdges.data;
         return createMarketingLinksScope({

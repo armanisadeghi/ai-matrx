@@ -370,7 +370,6 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-integrations"
-      surfaceLabel="Integrations"
       getScope={() =>
         createMarketingIntegrationsScope({
           ...getBaseValues(),

@@ -213,7 +213,6 @@ export function SitesPortfolio() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing"
-      surfaceLabel="Marketing"
       getScope={getHubScope}
     >
       <RouteHeader

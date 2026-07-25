@@ -147,7 +147,6 @@ export function SitemapsWorkspace() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-sitemaps"
-      surfaceLabel="Sitemaps"
       getScope={() =>
         createMarketingSitemapsScope({
           ...getBaseValues(),

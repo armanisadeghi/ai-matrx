@@ -136,7 +136,6 @@ export function SiteAnalysisTable() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-analysis"
-      surfaceLabel="Analysis"
       getScope={() => {
         const rows = priority.data?.rows ?? [];
         return createMarketingAnalysisScope({

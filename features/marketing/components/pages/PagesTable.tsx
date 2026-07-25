@@ -366,7 +366,6 @@ export function PagesTable() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-site-pages"
-      surfaceLabel="Pages"
       getScope={() =>
         createMarketingSitePagesScope({
           ...getBaseValues(),

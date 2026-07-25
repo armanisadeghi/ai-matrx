@@ -32,7 +32,9 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 3. `usePodcastRun` and `useStudioRun` use the canonical Redux `callApi` transport
    to POST **`{base}/podcast/generate`** (NDJSON stream; NOT under `/api/`), so
    active organization/project/task scope is injected like every other mutating
-   API call. Studio folds events via `generator/reduce.ts` and persists
+   API call. `PodcastGenerateRequest.context_anchor` may bind a run to an
+   existing durable source entity; aidream reloads that entity and its saved
+   scope becomes authoritative. Studio folds events via `generator/reduce.ts` and persists
    milestones to `pc_studio_runs`. Resume →
    `{base}/podcast/resume/{backend_run_id}` through the same transport.
 4. Backend (aidream `podcast_generator`) routes the script agent by host count
@@ -94,6 +96,12 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+
+- **2026-07-24 — Podcast generation supports durable source-entity identity.**
+  The generic request type carries an optional context anchor. Research Outputs
+  Studio sends its `research_topic` ID, so the podcast pipeline cannot switch
+  organizations or fall back to personal scope when the user's active UI
+  context changes.
 
 - **2026-07-24 — One-shot podcast agents use the canonical scoped launcher.**
   Article generation and source resolvers now declare

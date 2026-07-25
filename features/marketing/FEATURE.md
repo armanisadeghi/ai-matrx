@@ -162,6 +162,24 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-24 — Claude (surface completeness backfill): the `matrx-user/marketing-page`
+  surface is the exemplar of the COMPLETENESS + NAMING laws. The manifest
+  (`features/surfaces/manifests/marketing-page.manifest.ts`) now declares 7 value
+  groups and 20 new values (identity fields, composite `page_intent`, indexability/
+  social/url-quality evaluations, content stats + file ids, captures, Page Analyzer
+  artifact, page score/failed checks, PageSpeed/GA4/sitemap evidence);
+  `buildMarketingPageScope` emits ALL of it and exports the shared deterministic
+  helpers (`evaluatePageIndexability`, `evaluatePageSocialCard`, `pageCaptureRows`,
+  `captureAvailability`, `latestPagespeedByStrategy`, `webAnalyticsTotals`) that the
+  PageWorkspace UI renders from — one evaluation path, two consumers. PageWorkspace/
+  PageContentCard render section titles and field labels via `surfaceValueLabels`/
+  `surfaceGroupLabels` (byte-identical to the manifest) and tag every major card and
+  metric with `data-surface-value` locate-on-page anchors (SectionCard/MetricCell
+  grew an `anchor` prop). Pagespeed + GA4 page rows moved to shared react-query
+  hooks (`usePagePerformance`/`usePageWebAnalytics` in `data/hooks.ts`); the Page
+  Analyzer hook is lifted to PageWorkspace so the surface scope emits the same
+  artifact the card shows.
+
 - 2026-07-24 — Claude (M-9 SEO cost UI): `/marketing/cost` (the pre-existing
   runtime/AI-execution cost rollup page — a DIFFERENT concept from SEO
   provider spend) gained a third "Provider spend" mode

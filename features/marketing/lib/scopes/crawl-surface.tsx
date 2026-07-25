@@ -51,7 +51,6 @@ export function CrawlSurfaceProvider({
   return (
     <SurfaceRuntimeProvider
       surfaceName={MARKETING_CRAWL_SURFACE_NAME}
-      surfaceLabel="Crawl Session"
       getScope={() =>
         createMarketingCrawlScope({
           ...getBaseValues(),

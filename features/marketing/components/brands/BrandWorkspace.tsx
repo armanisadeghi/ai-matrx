@@ -339,7 +339,6 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-brand"
-      surfaceLabel="Brand"
       getScope={getBrandScope}
     >
       <RouteHeader

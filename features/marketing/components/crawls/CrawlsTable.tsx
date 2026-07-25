@@ -169,7 +169,6 @@ export function CrawlsTable() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-crawls"
-      surfaceLabel="Crawls"
       getScope={() => {
         const rows = crawls.data?.rows ?? [];
         return createMarketingCrawlsScope({

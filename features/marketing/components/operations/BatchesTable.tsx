@@ -195,7 +195,6 @@ export function BatchesTable() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-batches"
-      surfaceLabel="Batches"
       getScope={getBatchesScope}
     >
       <RouteHeader

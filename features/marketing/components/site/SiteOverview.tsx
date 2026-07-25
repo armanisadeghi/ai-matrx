@@ -343,7 +343,6 @@ export function SiteOverview() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-site"
-      surfaceLabel="Site overview"
       getScope={getOverviewScope}
     >
     <main className="h-full overflow-y-auto bg-textured px-3 pb-24 pt-3 sm:px-4 sm:pb-32 sm:pt-4">

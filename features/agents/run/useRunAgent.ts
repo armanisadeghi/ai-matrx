@@ -32,6 +32,7 @@ import {
   type CallScope,
   type LLMParamsBody,
 } from "@/lib/api/call-api";
+import type { components } from "@/types/python-generated/api-types";
 import { extractErrorMessage } from "@/utils/errors";
 
 export interface RunAgentArgs {
@@ -47,6 +48,11 @@ export interface RunAgentArgs {
   organizationId?: string;
   projectId?: string;
   taskId?: string;
+  /**
+   * Stable durable-entity identity. The server reloads this row and uses its
+   * saved scope; the browser does not get to redefine that scope.
+   */
+  contextAnchor?: components["schemas"]["ContextAnchor"];
   /** Durable producer attribution for the conversation and usage ledger. */
   sourceApp: string;
   sourceFeature: string;
@@ -85,6 +91,7 @@ export function buildRunAgentRequest(args: RunAgentArgs): {
       config_overrides: args.configOverrides,
       source_app: args.sourceApp,
       source_feature: args.sourceFeature,
+      context_anchor: args.contextAnchor,
       stream: true,
       debug: false,
     },
@@ -113,6 +120,7 @@ export function useRunAgent(): UseRunAgent {
       organizationId,
       projectId,
       taskId,
+      contextAnchor,
       sourceApp,
       sourceFeature,
       signal,
@@ -133,6 +141,7 @@ export function useRunAgent(): UseRunAgent {
           organizationId,
           projectId,
           taskId,
+          contextAnchor,
           sourceApp,
           sourceFeature,
           signal,

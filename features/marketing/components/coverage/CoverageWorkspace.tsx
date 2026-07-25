@@ -147,7 +147,6 @@ export function CoverageWorkspace() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-coverage"
-      surfaceLabel="Coverage"
       getScope={() =>
         createMarketingCoverageScope({
           ...getBaseValues(),

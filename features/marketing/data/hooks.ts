@@ -71,6 +71,8 @@ import {
   updateProperty,
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
+import { listPagePerformance } from "@/features/marketing/pagespeed/data";
+import { listWebAnalyticsDailyForPage } from "@/features/marketing/analytics/data";
 import {
   buildSiteAuditRollup,
   buildSiteAuditTrend,
@@ -243,6 +245,25 @@ export function usePageScreenshots(siteId: string, pageId: string) {
   return useQuery({
     queryKey: [...marketingKeys.page(siteId, pageId), "screenshots"] as const,
     queryFn: ({ signal }) => listPageScreenshots(siteId, pageId, signal),
+    enabled: Boolean(siteId && pageId),
+  });
+}
+
+/** Persisted PageSpeed Insights rows for one page (shared query cache — the
+ * PageWorkspace surface scope and the Pagespeed card read the same rows). */
+export function usePagePerformance(siteId: string, pageId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.page(siteId, pageId), "pagespeed"] as const,
+    queryFn: ({ signal }) => listPagePerformance(pageId, signal),
+    enabled: Boolean(siteId && pageId),
+  });
+}
+
+/** Stored GA4 landing-page rows for one page (shared query cache). */
+export function usePageWebAnalytics(siteId: string, pageId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.page(siteId, pageId), "web-analytics"] as const,
+    queryFn: ({ signal }) => listWebAnalyticsDailyForPage(siteId, pageId, signal),
     enabled: Boolean(siteId && pageId),
   });
 }

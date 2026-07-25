@@ -40,13 +40,20 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import {
+  marketingKeys,
   useDeleteScreenshot,
+  usePagePerformance,
   usePageScreenshots,
   usePageSitemapMemberships,
+  usePageWebAnalytics,
   usePageWorkspace,
   useUpdatePageIntent,
 } from "@/features/marketing/data/hooks";
-import { usePageAnalyzer } from "@/features/marketing/components/pages/usePageAnalyzer";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  usePageAnalyzer,
+  type PageAnalyzerState,
+} from "@/features/marketing/components/pages/usePageAnalyzer";
 import type {
   MarketingPage,
   PageSnapshot,
@@ -57,8 +64,20 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import {
   buildMarketingPageScope,
+  captureAvailability,
+  evaluatePageIndexability,
+  evaluatePageSocialCard,
+  latestPagespeedByStrategy,
   MARKETING_PAGE_SURFACE_NAME,
+  pageCaptureRows,
+  rawSocialTags,
+  webAnalyticsTotals,
 } from "@/features/marketing/lib/marketing-page-scope";
+import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
+import {
+  surfaceGroupLabels,
+  surfaceValueLabels,
+} from "@/features/surfaces/utils/surface-display";
 import { SerpResult, type SerpDevice } from "@/features/seo/serp/SerpResult";
 import { SerpFieldChips } from "@/features/seo/serp/SerpValidation";
 import { MetaRecommendations } from "@/features/seo/serp/MetaRecommendations";
@@ -69,17 +88,12 @@ import {
 } from "@/features/seo/serp/metrics";
 import { useOpenSerpAnalyzerWindow } from "@/features/overlays/openers/serpAnalyzerWindow";
 import { useOpenSocialCardWindow } from "@/features/overlays/openers/socialCardAnalyzerWindow";
-import { evaluateSocialCard } from "@/features/seo/audit/social";
 import {
   evaluateHeadingStructure,
   headingInputsFromRaw,
 } from "@/features/seo/audit/headings";
-import {
-  evaluateIndexability,
-  type IndexabilityEvaluation,
-} from "@/features/seo/audit/indexability";
+import { type IndexabilityEvaluation } from "@/features/seo/audit/indexability";
 import { evaluateUrlQuality } from "@/features/seo/audit/url-quality";
-import { socialInputFromRawTags } from "@/features/seo/audit/stored";
 import { AuditIssueList } from "@/features/seo/audit/AuditIssueList";
 import {
   SocialCard,
@@ -106,16 +120,13 @@ import { MarketingUrlRow } from "@/features/marketing/components/shared/Marketin
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
-import {
-  listPagePerformance,
-  syncPagespeed,
-  type PagePerformanceRow,
-} from "@/features/marketing/pagespeed/data";
-import {
-  listWebAnalyticsDailyForPage,
-  syncSiteAnalytics,
-  type WebAnalyticsDailyRow,
-} from "@/features/marketing/analytics/data";
+import { syncPagespeed } from "@/features/marketing/pagespeed/data";
+import { syncSiteAnalytics } from "@/features/marketing/analytics/data";
+
+// THE NAMING LAW: canonical labels for every declared surface value + group —
+// section titles and field labels below render these byte-identically.
+const L = surfaceValueLabels(marketingPageManifest);
+const G = surfaceGroupLabels(marketingPageManifest);
 
 function IntentForm({
   page,
@@ -192,9 +203,10 @@ function IntentForm({
 
   return (
     <SectionCard
-      title="User-owned page intent"
+      title={G.page_intent}
       copy={copy}
       collapsible
+      anchor="page_intent"
       headerExtra={
         <button
           type="button"
@@ -209,9 +221,9 @@ function IntentForm({
       }
     >
       <div className="grid gap-3 p-3">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" data-surface-value="target_keyword">
           <Label htmlFor="target-keyword" className="text-xs">
-            Target keyword
+            {L.target_keyword}
           </Label>
           <Input
             id="target-keyword"
@@ -220,10 +232,10 @@ function IntentForm({
             placeholder="Primary search intent"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" data-surface-value="desired_title">
           <div className="flex items-center justify-between">
             <Label htmlFor="desired-title" className="text-xs">
-              Desired meta title
+              {L.desired_title}
             </Label>
             {draftTitleEval ? (
               <SerpFieldChips
@@ -244,10 +256,10 @@ function IntentForm({
             placeholder="Editorial target, separate from observed content"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" data-surface-value="desired_description">
           <div className="flex items-center justify-between">
             <Label htmlFor="desired-description" className="text-xs">
-              Desired meta description
+              {L.desired_description}
             </Label>
             {draftDescEval ? (
               <SerpFieldChips
@@ -391,30 +403,34 @@ function SerpPreview({
           placeholderDescription="No observed meta description — search engines will improvise one."
         />
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-2">
-          {titleEval ? (
-            <SerpFieldChips
-              prefix="Title"
-              chars={titleEval.charCount}
-              pixels={titleEval.pixelWidth}
-              ok={titleEval.ok}
-            />
-          ) : (
-            <span className="font-mono text-[11px] text-muted-foreground">
-              Title —
-            </span>
-          )}
-          {descEval ? (
-            <SerpFieldChips
-              prefix="Description"
-              chars={descEval.charCount}
-              pixels={descEval.pixelWidth}
-              ok={descEval.ok}
-            />
-          ) : (
-            <span className="font-mono text-[11px] text-muted-foreground">
-              Description —
-            </span>
-          )}
+          <span data-surface-value="observed_title">
+            {titleEval ? (
+              <SerpFieldChips
+                prefix="Title"
+                chars={titleEval.charCount}
+                pixels={titleEval.pixelWidth}
+                ok={titleEval.ok}
+              />
+            ) : (
+              <span className="font-mono text-[11px] text-muted-foreground">
+                Title —
+              </span>
+            )}
+          </span>
+          <span data-surface-value="observed_description">
+            {descEval ? (
+              <SerpFieldChips
+                prefix="Description"
+                chars={descEval.charCount}
+                pixels={descEval.pixelWidth}
+                ok={descEval.ok}
+              />
+            ) : (
+              <span className="font-mono text-[11px] text-muted-foreground">
+                Description —
+              </span>
+            )}
+          </span>
         </div>
       </div>
 
@@ -429,13 +445,13 @@ function SerpPreview({
 
       <div className="grid gap-2.5">
         <IntentDiffRow
-          label="Desired title"
+          label={L.desired_title}
           observed={title}
           desired={page.meta_title_desired}
           metrics={desiredTitleEval}
         />
         <IntentDiffRow
-          label="Desired description"
+          label={L.desired_description}
           observed={description}
           desired={page.meta_description_desired}
           metrics={desiredDescEval}
@@ -443,18 +459,6 @@ function SerpPreview({
       </div>
     </div>
   );
-}
-
-/** Raw og/twitter tag records from `head_tags` — the evaluator's wire shape. */
-function rawSocialTags(snapshot: PageSnapshot): {
-  og: Record<string, unknown>;
-  twitter: Record<string, unknown>;
-} {
-  const headTags = isJsonRecord(snapshot.head_tags) ? snapshot.head_tags : {};
-  return {
-    og: isJsonRecord(headTags.og) ? headTags.og : {},
-    twitter: isJsonRecord(headTags.twitter) ? headTags.twitter : {},
-  };
 }
 
 /**
@@ -472,10 +476,8 @@ function SocialCardPreview({
   page: MarketingPage;
   platform: SocialPlatform;
 }) {
-  const raw = rawSocialTags(snapshot);
-  const evaluation = evaluateSocialCard(
-    socialInputFromRawTags(raw.og, raw.twitter),
-  );
+  // The SAME deterministic evaluation the surface scope emits (social_card).
+  const evaluation = evaluatePageSocialCard(snapshot);
 
   return (
     <div className="grid gap-3 p-3">
@@ -557,15 +559,10 @@ function IndexabilitySection({
 }) {
   const head = parseSnapshotHeadTags(snapshot.head_tags);
   const extracted = parseSnapshotExtracted(snapshot.extracted);
-  // Deterministic verdict — identical to the scraper's crawl-time
+  // Deterministic verdict — the SAME evaluation the surface scope emits
+  // (indexability), identical to the scraper's crawl-time
   // `audit_metrics.indexability` by construction.
-  const evaluation = evaluateIndexability({
-    httpStatus: snapshot.http_status,
-    metaRobots: head.metaRobots,
-    canonicalUrl: head.canonicalUrl,
-    redirectChain: extracted.redirectChain,
-    finalUrl: snapshot.final_url ?? page.url,
-  });
+  const evaluation = evaluatePageIndexability(page, snapshot);
   const noindex = evaluation.noindex;
   const canonicalMismatch = evaluation.canonicalMatches === false;
   // URL quality needs no crawl data — always computed live from the URL.
@@ -578,7 +575,7 @@ function IndexabilitySection({
       <CondensedFieldGrid
         fields={[
           {
-            label: "HTTP status",
+            label: L.http_status,
             value: snapshot.http_status ?? "—",
             tone:
               snapshot.http_status !== null && snapshot.http_status >= 400
@@ -706,7 +703,7 @@ function ContentStats({ snapshot }: { snapshot: PageSnapshot }) {
       <CondensedFieldGrid
         fields={[
           {
-            label: "Word count",
+            label: L.word_count,
             value: snapshot.word_count?.toLocaleString() ?? "—",
           },
           {
@@ -740,7 +737,7 @@ function ContentStats({ snapshot }: { snapshot: PageSnapshot }) {
                 : `${images.count.toLocaleString()}${images.missingAlt ? ` · ${images.missingAlt} missing alt` : ""}`,
             tone: images.missingAlt ? "warning" : "default",
           },
-          { label: "Captured", value: formatDate(snapshot.captured_at) },
+          { label: L.snapshot_captured_at, value: formatDate(snapshot.captured_at) },
         ]}
       />
       <div className="mt-3 flex flex-wrap gap-2">
@@ -840,7 +837,12 @@ function SitemapMembershipsCard({ page }: { page: MarketingPage }) {
     );
   }
   return (
-    <SectionCard title="Sitemap memberships" copy={copy} collapsible>
+    <SectionCard
+      title={L.sitemap_memberships}
+      copy={copy}
+      collapsible
+      anchor="sitemap_memberships"
+    >
       {body}
     </SectionCard>
   );
@@ -855,20 +857,10 @@ function PageCapturesCard({ page }: { page: MarketingPage }) {
   const openFilePreview = useOpenFilePreviewWindow();
   const [deleting, setDeleting] = useState<SiteScreenshot | null>(null);
 
-  const rows = (screenshots.data ?? []).filter(
-    (screenshot): screenshot is SiteScreenshot & { file_id: string } =>
-      Boolean(screenshot.file_id),
-  );
-  const hasMobileCapture = rows.some(
-    (screenshot) =>
-      screenshot.kind.toLowerCase().includes("mobile") ||
-      (screenshot.width !== null && screenshot.width <= 600),
-  );
-  const hasDesktopCapture = rows.some(
-    (screenshot) =>
-      !screenshot.kind.toLowerCase().includes("mobile") &&
-      (screenshot.width === null || screenshot.width > 600),
-  );
+  // Same row filter + desktop/mobile classification the surface scope emits
+  // (captures / has_desktop_capture / has_mobile_capture).
+  const rows = pageCaptureRows(screenshots.data);
+  const { hasDesktopCapture, hasMobileCapture } = captureAvailability(rows);
 
   // Rows arrive newest-first; the first row per kind is the current capture.
   const byKind = new Map<string, (SiteScreenshot & { file_id: string })[]>();
@@ -1033,7 +1025,7 @@ function PageCapturesCard({ page }: { page: MarketingPage }) {
     );
   }
   return (
-    <SectionCard title="Captures" copy={copy} collapsible>
+    <SectionCard title={L.captures} copy={copy} collapsible anchor="captures">
       {body}
     </SectionCard>
   );
@@ -1047,8 +1039,17 @@ function PageCapturesCard({ page }: { page: MarketingPage }) {
  * content gaps. Replaces the former "Matrx Analysis" / "Matrx Suggestions"
  * placeholders.
  */
-function PageAnalyzerCard({ page }: { page: MarketingPage }) {
-  const { state, run } = usePageAnalyzer(page.id);
+function PageAnalyzerCard({
+  page,
+  state,
+  run,
+}: {
+  page: MarketingPage;
+  /** Lifted analyzer state (PageWorkspace owns the hook so the surface scope
+   * emits the same artifact this card renders — `page_analyzer`). */
+  state: PageAnalyzerState;
+  run: (forceRefresh: boolean) => Promise<void>;
+}) {
   const artifact = state.result?.artifact;
 
   const copy = webCopy({
@@ -1073,9 +1074,10 @@ function PageAnalyzerCard({ page }: { page: MarketingPage }) {
 
   return (
     <SectionCard
-      title="Page Analyzer"
+      title={L.page_analyzer}
       copy={copy}
       collapsible
+      anchor="page_analyzer"
       headerExtra={
         <button
           type="button"
@@ -1195,35 +1197,26 @@ function PageAnalyzerCard({ page }: { page: MarketingPage }) {
  * Replaces the former disabled placeholder.
  */
 function PagespeedCard({ page }: { page: MarketingPage }) {
-  const [rows, setRows] = useState<PagePerformanceRow[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  // Shared query cache — the PageWorkspace surface scope (pagespeed) reads
+  // the exact same rows this card renders.
+  const performance = usePagePerformance(page.site_id, page.id);
+  const rows = performance.data ?? null;
+  const loading = performance.isLoading;
+  const loadError = performance.isError
+    ? extractErrorMessage(performance.error)
+    : null;
   const [syncingStrategy, setSyncingStrategy] = useState<
     "mobile" | "desktop" | null
   >(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  const load = async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      setRows(await listPagePerformance(page.id));
-    } catch (error) {
-      setLoadError(extractErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page.id]);
 
   const runSync = async (strategy: "mobile" | "desktop") => {
     setSyncingStrategy(strategy);
     try {
       await syncPagespeed(page.id, strategy);
-      await load();
+      await queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.page(page.site_id, page.id), "pagespeed"],
+      });
       toast.success(`PageSpeed Insights synced (${strategy})`);
     } catch (error) {
       toast.error("PageSpeed Insights sync failed", {
@@ -1234,10 +1227,8 @@ function PagespeedCard({ page }: { page: MarketingPage }) {
     }
   };
 
-  const latestByStrategy = new Map<string, PagePerformanceRow>();
-  for (const row of rows ?? []) {
-    if (!latestByStrategy.has(row.strategy)) latestByStrategy.set(row.strategy, row);
-  }
+  // Same latest-per-strategy selection the surface scope emits.
+  const latestByStrategy = latestPagespeedByStrategy(rows);
 
   const scoreTone = (value: number | null): "good" | "warning" | "bad" | "default" => {
     if (value === null) return "default";
@@ -1248,8 +1239,9 @@ function PagespeedCard({ page }: { page: MarketingPage }) {
 
   return (
     <SectionCard
-      title="PageSpeed Insights"
+      title={L.pagespeed}
       collapsible
+      anchor="pagespeed"
       headerExtra={
         <div className="flex items-center gap-1">
           {(["mobile", "desktop"] as const).map((strategy) => (
@@ -1400,35 +1392,26 @@ function PagespeedCard({ page }: { page: MarketingPage }) {
  */
 function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   const { site } = useMarketingSite();
-  const [rows, setRows] = useState<WebAnalyticsDailyRow[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  // Shared query cache — the PageWorkspace surface scope (ga4_metrics) reads
+  // the exact same rows this card renders.
+  const analytics = usePageWebAnalytics(site.id, page.id);
+  const rows = analytics.data ?? null;
+  const loading = analytics.isLoading;
+  const loadError = analytics.isError
+    ? extractErrorMessage(analytics.error)
+    : null;
   const [syncing, setSyncing] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const integrations = parseSiteIntegrations(site.integrations);
   const ga4Enabled = integrations.googleAnalytics4.enabled;
-
-  const load = async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      setRows(await listWebAnalyticsDailyForPage(site.id, page.id));
-    } catch (error) {
-      setLoadError(extractErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page.id, site.id]);
 
   const runSync = async () => {
     setSyncing(true);
     try {
       await syncSiteAnalytics(site.id);
-      await load();
+      await queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.page(site.id, page.id), "web-analytics"],
+      });
       toast.success("Google Analytics synced");
     } catch (error) {
       toast.error("Google Analytics sync failed", {
@@ -1439,21 +1422,14 @@ function PageAnalyticsCard({ page }: { page: MarketingPage }) {
     }
   };
 
-  const totals = (rows ?? []).reduce(
-    (acc, row) => ({
-      sessions: acc.sessions + row.sessions,
-      users: acc.users + row.users,
-      engagedSessions: acc.engagedSessions + row.engaged_sessions,
-    }),
-    { sessions: 0, users: 0, engagedSessions: 0 },
-  );
-  const engagementRate =
-    totals.sessions > 0 ? (totals.engagedSessions / totals.sessions) * 100 : null;
+  // Same totals math the surface scope emits.
+  const { engagementRate, ...totals } = webAnalyticsTotals(rows);
 
   return (
     <SectionCard
-      title="Google Analytics"
+      title={L.ga4_metrics}
       collapsible
+      anchor="ga4_metrics"
       headerExtra={
         <button
           type="button"
@@ -1531,6 +1507,14 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const { site, sitePath } = useMarketingSite();
   const { brandId, getBaseValues } = useMarketingSiteSurfaceBase();
   const workspace = usePageWorkspace(site.id, pageId);
+  // Everything the page loads is emitted as a surface value (completeness
+  // law) — these share react-query caches with the cards below.
+  const screenshots = usePageScreenshots(site.id, pageId);
+  const sitemapMemberships = usePageSitemapMemberships(site.id, pageId);
+  const pagespeedRows = usePagePerformance(site.id, pageId);
+  const analyticsRows = usePageWebAnalytics(site.id, pageId);
+  // Lifted so the surface scope emits the same artifact the card renders.
+  const analyzer = usePageAnalyzer(pageId);
   const openSerpAnalyzer = useOpenSerpAnalyzerWindow();
   const openSocialCards = useOpenSocialCardWindow();
   const [serpDevice, setSerpDevice] = useState<SerpDevice>("desktop");
@@ -1596,6 +1580,13 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             position: searchPerformance.gsc_position_28d,
           }
         : undefined,
+      screenshots: screenshots.data ?? null,
+      analyzerArtifact: analyzer.state.result?.artifact ?? null,
+      pagespeedRows: pagespeedRows.data ?? null,
+      analyticsRows: analyticsRows.data ?? null,
+      sitemapMemberships: sitemapMemberships.data ?? null,
+      pageScore: data.score,
+      failedChecks: data.failCount,
       base: getBaseValues(),
     });
 
@@ -1624,7 +1615,6 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName={MARKETING_PAGE_SURFACE_NAME}
-      surfaceLabel="Page"
       isEditable={false}
       getScope={getScope}
     >
@@ -1633,12 +1623,21 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         <section className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <StatusBadge value={page.status} />
-              <Badge variant="outline" className="uppercase">
+              <span data-surface-value="page_status">
+                <StatusBadge value={page.status} />
+              </span>
+              <Badge
+                variant="outline"
+                className="uppercase"
+                data-surface-value="page_provenance"
+              >
                 {page.provenance}
               </Badge>
             </div>
-            <h1 className="mt-2 truncate font-mono text-sm font-semibold text-foreground">
+            <h1
+              className="mt-2 truncate font-mono text-sm font-semibold text-foreground"
+              data-surface-value="page_path"
+            >
               {page.path || "/"}
             </h1>
             <MarketingUrlRow url={page.url} className="mt-0.5" />
@@ -1657,31 +1656,39 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
 
         <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
           <MetricCell
-            label="Open findings"
+            label={L.open_findings}
             value={data.openFindings}
             detail="Current state"
             tone={data.openFindings ? "warning" : "good"}
+            anchor="open_findings"
           />
           <MetricCell
-            label="Last HTTP"
+            label={L.http_status}
             value={page.http_status_last ?? "—"}
             detail="Latest observed"
+            anchor="http_status"
           />
           <MetricCell
-            label="Words"
+            label={L.word_count}
             value={snapshot?.word_count?.toLocaleString() ?? "—"}
             detail="Latest snapshot"
+            anchor="word_count"
           />
-          <MetricCell label="First seen" value={formatDate(page.first_seen)} />
-          <MetricCell label="Last seen" value={formatDate(page.last_seen)} />
           <MetricCell
-            label="Current content"
-            value={snapshot ? "Captured" : "None"}
-            detail={
-              snapshot
-                ? formatDate(snapshot.captured_at)
-                : "No accepted snapshot"
-            }
+            label={L.first_seen}
+            value={formatDate(page.first_seen)}
+            anchor="first_seen"
+          />
+          <MetricCell
+            label={L.last_seen}
+            value={formatDate(page.last_seen)}
+            anchor="last_seen"
+          />
+          <MetricCell
+            label={L.snapshot_captured_at}
+            value={snapshot ? formatDate(snapshot.captured_at) : "None"}
+            detail={snapshot ? "Latest snapshot" : "No accepted snapshot"}
+            anchor="snapshot_captured_at"
           />
         </section>
 
@@ -1788,8 +1795,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           <>
             <div className="grid gap-3 lg:grid-cols-2">
               <SectionCard
-                title="Social share preview"
+                title={L.social_card}
                 collapsible
+                anchor="social_card"
                 headerExtra={
                   <div className="flex items-center gap-1">
                     <div className="flex items-center rounded-md border border-border">
@@ -1822,10 +1830,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                     <button
                       type="button"
                       onClick={() => {
-                        const raw = rawSocialTags(snapshot);
-                        const observed = evaluateSocialCard(
-                          socialInputFromRawTags(raw.og, raw.twitter),
-                        );
+                        const observed = evaluatePageSocialCard(snapshot);
                         openSocialCards({
                           url: observed.url ?? page.url,
                           title: observed.title ?? "",
@@ -1878,8 +1883,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 />
               </SectionCard>
               <SectionCard
-                title="Indexability"
+                title={L.indexability}
                 collapsible
+                anchor="indexability"
                 copy={webCopy({
                   kind: "web-page-indexability",
                   label: "Indexability",
@@ -1917,12 +1923,17 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               </SectionCard>
             </div>
             <div className="grid gap-3 lg:grid-cols-1">
-              <PageAnalyzerCard page={page} />
+              <PageAnalyzerCard
+                page={page}
+                state={analyzer.state}
+                run={analyzer.run}
+              />
             </div>
             <div className="grid gap-3 xl:grid-cols-3">
               <SectionCard
-                title="Google Search Console"
+                title={L.gsc_metrics_28d}
                 collapsible
+                anchor="gsc_metrics_28d"
                 headerExtra={
                   <button
                     type="button"
@@ -2016,8 +2027,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             </div>
             <div className="grid gap-3 lg:grid-cols-2">
               <SectionCard
-                title="Headings outline"
+                title={L.headings_outline}
                 collapsible
+                anchor="headings_outline"
                 copy={webCopy({
                   kind: "web-page-headings",
                   label: "Headings outline",
@@ -2039,8 +2051,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 <HeadingsOutline snapshot={snapshot} />
               </SectionCard>
               <SectionCard
-                title="Content stats"
+                title={L.content_stats}
                 collapsible
+                anchor="content_stats"
                 copy={webCopy({
                   kind: "web-page-content-stats",
                   label: "Content stats",

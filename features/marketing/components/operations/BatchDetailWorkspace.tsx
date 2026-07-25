@@ -281,7 +281,6 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-batches"
-      surfaceLabel="Batches"
       getScope={getBatchScope}
     >
       <RouteHeader

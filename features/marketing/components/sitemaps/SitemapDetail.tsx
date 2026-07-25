@@ -154,7 +154,6 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-sitemaps"
-      surfaceLabel="Sitemaps"
       getScope={() =>
         createMarketingSitemapsScope({
           ...getBaseValues(),

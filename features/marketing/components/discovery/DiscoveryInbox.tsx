@@ -197,7 +197,6 @@ export function DiscoveryInbox() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-discovery"
-      surfaceLabel="Discovery"
       getScope={() => {
         // pending_count comes from the dedicated brand-scoped count query —
         // never the loaded rows' length, which caps at the list query's

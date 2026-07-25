@@ -10,6 +10,8 @@ import { useFileBlob } from "@/features/files";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
+import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { MarketingPage } from "@/features/marketing/types";
 
@@ -84,11 +86,15 @@ export function PageContentCard({
     attributes: { page_id: page.id },
   });
 
+  // THE NAMING LAW: the card title is the canonical `page_content` label.
+  const L = surfaceValueLabels(marketingPageManifest);
+
   return (
     <SectionCard
-      title="Page content"
+      title={L.page_content}
       copy={{ ...copy, human: () => text ?? "Content is still loading." }}
       collapsible
+      anchor="page_content"
     >
       {/* Read-only rendered markdown → NonEditableContextMenu. No ContentSource
           variant or EntityType token exists for `web.page`, so contentSource

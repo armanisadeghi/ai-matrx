@@ -282,7 +282,6 @@ export function FindingDetail({ findingId }: { findingId: string }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-findings"
-      surfaceLabel="Findings"
       getScope={() =>
         createMarketingFindingsScope({
           ...getBaseValues(),

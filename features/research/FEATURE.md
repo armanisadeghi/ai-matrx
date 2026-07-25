@@ -120,12 +120,14 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 ## Change log
 
 - `2026-07-24` — **Outputs Studio preserves the topic organization on every
-  saved-agent output run.** Blog, slides, and SEO pass the topic row's
-  `organization_id` plus `matrx-frontend`/`research` attribution into the
-  shared `useRunAgent` launcher. The launcher now rides canonical
-  `callAgentStart`/`callApi`, so local topic identity wins over global active
-  context and the server creates conversation, message, usage, and tool rows in
-  the correct org instead of silently falling onto the user's personal org.
+  output run without trusting the browser as scope authority.** Podcast, blog,
+  slides, and SEO pass a stable
+  `research_topic`/`topicId` context anchor; aidream RLS-reloads that topic and
+  uses its saved organization before conversation or agent preparation. The
+  earlier explicit `organization_id` and `matrx-frontend`/`research`
+  attribution remain as assertions/diagnostics, but cannot move an established
+  topic when active UI context changes. The shared launcher still rides
+  canonical `callAgentStart`/`callApi`.
 
 - `2026-07-23` — **Project selection shows everything and creates in place.** AI, manual, and template creation paths now reuse the projects feature's `ProjectPicker`, filtered to the active organization: one complete searchable/scrollable list with no secondary load/pagination step, plus a persistent **New** button that opens the canonical `createProjectWindow` and auto-selects a manually created project.
 - `2026-07-22` — **THE VIEW LAW.** `getAllTopics()` was a bare RLS-only read ("All really means All" — the exact anti-pattern the law targets for a multi-org user); it now explicitly `.eq("created_by", userId)`. "All topics" now means "all of mine", not every org's topics blended together.

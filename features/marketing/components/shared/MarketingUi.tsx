@@ -152,6 +152,7 @@ export function MetricCell({
   tone = "default",
   icon,
   variant = "strip",
+  anchor,
 }: {
   label: string;
   value: string | number;
@@ -159,9 +160,12 @@ export function MetricCell({
   tone?: "default" | "good" | "warning" | "bad";
   icon?: React.ReactNode;
   variant?: "strip" | "card";
+  /** Surface value name — rendered as `data-surface-value` (locate-on-page). */
+  anchor?: string;
 }) {
   return (
     <div
+      data-surface-value={anchor}
       className={cn(
         "min-w-0",
         variant === "strip"
@@ -260,6 +264,7 @@ export function SectionCard({
   className,
   collapsible = false,
   defaultOpen = true,
+  anchor,
 }: {
   title: string;
   /** Link action (`href`) or in-place action (`onClick`). */
@@ -278,6 +283,8 @@ export function SectionCard({
   collapsible?: boolean;
   /** Initial disclosure state when `collapsible` is enabled. */
   defaultOpen?: boolean;
+  /** Surface value name — rendered as `data-surface-value` (locate-on-page). */
+  anchor?: string;
 }) {
   const content = collapsible ? (
     <CollapsibleContent>{children}</CollapsibleContent>
@@ -286,6 +293,7 @@ export function SectionCard({
   );
   const card = (
     <section
+      data-surface-value={anchor}
       className={cn(
         "min-w-0 rounded-lg border border-border bg-card",
         collapsible && "self-start",

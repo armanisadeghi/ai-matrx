@@ -6244,6 +6244,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -16418,6 +16442,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -19807,6 +19832,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -20756,6 +20782,19 @@ export interface components {
          */
         ContentType: "generic" | "transcript" | "conversation" | "document";
         /**
+         * ContextAnchor
+         * @description Stable identity of the durable entity whose saved context owns a run.
+         */
+        ContextAnchor: {
+            /** Resource Type */
+            resource_type: string;
+            /**
+             * Resource Id
+             * Format: uuid
+             */
+            resource_id: string;
+        };
+        /**
          * ContextItemBinding
          * @description Binds a variable to a scope context item; it inherits that item's component.
          */
@@ -20830,6 +20869,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -21006,6 +21046,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -22357,6 +22398,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -25041,6 +25109,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -27600,6 +27669,19 @@ export interface components {
             /** Redact */
             redact: boolean;
         };
+        /**
+         * ManifestGroupEntry
+         * @description One canonical value group (machine key + order only).
+         */
+        ManifestGroupEntry: {
+            /** Key */
+            key: string;
+            /**
+             * Sort Order
+             * @default 1000
+             */
+            sort_order?: number;
+        };
         /** ManifestResponse */
         ManifestResponse: {
             /** File Id */
@@ -27640,6 +27722,21 @@ export interface components {
              * @default true
              */
             auto_context?: boolean;
+            /**
+             * Group Key
+             * @default general
+             */
+            group_key?: string;
+            /**
+             * Sort Order
+             * @default 1000
+             */
+            sort_order?: number;
+            /**
+             * Always Available
+             * @default false
+             */
+            always_available?: boolean;
         };
         /**
          * ManualCredentialsRequest
@@ -30067,6 +30164,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -30514,6 +30612,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -32071,6 +32170,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -34882,6 +34982,11 @@ export interface components {
              * @default []
              */
             values?: components["schemas"]["ManifestValueEntry"][];
+            /**
+             * Groups
+             * @default []
+             */
+            groups?: components["schemas"]["ManifestGroupEntry"][];
             /** Intro */
             intro?: string | null;
         };
@@ -35439,6 +35544,7 @@ export interface components {
             task_id?: string | null;
             /** Scope Ids */
             scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -49601,6 +49707,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

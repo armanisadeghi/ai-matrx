@@ -354,7 +354,6 @@ export function BacklinksWorkspace() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-backlinks"
-      surfaceLabel="Backlinks"
       getScope={() =>
         createMarketingBacklinksScope({
           ...getBaseValues(),

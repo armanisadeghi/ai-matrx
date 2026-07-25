@@ -6,6 +6,7 @@
 // to. Mirrors aidream `api/routers/podcast_generator.py` event models.
 
 import type { DictEntryDraft } from "@/features/dictionary/types";
+import type { components } from "@/types/python-generated/api-types";
 import type { FeatureImageStyleValue } from "./featureImageStyles";
 
 // ── Request ────────────────────────────────────────────────────────────────
@@ -104,6 +105,12 @@ export interface PodcastSpeaker {
 }
 
 export interface PodcastGenerateRequest {
+  /**
+   * Stable identity of the durable source entity. Aidream reloads it and owns
+   * the effective organization/project/task values for the run.
+   */
+  context_anchor?: components["schemas"]["ContextAnchor"];
+
   // What to make a podcast about (pick the input type, fill the matching field).
   input_data_type: PodcastInputDataType;
   input_data?: string; // topic / partial_content / full_content / single file URL

@@ -279,7 +279,6 @@ export function BrandsPortfolio() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing"
-      surfaceLabel="Marketing"
       getScope={getHubScope}
     >
       <RouteHeader

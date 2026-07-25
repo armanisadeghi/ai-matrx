@@ -331,7 +331,6 @@ export function AuditWorkspace() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-audit"
-      surfaceLabel="Audit"
       getScope={() => {
         const data = rollup.data;
         return createMarketingAuditScope({

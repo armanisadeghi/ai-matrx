@@ -161,7 +161,6 @@ export function FindingsTable() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-findings"
-      surfaceLabel="Findings"
       getScope={() =>
         createMarketingFindingsScope({
           ...getBaseValues(),

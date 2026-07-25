@@ -36,7 +36,10 @@ to canonical `callAgentStart`/`callApi`, so auth, API versioning, diagnostics,
 global org/project/task fallback, source attribution, and streaming share the
 same request boundary as every other agent surface. Entity-local callers pass
 their own scope (`organizationId`/`projectId`/`taskId`); explicit local identity
-beats global active context. Never rebuild a bare `useBackendApi` agent body.
+beats global active context for genuinely new work. When a run belongs to an
+existing durable entity, callers also pass `contextAnchor` (stable resource
+type/id only). Aidream reloads that row and its saved scope wins over both local
+and global browser context. Never rebuild a bare `useBackendApi` agent body.
 
 Admin/dev desktop targeting is an additive request overlay, not part of agent authoring. When `adminPreferences.desktopTargetInstanceId` is set by the admin Server environment tab, first-turn, continuation, resume, manual, and legacy `callApi` agent turn paths stamp `client.state["desktop-native"].target_instance_id` with the selected `public.app_instances.instance_id` (`/desktop-instances.id`); compatibility paths also include a root `target_instance_id`. Auto stores `null` and omits the target so aidream keeps default routing.
 
@@ -258,7 +261,10 @@ model overrides.
   of assembling a scope-free `useBackendApi` request. All consumers inherit
   global org/project/task fallback, and entity-local callers can explicitly
   override it; source app/feature attribution travels on the same contract.
-  Regression tests ensure omitted local fields do not overwrite global scope.
+  Existing-entity callers can additionally send a stable `contextAnchor`;
+  aidream RLS-loads the entity and owns the effective organization/project/task
+  rather than trusting browser values. Regression tests cover both the anchor
+  wire shape and omitted local fields.
 - `2026-07-24` — **Added canonical multi-run request fan-out.** New
   `copyInstanceRequestDraft` composes the existing execution-slice actions to
   copy a Smart Agent Input draft—including multimodal message parts, uploaded

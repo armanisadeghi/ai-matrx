@@ -153,7 +153,6 @@ export function NewCrawlWorkspace() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-crawls"
-      surfaceLabel="Crawls"
       getScope={() =>
         createMarketingCrawlsScope({
           ...getBaseValues(),
