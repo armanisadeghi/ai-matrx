@@ -16,11 +16,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // eslint-disable-next-line no-restricted-syntax -- this file IS the map Impl; it loads only through the next/dynamic({ssr:false}) wrapper in ContentPlanWorkbench.tsx
 import {
+  applyNodeChanges,
   Background,
   Controls,
   ReactFlow,
   type Edge,
   type Node,
+  type NodeChange,
   type NodeMouseHandler,
   type OnSelectionChangeParams,
 } from "@xyflow/react";
@@ -36,9 +38,7 @@ import {
 } from "@/components/ui/select";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { extractErrorMessage } from "@/utils/errors";
 
 import { planStatusColor, PRIORITY_SIZES } from "../constants";
 import type { PlanNodeRow, PlanNodeTreeItem } from "../types";
@@ -183,7 +183,7 @@ export function PillarMap({
 
   const layout = useMemo(() => layoutTree(buildPlanTree(visible)), [visible]);
 
-  const flowNodes = useMemo<MapNode[]>(
+  const layoutNodes = useMemo<MapNode[]>(
     () =>
       visible.map((node) => ({
         id: node.id,
@@ -200,6 +200,27 @@ export function PillarMap({
     [visible, layout, statusSlugById],
   );
 
+  // Controlled React Flow: drag movement + selection flags only persist if
+  // node changes are APPLIED — a controlled flow without onNodesChange is a
+  // frozen flow. Data/layout changes re-seed the state; live positions for
+  // drop detection are read from THIS state, never the pure layout output.
+  const [flowNodes, setFlowNodes] = useState<MapNode[]>(layoutNodes);
+  const flowNodesRef = useRef(flowNodes);
+  useEffect(() => {
+    flowNodesRef.current = flowNodes;
+  }, [flowNodes]);
+  const [prevLayoutNodes, setPrevLayoutNodes] = useState(layoutNodes);
+  if (prevLayoutNodes !== layoutNodes) {
+    setPrevLayoutNodes(layoutNodes);
+    setFlowNodes(layoutNodes);
+  }
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<MapNode>[]) => {
+      setFlowNodes((current) => applyNodeChanges(changes, current));
+    },
+    [],
+  );
+
   const flowEdges = useMemo<Edge[]>(() => {
     const ids = new Set(visible.map((node) => node.id));
     return visible
@@ -211,14 +232,6 @@ export function PillarMap({
         type: "straight",
       }));
   }, [visible]);
-
-  // Live positions during a drag so drop-target detection uses real pixels.
-  const positionsRef = useRef(new Map<string, { x: number; y: number }>());
-  useEffect(() => {
-    positionsRef.current = new Map(
-      flowNodes.map((node) => [node.id, node.position]),
-    );
-  }, [flowNodes]);
 
   const byId = useMemo(() => {
     const map = new Map<string, PlanNodeRow>();
@@ -233,14 +246,16 @@ export function PillarMap({
 
   const handleNodeDragStop = useCallback(
     (_event: unknown, dragged: Node) => {
-      // Find the nearest OTHER node center within the drop radius.
+      // Find the nearest OTHER node center within the drop radius, using
+      // the LIVE controlled positions (nodes may have been dragged aside).
       let nearest: { id: string; distance: number } | null = null;
-      for (const [id, position] of positionsRef.current) {
-        if (id === dragged.id) continue;
+      for (const other of flowNodesRef.current) {
+        if (other.id === dragged.id) continue;
         const distance = Math.hypot(
-          position.x - dragged.position.x,
-          position.y - dragged.position.y,
+          other.position.x - dragged.position.x,
+          other.position.y - dragged.position.y,
         );
+        const id = other.id;
         if (distance < 70 && (!nearest || distance < nearest.distance)) {
           nearest = { id, distance };
         }
@@ -316,13 +331,7 @@ export function PillarMap({
               size="sm"
               className="h-7 text-xs"
               disabled={!bulkStatusId}
-              onClick={() => {
-                try {
-                  onBulkStatus(selectedIds, bulkStatusId);
-                } catch (error) {
-                  toast.error(extractErrorMessage(error));
-                }
-              }}
+              onClick={() => onBulkStatus(selectedIds, bulkStatusId)}
             >
               Apply
             </Button>
@@ -338,6 +347,7 @@ export function PillarMap({
           nodes={flowNodes}
           edges={flowEdges}
           nodeTypes={nodeTypes}
+          onNodesChange={handleNodesChange}
           onNodeClick={handleNodeClick}
           onNodeDragStop={handleNodeDragStop}
           onSelectionChange={handleSelectionChange}

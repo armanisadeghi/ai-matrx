@@ -79,13 +79,9 @@ export const PLAN_ENTITY_TYPES: readonly PlanEntityType[] = [
   "org",
 ];
 
-/** platform.categories dimensions seeded for the plan schema. */
-export const PLAN_CATEGORY_DIMENSIONS = {
-  pageType: "plan_page_type",
-  status: "plan_status",
-  personRole: "plan_person_role",
-  sourceType: "plan_source_type",
-} as const;
+// Category dimensions live in the CANONICAL registry —
+// `CATEGORY_DIMENSIONS.planPageType|planStatus|planPersonRole|planSourceType`
+// in features/scopes/categoryDimensions.ts. No local copy.
 
 /** Association roles registered for plan pairs (platform.association_types). */
 export const PLAN_NODE_TOPIC_ROLE = "topic";
@@ -109,7 +105,6 @@ export interface PlanReviewPayload {
 /** Entity tokens (platform.association_types source/target types). */
 export const PLAN_NODE_TOKEN = "plan_node";
 export const PLAN_ENTITY_TOKEN = "plan_entity";
-export const WEB_SITE_TOKEN = "web_site";
 export const SEO_TOPIC_TOKEN = "seo_topic";
 export const SEO_KEYWORD_TOKEN = "seo_keyword";
 

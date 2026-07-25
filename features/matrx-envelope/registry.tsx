@@ -50,6 +50,8 @@ import {
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
 import CreateProjectWithTasksRenderer from "@/features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer";
+import PlanTreeRenderer from "@/features/matrx-envelope/directives/planTree/PlanTreeRenderer";
+import PlanNodePatchRenderer from "@/features/matrx-envelope/directives/planTree/PlanNodePatchRenderer";
 
 export interface EnvelopeRendererProps {
   envelope: MatrxEnvelope;
@@ -263,3 +265,13 @@ const ContextGroomRenderer: EnvelopeRenderer = ({ envelope }) => {
 };
 
 registerEnvelopeRenderer("output_directive", ContextGroomRenderer, "context_groom");
+
+// Content Planning (plan schema) — applied server-side by aidream's
+// services/content_plan directives; these cards are receipts that resolve
+// to live plan.node routes and deep-link into /content-plan.
+registerEnvelopeRenderer("output_directive", PlanTreeRenderer, "plan_tree");
+registerEnvelopeRenderer(
+  "output_directive",
+  PlanNodePatchRenderer,
+  "plan_node_patch",
+);

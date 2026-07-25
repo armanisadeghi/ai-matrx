@@ -33,6 +33,13 @@ plan CRUD through it.
 - `data/associations.ts` — plan edges via the canonical
   `associationsService` (assoc_add/assoc_remove RPCs); never a parallel path.
 - `data/hooks.ts` — TanStack Query hooks (`planKeys.*`).
+- Surface: `matrx-user/content-plan`
+  (`features/surfaces/manifests/content-plan.manifest.ts`; route mapping in
+  `features/surfaces/utils/route-to-surface.ts`). The workbench mounts
+  `SurfaceRuntimeProvider` and emits declared values at trigger time via
+  `lib/content-plan-scope.ts` (`buildContentPlanScope`) — already-loaded query
+  data only, never a fetch. Only `view` is `alwaysAvailable` (site identity
+  rides `?site=`, not a routed segment).
 
 ## Data model (all live in Supabase, PostgREST-exposed)
 
@@ -122,6 +129,11 @@ plan CRUD through it.
   pattern as `features/marketing`). No barrels.
 
 ## Change log
+
+- 2026-07-25 — Claude: surface manifest `matrx-user/content-plan` (21 values,
+  5 curated groups, 3 agent roles), runtime emitter in the workbench
+  (`lib/content-plan-scope.ts`), `/content-plan` route→surface mapping, DB
+  mirror synced (`ui.ui_surface` + values + roles verified live).
 
 - 2026-07-25 — Claude: initial build (Phase 1 of the content-planning
   rollout): tree editor + node panel + keyword/topic/entity attachment,

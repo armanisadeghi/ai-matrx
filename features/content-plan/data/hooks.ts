@@ -56,8 +56,10 @@ export const planKeys = {
   profiles: (orgId: string) => ["content-plan", "profiles", orgId] as const,
   nodeEdges: (nodeId: string) =>
     ["content-plan", "node-edges", nodeId] as const,
+  // One joined segment — spreading raw ids would make smaller id-sets
+  // invalidation-prefixes of larger ones.
   keywordLabels: (ids: string[]) =>
-    ["content-plan", "keyword-labels", ...ids] as const,
+    ["content-plan", "keyword-labels", ids.join(",")] as const,
   siteKeywordValues: (siteId: string) =>
     ["content-plan", "site-keyword-values", siteId] as const,
   topics: (search: string) => ["content-plan", "topics", search] as const,

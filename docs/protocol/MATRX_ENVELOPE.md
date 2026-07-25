@@ -55,6 +55,14 @@ The same envelope shape means different things by **where it sits**:
 - **Embedded inside content** (a ` ```matrx ` fence in prose — see
   [MATRX_REFERENCES.md](MATRX_REFERENCES.md)) → only `reference` / `secret` **resolve**.
   An `output_directive` found inside content is **logged + skipped, never executed.**
+- **Current-turn model-authored text** (the third position, added 2026-07-02) → the
+  orchestrator's `turn_directive_handler` seam hands EACH turn's model output — never
+  history, user, or tool content — to the host, which executes ONLY explicitly
+  turn-scoped shapes (today: `(output_directive, context_groom)`). The position is
+  enforced by the INVOKER (matrx-ai passes only that turn's assistant text; the host
+  guards kind/type) — `ShapeSpec.purposes` remains documentation, not enforcement.
+  The blast radius of a turn-scoped shape must be reversible and confined to the
+  requester's own conversation (context_groom: stub/retain value-linked tool rows).
 
 In-content references use ONE encoding — the ` ```matrx ` fence — never inline bare
 JSON or delimiter tokens. Full contract: [MATRX_REFERENCES.md](MATRX_REFERENCES.md).
@@ -64,7 +72,7 @@ JSON or delimiter tokens. Full contract: [MATRX_REFERENCES.md](MATRX_REFERENCES.
 | kind | category | what it is | each `items[]` |
 |---|---|---|---|
 | `output_directive` | `side_effect` | output that applies a durable server action (the apply system) | the thing to create/update (a project, a task, a row) |
-| `reference` | `pure` | a pointer resolved/fetched on read; never carries stored data | `{ purpose, slot?, ref, display? }` |
+| `reference` | `pure` | a pointer resolved/fetched on read; never carries stored data | `{ …ids, display-hints? }` — pure identity (see [MATRX_REFERENCES.md](MATRX_REFERENCES.md)) |
 | `secret` | `sensitive` | a token resolved only for the model; redacted on store/display | `{ purpose, token, source }` |
 | `validation` | `pure` | name a validation function to run (server workflows, client dynamic forms) | `{ args }` |
 
@@ -88,10 +96,13 @@ delivered, before the stream closes ("has the last word").
   wire, so the model can't fumble it.
 - A failed apply is **warn-not-fatal** — the delivered response always stands.
 
-**`reference`** — each item is a pure pointer `{ purpose, slot?, ref, display? }`.
-**Stores ids, never data.** Optional `display` is a *last-known* hint for instant
-paint; the resolver re-fetches live values on render → never stale. (`purpose` =
-`substitute`/`expand`/`inline`/`context`; `slot` names the `{{slot}}` it fills.)
+**`reference`** — each item is a **pure pointer**: the typed identity ids + optional
+**display hints** (`label` / `table_name` / `description` / …), nothing else.
+**Stores ids, never data** — the resolver re-fetches live on render → never stale.
+Intent is **not** on the item: `purpose`/`slot` are externalized to the use-site
+(fence position, the `variables` map key, or the consuming workflow node). One
+`ReferenceOrchestrator` dispatches each item by `type` to a source-grouped resolver
+that enforces ownership. Full taxonomy + the seven types: [MATRX_REFERENCES.md](MATRX_REFERENCES.md).
 
 **`secret`** — `kind:"secret"` makes "**must never persist resolved**" one greppable,
 enforceable rule. The resolver injects the real value only into the model-bound
@@ -112,11 +123,9 @@ result, mutates nothing.
 { "matrx_version":1, "kind":"output_directive", "type":"db_create",
   "items":[ { "resource_type":"note", "data":{ "title":"…", "content":"…" } } ] }
 
-// reference — picklist item (in a ```matrx fence); purpose/slot/ref/display are item fields
+// reference — picklist item (in a ```matrx fence); item = pure identity + display hints
 { "matrx_version":1, "kind":"reference", "type":"picklist_item",
-  "items":[ { "purpose":"substitute", "slot":"style",
-              "ref":{ "list_id":"a729…", "item_id":"0c36…" },
-              "display":{ "label":"Illustrated Recipe" } } ] }
+  "items":[ { "list_id":"a729…", "item_id":"0c36…", "label":"Illustrated Recipe" } ] }
 
 // secret — vault-key pointer (resolved for the model on the wire only, never stored)
 { "matrx_version":1, "kind":"secret", "type":"user_secret",
@@ -204,6 +213,13 @@ the consuming `FEATURE.md`s.
 
 ## Change Log
 
+- 2026-06-20 — **`reference` item purified** to pure identity + display hints;
+  `purpose`/`slot` externalized to the use-site (not item fields). `kind` stays =
+  security category (`udt_handler` / source-named kinds rejected — they break the
+  position invariant). Reference detail moved to its own authority
+  [MATRX_REFERENCES.md](MATRX_REFERENCES.md) (7-type taxonomy, one
+  `ReferenceOrchestrator`, workflow-edge contract). **FE copy of this file must
+  sync** (kept byte-identical across repos).
 - 2026-06-17 — **items-everywhere is canonical.** Exactly four top-level keys
   (`matrx_version`/`kind`/`type`/`items`); all data lives inside each item, typed by
   a registered Pydantic item model. Built the generic core

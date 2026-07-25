@@ -43,25 +43,28 @@ const VIEW_ITEMS: { view: PlanView; label: string; icon: React.ReactNode }[] = [
 export function useContentPlanSites() {
   const orgId = useAppSelector(selectEffectiveOrganizationId);
   const sites = useSiteOptions();
-  const orgSites = useMemo(() => {
+  const scopedSites = useMemo(() => {
     const all = sites.data ?? [];
-    const scoped = orgId
-      ? all.filter((site) => site.organization_id === orgId)
-      : all;
-    return scoped.length > 0 ? scoped : all;
+    return orgId ? all.filter((site) => site.organization_id === orgId) : all;
   }, [sites.data, orgId]);
-  return { sites, orgSites };
+  const orgSites = useMemo(
+    () => (scopedSites.length > 0 ? scopedSites : (sites.data ?? [])),
+    [scopedSites, sites.data],
+  );
+  return { sites, orgSites, scopedSites };
 }
 
 export function ContentPlanHeader() {
   const { siteId, view, setSiteId, setView } = usePlanWorkspaceParams();
-  const { sites, orgSites } = useContentPlanSites();
+  const { sites, orgSites, scopedSites } = useContentPlanSites();
   const queryClient = useQueryClient();
 
-  // Default to the first visible site so the page is never a dead end.
+  // Default only to a site of the ACTIVE org — never silently drop another
+  // org's site into the URL. Orgs without sites get the full labeled list
+  // in the picker, but the user chooses explicitly.
   useEffect(() => {
-    if (!siteId && orgSites.length > 0) setSiteId(orgSites[0].id);
-  }, [siteId, orgSites, setSiteId]);
+    if (!siteId && scopedSites.length > 0) setSiteId(scopedSites[0].id);
+  }, [siteId, scopedSites, setSiteId]);
 
   return (
     <div className="flex w-full min-w-0 items-center gap-1.5">

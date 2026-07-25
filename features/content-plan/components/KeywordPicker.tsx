@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { listKeywordsWithMarket } from "@/features/seo/keyword-research/data/queries";
 import { cn } from "@/lib/utils";
+import { extractErrorMessage } from "@/utils/errors";
 
 import { useKeywordLabels, useSiteKeywordValues } from "../data/hooks";
 
@@ -94,7 +95,7 @@ export function KeywordPicker({
               <p className="px-2 py-3 text-xs text-muted-foreground">Searching…</p>
             ) : keywords.isError ? (
               <p className="px-2 py-3 text-xs text-destructive">
-                {(keywords.error as Error).message}
+                {extractErrorMessage(keywords.error)}
               </p>
             ) : (keywords.data ?? []).length === 0 ? (
               <p className="px-2 py-3 text-xs text-muted-foreground">

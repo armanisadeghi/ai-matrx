@@ -73,6 +73,13 @@ export async function listPlanNodes(
     const batch = assertData(response.data, response.error);
     rows.push(...batch);
     if (batch.length < 1000) break;
+    if (page === 9) {
+      // Loud recovery, never a silent truncation: a >10k-node plan needs a
+      // deliberate paging strategy, not a quietly incomplete tree.
+      throw new Error(
+        "This plan has more than 10,000 nodes — refusing to load a silently truncated tree.",
+      );
+    }
   }
   return rows;
 }

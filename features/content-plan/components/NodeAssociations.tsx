@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { AssociationEdge } from "@/features/scopes/types";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -141,7 +142,8 @@ export function NodeAssociations({
   );
 }
 
-type Edge = { otherId: string; label: string | null; role: string | null };
+// Narrow the canonical edge shape (never re-declare it locally).
+type Edge = Pick<AssociationEdge, "otherId" | "label" | "role">;
 
 function Chip({
   text,

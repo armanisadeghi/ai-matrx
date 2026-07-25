@@ -121,13 +121,16 @@ export function EntityManager({
         )}
       </div>
 
-      <EntityEditorDialog
-        siteId={siteId}
-        organizationId={organizationId}
-        entity={editing}
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-      />
+      {editorOpen ? (
+        <EntityEditorDialog
+          key={editing?.id ?? "new"}
+          siteId={siteId}
+          organizationId={organizationId}
+          entity={editing}
+          open={editorOpen}
+          onOpenChange={setEditorOpen}
+        />
+      ) : null}
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => {
@@ -183,16 +186,8 @@ function EntityEditorDialog({
   const [sourceTypeId, setSourceTypeId] = useState<string | null>(
     entity?.source_type_id ?? null,
   );
-  const [seededFor, setSeededFor] = useState<string | null>(null);
-
-  // Re-seed local state when the dialog opens for a different row.
-  const seedKey = `${open}:${entity?.id ?? "new"}`;
-  if (open && seededFor !== seedKey) {
-    setSeededFor(seedKey);
-    setLabel(entity?.label ?? "");
-    setEntityType((entity?.entity_type as PlanEntityType) ?? "person");
-    setSourceTypeId(entity?.source_type_id ?? null);
-  }
+  // No re-seed logic needed: the dialog is mounted only while open and
+  // keyed by the entity id, so useState initializers always seed fresh.
 
   const busy = create.isPending || update.isPending;
 

@@ -65,15 +65,21 @@ export function NodePanel({
   const remove = useDeletePlanNode(siteId);
 
   const [draft, setDraft] = useState<PlanNodeUpdate>({});
+  // Raw textarea text for brief — split into the string[] draft only on
+  // change, but the DISPLAYED value is the raw text so typing spaces and
+  // blank lines works (transforming the controlled value ate them).
+  const [briefText, setBriefText] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Reset the draft whenever a different node (or a fresher row) arrives —
-  // adjust-state-during-render, not an effect (react.dev pattern).
-  const draftKey = `${node.id}:${node.updated_at}`;
-  const [prevDraftKey, setPrevDraftKey] = useState(draftKey);
-  if (prevDraftKey !== draftKey) {
-    setPrevDraftKey(draftKey);
+  // Reset the draft only when a DIFFERENT node is shown (the panel is also
+  // keyed by node.id at its call sites). Background refetches of the same
+  // node must NOT clear in-progress edits — the draft is a per-field patch
+  // overlaying the fresh row, so untouched fields always show live values.
+  const [prevNodeId, setPrevNodeId] = useState(node.id);
+  if (prevNodeId !== node.id) {
+    setPrevNodeId(node.id);
     setDraft({});
+    setBriefText(null);
   }
 
   const current = useMemo(
@@ -107,6 +113,7 @@ export function NodePanel({
       {
         onSuccess: () => {
           setDraft({});
+          setBriefText(null);
           toast.success("Node saved.");
         },
         onError: (error) =>
@@ -290,19 +297,18 @@ export function NodePanel({
         <div>
           <Label className="text-xs">Brief (one point per line)</Label>
           <Textarea
-            value={(current.brief ?? []).join("\n")}
-            onChange={(event) =>
+            value={briefText ?? (node.brief ?? []).join("\n")}
+            onChange={(event) => {
+              const text = event.target.value;
+              setBriefText(text);
               setDraft((d) => ({
                 ...d,
-                brief: event.target.value
+                brief: text
                   .split("\n")
-                  .map((line) => line.trimEnd())
-                  .filter((line, index, all) =>
-                    // keep interior blank lines out but allow typing at end
-                    line.length > 0 || index === all.length - 1,
-                  ),
-              }))
-            }
+                  .map((line) => line.trim())
+                  .filter((line) => line.length > 0),
+              }));
+            }}
             placeholder={"What this page must cover…\nOne bullet per line"}
             className="min-h-28 text-sm"
           />

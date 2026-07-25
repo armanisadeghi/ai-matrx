@@ -23,6 +23,8 @@ const BUILTIN_DIRECTIVES: DirectiveOption[] = [
   { type: "create_task", label: "Create task", family: "Built-in" },
   { type: "db_create", label: "Create record (db_create)", family: "Built-in" },
   { type: "db_update", label: "Update record (db_update)", family: "Built-in" },
+  { type: "plan_tree", label: "Apply content plan tree", family: "Built-in" },
+  { type: "plan_node_patch", label: "Patch content plan node", family: "Built-in" },
 ];
 
 const WRITE_VERBS = ["create", "update", "delete"] as const;

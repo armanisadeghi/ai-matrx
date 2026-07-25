@@ -66,7 +66,12 @@ export function AttributesEditor({
     [profiles, verticalId],
   );
   const properties = nodeSchemaProperties(profile);
-  const attributes = (value ?? {}) as Record<string, Json>;
+  // Non-object attributes (bad legacy/agent data) fall back to {} rather
+  // than being spread into garbage keys; Raw JSON still shows the truth.
+  const attributes: Record<string, Json> =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, Json>)
+      : {};
 
   const setField = (key: string, fieldValue: Json) => {
     onChange({ ...attributes, [key]: fieldValue });

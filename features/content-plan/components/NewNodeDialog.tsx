@@ -103,6 +103,14 @@ export function NewNodeDialog({
         : convertToKebabCase(label);
 
   const submit = () => {
+    // Late-bind the "planned" default: categories may not have been loaded
+    // yet when the dialog opened (the open-time default would stay null).
+    const resolvedStatusId =
+      statusId ??
+      statusCategories.categories.find(
+        (category) => category.slug === "planned",
+      )?.id ??
+      null;
     create.mutate(
       {
         site_id: siteId,
@@ -111,7 +119,7 @@ export function NewNodeDialog({
         node_type: nodeType,
         label: label.trim(),
         slug: nodeType === "home" ? null : effectiveSlug.trim() || null,
-        status_id: statusId,
+        status_id: resolvedStatusId,
       },
       {
         onSuccess: (node) => {

@@ -52,15 +52,6 @@ export async function listPlanNodeEdges(
   return data.edges;
 }
 
-export async function listPlanEntityEdges(
-  entityId: string,
-): Promise<AssociationEdge[]> {
-  const data = unwrap(
-    await associationsService.listForEntity(PLAN_ENTITY_TOKEN, entityId),
-  );
-  return data.edges;
-}
-
 export async function addNodeTopic(
   nodeId: string,
   topicId: string,

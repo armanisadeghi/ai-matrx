@@ -79,6 +79,7 @@ import { marketingSitemapsManifest } from "./marketing-sitemaps.manifest";
 import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
 import { marketingBatchesManifest } from "./marketing-batches.manifest";
+import { contentPlanManifest } from "./content-plan.manifest";
 import { agentsHubManifest } from "./agents-hub.manifest";
 import { organizationsManifest } from "./organizations.manifest";
 import { dashboardManifest } from "./dashboard.manifest";
@@ -148,6 +149,8 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingDiscoveryManifest,
   marketingIntegrationsManifest,
   marketingBatchesManifest,
+  // Content planning (plan schema) — sibling of the marketing fleet.
+  contentPlanManifest,
   // 2026-07-24 fleet push — hub/list + workspace surfaces.
   agentsHubManifest,
   organizationsManifest,
