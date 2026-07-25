@@ -6,6 +6,7 @@ import type {
   SurfaceDriftReport,
   SurfaceValue,
 } from "@/features/surfaces/types";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import {
   TOOL_BUNDLE,
@@ -513,7 +514,24 @@ export async function listSurfaceValues(
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map(rowToSurfaceValue);
+  const rows = (data ?? []).map(rowToSurfaceValue);
+  // Canonical ordering: group order first (curated → general → inherited →
+  // baseline, from the registry), then the DB sort_order fetched above —
+  // matching the resolved-manifest order every other consumer sees.
+  const groups = getManifest(surfaceName)?.groups;
+  if (!groups || groups.length === 0) return rows;
+  const groupOrder = new Map(groups.map((g) => [g.key, g.sortOrder] as const));
+  const rowGroup = new Map(
+    (data ?? []).map((r) => [r.name, (r as { group_key?: string }).group_key ?? "general"] as const),
+  );
+  return rows
+    .map((row, i) => ({ row, i }))
+    .sort((a, b) => {
+      const ga = groupOrder.get(rowGroup.get(a.row.name) ?? "general") ?? 850;
+      const gb = groupOrder.get(rowGroup.get(b.row.name) ?? "general") ?? 850;
+      return ga !== gb ? ga - gb : a.i - b.i;
+    })
+    .map((x) => x.row);
 }
 
 /** List the agent ↔ surface bindings for a surface (admin overview). */
