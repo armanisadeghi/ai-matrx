@@ -16,7 +16,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { ResourceType } from "@/utils/permissions";
+import type { ResourceType } from "@/utils/permissions/types";
 
 const OVERLAY_ID = "shareModal" as const;
 
@@ -42,7 +42,9 @@ export function useOpenShareModal() {
   const dispatch = useAppDispatch();
   return useCallback(
     (opts: OpenShareModalOptions): ShareModalHandle => {
-      const instanceId = opts.instanceId ?? `shareModal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const instanceId =
+        opts.instanceId ??
+        `shareModal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
@@ -57,7 +59,8 @@ export function useOpenShareModal() {
       );
       return {
         instanceId,
-        close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
+        close: () =>
+          dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
       };
     },
     [dispatch],
@@ -74,6 +77,12 @@ export function ShareModalController(props: OpenShareModalOptions): null {
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.resourceType, props.resourceId, props.resourceName, props.isOwner]);
+  }, [
+    open,
+    props.resourceType,
+    props.resourceId,
+    props.resourceName,
+    props.isOwner,
+  ]);
   return null;
 }

@@ -13,8 +13,11 @@
  */
 
 // ── Core public surface ────────────────────────────────────────────────────
-export * from "./redux";
-export * from "./types";
+export * from "./redux/slices";
+export * from "./redux/thunks";
+export * from "./redux/selectors";
+export * from "./redux/hooks";
+export * from "./types/agents-types";
 
 // ── Adapter types (consumers implement these to satisfy configure()) ──────
 export type {

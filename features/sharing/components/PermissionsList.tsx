@@ -17,7 +17,7 @@ import type {
   PermissionWithDetails,
   PermissionLevel,
   ShareActionResult,
-} from "@/utils/permissions";
+} from "@/utils/permissions/types";
 import {
   AlertDialog,
   AlertDialogAction,

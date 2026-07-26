@@ -7,19 +7,11 @@
 
 | Metric | Count |
 |--------|------:|
-| Total `index.*` files | 55 |
-| Barrel / mixed re-export files | 32 |
+| Total `index.*` files | 45 |
+| Barrel / mixed re-export files | 22 |
 | Component-entry (`index.tsx` implementations) | 14 |
 | Other | 9 |
-| Unique files importing through an index | 355 |
-
-## Already removed (working tree, not yet committed)
-
-| File | Status | Notes |
-|------|--------|-------|
-| `features/files/index.ts` | **Deleted locally** (`git status: D`) | 383-line mega-barrel (48 re-exports). Documented exception in-file. **0 remaining** `@/features/files` imports — safe to commit the deletion. |
-
-> Regenerate this audit: `node scripts/audit-index-files.mjs`
+| Unique files importing through an index | 224 |
 
 ## ESLint / build context
 
@@ -42,233 +34,32 @@
 
 | Priority | File | Kind | Importers | Lines | Re-exports |
 |----------|------|------|----------:|------:|-----------:|
-| 1 | `lib/redux/brokerSlice/index.ts` | barrel | 60 | 14 | 3 |
-| 2 | `utils/permissions/index.ts` | barrel | 53 | 24 | 5 |
-| 3 | `features/files/api/index.ts` | barrel | 39 | 15 | 6 |
-| 4 | `features/messaging/index.ts` | barrel | 30 | 88 | 10 |
-| 5 | `features/tasks/types/index.ts` | barrel | 26 | 40 | 2 |
-| 6 | `features/sharing/components/index.ts` | barrel | 25 | 18 | 7 |
-| 7 | `features/settings/index.ts` | barrel | 15 | 35 | 5 |
-| 8 | `lib/redux/app-builder/service/index.ts` | barrel | 13 | 6 | 4 |
-| 9 | `features/sharing/index.ts` | barrel | 10 | 14 | 2 |
-| 10 | `features/scopes/components/active-context/quick-pick/index.ts` | barrel | 8 | 12 | 1 |
-| 11 | `features/agents/redux/conversation-history/index.ts` | barrel | 6 | 20 | 4 |
-| 12 | `utils/logger/index.ts` | barrel | 6 | 12 | 8 |
-| 13 | `features/agents/components/run-controls/AdvancedRunSettings/algorithm/index.ts` | barrel | 4 | 19 | 2 |
-| 14 | `features/applet/runner/header/index.ts` | barrel | 4 | 9 | 7 |
-| 15 | `features/files/components/core/PdfAnnotationLayer/index.ts` | barrel | 4 | 3 | 1 |
-| 16 | `features/code/agent-context/index.ts` | barrel | 3 | 39 | 10 |
-| 17 | `features/scopes/components/active-context/context-tree/index.ts` | barrel | 3 | 43 | 2 |
-| 18 | `lib/refs/index.ts` | barrel | 3 | 6 | 4 |
-| 19 | `components/official/card-and-grid/index.ts` | barrel | 2 | 5 | 5 |
-| 20 | `features/code/editor/monaco-environments/index.ts` | barrel | 2 | 47 | 1 |
-| 21 | `lib/scheduler-client/index.ts` | barrel | 2 | 90 | 2 |
-| 22 | `packages/matrx-agents/src/adapters/index.ts` | barrel | 2 | 20 | 4 |
-| 23 | `features/agents/components/run-controls/AdvancedRunSettings/index.ts` | barrel | 1 | 39 | 3 |
-| 24 | `features/pdf/components/viewer/annotation-layer/index.ts` | barrel | 1 | 11 | 3 |
-| 25 | `features/tool-call-visualization/renderers/get-user-lists/index.ts` | barrel | 1 | 3 | 2 |
-| 26 | `features/tool-call-visualization/renderers/news-api/index.ts` | barrel | 1 | 6 | 2 |
-| 27 | `features/tool-call-visualization/renderers/random-wheel/index.ts` | barrel | 1 | 11 | 1 |
-| 28 | `packages/matrx-agents/src/redux/index.ts` | barrel | 1 | 5 | 4 |
-| 29 | `packages/matrx-agents/src/types/index.ts` | barrel | 1 | 121 | 3 |
-| 30 | `features/code/views/source-control/index.ts` | barrel | 0 | 3 | 2 |
-| 31 | `features/workflow-emit/index.ts` | barrel | 0 | 31 | 4 |
-| 32 | `packages/matrx-agents/src/index.ts` | barrel | 0 | 47 | 3 |
+| 1 | `features/messaging/index.ts` | barrel | 30 | 88 | 10 |
+| 2 | `features/tasks/types/index.ts` | barrel | 26 | 40 | 2 |
+| 3 | `features/sharing/components/index.ts` | barrel | 25 | 18 | 7 |
+| 4 | `features/settings/index.ts` | barrel | 15 | 35 | 5 |
+| 5 | `lib/redux/app-builder/service/index.ts` | barrel | 13 | 6 | 4 |
+| 6 | `features/sharing/index.ts` | barrel | 10 | 17 | 6 |
+| 7 | `features/scopes/components/active-context/quick-pick/index.ts` | barrel | 8 | 12 | 1 |
+| 8 | `features/agents/redux/conversation-history/index.ts` | barrel | 6 | 20 | 4 |
+| 9 | `utils/logger/index.ts` | barrel | 6 | 12 | 8 |
+| 10 | `features/agents/components/run-controls/AdvancedRunSettings/algorithm/index.ts` | barrel | 4 | 19 | 2 |
+| 11 | `features/applet/runner/header/index.ts` | barrel | 4 | 9 | 7 |
+| 12 | `features/files/components/core/PdfAnnotationLayer/index.ts` | barrel | 4 | 3 | 1 |
+| 13 | `features/code/agent-context/index.ts` | barrel | 3 | 39 | 10 |
+| 14 | `features/scopes/components/active-context/context-tree/index.ts` | barrel | 3 | 43 | 2 |
+| 15 | `lib/refs/index.ts` | barrel | 3 | 6 | 4 |
+| 16 | `components/official/card-and-grid/index.ts` | barrel | 2 | 5 | 5 |
+| 17 | `features/code/editor/monaco-environments/index.ts` | barrel | 2 | 47 | 1 |
+| 18 | `lib/scheduler-client/index.ts` | barrel | 2 | 90 | 2 |
+| 19 | `packages/matrx-agents/src/adapters/index.ts` | barrel | 2 | 20 | 4 |
+| 20 | `features/agents/components/run-controls/AdvancedRunSettings/index.ts` | barrel | 1 | 39 | 3 |
+| 21 | `features/pdf/components/viewer/annotation-layer/index.ts` | barrel | 1 | 11 | 3 |
+| 22 | `features/tool-call-visualization/renderers/get-user-lists/index.ts` | barrel | 1 | 3 | 2 |
 
 ---
 
 ## Full inventory (all index files)
-
-### `lib/redux/brokerSlice/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 14
-- **Re-export statements:** 3
-- **Importer count:** 60
-
-<details>
-<summary>Importers (60)</summary>
-
-- `app/(dev)/demos/tests/field-tests/manual-simple-fields/page.dev.tsx`
-- `app/(dev)/demos/tests/slack/with-brokers/SlackBrokersLayoutClient.tsx`
-- `app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx`
-- `app/(dev)/demos/tests/slack/with-brokers/components/BrokerSlackClient.tsx`
-- `app/(dev)/demos/tests/slack/with-brokers/components/ChannelSelector.tsx`
-- `app/(dev)/demos/tests/slack/with-brokers/components/SlackAuthentication.tsx`
-- `app/(dev)/demos/tests/slack/with-brokers/components/TokenManager.tsx`
-- `app/(dev)/demos/tests/slack/with-brokers/page.dev.tsx`
-- `app/(transitional)/apps/custom/[slug]/CustomAppSlugLayoutClient.tsx`
-- `components/broker/UserBrokerInitializer.tsx`
-- `components/layout/new-layout/MobileUnifiedMenu.tsx`
-- `components/mardown-display/markdown-classification/DirectMarkdownRenderer.tsx`
-- `features/applet/builder/modules/field-builder/previews/FieldPreview.tsx`
-- `features/applet/builder/modules/field-builder/previews/FieldPreviewAs.tsx`
-- `features/applet/contepts/BrokerDebugger.tsx`
-- `features/applet/hooks/useAppletRecipe.ts`
-- `features/applet/hooks/useAppletRecipeFastAPI.ts`
-- `features/applet/runner/fields/AddressBlockField.tsx`
-- `features/applet/runner/fields/ButtonGroupField.tsx`
-- `features/applet/runner/fields/ButtonSelectionField.tsx`
-- `features/applet/runner/fields/CheckboxGroupField.tsx`
-- `features/applet/runner/fields/DateField.tsx`
-- `features/applet/runner/fields/DateRangePicker.tsx`
-- `features/applet/runner/fields/DependentDropdownField.tsx`
-- `features/applet/runner/fields/DirectMultiSelectField.tsx`
-- `features/applet/runner/fields/FileUploadField.tsx`
-- `features/applet/runner/fields/InputField.tsx`
-- `features/applet/runner/fields/JSONField.tsx`
-- `features/applet/runner/fields/MultiDateField.tsx`
-- `features/applet/runner/fields/MultiSearchableSelectField.tsx`
-- `features/applet/runner/fields/NumberInputField.tsx`
-- `features/applet/runner/fields/PhoneNumberField.tsx`
-- `features/applet/runner/fields/RadioGroupField.tsx`
-- `features/applet/runner/fields/RangeSlider.tsx`
-- `features/applet/runner/fields/SearchableSelectField.tsx`
-- `features/applet/runner/fields/SelectField.tsx`
-- `features/applet/runner/fields/SimpleNumberField.tsx`
-- `features/applet/runner/fields/SliderField.tsx`
-- `features/applet/runner/fields/SortableField.tsx`
-- `features/applet/runner/fields/StarRatingField.tsx`
-- `features/applet/runner/fields/StepperNumberField.tsx`
-- `features/applet/runner/fields/SwitchField.tsx`
-- `features/applet/runner/fields/TagInputField.tsx`
-- `features/applet/runner/fields/TextareaField.tsx`
-- `features/applet/runner/fields/concept-broker-options/DragEditModifyTableField.tsx`
-- `features/applet/runner/fields/concept-broker-options/SearchableSelectField.tsx`
-- `features/applet/runner/fields/concepts/DragEditModifyTableField.tsx`
-- `features/applet/runner/fields/concepts/DragTableRowAndColumnField.tsx`
-- `features/applet/runner/fields/concepts/DraggableEditableTableField.tsx`
-- `features/applet/runner/fields/concepts/DraggableTableField.tsx`
-- `features/applet/runner/fields/core/DirectFields.tsx`
-- `features/applet/runner/header/CustomAppHeader.tsx`
-- `features/applet/runner/response/BrokerMapViewer.tsx`
-- `features/applet/runner/response/BrokerValuesSimpleViewer.tsx`
-- `features/applet/runner/response/ResponseLayoutManager.tsx`
-- `hooks/brokers/useGeolocation.ts`
-- `hooks/brokers/useSetGlobalBasics.ts`
-- `lib/redux/app-runner/thunks/appRunnerThunks.ts`
-- `lib/redux/app-runner/thunks/loadApp.ts`
-- `lib/redux/app-runner/thunks/loadApplet.ts`
-
-</details>
-
-### `utils/permissions/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 24
-- **Re-export statements:** 5
-- **Importer count:** 53
-
-<details>
-<summary>Importers (53)</summary>
-
-- `app/(core)/education/audio-study/[id]/edit/page.tsx`
-- `app/(core)/education/flashcards/[setId]/edit/page.tsx`
-- `app/(core)/education/memory/[id]/edit/page.tsx`
-- `app/(core)/education/mind-maps/[id]/edit/page.tsx`
-- `app/(core)/education/notes/[id]/edit/page.tsx`
-- `app/(core)/education/practice-tests/[id]/edit/page.tsx`
-- `app/(core)/education/quizzes/[id]/edit/page.tsx`
-- `app/(public)/p/e/[resourceType]/[id]/PublicResourceView.tsx`
-- `app/(public)/p/e/loadPublicResource.ts`
-- `app/(public)/s/[token]/SharedResourceView.tsx`
-- `app/(public)/s/[token]/page.tsx`
-- `features/agents/components/sharing/AgentSharePanel.tsx`
-- `features/context-menu-v3/types.ts`
-- `features/education/assessment/components/AssessmentDetail.tsx`
-- `features/education/assessment/components/edit/AssessmentEdit.tsx`
-- `features/education/media/audio/components/AudioStudyDetail.tsx`
-- `features/education/media/mindmap/components/MindMapDetail.tsx`
-- `features/education/memory/components/MemoryDetail.tsx`
-- `features/education/notes/EduNoteActionBar.tsx`
-- `features/education/tutor/components/EducationTutorClient.tsx`
-- `features/files/components/core/ShareLinkDialog/ShareLinkDialog.tsx`
-- `features/files/handler/utils/python-base.ts`
-- `features/files/redux/converters.ts`
-- `features/files/redux/thunks.ts`
-- `features/files/upload/cloudUpload.ts`
-- `features/flashcards/components/set-detail/SetDetailView.tsx`
-- `features/messaging/actions/messageActionRegistry.tsx`
-- `features/notes/agent-context/buildNotesEditorContextData.ts`
-- `features/notes/hooks/useNoteAccess.ts`
-- `features/organizations/components/ContainerResourceSheet.tsx`
-- `features/organizations/components/OrgResourceDetail.tsx`
-- `features/organizations/components/OrgResourceList.tsx`
-- `features/organizations/components/OrgShareReviewCard.tsx`
-- `features/organizations/hooks/useOrgContributableItems.ts`
-- `features/organizations/hooks/useOrgSharedItems.ts`
-- `features/organizations/orgModuleSettings.ts`
-- `features/overlays/OverlayController.tsx`
-- `features/overlays/openers/shareModal.tsx`
-- `features/overlays/openers/shareModalWindow.tsx`
-- `features/sharing/components/DuplicateToEditButton.tsx`
-- `features/sharing/components/PermissionBadge.tsx`
-- `features/sharing/components/PermissionsList.tsx`
-- `features/sharing/components/ShareButton.tsx`
-- `features/sharing/components/ShareLinkPanel.tsx`
-- `features/sharing/components/ShareModal.tsx`
-- `features/sharing/components/tabs/PublicAccessTab.tsx`
-- `features/sharing/components/tabs/ShareWithOrgTab.tsx`
-- `features/sharing/components/tabs/ShareWithUserTab.tsx`
-- `features/sharing/index.ts`
-- `features/surfaces/manifests/notes-editor.manifest.ts`
-- `features/tasks/services/taskService.ts`
-- `features/window-panels/registry/windowRegistryMetadata.ts`
-- `features/window-panels/windows/ShareModalWindow.tsx`
-
-</details>
-
-### `features/files/api/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 15
-- **Re-export statements:** 6
-- **Importer count:** 39
-
-<details>
-<summary>Importers (39)</summary>
-
-- `app/(dev)/demos/scopes/context-lab/page.dev.tsx`
-- `app/api/agent-apps/generate-favicon/route.ts`
-- `components/official/ImageAssetUploader.tsx`
-- `components/official/ImageCropUploader.tsx`
-- `features/agents/components/variables-management/CustomComponentConfigurator.tsx`
-- `features/agents/utils/processedDocumentContext.ts`
-- `features/canvas/social/ShareCoverImagePicker.tsx`
-- `features/files/api/server-client.ts`
-- `features/files/blocks/image/utils/render-image-variant.ts`
-- `features/files/components/core/FileActions/useFileActions.ts`
-- `features/files/components/surfaces/desktop/BulkActionsBar.tsx`
-- `features/files/handler/intelligence/refresh.ts`
-- `features/files/handler/resolver.ts`
-- `features/files/handler/types.ts`
-- `features/files/handler/upload.ts`
-- `features/files/hooks/useFileAsset.ts`
-- `features/files/hooks/useFileBlob.ts`
-- `features/files/hooks/useFileDocument.ts`
-- `features/files/hooks/useStorageQuota.ts`
-- `features/files/redux/rag-thunks.ts`
-- `features/files/redux/thunks.ts`
-- `features/files/upload/__tests__/transport-policy.test.ts`
-- `features/files/upload/cloudUpload.ts`
-- `features/files/upload/tusUpload.ts`
-- `features/image-studio/hooks/useImageStudio.ts`
-- `features/image-studio/modes/edit/EditModeShell.tsx`
-- `features/pdf-extractor/studio/PdfStudioHeaderControls.tsx`
-- `features/pdf/hooks/usePdfOptimize.ts`
-- `features/pdf/hooks/usePdfSurfaceLinks.ts`
-- `features/pdf/scanner/useScanSession.ts`
-- `features/public-chat/components/resource-picker/PublicUploadResourcePicker.tsx`
-- `features/rag/components/ProcessForRagButton.tsx`
-- `features/rag/components/files/FileKnowledgePanel.tsx`
-- `features/rag/components/library/LibraryTrashSheet.tsx`
-- `features/rag/components/search/SelectedPdfPages.tsx`
-- `features/rag/hooks/useFileIngest.ts`
-- `features/rag/hooks/useFileRagStatus.ts`
-- `features/research/components/media/MediaGallery.tsx`
-- `features/resource-manager/resource-picker/UploadResourcePicker.tsx`
-
-</details>
 
 ### `features/messaging/index.ts`
 
@@ -527,8 +318,8 @@
 ### `features/sharing/index.ts`
 
 - **Kind:** barrel
-- **Lines:** 14
-- **Re-export statements:** 2
+- **Lines:** 17
+- **Re-export statements:** 6
 - **Importer count:** 10
 
 <details>
@@ -855,7 +646,7 @@
 <summary>Importers (2)</summary>
 
 - `packages/matrx-agents/src/config/registry.ts`
-- `packages/matrx-agents/src/index.ts`
+- `packages/matrx-agents/src/public.ts`
 
 </details>
 
@@ -870,7 +661,7 @@
 <summary>Importers (2)</summary>
 
 - `features/agents/package-bootstrap/configure-agents.ts`
-- `packages/matrx-agents/src/index.ts`
+- `packages/matrx-agents/src/public.ts`
 
 </details>
 
@@ -1043,71 +834,6 @@
 
 </details>
 
-### `features/tool-call-visualization/renderers/news-api/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 6
-- **Re-export statements:** 2
-- **Importer count:** 1
-
-<details>
-<summary>Importers (1)</summary>
-
-- `features/tool-call-visualization/registry/registry.tsx`
-
-</details>
-
-### `features/tool-call-visualization/renderers/random-wheel/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 11
-- **Re-export statements:** 1
-- **Importer count:** 1
-
-<details>
-<summary>Importers (1)</summary>
-
-- `features/tool-call-visualization/registry/registry.tsx`
-
-</details>
-
-### `packages/matrx-agents/src/redux/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 5
-- **Re-export statements:** 4
-- **Importer count:** 1
-
-<details>
-<summary>Importers (1)</summary>
-
-- `packages/matrx-agents/src/index.ts`
-
-</details>
-
-### `packages/matrx-agents/src/types/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 121
-- **Re-export statements:** 3
-- **Importer count:** 1
-
-<details>
-<summary>Importers (1)</summary>
-
-- `packages/matrx-agents/src/index.ts`
-
-</details>
-
-### `features/code/views/source-control/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 3
-- **Re-export statements:** 2
-- **Importer count:** 0
-
-_No static importers found._
-
 ### `features/education/convert/generators/index.ts`
 
 - **Kind:** other
@@ -1131,24 +857,6 @@ _No static importers found._
 - **Kind:** other
 - **Lines:** 17
 - **Re-export statements:** 0
-- **Importer count:** 0
-
-_No static importers found._
-
-### `features/workflow-emit/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 31
-- **Re-export statements:** 4
-- **Importer count:** 0
-
-_No static importers found._
-
-### `packages/matrx-agents/src/index.ts`
-
-- **Kind:** barrel
-- **Lines:** 47
-- **Re-export statements:** 3
 - **Importer count:** 0
 
 _No static importers found._

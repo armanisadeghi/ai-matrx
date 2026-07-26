@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { brokerSelectors, brokerActions } from "@/lib/redux/brokerSlice";
+import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { ensureValidWidthClass } from "@/features/applet/constants/field-constants";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";

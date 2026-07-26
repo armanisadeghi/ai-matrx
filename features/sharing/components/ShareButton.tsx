@@ -9,8 +9,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Share2, Globe, Lock } from "lucide-react";
-import { useSharingStatus } from "@/utils/permissions";
-import type { ResourceType } from "@/utils/permissions";
+import { useSharingStatus } from "@/utils/permissions/hooks";
+import type { ResourceType } from "@/utils/permissions/types";
 import { ShareModal } from "./ShareModal";
 
 interface ShareButtonProps {

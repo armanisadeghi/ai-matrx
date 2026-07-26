@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { brokerActions } from "@/lib/redux/brokerSlice";
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { ViewId } from "./custom-views/view-registry";
 import ViewRenderer from "./custom-views/ViewRenderer";

@@ -19,7 +19,7 @@ import {
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import { fetchAppWithApplets } from "@/lib/redux/app-runner/thunks/appRunnerThunks";
-import { brokerSelectors } from "@/lib/redux/brokerSlice";
+import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
 
 interface CustomAppLayoutProps {
   children: React.ReactNode;
