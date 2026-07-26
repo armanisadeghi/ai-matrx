@@ -205,7 +205,10 @@ export function StageCanvas({
                 </p>
                 <div className="space-y-2">
                   {teaseTurns.map((turn, i) => (
-                    <p key={windowStart + i} className="text-sm leading-relaxed">
+                    <p
+                      key={windowStart + i}
+                      className="text-sm leading-relaxed"
+                    >
                       <span
                         className={cn(
                           "font-semibold",

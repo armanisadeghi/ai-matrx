@@ -135,7 +135,9 @@ function seoHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
             {variant.failed} Need Attention
           </span>
         )}
-        <span className="ml-auto text-white/60">Total: {variant.entries.length}</span>
+        <span className="ml-auto text-white/60">
+          Total: {variant.entries.length}
+        </span>
       </div>
     );
   }

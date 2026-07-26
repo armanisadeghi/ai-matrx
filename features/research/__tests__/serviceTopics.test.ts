@@ -1,6 +1,6 @@
 /**
  * Research-project decoupling tests (Phase 1/2 —
- * common-docs/research-project-decoupling/FEATURE.md):
+ * common-docs/projects/research-project-decoupling/FEATURE.md):
  *
  *  - createTopic requires NO project; org is an explicit argument (canonical
  *    app context at the call site), never derived from a project.

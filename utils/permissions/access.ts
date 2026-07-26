@@ -18,10 +18,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { resolveResourceAccess, NO_ACCESS, type ResourceAccess } from "./access-core";
+import {
+  resolveResourceAccess,
+  NO_ACCESS,
+  type ResourceAccess,
+} from "./access-core";
 
 // Pure types + helpers (AccessLevel, accessSatisfies, canEditAccess, …) come from
-// ./access-core — import them from there or from `@/utils/permissions/access-core`.
+// ./access-core — import them from there or from @/utils/permissions/access-core.
 
 /**
  * Resolve the current caller's access to a resource using the browser client.

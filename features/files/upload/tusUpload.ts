@@ -7,7 +7,7 @@
  * (size ≥ `TUS_TRANSPORT_THRESHOLD_BYTES`, or an explicit
  * `transport: "tus"` override).
  *
- * Wire contract (common-docs/media-capture/FEATURE.md § TUS):
+ * Wire contract (common-docs/systems/media-capture/FEATURE.md § TUS):
  * - Endpoint: `${PYTHON_BACKEND}/files/upload/tus` (resolved through the same
  *   base-url helper the python-client uses — server toggle respected).
  * - Explicit chunk size 16 MiB (server bounds 8–32 MiB; never the client

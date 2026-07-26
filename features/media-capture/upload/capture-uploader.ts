@@ -13,7 +13,10 @@
  */
 
 import { fileHandler } from "@/features/files/handler/handler";
-import { CloudFolders, resolveDefaultVisibility } from "@/features/files/utils/folder-conventions";
+import {
+  CloudFolders,
+  resolveDefaultVisibility,
+} from "@/features/files/utils/folder-conventions";
 import type { NormalizedFile } from "@/features/files/handler/types";
 import {
   isCaptureMetadata,

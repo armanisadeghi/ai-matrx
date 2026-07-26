@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import type { BrokerIdentifier } from "@/lib/redux/brokerSlice/types";
 import { useServerBrokerSync } from "@/lib/redux/brokerSlice/hooks/useTempBroker";
-import { BrokerIdentifier } from "@/lib/redux/brokerSlice/types";
 import { SlackChannel } from "@/app/(dev)/demos/tests/slack/slackClientUtils";
 
 // Define broker identifiers

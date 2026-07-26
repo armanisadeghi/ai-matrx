@@ -26,7 +26,11 @@ import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { PdfAnnotationLayer } from "@/features/files/components/core/PdfAnnotationLayer";
-import type { AnnotationLayerMode, PdfRegion, PendingDraw } from "@/features/files/components/core/PdfAnnotationLayer";
+import type {
+  AnnotationLayerMode,
+  PdfRegion,
+  PendingDraw,
+} from "@/features/files/components/core/PdfAnnotationLayer";
 import { LabelPicker } from "./LabelPicker";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 import * as Api from "@/features/file-analysis/api/file-analysis";
@@ -39,9 +43,7 @@ import type {
 // until it's mounted.
 const PdfPreview = dynamic(
   () =>
-    import(
-      "@/features/files/components/core/FilePreview/previewers/PdfPreview"
-    ),
+    import("@/features/files/components/core/FilePreview/previewers/PdfPreview"),
   { ssr: false, loading: () => <CanvasSkeleton /> },
 );
 
@@ -85,11 +87,7 @@ export interface AnnotatablePdfCanvasProps {
 
   /** Click handlers forwarded to the layer. */
   onRegionClick?: (regionId: string) => void;
-  onRegionContextMenu?: (
-    regionId: string,
-    x: number,
-    y: number,
-  ) => void;
+  onRegionContextMenu?: (regionId: string, x: number, y: number) => void;
   onBackgroundClick?: () => void;
 
   className?: string;
@@ -183,9 +181,7 @@ export function AnnotatablePdfCanvas({
   );
 
   const handleConfirm = useCallback(
-    async (
-      body: Omit<AnnotationCreateBody, "page_number" | "bbox">,
-    ) => {
+    async (body: Omit<AnnotationCreateBody, "page_number" | "bbox">) => {
       if (!draft) return;
       const bbox = draft.snappedBbox ?? draft.bbox;
       try {

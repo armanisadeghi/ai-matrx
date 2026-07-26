@@ -20,9 +20,9 @@
 import { useEffect, useRef } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { normalize } from "@/features/files/handler/input/normalize";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
-import { normalize } from "@/features/files/handler/input/normalize";
 import {
   addResource,
   removeResource,

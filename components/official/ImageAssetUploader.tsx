@@ -44,11 +44,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Asset, AssetPreset, AssetVariant, Visibility } from "@/features/files/types";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { addAssetVariants, getAssetForFile } from "@/features/files/api/assets";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { getAssetForFile, addAssetVariants } from "@/features/files/api/assets";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import type {
+  Asset,
+  AssetPreset,
+  AssetVariant,
+  Visibility,
+} from "@/features/files/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { extractErrorMessage } from "@/utils/errors";

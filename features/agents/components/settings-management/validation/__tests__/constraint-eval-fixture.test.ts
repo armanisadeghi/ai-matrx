@@ -17,7 +17,7 @@ const DEFAULT_FIXTURES_DIR = path.resolve(
   __dirname,
   "../../../../../..",
   "..",
-  "common-docs/model-config",
+  "common-docs/systems/model-config",
 );
 
 const FIXTURE_PATH = path.join(

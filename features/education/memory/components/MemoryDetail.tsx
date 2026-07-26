@@ -45,7 +45,8 @@ export function MemoryDetail({ mediaId }: { mediaId: string }) {
     if (!media) return;
     const ok = await confirm({
       title: "Delete these memory aids?",
-      description: "They will be removed from your library. This can't be undone.",
+      description:
+        "They will be removed from your library. This can't be undone.",
       confirmLabel: "Delete",
       variant: "destructive",
     });

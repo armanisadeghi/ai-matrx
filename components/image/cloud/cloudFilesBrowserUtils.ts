@@ -1,5 +1,7 @@
 import type { CloudFileRecord, CloudFolderRecord } from "@/features/files/types";
 import { getFileTypeDetails, isAudioMime, isImageMime, isPdfMime, isVideoMime, resolveMime } from "@/features/files/utils/file-types";
+
+
 import type { AllowedFileKind } from "./CloudFilesTab";
 
 export type CloudFilesBrowserRow =

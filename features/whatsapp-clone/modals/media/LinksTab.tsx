@@ -23,7 +23,9 @@ function groupLinks(items: WALinkItem[]): LinkGroup[] {
   const dayMs = 86_400_000;
   const NOW = new Date();
   const sevenDaysAgo = new Date(NOW.getTime() - 7 * dayMs);
-  const sorted = [...items].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const sorted = [...items].sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : -1,
+  );
 
   const recent = sorted.filter((i) => new Date(i.createdAt) >= sevenDaysAgo);
   const older = sorted.filter((i) => new Date(i.createdAt) < sevenDaysAgo);
@@ -120,7 +122,9 @@ function LinkRow({ item }: { item: WALinkItem }) {
             size="fill"
             fit="cover"
             rounded="none"
-            fallbackIcon={<LinkIcon className="h-4 w-4 text-muted-foreground" />}
+            fallbackIcon={
+              <LinkIcon className="h-4 w-4 text-muted-foreground" />
+            }
             alt=""
           />
         </div>

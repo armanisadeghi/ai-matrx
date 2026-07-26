@@ -517,10 +517,18 @@ export function ChatInputWithControls({
   const textInputRef = externalTextInputRef || internalTextInputRef;
 
   // Universal file handler — same path for authenticated and anonymous users
-  const { upload, uploading: isUploading, error: uploadError } = useFileUpload();
+  const {
+    upload,
+    uploading: isUploading,
+    error: uploadError,
+  } = useFileUpload();
 
   const normalizedToResource = useCallback(
-    (normalized: NormalizedFile, originalName: string, originalSize: number): PublicResource => {
+    (
+      normalized: NormalizedFile,
+      originalName: string,
+      originalSize: number,
+    ): PublicResource => {
       const mimeType = normalized.meta.mime ?? "";
 
       let resourceType: PublicResourceType = "file";
@@ -528,7 +536,9 @@ export function ChatInputWithControls({
       else if (mimeType.startsWith("audio/")) resourceType = "audio";
       else if (mimeType.startsWith("video/")) resourceType = "file";
 
-      const url = normalized.url ?? (normalized.fileId ? `cld_files:${normalized.fileId}` : "");
+      const url =
+        normalized.url ??
+        (normalized.fileId ? `cld_files:${normalized.fileId}` : "");
       return {
         type: resourceType,
         data: {
@@ -551,7 +561,10 @@ export function ChatInputWithControls({
           { kind: "file", file },
           { folderPath: "Public Chat Uploads", visibility: "public" },
         );
-        setResources((prev) => [...prev, normalizedToResource(normalized, file.name, file.size)]);
+        setResources((prev) => [
+          ...prev,
+          normalizedToResource(normalized, file.name, file.size),
+        ]);
       } catch {
         if (file.type === "application/pdf" && file.size > 10 * 1024 * 1024) {
           setOversizedPdf(file);

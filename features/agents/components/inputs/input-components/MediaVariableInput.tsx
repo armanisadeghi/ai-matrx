@@ -39,9 +39,9 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   FilesResourcePicker,
   type FilesResourcePickerFilter,
@@ -171,7 +171,8 @@ export function MediaVariableInput({
     selectRuntimeVariableResourcePolicies(conversationId ?? ""),
   );
   const policyKey = variableKey ?? variableName;
-  const effectiveResourceContext = runtimePolicies[policyKey] ?? resourceContext;
+  const effectiveResourceContext =
+    runtimePolicies[policyKey] ?? resourceContext;
   const meta = KIND_META[mediaKind];
   const Icon = meta.Icon;
   const stored = readValue(value);

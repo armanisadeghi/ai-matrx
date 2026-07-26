@@ -12,12 +12,12 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useSharing, useIsOwner } from "@/utils/permissions/hooks";
-import type { ResourceType } from "@/utils/permissions/registry";
+import { getResourceTypeLabel } from "@/utils/permissions/registry";
+import type { ResourceType } from "@/utils/permissions/types";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
-import { getResourceTypeLabel } from "@/utils/permissions/registry";
 import { useToast } from "@/components/ui/use-toast";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 

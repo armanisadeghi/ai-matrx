@@ -24,9 +24,7 @@ export function ImageBubble({ message }: ImageBubbleProps) {
       <div
         className={cn(
           "relative max-w-[60%] overflow-hidden rounded-lg p-1 shadow-sm",
-          isOwn
-            ? "bg-emerald-100 dark:bg-emerald-800/80"
-            : "bg-card",
+          isOwn ? "bg-emerald-100 dark:bg-emerald-800/80" : "bg-card",
         )}
       >
         <div className="overflow-hidden rounded-md">

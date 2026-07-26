@@ -92,12 +92,14 @@ export async function setOrgModuleSetting(
     const parsed = isJsonObject(data) ? data : {};
     const success = parsed.success === true;
     if (!success) {
-      const parsedError = typeof parsed.error === "string" ? parsed.error : "Failed to save";
+      const parsedError =
+        typeof parsed.error === "string" ? parsed.error : "Failed to save";
       return { success: false, error: parsedError };
     }
     return { success: true };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to save module setting";
+    const message =
+      err instanceof Error ? err.message : "Failed to save module setting";
     console.error("[orgModuleSettings] save failed:", message);
     return { success: false, error: message };
   }

@@ -2,7 +2,7 @@
 
 **Status:** Live. The browser-side primitive for scoped, short-lived, tier-governed credentials minted by aidream (`POST /broker/tokens`). Any surface needing temporary privileged reach — provider realtime sessions, direct provider API calls — consumes THIS module. **Never hand-roll a mint call, cache, or gateway fetch.**
 
-Cross-repo system of record: `/Users/armanisadeghi/code/common-docs/token-broker/FEATURE.md`. Server growth (new providers/audiences): global `token-broker` skill — **server-first, always**. Repo consumption rules: `.claude/skills/token-broker-client/SKILL.md`.
+Cross-repo system of record: `/Users/armanisadeghi/code/common-docs/systems/token-broker/FEATURE.md`. Server growth (new providers/audiences): global `token-broker` skill — **server-first, always**. Repo consumption rules: `.claude/skills/token-broker-client/SKILL.md`.
 
 ## The module
 

@@ -21,6 +21,7 @@ import {
   type DirectiveConfirmRequest,
   type DirectiveConfirmResult,
 } from "@/features/action-catalog/types";
+import { parseHttpError } from "@/lib/api/errors";
 
 const trimRoot = (baseUrl: string): string =>
   baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
@@ -70,18 +71,25 @@ export async function executeAction(
   body: ActionExecuteRequest,
 ): Promise<ActionApplyResult> {
   if (!baseUrl) {
-    throw new Error("No backend base URL configured (apiConfigSlice / NEXT_PUBLIC_BACKEND_URL_*).");
+    throw new Error(
+      "No backend base URL configured (apiConfigSlice / NEXT_PUBLIC_BACKEND_URL_*).",
+    );
   }
   const { data, error } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (error || !token) {
-    throw new Error("Not signed in — an action write needs an authenticated session.");
+    throw new Error(
+      "Not signed in — an action write needs an authenticated session.",
+    );
   }
   const url = `${trimRoot(baseUrl)}${ENDPOINTS_ACTIONS.execute}`;
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -99,7 +107,9 @@ export async function executeAction(
 
   const payload: unknown = await response.json();
   if (!isActionApplyResult(payload)) {
-    throw new Error(`Execute response was malformed (missing type / applied / receipts) from ${url}`);
+    throw new Error(
+      `Execute response was malformed (missing type / applied / receipts) from ${url}`,
+    );
   }
   return payload;
 }
@@ -109,44 +119,45 @@ export async function executeAction(
  * accepts it (the approve button on a `directive_apply.proposed` card). AUTHED —
  * the write runs as the user (RLS) on the server. `body` is the round-tripped
  * envelope the proposal carried; idempotent by `proposal_id` (a double-accept is
- * a no-op). Throws a structured Error on a missing base / no session / non-2xx /
- * malformed payload. Same JWT path as `executeAction` — never writes Supabase.
+ * a no-op). Throws `BackendApiError` on non-2xx (UI should show
+ * ``userMessage`` — never the technical ``detail``). Same JWT path as
+ * `executeAction` — never writes Supabase.
  */
 export async function confirmDirective(
   baseUrl: string | undefined,
   body: DirectiveConfirmRequest,
 ): Promise<DirectiveConfirmResult> {
   if (!baseUrl) {
-    throw new Error("No backend base URL configured (apiConfigSlice / NEXT_PUBLIC_BACKEND_URL_*).");
+    throw new Error(
+      "No backend base URL configured (apiConfigSlice / NEXT_PUBLIC_BACKEND_URL_*).",
+    );
   }
   const { data, error } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (error || !token) {
-    throw new Error("Not signed in — confirming an action needs an authenticated session.");
+    throw new Error(
+      "Not signed in — confirming an action needs an authenticated session.",
+    );
   }
   const url = `${trimRoot(baseUrl)}${ENDPOINTS_ACTIONS.confirm}`;
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    let detail = `${response.status} ${response.statusText}`;
-    try {
-      const err: unknown = await response.json();
-      if (err && typeof err === "object" && "detail" in err) {
-        detail = String((err as { detail: unknown }).detail);
-      }
-    } catch {
-      /* non-JSON error body — keep the status line */
-    }
-    throw new Error(`Confirm failed: ${detail}`);
+    throw await parseHttpError(response);
   }
 
   const payload: unknown = await response.json();
   if (!isDirectiveConfirmResult(payload)) {
-    throw new Error(`Confirm response was malformed (missing type / proposal_id / receipts) from ${url}`);
+    throw new Error(
+      `Confirm response was malformed (missing type / proposal_id / receipts) from ${url}`,
+    );
   }
   return payload;
 }

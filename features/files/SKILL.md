@@ -59,7 +59,7 @@ await dispatch(
 ### Render a file as `<img>` / `<video>`
 
 ```ts
-import { useFileSrc } from '@/features/files';
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 
 const { url } = useFileSrc({ kind: 'file_id', fileId });
 return <img src={url ?? undefined} />;

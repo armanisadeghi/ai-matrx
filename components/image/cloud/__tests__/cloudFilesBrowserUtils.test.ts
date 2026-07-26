@@ -5,7 +5,10 @@ import {
   isCloudFileSelectable,
   toggleCloudBrowserSelection,
 } from "../cloudFilesBrowserUtils";
-import type { CloudFileRecord, CloudFolderRecord } from "@/features/files/types";
+import type {
+  CloudFileRecord,
+  CloudFolderRecord,
+} from "@/features/files/types";
 
 function file(
   patch: Partial<CloudFileRecord> & Pick<CloudFileRecord, "id" | "fileName">,

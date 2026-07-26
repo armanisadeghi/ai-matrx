@@ -32,14 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Copy,
-  Check,
-  Share2,
-  Link2,
-  Globe,
-  Lock,
-} from "lucide-react";
+import { Copy, Check, Share2, Link2, Globe, Lock } from "lucide-react";
 import { Twitter, Facebook, Linkedin } from "@/components/icons/brand-icons";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";

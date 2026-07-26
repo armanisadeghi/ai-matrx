@@ -27,6 +27,16 @@ import { useOpenStructuredListManagerV2Window } from "@/features/overlays/opener
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+// These four are STATIC imports on purpose. Do not "optimize" them into
+// `await import()` — that was tried (commit 899342703) and it made things worse.
+//
+// A dynamic import does not remove a module from the build; it creates a chunk
+// boundary. The module is still compiled. It only pays off when the module is
+// reachable ONLY through a human action. These four are not: war-room/redux/thunks
+// has 37 other static importers, notes/redux/thunks 13, document-service 6,
+// workbook-service 5. So splitting them here bought four extra chunk boundaries and
+// the extra chunk-graph assembly memory that comes with them, while removing nothing
+// from the build — on a builder that is already OOM-killing during compile.
 import { createWarRoomSession } from "@/features/war-room/redux/thunks";
 import { createNewNote } from "@/features/notes/redux/thunks";
 import { createDocument } from "@/features/data-tables/document-service";

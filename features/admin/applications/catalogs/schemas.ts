@@ -6,7 +6,7 @@
 // Pragmatic by design: each kind pins its identity/required fields and lets
 // every unknown key pass through unchanged (loose object parsing) so payloads
 // round-trip verbatim — the same forward-compat posture as app-config.
-// Cross-repo system-of-record: common-docs/remote-catalogs/FEATURE.md
+// Cross-repo system-of-record: common-docs/systems/remote-catalogs/FEATURE.md
 
 import { z } from "zod";
 

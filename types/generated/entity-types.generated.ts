@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 305 active entity tokens. A token here is FK-valid for
+// 306 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -206,6 +206,7 @@ export type EntityTypeToken =
   | "redaction_mapping"
   | "research_analysis"
   | "research_content"
+  | "research_context_bundle"
   | "research_document"
   | "research_keyword"
   | "research_media"
@@ -709,6 +710,7 @@ export type ScopeableEntityToken =
   | "redaction_mapping"
   | "research_analysis"
   | "research_content"
+  | "research_context_bundle"
   | "research_document"
   | "research_keyword"
   | "research_media"
@@ -865,6 +867,7 @@ export type ListedEntityToken =
   | "learn_doc"
   | "plan_entity"
   | "plan_node"
+  | "research_context_bundle"
   | "structured_list"
   | "surface"
   | "workbook";
@@ -966,7 +969,7 @@ export const ENTITY_TYPE_METADATA = {
   "cx_user_request": { token: "cx_user_request", schema: "chat", table: "user_request", label: "User Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_user_todo": { token: "cx_user_todo", schema: "chat", table: "user_todo", label: "User Todo", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "dashboard_saved_view": { token: "dashboard_saved_view", schema: "public", table: "dashboard_saved_views", label: "Dashboard Saved View", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
-  "data_store": { token: "data_store", schema: "rag", table: "data_stores", label: "Data Store", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: null, contentRole: "source", referenceCategory: null },
+  "data_store": { token: "data_store", schema: "rag", table: "data_stores", label: "Data Store", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "dataset": { token: "dataset", schema: "workbench", table: "udt_datasets", label: "Dataset", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "description", contentRole: "hybrid", referenceCategory: null },
   "derive_run": { token: "derive_run", schema: "docproc", table: "derive_runs", label: "Derive Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "dict_setting": { token: "dict_setting", schema: "public", table: "dict_settings", label: "Dict Setting", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1043,6 +1046,7 @@ export const ENTITY_TYPE_METADATA = {
   "redaction_mapping": { token: "redaction_mapping", schema: "pdf", table: "redaction_mapping", label: "Redaction Mapping", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "research_analysis": { token: "research_analysis", schema: "research", table: "rs_analysis", label: "Research Analysis", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "research_content": { token: "research_content", schema: "research", table: "rs_content", label: "Research Content", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "research_context_bundle": { token: "research_context_bundle", schema: "research", table: "rs_context_bundle", label: "Research Context Bundle", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: "research", referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "research_document": { token: "research_document", schema: "research", table: "rs_document", label: "Research Document", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "research_keyword": { token: "research_keyword", schema: "research", table: "rs_keyword", label: "Research Keyword", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "research_media": { token: "research_media", schema: "research", table: "rs_media", label: "Research Media", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1056,7 +1060,7 @@ export const ENTITY_TYPE_METADATA = {
   "sch_run": { token: "sch_run", schema: "scheduler", table: "sch_run", label: "Task Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "sch_task": { token: "sch_task", schema: "scheduler", table: "sch_task", label: "Scheduled Task", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "sch_trigger": { token: "sch_trigger", schema: "scheduler", table: "sch_trigger", label: "Task Trigger", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "scope": { token: "scope", schema: "context", table: "scopes", label: "Scope", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: "container", referenceCategory: null },
+  "scope": { token: "scope", schema: "context", table: "scopes", label: "Scope", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "scope_association_suggestion": { token: "scope_association_suggestion", schema: "reg", table: "scope_association_suggestions", label: "Scope Association Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "scope_item_value_suggestion": { token: "scope_item_value_suggestion", schema: "reg", table: "scope_item_value_suggestions", label: "Scope Item Value Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "scope_suggestion": { token: "scope_suggestion", schema: "reg", table: "scope_suggestions", label: "Scope Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1352,6 +1356,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "redaction_mapping",
   "research_analysis",
   "research_content",
+  "research_context_bundle",
   "research_document",
   "research_keyword",
   "research_media",

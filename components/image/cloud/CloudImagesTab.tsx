@@ -86,6 +86,7 @@ import {
 } from "@/features/files/redux/thunks";
 import { isImageMime, resolveMime } from "@/features/files/utils/file-types";
 import type { CloudFileRecord, Visibility } from "@/features/files/types";
+import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import {
   useSelectedImages,
   type ImageSource,
@@ -99,7 +100,6 @@ import { CloudImageGrid } from "@/components/image/cloud/CloudImageGrid";
 import { CloudImageList } from "@/components/image/cloud/CloudImageList";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
 import { CloudFileMetadataSheet } from "@/features/image-manager/components/CloudFileMetadataSheet";
-import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { toast } from "@/lib/toast";
 
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days

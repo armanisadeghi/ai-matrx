@@ -145,11 +145,7 @@ const feedbackTypeIcons: Record<FeedbackType, React.ReactNode> = {
 };
 
 type SortField =
-  | "created_at"
-  | "status"
-  | "feedback_type"
-  | "username"
-  | "work_priority";
+  "created_at" | "status" | "feedback_type" | "username" | "work_priority";
 type SortDirection = "asc" | "desc";
 
 // Mutually exclusive pipeline stages

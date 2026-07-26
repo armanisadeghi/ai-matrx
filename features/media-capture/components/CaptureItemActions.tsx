@@ -108,9 +108,7 @@ export function CaptureItemActions({
       setTranscript(text);
     } catch (err) {
       console.error("[CaptureItemActions] transcription failed", err);
-      toast.error(
-        err instanceof Error ? err.message : "Transcription failed.",
-      );
+      toast.error(err instanceof Error ? err.message : "Transcription failed.");
     } finally {
       setTranscribing(false);
     }

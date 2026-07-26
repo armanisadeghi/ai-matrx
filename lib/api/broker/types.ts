@@ -9,7 +9,7 @@
  * server contract changes, `pnpm sync-types` makes drift a compile error.
  *
  * Cross-repo system of record:
- *   /Users/armanisadeghi/code/common-docs/token-broker/FEATURE.md
+ *   /Users/armanisadeghi/code/common-docs/systems/token-broker/FEATURE.md
  */
 
 import type { components } from "@/types/python-generated/api-types";

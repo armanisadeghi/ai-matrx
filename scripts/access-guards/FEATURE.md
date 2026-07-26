@@ -1,7 +1,7 @@
 # Access Guards — FEATURE.md
 
 Enforcement piece of THE SECURITY PHILOSOPHY and THE VIEW LAW
-(`CLAUDE.md` §Supabase, `common-docs/db-rules/FEATURE.md` §6).
+(`CLAUDE.md` §Supabase, `common-docs/systems/db-rules/FEATURE.md` §6).
 
 Script: `scripts/check-access-guards.ts` · Command: `pnpm check:access-guards`
 (`:strict` variant exits 1 on FAIL findings). Wired into `pnpm check:release-gates`.

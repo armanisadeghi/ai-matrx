@@ -74,12 +74,27 @@ function RichText({ text, className }: { text?: string; className?: string }) {
 
 /** Normalize the layout name from explicit `layout` or the legacy `type`. */
 function resolveLayout(slide: SlideData): string {
-  const raw = (slide.layout || slide.type || "").toLowerCase().replace(/[\s_]+/g, "-");
-  if (raw === "intro" || raw === "cover" || raw === "hero" || raw === "title-slide") return "title";
-  if (raw === "outro" || raw === "thank-you" || raw === "thanks" || raw === "end") return "closing";
+  const raw = (slide.layout || slide.type || "")
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+  if (
+    raw === "intro" ||
+    raw === "cover" ||
+    raw === "hero" ||
+    raw === "title-slide"
+  )
+    return "title";
+  if (
+    raw === "outro" ||
+    raw === "thank-you" ||
+    raw === "thanks" ||
+    raw === "end"
+  )
+    return "closing";
   if (raw === "content" || raw === "" || raw === "default") {
     if (slide.quote) return "quote";
-    if (Array.isArray((slide.extra as { stats?: unknown[] })?.stats)) return "stat";
+    if (Array.isArray((slide.extra as { stats?: unknown[] })?.stats))
+      return "stat";
     if (slideWantsImage(slide)) return "image-split";
     return "bullets";
   }
@@ -88,14 +103,18 @@ function resolveLayout(slide: SlideData): string {
 
 /** An explicitly-provided image URL on the slide. */
 function slideImageRef(slide: SlideData): string | undefined {
-  return slide.image_url || slide.imageUrl || (slide.extra?.image as string | undefined);
+  return (
+    slide.image_url ||
+    slide.imageUrl ||
+    (slide.extra?.image as string | undefined)
+  );
 }
 
 /** A short art-direction phrase to source an image for (Unsplash fallback). */
 function slideImagePrompt(slide: SlideData): string | undefined {
-  const p = (slide.extra?.imagePrompt ?? (slide.extra as { image_prompt?: unknown })?.image_prompt) as
-    | string
-    | undefined;
+  const p = (slide.extra?.imagePrompt ??
+    (slide.extra as { image_prompt?: unknown })?.image_prompt) as
+    string | undefined;
   return typeof p === "string" && p.trim() ? p.trim() : undefined;
 }
 
@@ -108,12 +127,20 @@ function slideWantsImage(slide: SlideData): boolean {
  * Resolve the slide's image: an explicit URL wins; otherwise an `imagePrompt`
  * is sourced from Unsplash (cached). Returns the URL + optional attribution.
  */
-function useSlideImage(slide: SlideData): { url?: string; credit?: string; creditUrl?: string; loading: boolean } {
+function useSlideImage(slide: SlideData): {
+  url?: string;
+  credit?: string;
+  creditUrl?: string;
+  loading: boolean;
+} {
   const explicit = slideImageRef(slide);
   const prompt = slideImagePrompt(slide);
   // setState happens only in the async resolver callback (never synchronously
   // in the effect) — keeps the React Compiler rules happy.
-  const [state, setState] = useState<{ img: ResolvedImage | null; done: boolean }>({ img: null, done: false });
+  const [state, setState] = useState<{
+    img: ResolvedImage | null;
+    done: boolean;
+  }>({ img: null, done: false });
 
   useEffect(() => {
     if (explicit || !prompt) return undefined;
@@ -127,7 +154,12 @@ function useSlideImage(slide: SlideData): { url?: string; credit?: string; credi
   }, [explicit, prompt]);
 
   if (explicit) return { url: explicit, loading: false };
-  return { url: state.img?.url, credit: state.img?.credit, creditUrl: state.img?.creditUrl, loading: !state.done };
+  return {
+    url: state.img?.url,
+    credit: state.img?.credit,
+    creditUrl: state.img?.creditUrl,
+    loading: !state.done,
+  };
 }
 
 export function SlideView({
@@ -145,14 +177,28 @@ export function SlideView({
   const layout = resolveLayout(slide);
   const fancy = variant !== "generic";
   const big = fullScreen;
-  const eyebrow = (slide.extra?.eyebrow as string | undefined) ?? sectionEyebrow(slide, layout);
+  const eyebrow =
+    (slide.extra?.eyebrow as string | undefined) ??
+    sectionEyebrow(slide, layout);
 
   const titleSize = big ? "text-5xl" : "text-3xl";
   const bodySize = big ? "text-xl" : "text-base";
 
   // ── Full-bleed image cover (deluxe / explicit) ──────────────────────────
-  if ((layout === "image-full" || layout === "image") && slideWantsImage(slide)) {
-    return <ImageFullSlide slide={slide} c={c} eyebrow={eyebrow} big={big} titleSize={titleSize} bodySize={bodySize} />;
+  if (
+    (layout === "image-full" || layout === "image") &&
+    slideWantsImage(slide)
+  ) {
+    return (
+      <ImageFullSlide
+        slide={slide}
+        c={c}
+        eyebrow={eyebrow}
+        big={big}
+        titleSize={titleSize}
+        bodySize={bodySize}
+      />
+    );
   }
 
   // ── Title / cover ───────────────────────────────────────────────────────
@@ -163,16 +209,29 @@ export function SlideView({
           {eyebrow && <Eyebrow text={eyebrow} color={c.accent} center />}
           <h1
             className={`font-bold leading-[1.05] ${big ? "text-6xl" : "text-4xl"}`}
-            style={fancy ? gradientText(c.primary, c.secondary) : { color: c.primary }}
+            style={
+              fancy
+                ? gradientText(c.primary, c.secondary)
+                : { color: c.primary }
+            }
           >
             <RichText text={slide.title} />
           </h1>
           {slide.subtitle && (
-            <p className={`mx-auto mt-5 max-w-2xl text-muted-foreground ${big ? "text-2xl" : "text-lg"}`}>
+            <p
+              className={`mx-auto mt-5 max-w-2xl text-muted-foreground ${big ? "text-2xl" : "text-lg"}`}
+            >
               <RichText text={slide.subtitle} />
             </p>
           )}
-          {fancy && <div className="mx-auto mt-7 h-1 w-24 rounded-full" style={{ background: `linear-gradient(90deg, ${c.primary}, ${c.accent})` }} />}
+          {fancy && (
+            <div
+              className="mx-auto mt-7 h-1 w-24 rounded-full"
+              style={{
+                background: `linear-gradient(90deg, ${c.primary}, ${c.accent})`,
+              }}
+            />
+          )}
         </div>
       </Frame>
     );
@@ -184,7 +243,9 @@ export function SlideView({
       <Frame variant={variant} c={c} sectionGradient>
         <div className="flex h-full flex-col justify-center">
           {eyebrow && <Eyebrow text={eyebrow} color="#ffffff" onDark />}
-          <h2 className={`font-bold leading-tight text-white ${big ? "text-6xl" : "text-4xl"}`}>
+          <h2
+            className={`font-bold leading-tight text-white ${big ? "text-6xl" : "text-4xl"}`}
+          >
             <RichText text={slide.title} />
           </h2>
           {slide.description && (
@@ -202,14 +263,23 @@ export function SlideView({
     return (
       <Frame variant={variant} c={c} center>
         <figure className="mx-auto max-w-3xl text-center">
-          <div className={`font-serif leading-none ${big ? "text-7xl" : "text-5xl"}`} style={{ color: c.accent }}>
+          <div
+            className={`font-serif leading-none ${big ? "text-7xl" : "text-5xl"}`}
+            style={{ color: c.accent }}
+          >
             &ldquo;
           </div>
-          <blockquote className={`-mt-4 font-medium leading-snug text-foreground ${big ? "text-3xl" : "text-xl"}`}>
+          <blockquote
+            className={`-mt-4 font-medium leading-snug text-foreground ${big ? "text-3xl" : "text-xl"}`}
+          >
             <RichText text={slide.quote || slide.title} />
           </blockquote>
           {slide.author && (
-            <figcaption className={`mt-5 text-muted-foreground ${big ? "text-lg" : "text-sm"}`}>— {slide.author}</figcaption>
+            <figcaption
+              className={`mt-5 text-muted-foreground ${big ? "text-lg" : "text-sm"}`}
+            >
+              — {slide.author}
+            </figcaption>
           )}
         </figure>
       </Frame>
@@ -218,17 +288,37 @@ export function SlideView({
 
   // ── Stat / metrics ──────────────────────────────────────────────────────
   if (layout === "stat" || layout === "metrics") {
-    const stats = (slide.extra?.stats as Array<{ value?: string; label?: string }> | undefined) ?? [];
+    const stats =
+      (slide.extra?.stats as
+        Array<{ value?: string; label?: string }> | undefined) ?? [];
     return (
       <Frame variant={variant} c={c}>
-        <SlideHeading slide={slide} c={c} fancy={fancy} big={big} eyebrow={eyebrow} />
-        <div className={`mt-8 grid gap-5 ${stats.length >= 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+        <SlideHeading
+          slide={slide}
+          c={c}
+          fancy={fancy}
+          big={big}
+          eyebrow={eyebrow}
+        />
+        <div
+          className={`mt-8 grid gap-5 ${stats.length >= 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}
+        >
           {stats.map((s, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card/60 p-5 text-center">
-              <div className={`font-bold ${big ? "text-5xl" : "text-3xl"}`} style={gradientText(c.primary, c.accent)}>
+            <div
+              key={i}
+              className="rounded-xl border border-border bg-card/60 p-5 text-center"
+            >
+              <div
+                className={`font-bold ${big ? "text-5xl" : "text-3xl"}`}
+                style={gradientText(c.primary, c.accent)}
+              >
                 {s.value}
               </div>
-              <div className={`mt-1 text-muted-foreground ${big ? "text-base" : "text-xs"}`}>{s.label}</div>
+              <div
+                className={`mt-1 text-muted-foreground ${big ? "text-base" : "text-xs"}`}
+              >
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
@@ -238,15 +328,36 @@ export function SlideView({
 
   // ── Two-column ──────────────────────────────────────────────────────────
   if (layout === "two-column" || layout === "split" || layout === "columns") {
-    const cols = (slide.extra?.columns as Array<{ title?: string; bullets?: string[] }> | undefined) ?? splitBullets(slide.bullets);
+    const cols =
+      (slide.extra?.columns as
+        Array<{ title?: string; bullets?: string[] }> | undefined) ??
+      splitBullets(slide.bullets);
     return (
       <Frame variant={variant} c={c}>
-        <SlideHeading slide={slide} c={c} fancy={fancy} big={big} eyebrow={eyebrow} />
+        <SlideHeading
+          slide={slide}
+          c={c}
+          fancy={fancy}
+          big={big}
+          eyebrow={eyebrow}
+        />
         <div className="mt-7 grid grid-cols-2 gap-6">
           {cols.map((col, i) => (
             <div key={i}>
-              {col.title && <h3 className={`mb-3 font-semibold ${big ? "text-xl" : "text-base"}`} style={{ color: c.primary }}>{col.title}</h3>}
-              <BulletList bullets={col.bullets ?? []} c={c} fancy={fancy} big={big} />
+              {col.title && (
+                <h3
+                  className={`mb-3 font-semibold ${big ? "text-xl" : "text-base"}`}
+                  style={{ color: c.primary }}
+                >
+                  {col.title}
+                </h3>
+              )}
+              <BulletList
+                bullets={col.bullets ?? []}
+                c={c}
+                fancy={fancy}
+                big={big}
+              />
             </div>
           ))}
         </div>
@@ -255,7 +366,12 @@ export function SlideView({
   }
 
   // ── Image split (image + content side by side) ──────────────────────────
-  if ((layout === "image-split" || layout === "image-left" || layout === "image-right") && slideWantsImage(slide)) {
+  if (
+    (layout === "image-split" ||
+      layout === "image-left" ||
+      layout === "image-right") &&
+    slideWantsImage(slide)
+  ) {
     return (
       <ImageSplitSlide
         slide={slide}
@@ -274,10 +390,16 @@ export function SlideView({
     return (
       <Frame variant={variant} c={c} sectionGradient center>
         <div className="text-center">
-          <h2 className={`font-bold text-white ${big ? "text-5xl" : "text-3xl"}`}>
+          <h2
+            className={`font-bold text-white ${big ? "text-5xl" : "text-3xl"}`}
+          >
             <RichText text={slide.title || "Thank you"} />
           </h2>
-          {slide.subtitle && <p className={`mx-auto mt-4 max-w-2xl text-white/80 ${bodySize}`}><RichText text={slide.subtitle} /></p>}
+          {slide.subtitle && (
+            <p className={`mx-auto mt-4 max-w-2xl text-white/80 ${bodySize}`}>
+              <RichText text={slide.subtitle} />
+            </p>
+          )}
         </div>
       </Frame>
     );
@@ -286,9 +408,20 @@ export function SlideView({
   // ── Default: bullets ────────────────────────────────────────────────────
   return (
     <Frame variant={variant} c={c}>
-      <SlideHeading slide={slide} c={c} fancy={fancy} big={big} eyebrow={eyebrow} />
+      <SlideHeading
+        slide={slide}
+        c={c}
+        fancy={fancy}
+        big={big}
+        eyebrow={eyebrow}
+      />
       <div className="mt-6">
-        <BulletList bullets={slide.bullets ?? []} c={c} fancy={fancy} big={big} />
+        <BulletList
+          bullets={slide.bullets ?? []}
+          c={c}
+          fancy={fancy}
+          big={big}
+        />
       </div>
     </Frame>
   );
@@ -312,7 +445,9 @@ function Frame({
   const style: React.CSSProperties = sectionGradient
     ? { background: `linear-gradient(135deg, ${c.primary}, ${c.secondary})` }
     : variant === "deluxe"
-      ? { background: `radial-gradient(120% 120% at 0% 0%, ${c.primary}0D, transparent 50%), radial-gradient(120% 120% at 100% 100%, ${c.accent}0D, transparent 50%)` }
+      ? {
+          background: `radial-gradient(120% 120% at 0% 0%, ${c.primary}0D, transparent 50%), radial-gradient(120% 120% at 100% 100%, ${c.accent}0D, transparent 50%)`,
+        }
       : {};
   return (
     <div
@@ -322,7 +457,10 @@ function Frame({
       style={style}
     >
       {variant !== "generic" && !sectionGradient && (
-        <div className="pointer-events-none absolute right-0 top-0 h-40 w-40 -translate-y-12 translate-x-12 rounded-full opacity-[0.07]" style={{ background: c.accent }} />
+        <div
+          className="pointer-events-none absolute right-0 top-0 h-40 w-40 -translate-y-12 translate-x-12 rounded-full opacity-[0.07]"
+          style={{ background: c.accent }}
+        />
       )}
       <div className={`relative ${center ? "" : "h-full"}`}>{children}</div>
     </div>
@@ -345,11 +483,18 @@ function SlideHeading({
   return (
     <div>
       {eyebrow && <Eyebrow text={eyebrow} color={c.accent} />}
-      <h2 className={`font-bold leading-tight ${big ? "text-4xl" : "text-2xl"}`} style={fancy ? gradientText(c.primary, c.secondary) : { color: c.primary }}>
+      <h2
+        className={`font-bold leading-tight ${big ? "text-4xl" : "text-2xl"}`}
+        style={
+          fancy ? gradientText(c.primary, c.secondary) : { color: c.primary }
+        }
+      >
         <RichText text={slide.title} />
       </h2>
       {slide.description && (
-        <p className={`mt-2 text-muted-foreground ${big ? "text-lg" : "text-sm"}`}>
+        <p
+          className={`mt-2 text-muted-foreground ${big ? "text-lg" : "text-sm"}`}
+        >
           <RichText text={slide.description} />
         </p>
       )}
@@ -376,8 +521,15 @@ function BulletList({
           className={`flex items-start gap-3 rounded-lg ${fancy ? "bg-muted/40 p-3 transition-transform hover:translate-x-0.5" : "py-1"}`}
           style={{ animation: `slideIn 0.45s ease-out ${i * 0.07}s both` }}
         >
-          <span className={`mt-2 h-2 w-2 shrink-0 rounded-full ${big ? "mt-2.5" : ""}`} style={{ background: `linear-gradient(135deg, ${c.primary}, ${c.accent})` }} />
-          <span className={`leading-relaxed text-foreground ${big ? "text-lg" : "text-sm"}`}>
+          <span
+            className={`mt-2 h-2 w-2 shrink-0 rounded-full ${big ? "mt-2.5" : ""}`}
+            style={{
+              background: `linear-gradient(135deg, ${c.primary}, ${c.accent})`,
+            }}
+          />
+          <span
+            className={`leading-relaxed text-foreground ${big ? "text-lg" : "text-sm"}`}
+          >
             <RichText text={b} />
           </span>
         </li>
@@ -386,11 +538,25 @@ function BulletList({
   );
 }
 
-function Eyebrow({ text, color, center, onDark }: { text: string; color: string; center?: boolean; onDark?: boolean }) {
+function Eyebrow({
+  text,
+  color,
+  center,
+  onDark,
+}: {
+  text: string;
+  color: string;
+  center?: boolean;
+  onDark?: boolean;
+}) {
   return (
     <div
       className={`mb-3 inline-block rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${center ? "mx-auto" : ""}`}
-      style={onDark ? { background: "rgba(255,255,255,0.18)", color: "#fff" } : { background: `${color}1A`, color }}
+      style={
+        onDark
+          ? { background: "rgba(255,255,255,0.18)", color: "#fff" }
+          : { background: `${color}1A`, color }
+      }
     >
       {text}
     </div>
@@ -399,21 +565,42 @@ function Eyebrow({ text, color, center, onDark }: { text: string; color: string;
 
 // ── Image layouts (resolve explicit URL, else Unsplash from imagePrompt) ────
 
-function ImagePlaceholder({ c, loading }: { c: ReturnType<typeof palette>; loading: boolean }) {
+function ImagePlaceholder({
+  c,
+  loading,
+}: {
+  c: ReturnType<typeof palette>;
+  loading: boolean;
+}) {
   return (
     <div
       className={`h-full w-full ${loading ? "animate-pulse" : ""}`}
-      style={{ background: `linear-gradient(135deg, ${c.primary}1A, ${c.accent}1A)` }}
+      style={{
+        background: `linear-gradient(135deg, ${c.primary}1A, ${c.accent}1A)`,
+      }}
     />
   );
 }
 
-function Attribution({ credit, creditUrl, onDark }: { credit?: string; creditUrl?: string; onDark?: boolean }) {
+function Attribution({
+  credit,
+  creditUrl,
+  onDark,
+}: {
+  credit?: string;
+  creditUrl?: string;
+  onDark?: boolean;
+}) {
   if (!credit) return null;
   const cls = `absolute bottom-1.5 right-2 z-10 rounded bg-black/35 px-1.5 py-0.5 text-[10px] ${onDark ? "text-white/80" : "text-white/85"}`;
   const label = `Photo: ${credit} / Unsplash`;
   return creditUrl ? (
-    <a href={creditUrl} target="_blank" rel="noopener noreferrer" className={`${cls} hover:underline`}>
+    <a
+      href={creditUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${cls} hover:underline`}
+    >
       {label}
     </a>
   ) : (
@@ -441,7 +628,12 @@ function ImageFullSlide({
     <div className="relative h-full w-full overflow-hidden rounded-xl">
       <div className="absolute inset-0">
         {url ? (
-          <InlineMediaRef ref={url} alt={slide.title ?? "Slide image"} size="fill" fit="cover" />
+          <InlineMediaRef
+            ref={url}
+            alt={slide.title ?? "Slide image"}
+            size="fill"
+            fit="cover"
+          />
         ) : (
           <ImagePlaceholder c={c} loading={loading} />
         )}
@@ -485,14 +677,32 @@ function ImageSplitSlide({
     <Frame variant={variant} c={c}>
       <div className="grid h-full grid-cols-2 items-center gap-7">
         <div className={imageRight ? "order-1" : "order-2"}>
-          <SlideHeading slide={slide} c={c} fancy={fancy} big={big} eyebrow={eyebrow} />
+          <SlideHeading
+            slide={slide}
+            c={c}
+            fancy={fancy}
+            big={big}
+            eyebrow={eyebrow}
+          />
           <div className="mt-5">
-            <BulletList bullets={slide.bullets ?? []} c={c} fancy={fancy} big={big} />
+            <BulletList
+              bullets={slide.bullets ?? []}
+              c={c}
+              fancy={fancy}
+              big={big}
+            />
           </div>
         </div>
-        <div className={`${imageRight ? "order-2" : "order-1"} relative h-full max-h-full overflow-hidden rounded-xl`}>
+        <div
+          className={`${imageRight ? "order-2" : "order-1"} relative h-full max-h-full overflow-hidden rounded-xl`}
+        >
           {url ? (
-            <InlineMediaRef ref={url} alt={slide.title ?? "Slide image"} size="fill" fit="cover" />
+            <InlineMediaRef
+              ref={url}
+              alt={slide.title ?? "Slide image"}
+              size="fill"
+              fit="cover"
+            />
           ) : (
             <ImagePlaceholder c={c} loading={loading} />
           )}
@@ -518,7 +728,9 @@ function sectionEyebrow(slide: SlideData, layout: string): string | undefined {
   return undefined;
 }
 
-function splitBullets(bullets?: string[]): Array<{ title?: string; bullets: string[] }> {
+function splitBullets(
+  bullets?: string[],
+): Array<{ title?: string; bullets: string[] }> {
   const b = bullets ?? [];
   const mid = Math.ceil(b.length / 2);
   return [{ bullets: b.slice(0, mid) }, { bullets: b.slice(mid) }];

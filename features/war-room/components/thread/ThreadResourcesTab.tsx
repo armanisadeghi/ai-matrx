@@ -39,11 +39,11 @@ import {
 } from "@/components/ui/command";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { folderForWarRoomThread } from "@/features/files/utils/folder-conventions";
-import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import { useFile } from "@/features/files/handler/hooks/useFile";
+import { fileIdToMediaRef } from "@/features/files/redux/converters";
+import { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
+import { folderForWarRoomThread } from "@/features/files/utils/folder-conventions";
 import {
   createDocument,
   listAccessibleDocuments,
@@ -104,7 +104,10 @@ export function ThreadResourcesTab({
       );
     }, 60_000);
     try {
-      console.info("[war-room upload] start", files.map((f) => f.name));
+      console.info(
+        "[war-room upload] start",
+        files.map((f) => f.name),
+      );
       const result = await requestUpload({
         files,
         folderPath: folderForWarRoomThread(threadId),

@@ -41,10 +41,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Asset, AssetPreset, Visibility } from "@/features/files/types";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { getAssetForFile } from "@/features/files/api/assets";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { getAssetForFile } from "@/features/files/api/assets";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

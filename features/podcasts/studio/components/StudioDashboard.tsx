@@ -52,7 +52,9 @@ function ShowChip({ show }: { show: PcShow }) {
           {show.title}
         </p>
         {show.author && (
-          <p className="truncate text-xs text-muted-foreground">{show.author}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {show.author}
+          </p>
         )}
       </div>
       <Settings2 className="h-4 w-4 shrink-0 text-muted-foreground" />

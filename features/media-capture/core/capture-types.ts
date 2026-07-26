@@ -5,7 +5,7 @@
  *
  * `CaptureMetadata` is the versioned, snake_case discriminated union persisted
  * verbatim as `files.files.metadata.capture` (schema v1 — frozen in the
- * cross-repo system of record: common-docs/media-capture/FEATURE.md).
+ * cross-repo system of record: common-docs/systems/media-capture/FEATURE.md).
  *
  * Invariants (docs/media-capture-plan.md §5):
  * - Output width/height/duration_ms live in canonical `files.files` columns —

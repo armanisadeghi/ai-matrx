@@ -51,7 +51,8 @@ import type { AssetPreset } from "@/features/files/types";
 import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
-import { getShareableResource, type ResourceType } from "@/utils/permissions/registry";
+import { getShareableResource } from "@/utils/permissions/registry";
+import type { ResourceType } from "@/utils/permissions/types";
 import type {
   CodeEditorAgentConfig,
   CodeFile as AgentCodeEditorCodeFile,
@@ -503,9 +504,7 @@ import type { ContextBundle as ContextBundleForPreview } from "@/features/resear
 
 const ResearchContextPreviewWindow = lazyOverlay(
   () =>
-    import(
-      "@/features/window-panels/windows/research/ResearchContextPreviewWindow"
-    ),
+    import("@/features/window-panels/windows/research/ResearchContextPreviewWindow"),
   { ssr: false },
 );
 const FullScreenMarkdownEditorBridge = lazyOverlay(
@@ -833,8 +832,7 @@ const StreamDebugFloating = lazyOverlay(
   { ssr: false },
 );
 const CaptureInspectorWindow = lazyOverlay(
-  () =>
-    import("@/features/window-panels/windows/admin/CaptureInspectorWindow"),
+  () => import("@/features/window-panels/windows/admin/CaptureInspectorWindow"),
 );
 
 const StreamDebugHistoryWindow = lazyOverlay(
@@ -2076,9 +2074,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentSkillsWindow;
         const data = dataById.agentSkillsWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentSkillsWindow
@@ -3480,9 +3476,7 @@ export default function OverlayController() {
               )
             }
             topicId={typeof data?.topicId === "string" ? data.topicId : null}
-            bundle={
-              (data?.bundle ?? null) as ContextBundleForPreview | null
-            }
+            bundle={(data?.bundle ?? null) as ContextBundleForPreview | null}
             title={typeof data?.title === "string" ? data.title : undefined}
           />
         );

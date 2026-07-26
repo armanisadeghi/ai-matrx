@@ -48,6 +48,8 @@ import {
   removeResource,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
 import {
   selectIsExecuting,
   selectShouldShowVariables,
@@ -65,8 +67,6 @@ import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ResourceChips } from "@/features/agents/resources/ResourceChips";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
 import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
 import { PlusAttachMenu } from "@/features/agents/components/inputs/smart-input/PlusAttachMenu";
 import { toast } from "@/lib/toast";

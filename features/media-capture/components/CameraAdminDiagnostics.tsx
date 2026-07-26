@@ -29,7 +29,10 @@ import {
   refreshCaptureJournals,
 } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
 import { useCaptureUploadFeed } from "@/features/media-capture/hooks/useCaptureUploadFeed";
-import { listStoredTusUploads, type StoredTusUploadSummary } from "@/features/files/upload/tusUpload";
+import {
+  listStoredTusUploads,
+  type StoredTusUploadSummary,
+} from "@/features/files/upload/tusUpload";
 
 function probeRecordingMimes(kind: "video" | "audio"): string[] {
   if (
@@ -164,7 +167,8 @@ export function CameraAdminDiagnostics() {
         <KV k="Speakers detected" v={String(devices.outputs.length)} />
         {cameraLabelsUnlocked && devices.cameras.length > 0 && (
           <p className="mt-1 truncate text-[11px] text-muted-foreground">
-            Cameras: {devices.cameras.map((c) => c.label || "(unnamed)").join(", ")}
+            Cameras:{" "}
+            {devices.cameras.map((c) => c.label || "(unnamed)").join(", ")}
           </p>
         )}
         {micLabelsUnlocked && devices.inputs.length > 0 && (

@@ -9,13 +9,10 @@ enriched YouTube Data API primitive as the automated research pipeline.
 ## Entry points
 
 - UI: `YouTubeDiscoveryDemo.tsx`
-- Shared modal/page preview: `YouTubeVideoPreview.tsx`
 - API client: `service.ts`
 - API types and defaults: `types.ts`
 - Demo route: `/demos/youtube-discovery` in full-profile builds
-- Direct preview route: `/demos/youtube-discovery/videos/[videoId]`
 - Server route: `POST /api/research/youtube/search`
-- Direct lookup: `GET /api/research/youtube/videos/{video_id}`
 
 ## Invariants
 
@@ -35,8 +32,6 @@ enriched YouTube Data API primitive as the automated research pipeline.
 - Result actions can copy the canonical YouTube link, and previews can copy the
   displayed description text.
 - Video previews use the shared privacy-enhanced YouTube embed primitive.
-- The modal and dedicated route render the same `YouTubeVideoPreviewContent`;
-  direct links reload safely by fetching the video's enriched payload by ID.
 - This surface is transient discovery. Persisting selected videos into research
   remains a separate research action.
 
@@ -48,8 +43,6 @@ does not yet add a selected video to a research project.
 
 ## Changelog
 
-- **2026-07-26** — Added a dedicated, reload-safe video preview route and
-  extracted one shared preview renderer for both the route and modal.
 - **2026-07-25** — Added light-theme parity, default channel diversity, exact
   under-10/under-20 duration controls, permanently unfiltered discovery, and
   copy actions for links and preview descriptions.
