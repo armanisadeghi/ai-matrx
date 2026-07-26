@@ -84,12 +84,6 @@ function pathnameIsUnderAdminHosts(pathname: string): boolean {
   );
 }
 
-// ─── Build A/B kill switch ────────────────────────────────────────────────────
-// When true, every route metadata helper skips SVG / data-URI favicon generation
-// and returns titles/OG/Twitter only. Use to isolate whether per-route favicons
-// are inflating the Next build. Flip back to false to restore normal badges.
-const DISABLE_DYNAMIC_FAVICONS = true;
-
 // ─── Active favicon style ─────────────────────────────────────────────────────
 // The badge design generateSVGFavicon renders for EVERY route. Flip this one
 // value to instantly restore the previous look — nothing else changes.
@@ -301,11 +295,6 @@ export function generateFaviconMetadata(
   additionalMetadata?: Partial<Metadata>,
   letterOverride?: string,
 ): Metadata {
-  // TEMP build A/B: skip all per-route SVG favicon work.
-  if (DISABLE_DYNAMIC_FAVICONS) {
-    return additionalMetadata ?? {};
-  }
-
   let config = getFaviconConfigByPath(pathname);
 
   // Apply the letter override — keeps the resolved color but replaces the letter.
@@ -363,11 +352,6 @@ export function createCustomFaviconMetadata(
   config: FaviconConfig,
   additionalMetadata?: Partial<Metadata>,
 ): Metadata {
-  // TEMP build A/B: skip all per-route SVG favicon work.
-  if (DISABLE_DYNAMIC_FAVICONS) {
-    return additionalMetadata ?? {};
-  }
-
   const svg = generateSVGFavicon(config);
   const dataURI = svgToDataURI(svg);
 
