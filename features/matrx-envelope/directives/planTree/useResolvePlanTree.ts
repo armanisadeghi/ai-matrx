@@ -90,7 +90,11 @@ export function useResolvePlanTree(item: PlanTreeDirectiveItem | null): {
   status: ResolveStatus;
   data: ResolvedPlanTree | null;
 } {
-  const lookupKey = item ? `${item.site_id}:${item.nodes.length}` : null;
+  // Key on BOTH addressing forms — a text-addressed item has no site_id, so
+  // keying on site_id alone collided across sites in one envelope.
+  const lookupKey = item
+    ? `${item.site_id ?? item.site ?? ""}:${item.nodes.length}`
+    : null;
   return usePolledResolve(item, lookupKey, resolvePlanTree);
 }
 
