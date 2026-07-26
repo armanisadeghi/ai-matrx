@@ -1,117 +1,20 @@
-# Pending: archive/oom-batch-v0.4.66 vs working tree
-# Regenerated now.
-#
-# Legend: A = on our tree only (park removed / we lack); D = park only; M = differ
-# TOTAL still pending: 382
-
-## SKIP — keep A1 config (2)
-M	next.config.js
-M	tsconfig.json
+# Pending APPLY from archive/oom-batch-v0.4.66
+# Filter: still at A1 only. Match-park=done. Ahead/diverged=excluded.
+# After pull main@e7354a8f7 (v0.4.78)
+# Universe: 387 | done: 244 | ahead: 111 | STILL TO APPLY: 32
+# Ready to ship (unstaged for review): youtube YouTubeDiscoveryDemo.tsx
 
 ## SKIP — fake-dynamic / audit scripts (2)
-D	scripts/audit-index-files.mjs
-D	scripts/check-fake-dynamic-imports.mjs
+A	scripts/audit-index-files.mjs
+A	scripts/check-fake-dynamic-imports.mjs
 
-## BATCH — action-catalog (7)
-M	features/action-catalog/buildEnvelope.ts
-M	features/action-catalog/components/ActionBuilderPanel.tsx
-M	features/action-catalog/components/ActionCatalogGrid.tsx
+## BATCH — action-catalog (1)
 M	features/action-catalog/service.ts
-M	features/action-catalog/types.ts
-M	features/agents/components/settings-management/matrx-actions/directiveOptions.ts
-A	features/agents/components/settings-management/output-schema/applyDirectives.ts
 
-## BATCH — sharing (3)
-M	features/sharing/FEATURE.md
-M	features/sharing/README.md
-D	features/sharing/index.ts
-
-## BATCH — permissions utils (1)
-M	utils/permissions/access.ts
-
-## BATCH — applet (66)
-R	app/(transitional)/_apps/app-builder/applets/AppletsLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/AppletViewLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/AppTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/BrokerMappingsTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/ConfigTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/ContainersTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/DataSourceTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/FieldsTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/InfoTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/JsonConfigTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/LayoutTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/OverviewTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/RecipeTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/ReferencesTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/TabLayout.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/components/VisualsTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/AppEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/BrokerMappingsEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/ConfigEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/ContainersEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/DataSourceEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/EditTabLayout.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/FieldsEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/InfoEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/JsonConfigEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/LayoutEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/LegacyEditorTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/OverviewEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/RecipeEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/ReferencesEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/components/VisualsEditTab.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/edit/page.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/layout.tsx
-R	app/(transitional)/_apps/app-builder/applets/[id]/page.tsx
-R	app/(transitional)/_apps/app-builder/applets/community/page.tsx
-R	app/(transitional)/_apps/app-builder/applets/create/AppletCreateLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/applets/create/layout.tsx
-R	app/(transitional)/_apps/app-builder/applets/create/page.tsx
-R	app/(transitional)/_apps/app-builder/applets/layout.tsx
-R	app/(transitional)/_apps/app-builder/applets/list/page.tsx
-R	app/(transitional)/_apps/app-builder/applets/organization/page.tsx
-R	app/(transitional)/_apps/app-builder/applets/page.tsx
-R	app/(transitional)/_apps/app-builder/applets/templates/page.tsx
-M	features/applet/builder/modules/smart-parts/applets/SmartAppletList.tsx
-M	features/applet/builder/modules/smart-parts/apps/SmartAppList.tsx
-M	features/applet/builder/previews/AppPreviewCard.tsx
-M	features/applet/builder/previews/AppletPreviewCard.tsx
-M	features/applet/contepts/BrokerDebugger.tsx
-M	features/applet/demo/AppDemoManager.tsx
-M	features/applet/home/app-display/Banner.tsx
-M	features/applet/home/app-display/Default.tsx
-M	features/applet/home/app-display/Minimal.tsx
-M	features/applet/home/app-display/Modern.tsx
-M	features/applet/home/app-display/ModernGlass.tsx
-M	features/applet/home/app-display/QuarterThreeQuarters.tsx
-M	features/applet/home/app-display/SavedDefault.tsx
-M	features/applet/home/app-display/SideBySide.tsx
-M	features/applet/home/applet-card/Default.tsx
-M	features/applet/home/applet-card/Enhanced.tsx
-M	features/applet/home/applet-card/Modern.tsx
-M	features/applet/home/main-layout/Grid.tsx
-M	features/applet/home/main-layout/Sidebar.tsx
-M	features/applet/hooks/useAppletRecipe.ts
-M	features/applet/runner/fields/concept-broker-options/DragEditModifyTableField.tsx
-M	features/applet/runner/fields/concept-broker-options/SearchableSelectField.tsx
-M	features/applet/runner/header/CustomAppHeader.tsx
-
-## BATCH — podcasts (14)
-M	app/(core)/podcast/PodcastGrid.tsx
-M	app/(core)/podcast/studio/run-c/_components/StreamingResults.tsx
-M	app/(core)/podcast/studio/run-refine/[id]/_components/ProductionStage.tsx
-M	app/(core)/podcast/studio/run-reimagine/[id]/_components/StageCanvas.tsx
-M	features/podcasts/components/admin/AssetUploader.tsx
-M	features/podcasts/components/admin/PodcastsTable.tsx
-M	features/podcasts/components/admin/ShowDetailClient.tsx
-M	features/podcasts/components/admin/ShowsClient.tsx
-M	features/podcasts/components/player/PodcastEpisodePage.tsx
-M	features/podcasts/components/player/PodcastShowPage.tsx
-M	features/podcasts/generator/components/ProductionTeaser.tsx
-M	features/podcasts/studio/components/RunHistoryCard.tsx
-M	features/podcasts/studio/components/ShowManageClient.tsx
-M	features/podcasts/studio/components/StudioDashboard.tsx
+## BATCH — research (3)
+M	features/research/__tests__/serviceTopics.test.ts
+M	features/research/hooks/usePipelineProgress.ts
+M	features/research/service.ts
 
 ## BATCH — admin applications (9)
 M	app/(admin)/administration/applications/catalogs/page.tsx
@@ -124,299 +27,91 @@ M	features/admin/applications/config/components/AppConfigClient.tsx
 M	features/admin/applications/config/schema.ts
 M	features/admin/applications/config/types.ts
 
-## BATCH — media-capture (9)
-M	features/media-capture/components/CameraAdminDiagnostics.tsx
-M	features/media-capture/components/CaptureItemActions.tsx
-M	features/media-capture/components/CaptureLibrary.tsx
-M	features/media-capture/components/CaptureReview.tsx
-M	features/media-capture/components/CaptureTransportStrip.tsx
+## BATCH — media-capture (1)
 M	features/media-capture/core/capture-types.ts
-M	features/media-capture/hooks/useCaptureUploadFeed.ts
-M	features/media-capture/upload/__tests__/capture-uploader.test.ts
-M	features/media-capture/upload/capture-uploader.ts
-
-## BATCH — research (5)
-M	features/research/__tests__/serviceTopics.test.ts
-M	features/research/__tests__/sourceScoreDisplay.test.ts
-M	features/research/hooks/usePipelineProgress.ts
-M	features/research/service.ts
-M	features/research/youtube-discovery/YouTubeDiscoveryDemo.tsx
-
-## BATCH — tool-call-visualization (5)
-M	features/tool-call-visualization/AGENT_HANDOFF.md
-M	features/tool-call-visualization/FEATURE.md
-M	features/tool-call-visualization/renderers/scrape/ScrapeInline.tsx
-M	features/tool-call-visualization/renderers/scrape/ScrapeOverlay.tsx
-M	features/tool-call-visualization/result-fields/ResultFile.tsx
 
 ## BATCH — transcript-studio (3)
-D	features/transcript-studio/redux/actionTypes.ts
+A	features/transcript-studio/redux/actionTypes.ts
 M	features/transcript-studio/redux/realtimeMiddleware.ts
 M	features/transcript-studio/redux/thunks.ts
 
-## BATCH — markdown docs (remaining) (8)
-M	CLAUDE.md
-R	app/(transitional)/_flash-cards/docs/cartesia.md
-R	app/(transitional)/_flash-cards/fast-fire/REQUIREMENTS.md
-M	docs/upgrades/research/groq.md
-M	features/code/FEATURE.md
-M	features/files/FEATURE.md
-M	packages/matrx-agents/MIGRATION.md
-M	packages/matrx-agents/README.md
-
-## BATCH — scripts / package.json (5)
-M	package.json
+## BATCH — scripts / package.json (1)
 M	scripts/check-access-guards.ts
-M	scripts/check-doc-claims.ts
-M	scripts/check-protocol-sync.ts
-D	scripts/gen-action-nouns.mjs
 
-## BATCH — python-generated types (2)
-M	types/python-generated/api-types.ts
-M	types/python-generated/openapi.json
-
-## BATCH — barrel index deletes (files ignored for now) (1)
-A	features/files/api/index.ts
-
-## BATCH — other (240)
-M	app/(admin)/administration/users/feedback/components/FeedbackTable.tsx
+## BATCH — other (12)
 M	app/(core)/cms/admin/page.tsx
-M	app/(dev)/demos/tests/oauth/components/SlackManager.tsx
-M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx
-M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerSlackClient.tsx
-M	app/(dev)/demos/tests/slack/with-brokers/components/SlackAuthentication.tsx
-M	app/(dev)/demos/tests/slack/with-brokers/components/TokenManager.tsx
-M	app/(dev)/demos/tests/utility-function-tests/create-table-templates/page.dev.tsx
-M	app/(dev)/demos/tool-viz/result-fields/page.dev.tsx
-M	app/(public)/p/[slug]/page.tsx
-R	app/(transitional)/_applets/[category]/[subcategory]/[id]/page.tsx
-R	app/(transitional)/_applets/[category]/[subcategory]/page.tsx
-R	app/(transitional)/_applets/[category]/page.tsx
-R	app/(transitional)/_applets/page.tsx
-R	app/(transitional)/_apps/AppsLayoutClient.tsx
-R	app/(transitional)/_apps/[category]/[subcategory]/[id]/page.tsx
-R	app/(transitional)/_apps/[category]/[subcategory]/page.tsx
-R	app/(transitional)/_apps/[category]/page.tsx
-R	app/(transitional)/_apps/all-layouts/page.tsx
-R	app/(transitional)/_apps/app-builder/apps/AppsSectionLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/AppViewLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/AccessTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/AdditionalInfoTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/AppActionsTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/AppDataContextTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/AppLayoutTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/AppletsTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/BasicInfoTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/JsonConfigTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/OverviewTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/TabLayout.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/components/VisualDetailsTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/AppEditLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/AccessEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/AdditionalInfoEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/AppActionsEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/AppDataContextEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/AppLayoutEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/AppletsEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/BasicInfoEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/EditTabLayout.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/JsonConfigEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/LegacyEditorTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/OverviewEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/components/VisualDetailsEditTab.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/layout.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/edit/page.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/layout.tsx
-R	app/(transitional)/_apps/app-builder/apps/[id]/page.tsx
-R	app/(transitional)/_apps/app-builder/apps/community/page.tsx
-R	app/(transitional)/_apps/app-builder/apps/create/AppCreateLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/apps/create/layout.tsx
-R	app/(transitional)/_apps/app-builder/apps/create/page.tsx
-R	app/(transitional)/_apps/app-builder/apps/layout.tsx
-R	app/(transitional)/_apps/app-builder/apps/list/page.tsx
-R	app/(transitional)/_apps/app-builder/apps/organization/page.tsx
-R	app/(transitional)/_apps/app-builder/apps/page.tsx
-R	app/(transitional)/_apps/app-builder/apps/templates/page.tsx
-R	app/(transitional)/_apps/app-builder/containers/ContainersLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/containers/[id]/ContainerDetailLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/containers/[id]/edit/page.tsx
-R	app/(transitional)/_apps/app-builder/containers/[id]/layout.tsx
-R	app/(transitional)/_apps/app-builder/containers/[id]/page.tsx
-R	app/(transitional)/_apps/app-builder/containers/community/page.tsx
-R	app/(transitional)/_apps/app-builder/containers/create/ContainerCreateLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/containers/create/layout.tsx
-R	app/(transitional)/_apps/app-builder/containers/create/page.tsx
-R	app/(transitional)/_apps/app-builder/containers/layout.tsx
-R	app/(transitional)/_apps/app-builder/containers/list/page.tsx
-R	app/(transitional)/_apps/app-builder/containers/organization/page.tsx
-R	app/(transitional)/_apps/app-builder/containers/page.tsx
-R	app/(transitional)/_apps/app-builder/containers/templates/page.tsx
-R	app/(transitional)/_apps/app-builder/fields/FieldsLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/fields/[id]/FieldDetailLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/fields/[id]/edit/page.tsx
-R	app/(transitional)/_apps/app-builder/fields/[id]/layout.tsx
-R	app/(transitional)/_apps/app-builder/fields/[id]/page.tsx
-R	app/(transitional)/_apps/app-builder/fields/community/page.tsx
-R	app/(transitional)/_apps/app-builder/fields/create/FieldCreateLayoutClient.tsx
-R	app/(transitional)/_apps/app-builder/fields/create/layout.tsx
-R	app/(transitional)/_apps/app-builder/fields/create/page.tsx
-R	app/(transitional)/_apps/app-builder/fields/layout.tsx
-R	app/(transitional)/_apps/app-builder/fields/list/page.tsx
-R	app/(transitional)/_apps/app-builder/fields/organization/page.tsx
-R	app/(transitional)/_apps/app-builder/fields/page.tsx
-R	app/(transitional)/_apps/app-builder/fields/templates/page.tsx
-R	app/(transitional)/_apps/app-builder/layout-client.tsx
-R	app/(transitional)/_apps/app-builder/layout.tsx
-R	app/(transitional)/_apps/app-builder/page.tsx
-R	app/(transitional)/_apps/builder/hub/build-modules.tsx
-R	app/(transitional)/_apps/builder/hub/page.tsx
-R	app/(transitional)/_apps/builder/layout.tsx
-R	app/(transitional)/_apps/builder/modules/app/page.tsx
-R	app/(transitional)/_apps/builder/modules/applet/page.tsx
-R	app/(transitional)/_apps/builder/modules/common/BuilderPageLayout.tsx
-R	app/(transitional)/_apps/builder/modules/field-demo/FieldBuilderDemo.tsx
-R	app/(transitional)/_apps/builder/modules/field-demo/FieldDemoLayoutClient.tsx
-R	app/(transitional)/_apps/builder/modules/field-demo/layout.tsx
-R	app/(transitional)/_apps/builder/modules/field-demo/page.tsx
-R	app/(transitional)/_apps/builder/modules/field/page.tsx
-R	app/(transitional)/_apps/builder/modules/group/page.tsx
-R	app/(transitional)/_apps/builder/modules/library/page.tsx
-R	app/(transitional)/_apps/builder/page.tsx
-R	app/(transitional)/_apps/builder/unified-concept/ComponentRender.tsx
-R	app/(transitional)/_apps/builder/unified-concept/DefinitionEntry.tsx
-R	app/(transitional)/_apps/builder/unified-concept/field-builder/FieldComponentsList.tsx
-R	app/(transitional)/_apps/builder/unified-concept/page.tsx
-R	app/(transitional)/_apps/builder/unified-concept/sample-all-in-one.tsx
-R	app/(transitional)/_apps/custom/[slug]/AppNotFoundPage.tsx
-R	app/(transitional)/_apps/custom/[slug]/CustomAppHomePageClient.tsx
-R	app/(transitional)/_apps/custom/[slug]/CustomAppSlugLayoutClient.tsx
-R	app/(transitional)/_apps/custom/[slug]/[appletSlug]/AppletPageClient.tsx
-R	app/(transitional)/_apps/custom/[slug]/[appletSlug]/layout.tsx
-R	app/(transitional)/_apps/custom/[slug]/[appletSlug]/page.tsx
-R	app/(transitional)/_apps/custom/[slug]/debug.tsx
-R	app/(transitional)/_apps/custom/[slug]/layout.tsx
-R	app/(transitional)/_apps/custom/[slug]/page.tsx
-R	app/(transitional)/_apps/custom/layout.tsx
-R	app/(transitional)/_apps/debug/admin/[slug]/[appletSlug]/layout.tsx
-R	app/(transitional)/_apps/debug/admin/[slug]/[appletSlug]/page.tsx
-R	app/(transitional)/_apps/debug/admin/[slug]/layout.tsx
-R	app/(transitional)/_apps/debug/admin/[slug]/page.tsx
-R	app/(transitional)/_apps/debug/layout.tsx
-R	app/(transitional)/_apps/demo/AppsDemoLayoutClient.tsx
-R	app/(transitional)/_apps/demo/layout.tsx
-R	app/(transitional)/_apps/demo/page.tsx
-R	app/(transitional)/_apps/layout.tsx
-R	app/(transitional)/_apps/page.tsx
-R	app/(transitional)/_flash-cards/ai/AIChatInterface.tsx
-R	app/(transitional)/_flash-cards/ai/AiAssistModal.tsx
-R	app/(transitional)/_flash-cards/ai/AiChatModal.tsx
-R	app/(transitional)/_flash-cards/ai/AiMessaging.tsx
-R	app/(transitional)/_flash-cards/ai/ExpandedFlashcardWithChat.tsx
-R	app/(transitional)/_flash-cards/ai/PromptInputWithActions.tsx
-R	app/(transitional)/_flash-cards/components/EditFlashcardDialog.tsx
-R	app/(transitional)/_flash-cards/components/FlashcardComponent.tsx
-R	app/(transitional)/_flash-cards/components/FlashcardComponentMobile.tsx
-R	app/(transitional)/_flash-cards/components/FlashcardControls.tsx
-R	app/(transitional)/_flash-cards/components/FlashcardDisplay.tsx
-R	app/(transitional)/_flash-cards/components/FlashcardTable.tsx
-R	app/(transitional)/_flash-cards/components/PerformanceChart.tsx
-R	app/(transitional)/_flash-cards/hooks/useAiChat.ts
-R	app/(transitional)/_flash-cards/hooks/useFlashcardActions.ts
-R	app/(transitional)/_flash-cards/page.tsx
-R	app/(transitional)/_flash-cards/services/flashcardService.ts
-R	app/(transitional)/_flash-cards/utils/chatSettings.ts
-R	app/(transitional)/_flash-cards/utils/handleSendMessage.ts
-R	app/(transitional)/_flashcard/[category]/[id]/layout.tsx
-R	app/(transitional)/_flashcard/[category]/[id]/page.tsx
-R	app/(transitional)/_flashcard/[category]/layout.tsx
-R	app/(transitional)/_flashcard/[category]/page.tsx
-R	app/(transitional)/_flashcard/app-data.ts
-R	app/(transitional)/_flashcard/constants.ts
-R	app/(transitional)/_flashcard/loading.tsx
-R	app/(transitional)/_flashcard/not-found.tsx
-R	app/(transitional)/_flashcard/page.tsx
-M	app/api/agent-apps/generate-favicon/route.ts
-M	components/applet/apps/AppletCard.tsx
-M	components/flashcard-app/components/FlashcardComponentDesktop.tsx
-M	components/flashcard-app/components/FlashcardComponentMobile.tsx
-M	components/flashcard-app/components/FlashcardControls.tsx
-M	components/flashcard-app/components/SmartFlashcardControls/SmartFlashcardControls.tsx
-M	components/image/cloud/CloudFilesBrowserTable.tsx
-M	components/image/cloud/CloudImagesTab.tsx
-M	components/image/cloud/CloudUploadTab.tsx
-M	components/image/cloud/__tests__/cloudFilesBrowserUtils.test.ts
-M	components/image/cloud/cloudFilesBrowserUtils.ts
-M	components/mardown-display/blocks/presentations/SlideView.tsx
 M	components/mardown-display/blocks/tasks/tasklist-parser.tsx
-M	components/mermaid/export.ts
-M	components/official/ImageAssetUploader.tsx
-M	components/official/ImageCropUploader.tsx
 M	components/official/ProTextarea.tsx
-M	components/ui/file-upload/FileUploadWithStorage.tsx
-M	components/user-generated-table-data/TableListItem.tsx
-M	eslint.config.mjs
-M	features/agent-apps/components/agent-app-listings/AgentAppCard.tsx
-M	features/agent-apps/route/AgentAppOverviewContent.tsx
-M	features/agent-apps/utils/favicon-metadata.ts
-M	features/agents/components/inputs/input-components/MediaVariableInput.tsx
-M	features/agents/components/inputs/resources/usePasteImageResource.ts
 M	features/agents/components/settings-management/validation/__tests__/constraint-eval-fixture.test.ts
-M	features/agents/package-bootstrap/configure-agents.ts
-M	features/canvas/artifact-types/renderers/ImageArtifact.tsx
-M	features/canvas/social/CanvasShareSheet.tsx
-M	features/code/editor/BinaryFileViewer.tsx
-M	features/code/views/explorer/CloudFilesExplorer.tsx
-M	features/content-templates/components/TemplateCard.tsx
-M	features/cx-chat/components/ChatHeaderControls.tsx
-M	features/cx-chat/components/SsrSidebarChats.tsx
-M	features/cx-chat/components/user-input/ConversationInput.tsx
-M	features/file-analysis/components/AnnotatablePdfCanvas.tsx
-M	features/file-analysis/studio/StudioShell.tsx
-M	features/file-analysis/studio/panels/AnnotationsPanel.tsx
-M	features/files/components/surfaces/single-file/PdfEditTab.tsx
-M	features/files/hooks/useFileAsset.ts
-M	features/files/types.ts
 M	features/files/upload/tusUpload.ts
-M	features/image-manager/components/CloudFileMetadataSheet.tsx
-M	features/image-studio/hooks/useImageStudio.ts
 M	features/item-presentation/registry.tsx
 M	features/item-presentation/types.ts
-M	features/matrx-envelope/ApplyDirectiveButton.tsx
-D	features/matrx-envelope/catalog-nouns.generated.ts
-M	features/matrx-envelope/components/ProposedDirectivesZone.tsx
-D	features/matrx-envelope/directives/planTree/PlanTreePreview.tsx
-M	features/matrx-envelope/directives/planTree/PlanTreeRenderer.tsx
-M	features/matrx-envelope/directives/planTree/resolvePlanTree.ts
-M	features/matrx-envelope/envelope.ts
-M	features/matrx-envelope/referenceResolvers.ts
-M	features/matrx-envelope/registry.tsx
-M	features/news/components/NewsFloatingWorkspace.tsx
-M	features/organizations/components/GeneralSettings.tsx
-M	features/organizations/components/OrgWorkspace.tsx
-M	features/public-chat/components/ChatInputWithControls.tsx
-M	features/rag/components/search/SelectedPdfPages.tsx
-M	features/resource-manager/resource-picker/FilesResourcePicker.tsx
 M	features/shell/navigation/navActions.ts
-M	features/tasks/components/TaskItem.tsx
-M	features/war-room/components/thread/ThreadResourcesTab.tsx
-M	features/whatsapp-clone/chat-view/bubbles/ImageBubble.tsx
-M	features/whatsapp-clone/modals/media/LinksTab.tsx
-M	features/whatsapp-clone/modals/media/MediaTab.tsx
-M	features/window-panels/windows/cloud-files/CloudFilesWindow.tsx
-M	features/window-panels/windows/image/ImageViewerWindow.tsx
-M	hooks/brokers/useGeolocation.ts
-M	hooks/brokers/useSetGlobalBasics.ts
-M	hooks/flashcard-app/useFlashcard.ts
 M	lib/api/broker/types.ts
 M	lib/list-scope/types.ts
-M	lib/server/brokerCache.ts
-M	lib/server/brokerService.ts
-M	packages/matrx-agents/package.json
-D	packages/matrx-agents/src/adapters/index.ts
-D	packages/matrx-agents/src/config/index.ts
-M	packages/matrx-agents/src/config/registry.ts
-D	packages/matrx-agents/src/public.ts
-D	packages/matrx-agents/src/types/agents-types.ts
-M	public/blob-sw.js
-M	types/database.types.ts
+R	packages/matrx-agents/src/public.ts
+R	packages/matrx-agents/src/types/agents-types.ts
+
+## EXCLUDED — ahead/diverged (111)
+# M	app/(admin)/administration/users/feedback/components/FeedbackTable.tsx
+# M	app/(core)/podcast/PodcastGrid.tsx
+# M	app/(core)/podcast/studio/run-c/_components/StreamingResults.tsx
+# M	app/(core)/podcast/studio/run-refine/[id]/_components/ProductionStage.tsx
+# M	app/(core)/podcast/studio/run-reimagine/[id]/_components/StageCanvas.tsx
+# M	app/(dev)/demos/tests/oauth/components/SlackManager.tsx
+# M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx
+# M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerSlackClient.tsx
+# M	app/(dev)/demos/tests/slack/with-brokers/components/SlackAuthentication.tsx
+# M	app/(dev)/demos/tests/slack/with-brokers/components/TokenManager.tsx
+# M	app/(transitional)/apps/custom/[slug]/CustomAppSlugLayoutClient.tsx
+# M	app/api/agent-apps/generate-favicon/route.ts
+# M	components/applet/apps/AppletCard.tsx
+# M	components/image/cloud/CloudFilesBrowserTable.tsx
+# M	components/image/cloud/CloudImagesTab.tsx
+# M	components/image/cloud/CloudUploadTab.tsx
+# M	components/image/cloud/__tests__/cloudFilesBrowserUtils.test.ts
+# M	components/image/cloud/cloudFilesBrowserUtils.ts
+# M	components/mardown-display/blocks/presentations/SlideView.tsx
+# M	components/mermaid/export.ts
+# M	components/official/ImageAssetUploader.tsx
+# M	components/official/ImageCropUploader.tsx
+# M	components/ui/file-upload/FileUploadWithStorage.tsx
+# M	features/action-catalog/buildEnvelope.ts
+# M	features/agent-apps/route/AgentAppOverviewContent.tsx
+# M	features/agents/components/inputs/input-components/MediaVariableInput.tsx
+# M	features/agents/components/inputs/resources/usePasteImageResource.ts
+# M	features/applet/builder/modules/smart-parts/applets/SmartAppletList.tsx
+# M	features/applet/builder/modules/smart-parts/apps/SmartAppList.tsx
+# M	features/applet/builder/previews/AppPreviewCard.tsx
+# M	features/applet/builder/previews/AppletPreviewCard.tsx
+# M	features/applet/contepts/BrokerDebugger.tsx
+# M	features/applet/home/app-display/Banner.tsx
+# M	features/applet/home/app-display/Default.tsx
+# M	features/applet/home/app-display/Minimal.tsx
+# M	features/applet/home/app-display/Modern.tsx
+# M	features/applet/home/app-display/ModernGlass.tsx
+# M	features/applet/home/app-display/QuarterThreeQuarters.tsx
+# M	features/applet/home/app-display/SavedDefault.tsx
+# M	features/applet/home/app-display/SideBySide.tsx
+# M	features/applet/home/applet-card/Default.tsx
+# M	features/applet/home/applet-card/Enhanced.tsx
+# M	features/applet/home/applet-card/Modern.tsx
+# M	features/applet/home/main-layout/Grid.tsx
+# M	features/applet/home/main-layout/Sidebar.tsx
+# M	features/applet/hooks/useAppletRecipe.ts
+# M	features/applet/runner/fields/concept-broker-options/DragEditModifyTableField.tsx
+# M	features/applet/runner/fields/concept-broker-options/SearchableSelectField.tsx
+# M	features/applet/runner/header/CustomAppHeader.tsx
+# M	features/canvas/artifact-types/renderers/ImageArtifact.tsx
+# M	features/canvas/social/CanvasShareSheet.tsx
+# M	features/code/editor/BinaryFileViewer.tsx
+# M	features/code/views/explorer/CloudFilesExplorer.tsx
+# M	features/cx-chat/components/user-input/ConversationInput.tsx
+# M	features/file-analysis/components/AnnotatablePdfCanvas.tsx
+# M	features/file-analysis/studio/StudioShell.tsx
+# M	features/file-analysis/studio/panels/AnnotationsPanel.tsx
+# M	features/files/FEATURE.md
+# M	features/files/components/surfaces/single-file/PdfEditTab.tsx
+# M	features/files/types.ts
+# ... +51 more
 
