@@ -33,7 +33,7 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 // only filters route leaves, not arbitrary components.
 const VALID_PROFILES = new Set(["full", "core", "user", "slim"]);
 /** @type {null | "full" | "core" | "user" | "slim"} — null = use env / default */
-const FORCE_MATRX_PROFILE = "user";
+const FORCE_MATRX_PROFILE = "slim";
 if (FORCE_MATRX_PROFILE && !VALID_PROFILES.has(FORCE_MATRX_PROFILE)) {
     throw new Error(
         `[matrx] Invalid FORCE_MATRX_PROFILE="${FORCE_MATRX_PROFILE}". ` +
