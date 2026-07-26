@@ -7,5 +7,5 @@
  * compile; AppShell also stamps data-no-sidebar so the grid goes full-bleed.
  */
 module.exports = {
-  FORCE_EXCLUDE_SIDEMENU: true,
+  FORCE_EXCLUDE_SIDEMENU: false,
 };

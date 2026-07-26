@@ -58,7 +58,7 @@ function sidemenuStubAliases() {
 // only filters route leaves, not arbitrary components.
 const VALID_PROFILES = new Set(["full", "core", "user", "slim"]);
 /** @type {null | "full" | "core" | "user" | "slim"} — null = use env / default */
-const FORCE_MATRX_PROFILE = "full";
+const FORCE_MATRX_PROFILE = "core";
 if (FORCE_MATRX_PROFILE && !VALID_PROFILES.has(FORCE_MATRX_PROFILE)) {
     throw new Error(
         `[matrx] Invalid FORCE_MATRX_PROFILE="${FORCE_MATRX_PROFILE}". ` +
