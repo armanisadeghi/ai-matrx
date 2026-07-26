@@ -1,11 +1,11 @@
 # Pending: archive/oom-batch-v0.4.66 vs working tree
+# Regenerated now.
 #
-# APPLIED / DONE:
-#   - docs-only (.md)
-#   - sharing (+ AgentSharePanel)
-#   - barrel deletes: brokerSlice, matrx-agents/redux, permissions, source-control, workflow-emit
-#     DEFERRED: features/files/index.ts, features/files/api/index.ts
+# DONE: docs-only, sharing (+AgentSharePanel), workflow-emit barrel,
+#       brokerSlice / matrx-agents / permissions / source-control barrels
+# DEFERRED: features/files/index.ts, features/files/api/index.ts
 #
+# Legend: A = on our tree only (park removed / we lack); D = park only; M = differ
 # TOTAL still pending: 300
 
 ## SKIP — keep A1 config (1)

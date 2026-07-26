@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase/client';
 import { createTable, addRow, getTableDetails, type TableField } from '@/utils/user-table-utls/table-utils';
 import { sampleData } from '@/utils/user-table-utls/sample-data';
-import { getFlashcardSetOptions, getFlashcardSet } from '@/app/(transitional)/flashcard/app-data';
+import { getFlashcardSetOptions, getFlashcardSet } from '@/app/(transitional)/_flashcard/app-data';
 import { 
   getSchemaTemplates, 
   getSchemaTemplateById, 

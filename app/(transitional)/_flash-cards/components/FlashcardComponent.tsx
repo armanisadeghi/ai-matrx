@@ -3,11 +3,11 @@
 import React, { Suspense } from "react";
 
 import FlashcardControls from "./FlashcardControls";
-import FlashcardDisplay from "@/components/flashcard-app/-dev/display-all-in-one";
-import PerformanceChart from "@/components/flashcard-app/-dev/PerformanceChart";
+import FlashcardDisplay from "./FlashcardDisplay";
+import PerformanceChart from "./PerformanceChart";
 import EditFlashcardDialog from "./EditFlashcardDialog";
 import { Progress } from "@/components/ui/progress";
-
+import AiAssistModal from "../ai/AiAssistModal";
 import { useFlashcard } from "@/hooks/flashcard-app/useFlashcard";
 import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 import {
@@ -16,77 +16,74 @@ import {
   LargeComponentLoading,
   CardLoading,
 } from "@/components/matrx/LoadingComponents";
-import { ensureId } from "@/utils/schema/lite";
 import { getFlashcardSet } from "@/app/(transitional)/_flashcard/app-data";
-import AiAssistModal from "@/app/(transitional)/_flash-cards/ai/AiAssistModal";
-import type { TableData } from "@/types/tableTypes";
+import { ensureId } from "@/utils/schema/lite";
 import type { Flashcard } from "@/types/flashcards.types";
+import type { TableData } from "@/types/tableTypes";
 
-// MatrxTable is a generic table component (rows typed as the loose `TableData`),
-// but this screen only ever feeds it `Flashcard` rows (via `ensureId(allFlashcards)`
-// below). Narrow at the boundary instead of widening `useFlashcard`'s `handleAction`
-// contract back to `any`.
-function isFlashcardRow(row: TableData): row is TableData & Flashcard {
-  return (
-    typeof row.order === "number" &&
-    typeof row.front === "string" &&
-    typeof row.back === "string"
-  );
-}
+const isFlashcardRow = (row: TableData): row is TableData & Flashcard =>
+  typeof row.order === "number" &&
+  typeof row.front === "string" &&
+  typeof row.back === "string" &&
+  typeof row.reviewCount === "number" &&
+  typeof row.correctCount === "number" &&
+  typeof row.incorrectCount === "number";
 
-const FlashcardComponentMobile: React.FC<{ dataSetId: string }> = ({ dataSetId }) => {
+const FlashcardComponent: React.FC<{ dataSetId: string }> = ({ dataSetId }) => {
   const initialFlashcards = getFlashcardSet(dataSetId);
+
   const flashcardHook = useFlashcard(initialFlashcards);
+
   const {
     allFlashcards,
     currentIndex,
-    firstName,
-    handleNext,
-    handlePrevious,
-    handleSelectChange,
-    activeFlashcard,
-    shuffleCards,
+    editingCard,
     textModalState: {
-      isAiModalOpen,
       isAiAssistModalOpen,
       aiAssistModalMessage,
       aiAssistModalDefaultTab,
     },
-    textModalActions: {
-      openAiModal,
-      closeAiModal,
-      openAiAssistModal,
-      closeAiAssistModal,
-    },
-    setFontSize,
-    audioModalActions,
+    textModalActions: { closeAiAssistModal },
     handleAction,
     setEditingCard,
-    editingCard,
   } = flashcardHook;
+
   const flashcardsWithUUIDs = ensureId(allFlashcards);
+
+  const handleTableAction = (actionName: string, row: TableData) => {
+    if (!isFlashcardRow(row)) {
+      console.error("Flashcard table action received an invalid row", row);
+      return;
+    }
+    handleAction(actionName, row);
+  };
 
   return (
     <div className="w-full">
-      <div className="flex flex-col justify-between items-stretch mb-1 gap-1">
-        <div className="w-full flex">
+      <div className="flex flex-col lg:flex-row justify-between items-stretch mb-4 gap-4">
+        <div className="w-full lg:w-2/3 flex">
           <Suspense fallback={<CardLoading />}>
             <FlashcardDisplay flashcardHook={flashcardHook} />
           </Suspense>
         </div>
-        <div className="w-full flex flex-col gap-1">
-          <Suspense fallback={<SmallComponentLoading />}>
-            <FlashcardControls flashcardHook={flashcardHook} />
-          </Suspense>
+        <div className="w-full lg:w-1/3 flex">
           <Suspense fallback={<MediumComponentLoading />}>
-            <PerformanceChart />
+            <PerformanceChart cardCount={initialFlashcards.length} />
           </Suspense>
         </div>
       </div>
 
-      <div className="mt-2">
+      <Suspense fallback={<SmallComponentLoading />}>
+        <FlashcardControls flashcardHook={flashcardHook} />
+      </Suspense>
+
+      <div className="mt-4">
         <Progress
-          value={((currentIndex + 1) / allFlashcards.length) * 100}
+          value={
+            ((currentIndex + 1) /
+              Math.max(allFlashcards.length, initialFlashcards.length, 1)) *
+            100
+          }
           className="w-full"
         />
       </div>
@@ -94,13 +91,7 @@ const FlashcardComponentMobile: React.FC<{ dataSetId: string }> = ({ dataSetId }
       <Suspense fallback={<LargeComponentLoading />}>
         <MatrxTable
           data={flashcardsWithUUIDs}
-          onAction={(actionName, rowData) => {
-            if (!isFlashcardRow(rowData)) {
-              console.error("FlashcardComponentMobile: table row is not a Flashcard", rowData);
-              return;
-            }
-            handleAction(actionName, rowData);
-          }}
+          onAction={handleTableAction}
           defaultVisibleColumns={[
             "lesson",
             "topic",
@@ -133,4 +124,4 @@ const FlashcardComponentMobile: React.FC<{ dataSetId: string }> = ({ dataSetId }
   );
 };
 
-export default FlashcardComponentMobile;
+export default FlashcardComponent;
