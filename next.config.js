@@ -39,37 +39,68 @@ function sidemenuStubAliases() {
     };
 }
 
-// MATRX_PROFILE controls which routes are compiled into the build:
-//   full (default everywhere — matches production / aimatrx.com) —
-//                    main app + (admin) + (dev) `*.dev.tsx`.
+// MATRX_PROFILE controls which routes are compiled into the build.
+// With the 2026-07 deployment split, the app ships as THREE Vercel projects
+// from this ONE repo — the union of the deployed slices is the full app, so a
+// non-full profile in production is partitioning, not degradation:
+//   ai-matrx        → aimatrx.com        → MATRX_PROFILE=slim  (main app)
+//   ai-matrx-manage → manage.aimatrx.com → MATRX_PROFILE=admin ((admin) surface)
+//   ai-matrx-demos  → demos.aimatrx.com  → MATRX_PROFILE=demos ((dev) surface)
+//
+// Profiles:
+//   full (default) — everything: main app + (admin) + (dev) `*.dev.tsx`.
 //   core — main app + (admin); NO (dev).
-//   user — full WITHOUT (admin): main app + (dev); parks (admin).
-//   slim — core WITHOUT (admin): main app only; parks (admin).
-// Admin park: Next has no route-group exclude, so `user`/`slim` rename
-// app/(admin) → app/_admin_build_excluded (private `_` folder) for the
-// process lifetime. Git source of truth is ALWAYS app/(admin); parked
-// name is gitignored.
+//   user — main app + (dev); parks (admin).
+//   slim — main app only; parks (admin). (aimatrx.com's profile post-cutover.)
+//   admin — ONLY (admin) + (auth-pages) + api/root files; parks (core),
+//           (transitional), (public), (popup). For manage.aimatrx.com.
+//   demos — ONLY (dev) routes + (auth-pages) + api/root files; parks (core),
+//           (admin), (transitional), (public), (popup). For demos.aimatrx.com.
+//
+// Park mechanism: Next has no route-group exclude, so excluded groups are
+// renamed app/(x) → app/_x_build_excluded (private `_` folder) for the
+// process lifetime. Git source of truth is ALWAYS app/(x); parked names are
+// gitignored. app/(dev) is NEVER parked — prod code imports helper files
+// under it ("fake demos" debt); its route leaves are excluded via
+// pageExtensions instead (route leaves are *.dev.tsx).
+// WARNING: parking renames real folders — do not run a parked-profile build
+// while a dev server on another profile watches the same tree.
+//
+// Cross-group imports break parked builds: route-group code may only import
+// from features/ components/ lib/ etc., never another group's app/(x) path.
+// ((dev) helper imports are the tolerated exception — (dev) is never parked.)
 //
 // Two ways to set the profile:
 //   1. Code override below (wins over env) — flip for a ship without
 //      touching Vercel env. Set null to defer to env / default.
-//   2. Env: MATRX_PROFILE=user|slim|core|full pnpm build
-// Helper .tsx files under (dev) keep plain .tsx (prod imports); pageExtensions
-// only filters route leaves, not arbitrary components.
-const VALID_PROFILES = new Set(["full", "core", "user", "slim"]);
-/** @type {null | "full" | "core" | "user" | "slim"} — null = use env / default */
+//   2. Env: MATRX_PROFILE=slim|admin|demos|user|core|full pnpm build
+const PROFILES = {
+    full: { includeDev: true, park: [] },
+    core: { includeDev: false, park: [] },
+    user: { includeDev: true, park: ["admin"] },
+    slim: { includeDev: false, park: ["admin"] },
+    admin: { includeDev: false, park: ["core", "transitional", "public", "popup"] },
+    demos: { includeDev: true, park: ["core", "admin", "transitional", "public", "popup"] },
+};
+const PARKABLE_GROUPS = ["admin", "core", "transitional", "public", "popup"];
+const VALID_PROFILES = new Set(Object.keys(PROFILES));
+/** @type {null | keyof typeof PROFILES} — null = use env / default */
+// TEMP "core" until the deployment-split cutover: production full builds OOM,
+// so demos are dark on aimatrx.com today. Once manage.aimatrx.com and
+// demos.aimatrx.com are verified live, flip this to null and set
+// MATRX_PROFILE=slim on the ai-matrx Vercel project.
 const FORCE_MATRX_PROFILE = "core";
 if (FORCE_MATRX_PROFILE && !VALID_PROFILES.has(FORCE_MATRX_PROFILE)) {
     throw new Error(
         `[matrx] Invalid FORCE_MATRX_PROFILE="${FORCE_MATRX_PROFILE}". ` +
-            `Valid: "full" | "core" | "user" | "slim" | null.`,
+            `Valid: ${[...VALID_PROFILES].join(" | ")} | null.`,
     );
 }
 const rawProfile = (process.env.MATRX_PROFILE || "").trim().toLowerCase();
 if (rawProfile && !VALID_PROFILES.has(rawProfile)) {
     console.warn(
         `[matrx] Unknown MATRX_PROFILE="${process.env.MATRX_PROFILE}". ` +
-            `Valid values: "full" | "core" | "user" | "slim". Falling back to "full".`,
+            `Valid values: ${[...VALID_PROFILES].join(" | ")}. Falling back to "full".`,
     );
 }
 const MATRX_PROFILE = FORCE_MATRX_PROFILE
@@ -77,10 +108,8 @@ const MATRX_PROFILE = FORCE_MATRX_PROFILE
     : VALID_PROFILES.has(rawProfile)
       ? rawProfile
       : "full";
-const INCLUDE_DEV = MATRX_PROFILE === "full" || MATRX_PROFILE === "user";
-const EXCLUDE_ADMIN = MATRX_PROFILE === "user" || MATRX_PROFILE === "slim";
-// TEMP build A/B: park app/(public) regardless of profile. Flip false after test.
-const FORCE_EXCLUDE_PUBLIC = false;
+const INCLUDE_DEV = PROFILES[MATRX_PROFILE].includeDev;
+const PARK_SET = new Set(PROFILES[MATRX_PROFILE].park);
 
 /**
  * Park a route group as a Next private `_` folder (not routed/compiled), or
@@ -110,15 +139,16 @@ function syncRouteGroupPark(exclude, liveName, parkedName) {
     }
 }
 
-syncRouteGroupPark(EXCLUDE_ADMIN, "(admin)", "_admin_build_excluded");
-syncRouteGroupPark(FORCE_EXCLUDE_PUBLIC, "(public)", "_public_build_excluded");
+for (const group of PARKABLE_GROUPS) {
+    syncRouteGroupPark(PARK_SET.has(group), `(${group})`, `_${group}_build_excluded`);
+}
 
 console.log(
     `[matrx] MATRX_PROFILE=${MATRX_PROFILE}` +
         (FORCE_MATRX_PROFILE
             ? ` (FORCE_MATRX_PROFILE=${FORCE_MATRX_PROFILE})`
             : "") +
-        (FORCE_EXCLUDE_PUBLIC ? " (FORCE_EXCLUDE_PUBLIC=true)" : "") +
+        (PARK_SET.size ? ` (parked: ${[...PARK_SET].join(", ")})` : "") +
         (FORCE_EXCLUDE_SIDEMENU ? " (FORCE_EXCLUDE_SIDEMENU=true)" : "") +
         ` (NODE_ENV=${process.env.NODE_ENV || "undefined"})`,
 );
@@ -520,6 +550,11 @@ const nextConfig = {
         return config;
     },
     env: {
+        // The RESOLVED build profile (env + FORCE override), inlined at build
+        // time. proxy.ts trusts THIS — never the runtime MATRX_PROFILE env
+        // var, which can disagree with what was actually compiled when
+        // FORCE_MATRX_PROFILE is set in code.
+        NEXT_PUBLIC_MATRX_PROFILE: MATRX_PROFILE,
         // Expose deployment ID to the client for diagnostics — lets the global
         // error logger include "this tab is on deployment X" so we can correlate
         // errors with stale-tab vs. genuinely-broken builds. Reads the REAL

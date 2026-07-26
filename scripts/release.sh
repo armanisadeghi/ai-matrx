@@ -36,15 +36,24 @@
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --no-migrate # skip applying FE migrations
 #   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
+#   ./scripts/release.sh --target admin --message "new admin panel"
+#       → commit "release-admin: vX.Y.Z - new admin panel" (deploys ONLY
+#         manage.aimatrx.com; --target demos / all likewise)
 #
 # This script talks to git only (and optionally the co-located aidream migration
 # applier). It never calls Vercel. Deploy is: one atomic push of branch + tag to
 # origin/main; Vercel/GitHub handle the rest.
 #
-# Production builds ONLY run for commits whose message starts with `release:`
-# (vercel.json ignoreCommand → scripts/vercel-ignore-build.sh). Plain pushes to
-# main are skipped. Commit messages are always `release: vX.Y.Z` (optionally
-# with ` - <note>`) so a release can never accidentally skip its own deploy.
+# Production builds ONLY run for commits whose message starts with a release
+# prefix (vercel.json ignoreCommand → scripts/vercel-ignore-build.sh). Plain
+# pushes to main are skipped. The prefix selects WHICH Vercel project builds
+# (deployment split 2026-07 — one repo, three projects):
+#   release:        → ai-matrx (aimatrx.com, MATRX_PROFILE=slim)   [default]
+#   release-admin:  → ai-matrx-manage (manage.aimatrx.com, admin profile)
+#   release-demos:  → ai-matrx-demos (demos.aimatrx.com, demos profile)
+#   release-all:    → all three projects
+# Each project carries a MATRX_BUILD_TARGET env var (main|admin|demos) the
+# ignore script matches against, so untargeted projects never rebuild.
 #
 # Dirty working tree: plain release IGNORES uncommitted changes (bumps + pushes
 # what is already committed). Only a remote sync that must FF/rebase will refuse
@@ -123,6 +132,14 @@ DRY_RUN=false
 NO_MIGRATE=false
 NO_GATES=false
 SHIP_MODE=false
+# Which Vercel project(s) this release should build (deployment split 2026-07):
+#   main  → ai-matrx (aimatrx.com)                — commit prefix `release:`
+#   admin → ai-matrx-manage (manage.aimatrx.com)  — commit prefix `release-admin:`
+#   demos → ai-matrx-demos (demos.aimatrx.com)    — commit prefix `release-demos:`
+#   all   → all three                             — commit prefix `release-all:`
+# scripts/vercel-ignore-build.sh matches the prefix against each project's
+# MATRX_BUILD_TARGET env var, so only the targeted project(s) build.
+TARGET="main"
 
 # TEMP(oom-recovery 2026-07-26): skip migrations / protocol sync / attribution /
 # advisory gates so we can bisect the OOM with bump+push only. DELETE THIS BLOCK
@@ -141,10 +158,17 @@ while [[ $# -gt 0 ]]; do
         --dry-run) DRY_RUN=true; shift ;;
         --no-migrate) NO_MIGRATE=true; shift ;;
         --no-gates) NO_GATES=true; shift ;;
+        --target)
+            [[ -n "${2:-}" ]] || fail "--target requires an argument (main|admin|demos|all)."
+            case "$2" in
+                main|admin|demos|all) TARGET="$2" ;;
+                *) fail "Invalid --target '$2'. Use main, admin, demos, or all." ;;
+            esac
+            shift 2 ;;
         -h|--help)
             grep '^#' "$0" | head -45 | sed 's/^# \?//'
             exit 0 ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --dry-run, --no-migrate, or --no-gates." ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, or --no-gates." ;;
     esac
 done
 
@@ -418,27 +442,37 @@ if [[ $SEARCH_BUMPS -gt 0 ]]; then
 fi
 
 # ── Build commit message ─────────────────────────────────────────────────────
-# MUST start with `release:` — vercel.json ignoreCommand skips every other
-# commit message, so a custom message without the prefix would ship a tag
-# that never deploys. Format: "release: vX.Y.Z" or "release: vX.Y.Z - note".
+# MUST start with the target's release prefix — vercel.json ignoreCommand
+# skips every other commit message, so a custom message without the prefix
+# would ship a tag that never deploys. Format: "<prefix> vX.Y.Z - note".
+case "$TARGET" in
+    main)  PREFIX="release:" ;;
+    admin) PREFIX="release-admin:" ;;
+    demos) PREFIX="release-demos:" ;;
+    all)   PREFIX="release-all:" ;;
+esac
 NOTE="$CUSTOM_MESSAGE"
-if [[ "$NOTE" == release:* ]]; then
-    NOTE="${NOTE#release:}"
-    NOTE="${NOTE# }"
-fi
+for P in "release-admin:" "release-demos:" "release-all:" "release:"; do
+    if [[ "$NOTE" == "$P"* ]]; then
+        NOTE="${NOTE#"$P"}"
+        NOTE="${NOTE# }"
+        break
+    fi
+done
 # If the note already starts with the tag, don't double it.
 if [[ -n "$NOTE" && "$NOTE" != "$NEW_TAG" && "$NOTE" != "$NEW_TAG"* ]]; then
-    COMMIT_MSG="release: ${NEW_TAG} - ${NOTE}"
+    COMMIT_MSG="${PREFIX} ${NEW_TAG} - ${NOTE}"
 elif [[ -n "$NOTE" && ( "$NOTE" == "$NEW_TAG" || "$NOTE" == "$NEW_TAG"* ) ]]; then
-    COMMIT_MSG="release: ${NOTE}"
+    COMMIT_MSG="${PREFIX} ${NOTE}"
 else
-    COMMIT_MSG="release: ${NEW_TAG}"
+    COMMIT_MSG="${PREFIX} ${NEW_TAG}"
 fi
 
 # ── Preview ──────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}  ${PROJECT_NAME} release${NC}"
 echo -e "  ─────────────────────────────────────────────"
+echo -e "  Target     : ${CYAN}${TARGET}${NC}"
 echo -e "  Bump type  : ${CYAN}${BUMP_TYPE}${NC}"
 echo -e "  Old version: ${CURRENT_VERSION}"
 echo -e "  New version: ${GREEN}${NEW_VERSION}${NC}"

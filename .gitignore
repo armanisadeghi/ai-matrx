@@ -34,6 +34,9 @@ packages/*/tsconfig.tsbuildinfo
 # always the live app/(admin) / app/(public) paths — never commit these.
 app/_admin_build_excluded/
 app/_public_build_excluded/
+app/_core_build_excluded/
+app/_transitional_build_excluded/
+app/_popup_build_excluded/
 
 # production
 /build
