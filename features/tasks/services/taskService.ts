@@ -6,7 +6,11 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { getSharedWithMe } from "@/utils/permissions/service";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { DatabaseTask } from "../types";
-import { fileHandler, folderForTask } from "@/features/files";
+// Deep imports, NOT the `@/features/files` barrel. This module is reached from the
+// shell sidebar (navActions -> war-room/thunks -> taskService), so the barrel put the
+// whole Files UI into every authenticated route's graph via this one line.
+import { fileHandler } from "@/features/files/handler/handler";
+import { folderForTask } from "@/features/files/utils/folder-conventions";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { commentsService } from "@/features/comments/service/commentsService";
 import type { Comment } from "@/features/comments/types";

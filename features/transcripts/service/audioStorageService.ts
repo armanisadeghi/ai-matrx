@@ -5,7 +5,8 @@
 // the same RLS, signed-URL refresh, and lifecycle as any other file in
 // the app. Canonical Files is the only file system.
 
-import { fileHandler } from "@/features/files";
+// Deep import, NOT the `@/features/files` barrel — see the note in lib/redux/store.ts.
+import { fileHandler } from "@/features/files/handler/handler";
 import { RECORDING_LIMITS } from "../constants/recording";
 import {
   normalizeAudioContentType,

@@ -20,10 +20,13 @@ import { enableMapSet } from "immer";
 import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
 import { notesRealtimeMiddleware } from "@/features/notes/redux/realtimeMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
-import {
-  cloudFilesRealtimeMiddleware,
-  cloudFilesMutationToastMiddleware,
-} from "@/features/files";
+// Deep imports, NOT `@/features/files`. The barrel re-exports the whole Files UI
+// (PreviewPane -> RAG library + PDF viewer + file-analysis studio, @xyflow/react,
+// react-icons/fa6). The store is built under Providers for every route, so the
+// barrel put ~261 modules / 1.75 MB of UI into every route's graph to obtain two
+// middlewares. Never import the barrel from here.
+import { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
+import { cloudFilesMutationToastMiddleware } from "@/features/files/redux/mutation-toast-middleware";
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";

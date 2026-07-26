@@ -18,7 +18,11 @@
 
 "use client";
 
-import { CloudFolders, fileHandler } from "@/features/files";
+// Deep imports, NOT the `@/features/files` barrel. This module is reached from
+// Providers -> GlobalRecordingProvider -> useChunkedRecordAndTranscribe, so the
+// barrel entered every authenticated route through the audio chain.
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { fileHandler } from "@/features/files/handler/handler";
 import { extractErrorMessage } from "@/utils/errors";
 import { AUDIO_API_ROUTES, RETRY_CONFIG } from "../constants";
 import { TranscriptionResult, TranscriptionOptions } from "../types";

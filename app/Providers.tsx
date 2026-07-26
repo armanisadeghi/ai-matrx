@@ -64,11 +64,12 @@ import { WindowPersistenceManager } from "@/features/window-panels/WindowPersist
 import { ExtensionBridgeSubscriber } from "@/lib/extension-bridge/ExtensionBridgeSubscriber";
 import GlobalTaskShortcut from "@/features/tasks/widgets/GlobalTaskShortcut";
 import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromSourceDialog";
-import {
-  CloudFilesPickerHost,
-  CloudFilesRealtimeProvider,
-  UploadGuardHost,
-} from "@/features/files";
+// Deep imports, NOT `@/features/files` — this file's own header (line 13) says
+// "never import from a barrel index.ts", and the barrel drags the entire Files UI
+// into every authenticated route to obtain these three hosts.
+import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
+import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
+import { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";

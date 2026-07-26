@@ -17,7 +17,12 @@ import { useMemo } from "react";
 import type { DocumentDetail } from "@/features/rag/types/documents";
 import { pageImageUrl } from "@/features/rag/api/document";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
-import { InlineMediaRef } from "@/features/files";
+// Deep import, NOT the `@/features/files` barrel. The barrel re-exports PreviewPane,
+// which reaches DocumentViewer -> this file; importing the barrel back from here
+// welded all ~440 barrel modules into one strongly-connected component, so tree
+// shaking could not drop anything and all ~82 InlineMediaRef consumers compiled the
+// RAG library and PDF viewer. Breaking this edge breaks the cycle.
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface PdfPreviewProps {
   fileId: string;
