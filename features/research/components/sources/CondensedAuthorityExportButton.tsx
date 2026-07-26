@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import {
-  Award,
+  FileStack,
   ChevronDown,
   Braces,
   Download,
@@ -25,12 +25,13 @@ import {
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { getCurationData } from "../../service";
 import {
-  buildAuthorityExport,
-  chunkAuthorityExport,
-  authorityExportToJson,
-  authorityExportFilename,
-  type AuthorityChunk,
-} from "../../utils/authorityExport";
+  buildCondensedAuthorityExport,
+  chunkCondensedAuthorityExport,
+  condensedAuthorityExportToJson,
+  condensedAuthorityExportFilename,
+  CONDENSED_EXPORT_SNIPPET_LIMITS,
+  type CondensedAuthorityChunk,
+} from "../../utils/condensedAuthorityExport";
 import {
   AUTHORITY_EXPORT_CHUNK_SIZES,
   authorityExportBatchLabel,
@@ -39,18 +40,18 @@ import {
   writeExportClipboard,
 } from "../../utils/authorityExportMenu";
 
-interface AuthorityExportButtonProps {
+interface CondensedAuthorityExportButtonProps {
   topicId: string;
   topicName: string | null;
 }
 
-function chunkAiText(chunk: AuthorityChunk): string {
+function chunkAiText(chunk: CondensedAuthorityChunk): string {
   const batchNote =
     chunk.chunkCount > 1
-      ? ` This is batch ${chunk.chunkIndex} of ${chunk.chunkCount} (${chunk.totalSourceCount} sources total). Score ONLY the ${chunk.sourceCount} sources in this batch.`
+      ? ` This is batch ${chunk.chunkIndex} of ${chunk.chunkCount} (${chunk.totalSourceCount} sources total).`
       : "";
   return buildAgentPayload({
-    kind: "research-source-authority-ranking",
+    kind: "research-source-authority-ranking-condensed",
     location: "AI Matrx — Research · Sources",
     description: chunk.instructions + batchNote,
     data: { sources: chunk.sources },
@@ -64,36 +65,41 @@ function chunkAiText(chunk: AuthorityChunk): string {
     },
     context: {
       topic: chunk.topicName,
-      returnSchema: JSON.stringify(chunk.returnSchema),
     },
   });
 }
 
 /**
- * Builds an authoritativeness-ranking payload for EVERY source in the topic
- * (not just the current page). Large topics are split into batches the user
- * processes one model call at a time — copy a batch, paste into a fresh chat,
- * collect the JSON, come back and copy the next batch.
+ * Condensed export: url/title/description/age/snippets, ordered by fused score.
  */
-export function AuthorityExportButton({
+export function CondensedAuthorityExportButton({
   topicId,
   topicName,
-}: AuthorityExportButtonProps) {
+}: CondensedAuthorityExportButtonProps) {
   const [busy, setBusy] = useState(false);
   const [chunkSize, setChunkSize] = useState("50");
+  const [snippetLimit, setSnippetLimit] = useState("0");
   const [totalSources, setTotalSources] = useState<number | null>(null);
-  const [chunks, setChunks] = useState<AuthorityChunk[] | null>(null);
+  const [chunks, setChunks] = useState<CondensedAuthorityChunk[] | null>(null);
   const [cursor, setCursor] = useState(0);
 
   const size = useMemo(() => parseInt(chunkSize, 10) || 0, [chunkSize]);
+  const snippetMaxChars = useMemo(
+    () => parseInt(snippetLimit, 10) || 0,
+    [snippetLimit],
+  );
 
-  const loadChunks = useCallback(async (): Promise<AuthorityChunk[]> => {
+  const loadChunks = useCallback(async (): Promise<
+    CondensedAuthorityChunk[]
+  > => {
     const { rows } = await getCurationData(topicId);
     if (rows.length === 0) throw new Error("No sources to export yet.");
     setTotalSources(rows.length);
-    const payload = buildAuthorityExport(topicId, topicName, rows);
-    return chunkAuthorityExport(payload, size);
-  }, [topicId, topicName, size]);
+    const payload = buildCondensedAuthorityExport(topicId, topicName, rows, {
+      snippetMaxChars,
+    });
+    return chunkCondensedAuthorityExport(payload, size);
+  }, [topicId, topicName, size, snippetMaxChars]);
 
   const refreshSourceCount = useCallback(async () => {
     try {
@@ -117,7 +123,9 @@ export function AuthorityExportButton({
         }
         const chunk = list[idx];
         const text =
-          mode === "ai" ? chunkAiText(chunk) : authorityExportToJson(chunk);
+          mode === "ai"
+            ? chunkAiText(chunk)
+            : condensedAuthorityExportToJson(chunk);
         await writeExportClipboard(text);
 
         const next = idx + 1;
@@ -125,7 +133,7 @@ export function AuthorityExportButton({
         const label = mode === "ai" ? "for AI" : "as JSON";
         if (list.length > 1) {
           toast.success(
-            `Copied batch ${chunk.chunkIndex}/${chunk.chunkCount} ${label} (${chunk.sourceCount} sources)`,
+            `Copied condensed batch ${chunk.chunkIndex}/${chunk.chunkCount} ${label} (${chunk.sourceCount} sources)`,
             {
               description:
                 next < list.length
@@ -134,7 +142,9 @@ export function AuthorityExportButton({
             },
           );
         } else {
-          toast.success(`Copied ${chunk.sourceCount} sources ${label}`);
+          toast.success(
+            `Copied ${chunk.sourceCount} condensed sources ${label}`,
+          );
         }
         if (next >= list.length) setCursor(0);
       } catch (err) {
@@ -153,13 +163,13 @@ export function AuthorityExportButton({
       const list = await loadChunks();
       list.forEach((chunk, i) => {
         setTimeout(() => {
-          const blob = new Blob([authorityExportToJson(chunk)], {
+          const blob = new Blob([condensedAuthorityExportToJson(chunk)], {
             type: "application/json",
           });
           const href = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = href;
-          a.download = authorityExportFilename(chunk);
+          a.download = condensedAuthorityExportFilename(chunk);
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -168,8 +178,8 @@ export function AuthorityExportButton({
       });
       toast.success(
         list.length > 1
-          ? `Downloading ${list.length} batch files`
-          : `Downloaded ${list[0].sourceCount} sources`,
+          ? `Downloading ${list.length} condensed batch files`
+          : `Downloaded ${list[0].sourceCount} condensed sources`,
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Export failed");
@@ -178,11 +188,15 @@ export function AuthorityExportButton({
     }
   }, [busy, loadChunks]);
 
-  const resetCursor = useCallback((nextSize: string) => {
-    setChunkSize(nextSize);
-    setChunks(null);
-    setCursor(0);
-  }, []);
+  const resetExportState = useCallback(
+    (updates: { chunkSize?: string; snippetLimit?: string }) => {
+      if (updates.chunkSize != null) setChunkSize(updates.chunkSize);
+      if (updates.snippetLimit != null) setSnippetLimit(updates.snippetLimit);
+      setChunks(null);
+      setCursor(0);
+    },
+    [],
+  );
 
   const inPass = chunks && chunks.length > 1 && cursor > 0;
   const stepSuffix = inPass
@@ -201,14 +215,14 @@ export function AuthorityExportButton({
           size="sm"
           disabled={busy}
           className="gap-1.5 text-xs"
-          title="Export sources for AI authoritativeness ranking"
+          title="Export condensed sources ordered by research score"
         >
           {busy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <Award className="h-3.5 w-3.5 text-primary" />
+            <FileStack className="h-3.5 w-3.5 text-primary" />
           )}
-          Authority export
+          Condensed
           <ChevronDown className="h-3 w-3 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
@@ -219,7 +233,10 @@ export function AuthorityExportButton({
             <span className="tabular-nums">{totalSources}</span>
           ) : null}
         </DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={chunkSize} onValueChange={resetCursor}>
+        <DropdownMenuRadioGroup
+          value={chunkSize}
+          onValueChange={(value) => resetExportState({ chunkSize: value })}
+        >
           {AUTHORITY_EXPORT_CHUNK_SIZES.map((opt) => (
             <DropdownMenuRadioItem
               key={opt.value}
@@ -228,6 +245,25 @@ export function AuthorityExportButton({
               onSelect={(e) => e.preventDefault()}
             >
               {authorityExportBatchLabel(opt.value, totalSources)}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+          Snippet max (chars)
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={snippetLimit}
+          onValueChange={(value) => resetExportState({ snippetLimit: value })}
+        >
+          {CONDENSED_EXPORT_SNIPPET_LIMITS.map((opt) => (
+            <DropdownMenuRadioItem
+              key={opt.value}
+              value={opt.value}
+              className={EXPORT_MENU_RADIO_CLASS}
+              onSelect={(e) => e.preventDefault()}
+            >
+              {opt.label}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

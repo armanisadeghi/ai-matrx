@@ -219,7 +219,11 @@ function SignalRow({ present, label }: { present: boolean; label: string }) {
       ) : (
         <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
       )}
-      <span className={present ? "text-foreground/80" : "text-muted-foreground/60"}>
+      <span
+        className={
+          present ? "text-sm text-foreground" : "text-sm text-muted-foreground"
+        }
+      >
         {label}
       </span>
     </div>
@@ -229,7 +233,7 @@ function SignalRow({ present, label }: { present: boolean; label: string }) {
 /** A neutral entity chip — monochrome, never coloured (one per entity string). */
 function EntityChip({ value }: { value: string }) {
   return (
-    <span className="inline-flex max-w-[18rem] truncate rounded-md border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] text-foreground/75">
+    <span className="inline-flex max-w-[18rem] truncate rounded-md border border-border/60 bg-background px-2 py-0.5 text-xs text-foreground">
       {value}
     </span>
   );
@@ -269,16 +273,18 @@ function FindingCard({ finding }: { finding: PageFinding }) {
   const confidencePct =
     finding.confidence == null ? null : Math.round(finding.confidence);
   return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-3 space-y-2">
-      <p className="text-xs font-medium leading-relaxed text-foreground/90">
+    <div className="rounded-lg border border-border/60 bg-card/60 p-3 space-y-2">
+      <p className="text-sm font-medium leading-relaxed text-foreground">
         {finding.finding}
       </p>
       {finding.supporting_text && (
-        <p className="border-l-2 border-border/70 pl-2.5 text-[11px] italic leading-relaxed text-muted-foreground">
+        <p className="border-l-2 border-primary/30 pl-2.5 text-sm italic leading-relaxed text-foreground/80">
           {finding.supporting_text}
         </p>
       )}
-      {(confidencePct != null || finding.importance || finding.finding_type) && (
+      {(confidencePct != null ||
+        finding.importance ||
+        finding.finding_type) && (
         <div className="flex flex-wrap items-center gap-3 pt-0.5">
           {confidencePct != null && (
             <span className="inline-flex items-baseline gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -305,17 +311,18 @@ function FindingCard({ finding }: { finding: PageFinding }) {
   );
 }
 
-const EVIDENCE_SIGNAL_LABELS: { key: keyof EvidenceSignals; label: string }[] = [
-  { key: "has_primary_data", label: "Primary data" },
-  { key: "has_citations", label: "Citations" },
-  { key: "has_methodology", label: "Methodology" },
-  { key: "has_expert_attribution", label: "Expert attribution" },
-  { key: "has_specific_numbers", label: "Specific numbers" },
-  { key: "has_dates", label: "Dates" },
-  { key: "has_named_sources", label: "Named sources" },
-  { key: "has_original_reporting", label: "Original reporting" },
-  { key: "has_verifiable_claims", label: "Verifiable claims" },
-];
+const EVIDENCE_SIGNAL_LABELS: { key: keyof EvidenceSignals; label: string }[] =
+  [
+    { key: "has_primary_data", label: "Primary data" },
+    { key: "has_citations", label: "Citations" },
+    { key: "has_methodology", label: "Methodology" },
+    { key: "has_expert_attribution", label: "Expert attribution" },
+    { key: "has_specific_numbers", label: "Specific numbers" },
+    { key: "has_dates", label: "Dates" },
+    { key: "has_named_sources", label: "Named sources" },
+    { key: "has_original_reporting", label: "Original reporting" },
+    { key: "has_verifiable_claims", label: "Verifiable claims" },
+  ];
 
 const BIAS_SIGNAL_LABELS: { key: keyof BiasAndRiskSignals; label: string }[] = [
   { key: "is_promotional", label: "Reads as promotional" },
@@ -388,8 +395,8 @@ function PageAnalysisDocument({
         {analysis.should_reject && analysis.rejection_reason && (
           <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/[0.05] px-3 py-2">
             <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500/70" />
-            <p className="text-[11px] leading-relaxed text-foreground/80">
-              <span className="font-medium text-muted-foreground">
+            <p className="text-sm leading-relaxed text-foreground">
+              <span className="font-medium text-foreground/70">
                 Recommended for rejection:{" "}
               </span>
               {analysis.rejection_reason}
@@ -399,18 +406,11 @@ function PageAnalysisDocument({
       </div>
 
       {/* Score panel — the eight axes as meters + the three fused/staged scores */}
-      <AnalysisBlock
-        icon={<TrendingUp className="h-3 w-3" />}
-        title="Scores"
-      >
-        <div className="rounded-xl border border-border/60 bg-card/40 p-4 space-y-4">
+      <AnalysisBlock icon={<TrendingUp className="h-3 w-3" />} title="Scores">
+        <div className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
           {/* Headline scores: final · overall page value · staged pre/post */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <HeadlineScore
-              label="Final score"
-              value={finalScore}
-              emphasize
-            />
+            <HeadlineScore label="Final score" value={finalScore} emphasize />
             <HeadlineScore
               label="Page value"
               value={analysis.overall_page_value_score}
@@ -436,10 +436,7 @@ function PageAnalysisDocument({
             />
             <ScoreBar label="Freshness" score={analysis.freshness_score} />
             <ScoreBar label="Originality" score={analysis.originality_score} />
-            <ScoreBar
-              label="Specificity"
-              score={analysis.specificity_score}
-            />
+            <ScoreBar label="Specificity" score={analysis.specificity_score} />
             <ScoreBar
               label="Commercial bias"
               score={analysis.commercial_bias_score}
@@ -453,7 +450,7 @@ function PageAnalysisDocument({
       {/* Summary — the agent's prose, rendered as real markdown */}
       {analysis.summary_markdown && (
         <AnalysisBlock icon={<FileText className="h-3 w-3" />} title="Summary">
-          <div className="rounded-xl border border-border/60 bg-card/40 px-4 py-3">
+          <div className="rounded-xl border border-border/60 bg-card/60 px-4 py-3">
             <MarkdownStream content={analysis.summary_markdown} />
           </div>
         </AnalysisBlock>
@@ -466,11 +463,14 @@ function PageAnalysisDocument({
           title="Key facts"
           count={analysis.key_facts.length}
         >
-          <ul className="space-y-1.5">
+          <ul className="space-y-2 rounded-xl border border-border/60 bg-card/60 px-4 py-3">
             {analysis.key_facts.map((fact, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs leading-relaxed">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/50" />
-                <span className="text-foreground/85">{fact}</span>
+              <li
+                key={i}
+                className="flex items-start gap-2.5 text-sm leading-relaxed"
+              >
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                <span className="text-foreground">{fact}</span>
               </li>
             ))}
           </ul>
@@ -488,13 +488,13 @@ function PageAnalysisDocument({
             {analysis.notable_quotes.map((q, i) => (
               <blockquote
                 key={i}
-                className="rounded-lg border-l-2 border-primary/40 bg-muted/30 px-3 py-2"
+                className="rounded-lg border-l-2 border-primary/40 bg-muted/20 px-3 py-2.5"
               >
-                <p className="text-xs italic leading-relaxed text-foreground/85">
+                <p className="text-sm italic leading-relaxed text-foreground">
                   &ldquo;{q.quote}&rdquo;
                 </p>
                 {q.speaker && (
-                  <footer className="mt-1 text-[11px] font-medium text-muted-foreground">
+                  <footer className="mt-1.5 text-xs font-medium text-foreground/70">
                     — {q.speaker}
                   </footer>
                 )}
@@ -530,7 +530,7 @@ function PageAnalysisDocument({
             {analysis.notable_claims.map((c, i) => (
               <div
                 key={i}
-                className="rounded-lg border border-border/60 bg-card/40 p-3 space-y-1.5"
+                className="rounded-lg border border-border/60 bg-card/60 p-3 space-y-1.5"
               >
                 <div className="flex items-start gap-2">
                   {c.is_well_supported === true ? (
@@ -538,14 +538,14 @@ function PageAnalysisDocument({
                   ) : c.is_well_supported === false ? (
                     <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500/60" />
                   ) : (
-                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/40" />
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/50" />
                   )}
-                  <p className="text-xs font-medium leading-relaxed text-foreground/90">
+                  <p className="text-sm font-medium leading-relaxed text-foreground">
                     {c.claim}
                   </p>
                 </div>
                 {c.support_assessment && (
-                  <p className="pl-5.5 text-[11px] leading-relaxed text-muted-foreground">
+                  <p className="pl-5.5 text-sm leading-relaxed text-foreground/80">
                     {c.support_assessment}
                   </p>
                 )}
@@ -561,7 +561,7 @@ function PageAnalysisDocument({
           icon={<CheckCircle2 className="h-3 w-3" />}
           title="Evidence signals"
         >
-          <div className="grid grid-cols-1 gap-x-6 gap-y-2 rounded-xl border border-border/60 bg-card/40 p-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-2 rounded-xl border border-border/60 bg-card/60 p-4 sm:grid-cols-2">
             {EVIDENCE_SIGNAL_LABELS.map(({ key, label }) => (
               <SignalRow
                 key={key}
@@ -605,7 +605,10 @@ function PageAnalysisDocument({
               <DateRow label="Updated" value={dates.updated_date} />
             )}
             {dates.content_timeframe && (
-              <DateRow label="Content timeframe" value={dates.content_timeframe} />
+              <DateRow
+                label="Content timeframe"
+                value={dates.content_timeframe}
+              />
             )}
           </div>
         </AnalysisBlock>
@@ -618,7 +621,7 @@ function PageAnalysisDocument({
           title="Entities mentioned"
           count={entityCount}
         >
-          <div className="space-y-3 rounded-xl border border-border/60 bg-card/40 p-4">
+          <div className="space-y-3 rounded-xl border border-border/60 bg-card/60 p-4">
             <EntityGroup
               icon={<Users className="h-3 w-3" />}
               label="People"
@@ -654,7 +657,7 @@ function PageAnalysisDocument({
           icon={<FileText className="h-3 w-3" />}
           title="Analysis notes"
         >
-          <p className="rounded-xl border border-border/60 bg-card/40 px-4 py-3 text-xs leading-relaxed text-foreground/80">
+          <p className="rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-sm leading-relaxed text-foreground">
             {analysis.analysis_notes}
           </p>
         </AnalysisBlock>
@@ -683,7 +686,7 @@ function HeadlineScore({
           "block tabular-nums leading-none",
           emphasize
             ? "text-2xl font-bold text-foreground"
-            : "text-xl font-semibold text-foreground/85",
+            : "text-xl font-semibold text-foreground",
         )}
       >
         {fmtScore(value)}
@@ -697,7 +700,7 @@ function DateRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border/40 py-2 last:border-0">
       <span className="text-[11px] text-muted-foreground">{label}</span>
-      <span className="text-xs font-medium text-foreground/85">{value}</span>
+      <span className="text-sm font-medium text-foreground">{value}</span>
     </div>
   );
 }
@@ -1108,7 +1111,9 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       )}
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">Not yet ranked</span>
+                    <span className="text-muted-foreground">
+                      Not yet ranked
+                    </span>
                   )}
                 </MetaRow>
                 {(typedSource.final_source_score != null ||
@@ -1458,7 +1463,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         {/* Page Analysis Section — the deep structured per-page read. Prominent,
             above the raw content, because it's the agent's verdict on the page. */}
         {typedSource && (
-          <div className="rounded-2xl border border-border/60 bg-card/30 backdrop-blur-sm p-4 sm:p-5">
+          <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-4 sm:p-5">
             {pageAnalysis ? (
               <PageAnalysisDocument
                 analysis={pageAnalysis}

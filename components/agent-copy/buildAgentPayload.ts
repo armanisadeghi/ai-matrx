@@ -57,6 +57,11 @@ function renderContextEntries(
     .join("\n");
 }
 
+/** Fence pretty JSON so markdown renderers syntax-highlight the payload body. */
+export function fenceJsonBlock(json: string): string {
+  return `\`\`\`json\n${json.trimEnd()}\n\`\`\``;
+}
+
 export function buildAgentPayload(input: AgentPayloadInput): string {
   const { kind, location, description, data, summary, attributes, context } =
     input;
@@ -64,8 +69,7 @@ export function buildAgentPayload(input: AgentPayloadInput): string {
   // Live browser state — the high-value bit. Guarded for SSR even though
   // this only ever runs inside a click handler on a client component.
   const url = typeof window !== "undefined" ? window.location.href : "";
-  const route =
-    typeof window !== "undefined" ? window.location.pathname : "";
+  const route = typeof window !== "undefined" ? window.location.pathname : "";
 
   const contextLines = [
     `<location>${location}</location>`,
@@ -85,7 +89,7 @@ export function buildAgentPayload(input: AgentPayloadInput): string {
 ${contextLines}
 </context>
 ${summaryBlock}<data format="json">
-${JSON.stringify(data, null, 2)}
+${fenceJsonBlock(JSON.stringify(data, null, 2))}
 </data>
 </${kind}>`;
 }

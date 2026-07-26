@@ -2,18 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowUpRight,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
+import { ArrowUpRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
-import { AuthorityTierBadge } from "./AuthorityTierBadge";
-import { SourceVerdictBadge } from "./SourceVerdictBadge";
 import { ColumnFilterMenu, type ColumnFilterOption } from "./ColumnFilterMenu";
+import {
+  ScoreCell,
+  sourceScoreValues,
+  QUALITY_SCORE_LABEL,
+  PRIORITY_SCORE_LABEL,
+  POST_READ_SCORE_LABEL,
+  AUTH_SCORE_LABEL,
+} from "./sourceScoreDisplay";
 import { sourceTypeFromDb, type ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
 import { SCRAPE_STATUS_CONFIG, SOURCE_TYPE_CONFIG } from "../../constants";
@@ -40,9 +41,11 @@ import { SCRAPE_STATUS_CONFIG, SOURCE_TYPE_CONFIG } from "../../constants";
 /** Every column that can be sorted, plus a `null` "no sort" state. */
 type SortKey =
   | "rank"
+  | "pre"
   | "source"
   | "scrape"
   | "authority"
+  | "post"
   | "verdict"
   | "type"
   | "characters"
@@ -80,8 +83,7 @@ const ANALYSIS_LABEL: Record<CurationAnalysisState, string> = {
   none: "None",
 };
 const ANALYSIS_CLASS: Record<CurationAnalysisState, string> = {
-  content:
-    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  content: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   empty: "bg-muted text-muted-foreground",
   failed: "bg-muted text-muted-foreground",
   none: "bg-transparent text-muted-foreground/50",
@@ -220,9 +222,7 @@ export function SourceResultsTable({
       list = list.filter((s) => tierFromSource(s) === tierFilter);
     }
     if (analysisFilter && analysisFor) {
-      list = list.filter(
-        (s) => (analysisFor(s) ?? "none") === analysisFilter,
-      );
+      list = list.filter((s) => (analysisFor(s) ?? "none") === analysisFilter);
     }
 
     if (sort.key) {
@@ -233,22 +233,36 @@ export function SourceResultsTable({
       list = [...list].sort((a, b) => {
         switch (sort.key) {
           case "rank": {
-            // Numeric, but "best rank" is a low number — keep nulls last in
-            // BOTH directions by sorting the raw value then pushing ∞ down.
             const av = num(rankFor(a));
             const bv = num(rankFor(b));
             if (av === bv) return 0;
             return av < bv ? -1 * d : 1 * d;
           }
+          case "pre": {
+            const av = num(a.pre_read_score);
+            const bv = num(b.pre_read_score);
+            if (av === bv) return 0;
+            return av < bv ? -1 * d : 1 * d;
+          }
           case "characters": {
-            const av = dataSizeFor ? num(dataSizeFor(a)) : Number.POSITIVE_INFINITY;
-            const bv = dataSizeFor ? num(dataSizeFor(b)) : Number.POSITIVE_INFINITY;
+            const av = dataSizeFor
+              ? num(dataSizeFor(a))
+              : Number.POSITIVE_INFINITY;
+            const bv = dataSizeFor
+              ? num(dataSizeFor(b))
+              : Number.POSITIVE_INFINITY;
             if (av === bv) return 0;
             return av < bv ? -1 * d : 1 * d;
           }
           case "authority": {
             const av = num(a.authority_score);
             const bv = num(b.authority_score);
+            if (av === bv) return 0;
+            return av < bv ? -1 * d : 1 * d;
+          }
+          case "post": {
+            const av = num(a.post_read_score);
+            const bv = num(b.post_read_score);
             if (av === bv) return 0;
             return av < bv ? -1 * d : 1 * d;
           }
@@ -318,14 +332,14 @@ export function SourceResultsTable({
             <th className="py-1.5 pl-2 pr-1 w-10 font-medium">
               {interactive ? (
                 <SortHeader
-                  label="#"
+                  label="Best"
                   field="rank"
                   active={sort.key === "rank"}
                   dir={sort.dir}
                   onSort={onSort}
                 />
               ) : (
-                "#"
+                "Best"
               )}
             </th>
             <th className="py-1.5 px-1 font-medium">
@@ -341,7 +355,9 @@ export function SourceResultsTable({
                 "Source"
               )}
             </th>
-            <th className="py-1.5 px-2 font-medium whitespace-nowrap">Search</th>
+            <th className="py-1.5 px-2 font-medium whitespace-nowrap">
+              Search
+            </th>
             <th className="py-1.5 px-2 font-medium whitespace-nowrap">
               {interactive ? (
                 <div className="flex items-center gap-1">
@@ -363,15 +379,30 @@ export function SourceResultsTable({
                 "Scrape"
               )}
             </th>
-            <th className="py-1.5 px-2 font-medium whitespace-nowrap">
+            <th className="py-1.5 px-2 font-medium whitespace-nowrap text-right">
               {interactive ? (
-                <div className="flex items-center gap-1">
+                <SortHeader
+                  label={PRIORITY_SCORE_LABEL}
+                  field="pre"
+                  active={sort.key === "pre"}
+                  dir={sort.dir}
+                  onSort={onSort}
+                  align="right"
+                />
+              ) : (
+                PRIORITY_SCORE_LABEL
+              )}
+            </th>
+            <th className="py-1.5 px-2 font-medium whitespace-nowrap text-right">
+              {interactive ? (
+                <div className="flex items-center justify-end gap-1">
                   <SortHeader
-                    label="Authority"
+                    label={AUTH_SCORE_LABEL}
                     field="authority"
                     active={sort.key === "authority"}
                     dir={sort.dir}
                     onSort={onSort}
+                    align="right"
                   />
                   <ColumnFilterMenu
                     label="Tier"
@@ -381,20 +412,35 @@ export function SourceResultsTable({
                   />
                 </div>
               ) : (
-                "Authority"
+                AUTH_SCORE_LABEL
               )}
             </th>
-            <th className="py-1.5 px-2 font-medium whitespace-nowrap">
+            <th className="py-1.5 px-2 font-medium whitespace-nowrap text-right">
               {interactive ? (
                 <SortHeader
-                  label="Verdict"
+                  label={POST_READ_SCORE_LABEL}
+                  field="post"
+                  active={sort.key === "post"}
+                  dir={sort.dir}
+                  onSort={onSort}
+                  align="right"
+                />
+              ) : (
+                POST_READ_SCORE_LABEL
+              )}
+            </th>
+            <th className="py-1.5 px-2 font-medium whitespace-nowrap text-right">
+              {interactive ? (
+                <SortHeader
+                  label={QUALITY_SCORE_LABEL}
                   field="verdict"
                   active={sort.key === "verdict"}
                   dir={sort.dir}
                   onSort={onSort}
+                  align="right"
                 />
               ) : (
-                "Verdict"
+                QUALITY_SCORE_LABEL
               )}
             </th>
             {interactive && (
@@ -465,6 +511,7 @@ export function SourceResultsTable({
             const analysis = analysisFor ? (analysisFor(src) ?? "none") : null;
             const go = () =>
               router.push(`/research/topics/${topicId}/sources/${src.id}`);
+            const scores = sourceScoreValues(src, rank);
             return (
               <tr
                 key={src.id}
@@ -480,7 +527,7 @@ export function SourceResultsTable({
                 className="group border-b border-border/20 last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
               >
                 <td className="py-2 pl-2 pr-1 align-top font-mono text-[11px] tabular-nums text-muted-foreground">
-                  {rank != null ? `#${rank}` : "—"}
+                  {rank != null ? rank : "—"}
                 </td>
                 <td className="py-2 px-1 align-top">
                   <div className="flex items-start gap-1.5 min-w-0">
@@ -506,26 +553,17 @@ export function SourceResultsTable({
                 <td className="py-2 px-2 align-top">
                   <StatusBadge status={src.scrape_status} />
                 </td>
-                <td className="py-2 px-2 align-top">
-                  {src.authority_score != null ? (
-                    <AuthorityTierBadge
-                      score={src.authority_score}
-                      tier={src.authority_tier}
-                      reasoning={src.authority_reasoning}
-                    />
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground/40">
-                      —
-                    </span>
-                  )}
+                <td className="py-2 px-2 align-top text-right">
+                  <ScoreCell value={scores.priority} />
                 </td>
-                <td className="py-2 px-2 align-top">
-                  <SourceVerdictBadge
-                    finalScore={src.final_source_score}
-                    recommendedUse={src.recommended_use}
-                    analysisStatus={src.analysis_status}
-                    showUnanalyzed={false}
-                  />
+                <td className="py-2 px-2 align-top text-right">
+                  <ScoreCell value={scores.auth} />
+                </td>
+                <td className="py-2 px-2 align-top text-right">
+                  <ScoreCell value={scores.post} />
+                </td>
+                <td className="py-2 px-2 align-top text-right">
+                  <ScoreCell value={scores.quality} />
                 </td>
                 {interactive && (
                   <td className="py-2 px-2 align-top hidden md:table-cell">
@@ -575,7 +613,9 @@ export function SourceResultsTable({
                         : "No scraped content recorded"
                     }
                   >
-                    {dataSize != null ? Math.round(dataSize).toLocaleString() : "—"}
+                    {dataSize != null
+                      ? Math.round(dataSize).toLocaleString()
+                      : "—"}
                   </td>
                 )}
                 <td className="py-2 pr-2 align-top">

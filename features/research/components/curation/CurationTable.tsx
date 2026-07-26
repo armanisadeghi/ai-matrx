@@ -27,9 +27,20 @@ import type { CurationRow, CurationAnalysisState } from "../../service";
 import { sourceTypeFromDb } from "../../types";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
-import { AuthorityTierBadge } from "../sources/AuthorityTierBadge";
-import { SourceVerdictBadge } from "../sources/SourceVerdictBadge";
-import { ColumnFilterMenu, type ColumnFilterOption } from "../sources/ColumnFilterMenu";
+import {
+  ScoreCell,
+  sourceScoreValues,
+  compareSourcesByResearchScore,
+  QUALITY_SCORE_LABEL,
+  PRIORITY_SCORE_LABEL,
+  POST_READ_SCORE_LABEL,
+  AUTH_SCORE_LABEL,
+  formatPreReadDisplay,
+} from "../sources/sourceScoreDisplay";
+import {
+  ColumnFilterMenu,
+  type ColumnFilterOption,
+} from "../sources/ColumnFilterMenu";
 import { CurationBatchBar } from "./CurationBatchBar";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
@@ -47,9 +58,11 @@ type GroupBy = "none" | "keyword" | "tag";
  */
 type SortKey =
   | "rank"
+  | "pre"
   | "source"
   | "scrape"
   | "authority"
+  | "post"
   | "verdict"
   | "chars"
   | "analysis"
@@ -96,7 +109,10 @@ function AnalysisCell({ state }: { state: CurationAnalysisState }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
       <span
-        className={cn("h-1.5 w-1.5 shrink-0 rounded-full", ANALYSIS_TONE_DOT[tone])}
+        className={cn(
+          "h-1.5 w-1.5 shrink-0 rounded-full",
+          ANALYSIS_TONE_DOT[tone],
+        )}
       />
       {label}
     </span>
@@ -265,9 +281,8 @@ export default function CurationTable() {
   const sortRows = useMemo(() => {
     return (items: CurationRow[]): CurationRow[] => {
       if (!sort) {
-        // Default order: importance score, highest first.
-        return [...items].sort(
-          (a, b) => (b.importance?.score ?? 0) - (a.importance?.score ?? 0),
+        return [...items].sort((a, b) =>
+          compareSourcesByResearchScore(a.source, b.source),
         );
       }
       const dir = sort.dir === "desc" ? -1 : 1;
@@ -275,6 +290,8 @@ export default function CurationTable() {
         switch (sort.key) {
           case "rank":
             return r.importance?.bestRank ?? null;
+          case "pre":
+            return r.source.pre_read_score ?? null;
           case "source":
             return (
               r.source.hostname ??
@@ -286,6 +303,8 @@ export default function CurationTable() {
             return r.source.scrape_status ?? null;
           case "authority":
             return r.source.authority_score ?? null;
+          case "post":
+            return r.source.post_read_score ?? null;
           case "verdict":
             return r.source.final_source_score ?? null;
           case "chars":
@@ -393,6 +412,7 @@ export default function CurationTable() {
   // One tri-state toggle (asc → desc → none) shared by EVERY column header.
   const handleSort = (field: SortKey) =>
     setSort((prev) => {
+      if (field === "verdict" && !prev) return { key: field, dir: "asc" };
       if (prev?.key !== field) return { key: field, dir: "asc" };
       if (prev.dir === "asc") return { key: field, dir: "desc" };
       return null;
@@ -563,11 +583,11 @@ export default function CurationTable() {
     [tags],
   );
 
-  const sortKey = sort?.key ?? null;
-  const sortDir = sort?.dir ?? "asc";
+  const sortKey = sort?.key ?? "verdict";
+  const sortDir = sort?.dir ?? "desc";
   // 10 columns: select, rank, source, scrape, authority, verdict, chars,
   // analysis, tags, included. Keep in sync with the header + body rows.
-  const colCount = 10;
+  const colCount = 12;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -615,7 +635,7 @@ export default function CurationTable() {
                 </th>
                 <th className="px-1 w-16 align-middle">
                   <SortHeader
-                    label="Rank"
+                    label="Best"
                     field="rank"
                     currentSort={sortKey}
                     currentDir={sortDir}
@@ -648,14 +668,25 @@ export default function CurationTable() {
                     />
                   </div>
                 </th>
-                <th className="px-2 align-middle whitespace-nowrap">
-                  <div className="flex items-center gap-1">
+                <th className="px-2 align-middle whitespace-nowrap text-right">
+                  <SortHeader
+                    label={PRIORITY_SCORE_LABEL}
+                    field="pre"
+                    currentSort={sortKey}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                    className="justify-end w-full"
+                  />
+                </th>
+                <th className="px-2 align-middle whitespace-nowrap text-right">
+                  <div className="flex items-center justify-end gap-1">
                     <SortHeader
-                      label="Authority"
+                      label={AUTH_SCORE_LABEL}
                       field="authority"
                       currentSort={sortKey}
                       currentDir={sortDir}
                       onSort={handleSort}
+                      className="justify-end"
                     />
                     <ColumnFilterMenu
                       label="Tier"
@@ -665,13 +696,24 @@ export default function CurationTable() {
                     />
                   </div>
                 </th>
-                <th className="px-2 align-middle whitespace-nowrap">
+                <th className="px-2 align-middle whitespace-nowrap text-right">
                   <SortHeader
-                    label="Verdict"
+                    label={POST_READ_SCORE_LABEL}
+                    field="post"
+                    currentSort={sortKey}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                    className="justify-end w-full"
+                  />
+                </th>
+                <th className="px-2 align-middle whitespace-nowrap text-right">
+                  <SortHeader
+                    label={QUALITY_SCORE_LABEL}
                     field="verdict"
                     currentSort={sortKey}
                     currentDir={sortDir}
                     onSort={handleSort}
+                    className="justify-end w-full"
                   />
                 </th>
                 <th className="px-2 align-middle whitespace-nowrap text-right">
@@ -810,6 +852,7 @@ function GroupRows({
       {group.rows.map((r) => {
         const s = r.source;
         const isSel = selected.has(s.id);
+        const scores = sourceScoreValues(s, r.importance?.bestRank ?? null);
         return (
           <tr
             key={`${group.key}:${s.id}`}
@@ -877,23 +920,17 @@ function GroupRows({
             <td className="py-1.5 px-2 align-middle">
               <StatusBadge status={s.scrape_status} />
             </td>
-            <td className="py-1.5 px-2 align-middle">
-              {s.authority_score != null ? (
-                <AuthorityTierBadge
-                  score={s.authority_score}
-                  tier={s.authority_tier}
-                  reasoning={s.authority_reasoning}
-                />
-              ) : (
-                <span className="text-[11px] text-muted-foreground/40">—</span>
-              )}
+            <td className="py-1.5 px-2 align-middle text-right">
+              <ScoreCell value={scores.priority} />
             </td>
-            <td className="py-1.5 px-2 align-middle">
-              <SourceVerdictBadge
-                finalScore={s.final_source_score}
-                recommendedUse={s.recommended_use}
-                analysisStatus={s.analysis_status}
-              />
+            <td className="py-1.5 px-2 align-middle text-right">
+              <ScoreCell value={scores.auth} />
+            </td>
+            <td className="py-1.5 px-2 align-middle text-right">
+              <ScoreCell value={scores.post} />
+            </td>
+            <td className="py-1.5 px-2 align-middle text-right">
+              <ScoreCell value={scores.quality} />
             </td>
             <td className="py-1.5 px-2 align-middle text-right text-[11px] tabular-nums whitespace-nowrap text-muted-foreground">
               {fmtInt(r.charCount)}

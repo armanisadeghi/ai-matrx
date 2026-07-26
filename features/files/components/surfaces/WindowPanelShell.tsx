@@ -8,6 +8,7 @@
  *
  * Tabs:
  *   • Browse  — full FileTree + FileList, matches PageShell main.
+ *   • Search  — tree-wide file/folder search with direct result activation.
  *   • Upload  — dedicated drag/drop, paste, and file-picker surface.
  *   • Recent  — list of recent files (most-recently updated).
  *   • Shared  — files shared with me (visibility=shared and owner≠me).
@@ -19,7 +20,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock, FolderOpen, Trash2, Upload, Users } from "lucide-react";
+import {
+  Clock,
+  FileSearch,
+  FolderOpen,
+  Loader2,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+} from "lucide-react";
 import { DndContext } from "@dnd-kit/core";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -35,6 +45,8 @@ import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumb
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import { useFileSearch } from "@/features/files/hooks/useFileSearch";
+import { ProInput } from "@/components/official/ProInput";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   setActiveFileId,
@@ -42,7 +54,7 @@ import {
 } from "@/features/files/redux/slice";
 
 export type CloudFilesWindowTab =
-  "browse" | "upload" | "recent" | "shared" | "trash";
+  "browse" | "search" | "upload" | "recent" | "shared" | "trash";
 
 export interface WindowPanelShellProps {
   /** Tab controlled externally (so WindowPanel's data persistence can store it). */
@@ -87,6 +99,10 @@ export function WindowPanelShell({
               <FolderOpen className="h-3.5 w-3.5" />
               Browse
             </TabsTrigger>
+            <TabsTrigger value="search" className="gap-1.5">
+              <Search className="h-3.5 w-3.5" />
+              Search
+            </TabsTrigger>
             <TabsTrigger value="upload" className="gap-1.5">
               <Upload className="h-3.5 w-3.5" />
               Upload
@@ -110,6 +126,12 @@ export function WindowPanelShell({
             className="flex-1 mt-2 mx-0 overflow-hidden data-[state=inactive]:hidden"
           >
             <BrowseTab />
+          </TabsContent>
+          <TabsContent
+            value="search"
+            className="flex-1 mt-2 mx-2 overflow-hidden data-[state=inactive]:hidden"
+          >
+            <SearchTab onOpenBrowse={() => setTab("browse")} />
           </TabsContent>
           <TabsContent
             value="upload"
@@ -192,6 +214,167 @@ function BrowseTab() {
             />
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SearchTab({ onOpenBrowse }: { onOpenBrowse: () => void }) {
+  const dispatch = useAppDispatch();
+  const { query, setQuery, files, folders, totalResults, isPending, clear } =
+    useFileSearch({ limit: 100 });
+  const hasQuery = query.trim().length > 0;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="shrink-0 border-b px-4 pb-4 pt-2">
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold">Search your files</h2>
+          <p className="text-sm text-muted-foreground">
+            Search names, folder paths, and exact file IDs across your entire
+            library.
+          </p>
+        </div>
+        <ProInput
+          autoFocus
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onClear={clear}
+          placeholder="Try a filename, folder, extension, or file ID"
+          aria-label="Search your files and folders"
+          clearable
+          enableVoice={false}
+          startIcon={
+            isPending ? (
+              <Loader2
+                className="h-4 w-4 animate-spin"
+                aria-label="Searching"
+              />
+            ) : (
+              <Search className="h-4 w-4" aria-hidden="true" />
+            )
+          }
+          wrapperClassName="w-full"
+          className="rounded-xl bg-muted/30"
+        />
+        {hasQuery && !isPending ? (
+          <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+            {totalResults} {totalResults === 1 ? "result" : "results"}
+            {folders.length > 0 ? ` · ${folders.length} folders` : ""}
+            {files.length > 0 ? ` · ${files.length} files` : ""}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+        {!hasQuery ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+            <div className="mb-4 rounded-2xl bg-primary/10 p-4 text-primary">
+              <FileSearch className="h-8 w-8" aria-hidden="true" />
+            </div>
+            <p className="font-medium">Find anything in your library</p>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">
+              Results span every loaded folder, so you don&apos;t need to
+              remember where something was saved.
+            </p>
+          </div>
+        ) : !isPending && totalResults === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+            <FileSearch
+              className="mb-3 h-8 w-8 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <p className="font-medium">No matches for “{query.trim()}”</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Try a shorter name, a file extension such as PDF, or part of a
+              folder path.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {folders.length > 0 ? (
+              <section aria-labelledby="file-search-folders">
+                <h3
+                  id="file-search-folders"
+                  className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Folders
+                </h3>
+                <div className="grid grid-cols-1 gap-1 lg:grid-cols-2">
+                  {folders.map((folder) => (
+                    <button
+                      key={folder.id}
+                      type="button"
+                      onClick={() => {
+                        dispatch(setActiveFolderId(folder.id));
+                        dispatch(setActiveFileId(null));
+                        onOpenBrowse();
+                      }}
+                      className="flex min-w-0 items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left hover:border-border hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <FolderOpen
+                        className="h-5 w-5 shrink-0 text-blue-500"
+                        aria-hidden="true"
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium">
+                          {folder.folderName}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {folder.folderPath || "Top level"}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {files.length > 0 ? (
+              <section aria-labelledby="file-search-files">
+                <h3
+                  id="file-search-files"
+                  className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Files
+                </h3>
+                <div className="divide-y rounded-lg border">
+                  {files.map((file) => (
+                    <button
+                      key={file.id}
+                      type="button"
+                      onClick={() => {
+                        dispatch(setActiveFolderId(file.parentFolderId));
+                        dispatch(setActiveFileId(file.id));
+                        onOpenBrowse();
+                      }}
+                      className="flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    >
+                      <FileIcon fileName={file.fileName} size={20} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">
+                          {file.fileName}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {file.filePath}
+                        </span>
+                      </span>
+                      <FileMeta
+                        file={{
+                          fileSize: file.fileSize,
+                          updatedAt: file.updatedAt,
+                          visibility: file.visibility,
+                        }}
+                        className="hidden shrink-0 sm:flex"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   );

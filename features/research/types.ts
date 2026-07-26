@@ -567,7 +567,7 @@ export interface ResearchSource {
   recommended_use: string | null;
   /** Outcome of the page analysis pass — see `AnalysisStatus`. */
   analysis_status: string | null;
-  /** Pre-read 0-100 score (from the search snippet, before the page was read). */
+  /** Pre-read priority raw float (sort key). Display as ×100 via `pre_read_breakdown.pre_read_score_display`. */
   pre_read_score: number | null;
   /** Structured breakdown behind `pre_read_score` (raw JSONB). */
   pre_read_breakdown: Json | null;
@@ -1625,6 +1625,8 @@ export type SourceSortBy =
   | "discovered_at"
   | "hostname"
   | "scrape_status"
+  | "pre_read_score"
+  | "post_read_score"
   | "authority_score"
   | "final_source_score";
 export type SortDir = "asc" | "desc";

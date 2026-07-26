@@ -15,6 +15,7 @@
 
 import type { CurationRow } from "../service";
 import { sourceTypeFromDb } from "../types";
+import { compareSourcesForExport } from "../components/sources/sourceScoreDisplay";
 
 /**
  * One source, reduced to the fields a model needs to judge authority.
@@ -107,7 +108,10 @@ export function buildAuthorityExport(
   topicName: string | null,
   rows: CurationRow[],
 ): AuthorityExport {
-  const sources = rows.map(toRecord);
+  const ordered = [...rows].sort((a, b) =>
+    compareSourcesForExport(a.source, b.source),
+  );
+  const sources = ordered.map(toRecord);
   return {
     topicId,
     topicName,
