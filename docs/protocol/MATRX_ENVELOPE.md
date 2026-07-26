@@ -92,11 +92,8 @@ delivered, before the stream closes ("has the last word").
 - `items` is **always a list** (1..N). Each item applied independently → **per-item
   receipt** (`item 0: created proj_x`; `item 2: failed: …`). A bad item never rolls
   back good ones; each item's own write stays atomic.
-- **Idempotency is derived server-side** — never on the wire, so the model can't
-  fumble it. The key is the per-item content key
-  (`act:sha256(conversation \x00 type \x00 canonical(item))`) consulted against the
-  durable ledger `platform.matrx_action_ledger`; a re-emit replays the original
-  receipt. Full contract: [MATRX_ACTIONS.md](MATRX_ACTIONS.md) §6.
+- **Idempotency is derived server-side** (request id + item index) — never on the
+  wire, so the model can't fumble it.
 - A failed apply is **warn-not-fatal** — the delivered response always stands.
 
 **`reference`** — each item is a **pure pointer**: the typed identity ids + optional
