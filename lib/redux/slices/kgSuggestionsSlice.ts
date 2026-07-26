@@ -15,7 +15,7 @@
 // Writes are small + individual (per CLAUDE.md). Async lives in the thunks
 // dispatched by useKgSuggestions; this slice is pure reducers + selectors.
 
-import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { KgSuggestionRow } from "@/features/kg-suggestions/types";
 

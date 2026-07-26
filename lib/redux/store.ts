@@ -5,8 +5,8 @@
 
 import {
   configureStore,
-  ThunkAction,
-  Action,
+  type ThunkAction,
+  type Action,
   type ThunkDispatch,
   type UnknownAction,
   type Dispatch,

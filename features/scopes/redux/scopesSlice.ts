@@ -14,7 +14,7 @@
 // Per-feature patches plumb through `treeReceived`, `scopeUpserted`, etc.
 // No selectors live here — selectors are in ./selectors/.
 
-import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAction, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
   REHYDRATE_ACTION_TYPE,

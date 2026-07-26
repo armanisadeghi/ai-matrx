@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import {
   fetchMcpCatalog,

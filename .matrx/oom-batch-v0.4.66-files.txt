@@ -1,13 +1,20 @@
 # Pending APPLY from archive/oom-batch-v0.4.66
-# STILL TO APPLY: 2
-# Unstaged for review: features/action-catalog/service.ts
+# APPLIED 2026-07-26: store factory chain type-import batch (49 files)
+# STILL TO APPLY: 0 from original remaining list (transcript-studio already used inline `type`)
+# Unstaged for review: features/action-catalog/service.ts — already correct (inline `type` on mixed import)
 # WILL NOT DO: ProTextarea, navActions, check-fake-dynamic-imports
+
+## APPLIED (2026-07-26) — store factory chain
+✓ lib/redux/store.ts — ThunkAction, Action → import type
+✓ lib/redux/rootReducer.ts — ModuleName → import type
+✓ 24 lib/redux slices/thunks in slim rootReducer (PayloadAction, Draft)
+✓ 24 feature slices mounted by rootReducer (PayloadAction)
+✓ lib/redux/app-runner/thunks/loadApplet.ts — CustomAppletConfig → import type
 
 ## WILL NOT DO (3)
 X	components/official/ProTextarea.tsx
 X	features/shell/navigation/navActions.ts
 X	scripts/check-fake-dynamic-imports.mjs
 
-## remaining (2)
-M	features/transcript-studio/redux/realtimeMiddleware.ts
-M	features/transcript-studio/redux/thunks.ts
+## remaining (0)
+# transcript-studio realtimeMiddleware.ts + thunks.ts — already use inline `type` on row/patch types

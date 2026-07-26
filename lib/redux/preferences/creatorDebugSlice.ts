@@ -24,7 +24,7 @@
 // it here. This slice is purely "what does the current creator want to see
 // right now."
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export interface CreatorDebugSettings {
   /** Show raw IDs (agent, shortcut, conversation, etc.) inline next to

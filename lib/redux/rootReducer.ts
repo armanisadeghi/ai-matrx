@@ -14,7 +14,7 @@
 
 import { combineReducers, type Reducer } from "@reduxjs/toolkit";
 import { createModuleSlice } from "./slices/moduleSliceCreator";
-import { moduleSchemas, ModuleName } from "./dynamic/moduleSchema";
+import { moduleSchemas, type ModuleName } from "./dynamic/moduleSchema";
 import layoutReducer from "./slices/layoutSlice";
 // Phase 4: legacy `userSlice` replaced by userAuth + userProfile (decisions D1).
 // userAuth is volatile (auth secrets MUST NOT persist).

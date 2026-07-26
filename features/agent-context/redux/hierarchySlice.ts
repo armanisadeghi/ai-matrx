@@ -7,7 +7,7 @@
 // The full context response is fanned out to scopeTypesSlice and scopesSlice
 // so they stay consistent without separate fetches.
 
-import { createSlice, createSelector, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createSelector, type PayloadAction } from "@reduxjs/toolkit";
 
 // ─── RPC response types ────────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { setActiveApp } from "../appBuilderSyncActions";
 import { createAppThunk, updateAppThunk, deleteAppThunk, addAppletThunk, removeAppletThunk, fetchAppsThunk, checkAppSlugUniqueness, FetchAppByIdSuccessAction, saveAppThunk } from "../thunks/appBuilderThunks";
 import { AppBuilder, type AppsState } from "../types";

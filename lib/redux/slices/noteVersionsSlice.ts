@@ -4,7 +4,7 @@
  * Manages version history state for notes
  */
 
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   NoteVersion,
   VersionHistoryState,

@@ -41,7 +41,7 @@
 //
 // Stamped onto every API call by lib/api/call-api.ts → resolveScope.
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
   REHYDRATE_ACTION_TYPE,

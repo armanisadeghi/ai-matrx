@@ -15,7 +15,7 @@
 // Profile data (userMetadata, fingerprintId, shellDataLoaded) lives in
 // `userProfileSlice.ts` and is persisted via the `boot-critical` preset.
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { IdentityData, AppMetadata } from "@/utils/userDataMapper";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
 

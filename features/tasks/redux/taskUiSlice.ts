@@ -1,6 +1,6 @@
 "use client";
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { DatabaseTask, ProjectWithTasks } from "../types/database";
 import type { TaskFilterType } from "../types";
 import type { TaskSortField } from "../types/sort";

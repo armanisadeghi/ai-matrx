@@ -2,7 +2,7 @@
 // Lightweight admin preferences - only used when user is admin
 // No impact on non-admin users
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 /**
  * Named server environments.

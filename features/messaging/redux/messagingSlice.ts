@@ -11,7 +11,7 @@
  * Uses auth.users.id (UUID) for user identification
  */
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { ConversationWithDetails, Message } from "../types";
 
 // ============================================

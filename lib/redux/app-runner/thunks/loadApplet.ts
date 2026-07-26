@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import type { AppThunk } from "@/lib/redux/store";
 import { componentDefinitionsSlice } from "../slices/componentDefinitionsSlice";
-import { CustomAppletConfig } from "@/types/customAppTypes";
+import type { CustomAppletConfig } from "@/types/customAppTypes";
 import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { extractErrorMessage } from "@/utils/errors";
 

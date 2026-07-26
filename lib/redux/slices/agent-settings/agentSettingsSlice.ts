@@ -11,7 +11,7 @@
  * invoked here. Components never compute or interpret settings themselves.
  */
 
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { createClient } from "@/utils/supabase/client";
 import {
   selectModelById,

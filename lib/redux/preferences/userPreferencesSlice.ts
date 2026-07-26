@@ -3,7 +3,7 @@
 // which imports `userPreferencesPolicy` back from this file. Routing through
 // the barrel creates a runtime initialization cycle under Turbopack/Next
 // ("Cannot access 'userPreferencesPolicy' before initialization").
-import { createSlice, PayloadAction, Draft } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction, type Draft } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
   REHYDRATE_ACTION_TYPE,

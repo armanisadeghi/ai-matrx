@@ -3,7 +3,7 @@
 // Normalized scheduling.tasks state — `byId` map of AgendaTask plus per-id
 // mutation status for optimistic-style writes.
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { AgendaTask } from "../../types";
 
 export type FetchStatus = "idle" | "loading" | "success" | "error";

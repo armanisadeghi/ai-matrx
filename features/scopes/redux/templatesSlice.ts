@@ -4,7 +4,7 @@
 // first time someone opens the templates gallery, then served from cache
 // until the user explicitly refreshes.
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { ContextTemplate } from "@/features/scopes/types";
 
 export interface TemplatesState {

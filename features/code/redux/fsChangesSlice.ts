@@ -27,7 +27,7 @@
  * stays intact.
  */
 
-import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { ResourceChangedPayload } from "@/types/python-generated/stream-events";
 
 type ResourceChangedKind = ResourceChangedPayload["kind"];

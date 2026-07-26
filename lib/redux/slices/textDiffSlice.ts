@@ -4,7 +4,7 @@
  * Manages diff session state for text editing with AI assistance
  */
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   DiffState,
   PendingDiff,

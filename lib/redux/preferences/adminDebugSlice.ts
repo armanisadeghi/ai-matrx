@@ -19,7 +19,7 @@
 // Indicators (promptDebug, resourceDebug, executionStateDebug) are unchanged from
 // the original design — they drive the floating debug panels in DebugIndicatorManager.
 
-import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { DebugData } from "@/components/debug/SystemPromptDebugModal";
 
 // ============================================================================

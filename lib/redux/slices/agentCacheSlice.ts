@@ -16,7 +16,7 @@
 //   builtins — system-provided agents (migrated from prompt_builtins → agent.definition, same UUIDs)
 //   shared   — prompts explicitly shared with the current user (not "secret sauce" share)
 
-import { createSlice, createSelector, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createSelector, type PayloadAction } from "@reduxjs/toolkit";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

@@ -9,7 +9,7 @@
  * waiting for the backend.
  */
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   AgentApp,
   AgentAppRecord,

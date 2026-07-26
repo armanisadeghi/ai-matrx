@@ -23,7 +23,7 @@
 // The shape is intentionally flat so no orchestration is needed — adding a
 // dimension is mechanical, never structural.
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

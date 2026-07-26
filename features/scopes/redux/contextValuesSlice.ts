@@ -11,7 +11,7 @@
 //   byScope: { [scopeId]: ScopeValuesEntry }
 //   where ScopeValuesEntry = { status, fetchedAt, values, drafts, error }
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   ContextItemValue,
   ScopeValuesEntry,

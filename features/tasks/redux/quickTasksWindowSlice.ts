@@ -1,6 +1,6 @@
 "use client";
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export interface QuickTasksWindowState {
   selectedOrgId: string | null;

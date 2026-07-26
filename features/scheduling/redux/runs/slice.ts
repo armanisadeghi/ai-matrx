@@ -1,6 +1,6 @@
 // features/scheduling/redux/runs/slice.ts
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { SchRunRow } from "../../types";
 
 export type RunsFetchStatus = "idle" | "loading" | "success" | "error";

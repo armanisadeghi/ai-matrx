@@ -11,7 +11,7 @@
 //   - Artifact tracking (that's artifactsSlice)
 //   - Editor local state (that stays in useHtmlPreviewState hook)
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { HtmlPageRecord } from "@/features/artifacts/types";
 
 // ── State shape ───────────────────────────────────────────────────────────────

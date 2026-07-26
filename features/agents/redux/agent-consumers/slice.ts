@@ -11,7 +11,7 @@
 //   2. To filter: dispatch(setAgentConsumerFilter({ consumerId: "agents-main", patch: { searchTerm: "gpt" } }))
 //   3. To select: use makeSelectFilteredAgents("agents-main") from agentSelectors.ts
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

@@ -23,7 +23,7 @@
 // First consumer: the Research init wizard
 // (features/research/components/init/ResearchInitForm.tsx).
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
   REHYDRATE_ACTION_TYPE,
