@@ -22,7 +22,7 @@ TASK-001 (agent handoff integration) hides plumbing message rows with an FE read
 The 2-col PK `(source_type, target_type)` forbids the designed label+generic rule coexistence. Recommended: option (2) — surrogate `id uuid` PK + keep the 3-col unique index (needs aidream ORM regen, cross-repo commit). Alternatives in the D35 entry. Say "option 1/2/3" and an agent executes.
 
 ### 4. Content IR Wave 1 owner decisions (mostly seconds each)
-Wave 1 shipped 2026-07-15 (see `common-docs/content-ir-system/OWNER_BRIEF.md`). Six calls only you can make; answer per letter in chat and an agent executes.
+Wave 1 shipped 2026-07-15 (see `common-docs/systems/content-ir-system/OWNER_BRIEF.md`). Six calls only you can make; answer per letter in chat and an agent executes.
 - **(a) Register-or-not the 7 shape candidates** the crosswalk flags as unregistered shapes: `chart`, `map`, `stats`, `diff`, `search_results`, `fetch_results`, `categorization_result` (`scripts/shape/content-vocab-crosswalk.json`). Registering makes each a real kind with schema + example; declining ratifies them as client-only.
 - **(b) Reconcile the `table` classification.** Crosswalk says `scalar_generic` (generic markdown-table ingestion); aidream's `NON_ENVELOPE_BLOCK_TYPES` comment advocates a registered kind for deliberate typed-table emission. Both can be true — decide: register a `table` kind for typed emission, or ratify scalar_generic-only.
 - **(c) Activation of the 6 documented inactive roots**: `office_document`, `office_presentation`, `office_spreadsheet`, `q_and_a_set`, `schema_showcase`, `study_pack_set`. Each has full guidance kits and an `activation_gate` metadata entry recording readiness + why it is held; say which (if any) to flip active.

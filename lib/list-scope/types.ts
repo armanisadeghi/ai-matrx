@@ -1,6 +1,6 @@
 // lib/list-scope/types.ts
 //
-// THE VIEW LAW (CLAUDE.md + common-docs/db-rules/FEATURE.md §6):
+// THE VIEW LAW (CLAUDE.md + common-docs/systems/db-rules/FEATURE.md §6):
 // RLS is the ceiling, never the view definition. Every list query MUST
 // declare its own scope explicitly — a bare `.select("*")` relying on RLS
 // alone to "just filter to mine" is a defect the moment a user belongs to

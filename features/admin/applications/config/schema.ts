@@ -1,7 +1,7 @@
 // features/admin/applications/config/schema.ts
 //
 // Client-side Zod schema mirroring AppConfigV1 (the payload contract in
-// common-docs/app-config/FEATURE.md) plus the parse/compose helpers the
+// common-docs/systems/app-config/FEATURE.md) plus the parse/compose helpers the
 // editor uses to guarantee unknown (forward-compat) keys round-trip
 // unchanged. Adding keys to the payload is free for consumers — this editor
 // must therefore never drop a key it doesn't know about.

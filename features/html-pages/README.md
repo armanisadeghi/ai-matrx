@@ -551,7 +551,7 @@ function CustomEditor() {
 ### Schema
 
 The `html_pages` table lives in a **separate Supabase project** (`viyklljfdhtidwecakwx` — "My Matrx"),
-not the main AI Matrx project. See `common-docs/cms-system/FEATURE.md` for the full cross-repo picture
+not the main AI Matrx project. See `common-docs/systems/cms-system/FEATURE.md` for the full cross-repo picture
 (this table + the full `client_*` CMS live in the same project).
 
 ```sql

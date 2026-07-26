@@ -28,18 +28,18 @@ All HISTORY-class: ai-matrx `docs/type-drift/` (34), `docs/SWEEP_*` + `docs/IMPA
 | 1 | Tool system (~17 docs) | `docs/official/tool_system_rules.md` vs `docs/cx_chat/TOOL_*` (7) vs `matrx-ai/tools/docs/*` (7) vs 3 per-consumer migration guides | `docs/official/tool_system_rules.md` absorbs; rest archive |
 | 2 | Request system | `api/REQUEST_SYSTEM_OVERHAUL.md` vs `docs/runtime/REQUEST_MANAGEMENT_LAYER.md` vs handoff | `docs/runtime/REQUEST_MANAGEMENT_LAYER.md` |
 | 3 | Agent system truth | `docs/agents_service/00_truth.md` ("Official Truth") vs `services/agent_service/FEATURE.md` | FEATURE.md; 00-04 marked historical |
-| 4 | Scope/context sprawl | `features/scopes/FEATURE.md` (in-progress canonical) vs `scope-system/*` vs `agent-context/` vs `docs/ctx/*` vs aidream `docs/ctx_context/*` + `docs/knowledge/scope-*` | common-docs/scope-context-system (model) + features/scopes (FE impl); rest pointered/archived |
-| 5 | CMS truth | `docs/cms_agent_authoring/README.md` ("MASTER") vs `matrx_cms/FEATURE.md` vs FE `features/cms/FEATURE.md` vs common-docs/cms-system | common-docs/cms-system arbitrates |
-| 6 | Web schema | FE `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md` + `_REVIEW.md` vs common-docs/db-rules reference model | db-rules; FE docs archive |
+| 4 | Scope/context sprawl | `features/scopes/FEATURE.md` (in-progress canonical) vs `scope-system/*` vs `agent-context/` vs `docs/ctx/*` vs aidream `docs/ctx_context/*` + `docs/knowledge/scope-*` | common-docs/systems/scope-context-system (model) + features/scopes (FE impl); rest pointered/archived |
+| 5 | CMS truth | `docs/cms_agent_authoring/README.md` ("MASTER") vs `matrx_cms/FEATURE.md` vs FE `features/cms/FEATURE.md` vs common-docs/systems/cms-system | common-docs/systems/cms-system arbitrates |
+| 6 | Web schema | FE `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md` + `_REVIEW.md` vs common-docs/systems/db-rules reference model | db-rules; FE docs archive |
 | 7 | Chat standards | FE root `agent-chat-standards.md` ("Single Source of Truth") vs `features/agents/components/chat/FEATURE.md` | chat FEATURE.md |
 | 8 | Secrets (4 claimants) | matrx-orm `secrets_battery` vs services `organization_secrets`/`user_secrets`/`secret_refs` FEATURE.mds | needs Arman — unclear |
-| 9 | Cloud files | `docs/cld_files/*` (14) vs matrx-files package + common-docs/matrx-files-service | package + common-docs; cld_files archive |
+| 9 | Cloud files | `docs/cld_files/*` (14) vs matrx-files package + common-docs/systems/matrx-files-service | package + common-docs; cld_files archive |
 | 10 | Scraper | `docs/scraper/*` vs matrx-scraper package vs `.arman` scraper notes | package; .arman notes stay VISION |
 | 11 | Workflow (3 homes) | `docs/workflow/*` (20) vs matrx-graph docs vs 7 skills | keep hub README + skills; specs consolidate under matrx-graph |
 | 12 | Package doctrine | `docs/packages/` trio vs per-package INDEPENDENCE.md vs matrx-package-template | matrx-package-template |
 | 13 | Testing standards | `.arman/rules/python_testing_guidelines.md` vs `common/code_standards/docs/TESTING_GUIDELINES.md` | needs Arman (one is his) |
 | 14 | Context engine spec | matrx-ai `ai_matrx_context_engine_complete.md` vs `_v2.md` | needs Arman |
-| 15 | DB canon satellite | aidream `db/canonical_db.md` (named "canonical") | demote to pointer at common-docs/db-rules |
+| 15 | DB canon satellite | aidream `db/canonical_db.md` (named "canonical") | demote to pointer at common-docs/systems/db-rules |
 | 16 | Versioning rules (added on takeover review) | FE `docs/official/VERSIONING_RULES.md` (full 73-line canon, NOT a stub) vs `features/agents/docs/AGENT_VERSIONING.md` vs the three common-docs versioning docs | common-docs versioning set; FE doc becomes a stub, AGENT_VERSIONING merges or points |
 
 ## Wave 4 — Skills consolidation

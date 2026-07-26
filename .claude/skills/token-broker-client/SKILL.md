@@ -5,7 +5,7 @@ description: Consume scoped short-lived credentials from the aidream token broke
 
 # token-broker-client — consume brokered credentials
 
-The primitive lives at **`lib/api/broker/`** (contract: its `FEATURE.md`; cross-repo system of record: `/Users/armanisadeghi/code/common-docs/token-broker/FEATURE.md`). It is complete — **consume it; never hand-roll a mint call, credential cache, or gateway fetch.**
+The primitive lives at **`lib/api/broker/`** (contract: its `FEATURE.md`; cross-repo system of record: `/Users/armanisadeghi/code/common-docs/systems/token-broker/FEATURE.md`). It is complete — **consume it; never hand-roll a mint call, credential cache, or gateway fetch.**
 
 ## Decision gate — does the server support the audience?
 

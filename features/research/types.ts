@@ -29,7 +29,7 @@ export type TopicUpdate = {
   // TopicUpdate. The project relationship is an optional canonical
   // `platform.associations` edge (research_topic → project) written through
   // `associationsService` — never a physical column write. See
-  // common-docs/research-project-decoupling/FEATURE.md.
+  // common-docs/projects/research-project-decoupling/FEATURE.md.
   // Quota ladder fields (migration 0013).
   max_keywords?: number | null;
   analyses_per_keyword?: number | null;
@@ -227,7 +227,7 @@ export type SourceOrigin =
  * `normalizeSynthesisScope`, never write it as feature vocabulary.
  * PHASE-4 COMPAT: after the Phase-4 data migration + backend Phase-3 deploy,
  * `'project'` disappears from the wire and the compat parsing can be deleted.
- * See common-docs/research-project-decoupling/FEATURE.md.
+ * See common-docs/projects/research-project-decoupling/FEATURE.md.
  */
 export type SynthesisScope = "keyword" | "topic";
 

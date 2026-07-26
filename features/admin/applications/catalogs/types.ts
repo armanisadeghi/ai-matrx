@@ -4,7 +4,7 @@
 // public.catalog_entries_history. All shapes derive from the generated
 // Database types — never hand-mirrored.
 // Cross-repo system-of-record:
-// /Users/armanisadeghi/code/common-docs/remote-catalogs/FEATURE.md
+// /Users/armanisadeghi/code/common-docs/systems/remote-catalogs/FEATURE.md
 
 import type { Database } from "@/types/database.types";
 
@@ -18,7 +18,7 @@ export type CatalogUpsertArgs =
   Database["public"]["Functions"]["admin_upsert_catalog_entry"]["Args"];
 
 // ── Link resolver (aidream POST /api/catalog-resolver/resolve) ──────────────
-// Ratified contract in common-docs/remote-catalogs/FEATURE.md. The endpoint
+// Ratified contract in common-docs/systems/remote-catalogs/FEATURE.md. The endpoint
 // is not yet in types/python-generated/api-types.ts (built in a parallel
 // aidream session) — these mirror the ratified contract until the OpenAPI
 // types include it, at which point they must be replaced by the generated

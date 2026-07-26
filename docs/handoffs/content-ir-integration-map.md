@@ -2,12 +2,12 @@
 status: active
 updated: 2026-07-18
 repos: [matrx-frontend, aidream, common-docs]
-vision: [/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md, /Users/armanisadeghi/code/common-docs/content-ir-system/OWNER_BRIEF.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md, /Users/armanisadeghi/code/common-docs/systems/content-ir-system/OWNER_BRIEF.md]
 ---
 
 # Content IR / Shape System — work order for continuing agents
 
-The system-of-record (evidence, counts, acceptance) is `common-docs/content-ir-system/FEATURE.md`. THIS doc is the working handoff. **Read the Vision section before touching anything** — it is the ground truth and outranks every summary, including this one.
+The system-of-record (evidence, counts, acceptance) is `common-docs/systems/content-ir-system/FEATURE.md`. THIS doc is the working handoff. **Read the Vision section before touching anything** — it is the ground truth and outranks every summary, including this one.
 
 > Sibling handoff: `docs/handoffs/kind-authoring-and-interactivity.md` owns the **authoring experience** (admin builder, alive/interactive components, the action registry, Kind Request). THIS doc owns the **platform rollout** (enforcement flips, tool_ui subsumption, workflows, bulk-bind). Keep them non-overlapping.
 

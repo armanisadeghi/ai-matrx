@@ -2,7 +2,7 @@
 status: superseded
 updated: 2026-07-15
 repos: [matrx-frontend, aidream, common-docs]
-vision: [/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md]
 ---
 
 # Shape System handoff — superseded
@@ -16,7 +16,7 @@ vision: [/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md]
 Current vision, live implementation facts, document map, full gap analysis, and
 merge-ordered agent projects:
 
-`/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`
+`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md`
 
 Use `/Users/armanisadeghi/code/matrx-frontend/features/content-ir/docs/SHAPE_SYSTEM.md`
 for frontend operating detail and generated `SHAPES_STATUS.md` for the live per-kind

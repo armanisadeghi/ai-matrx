@@ -41,7 +41,7 @@ const REF_FIELDS: Record<string, RefFieldSpec[]> = {
     { key: "list_id", label: "List ID", uuid: true },
     { key: "item_id", label: "Item ID", uuid: true },
   ],
-  // Legacy read-only aliases (pre-rename nouns). See common-docs/structured-lists-rename.
+  // Legacy read-only aliases (pre-rename nouns). See common-docs/projects/structured-lists-rename.
   picklist: [{ key: "list_id", label: "List ID", uuid: true }],
   picklist_group: [
     { key: "list_id", label: "List ID", uuid: true },

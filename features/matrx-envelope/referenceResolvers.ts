@@ -796,7 +796,7 @@ export function getReferenceResolver(
     document: "udt_document",
     // Read-time only: pre-rename historical references still name the picklist
     // family. NEW content always emits structured_list*. See
-    // common-docs/structured-lists-rename/FEATURE.md (history policy).
+    // common-docs/projects/structured-lists-rename/FEATURE.md (history policy).
     picklist: "structured_list",
     picklist_group: "structured_list_group",
     picklist_item: "structured_list_item",

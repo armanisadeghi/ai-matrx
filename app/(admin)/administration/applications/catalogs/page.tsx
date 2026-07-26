@@ -7,7 +7,7 @@
 //
 // Super-admin gating comes from the (admin) route-group layout; the RPCs are
 // additionally gated by is_super_admin() at the DB.
-// Cross-repo system-of-record: common-docs/remote-catalogs/FEATURE.md
+// Cross-repo system-of-record: common-docs/systems/remote-catalogs/FEATURE.md
 
 import { createClient } from "@/utils/supabase/server";
 import { CatalogsClient } from "@/features/admin/applications/catalogs/components/CatalogsClient";

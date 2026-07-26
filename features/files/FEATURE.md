@@ -6,7 +6,7 @@
 
 This is the live architecture doc for the canonical file management system under `features/files/`. File bytes live in S3 and metadata lives in Postgres; the browser never talks to an object-store SDK.
 
-> **Cross-repo system-of-record — the file BACKEND is now a standalone service:** `/Users/armanisadeghi/code/common-docs/matrx-files-service/FEATURE.md`. The aidream file layer was extracted into the independent `matrx-files` microservice (deployed to EC2 2026-07-13). Default production browser traffic remains on aidream unless `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`. The canonical API selector may route exact standalone-owned paths to `matrx-files` when an admin switches all services to localhost or explicitly pins Files; broader file-adjacent routes remain on aidream. Read the system-of-record before any file-backend-facing change.
+> **Cross-repo system-of-record — the file BACKEND is now a standalone service:** `/Users/armanisadeghi/code/common-docs/systems/matrx-files-service/FEATURE.md`. The aidream file layer was extracted into the independent `matrx-files` microservice (deployed to EC2 2026-07-13). Default production browser traffic remains on aidream unless `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`. The canonical API selector may route exact standalone-owned paths to `matrx-files` when an admin switches all services to localhost or explicitly pins Files; broader file-adjacent routes remain on aidream. Read the system-of-record before any file-backend-facing change.
 
 If you're modifying anything in this feature, **also update this doc in the same change.** Stale docs cascade across parallel agents.
 
