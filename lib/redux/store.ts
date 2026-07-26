@@ -15,7 +15,6 @@ import createSagaMiddleware from "redux-saga";
 import { createSlimRootSaga } from "@/lib/redux/sagas/rootSaga";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { loggerMiddleware } from "@/utils/logger";
 import { enableMapSet } from "immer";
 import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
 import { notesRealtimeMiddleware } from "@/features/notes/redux/realtimeMiddleware";
@@ -201,7 +200,6 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         actionCreatorCheck: false,
       }).concat(
         sagaMiddleware,
-        loggerMiddleware,
         syncMiddleware,
         autoSaveMiddleware,
         notesRealtimeMiddleware,

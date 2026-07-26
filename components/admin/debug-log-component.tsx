@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, memo } from "react";
-import { isEqual } from "lodash";
+import isEqual from "lodash/isEqual";
 
 interface DebugLogProps {
   title?: string;

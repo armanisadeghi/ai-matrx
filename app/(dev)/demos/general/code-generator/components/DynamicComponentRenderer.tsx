@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import axios from "axios";
-import * as _ from "lodash";
 import * as dateFns from "date-fns";
 
 /**
