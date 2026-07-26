@@ -117,11 +117,17 @@ const nextConfig = {
     // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
     reactCompiler: true,
     experimental: {
+        // EXPERIMENT 6 (combo): persistent build cache + memory ceiling + capped
+        // workers + icon barrel optimization + the navActions lazy edge (kept
+        // from experiment 5).
+        turbopackFileSystemCacheForBuild: true,
+        turbopackMemoryLimit: 48318382080, // 45 GiB on the 60 GB machine
+        cpus: 8,
         serverActions: {
             bodySizeLimit: "10mb",
         },
-        // Optimize lucide-react (the 1400+ icon barrel file) and zustand to avoid massive SSR chunks
-        optimizePackageImports: ['lucide-react', 'zustand'],
+        // Optimize icon/util barrels to avoid massive SSR chunks
+        optimizePackageImports: ['lucide-react', 'zustand', '@tabler/icons-react', 'react-icons'],
         // SOURCE MAPS OFF (A1) — memory, not speed, is the binding constraint.
         // Measured with `next build --experimental-debug-memory-usage`: peak RSS
         // 62.81 → 58.49 GiB (−4.32 GiB) with these two flags. Full production
