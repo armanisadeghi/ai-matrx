@@ -16,8 +16,8 @@ import {
 import { saveContainerAndUpdateAppletThunk, saveOrUpdateContainerToAppletThunk } from "../thunks/containerBuilderThunks";
 import { saveFieldAndUpdateContainerThunk } from "../thunks/fieldBuilderThunks";
 import { AppletBuilder, ContainerBuilder } from "../types";
-import { AppletLayoutOption, BrokerMapping } from "@/types/customAppTypes";
-import { AppletSourceConfig } from "@/types/customAppTypes";
+import type { AppletLayoutOption, BrokerMapping } from "@/types/customAppTypes";
+import type { AppletSourceConfig } from "@/types/customAppTypes";
 
 // Helper function to check if an applet exists in state
 const checkAppletExists = (state: AppletsState, id: string): boolean => {

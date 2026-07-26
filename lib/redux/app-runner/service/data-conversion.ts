@@ -1,4 +1,4 @@
-import { AppletLayoutOption, AppLayoutOptions, CustomAppConfig, CustomAppletConfig, KnownMethod } from "@/types/customAppTypes"; // Adjust import based on your types file
+import type { AppletLayoutOption, AppLayoutOptions, CustomAppConfig, CustomAppletConfig, KnownMethod } from "@/types/customAppTypes"; // Adjust import based on your types file
 import { RuntimeCompiledRecipe, RuntimeBrokerDefinition } from "../types";
 
 const KNOWN_ACTION_TYPES = ["button", "link", "redux", "none"] as const;

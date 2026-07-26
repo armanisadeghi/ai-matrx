@@ -1,7 +1,7 @@
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
-import { AppLayoutOptions, CustomAppConfig } from "@/types/customAppTypes";
+import type { AppLayoutOptions, CustomAppConfig } from "@/types/customAppTypes";
 import { isSlugInUse } from "@/config/applets/apps/constants";
 
 // Define the database type for CustomAppConfig

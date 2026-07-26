@@ -5,7 +5,7 @@
 // back from this file. Routing through the barrel creates a runtime
 // initialization cycle under Turbopack/Next ("Cannot access 'themePolicy'
 // before initialization"). Keep these two imports at deep paths.
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
     REHYDRATE_ACTION_TYPE,

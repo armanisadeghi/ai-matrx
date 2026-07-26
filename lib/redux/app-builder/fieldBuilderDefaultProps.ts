@@ -2,7 +2,7 @@
  * Default field component props and partial FieldBuilder (leaf: no import from app-builder slice/thunks).
  * Kept in sync with the former in-slice exports for behavior parity.
  */
-import { ComponentProps } from "@/types/customAppTypes";
+import type { ComponentProps } from "@/types/customAppTypes";
 import { FieldBuilder } from "@/lib/redux/app-builder/types";
 
 export const FIELD_DEFAULT_COMPONENT_PROPS: ComponentProps = {

@@ -1,5 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Flashcard, ChatMessage } from "@/types/flashcards.types";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { Flashcard, ChatMessage } from "@/types/flashcards.types";
 
 export interface FlashcardState extends Flashcard {
     chat: ChatMessage[];

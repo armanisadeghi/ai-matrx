@@ -1,5 +1,5 @@
 import { isSlugInUse } from "@/config/applets/apps/constants";
-import {
+import type {
   AppletContainer,
   AppletLayoutOption,
   AppletSourceConfig,
@@ -578,16 +578,18 @@ const convertDbResponseForSourceConfigs = (
     ? compiledData.brokers
     : [];
 
-  const needed_brokers: Broker[] = rawBrokers.filter(isJsonObject).map((broker) => ({
-    id: typeof broker.id === "string" ? broker.id : "",
-    name: typeof broker.name === "string" ? broker.name : "Name Missing",
-    required: typeof broker.required === "boolean" ? broker.required : true,
-    dataType: typeof broker.data_type === "string" ? broker.data_type : "",
-    defaultValue:
-      typeof broker.default_value === "string" ? broker.default_value : "",
-    inputComponent:
-      typeof broker.inputComponent === "string" ? broker.inputComponent : "",
-  }));
+  const needed_brokers: Broker[] = rawBrokers
+    .filter(isJsonObject)
+    .map((broker) => ({
+      id: typeof broker.id === "string" ? broker.id : "",
+      name: typeof broker.name === "string" ? broker.name : "Name Missing",
+      required: typeof broker.required === "boolean" ? broker.required : true,
+      dataType: typeof broker.data_type === "string" ? broker.data_type : "",
+      defaultValue:
+        typeof broker.default_value === "string" ? broker.default_value : "",
+      inputComponent:
+        typeof broker.inputComponent === "string" ? broker.inputComponent : "",
+    }));
 
   return {
     sourceType: "recipe",

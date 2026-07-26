@@ -1,4 +1,4 @@
-import { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { sanitizeFieldName, validateFieldName } from "./field-name-sanitizer";
 
 // Valid data types according to the backend schema

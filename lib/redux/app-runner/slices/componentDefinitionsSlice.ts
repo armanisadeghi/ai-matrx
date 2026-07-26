@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { FieldDefinition, AppletContainer, CustomAppletConfig, CustomAppConfig } from "@/types/customAppTypes";
+import type { FieldDefinition, AppletContainer, CustomAppletConfig, CustomAppConfig } from "@/types/customAppTypes";
 import { ComponentToBrokerMapping } from "../types";
 
 interface ComponentDefinitionsState {

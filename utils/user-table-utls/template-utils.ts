@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { FieldDefinition, normalizeDataType } from './table-utils';
 import { sanitizeFieldName, validateFieldName } from './field-name-sanitizer';
 

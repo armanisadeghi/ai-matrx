@@ -19,7 +19,7 @@ import {
   recompileContainerInAppletById,
   recompileAllContainersInApplet,
 } from "../service/customAppletService";
-import { FieldDefinition } from "@/types/customAppTypes";
+import type { FieldDefinition } from "@/types/customAppTypes";
 import { saveFieldAndUpdateContainerThunk } from "./fieldBuilderThunks";
 
 /**

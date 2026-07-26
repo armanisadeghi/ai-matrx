@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { AppLayoutOptions, CustomAppConfig } from "@/types/customAppTypes";
+import type { AppLayoutOptions, CustomAppConfig } from "@/types/customAppTypes";
 
 interface CustomAppRuntimeState {
   config: CustomAppConfig | null;

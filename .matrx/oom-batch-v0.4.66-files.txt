@@ -16,5 +16,7 @@ X	components/official/ProTextarea.tsx
 X	features/shell/navigation/navActions.ts
 X	scripts/check-fake-dynamic-imports.mjs
 
-## remaining (0)
-# transcript-studio realtimeMiddleware.ts + thunks.ts — already use inline `type` on row/patch types
+## APPLIED (2026-07-26) — batch 2: shell utils + missed rootReducer slices
+✓ 5 RTK slices missed in batch 1 (single-quote PayloadAction): flashcardChat, layout, urlSync, moduleSliceCreator, themeSlice
+✓ SupabaseClient → import type in ssrShellData, userSessionData, user-table utils, cms API routes
+✓ customAppTypes / flashcards.types / MatrxRecordId → import type across lib/redux app-builder + app-runner (~25 files)

@@ -3,7 +3,7 @@
 import type { AppletsState } from "../types";
 import { createSelector } from "@reduxjs/toolkit";
 import { AppletBuilder } from "../types";
-import {
+import type {
   BrokerMapping,
   AppletSourceConfig,
   NeededBroker,

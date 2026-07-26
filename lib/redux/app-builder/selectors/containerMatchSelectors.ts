@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import { AppletContainer, FieldDefinition } from "@/types/customAppTypes";
+import type { AppletContainer, FieldDefinition } from "@/types/customAppTypes";
 import { getContainerBuilderState } from "./containerSelectors";
 import { selectAppletById } from "./appletSelectors";
 import { ContainerBuilder } from "../types";

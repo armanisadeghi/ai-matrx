@@ -4,7 +4,7 @@ import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import type { Database, Json } from "@/types/database.types";
 
 import { ContainerBuilder, FieldBuilder } from "../types";
-import { FieldDefinition } from "@/types/customAppTypes";
+import type { FieldDefinition } from "@/types/customAppTypes";
 import { dbToFieldDefinition } from "./fieldComponentService";
 
 export type ComponentGroupRow =

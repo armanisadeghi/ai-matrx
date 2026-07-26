@@ -18,7 +18,7 @@ import {
 } from "../thunks/containerBuilderThunks";
 import { saveFieldAndUpdateContainerThunk, saveFieldToContainerThunk } from "../thunks/fieldBuilderThunks";
 import { ContainerBuilder , ContainersState } from "../types";
-import { FieldDefinition } from "@/types/customAppTypes";
+import type { FieldDefinition } from "@/types/customAppTypes";
 import { v4 as uuidv4 } from "uuid";
 
 // Helper function to check if a container exists in state

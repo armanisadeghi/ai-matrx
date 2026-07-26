@@ -14,15 +14,15 @@ import {
   setAppletRuntimeLoading,
   resetAppletRuntimeConfig,
 } from "../slices/customAppletRuntimeSlice";
-import {
-  validateAppWithApplets,
+import { validateAppWithApplets } from "../validations/appRunnerValidations";
+import type {
   ValidationOptions,
   ValidationResult,
 } from "../validations/appRunnerValidations";
 import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import type { BrokerMapEntry } from "@/lib/redux/brokerSlice/types";
 import { coreSelectors as brokerSelectors } from "@/lib/redux/brokerSlice/selectors/core";
-import {
+import type {
   CustomAppletConfig,
   CustomAppConfig,
   BrokerMapping,
@@ -233,7 +233,10 @@ export const fetchAppWithApplets = createAsyncThunk(
       );
 
       // Detailed error for debugging
-      const errorObj = error && typeof error === "object" ? (error as Record<string, unknown>) : {};
+      const errorObj =
+        error && typeof error === "object"
+          ? (error as Record<string, unknown>)
+          : {};
       const errorDetails = {
         message: extractErrorMessage(error) || "Unknown error",
         code: errorObj.code,

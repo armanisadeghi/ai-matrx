@@ -1,4 +1,4 @@
-import { AppletContainer, CustomAppConfig, CustomAppletConfig, FieldDefinition , AppletSourceConfig } from "@/types/customAppTypes";
+import type { AppletContainer, CustomAppConfig, CustomAppletConfig, FieldDefinition , AppletSourceConfig } from "@/types/customAppTypes";
 import type { JsonObject } from "@/types/json";
 
 export interface FieldBuilder extends FieldDefinition {

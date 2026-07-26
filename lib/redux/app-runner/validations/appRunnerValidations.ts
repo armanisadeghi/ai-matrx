@@ -1,4 +1,4 @@
-import { CustomAppConfig, CustomAppletConfig, AppletLayoutOption, AppLayoutOptions } from '@/types/customAppTypes';
+import type { CustomAppConfig, CustomAppletConfig, AppletLayoutOption, AppLayoutOptions } from '@/types/customAppTypes';
 import { extractErrorMessage } from '@/utils/errors';
 
 // Types for validation results
