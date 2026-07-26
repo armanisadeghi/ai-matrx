@@ -87,6 +87,7 @@ export function ApplyDirectiveButton({
         applied: result.applied,
         failed: result.failed,
       });
+      onApplied?.();
     } catch (error) {
       // Prefer the server's gentle user_message; never dump Pydantic/wire detail.
       const message =
@@ -129,7 +130,9 @@ export function ApplyDirectiveButton({
         ) : (
           <Play className="h-3.5 w-3.5" />
         )}
-        {state.status === "applying" ? "Applying…" : label}
+        {state.status === "applying"
+          ? `Applying${itemCount ? ` ${itemCount} pages` : ""}…${elapsed ? ` ${elapsed}s` : ""}`
+          : label}
       </button>
       {state.status === "error" ? (
         <span className="inline-flex max-w-sm items-start gap-1 text-xs text-destructive">
