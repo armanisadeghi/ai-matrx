@@ -98,7 +98,8 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
    the UI (Save as makes your own copy).
 4. **The resolver** (`resources/resolve.ts`) — the ONLY place that fetches
    bodies and the ONLY place that truncates, so the `ResolutionReport` can be
-   trusted. Returns `{variables, report}` ready for `useRunAgent`.
+   trusted. Returns `{variables, contextRefs, report}` — injected text plus any
+   lazy `resource_ref` envelopes (see the delivery invariant below).
 
 **Invariants — these are the ones that bite:**
 
@@ -118,9 +119,35 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
   (so we never fetch 4.98M chars to use 200k), then post-render against the real
   assembled text (rendering adds ~200 chars of provenance per block). Whole
   blocks are dropped, never half a block.
-- **Every rendered block carries its provenance** (URL, site, authority, best
-  rank) via `render.ts#block`. Rich context with no attribution is how
+- **Every rendered block carries its provenance** (URL only — site, authority,
+  rank and importance were deliberately removed: those signals chose what the
+  model reads, and repeating them asks it to weight the same signal twice) via
+  `render.ts#block` + `sourceMeta`. Rich context with no attribution is how
   unsourced claims get written.
+- **Delivery is per binding: `delivery: "direct" | "context"`.** Direct (the
+  default) renders text into the variable — always read, always budgeted.
+  Context sends each selected item as a `__kind:"resource_ref"` envelope in the
+  request's per-turn `context` dict (`runtime.context` →
+  `instanceContext` slice → the API `context` field): the server builds a small
+  descriptor and the agent opens the body through its context tool ONLY if it
+  chooses — near-zero injected tokens, zero budget cost, and it can never evict
+  a direct kind's items. Only kinds with a catalog `resourceType` (a real
+  RLS-loadable row) can travel this way; derived kinds silently fall back to
+  direct. Server half: each `resourceType` token must be registered in
+  aidream's `services/references/resources.py` (all research components are,
+  as of 2026-07-25). This was the handoff's "context vs direct" decision —
+  resolved 2026-07-25 as (a) per-request context; scope context items
+  (persistent state) and `reference_pickable` flips (always-injected snippets)
+  were both rejected as the wrong mechanism.
+- **Variable names are a wire contract, not UI copy** (ruling 2026-07-25). The
+  agent variable `scraped_pages` KEEPS its name even though the UI says
+  "read", because renaming a live contract to match display copy is backwards:
+  UI labels lead (the picker label, the preview rail), wire names stay visible
+  as sublabels, and mappings/shortcuts translate when a different name is
+  wanted. Do not rename agent `variable_definitions` to chase display copy.
+- **`page.images` vs `media.items` both stay** (ruling 2026-07-25): Media is
+  the curated subset of the raw extracted images. Both are offered with honest
+  labels saying exactly that; do not collapse them.
 - **`strategy: "first"` on a binding** means "the first kind that produced
   anything wins" — that is how `research-report-only` means "the assembled
   document, ELSE the current topic report" instead of sending both.
@@ -131,10 +158,14 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
   background run needs server-side resolution, aidream implements the SAME
   selector semantics over the Matrx ORM against the SAME bundle rows — the
   bundle descriptor is already the wire format. A second, divergent shape is a
-  defect.
+  defect. Deliberately DEFERRED until a scheduled/background consumer exists
+  (none does today); the lazy-context server half (referenceable-resource
+  registration) already shipped 2026-07-25.
 - **Media is text-only in this wave.** `media.items` renders URLs, alt text and
-  captions; the model does not see pixels. Real multimodal attachment is not
-  built — say so in the UI rather than implying it.
+  captions; the model does not see pixels. Real multimodal attachment is a
+  tracked promise — `research.multimodal-media` in
+  `lib/coming-soon/registry.ts` — and the catalog descriptions say "never
+  pixels" out loud.
 
 **Shipped bundles + agents** (`migrations/research_system_context_bundles.sql`,
 `components/outputs/outputDefinitions.ts`). Seven system templates, keyed by
@@ -233,6 +264,18 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- `2026-07-25` — **Lazy delivery + generic preview window + "read" copy.**
+  `BundleBinding.delivery: "direct" | "context"` shipped: context bindings emit
+  `resource_ref` envelopes through `runtime.context` (new field on
+  `AgentExecutionRuntime`) instead of injected text; picker Inject/On-demand
+  toggle, budget meter "on demand" rows, preview "Attached on demand" section;
+  aidream references registry gained all research component tokens. The
+  Context Preview window's viewing machinery was extracted into the generic
+  `TextSectionsWindow` (`features/window-panels/windows/text-sections/`).
+  Catalog snippet parsing consolidated onto `normalizeSearchSnippets` (D104
+  closed). Full user-facing "scraped"→"read" copy sweep across components.
+  Rulings recorded: no agent-variable renames; page.images + media.items both
+  stay; multimodal media tracked as `research.multimodal-media` Coming Soon.
 - `2026-07-25` — Fixed the condensed authority export's canonical snippet
   normalizer import and aligned the sources filter coverage prop with the
   rendered string contract, restoring the research type gate.

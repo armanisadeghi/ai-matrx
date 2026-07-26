@@ -70,6 +70,17 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/agents/browse row menu"],
   },
+  "research.multimodal-media": {
+    id: "research.multimodal-media",
+    label: "Send media to the model",
+    owner: "research",
+    promise:
+      "Attach a topic's curated images and media to an agent run as real visual input — today the model reads only URLs, alt text and captions, never the pixels.",
+    stage: "planned",
+    surfaces: [
+      "/research/topics/[id]/context picker (Media inventory, Page images)",
+    ],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {
