@@ -324,7 +324,47 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
   ],
+  windowPanels: [
+    {
+      overlayId: "keywordResearchWindow",
+      description:
+        "Canonical keyword research runner in a floating window: shared KeywordResearchLauncher (live key-by-key kind-component stream) + compact cluster explorer. Open from anywhere via useOpenKeywordResearchWindow({ primaryKeyword, autoRun }).",
+    },
+    {
+      overlayId: "serpAnalyzerWindow",
+      description:
+        "Search Appearance (MetadataAnalyzer) in a floating window.",
+    },
+    {
+      overlayId: "socialCardAnalyzerWindow",
+      description: "Social Cards (SocialCardAnalyzer) in a floating window.",
+    },
+  ],
   components: [
+    {
+      name: "KeywordResearchLauncher + LiveResearchFeed (features/marketing/seo/keyword-research)",
+      filePath:
+        "features/marketing/seo/keyword-research/components/KeywordResearchLauncher.tsx",
+      description:
+        "Canonical research runner: input → live key-by-key kind-component stream (keyword_relationship_research / keyword_classification_batch_v1 via content-ir) → durable summary. Consumed by the workbench page AND the Keyword Research window panel.",
+      tier: "official",
+    },
+    {
+      name: "KeywordMetrics (sparkline, competition, intent chip, confidence meter, formats)",
+      filePath:
+        "features/marketing/seo/keyword-research/components/KeywordMetrics.tsx",
+      description:
+        "THE shared keyword presentation primitives — every keyword surface (workbench, window panel, seo tool renderer, content-plan picker, site performance table, chat classification cards) consumes these; no private copies.",
+      tier: "official",
+    },
+    {
+      name: "KeywordResearchBlock + KeywordClassificationBatchBlock",
+      filePath:
+        "components/mardown-display/blocks/keyword-research/KeywordResearchBlock.tsx",
+      description:
+        "Kind renderers for keyword_relationship_research / keyword_classification_batch_v1 — streaming-first (chips/cards pop in per item), used in chat and any live feed.",
+      tier: "official",
+    },
     {
       name: "MatrxDataTable",
       filePath: "components/official/matrx-data-table/MatrxDataTable.tsx",

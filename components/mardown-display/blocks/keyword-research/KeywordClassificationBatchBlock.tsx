@@ -19,6 +19,10 @@ import type {
   KeywordClassificationCardData,
   KeywordClassificationFactKey,
 } from "@/features/content-ir/kinds/keyword-research";
+import {
+  KeywordConfidenceMeter,
+  KeywordIntentChip,
+} from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
 
 export interface KeywordClassificationBatchBlockProps {
   serverData?: unknown;
@@ -48,13 +52,6 @@ export function readKeywordClassificationData(
   };
 }
 
-const INTENT_CHIP_CLASSES: Record<string, string> = {
-  transactional: "border-primary/50 bg-primary/10 text-primary",
-  commercial_investigation: "border-primary/30 bg-primary/5 text-foreground",
-  informational: "border-border bg-muted text-muted-foreground",
-  navigational: "border-border bg-muted text-muted-foreground",
-};
-
 /** Facts worth a chip on the compact card, beyond the intent headline. */
 const CARD_FACT_KEYS: KeywordClassificationFactKey[] = [
   "funnel_stage",
@@ -68,26 +65,6 @@ const CARD_FACT_KEYS: KeywordClassificationFactKey[] = [
 
 function humanize(value: string): string {
   return value.replace(/_/g, " ");
-}
-
-function ConfidenceMeter({ value }: { value: number }) {
-  const clamped = Math.max(0, Math.min(100, value));
-  return (
-    <span
-      className="ml-auto inline-flex items-center gap-1.5"
-      title={`Overall confidence ${clamped}%`}
-    >
-      <span className="h-1 w-10 overflow-hidden rounded-full bg-muted">
-        <span
-          className="block h-full rounded-full bg-primary/70"
-          style={{ width: `${clamped}%` }}
-        />
-      </span>
-      <span className="text-[10px] tabular-nums text-muted-foreground">
-        {clamped}
-      </span>
-    </span>
-  );
 }
 
 function ClassificationCard({
@@ -106,19 +83,14 @@ function ClassificationCard({
           <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
         )}
         {card.overallConfidence !== null && (
-          <ConfidenceMeter value={card.overallConfidence} />
+          <KeywordConfidenceMeter
+            value={card.overallConfidence}
+            className="ml-auto"
+          />
         )}
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-1">
-        {intent && (
-          <span
-            className={`rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${
-              INTENT_CHIP_CLASSES[intent] ?? "border-border bg-muted text-muted-foreground"
-            }`}
-          >
-            {humanize(intent)}
-          </span>
-        )}
+        <KeywordIntentChip intentClass={intent} hideUnclassified />
         {CARD_FACT_KEYS.map((key) => {
           const fact = card.facts[key];
           return fact ? (

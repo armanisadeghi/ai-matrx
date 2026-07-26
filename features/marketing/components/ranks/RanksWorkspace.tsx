@@ -54,7 +54,8 @@ import {
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { RankSparkline } from "./RankSparkline";
 import { usePortfolio, useRankTargetHistory, useRunRankCheck } from "./useRanks";
-import type { RankPortfolioItem, RankProvider } from "./types";
+import { TRACKING_MODES } from "./types";
+import type { AiAnswerEngine, RankPortfolioItem, RankProvider } from "./types";
 
 function MovementBadge({ movement }: { movement: number | null }) {
   if (movement === null) return <span className="text-xs text-muted-foreground">—</span>;
@@ -101,27 +102,32 @@ function AddTargetForm({
     provider: RankProvider;
     location_name?: string;
     cadence_days: number;
+    search_type?: "organic" | "local_pack" | "ai_answer";
+    engine?: AiAnswerEngine | null;
   }) => Promise<void>;
 }) {
   const [keyword, setKeyword] = useState("");
-  const [provider, setProvider] = useState<RankProvider>("brave");
+  const [modeId, setModeId] = useState<string>("google_national");
   const [locationName, setLocationName] = useState("");
   const [cadenceDays, setCadenceDays] = useState(7);
   const [submitting, setSubmitting] = useState(false);
+  const mode = TRACKING_MODES.find((m) => m.id === modeId) ?? TRACKING_MODES[0];
 
   const submit = async () => {
     const trimmed = keyword.trim();
     if (!trimmed) return;
-    if (provider === "serpapi" && !locationName.trim()) {
-      toast.error("SerpAPI rank targets need a location (e.g. \"Los Angeles, California, United States\")");
+    if (mode.location === "required" && !locationName.trim()) {
+      toast.error(`${mode.label} needs a location (e.g. "Los Angeles, California, United States")`);
       return;
     }
     setSubmitting(true);
     try {
       await onAdd({
         keyword: trimmed,
-        provider,
-        location_name: locationName.trim() || undefined,
+        provider: mode.provider,
+        engine: mode.engine ?? undefined,
+        search_type: mode.search_type,
+        location_name: mode.location === "none" ? undefined : locationName.trim() || undefined,
         cadence_days: cadenceDays,
       });
       setKeyword("");
@@ -137,7 +143,9 @@ function AddTargetForm({
   return (
     <div className="grid gap-2 border-b border-border p-3 md:grid-cols-[1fr_140px_1fr_100px_auto] md:items-end">
       <div className="grid gap-1">
-        <span className="text-[11px] font-medium text-muted-foreground">Keyword</span>
+        <span className="text-[11px] font-medium text-muted-foreground">
+          {mode.search_type === "ai_answer" ? "Prompt to track" : "Keyword"}
+        </span>
         <Input
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
@@ -148,26 +156,30 @@ function AddTargetForm({
         />
       </div>
       <div className="grid gap-1">
-        <span className="text-[11px] font-medium text-muted-foreground">Provider</span>
-        <Select value={provider} onValueChange={(v) => setProvider(v as RankProvider)}>
-          <SelectTrigger>
+        <span className="text-[11px] font-medium text-muted-foreground">Track in</span>
+        <Select value={modeId} onValueChange={setModeId}>
+          <SelectTrigger title={mode.hint}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="brave">Brave</SelectItem>
-            <SelectItem value="serpapi">Google (SerpAPI)</SelectItem>
+            {TRACKING_MODES.map((m) => (
+              <SelectItem key={m.id} value={m.id} title={m.hint}>
+                {m.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
       <div className="grid gap-1">
         <span className="text-[11px] font-medium text-muted-foreground">
-          Location {provider === "serpapi" ? "(required)" : "(SerpAPI only)"}
+          {mode.search_type === "ai_answer" ? "City" : "Location"}{" "}
+          {mode.location === "required" ? "(required)" : mode.location === "optional" ? "(optional)" : "(n/a)"}
         </span>
         <Input
           value={locationName}
           onChange={(e) => setLocationName(e.target.value)}
-          placeholder="Los Angeles, California, United States"
-          disabled={provider !== "serpapi"}
+          placeholder={mode.search_type === "ai_answer" ? "Los Angeles" : "Los Angeles, California, United States"}
+          disabled={mode.location === "none"}
         />
       </div>
       <div className="grid gap-1">

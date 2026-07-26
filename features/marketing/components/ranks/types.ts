@@ -7,7 +7,38 @@
 
 import type { SeoCollectionReceipt } from "@/features/marketing/seo/rank/types";
 
-export type RankProvider = "brave" | "serpapi";
+export type RankProvider = "brave" | "serpapi" | "dataforseo";
+export type AiAnswerEngine = "chat_gpt" | "perplexity" | "gemini" | "claude";
+
+/** One user-facing tracking mode — composes provider + engine + search_type. */
+export interface TrackingModeOption {
+  id: string;
+  label: string;
+  provider: RankProvider;
+  engine?: AiAnswerEngine;
+  search_type: "organic" | "local_pack" | "ai_answer";
+  location: "required" | "optional" | "none";
+  hint: string;
+}
+
+export const TRACKING_MODES: TrackingModeOption[] = [
+  { id: "google_national", label: "Google — National", provider: "serpapi", search_type: "organic", location: "none",
+    hint: "Country-level Google organic rankings (no city bias)." },
+  { id: "google_location", label: "Google — Local area", provider: "serpapi", search_type: "organic", location: "required",
+    hint: "Google organic rankings as seen from a specific city." },
+  { id: "google_local_pack", label: "Google — Map pack", provider: "serpapi", search_type: "local_pack", location: "required",
+    hint: "Position in the Google local 3-pack for a place." },
+  { id: "brave", label: "Brave", provider: "brave", search_type: "organic", location: "none",
+    hint: "Brave's own index (country-level)." },
+  { id: "ai_chat_gpt", label: "ChatGPT (AI answers)", provider: "dataforseo", engine: "chat_gpt", search_type: "ai_answer", location: "optional",
+    hint: "Runs the prompt through ChatGPT with web search; tracks whether you are cited or mentioned." },
+  { id: "ai_perplexity", label: "Perplexity (AI answers)", provider: "dataforseo", engine: "perplexity", search_type: "ai_answer", location: "optional",
+    hint: "Citation + mention tracking in Perplexity answers." },
+  { id: "ai_gemini", label: "Gemini (AI answers)", provider: "dataforseo", engine: "gemini", search_type: "ai_answer", location: "optional",
+    hint: "Citation + mention tracking in Gemini answers." },
+  { id: "ai_claude", label: "Claude (AI answers)", provider: "dataforseo", engine: "claude", search_type: "ai_answer", location: "optional",
+    hint: "Citation + mention tracking in Claude answers." },
+];
 
 export interface RankPortfolioItem {
   target_id: string;
@@ -18,6 +49,8 @@ export interface RankPortfolioItem {
   engine: string;
   language: string;
   device: string;
+  search_type: string;
+  location_name: string | null;
   target_domain: string | null;
   target_page_id: string | null;
   group: string | null;
@@ -71,6 +104,8 @@ export interface AddRankTargetInput {
   notes?: string | null;
   cadence_days?: number;
   location_name?: string | null;
+  search_type?: "organic" | "local_pack" | "ai_answer";
+  engine?: AiAnswerEngine | null;
 }
 
 export interface UpdateRankTargetInput {

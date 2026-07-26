@@ -121,6 +121,84 @@ export function KeywordCompetitionBadge({
   );
 }
 
+const INTENT_CHIP_CLASSES: Record<string, string> = {
+  transactional: "border-primary/50 bg-primary/10 text-primary",
+  commercial_investigation: "border-primary/30 bg-primary/5 text-foreground",
+  informational: "border-border bg-muted text-muted-foreground",
+  navigational: "border-border bg-muted text-muted-foreground",
+};
+
+/**
+ * Search-intent chip — THE one way `intent_class` renders anywhere
+ * (classification stream cards, explorer tables, pickers). Color-coded by
+ * class, humanized text, null -> "unclassified" muted chip (pass
+ * `hideUnclassified` to render nothing instead).
+ */
+export function KeywordIntentChip({
+  intentClass,
+  hideUnclassified = false,
+  className,
+}: {
+  intentClass: string | null | undefined;
+  hideUnclassified?: boolean;
+  className?: string;
+}) {
+  if (!intentClass) {
+    if (hideUnclassified) return null;
+    return (
+      <span
+        className={cn(
+          "inline-flex rounded-full border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground",
+          className,
+        )}
+      >
+        unclassified
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+        INTENT_CHIP_CLASSES[intentClass] ??
+          "border-border bg-muted text-muted-foreground",
+        className,
+      )}
+    >
+      {intentClass.replace(/_/g, " ")}
+    </span>
+  );
+}
+
+/** 0-100 confidence meter: tiny bar + tabular number, tooltip carries the label. */
+export function KeywordConfidenceMeter({
+  value,
+  label = "Overall confidence",
+  className,
+}: {
+  value: number;
+  label?: string;
+  className?: string;
+}) {
+  const clamped = Math.max(0, Math.min(100, value));
+  return (
+    <span
+      className={cn("inline-flex items-center gap-1.5", className)}
+      title={`${label} ${clamped}%`}
+    >
+      <span className="h-1 w-10 overflow-hidden rounded-full bg-muted">
+        <span
+          className="block h-full rounded-full bg-primary/70"
+          style={{ width: `${clamped}%` }}
+        />
+      </span>
+      <span className="text-[10px] tabular-nums text-muted-foreground">
+        {clamped}
+      </span>
+    </span>
+  );
+}
+
 /** Direction chip for a percentage trend. */
 export function KeywordTrendBadge({ percent }: { percent: number | null }) {
   if (percent === null) return null;

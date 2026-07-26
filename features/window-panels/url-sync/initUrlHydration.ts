@@ -207,6 +207,30 @@ export function initUrlHydration() {
     );
   });
 
+  // Keyword Research — `?panels=keyword_research` opens the canonical
+  // research runner window. Never auto-runs (a run is a paid pipeline).
+  registerPanelHydrator("keyword_research", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "keywordResearchWindow" }));
+  });
+
+  // Keyword Intelligence — `?panels=keyword` opens the canonical keyword
+  // dossier window (blank; scope/phrase arrive via the opener, not the URL).
+  registerPanelHydrator("keyword", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "keywordWindow" }));
+  });
+
+  // Search Appearance — `?panels=serp_analyzer` (key declared in the
+  // registry since the window shipped; hydrator was missing — drift the
+  // dev check below exists to catch).
+  registerPanelHydrator("serp_analyzer", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "serpAnalyzerWindow" }));
+  });
+
+  // Social Cards — `?panels=social_cards` (same missing-hydrator drift).
+  registerPanelHydrator("social_cards", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "socialCardAnalyzerWindow" }));
+  });
+
   // ── Dev-only integrity check ─────────────────────────────────────────────
   // Every registry entry that declares `urlSync.key` must have a hydrator
   // registered above. Drift here is silent: `?panels=<key>` would just

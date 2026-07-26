@@ -54,6 +54,11 @@ market enrichment remain explicit compute operations.
     the completed run (`seo.research_completed {reused_completed_run: true}`) — zero
     duplicate paid calls.
 
+**The canonical per-keyword UI primitive lives in `features/marketing/seo/keyword/`**
+(`KeywordInput`, the Keyword Intelligence window, `buildKeywordBrief`) — it consumes
+this feature's reads, stream hook, and `KeywordMetrics` atoms. Read its FEATURE.md
+before adding any keyword field or per-keyword display anywhere.
+
 ## Files
 
 - `types.ts` — row types from `Database["seo"]` + API response types aliased from
@@ -80,6 +85,17 @@ market enrichment remain explicit compute operations.
 - `components/LiveResearchFeed.tsx` — live kind-component rendering of the agent
   streams (see the two-lane rule above); the canonical non-chat consumer of
   `useLiveJsonRegion`.
+- `components/KeywordResearchLauncher.tsx` — **THE canonical research runner**
+  (input → live feed → summary), presentational over a caller-owned
+  `useKeywordResearch()` instance. Consumed by the workbench AND
+  `features/window-panels/windows/seo/KeywordResearchWindow.tsx` (open from
+  anywhere: `useOpenKeywordResearchWindow({ primaryKeyword, autoRun })` in
+  `features/overlays/openers/keywordResearchWindow.tsx`; `?panels=keyword_research`).
+  `autoRun` only on an explicit user gesture — a run is a paid pipeline.
+- `components/KeywordMetrics.tsx` — the shared presentation primitives. Now also
+  `KeywordIntentChip` (THE one way `intent_class` renders anywhere) and
+  `KeywordConfidenceMeter`. **No surface hand-rolls an intent string, competition
+  badge, or volume/CPC format — consume these.**
 - `components/KeywordResearchWorkbench.tsx` — research launcher, run-summary strip,
   explorer table (volume / trend sparkline / competition / CPC / trajectory / intent),
   expandable detail (monthly bars + relationship chips; rejected edges render
@@ -100,6 +116,16 @@ market enrichment remain explicit compute operations.
 
 ## Change Log
 
+- 2026-07-26 — **Canonicalization round 2: window panel + shared primitives everywhere.**
+  Extracted `KeywordResearchLauncher` from the workbench (shared runner UI); new
+  `KeywordResearchWindow` (overlayId `keywordResearchWindow`, tools-grid tile,
+  `?panels=keyword_research`, opener `useOpenKeywordResearchWindow`) hosts it with a
+  compact cluster explorer. `KeywordIntentChip` + `KeywordConfidenceMeter` added to
+  `KeywordMetrics.tsx` and consumed by the chat classification block, the workbench
+  intent column, the window, and content-plan's `KeywordPicker` (which now also shows
+  volume + competition it always had in hand); `SiteKeywordPerformanceWorkspace`
+  dropped its private competition badge. Also registered hydrators for the
+  pre-existing `serp_analyzer` / `social_cards` urlSync drift.
 - 2026-07-26 — **Live streams render as real components, key by key — raw JSON killed.**
   The workbench's `<pre>` of raw agent tokens is gone: chunk text is phase-bucketed in
   `useKeywordResearch` and rendered through `LiveResearchFeed` → content-ir
