@@ -20,7 +20,7 @@
  * site+parent+slug), so a double-click cannot duplicate rows.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Play, TriangleAlert } from "lucide-react";
 
 import { confirmDirective } from "@/features/action-catalog/service";
@@ -39,14 +39,34 @@ export interface ApplyDirectiveButtonProps {
   envelope: MatrxEnvelope;
   /** Optional label override, e.g. "Apply plan". */
   label?: string;
+  /** How many things this will write — shown during the wait so a long apply
+   *  reads as "working on 219 pages", never as a frozen spinner. */
+  itemCount?: number;
+  onApplied?: () => void;
 }
 
 export function ApplyDirectiveButton({
   envelope,
   label = "Apply",
+  itemCount,
+  onApplied,
 }: ApplyDirectiveButtonProps) {
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const [state, setState] = useState<ApplyState>({ status: "idle" });
+  const [elapsed, setElapsed] = useState(0);
+  const startedAt = useRef<number | null>(null);
+
+  // An honest clock beats a fake progress bar: the server does not stream
+  // per-row progress, so we report the ONE thing we actually know.
+  useEffect(() => {
+    if (state.status !== "applying") return;
+    startedAt.current = Date.now();
+    const id = setInterval(
+      () => setElapsed(Math.round((Date.now() - (startedAt.current ?? 0)) / 1000)),
+      1000,
+    );
+    return () => clearInterval(id);
+  }, [state.status]);
 
   // Only side-effect envelopes are applicable; a reference/secret never is.
   if (envelope.kind !== "output_directive") return null;
