@@ -129,6 +129,22 @@ const nextConfig = {
         },
         // Optimize lucide-react (the 1400+ icon barrel file) and zustand to avoid massive SSR chunks
         optimizePackageImports: ['lucide-react', 'zustand'],
+        // SOURCE MAPS OFF (A1) — memory, not speed, is the binding constraint.
+        // Measured with `next build --experimental-debug-memory-usage`: peak RSS
+        // 62.81 → 58.49 GiB (−4.32 GiB) with these two flags. Full production
+        // server/ output previously held 14,198 .js.map files / 1.40 GB against
+        // 0.99 GB of actual server JS.
+        //
+        // `productionBrowserSourceMaps: false` only governs BROWSER maps
+        // (static/ had zero .map). Server maps are a separate path:
+        // `serverSourceMaps` + Turbopack emission. Explicitly force both off.
+        // (Next docs: turbopackSourceMaps build default tracks
+        // productionBrowserSourceMaps — still set false here so it cannot drift.)
+        //
+        // TRADE-OFF: production server stack traces point at compiled output,
+        // which degrades lib/diagnostics. A build that OOMs ships nothing.
+        turbopackSourceMaps: false,
+        serverSourceMaps: false,
     },
     // Turbopack configuration (Next.js 16 default bundler)
     turbopack: {
