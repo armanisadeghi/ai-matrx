@@ -133,6 +133,37 @@ const nextConfig = {
         // optimized without being listed here. Only add packages NOT in that default
         // list — adding a defaulted one is a no-op, not a build win.
         optimizePackageImports: ['lucide-react', 'zustand'],
+        // Memory, not speed, is the binding constraint on this build. Measured with
+        // `next build --experimental-debug-memory-usage`: peak RSS 62.8 GiB, on a
+        // Vercel Turbo builder that has 60 GB — so it OOMs deterministically, and
+        // Turbo is the LARGEST machine Vercel sells (standard 8GB / enhanced 16GB /
+        // turbo 60GB), so there is no hardware fix. Heap Used at peak was 46 MB of a
+        // 4,288 MB V8 limit (1.08%), i.e. ~100% of that 62.8 GiB is Turbopack's native
+        // Rust allocation — no --max-old-space-size flag can touch it.
+        //
+        // SOURCE MAPS OFF — this build is memory-bound, and source maps were the
+        // single largest retained artifact. Measured in the server output of a full
+        // production build: 14,198 .js.map files totalling 1.40 GB, against 0.99 GB of
+        // actual server JS — the maps were LARGER than the code they map. Turbopack
+        // generates them by default (`turbopackSourceMaps` defaults to true) and
+        // `productionBrowserSourceMaps: false` does NOT cover them; that flag only
+        // governs browser maps, which is why static/ had zero .map files while
+        // server/ had 14,198.
+        //
+        // TRADE-OFF, deliberate: production server stack traces will point at compiled
+        // output instead of original sources, which degrades the diagnostics capture in
+        // lib/diagnostics. A build that OOMs ships nothing at all, so this is the better
+        // side of the trade until peak memory has real headroom under 60 GB.
+        turbopackSourceMaps: false,
+        serverSourceMaps: false,
+
+        // MEASURED DEAD ENDS — do not retry these for memory:
+        //   turbopackInferModuleSideEffects: false  + RAYON_NUM_THREADS=8
+        //   -> peak RSS 63.50 GiB vs 62.81 GiB baseline. No better, slightly worse,
+        //      and it costs tree-shaking. Halving the Rust thread pool changing
+        //      nothing also proves the memory is NOT per-thread scratch — it is the
+        //      retained module graph, so only compiling fewer modules can reduce it.
+        //
         // DO NOT RE-ENABLE `turbopackFileSystemCacheForBuild` ON A 60 GB BUILDER.
         // Tried 2026-07-26 (commit 3836ca244) and it OOM-killed the build:
         // SIGKILL 3m24s into "Creating an optimized production build", where the same
