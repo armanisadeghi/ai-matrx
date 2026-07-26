@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — superseded: the ctx-association overhaul shipped as the `platform.associations` unified edge (not `ctx_associations`); `ctx_scope_assignments` was graveyarded 2026-06-24. Current truth: `features/scopes/FEATURE.md` + `common-docs/systems/scope-context-system/FEATURE.md`.
+
 # CTX Association & Context Architecture — Source of Truth
 
 > **Purpose.** The bible for the association / context overhaul. Records **locked decisions**, **current-system facts**, and **open questions**. Keep it to load-bearing decisions, not implementation minutiae.

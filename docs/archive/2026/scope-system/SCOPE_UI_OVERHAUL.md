@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — superseded by `common-docs/systems/scope-context-system/FEATURE.md` (the canonical model) + `features/scopes/FEATURE.md` (the FE implementation). Historical record of the pre-`features/scopes` scope-system UI effort.
+
 # Scope System — UI Finalization (working spec)
 
 > Single source of truth for the in-progress effort to finalize the CTX Scope UI.

@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — superseded: the ctx-association overhaul shipped as the `platform.associations` unified edge (not `ctx_associations`); `ctx_scope_assignments` was graveyarded 2026-06-24. Current truth: `features/scopes/FEATURE.md` + `common-docs/systems/scope-context-system/FEATURE.md`.
+
 # Migration Analysis Brief — CTX Association Overhaul
 
 > **For:** an IDE agent with full codebase access (TS/Next.js + Python).

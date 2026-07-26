@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — superseded: the ctx-association overhaul shipped as the `platform.associations` unified edge (not `ctx_associations`); `ctx_scope_assignments` was graveyarded 2026-06-24. Current truth: `features/scopes/FEATURE.md` + `common-docs/systems/scope-context-system/FEATURE.md`.
+
 # Removed-FK Ledger — CTX Association Overhaul
 
 > **Requirement #2:** track every FK we are retiring so nothing relies on the old path silently. A column is only safe to **drop** (Phase 2) once its row here is `verified` — meaning the codebase + Postgres-internals audits confirm nothing reads or writes it.

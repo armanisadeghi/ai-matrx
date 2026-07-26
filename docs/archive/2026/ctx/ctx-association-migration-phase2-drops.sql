@@ -1,3 +1,5 @@
+-- ARCHIVED 2026-07-26 — superseded: this migration path was replaced by the platform.associations model (see features/scopes/FEATURE.md). Never run.
+
 -- ============================================================================
 -- CTX ASSOCIATION OVERHAUL — PHASE 2 (DESTRUCTIVE) — DO NOT RUN YET
 -- ============================================================================

@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — superseded by `features/agents/components/chat/FEATURE.md` (the authoritative live-chat doc; its "Rendering & data-loading standards" section absorbs this file's still-true rules).
+
 # Agent/Chat/Conversation — Single Source of Truth
 
 **Status:** MANDATORY — No new implementations. No copies. No "temporary" versions.

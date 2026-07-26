@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — superseded: the ctx-association overhaul shipped as the `platform.associations` unified edge (not `ctx_associations`); `ctx_scope_assignments` was graveyarded 2026-06-24. Current truth: `features/scopes/FEATURE.md` + `common-docs/systems/scope-context-system/FEATURE.md`.
+
 # Supabase Internals Audit Brief — split across 10 agents
 
 > **Requirement #3: the silent killers.** Triggers, RPCs, views, and policies that quietly reference the things we're changing and break with no error anyone notices. This brief partitions the database so **10 agents each audit ~1/10th** in parallel, then we collate.

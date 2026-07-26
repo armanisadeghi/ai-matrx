@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — superseded: the ctx-association overhaul shipped as the `platform.associations` unified edge (not `ctx_associations`); `ctx_scope_assignments` was graveyarded 2026-06-24. Current truth: `features/scopes/FEATURE.md` + `common-docs/systems/scope-context-system/FEATURE.md`.
+
 # CTX Association Overhaul — Document Set (start here)
 
 The one-line idea: **every cross-cutting relationship moves into one unified association layer; hard FKs are reserved for ownership and containment only.** Scattered `project_id`/`task_id` columns across ~50 tables and the duplicate `ctx_scope_assignments`/`ctx_task_associations` tables collapse into one `ctx_associations` graph, while typed, named, enforceable relationships (incl. file/agent/scope-as-value) live in `ctx_context_item_values`.
