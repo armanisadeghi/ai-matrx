@@ -168,6 +168,13 @@ const nextConfig = {
     // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
     reactCompiler: true,
     experimental: {
+        // MEMORY (measured 2026-07-26, experiment fleet v0.4.93-99):
+        // - turbopackMemoryLimit alone (45GiB): compile SUCCEEDED in 19.4min where
+        //   baseline OOM'd; then died when 29 page-data workers spawned on top.
+        // - cpus: 8 caps those workers (default = cores-1 = 29 on Vercel Turbo).
+        // 40GiB (not 45) leaves ~20GB headroom for the worker phase.
+        turbopackMemoryLimit: 42949672960,
+        cpus: 8,
         serverActions: {
             bodySizeLimit: "10mb",
         },
