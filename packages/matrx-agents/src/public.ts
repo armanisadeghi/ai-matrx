@@ -20,16 +20,15 @@ export * from "./redux/hooks";
 export * from "./types/agents-types";
 
 // ── Adapter types (consumers implement these to satisfy configure()) ──────
+export type { AuthLike, Credentials } from "./adapters/auth";
+export type { CallbackManagerLike } from "./adapters/callback-manager";
+export type { FetchLike } from "./adapters/fetch";
+export type { LoggerLike } from "./adapters/logger";
 export type {
-  AuthLike,
-  CallbackManagerLike,
-  Credentials,
-  FetchLike,
-  LoggerLike,
   SupabaseLike,
   SupabaseQueryBuilder,
   SupabaseRpcResult,
-} from "./adapters";
+} from "./adapters/supabase";
 
 // ── configure() entry + runtime accessors (for advanced host wiring) ──────
 export {
@@ -43,7 +42,7 @@ export {
   getLogger,
   __resetAgentsConfigForTesting,
   type AgentsConfig,
-} from "./config";
+} from "./config/registry";
 
 // ── Reducer-map helper for consumers that `combineReducers` ───────────────
 export { buildAgentsReducerMap } from "./build-reducer-map";
