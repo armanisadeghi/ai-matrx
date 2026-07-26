@@ -38,6 +38,10 @@ function source(overrides: Partial<ResearchSource> = {}): ResearchSource {
     analysis_status: null,
     pre_read_score: null,
     pre_read_breakdown: null,
+    scrape_worthiness: null,
+    redundancy_group: null,
+    entity_match_confidence: null,
+    snippet_relevance: null,
     ...overrides,
   };
 }
