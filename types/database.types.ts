@@ -27262,6 +27262,57 @@ export type Database = {
           token: string
         }[]
       }
+      admin_exposure_audit_rows: {
+        Args: {
+          p_exposure?: string
+          p_include_deleted?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_resource_type?: string
+          p_search?: string
+        }
+        Returns: {
+          active_share_link_count: number
+          broad_discovery: boolean
+          content_preview: string
+          conveying_container_count: number
+          conveying_container_types: string[]
+          created_at: string
+          deleted_at: string
+          direct_grant_count: number
+          discovery_status: string
+          display_name: string
+          exposure_reasons: string[]
+          is_derived: boolean
+          is_system_artifact: boolean
+          location: string
+          mime_type: string
+          organization_grant_count: number
+          organization_id: string
+          organization_name: string
+          owner_email: string
+          owner_id: string
+          public_grant_count: number
+          resource_id: string
+          resource_type: string
+          total_count: number
+          updated_at: string
+          visibility: string
+        }[]
+      }
+      admin_exposure_audit_summary: {
+        Args: never
+        Returns: {
+          active_count: number
+          active_grant_count: number
+          active_share_link_count: number
+          contextual_count: number
+          deleted_count: number
+          owner_count: number
+          resource_type: string
+          visibility: string
+        }[]
+      }
       admin_find_user_by_email: {
         Args: { p_email: string }
         Returns: {

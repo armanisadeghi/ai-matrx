@@ -24,6 +24,10 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
 import { createFolder } from "../service/notesService";
 import {
+  hydrateNoteContextLinks,
+  syncNoteContextLinks,
+} from "../service/noteContextAssociations";
+import {
   noteSaveErrorMessage,
   toastNoteWriteBlocked,
   clearNoteWriteBlockedToast,
@@ -87,7 +91,7 @@ export const fetchNotesList = createAsyncThunk<void, void>(
       .schema("workbench")
       .from("notes")
       .select(
-        "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
+        "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
       )
       .eq("created_by", userId)
       .is("deleted_at", null)
@@ -99,7 +103,7 @@ export const fetchNotesList = createAsyncThunk<void, void>(
       throw error;
     }
 
-    const notes = data ?? [];
+    const notes = await hydrateNoteContextLinks(data ?? []);
 
     // ONE dispatch for the whole page. A per-note dispatch loop notified
     // every store subscriber (and re-ran every sorted list selector) once
@@ -150,14 +154,15 @@ export const fetchNoteContent = createAsyncThunk<Note | null, string>(
     if (error) throw error;
     if (!data) throw new Error("Note not found");
 
+    const [note] = await hydrateNoteContextLinks([data]);
     dispatch(
       upsertNoteFromServer({
-        note: data,
+        note,
         fetchStatus: "full",
       }),
     );
 
-    return data as Note;
+    return note;
   },
 );
 
@@ -195,14 +200,15 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
     if (error) throw error;
     if (!data) throw new Error("Note not found");
 
+    const [note] = await hydrateNoteContextLinks([data]);
     dispatch(
       upsertNoteFromServer({
-        note: data,
+        note,
         fetchStatus: "full",
       }),
     );
 
-    return data as Note;
+    return note;
   },
 );
 
@@ -229,6 +235,8 @@ export const saveNote = createAsyncThunk<void, string>(
 
     // Build update object from only dirty fields (snapshot for mid-save safety)
     const updates: Record<string, unknown> = {};
+    let projectId: string | null | undefined;
+    let taskId: string | null | undefined;
     const savedSnapshot: Partial<
       Record<NoteUndoableField, Note[NoteUndoableField]>
     > = {};
@@ -236,7 +244,13 @@ export const saveNote = createAsyncThunk<void, string>(
     const hasLabelChange = dirtyFields.includes("label");
 
     for (const field of dirtyFields) {
-      updates[field] = record[field];
+      if (field === "project_id") {
+        projectId = record.project_id;
+      } else if (field === "task_id") {
+        taskId = record.task_id;
+      } else {
+        updates[field] = record[field];
+      }
       savedSnapshot[field] = record[field];
     }
 
@@ -245,51 +259,70 @@ export const saveNote = createAsyncThunk<void, string>(
 
     // Atomic optimistic lock via updated_at predicate (OLD row; trigger only
     // mutates NEW). 0 rows ⇒ conflict or RLS deny.
-    let query = supabase
-      .schema("workbench")
-      .from("notes")
-      .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
-      .eq("id", noteId);
+    let updatedAt = record.updated_at;
+    if (Object.keys(updates).length > 0) {
+      let query = supabase
+        .schema("workbench")
+        .from("notes")
+        .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
+        .eq("id", noteId);
 
-    if (record.updated_at) {
-      query = query.eq("updated_at", record.updated_at);
+      if (record.updated_at) {
+        query = query.eq("updated_at", record.updated_at);
+      }
+
+      const { data, error } = await query.select("updated_at").maybeSingle();
+
+      if (error) {
+        const friendly = noteSaveErrorMessage(error);
+        dispatch(markNoteSaveError({ id: noteId, error: friendly }));
+        toastNoteWriteBlocked(noteId, friendly);
+        throw error;
+      }
+
+      if (!data) {
+        const { data: stillThere } = await supabase
+          .schema("workbench")
+          .from("notes")
+          .select("updated_at")
+          .eq("id", noteId)
+          .maybeSingle();
+
+        if (!stillThere) {
+          const friendly = "You don't have permission to save this note.";
+          dispatch(markNoteSaveError({ id: noteId, error: friendly }));
+          toastNoteWriteBlocked(noteId, friendly);
+          throw new Error(friendly);
+        }
+
+        const conflictMsg =
+          "Conflict: note was modified on another device or tab. Please refresh.";
+        dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
+        throw new Error(conflictMsg);
+      }
+      updatedAt = data.updated_at;
     }
 
-    const { data, error } = await query.select("updated_at").maybeSingle();
-
-    if (error) {
-      const friendly = noteSaveErrorMessage(error);
+    try {
+      await syncNoteContextLinks({
+        noteId,
+        organizationId: record.organization_id,
+        projectId,
+        taskId,
+      });
+    } catch (error) {
+      const friendly =
+        error instanceof Error ? error.message : "Could not save note context.";
       dispatch(markNoteSaveError({ id: noteId, error: friendly }));
       toastNoteWriteBlocked(noteId, friendly);
       throw error;
-    }
-
-    if (!data) {
-      const { data: stillThere } = await supabase
-        .schema("workbench")
-        .from("notes")
-        .select("updated_at")
-        .eq("id", noteId)
-        .maybeSingle();
-
-      if (!stillThere) {
-        const friendly = "You don't have permission to save this note.";
-        dispatch(markNoteSaveError({ id: noteId, error: friendly }));
-        toastNoteWriteBlocked(noteId, friendly);
-        throw new Error(friendly);
-      }
-
-      const conflictMsg =
-        "Conflict: note was modified on another device or tab. Please refresh.";
-      dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
-      throw new Error(conflictMsg);
     }
 
     clearNoteWriteBlockedToast(noteId);
     dispatch(
       markNoteSaved({
         id: noteId,
-        updatedAt: data.updated_at ?? undefined,
+        updatedAt: updatedAt ?? undefined,
         savedSnapshot,
       }),
     );
@@ -341,6 +374,7 @@ export const createNewNote = createAsyncThunk<
 
   // Resolve folder_id from note_folders table
   const folderId = input.folder_id ?? (await resolveFolderId(folderName));
+  const organizationId = await ensureOrgId(input.organization_id);
 
   const { data, error } = await supabase
     .schema("workbench")
@@ -360,9 +394,7 @@ export const createNewNote = createAsyncThunk<
       visibility: input.visibility ?? "personal",
       // folder_id can be null here, so the org-inherit trigger may have no
       // parent to read — resolve the org explicitly (never insert a null org).
-      organization_id: await ensureOrgId(input.organization_id),
-      ...(input.project_id && { project_id: input.project_id }),
-      ...(input.task_id && { task_id: input.task_id }),
+      organization_id: organizationId,
     })
     .select()
     .single();
@@ -370,7 +402,13 @@ export const createNewNote = createAsyncThunk<
   if (error) throw error;
   if (!data) throw new Error("Failed to create note");
 
-  const note = data as Note;
+  await syncNoteContextLinks({
+    noteId: data.id,
+    organizationId,
+    projectId: input.project_id,
+    taskId: input.task_id,
+  });
+  const [note] = await hydrateNoteContextLinks([data]);
 
   dispatch(
     upsertNoteFromServer({
@@ -687,7 +725,7 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
       .schema("workbench")
       .from("notes")
       .select(
-        "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, project_id, task_id, visibility, deleted_at, version",
+        "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, visibility, deleted_at, version",
       )
       .eq("created_by", userId)
       .not("deleted_at", "is", null)
@@ -695,7 +733,8 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
 
     if (error) throw error;
 
-    for (const note of data ?? []) {
+    const notes = await hydrateNoteContextLinks(data ?? []);
+    for (const note of notes) {
       dispatch(
         upsertNoteFromServer({
           note: { ...note, created_by: userId },

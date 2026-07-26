@@ -13,7 +13,7 @@
 //
 // Writes:
 //   • Scopes      → ctx_scope_assignments via the field's canonical live path.
-//   • Org/Proj/Task FKs → setNoteField + saveNote (the notes save pipeline),
+//   • Project/task associations → setNoteField + saveNote (the notes save pipeline),
 //     applied from the SAME selection on save — both entry points share
 //     `noteSaveAdapter` so behavior can never drift.
 //
@@ -36,7 +36,7 @@ import { ContextAssignmentPopover } from "@/features/scopes/components/context-a
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import type { AppDispatch } from "@/lib/redux/store";
 
-/** Shared FK adapter — identical for the footer and the tab icon. */
+/** Shared association adapter — identical for the footer and the tab icon. */
 function noteSaveAdapter(dispatch: AppDispatch, noteId: string) {
   return (r: ContextAssignmentSaveResult) => {
     if (!r.ok) return;

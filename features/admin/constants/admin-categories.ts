@@ -930,6 +930,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/database/relationships/sharing",
         isNew: true,
       },
+      {
+        title: "Exposure Audit",
+        description:
+          "Find files and notes visible beyond their owner, see exactly why each row is reachable, and distinguish public search exposure from organization, link, grant, and contextual access.",
+        iconName: "ShieldQuestion",
+        link: "/administration/database/relationships/exposure-audit",
+        isNew: true,
+      },
     ],
   },
   {

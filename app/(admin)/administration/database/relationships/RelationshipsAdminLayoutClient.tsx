@@ -14,6 +14,7 @@ import {
   Loader2,
   Network,
   Search,
+  ShieldQuestion,
   Waypoints,
   Zap,
 } from "lucide-react";
@@ -50,6 +51,11 @@ const NAV_ITEMS = [
     label: "Reachability",
     href: "/administration/database/relationships/reachability",
     icon: Waypoints,
+  },
+  {
+    label: "Exposure Audit",
+    href: "/administration/database/relationships/exposure-audit",
+    icon: ShieldQuestion,
   },
   {
     label: "Actions",

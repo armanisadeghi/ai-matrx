@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Routes (route-tabbed hub, Super Admin — gated by the `(admin)` layout):**
-`/administration/database/relationships` (Overview) · `/rules` · `/entity-types` · `/sharing` · `/explorer` (+ `/explorer/[token]`) · `/reachability` · `/actions`
+`/administration/database/relationships` (Overview) · `/rules` · `/entity-types` · `/sharing` · `/explorer` (+ `/explorer/[token]`) · `/reachability` · `/exposure-audit` · `/actions`
 **Owner surface for:** the reachability / containment registry control plane, the **`platform.entity_types` registry admin** (the only UI write path), and the **one** home for `platform.shareable_resource_registry` (full CRUD **plus** link policy — the old `/administration/sharing` page is deleted and redirects here).
 
 ---
@@ -49,6 +49,7 @@ DB — the UI just `router.refresh()`es.
 | Explorer | `explorer/page.tsx` (`admin_relationship_rules`) | `RelationshipExplorerClient` → `EntityExplorerEntry` |
 | Explorer orbit | `explorer/[token]/page.tsx` (`admin_relationship_rules`) | `EntityExplorerHeader` + `EntityRelationshipOrbitPageBody` |
 | Reachability | `reachability/page.tsx` (none) | `ReachabilityInspectorClient` — self-fetching |
+| Exposure Audit | `exposure-audit/page.tsx` (none) | `ExposureAuditClient` — super-admin summary + controlled, paginated file/note exposure inventory |
 | Actions | `actions/page.tsx` (none) | `ActionCatalogClient` (`features/action-catalog/` — see its FEATURE.md; moved from the deleted `/administration/action-catalog` route) |
 
 **Cross-tab deep links are consume-once query params:** the Overview drift panel's
@@ -73,6 +74,8 @@ with `router.replace` so refresh/back never re-triggers.
 | `admin_delete_relationship_rule(source, target, label?)` | True delete (completes CRUD). |
 | `admin_rebuild_reachability()` | Nuke + rebuild the closure cache; returns row count. |
 | `admin_reachability_contents/containers(type, id)` | The "why can they see this?" inspector. |
+| `admin_exposure_audit_summary()` | Active/deleted counts by resource + visibility, including grant/link/context totals. |
+| `admin_exposure_audit_rows(...)` | Paginated file/note rows with owner/org identity and exact public/internal/link/grant/context exposure reasons. |
 | `admin_set_association_enforcement(bool)` | Toggle the write-time known-shape guard trigger. |
 
 **`admin_relationship_problems()` drift categories** (ordered error-first): `unregistered_pair`,
@@ -148,6 +151,12 @@ used by the per-row **Link policy** side panel).
   (`explorer/[token]`) or **Open in window** (non-blocking peek); clicking a
   neighbor chip re-centers the orbit in place via `onSelectToken` (window) or
   navigates (page).
+- **Audit exposed content (Exposure Audit tab):** start on truly public files +
+  notes, then pivot to internal/link/shared/contextual/personal scopes; use the
+  summary cards, file/note filter, server search, deleted toggle, and row
+  inspector to see exactly why a row is reachable. Public notes are labeled as
+  agent/RAG searchable; public files state that personal listings remain
+  owner-or-explicit-grant only.
 
 ## Invariants & gotchas
 
@@ -197,6 +206,13 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-07-25** — Added the read-only **Exposure Audit** tab and
+  `admin_exposure_audit_summary/rows` super-admin RPCs. Files and notes now have
+  one cross-user inventory for public, internal, link, explicit-grant, and
+  contextual reachability; rows include owner/org identity, active links,
+  conveying containers, broad-discovery status, and derived/system flags.
+  Hardened `workbench.notes.pub_read` so soft-deleted public notes cannot remain
+  anonymously readable.
 - **2026-07-13** — **Route-tabbed hub restructure.** The single endless-scroll page
   split into 7 tab routes under one layout (`RelationshipsAdminLayoutClient`,
   scheduling pattern); `RelationshipManagerClient.tsx` deleted, decomposed into

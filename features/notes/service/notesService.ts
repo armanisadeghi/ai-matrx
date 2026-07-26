@@ -8,12 +8,17 @@ import {
 } from "@/lib/organizations/personalOrg";
 import type {
   Note,
+  NoteRow,
   CreateNoteInput,
   UpdateNoteInput,
   NoteListItem,
 } from "../types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
 import { findEmptyNewNote } from "../utils/noteUtils";
+import {
+  hydrateNoteContextLinks,
+  syncNoteContextLinks,
+} from "./noteContextAssociations";
 
 /**
  * Fetch all notes owned by the current user (excluding deleted).
@@ -35,7 +40,7 @@ export async function fetchNotes(): Promise<Note[]> {
     throw error;
   }
 
-  return data ?? [];
+  return hydrateNoteContextLinks(data ?? []);
 }
 
 /**
@@ -47,7 +52,7 @@ export async function fetchNoteListItems(): Promise<NoteListItem[]> {
     .schema("workbench")
     .from("notes")
     .select(
-      "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
+      "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
     )
     .eq("created_by", userId)
     .is("deleted_at", null)
@@ -58,7 +63,7 @@ export async function fetchNoteListItems(): Promise<NoteListItem[]> {
     throw error;
   }
 
-  return (data ?? []) as NoteListItem[];
+  return hydrateNoteContextLinks(data ?? []) as Promise<NoteListItem[]>;
 }
 
 /**
@@ -78,7 +83,9 @@ export async function fetchNoteById(id: string): Promise<Note | null> {
     return null;
   }
 
-  return data;
+  if (!data) return null;
+  const [note] = await hydrateNoteContextLinks([data]);
+  return note;
 }
 
 /**
@@ -205,11 +212,7 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
       // Private by default — the `notes.visibility` enum DB default is
       // 'internal' (org-visible), so set it explicitly on create.
       visibility: input.visibility ?? "personal",
-      // Associations were silently dropped before — a note created with a
-      // task_id / org / project now actually persists those links.
-      task_id: input.task_id ?? null,
       organization_id: organizationId,
-      project_id: input.project_id ?? null,
     })
     .select()
     .single();
@@ -227,7 +230,14 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
     "Content length:",
     content.length,
   );
-  return data;
+  await syncNoteContextLinks({
+    noteId: data.id,
+    organizationId,
+    projectId: input.project_id,
+    taskId: input.task_id,
+  });
+  const [note] = await hydrateNoteContextLinks([data]);
+  return note;
 }
 
 /**
@@ -257,17 +267,38 @@ export async function updateNote(
       : null;
   }
 
-  let query = supabase
-    .schema("workbench")
-    .from("notes")
-    .update(normalizedUpdates)
-    .eq("id", id);
+  const {
+    project_id: projectId,
+    task_id: taskId,
+    ...databaseUpdates
+  } = normalizedUpdates;
 
-  if (options?.expectedUpdatedAt) {
-    query = query.eq("updated_at", options.expectedUpdatedAt);
+  let data: NoteRow | null = null;
+  let error: { message: string } | null = null;
+  if (Object.keys(databaseUpdates).length > 0) {
+    let query = supabase
+      .schema("workbench")
+      .from("notes")
+      .update(databaseUpdates)
+      .eq("id", id);
+
+    if (options?.expectedUpdatedAt) {
+      query = query.eq("updated_at", options.expectedUpdatedAt);
+    }
+
+    const result = await query.select().maybeSingle();
+    data = result.data;
+    error = result.error;
+  } else {
+    const result = await supabase
+      .schema("workbench")
+      .from("notes")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    data = result.data;
+    error = result.error;
   }
-
-  const { data, error } = await query.select().maybeSingle();
 
   if (error) {
     console.error("Error updating note:", error);
@@ -291,7 +322,14 @@ export async function updateNote(
     throw new Error("You don't have permission to save this note.");
   }
 
-  return data;
+  await syncNoteContextLinks({
+    noteId: id,
+    organizationId: data.organization_id,
+    projectId,
+    taskId,
+  });
+  const [note] = await hydrateNoteContextLinks([data]);
+  return note;
 }
 
 /**

@@ -40,7 +40,7 @@ Comprehensive notes system: rich-text editing (WYSIWYG + markdown split view), f
 ## Data model
 
 DB tables (verify in Supabase; names representative):
-- `notes` — note rows: `id`, `user_id`, `organization_id`, `project_id`, `folder_id`, `title`, `content` (rich/markdown payload), `labels[]`, timestamps
+- `notes` — note rows: `id`, `created_by`, `organization_id`, `folder_id`, `label`, `content` (rich/markdown payload), `tags[]`, timestamps. Optional project/task context lives only on `platform.associations` and is projected into the UI by `noteContextAssociations`.
 - `note_folders` — tree structure: parent references
 - `note_labels` — auto-labeling metadata
 
@@ -101,7 +101,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 - **Cleanup's whitespace/typography ops never edit protected regions.** `lib/content-cleanup/` masks code / JSON / tables / front-matter / inline-code / HTML out before any whitespace or typography op, then restores them verbatim. The ONE exception is a **region operation** (JSON condense/minify/expand) — opt-in, exclusive, and applied through a real JSON parser + writer, never a regex; it refuses JSON that only parses tolerantly so comments are never silently deleted. The engine is pure and surface-agnostic — reuse it, never fork it, for any paste-cleanup need.
 - **Rich text editor:** Notes currently uses its own editor — the legacy `features/rich-text-editor/` is deprecated (per CLAUDE.md) and must not be re-adopted. Verify the current editor before modifying content rendering.
 - **The `/notes` route uses inline rich-document actions.** The header intentionally contains only view-mode controls; it does not mount a `RichDocumentActionSurface`. Do not pass an `actionsSurfaceId` from `NotesView` unless the matching consumer is mounted. With no remote ID, preview mode renders the full inline bar and split mode renders its compact inline icon menu.
-- **Scope columns** (`user_id`, `organization_id`, `project_id`) follow the project's multi-scope convention — see [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
+- **Context ownership** — `organization_id` is the note's home. Project/task context and scope tags are canonical `platform.associations` edges; the note table never carries project/task FK mirrors. See [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 - **Folder tree operations are transactional.** Moving a folder with children must update all descendants' paths — don't optimize away the reparenting walk.
 - **Folder selection and creation are one interaction.** Every surface that can assign a note folder must also offer **New folder…** in the same flow. Use the shared adaptive `MoveNoteDialog` / `CreateFolderDialog` (Dialog on desktop, Drawer on mobile); never build a route-, tab-, context-menu-, or window-only fork. A folder move must keep `folder_name` and `folder_id` paired.
 

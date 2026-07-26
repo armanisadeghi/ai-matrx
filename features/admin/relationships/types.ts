@@ -21,6 +21,12 @@ export type ReachabilityContent =
 export type ReachabilityContainer =
   Database["public"]["Functions"]["admin_reachability_containers"]["Returns"][number];
 
+export type ExposureAuditRow =
+  Database["public"]["Functions"]["admin_exposure_audit_rows"]["Returns"][number];
+
+export type ExposureAuditSummary =
+  Database["public"]["Functions"]["admin_exposure_audit_summary"]["Returns"][number];
+
 export type RelationshipProblem =
   Database["public"]["Functions"]["admin_relationship_problems"]["Returns"][number];
 

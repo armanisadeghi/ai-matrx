@@ -11,11 +11,16 @@ export type NoteFolderRow = Database["workbench"]["Tables"]["note_folders"]["Row
 // note_versions retired -> history.row_versions (use the get_note_versions RPCs).
 // note_shares retired -> canonical permissions table. Neither has a public type row anymore.
 
-// ── Note type — direct alias of the DB Row ─────────────────────────────────
-// The DB schema is the single source of truth. If the schema changes and we
-// regenerate types via `pnpm types`, every consumer of `Note` updates
-// automatically and any shape drift surfaces as a compile error.
-export type Note = NoteRow;
+// ── Canonical association projection ───────────────────────────────────────
+// Project/task membership is an optional platform.associations edge, never a
+// physical FK on workbench.notes. These two fields are a read projection that
+// keeps the note UI ergonomic while the generated NoteRow remains DB truth.
+export interface NoteContextLinks {
+    project_id: string | null;
+    task_id: string | null;
+}
+
+export type Note = NoteRow & NoteContextLinks;
 
 // ── Narrowed shapes for JSON columns ────────────────────────────────────────
 // `metadata` is a Json column — the generated type is `unknown`. Consumers use
@@ -38,7 +43,7 @@ export function getNoteMetadata(
 // ── Sidebar list projection (subset returned by fetchNotesList) ─────────────
 // Only fields selected in the list query — keep in sync with thunks.ts.
 export type NoteListItem = Pick<
-    Note,
+    NoteRow,
     | "id"
     | "created_by"
     | "label"
@@ -48,11 +53,9 @@ export type NoteListItem = Pick<
     | "updated_at"
     | "position"
     | "organization_id"
-    | "project_id"
-    | "task_id"
     | "visibility"
     | "version"
->;
+> & NoteContextLinks;
 
 // ── Group-by modes for the sidebar ──────────────────────────────────────────
 export type NoteGroupBy = "folder" | "organization" | "project" | "task" | "scope";
@@ -78,8 +81,6 @@ export type CreateNoteInput = Pick<
     | "content"
     | "folder_name"
     | "folder_id"
-    | "project_id"
-    | "task_id"
     | "tags"
     | "metadata"
     | "position"
@@ -89,7 +90,7 @@ export type CreateNoteInput = Pick<
     // pass it — keep it optional even though NoteInsert.organization_id is now
     // NOT NULL / required.
     organization_id?: string | null;
-};
+} & Partial<NoteContextLinks>;
 
 export type UpdateNoteInput = Pick<
     NoteUpdate,
@@ -98,13 +99,11 @@ export type UpdateNoteInput = Pick<
     | "folder_name"
     | "folder_id"
     | "organization_id"
-    | "project_id"
-    | "task_id"
     | "tags"
     | "metadata"
     | "position"
     | "visibility"
->;
+> & Partial<NoteContextLinks>;
 
 export interface FolderGroup {
     folder_name: string;
@@ -125,4 +124,3 @@ export interface NoteSortConfig {
     field: NoteSortField;
     order: NoteSortOrder;
 }
-

@@ -303,6 +303,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
             "/administration/database/relationships/explorer/[token]",
           ]),
           destination("/administration/database/relationships/reachability"),
+          destination("/administration/database/relationships/exposure-audit"),
           destination("/administration/database/relationships/sharing"),
         ],
       },
