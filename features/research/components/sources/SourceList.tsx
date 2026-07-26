@@ -63,6 +63,8 @@ import { AuthorityRankButton } from "./AuthorityRankButton";
 import { AuthorityExportButton } from "./AuthorityExportButton";
 import { CondensedAuthorityExportButton } from "./CondensedAuthorityExportButton";
 import { AuthorityTierBadge } from "./AuthorityTierBadge";
+import { RedundancyGroupBadge } from "./RedundancyGroupBadge";
+import { ScrapeWorthinessFlag } from "./ScrapeWorthinessFlag";
 import {
   ScoreCell,
   PriorityCell,
@@ -569,11 +571,14 @@ function SourceRow({
                 {source.description}
               </div>
             )}
-            {source.hostname && (
-              <div className="mt-1.5">
-                <span className="text-[11px] text-muted-foreground truncate max-w-48 inline-block">
-                  {source.hostname}
-                </span>
+            {(source.hostname || source.redundancy_group) && (
+              <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                {source.hostname && (
+                  <span className="text-[11px] text-muted-foreground truncate max-w-48 inline-block">
+                    {source.hostname}
+                  </span>
+                )}
+                <RedundancyGroupBadge group={source.redundancy_group} />
               </div>
             )}
             <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
@@ -597,6 +602,7 @@ function SourceRow({
         >
           <div className="flex flex-col items-start gap-1.5">
             <ScrapeOutcomeCell status={source.scrape_status} />
+            <ScrapeWorthinessFlag scrapeWorthiness={source.scrape_worthiness} />
             <ActionTrigger
               label={needsScrape ? "Read" : "Re-read"}
               busy={scraping}

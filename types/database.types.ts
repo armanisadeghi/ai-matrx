@@ -36329,6 +36329,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           discovered_at: string | null
+          entity_match_confidence: number | null
           extra_snippets: Json | null
           final_source_score: number | null
           hostname: string | null
@@ -36350,9 +36351,12 @@ export type Database = {
           rank: number | null
           raw_search_result: Json | null
           recommended_use: string | null
+          redundancy_group: string | null
           scrape_status: string
+          scrape_worthiness: number | null
           server_attempts: number
           server_gave_up: boolean
+          snippet_relevance: number | null
           source_type: string
           thumbnail_url: string | null
           title: string | null
@@ -36374,6 +36378,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           discovered_at?: string | null
+          entity_match_confidence?: number | null
           extra_snippets?: Json | null
           final_source_score?: number | null
           hostname?: string | null
@@ -36395,9 +36400,12 @@ export type Database = {
           rank?: number | null
           raw_search_result?: Json | null
           recommended_use?: string | null
+          redundancy_group?: string | null
           scrape_status?: string
+          scrape_worthiness?: number | null
           server_attempts?: number
           server_gave_up?: boolean
+          snippet_relevance?: number | null
           source_type?: string
           thumbnail_url?: string | null
           title?: string | null
@@ -36419,6 +36427,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           discovered_at?: string | null
+          entity_match_confidence?: number | null
           extra_snippets?: Json | null
           final_source_score?: number | null
           hostname?: string | null
@@ -36440,9 +36449,12 @@ export type Database = {
           rank?: number | null
           raw_search_result?: Json | null
           recommended_use?: string | null
+          redundancy_group?: string | null
           scrape_status?: string
+          scrape_worthiness?: number | null
           server_attempts?: number
           server_gave_up?: boolean
+          snippet_relevance?: number | null
           source_type?: string
           thumbnail_url?: string | null
           title?: string | null
