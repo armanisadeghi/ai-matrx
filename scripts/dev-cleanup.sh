@@ -226,6 +226,14 @@ cmd_reap() {
     if [[ "$dry" -eq 1 ]]; then bold "  would reap $killed dev server tree(s)"; else bold "  reaped $killed dev server tree(s)"; fi
   fi
 
+  # `next dev` APPENDS "<distDir>/types/**/*.ts" to tsconfig.json's include on
+  # every boot, and tsconfig.json is tracked by git — so one dead entry per agent
+  # session accumulated forever (200 of 214 entries by 2026-07-25). They are inert
+  # (the .next* exclude nullifies them), so pruning is always safe.
+  if [[ "$dry" -eq 0 ]] && command -v pnpm >/dev/null 2>&1; then
+    (cd "$REPO_ROOT" && pnpm -s fix:tsconfig >/dev/null 2>&1) || true
+  fi
+
   # Stale per-session files whose .meta is long gone (the warm-up subshell can
   # re-touch .ready after SessionEnd already cleaned up). Purely cosmetic, but
   # ~130 of them had accumulated.

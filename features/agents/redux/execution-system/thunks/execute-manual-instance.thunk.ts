@@ -470,7 +470,13 @@ export async function assembleManualRequest(
   // and execute-instance already send so the Builder's manual path is not the
   // odd one out (org-id enforcement is coming app-wide). Only fields that are
   // actually set ride the wire; absent ones are omitted.
-  const organization_id = selectEffectiveOrganizationId(state) ?? undefined;
+  // Org: the conversation's own value wins on any turn after the first — it is
+  // decided at creation and never moves (same rule as assembleRequest /
+  // resume-instance). Ambient is the source only for a brand-new conversation.
+  const organization_id =
+    state.conversations.byConversationId[conversationId]?.organizationId ??
+    selectEffectiveOrganizationId(state) ??
+    undefined;
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
   if (organization_id) request.organization_id = organization_id;

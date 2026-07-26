@@ -20,11 +20,12 @@
  * if any of those three are removed.
  */
 
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
+const FIX = process.argv.includes("--fix");
 
 const RED = "\x1b[31m";
 const YELLOW = "\x1b[33m";
@@ -58,6 +59,49 @@ function checkTsconfig(file: string): void {
 
 checkTsconfig("tsconfig.json");
 checkTsconfig("tsconfig.typecheck.json");
+
+/**
+ * The other half of the same leak. `next dev` doesn't only *read* tsconfig.json —
+ * it APPENDS `<distDir>/types/**\/*.ts` to `include` on every boot, and
+ * tsconfig.json is a TRACKED file. With one NEXT_DISTDIR per agent session those
+ * entries never stop accumulating: 200 of 214 include entries were dead
+ * `.next-agent-*` / `.next-preview-*` paths by 2026-07-25, all committed to git.
+ *
+ * Every one of them is inert — the `.next*` exclude above nullifies them (exclude
+ * beats include) — so pruning is always safe and never changes what tsc sees.
+ * `--fix` prunes; the reaper in scripts/dev-cleanup.sh calls it, so this
+ * self-heals instead of growing forever.
+ */
+function pruneDistdirIncludes(file: string): void {
+  const path = join(ROOT, file);
+  if (!existsSync(path)) return;
+  const raw = readFileSync(path, "utf8");
+  const cfg = JSON.parse(raw.replace(/^\s*\/\/.*$/gm, "")) as Record<string, unknown>;
+  const include = cfg.include as string[] | undefined;
+  if (!Array.isArray(include)) return;
+
+  const dead = include.filter((e) => e.startsWith(".next"));
+  if (dead.length === 0) return;
+
+  if (!FIX) {
+    console.log(
+      `${YELLOW}note${RESET} ${file}: ${dead.length} dead ".next*" include entries ` +
+        `(inert — the .next* exclude nullifies them — but they accumulate in a ` +
+        `tracked file on every dev-server boot). Prune with \`pnpm fix:tsconfig\`.`,
+    );
+    return;
+  }
+
+  cfg.include = include.filter((e) => !e.startsWith(".next"));
+  // Preserve the file's trailing newline convention.
+  writeFileSync(path, `${JSON.stringify(cfg, null, 2)}\n`);
+  console.log(
+    `${GREEN}✓${RESET} ${file}: pruned ${dead.length} dead ".next*" include entries.`,
+  );
+}
+
+pruneDistdirIncludes("tsconfig.json");
+pruneDistdirIncludes("tsconfig.typecheck.json");
 
 // ESLint flat config does not read .gitignore — it needs its own ignores entry.
 const eslintPath = join(ROOT, "eslint.config.mjs");

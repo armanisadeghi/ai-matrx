@@ -199,7 +199,12 @@ export const resumeInstance = createAsyncThunk<
       // to send org only inside ambient `context.organization`, which the
       // server did not lift onto AppContext → personal-org default + Titanium
       // scope tools "not found".
-      const organization_id = selectEffectiveOrganizationId(state) ?? undefined;
+      // Resume is by definition a continuation, so the conversation's OWN org
+      // (hydrated from chat.conversation.organization_id) is the truth; ambient
+      // is only a fallback for a record that never hydrated. See the identical
+      // rule in assembleRequest — org never moves once a conversation exists.
+      const organization_id =
+        instance.organizationId ?? selectEffectiveOrganizationId(state) ?? undefined;
       const project_id = selectProjectId(state) ?? undefined;
       const task_id = selectTaskId(state) ?? undefined;
       const scope_ids = Object.values(

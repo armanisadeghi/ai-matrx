@@ -210,8 +210,30 @@ export function assembleRequest(
   // it out of this pure function lets capability providers stay async (e.g.
   // sandbox-fs mints a short-lived bearer token on demand).
 
-  // Scope — snapshot from appContextSlice at the moment of execution
-  const organization_id = selectEffectiveOrganizationId(state) ?? undefined;
+  // Scope — snapshot from appContextSlice at the moment of execution.
+  //
+  // ORG IS THE ONE FIELD AMBIENT STATE DOES NOT OWN. A conversation's org is
+  // decided when it is created and never moves; the server treats the saved
+  // value as authoritative and screams on drift. So once a conversation record
+  // carries an org (hydrated from `chat.conversation.organization_id` by
+  // load-conversation / fork), THAT is what every later turn re-sends — the
+  // sidebar's active org is only the source for a brand-new conversation.
+  //
+  // This makes the client independently correct: a continuation carries the
+  // right org even if appContextSlice hasn't bootstrapped yet (both
+  // organization_id and personal_organization_id are null during that window,
+  // so the ambient read would have silently omitted the field entirely).
+  const ambientOrganizationId = selectEffectiveOrganizationId(state) ?? undefined;
+  const organization_id = instance.organizationId ?? ambientOrganizationId;
+  if (!organization_id && instance.messageCount) {
+    // A continuation with NO org from either source is a defect, not a shrug:
+    // it is how a request reaches the server with no identity at all.
+    console.error(
+      `[assembleRequest] conversation ${conversationId} is a continuation with NO organization_id — ` +
+        `neither the conversation record nor appContext supplied one. The server will have to ` +
+        `recover it from the conversation row; fix the hydration path that dropped it.`,
+    );
+  }
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
   // Active scope selections (multi-scope, keyed by scope id — any number of
