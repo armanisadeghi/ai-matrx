@@ -221,6 +221,18 @@ export interface SiteOverviewMetrics {
   openFindings: number;
   snapshots: number;
   latestCrawl: CrawlSession | null;
+  /** Pages with a user-set target keyword (`web.page.target_keyword`). */
+  targetKeywordPages: number;
+  /** Pages Google Search Console reports impressions for (`v_page_list.in_gsc`). */
+  pagesInGsc: number;
+  /** Pages whose stored indexability verdict is `blocked`. */
+  blockedPages: number;
+  /** Pages whose stored SERP metadata verdict failed (`serp_ok = false`). */
+  serpIssues: number;
+  /** Live sitemap documents discovered for the site. */
+  sitemaps: number;
+  /** Total crawl sessions recorded for the site. */
+  crawlSessions: number;
 }
 
 export interface HomepageObservedMeta {

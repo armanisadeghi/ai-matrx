@@ -5,19 +5,32 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
+  ArrowRight,
+  BadgeCheck,
   Camera,
+  CheckCircle2,
   CircleAlert,
+  CircleDollarSign,
+  ClipboardCheck,
   ExternalLink,
   FileText,
   Gauge,
   Globe2,
-  Inbox,
+  Grid3x3,
+  KeyRound,
+  Link2,
   Loader2,
+  Map,
   Pencil,
   Play,
+  Plug,
   RefreshCw,
   ScanSearch,
+  Search,
+  Settings,
+  ShieldCheck,
   Sparkles,
+  TrendingUp,
   TriangleAlert,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -68,6 +81,7 @@ import {
   parseInitialization,
   siteConnectionStatuses,
   type SiteConnectionState,
+  type SiteConnectionStatus,
 } from "@/features/marketing/lib/site-status";
 import type {
   MarketingSite,
@@ -240,7 +254,15 @@ export function SiteOverview() {
         status.name,
         `${status.state} — ${status.detail}`,
       ]),
+      ["Site score", metrics.siteScore ?? "awaiting analysis"],
       ["Canonical pages", metrics.canonicalPages],
+      ["Open findings", metrics.openFindings],
+      ["Pages with a target keyword", metrics.targetKeywordPages],
+      ["Pages in Google Search Console", metrics.pagesInGsc],
+      ["Pages blocked from indexing", metrics.blockedPages],
+      ["Pages failing SERP metadata checks", metrics.serpIssues],
+      ["Sitemaps", metrics.sitemaps],
+      ["Crawl sessions", metrics.crawlSessions],
       [
         "Last crawl",
         metrics.latestCrawl
@@ -350,149 +372,110 @@ export function SiteOverview() {
       surfaceName="matrx-user/marketing-site"
       getScope={getOverviewScope}
     >
-    <main className="h-full overflow-y-auto bg-textured px-3 pb-24 pt-3 sm:px-4 sm:pb-32 sm:pt-4">
-      <div className="grid w-full gap-3">
-        <SiteHero
-          site={site}
-          sitePath={sitePath}
-          heroFileId={hero.data?.file_id ?? null}
-          heroLoading={hero.isLoading || initBusy}
-          onRecapture={() => void runInitialize()}
-          recaptureBusy={initBusy}
-          copy={<CopyButtons size="icon" {...siteCopy} />}
-          metrics={metrics}
-          pendingDiscovered={pendingDiscovered.data ?? 0}
-        />
-
-        {!site.initialized_at ? (
-          <InitializeCard
-            phase={initPhase}
-            error={initError}
-            onInitialize={() => void runInitialize()}
-            steps={initSteps}
-            stepEventsSeen={stepEventsSeen}
-            showProgress={showProgress}
+      <main className="h-full overflow-y-auto bg-textured">
+        <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-3.5 px-3 pb-24 pt-3 sm:gap-4 sm:px-5 sm:pb-32 sm:pt-4">
+          <SiteHero
+            site={site}
+            sitePath={sitePath}
+            heroFileId={hero.data?.file_id ?? null}
+            heroLoading={hero.isLoading || initBusy}
+            onRecapture={() => void runInitialize()}
+            recaptureBusy={initBusy}
+            copy={<CopyButtons size="icon" {...siteCopy} />}
+            metrics={metrics}
+            statuses={statuses}
           />
-        ) : showProgress ? (
-          <section className="rounded-lg border border-border bg-card px-3 py-2.5">
-            <InitializeProgress
+
+          {!site.initialized_at ? (
+            <InitializeCard
+              phase={initPhase}
+              error={initError}
+              onInitialize={() => void runInitialize()}
               steps={initSteps}
-              running={initBusy}
-              indeterminate={!stepEventsSeen}
+              stepEventsSeen={stepEventsSeen}
+              showProgress={showProgress}
             />
-          </section>
-        ) : null}
+          ) : showProgress ? (
+            <section className="rounded-lg border border-border bg-card px-3 py-2.5">
+              <InitializeProgress
+                steps={initSteps}
+                running={initBusy}
+                indeterminate={!stepEventsSeen}
+              />
+            </section>
+          ) : null}
 
-        {init.stepErrors.length ? (
-          <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
-            <div className="flex items-center gap-2">
-              <TriangleAlert className="h-4 w-4 text-destructive" />
-              <h2 className="text-sm font-semibold text-foreground">
-                Initialization issues — {init.stepErrors.length} step
-                {init.stepErrors.length === 1 ? "" : "s"} failed
-              </h2>
-              <span className="ml-auto">
-                <CopyButtons size="icon" {...initIssuesCopy} />
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                disabled={initBusy}
-                onClick={() => void runInitialize()}
-              >
-                Retry initialization
-              </Button>
-            </div>
-            <ul className="mt-2 space-y-2">
-              {init.stepErrors.map((stepError) => (
-                <li key={stepError.step} className="text-xs leading-5">
-                  <span className="font-semibold capitalize text-foreground">
-                    {stepError.step}
-                  </span>
-                  {stepError.errorType ? (
-                    <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
-                      {stepError.errorType}
-                    </span>
-                  ) : null}
-                  <p className="break-words text-muted-foreground">
-                    {stepError.message}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <section className="overflow-hidden rounded-lg border border-border bg-card">
-          <header className="flex items-center justify-between border-b border-border px-3 py-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Connections
-            </h2>
-            <div className="flex items-center gap-1.5">
-              <CopyButtons size="icon" {...connectionsCopy} />
-              {site.initialized_at ? (
+          {init.stepErrors.length ? (
+            <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+              <div className="flex items-center gap-2">
+                <TriangleAlert className="h-4 w-4 text-destructive" />
+                <h2 className="text-sm font-semibold text-foreground">
+                  Initialization issues — {init.stepErrors.length} step
+                  {init.stepErrors.length === 1 ? "" : "s"} failed
+                </h2>
+                <span className="ml-auto">
+                  <CopyButtons size="icon" {...initIssuesCopy} />
+                </span>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
+                  variant="outline"
+                  className="h-7 text-xs"
                   disabled={initBusy}
                   onClick={() => void runInitialize()}
                 >
-                  {initBusy ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
-                  Re-initialize
+                  Retry initialization
                 </Button>
-              ) : null}
-            </div>
-          </header>
-          <ul className="divide-y divide-border">
-            {statuses.map((status) => (
-              <li
-                key={status.key}
-                className="flex items-center gap-3 px-3 py-2"
-              >
-                <span
-                  className={cn(
-                    "h-2 w-2 shrink-0 rounded-full",
-                    stateDotClass[status.state],
-                  )}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {status.name}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {status.detail}
-                  </p>
-                </div>
-                {status.key === "initialized" ? (
-                  site.initialized_at ? (
-                    <span className="text-[11px] text-muted-foreground">
-                      {formatDate(site.initialized_at)}
+              </div>
+              <ul className="mt-2 space-y-2">
+                {init.stepErrors.map((stepError) => (
+                  <li key={stepError.step} className="text-xs leading-5">
+                    <span className="font-semibold capitalize text-foreground">
+                      {stepError.step}
                     </span>
-                  ) : null
-                ) : (
-                  <Button
-                    asChild
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs"
-                  >
-                    <Link href={`${sitePath}/integrations`}>
-                      {status.state === "connected" ? "Manage" : "Set up"}
-                    </Link>
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-    </main>
+                    {stepError.errorType ? (
+                      <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                        {stepError.errorType}
+                      </span>
+                    ) : null}
+                    <p className="break-words text-muted-foreground">
+                      {stepError.message}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <KpiGrid
+            metrics={metrics}
+            pendingDiscovered={pendingDiscovered.data ?? 0}
+            sitePath={sitePath}
+          />
+
+          <div className="grid gap-3.5 sm:gap-4 lg:grid-cols-2">
+            <AttentionCard
+              metrics={metrics}
+              pendingDiscovered={pendingDiscovered.data ?? 0}
+              statuses={statuses}
+              sitePath={sitePath}
+            />
+            <QuickWorkCard sitePath={sitePath} />
+          </div>
+
+          <WorkspaceDirectory metrics={metrics} sitePath={sitePath} />
+
+          <ConnectionsStrip
+            statuses={statuses}
+            sitePath={sitePath}
+            initializedAt={site.initialized_at}
+            copy={<CopyButtons size="icon" {...connectionsCopy} />}
+            onReinitialize={
+              site.initialized_at ? () => void runInitialize() : undefined
+            }
+            reinitializeBusy={initBusy}
+          />
+        </div>
+      </main>
     </SurfaceRuntimeProvider>
   );
 }
@@ -506,7 +489,7 @@ function SiteHero({
   recaptureBusy,
   copy,
   metrics,
-  pendingDiscovered,
+  statuses,
 }: {
   site: MarketingSite;
   sitePath: string;
@@ -517,15 +500,21 @@ function SiteHero({
   /** Whole-site Copy / Copy-for-AI pair rendered beside the identity edit control. */
   copy?: React.ReactNode;
   metrics: SiteOverviewMetrics;
-  pendingDiscovered: number;
+  statuses: SiteConnectionStatus[];
 }) {
   const [editing, setEditing] = useState(false);
+  const attentionCount = statuses.filter(
+    (status) => status.state === "attention",
+  ).length;
+  const connectedCount = statuses.filter(
+    (status) => status.state === "connected",
+  ).length;
 
   return (
-    <section className="-ml-3 sm:-ml-4">
-      <div className="flex flex-col sm:flex-row sm:items-start">
-        <div className="group relative w-full shrink-0 sm:w-1/2 lg:w-[52%]">
-          <div className="relative aspect-[16/10] w-full overflow-hidden sm:rounded-r-lg">
+    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-stretch">
+        <div className="group relative w-full shrink-0 border-b border-border bg-muted/20 lg:w-[44%] lg:max-w-[640px] lg:border-b-0 lg:border-r">
+          <div className="relative aspect-[16/10] h-full w-full overflow-hidden">
             {heroFileId ? (
               <InlineMediaRef
                 ref={fileIdToMediaRef(heroFileId)}
@@ -549,7 +538,7 @@ function SiteHero({
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 bg-muted/20 text-muted-foreground/60">
+              <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 text-muted-foreground/60">
                 <Globe2 className="h-10 w-10" />
                 <p className="text-xs">
                   Initialize the site to capture its first preview
@@ -569,16 +558,16 @@ function SiteHero({
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col py-3 pl-4 pr-1 sm:py-4 sm:pl-8 sm:pr-0">
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-3.5 p-4 sm:p-5 lg:p-6">
           {editing ? (
             <IdentityEditor site={site} onDone={() => setEditing(false)} />
           ) : (
-            <div className="space-y-3.5">
+            <>
               <div className="flex items-start gap-3">
                 <SiteIdentityMark site={site} size={40} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                    <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl xl:text-3xl">
                       {site.name}
                     </h1>
                     <button
@@ -621,82 +610,54 @@ function SiteHero({
                 </p>
               )}
 
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <MetricCell
-                  variant="card"
-                  icon={<Gauge className="h-4 w-4" />}
-                  label="Site score"
-                  value={
-                    metrics.siteScore === null
-                      ? "—"
-                      : Math.round(metrics.siteScore)
-                  }
-                  detail={
-                    metrics.siteScore === null
-                      ? "Awaiting analysis"
-                      : `${metrics.scoredPages.toLocaleString()} pages scored`
-                  }
-                  tone={
-                    metrics.siteScore === null
-                      ? "default"
-                      : metrics.siteScore >= 80
-                        ? "good"
-                        : metrics.siteScore >= 60
-                          ? "warning"
-                          : "bad"
-                  }
-                />
-                <MetricCell
-                  variant="card"
-                  icon={<FileText className="h-4 w-4" />}
-                  label="Canonical pages"
-                  value={metrics.canonicalPages.toLocaleString()}
-                  detail={`${metrics.snapshots.toLocaleString()} saved captures`}
-                />
-                <MetricCell
-                  variant="card"
-                  icon={<CircleAlert className="h-4 w-4" />}
-                  label="Open findings"
-                  value={metrics.openFindings.toLocaleString()}
-                  detail={
-                    metrics.openFindings ? "Needs attention" : "No open issues"
-                  }
-                  tone={metrics.openFindings ? "warning" : "good"}
-                />
-                <MetricCell
-                  variant="card"
-                  icon={<Camera className="h-4 w-4" />}
-                  label="Discovery review"
-                  value={pendingDiscovered.toLocaleString()}
-                  detail={
-                    pendingDiscovered ? "Candidates waiting" : "Inbox is clear"
-                  }
-                  tone={pendingDiscovered ? "warning" : "good"}
-                />
-              </div>
-
-              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                <Activity className="h-3.5 w-3.5 text-primary" />
-                <span className="font-medium text-foreground">Last crawl</span>
-                <span className="capitalize">
-                  {metrics.latestCrawl?.status ?? "never"}
-                </span>
-                <span className="ml-auto tabular-nums">
-                  {metrics.latestCrawl
-                    ? formatDate(
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                <Link
+                  href={`${sitePath}/crawls`}
+                  className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
+                >
+                  <Activity className="h-3.5 w-3.5" />
+                  <span className="font-medium text-foreground">
+                    Last crawl
+                  </span>
+                  <span className="capitalize">
+                    {metrics.latestCrawl?.status ?? "never"}
+                  </span>
+                  {metrics.latestCrawl ? (
+                    <span className="tabular-nums">
+                      ·{" "}
+                      {formatDate(
                         metrics.latestCrawl.finished_at ??
                           metrics.latestCrawl.started_at,
-                      )
-                    : "No sessions yet"}
-                </span>
+                      )}
+                    </span>
+                  ) : null}
+                </Link>
+                <Link
+                  href={`${sitePath}/integrations`}
+                  className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
+                >
+                  <Plug className="h-3.5 w-3.5" />
+                  <span className="font-medium text-foreground">
+                    Connections
+                  </span>
+                  <span>
+                    {connectedCount} of {statuses.length} active
+                  </span>
+                  {attentionCount ? (
+                    <span className="text-amber-600 dark:text-amber-400">
+                      · {attentionCount} need
+                      {attentionCount === 1 ? "s" : ""} attention
+                    </span>
+                  ) : null}
+                </Link>
+                {site.initialized_at ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Initialized {formatDate(site.initialized_at)}
+                  </span>
+                ) : null}
               </div>
-
-              <ReviewInboxCard
-                sitePath={sitePath}
-                pendingDiscovered={pendingDiscovered}
-              />
-              <QuickWorkCard sitePath={sitePath} />
-            </div>
+            </>
           )}
         </div>
       </div>
@@ -704,34 +665,218 @@ function SiteHero({
   );
 }
 
-function ReviewInboxCard({
-  sitePath,
+function KpiGrid({
+  metrics,
   pendingDiscovered,
+  sitePath,
 }: {
-  sitePath: string;
+  metrics: SiteOverviewMetrics;
   pendingDiscovered: number;
+  sitePath: string;
 }) {
   return (
-    <SectionCard title="Review inbox">
-      <div className="flex flex-wrap items-center gap-3 p-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <Inbox className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">
-            {pendingDiscovered
-              ? `${pendingDiscovered.toLocaleString()} items awaiting review`
-              : "Nothing awaiting review"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Confirm discovered logos, images, contact details, and social
-            profiles as brand truth.
-          </p>
+    <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+      <MetricCell
+        variant="card"
+        icon={<Gauge className="h-4 w-4" />}
+        label="Site score"
+        value={metrics.siteScore === null ? "—" : Math.round(metrics.siteScore)}
+        detail={
+          metrics.siteScore === null
+            ? "Awaiting analysis"
+            : `${metrics.scoredPages.toLocaleString()} pages scored`
+        }
+        tone={
+          metrics.siteScore === null
+            ? "default"
+            : metrics.siteScore >= 80
+              ? "good"
+              : metrics.siteScore >= 60
+                ? "warning"
+                : "bad"
+        }
+        href={`${sitePath}/audit`}
+      />
+      <MetricCell
+        variant="card"
+        icon={<FileText className="h-4 w-4" />}
+        label="Pages"
+        value={metrics.canonicalPages.toLocaleString()}
+        detail={`${metrics.snapshots.toLocaleString()} saved captures`}
+        href={`${sitePath}/pages`}
+      />
+      <MetricCell
+        variant="card"
+        icon={<CircleAlert className="h-4 w-4" />}
+        label="Open findings"
+        value={metrics.openFindings.toLocaleString()}
+        detail={metrics.openFindings ? "Needs attention" : "No open issues"}
+        tone={metrics.openFindings ? "warning" : "good"}
+        href={`${sitePath}/findings`}
+      />
+      <MetricCell
+        variant="card"
+        icon={<Camera className="h-4 w-4" />}
+        label="Discovery review"
+        value={pendingDiscovered.toLocaleString()}
+        detail={pendingDiscovered ? "Candidates waiting" : "Inbox is clear"}
+        tone={pendingDiscovered ? "warning" : "good"}
+        href={`${sitePath}/discovery`}
+      />
+      <MetricCell
+        variant="card"
+        icon={<KeyRound className="h-4 w-4" />}
+        label="Target keywords"
+        value={metrics.targetKeywordPages.toLocaleString()}
+        detail={`of ${metrics.canonicalPages.toLocaleString()} pages have one`}
+        tone={
+          metrics.canonicalPages === 0
+            ? "default"
+            : metrics.targetKeywordPages === metrics.canonicalPages
+              ? "good"
+              : metrics.targetKeywordPages === 0
+                ? "warning"
+                : "default"
+        }
+        href={`${sitePath}/pages`}
+      />
+      <MetricCell
+        variant="card"
+        icon={<Search className="h-4 w-4" />}
+        label="In Google"
+        value={metrics.pagesInGsc.toLocaleString()}
+        detail="pages with search impressions"
+        href={`${sitePath}/pages?coverage=in_gsc`}
+      />
+    </section>
+  );
+}
+
+interface AttentionItem {
+  key: string;
+  count: number | null;
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+}
+
+function AttentionCard({
+  metrics,
+  pendingDiscovered,
+  statuses,
+  sitePath,
+}: {
+  metrics: SiteOverviewMetrics;
+  pendingDiscovered: number;
+  statuses: SiteConnectionStatus[];
+  sitePath: string;
+}) {
+  const pagesWithoutKeyword = Math.max(
+    0,
+    metrics.canonicalPages - metrics.targetKeywordPages,
+  );
+  const items: AttentionItem[] = [
+    ...(pendingDiscovered
+      ? [
+          {
+            key: "discovery",
+            count: pendingDiscovered,
+            label: "discovery candidates awaiting review",
+            href: `${sitePath}/discovery`,
+            icon: <Camera className="h-3.5 w-3.5" />,
+          },
+        ]
+      : []),
+    ...(metrics.openFindings
+      ? [
+          {
+            key: "findings",
+            count: metrics.openFindings,
+            label: "open findings need triage",
+            href: `${sitePath}/findings`,
+            icon: <CircleAlert className="h-3.5 w-3.5" />,
+          },
+        ]
+      : []),
+    ...(metrics.blockedPages
+      ? [
+          {
+            key: "blocked",
+            count: metrics.blockedPages,
+            label: "pages blocked from indexing",
+            href: `${sitePath}/audit`,
+            icon: <TriangleAlert className="h-3.5 w-3.5" />,
+          },
+        ]
+      : []),
+    ...(metrics.serpIssues
+      ? [
+          {
+            key: "serp",
+            count: metrics.serpIssues,
+            label: "pages failing SERP metadata checks",
+            href: `${sitePath}/audit`,
+            icon: <Search className="h-3.5 w-3.5" />,
+          },
+        ]
+      : []),
+    ...(pagesWithoutKeyword
+      ? [
+          {
+            key: "keywords",
+            count: pagesWithoutKeyword,
+            label: "pages missing a target keyword",
+            href: `${sitePath}/pages`,
+            icon: <KeyRound className="h-3.5 w-3.5" />,
+          },
+        ]
+      : []),
+    ...statuses
+      .filter((status) => status.state === "attention")
+      .map((status) => ({
+        key: `connection-${status.key}`,
+        count: null,
+        label: `${status.name}: ${status.detail}`,
+        href:
+          status.key === "initialized"
+            ? sitePath
+            : `${sitePath}/integrations`,
+        icon: <Plug className="h-3.5 w-3.5" />,
+      })),
+  ];
+
+  return (
+    <SectionCard title="Needs attention">
+      {items.length ? (
+        <ul className="divide-y divide-border">
+          {items.map((item) => (
+            <li key={item.key}>
+              <Link
+                href={item.href}
+                className="group flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-muted/40"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  {item.icon}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                  {item.count !== null ? (
+                    <span className="font-semibold tabular-nums">
+                      {item.count.toLocaleString()}{" "}
+                    </span>
+                  ) : null}
+                  {item.label}
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="flex items-center gap-2.5 px-3 py-4 text-sm text-muted-foreground">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          Nothing needs your attention right now.
         </div>
-        <Button asChild size="sm" variant="outline" className="h-8">
-          <Link href={`${sitePath}/discovery`}>Review</Link>
-        </Button>
-      </div>
+      )}
     </SectionCard>
   );
 }
@@ -739,17 +884,17 @@ function ReviewInboxCard({
 function QuickWorkCard({ sitePath }: { sitePath: string }) {
   return (
     <SectionCard title="Quick work">
-      <div className="grid gap-2 p-3">
-        <Button asChild variant="outline" className="h-9 justify-start gap-2">
-          <Link href={`${sitePath}/pages`}>
-            <FileText className="h-4 w-4" />
-            Review canonical pages
-          </Link>
-        </Button>
+      <div className="grid gap-2 p-3 sm:grid-cols-2">
         <Button asChild variant="outline" className="h-9 justify-start gap-2">
           <Link href={`${sitePath}/crawls/new`}>
             <Play className="h-4 w-4" />
             Start a crawl
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+          <Link href={`${sitePath}/pages`}>
+            <FileText className="h-4 w-4" />
+            Review canonical pages
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-9 justify-start gap-2">
@@ -758,6 +903,218 @@ function QuickWorkCard({ sitePath }: { sitePath: string }) {
             Coverage matrix
           </Link>
         </Button>
+        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+          <Link href={`${sitePath}/integrations`}>
+            <Plug className="h-4 w-4" />
+            Manage integrations
+          </Link>
+        </Button>
+      </div>
+    </SectionCard>
+  );
+}
+
+interface DirectoryEntry {
+  name: string;
+  detail: string;
+  href: string;
+  icon: React.ReactNode;
+}
+
+function WorkspaceDirectory({
+  metrics,
+  sitePath,
+}: {
+  metrics: SiteOverviewMetrics;
+  sitePath: string;
+}) {
+  const entries: DirectoryEntry[] = [
+    {
+      name: "Audit",
+      detail:
+        metrics.siteScore === null
+          ? "Site-wide technical audit"
+          : `Score ${Math.round(metrics.siteScore)} · top issues & worst pages`,
+      href: `${sitePath}/audit`,
+      icon: <ClipboardCheck className="h-4 w-4" />,
+    },
+    {
+      name: "Crawls",
+      detail: `${metrics.crawlSessions.toLocaleString()} session${metrics.crawlSessions === 1 ? "" : "s"} recorded`,
+      href: `${sitePath}/crawls`,
+      icon: <ScanSearch className="h-4 w-4" />,
+    },
+    {
+      name: "Analysis",
+      detail: "Prioritized issue queue",
+      href: `${sitePath}/analysis`,
+      icon: <Activity className="h-4 w-4" />,
+    },
+    {
+      name: "Sitemaps",
+      detail: `${metrics.sitemaps.toLocaleString()} document${metrics.sitemaps === 1 ? "" : "s"} discovered`,
+      href: `${sitePath}/sitemaps`,
+      icon: <Map className="h-4 w-4" />,
+    },
+    {
+      name: "Coverage",
+      detail: "Where each source disagrees",
+      href: `${sitePath}/coverage`,
+      icon: <Grid3x3 className="h-4 w-4" />,
+    },
+    {
+      name: "Links",
+      detail: "Site link graph & outbound links",
+      href: `${sitePath}/links`,
+      icon: <Link2 className="h-4 w-4" />,
+    },
+    {
+      name: "Backlinks",
+      detail: "Referring domains & anchors",
+      href: `${sitePath}/backlinks`,
+      icon: <BadgeCheck className="h-4 w-4" />,
+    },
+    {
+      name: "Keywords",
+      detail: "Search Console keyword performance",
+      href: `${sitePath}/keywords`,
+      icon: <KeyRound className="h-4 w-4" />,
+    },
+    {
+      name: "Ranks",
+      detail: "Rank tracking portfolio",
+      href: `${sitePath}/ranks`,
+      icon: <TrendingUp className="h-4 w-4" />,
+    },
+    {
+      name: "Cost",
+      detail: "Spend by page, run, and provider",
+      href: `${sitePath}/cost`,
+      icon: <CircleDollarSign className="h-4 w-4" />,
+    },
+    {
+      name: "Access",
+      detail: "Sharing & permissions",
+      href: `${sitePath}/access`,
+      icon: <ShieldCheck className="h-4 w-4" />,
+    },
+    {
+      name: "Settings",
+      detail: "Crawl policy & site configuration",
+      href: `${sitePath}/settings`,
+      icon: <Settings className="h-4 w-4" />,
+    },
+  ];
+
+  return (
+    <SectionCard title="Workspace">
+      <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {entries.map((entry) => (
+          <Link
+            key={entry.name}
+            href={entry.href}
+            className="group flex items-center gap-2.5 rounded-lg border border-border/70 px-2.5 py-2 transition-colors hover:border-primary/50 hover:bg-muted/40"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              {entry.icon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium text-foreground">
+                {entry.name}
+              </span>
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {entry.detail}
+              </span>
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+          </Link>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+function ConnectionsStrip({
+  statuses,
+  sitePath,
+  initializedAt,
+  copy,
+  onReinitialize,
+  reinitializeBusy,
+}: {
+  statuses: SiteConnectionStatus[];
+  sitePath: string;
+  initializedAt: string | null;
+  copy?: React.ReactNode;
+  onReinitialize?: () => void;
+  reinitializeBusy: boolean;
+}) {
+  return (
+    <SectionCard
+      title="Connections"
+      headerExtra={
+        <>
+          {copy}
+          {onReinitialize ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1.5 text-xs"
+              disabled={reinitializeBusy}
+              onClick={onReinitialize}
+            >
+              {reinitializeBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Re-initialize
+            </Button>
+          ) : null}
+        </>
+      }
+      action={{ label: "Manage", href: `${sitePath}/integrations` }}
+    >
+      <div className="flex flex-wrap gap-2 p-3">
+        {statuses.map((status) => {
+          const chip = (
+            <>
+              <span
+                className={cn(
+                  "h-2 w-2 shrink-0 rounded-full",
+                  stateDotClass[status.state],
+                )}
+              />
+              <span className="font-medium text-foreground">{status.name}</span>
+              <span className="max-w-52 truncate text-muted-foreground">
+                {status.key === "initialized" && initializedAt
+                  ? formatDate(initializedAt)
+                  : status.detail}
+              </span>
+            </>
+          );
+          if (status.key === "initialized") {
+            return (
+              <span
+                key={status.key}
+                className="inline-flex items-center gap-2 rounded-md border border-border/70 px-2.5 py-1.5 text-xs"
+                title={status.detail}
+              >
+                {chip}
+              </span>
+            );
+          }
+          return (
+            <Link
+              key={status.key}
+              href={`${sitePath}/integrations`}
+              className="inline-flex items-center gap-2 rounded-md border border-border/70 px-2.5 py-1.5 text-xs transition-colors hover:border-primary/50 hover:bg-muted/40"
+              title={status.detail}
+            >
+              {chip}
+            </Link>
+          );
+        })}
       </div>
     </SectionCard>
   );
