@@ -61,7 +61,14 @@ import {
   recordingSegmentRemoved,
   studioDocumentUpserted,
 } from "./slice";
-import { fetchSessionsThunk } from "./thunks";
+// Match the action by TYPE, never by importing the thunk. `./thunks` transitively
+// reaches cleanRecording.thunk -> launch-agent-execution.thunk (the whole agent
+// execution system) -> canvas materialization -> the markdown content-IR pipeline,
+// and this middleware is registered in lib/redux/store.ts, so importing it pulled all
+// of that into every authenticated route's graph purely to obtain a string.
+// ./actionTypes is a leaf (constants only); the thunk definition reads the same
+// constant, so the two cannot drift apart.
+import { TRANSCRIPT_STUDIO_FETCH_SESSIONS_FULFILLED } from "./actionTypes";
 
 let sessionsChannel: RealtimeChannel | null = null;
 let activeSessionChannel: RealtimeChannel | null = null;
@@ -89,7 +96,12 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
     const userId = state.userAuth?.id;
 
     // Subscribe to sessions table once after the first list fetch
-    if (fetchSessionsThunk.fulfilled.match(action) && userId && !sessionsChannel) {
+    if (
+      (action as { type?: string })?.type ===
+        TRANSCRIPT_STUDIO_FETCH_SESSIONS_FULFILLED &&
+      userId &&
+      !sessionsChannel
+    ) {
       sessionsChannel = supabase
         .channel(uniqueChannelTopic(`studio-sessions-rt:${userId}`))
         .on(
