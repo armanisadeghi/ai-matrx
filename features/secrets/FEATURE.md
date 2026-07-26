@@ -87,12 +87,13 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 - Disconnect (aidream `DELETE /api/mcp-connections/{server_id}`) clears the
   connection AND soft-deletes the owned vault item.
 
-## Known gaps (2026-07-23)
+## Production status
 
-- aidream `/api/vault/*` is implemented in the local repo but not yet deployed to prod — until deploy, value ops surface clear error toasts while the masked list keeps rendering from Supabase.
+- aidream `/api/vault/*` is live in production (verified in the production OpenAPI on 2026-07-26); masked metadata reads and value-bearing vault operations are both available.
 
 ## Change Log
 
+- **2026-07-26** — Verified the unified `/api/vault/*` surface is live in production and removed the obsolete deployment gap.
 - **2026-07-23** — Phase 4 MCP/OAuth cutover: MCP tokens moved to sealed vault items; browser token paths deleted; refresh/persist/disconnect run in aidream `/api/mcp-connections/*`. Live finding: the legacy pgcrypto store NEVER held a token (its shared key was never configured) — all 4 connections stamped `expired` for re-auth.
 - **2026-07-23** — Alignment with final vault API: field-metadata PATCH (env alias set/clear, description, active, one-way seal with confirm; deleted the interim direct `inject_into_sandbox` write) and per-recipient share grantees with a Can-manage toggle (org members + personal email lookup); types regenerated.
 - **2026-07-23** — Phase 3 unification: ONE definition-driven `VaultWorkspace` for both principals (catalog picker + presets + custom builder, reveal/copy with transient auto-clear, env import, share/transfer/fork/rotate/audit, capability-driven actions); data split direct-Supabase masked reads vs `/api/vault/*` value ops; deleted the duplicated personal/org services, hooks, and `OrganizationVaultSection`; regenerated `api-types.ts` from local aidream OpenAPI.
