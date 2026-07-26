@@ -5,6 +5,8 @@ alwaysApply: false
 
 # Batch Triage Workflow
 
+> **DEPRECATED (legacy Cursor rule — Wave 4 doc consolidation, 2026-07).** See the header of `feedback-workflow.mdc` — same status: unique triage protocol with no modern home yet; migrate before relying on it long-term. Do not add new rules here.
+
 This is a focused triage-only workflow that processes untriaged feedback items in batches of 3. It replaces **Step 1 (Triage)** from the main `feedback-workflow.mdc` rule. For all other steps (working the queue, resolving, etc.), use the main workflow rule.
 
 ## CRITICAL: Agent Boundaries

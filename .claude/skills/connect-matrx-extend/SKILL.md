@@ -56,8 +56,8 @@ bespoke RPC.
 
 - UI-only changes that don't cross the extension boundary (use
   `window-panels` skill instead).
-- Pure Next.js routing / SSR / Server Component work (use `nextjs` /
-  `nextjs-ssr-architecture`).
+- Pure Next.js routing / SSR / Server Component work (use
+  `ssr-zero-layout-shift`).
 - Changes inside the matrx-extend repo itself (use that repo's own
   skills via the worktree).
 - Authentication scheme changes — Supabase auth is shared; touch

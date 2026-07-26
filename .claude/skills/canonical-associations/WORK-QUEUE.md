@@ -56,7 +56,7 @@ The prioritized, file-anchored backlog for the canonicalization campaign. One su
 
 | Status | Item | Detail |
 |---|---|---|
-| ☐ | Repoint DB-side `ctx_scope_assignments` readers | `migrations/ctx_set_entity_scopes_auth.sql` (56,89,92,107); `ctx_resolve_full_context_cell_values_by_id.sql` (52,62); `ctx_resolve_full_context_scope_cells.sql` (74,84); `repoint_project_member_trio_to_iam.sql` (133). Repoint to `platform.associations`, then graveyard the table + mirror triggers. |
+| ☑ | Repoint DB-side `ctx_scope_assignments` readers | DONE (verified by the access campaign, 2026-06/07): zero live DB functions reference `ctx_scope_assignments`; FE services cut over 2026-06. The on-disk `.sql` files listed here (`ctx_set_entity_scopes_auth.sql` etc.) are historical migration snapshots, not live readers. Remaining: graveyard the table + mirror triggers (soak-gated, below). |
 | ☐ | Drop graveyarded task-assoc RPCs | `associate_with_task` / `dissociate_from_task` / `create_task_with_association` already graveyarded; confirm zero callers (FE clean) then drop. |
 | ☐ | Drop the legacy junction tables + mirror triggers | Only after every reader above is repointed AND soaked. `verify live before dropping.` |
 

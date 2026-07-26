@@ -6,10 +6,14 @@ description: >-
   selective hydration, lazy-loaded client components via next/dynamic, dimension-matched skeleton fallbacks,
   interaction-triggered data fetching, and one-shot Redux hydration. Also covers React cache() deduplication,
   server-only guards, the slot pattern, preloading, and the loading state hierarchy.
+  Also the canonical Next.js 15/16 App Router doctrine (absorbed nextjs-ssr-architecture +
+  nextjs-app-router-expert): server/client component boundaries, shared service patterns, async request
+  APIs (awaited params/searchParams/cookies/headers), Route Handlers vs Server Actions, and 'use cache'.
   Use when creating pages, components, forms, dropdowns, data tables, dashboards, or any UI that fetches data.
   Also use when fixing layout shift, CLS issues, hydration mismatches, or reviewing component architecture
   for rendering performance. Triggers on: Suspense, skeleton, layout shift, CLS, SSR, streaming, hydration,
-  next/dynamic, lazy loading, prerender, static shell, cache components, Redux hydration, server-only.
+  next/dynamic, lazy loading, prerender, static shell, cache components, Redux hydration, server-only,
+  "use client" audit, API route patterns, Server Actions.
 ---
 
 # SSR-First Zero Layout Shift
@@ -336,6 +340,69 @@ const logs = await getAgentLogs(id)
 
 ---
 
+## Next.js 15/16 App Router Rules (merged from nextjs-app-router-expert)
+
+### Business logic lives in shared services
+
+Never scatter Supabase queries across components and API routes. Extract to a service and consume it from Server Components, API routes, and Server Actions alike:
+
+| Scope | Location |
+|-------|----------|
+| Feature-specific | `features/[feature-name]/service.ts` |
+| Shared/reusable | `lib/services/[name].ts` |
+
+Client Components avoid direct Supabase queries where a Server Component parent (via a service) can pass data down. Server clients: `@/utils/supabase/server`; browser: `@/utils/supabase/client`.
+
+### Async request APIs — always await
+
+`params`, `searchParams`, `cookies()`, and `headers()` all return Promises in Next.js 15/16:
+
+```tsx
+export default async function Page({ params, searchParams }: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string>>
+}) {
+  const { id } = await params
+  const { page } = await searchParams
+}
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const cookieStore = await cookies()
+}
+```
+
+Types must include the `Promise<>` wrappers.
+
+### Route Handlers vs Server Actions
+
+| Use case | Use |
+|----------|-----|
+| Webhooks, third-party integrations | Route Handlers (`/api/...`) |
+| Forms / internal mutations | Server Actions |
+
+Both go through shared services.
+
+### Cross-request caching (`'use cache'`)
+
+Opt-in and explicit. `cache()` deduplicates within one request; `'use cache'` persists across requests — often used together:
+
+```tsx
+async function getStaticData() {
+  'use cache'
+  cacheTag('static-data')
+  cacheLife('hours')  // seconds, minutes, hours, days, max
+  return await fetchData()
+}
+// Invalidate: revalidateTag('static-data') from next/cache after a mutation.
+```
+
+### `"use client"` audit
+
+`"use client"` is justified ONLY by hooks, event handlers, browser APIs, or client-only third-party libs. A pure display component carrying the directive is a violation — remove it. When reviewing, check each in order: hooks? events? browser APIs? None → strip the directive.
+
+---
+
 ## Loading State Hierarchy
 
 ```
@@ -397,4 +464,6 @@ Before shipping any page or component:
 ## Additional Resources
 
 - For complete page examples with cache components, see [examples.md](examples.md)
-- For full route architecture (layouts, nested routes, error boundaries, Redux hydration), see the `nextjs-ssr-architecture` skill
+- For route-level architecture (layouts, nested routes, metadata, error boundaries), see [route-architecture.md](route-architecture.md)
+- For detailed Next.js 16 templates (services, API routes, signatures), see [nextjs16-patterns-reference.md](nextjs16-patterns-reference.md)
+- For splitting heavy client code out of the bundle, see the `code-splitting` skill; for the full new-route workflow, see `new-route-scaffold`

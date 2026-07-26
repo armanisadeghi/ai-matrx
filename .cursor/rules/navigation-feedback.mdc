@@ -8,6 +8,8 @@ globs:
 ---
 # Navigation Feedback Pattern
 
+> **DEPRECATED (legacy Cursor rule — Wave 4 doc consolidation, 2026-07).** The `useTransition`/loading-overlay/duplicate-click rules are covered by `CLAUDE.md` → UI standards → Navigation. Kept only for the cmd+click doctrine (`utils/navigation/should-open-in-new-tab` helpers, `<Link href>` over `router.push`) which has no modern home yet. Do not add new rules here.
+
 ## Requirements
 All clickable cards/items that navigate to new routes must:
 1. Provide immediate visual feedback and prevent duplicate actions

@@ -23,6 +23,7 @@ A fast, clean, **inviting** UI. Sharp, minimal, confident. The user's first reac
 
 - `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
 - `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
+- [project-conventions.md](project-conventions.md) (in this skill; absorbed the former `modern-web-design-expert` skill) — the "how to write conformant CSS" layer: migration priorities (fluid `clamp()` type, `@container` queries, `@starting-style` entrance animations, shadcn wrappers), textures/scrollbars, layout components, and key-file map. Applies to every ui-* posture, not just this one.
 
 ## Interview first — 2 questions, in plain conversation, skippable
 

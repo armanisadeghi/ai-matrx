@@ -1,9 +1,0 @@
----
-alwaysApply: false
----
-# Styling guidance for Tailwind CSS
-
-- Always provide a light and dark variation for all colors using Tailwind CSS
-    - bg-textured (This automatically applies both light and dark and a texture)
-    - eg. "text-gray-800 dark:text-gray-300 hover:bg-zinc-300 dark:hover:bg-zinc-700 bg-zinc-300 dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-700"
-    - While you will not always use hover and border, the key is to properly set both regular and dark values whenever you do use color.

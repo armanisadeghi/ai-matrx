@@ -9,6 +9,8 @@ Any generated code that does not meet these guidelines will be rejected.
 
 # App Builder Redux Implementation
 
+> **DEPRECATED (legacy Cursor rule — Wave 4 doc consolidation, 2026-07).** General Redux rules live in `.claude/skills/redux-selector-rules/` and `.claude/skills/provider-and-init-rules/`. Kept only because the app-builder slice contract below (start/edit/save lifecycle, small individual updates, per-field selectors for `lib/redux/app-builder/`) has no modern home. Do not add new rules here — if you work on app-builder, migrate this into a FEATURE.md beside `lib/redux/app-builder/`.
+
 "@/lib/redux/app-builder/
               ├── README.md
               ├── types.ts

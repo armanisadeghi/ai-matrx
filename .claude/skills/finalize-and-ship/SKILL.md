@@ -57,6 +57,7 @@ Must come back **silent** (clean). If it flags `[UNAPPLIED]` or `[DRIFTED]`: app
 | A **new type / component / hook / slice** | Confirm no existing primitive could extend instead (PRINCIPLES.md); `pnpm check:doctrine` flags new ones |
 | **Scope/context** code | Respect the global-vs-local invariant (CLAUDE.md → Scopes) |
 | Any **user-facing surface** | No `window.confirm/alert/prompt`; no new barrel `index.ts`; Lucide icons only, no emojis |
+| A **completed plan / handoff / campaign** | HISTORY docs get archived in the SAME session that completes them: move the finished plan/handoff doc to `docs/archive/<year>/` (grooming its inbound pointers) — never leave a done doc sitting in `docs/handoffs/` or `docs/` to rot |
 
 Fuller sweep when unsure (surface-drift + doctrine + types): `pnpm validate --no-lint`. (`lint` is advisory and slow — skip unless asked.)
 

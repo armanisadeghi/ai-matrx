@@ -143,6 +143,16 @@ One controller, imported directly (no flag, no `dynamic()` shell):
 - Authenticated: `app/DeferredSingletons.tsx` → `OverlayControllerGate` (returns null until `selectAnyOverlayOpen`).
 - Public: `app/(public)/PublicProviders.tsx` → mounted directly.
 
+## Message actions (chat) — absorbed from `message-actions-overlay-system`
+
+The live-chat message action bar is a **consumer** of this system, not a parallel one:
+
+- `features/cx-conversation/AssistantActionBar.tsx` + `features/cx-conversation/actions/messageActionRegistry.ts` — the menu items on an assistant message. Every action that opens UI dispatches through the overlay system (openers for new code; legacy typed creators like `openSaveToNotes` / `openShareModal` from `overlaySlice` still exist at old sites).
+- `features/cx-conversation/redux/messageActionsSlice.ts` is **instance tracking ONLY** — `registerInstance` / `unregisterInstance` / `updateInstanceContext` so an overlay can look up which message context (content, sessionId, messageId) belongs to which bar. It holds NO overlay open/close state; a parallel renderer (`MessageActionsController`) was deleted in the consolidation. Never re-add overlay state to it.
+- Overlays must be available on public routes too (`app/(public)/PublicProviders.tsx` mounts the controller) — inline per-route `<ShareModal>`/`<HtmlPreviewModal>` instances and local `isOpen` useState flags are the exact anti-pattern the consolidation removed.
+
+For the action toolkit on non-chat markdown surfaces, use the `rich-document-actions` skill instead.
+
 ## Patterns to recognize and what to do
 
 | You see this | Do this |

@@ -1,6 +1,6 @@
 ---
 name: context-assignment
-description: Use whenever a task touches context selection, scope tagging, or the ctx system UI at matrx-frontend — adding a context picker to a surface, showing per-entity context status, tagging files/notes/agents to scopes, setting the working (active) context, filtering by context, or upload-time context prompts. Triggers on features/scopes/components/context-assignment/**, active-context/**, ContextAssignmentField, ActiveContextButton, ContextStatusButton, UploadContextPrompt, appContextSlice, ctx_scope_assignments, or any request like "add context selection to X", "tag this entity", "show context status". Read this BEFORE wiring any context UI — picking the wrong mode or writer is the #1 recurring failure.
+description: Use whenever a task touches context selection, scope tagging, or the ctx system UI at matrx-frontend — adding a context picker to a surface, showing per-entity context status, tagging files/notes/agents to scopes, setting the working (active) context, filtering by context, or upload-time context prompts. Triggers on features/scopes/components/context-assignment/**, active-context/**, ContextAssignmentField, ActiveContextButton, ContextStatusButton, UploadContextPrompt, appContextSlice, or any request like "add context selection to X", "tag this entity", "show context status". Read this BEFORE wiring any context UI — picking the wrong mode or writer is the #1 recurring failure.
 ---
 
 # Context assignment — picking the right component
@@ -32,9 +32,10 @@ description: Use whenever a task touches context selection, scope tagging, or th
      — read scope data via hierarchy selectors, do NOT reach for the fragmented
      `scopeTypes`/`scopes`/… fan-out slices in new code.
    - **Layer C — Durable object assignment** = "this entity belongs to these";
-     persisted in `ctx_scope_assignments` / canonical `platform.associations`
-     via the `setEntityScopes` chokepoint, **from the user's explicit UI
-     selection**.
+     persisted in canonical `platform.associations` via the `setEntityScopes`
+     chokepoint, **from the user's explicit UI selection**. (The legacy
+     `ctx_scope_assignments` table is RETIRED — FE cut over 2026-06, zero DB
+     functions reference it; never write to or read from it.)
    - A user ACTION (Layer C) must read the explicit selection, **never** Layer A
      just because it's loaded. A successful write that sourced Layer A is *worse*
      than a failure — it silently mis-binds. Never auto-convert active → durable

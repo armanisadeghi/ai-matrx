@@ -1,11 +1,11 @@
 ---
 name: surface-authoring
-description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration (required canonical label, value groups, baseline-vs-specific values), THE NAMING LAW and THE COMPLETENESS LAW, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", the runtime scope-builder module pattern, manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the manifest drift check. Use whenever the task touches `features/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "surface label", "surface groups", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values".
+description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration (required canonical label, value groups, baseline-vs-specific values), THE NAMING LAW and THE COMPLETENESS LAW, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", the runtime scope-builder module pattern, manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the manifest drift check. Use whenever the task touches `features/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "surface label", "surface groups", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values". ALSO the end-to-end layered registration recipe (absorbed the former `surface-registration` skill) — agent roles, config namespaces, registry + check:surface-drift, DB sync (ui_surface / ui_surface_value / ui_surface_agent_role), runtime buildScope emitter, and live verification including the Matrx-vs-matrix context test; use for "register a surface", "bind agents to this page", or "add an agent role / config namespace to a surface". NOT for the binding services / merge engine / inheritance internals — those are features/surfaces/FEATURE.md territory.
 ---
 
 # Surface authoring
 
-**End-to-end layered registration process (roles, config namespaces, DB sync, emitter, verification) → invoke the `surface-registration` skill.** This skill owns the manifest itself: fields, values, groups, labels, scope builders.
+This is the ONE surface skill (it absorbed `surface-registration` in the Wave 4 consolidation): it owns the manifest itself — fields, values, groups, labels, scope builders — AND the end-to-end layered registration process (roles, config namespaces, DB sync, emitter, live verification), in the "End-to-end layered registration" section near the bottom. Reference consumer for every registration layer: **`features/transcription-cleanup/`** (`/transcripts/cleanup`).
 
 Adding a surface is **code-first, DB-mirror**. Code is the single source of truth — the DB is a synced reflection. Get the manifest right and everything downstream (binding UIs, chrome labels, drift report, RLS-gated agent + tool bindings, the runtime resolver) just works.
 
@@ -412,3 +412,54 @@ Before you say a surface is added:
 - [ ] Surface code launches agents via `runtime.surfaceName` + `applicationScope: create<LocalSlug>Scope(...)`
 
 If anything in the checklist is unclear, re-read the relevant section above instead of guessing — the resolver is unforgiving when the contract drifts.
+
+---
+
+# End-to-end layered registration (absorbed from `surface-registration`)
+
+Registering a surface is a LAYERED recipe — each layer is independently shippable, and a manifest with no emitter is still useful (bindings work; live values land later). Layer 1 (the manifest) is everything above. **Read first:** `features/surfaces/FEATURE.md` (binding model, inheritance, roles/config) · `features/surfaces/manifests/README.md`.
+
+## Layer 2 — Agent roles + config namespaces
+
+- **Agent role** = a named position the surface PLUGS an agent into (`agentRoles`; cleanup's `clean` + `custom_slot`, scribe's `assistant`). `defaultAgentId` = platform default; users/orgs override in `ui_surface_agent_pref`, resolved `manifest → global → org-by-membership → user` by `services/surface-config.service.ts`. Pages read via `hooks/useSurfaceConfig.ts` / `useSurfaceAgentRoles`. **Never store a per-surface agent choice in `userPreferences` / `useSetting`** — that's the exact legacy this system deleted (`scribeAssistantAgentId`).
+- **Config namespace** = a typed JSONB bucket in `ui_surface_config` (`dictionary`, `session_defaults`). Adding one = a PURE handler (validate/merge/empty) in `config/namespace-registry.ts` + a manifest `configNamespaces` line. Zero SQL.
+- Surfaces with ≥1 role or namespace automatically appear in the user hub at **`/surfaces`**.
+
+## Layer 3 — Registry + drift gate
+
+- Import + add to `RAW_MANIFESTS` in `manifests/registry.ts`, then **`pnpm check:surface-drift`** must pass before anything ships.
+
+## Layer 4 — DB sync (a manifest not synced is not registered)
+
+- A `ui_surface` row must EXIST first (surfaces admin `/administration/ui/surfaces`, or SQL insert with client + sort_order tier).
+- Canonical sync: **`POST /api/admin/surfaces/sync-manifests`** (surfaces admin button). From an agent shell: `pnpm tsx scripts/emit-surface-sync-sql.ts` → run the upsert via Supabase MCP (mirrors `manifest-sync.service.ts`).
+- Sync mirrors **`ui_surface.label` + `value_groups` (ALWAYS written)**, per-value `group_key` + `auto_context`, `url_pattern`, `intro`, `parent_surface_name`, `ui_surface_agent_role`.
+- **Verify live** — count `ui_surface_value` / `ui_surface_agent_role` rows for the surface; then `pnpm check:surface-drift` again (the live count is the real DB check).
+
+## Layer 5 — Runtime emitter (`buildScope`)
+
+- The page assembles its scope with the manifest's `createXScope(...)` at **trigger time** (read live refs, not stale state) and launches with `runtime.surfaceName` set — via the v3 context menu (`EditableContextMenu` / `NonEditableContextMenu`) `surfaceName=` + `getApplicationScope`, `useAgentLauncher().launchAgent`, or `useAiPostProcess`. Cleanup's emitter: `CleanupPad.tsx` `buildScope()`.
+- Mount `<SurfaceRuntimeProvider>` (`runtime/SurfaceRuntimeContext.tsx`) so the header Agents chrome gets live Run scope.
+- Baseline `selection`/`text_before`/`text_after` are captured by the menu itself — don't duplicate.
+
+## Layer 6 — Bindings + verification
+
+Bindings are **`platform.associations` edges** (agent → surface, tier-encoded `role`, `value_mappings` in edge metadata), written ONLY through `services/bind-agent-to-surface.service.ts` — UI paths: `SurfaceAgentBindPanel`, the 5-panel `/agents/[id]/surfaces` shell, or the batch editor. Never write an edge by hand.
+
+Verify like the owner does:
+
+1. Bind a test agent with **deliberately non-matching names** (cleanup's template: agent `Cleanup Surface Demo Reporter` 42971fe0, `working_text` ← `raw_transcript_text`) so name-heuristics can't mask a broken mapping.
+2. Launch from the surface; confirm the mapped variables arrived: `cx_conversation.variables` is the DB forensics.
+3. **The Matrx-vs-matrix test** (Arman's standard): put "Matrx is the product name (not matrix)" in a bound context value, feed input containing "matrix", check the output spells **Matrx**. If it doesn't, the context never reached the agent — a silently-skipped binding, the exact bug class this system exists to kill.
+4. Recovery layers must be **LOUD** (console.warn/error + toast) — a silent skip is how the org-tier bug survived.
+
+## Registration ship checklist
+
+- [ ] `readiness` stamped honestly (verified only after the full checklist; note required otherwise); overlay surfaces carry `overlayId`
+- [ ] Manifest + scope builder; required `label`; groups declared + every value grouped; completeness sweep clean; honest values; baselines not duplicated
+- [ ] Roles/namespaces declared where the surface plugs in agents/config
+- [ ] Registered in `registry.ts`; `pnpm check:surface-drift` green
+- [ ] DB synced AND live row counts verified
+- [ ] Route prefix in `utils/route-to-surface.ts` (more-specific prefixes ABOVE their parent)
+- [ ] Emitter wired (or explicitly deferred in the manifest header comment)
+- [ ] Non-matching-name binding + Matrx-vs-matrix test passed live

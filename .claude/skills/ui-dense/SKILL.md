@@ -5,8 +5,11 @@ description: >-
   hierarchy — for the power user, the data-heavy surface, the enterprise/admin tool used
   all day where speed and scannability beat breathing room. Think Linear at its densest,
   a Bloomberg terminal, a great ops console, SAP Fiori done right. Trigger this for admin
-  dashboards, data tables and grids, ops/monitoring views, settings-heavy panels, or any
-  surface a professional drives all day and wants tight. One of the ui-* family (ui-sharp /
+  dashboards, data tables and grids, ops/monitoring views, settings-heavy panels, debug
+  inspectors, state viewers, log viewers, multi-pane tool UIs, or any
+  surface a professional drives all day and wants tight (absorbed the former
+  data-dense-panels skill — its concrete rules live in data-dense-rules.md beside this
+  file). One of the ui-* family (ui-sharp /
   ui-reimagine / ui-refine / ui-dense, orchestrated by ui-bakeoff) — this is the
   high-density, power-user one.
 ---
@@ -25,6 +28,7 @@ Run this for admin dashboards, data tables/grids, ops and monitoring views, sett
 
 - `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
 - `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
+- [data-dense-rules.md](data-dense-rules.md) (in this skill) — the concrete construction rules for dense panels: theme-token-only colors, font-size floors (`text-xs` minimum), the 4px grid, resizable-panels v4 (`pct()`), dialog/overlay compatibility, JSON-tree patterns, the ship checklist, and the anti-pattern table. Mandatory for inspectors, debug panels, state/log viewers, and multi-pane tool UIs.
 
 ## Interview first — 2-3 questions, in plain conversation, skippable
 

@@ -1,9 +1,7 @@
----
-name: modern-web-design-expert
-description: Project-specific web design patterns for AI Matrx Admin. Extends the global modern-web-design-expert skill with project state, migration priorities, and local conventions. Use when working on UI components, styles, or responsive layouts in this project.
----
 
-# Modern Web Design Expert — AI Matrx Admin
+# Project CSS/Design Conventions — AI Matrx Admin
+
+> Formerly the `modern-web-design-expert` skill; folded into `ui-sharp` in the Wave 4 doc consolidation. Applies to ALL UI work (any ui-* posture), not just ui-sharp.
 
 > **Official guide:** `~/.arman/rules/nextjs-best-practices/nextjs-guide.md` — §13 (Styling Architecture) covers the Tailwind design-system mandate. The old §15 (Component Contracts & Accessibility) was removed and will get a dedicated guide. This skill covers project-specific migration state and priorities.
 

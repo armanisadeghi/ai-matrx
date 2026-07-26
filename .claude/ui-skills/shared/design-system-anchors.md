@@ -69,6 +69,6 @@ Glass is a first-class part of this app. Use it; just use ours.
 ## Sibling skills to defer to (don't duplicate them)
 
 - **`ios-mobile-first`** (`.claude/skills/ios-mobile-first/SKILL.md`) — all mobile mechanics: viewport units, safe areas, touch targets, drawer-not-dialog, single scroll area.
-- **`web-design` / `modern-web-design-expert`** — the Tailwind *migration checklist* (fluid `clamp()` type, `@container`, `@starting-style` animations, component wrappers). The "how to write conformant CSS" layer; the ui-* skills are the "what to build and why" layer.
+- **`ui-sharp/project-conventions.md`** (absorbed the former `modern-web-design-expert` skill) — the Tailwind *migration checklist* (fluid `clamp()` type, `@container`, `@starting-style` animations, component wrappers). The "how to write conformant CSS" layer; the ui-* skills are the "what to build and why" layer.
 - **`overlay-system`**, **`window-panels`** — opening/rendering overlays and the window frame.
 - Official Next.js/React/Tailwind guide: `~/.arman/rules/nextjs-best-practices/nextjs-guide.md`.

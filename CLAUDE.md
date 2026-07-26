@@ -218,7 +218,7 @@ A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days lat
 
 ## Found defects & task tracking
 
-Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Four-file task system: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks). **Invoke the `task-hygiene` skill** to triage, promote, or clean any of them.
+Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Four-file task system: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks).
 
 ## "Coming Soon" is a promise — track it like a found defect
 
@@ -340,7 +340,7 @@ Cross-project issue tracker.
 
 - **Icons:** Lucide only. **No emojis** anywhere a user can see — UI, chips, titles, seed data. Matrx is enterprise.
 - **Backgrounds:** `bg-textured` for main backgrounds.
-- **Colors:** semantic classes only (`bg-card`, `bg-muted`, `bg-accent`, `text-foreground`, `text-muted-foreground`, `text-primary`, `border-border`). Tokens, elevations (`--elevation-1/2/3`), and gradients (`--gradient-1/2/3`) defined in `app/globals.css`. CSS migration guide: `.cursor/rules/css-updates.mdc`.
+- **Colors:** semantic classes only (`bg-card`, `bg-muted`, `bg-accent`, `text-foreground`, `text-muted-foreground`, `text-primary`, `border-border`). Tokens, elevations (`--elevation-1/2/3`), and gradients (`--gradient-1/2/3`) defined in `app/globals.css`. Token-only color rules + old→semantic mapping: `.claude/skills/ui-dense/data-dense-rules.md` §1.
 - **Loading:** component-library loading states. Never plain "Loading…" text.
 - **Layout:** space-efficient, minimal padding/gaps. **`(core)` AppShell routes:** route chrome in `<PageHeader>`, body wrapper `h-full overflow-hidden` — **never** `h-page` or `calc(100dvh - header)` (`.shell-main` is already full viewport). See [`features/shell/components/header/variants/USAGE.md`](./features/shell/components/header/variants/USAGE.md).
 - **Navigation:** `useTransition` + `startTransition` for all route changes. Loading overlay on the active element. Disable interactive elements during transitions. Guard against duplicate clicks.

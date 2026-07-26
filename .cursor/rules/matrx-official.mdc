@@ -5,6 +5,8 @@ alwaysApply: true
 
 # AI Matrx Development Guidelines
 
+> **DEPRECATED (legacy Cursor rule — Wave 4 doc consolidation, 2026-07).** The modern source of truth is the repo root `CLAUDE.md` (stack, conventions, dev auto-login, UI/mobile rules) plus `.claude/skills/` (mobile → `ios-mobile-first`; SSR → `ssr-zero-layout-shift`). Kept only for its "Auth in Public Routes" section (`useBackendApi` / `useApiAuth` / `refresh`-not-`refetch`), which has no modern home yet. Do not add new rules here. (The `.cursor/skills/ios-mobile-first` path below is stale — the skill lives at `.claude/skills/ios-mobile-first/`.)
+
 > **Official guide:** `~/.arman/rules/nextjs-best-practices/nextjs-guide.md` — rendering, caching, performance, mobile, Tailwind, APIs, components. This file covers project-specific conventions only.
 
 **Stack:** React 19, Next.js 16, Tailwind CSS, TypeScript, Redux (@/lib/redux/store.ts), Supabase (@/utils/supabase/client.ts)

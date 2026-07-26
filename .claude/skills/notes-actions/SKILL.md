@@ -5,6 +5,16 @@ description: Cross-app notes integration components and patterns. Use when addin
 
 # Notes Actions (Cross-App Integration)
 
+## Scope boundary — which skill owns what
+
+This skill owns the **notes-side primitives**: the components under `features/notes/actions/` and the `openSaveToNotes` overlay flow — i.e. HOW a save-to-notes capability is built and wired. It does NOT own the surfaces that expose it:
+
+- An action toolkit on markdown/RichDocument surfaces (where "Save to notes" is one action among many) → `rich-document-actions` skill.
+- The live-chat message bar (`AssistantActionBar` / `messageActionRegistry`) → `overlay-system` skill, "Message actions (chat)" section.
+- Overlay rendering/registration mechanics (how `openSaveToNotes` actually renders) → `overlay-system` skill.
+
+Come here when adding/altering a notes action component or its provider/API contract; go to those skills when merely consuming save-to-notes from their surfaces.
+
 ## Quick Reference
 
 **Source:** `features/notes/actions/`
@@ -89,7 +99,7 @@ Used inside `OverlayController` or any layout that provides `NotesProvider`.
 - `features/notes/actions/notes-actions.md` — living usage reference
 - `features/notes/service/notesApi.ts` — `NotesAPI` (programmatic CRUD)
 - `features/notes/context/NotesContext.tsx` — shared state + realtime
-- `components/overlays/OverlayController.tsx` — overlay host for modal/sheet
+- `features/overlays/OverlayController.tsx` — overlay host for modal/sheet (see the `overlay-system` skill)
 - `lib/redux/slices/overlaySlice.ts` — `openSaveToNotes` action creator
 
 ## Provider Requirements

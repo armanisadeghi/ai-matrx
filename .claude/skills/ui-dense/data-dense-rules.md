@@ -1,7 +1,3 @@
----
-name: data-dense-panels
-description: Rules for building data-dense admin panels, debug inspectors, state viewers, and multi-column tool UIs. Covers color theming, font sizing, space efficiency, resizable panels, and common anti-patterns. Grounded in VSCode, macOS, and WCAG best practices. Use when creating any inspector, debug panel, state viewer, data browser, log viewer, settings panel, or multi-pane tool UI with dense information.
----
 
 # Data-Dense Panel UI — Rules & Patterns
 

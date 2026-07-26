@@ -5,6 +5,8 @@ alwaysApply: false
 
 # Feedback Resolution System
 
+> **DEPRECATED (legacy Cursor rule — Wave 4 doc consolidation, 2026-07).** The feedback system's modern docs are `app/api/mcp/FEATURE.md` (agent feedback API/MCP) and the admin UI at `/administration/feedback`. This workflow (status flow, agent boundaries, queue handling) is unique and still described only here — migrate it into a `.claude/skills` skill or the feedback FEATURE.md before relying on it long-term. Do not add new rules here.
+
 All feedback state lives in the database. The admin UI at `/administration/feedback` is the source of truth.
 
 ## Permissions & Status Flow
