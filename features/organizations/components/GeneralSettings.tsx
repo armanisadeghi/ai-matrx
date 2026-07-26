@@ -15,10 +15,11 @@ import {
   type Organization,
   type OrgRole,
 } from "../types";
-import { InlineMediaRef, useFileAsset } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { useFileAsset } from "@/features/files/hooks/useFileAsset";
+import { folderForOrg } from "@/features/files/utils/folder-conventions";
 import { format } from "date-fns";
 import { ImageCropModal } from "@/components/official/ImageCropModal";
-import { folderForOrg } from "@/features/files";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";

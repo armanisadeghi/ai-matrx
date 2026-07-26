@@ -46,7 +46,8 @@ import { FaGoogle, FaGithub } from "react-icons/fa";
 
 import { ImageCropModal } from "@/components/official/ImageCropModal";
 import type { ImageUploaderResult } from "@/components/official/ImageAssetUploader";
-import { CloudFolders, useFileAsset } from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { toast } from "@/lib/toast";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { Button } from "@/components/ui/button";

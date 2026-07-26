@@ -36,7 +36,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
-import { useFileSrc } from "@/features/files";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 
 import type { ScanItem } from "../types";
 

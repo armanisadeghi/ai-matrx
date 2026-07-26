@@ -2,7 +2,8 @@
  * features/files/types.ts
  *
  * Single source of truth for all cloud-files types. Every consumer imports from
- * [features/files/index.ts](./index.ts) (barrel) — never from subfolders.
+ * Direct imports from the owning module under `features/files/**` — never
+ * from a barrel `index.ts`.
  *
  * LAYERS
  * ------

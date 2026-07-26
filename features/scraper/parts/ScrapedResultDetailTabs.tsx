@@ -15,7 +15,7 @@ import { ScrapedContentPretty } from "@/features/scraper/parts/ScrapedContentPre
 import { contentLength } from "@/features/scraper/utils/scraper-floating-helpers";
 import type { ScraperResult } from "@/features/scraper/hooks/useScraperApi";
 import { cn } from "@/lib/utils";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 export type ScrapedDetailTabId = "pretty" | "overview" | "text" | "raw";
 

@@ -45,7 +45,7 @@ import {
   PanelRightTapButton,
 } from "@/components/icons/tap-buttons";
 import { PageJumperTapGroup } from "@/features/pdf/components/PageJumperTapGroup";
-import { downloadFile } from "@/features/files";
+import { downloadFile } from "@/features/files/api/files";
 import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { PdfStudioDocTitle } from "./PdfStudioDocTitle";

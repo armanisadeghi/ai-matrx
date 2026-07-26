@@ -36,7 +36,7 @@ import {
   getImageViewerTransformStyle,
   initialImageViewerTransform,
 } from "./imageViewerTransforms";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,8 +56,10 @@ export interface ImageViewerProps {
 // The window shell owns its own active-index state and drives the inner
 // ImageViewer + thumbnail sidebar from it, so it does NOT accept the
 // body's controlled-index props (`activeIndex` / `onIndexChange`).
-export interface ImageViewerWindowProps
-  extends Omit<ImageViewerProps, "activeIndex" | "onIndexChange"> {
+export interface ImageViewerWindowProps extends Omit<
+  ImageViewerProps,
+  "activeIndex" | "onIndexChange"
+> {
   isOpen: boolean;
   onClose: () => void;
   /** Optional window title. Auto-generated from image count if omitted. */

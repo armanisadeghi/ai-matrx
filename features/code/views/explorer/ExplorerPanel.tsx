@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useCloudTree } from "@/features/files";
+import { useCloudTree } from "@/features/files/hooks/useCloudTree";
 import {
   selectActiveSandboxId,
   selectExplorerRootOverride,

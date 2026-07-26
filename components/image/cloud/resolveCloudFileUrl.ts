@@ -14,8 +14,8 @@
  * back as-is.
  */
 
-import { fileHandler } from "@/features/files";
-import type { CloudFileRecord } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
+import type { CloudFileRecord } from "@/features/files/types";
 import type { AppStore } from "@/lib/redux/store";
 import type { ImageSource } from "@/components/image/context/SelectedImagesProvider";
 import { signedUrlExpiresAtMs } from "@/lib/media/signed-url";

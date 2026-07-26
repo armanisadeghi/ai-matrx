@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectFileById } from "@/features/files";
+import { selectFileById } from "@/features/files/redux/selectors";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { useAudioSessions } from "@/features/audio/session/useAudioSessions";
 import {

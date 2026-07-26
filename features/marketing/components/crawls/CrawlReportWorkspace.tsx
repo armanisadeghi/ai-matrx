@@ -18,7 +18,7 @@ import { useCrawlSnapshots } from "@/features/marketing/data/inspection-hooks";
 import { useCrawl, useCrawlUrls } from "@/features/marketing/data/hooks";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import type { CrawlUrl } from "@/features/marketing/types";
-import { formatFileSize } from "@/features/files";
+import { formatFileSize } from "@/features/files/utils/format";
 import {
   CRAWL_REPORTS,
   getCrawlReport,

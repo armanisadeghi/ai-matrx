@@ -29,7 +29,7 @@ import {
 import { ShowForm } from "./PodcastForm";
 import { podcastService } from "../../service";
 import type { PcShow, PcEpisodeWithShow } from "../../types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -118,7 +118,9 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
     // After creating a new show, redirect to its real route
     if (isNew) {
       startTransition(() =>
-        router.replace(`/administration/knowledge/podcasts/shows/${saved.id}?panel=show`),
+        router.replace(
+          `/administration/knowledge/podcasts/shows/${saved.id}?panel=show`,
+        ),
       );
     }
   };
@@ -138,7 +140,9 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
   };
 
   const back = () =>
-    startTransition(() => router.push("/administration/knowledge/podcasts/shows"));
+    startTransition(() =>
+      router.push("/administration/knowledge/podcasts/shows"),
+    );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -278,11 +282,13 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                   >
                     {/* Thumbnail */}
                     <InlineMediaRef
-                      ref={(ep.thumbnail_url ?? ep.image_url) ?? null}
+                      ref={ep.thumbnail_url ?? ep.image_url ?? null}
                       size={{ width: 40, height: 40 }}
                       fit="cover"
                       rounded="lg"
-                      fallbackIcon={<Music className="h-4 w-4 text-muted-foreground" />}
+                      fallbackIcon={
+                        <Music className="h-4 w-4 text-muted-foreground" />
+                      }
                       className="shrink-0"
                       alt=""
                     />

@@ -9,7 +9,8 @@
  * flowchart.htmlLabels=false (no <foreignObject> → no canvas taint).
  */
 
-import { fileHandler, type NormalizedFile } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
+import type { NormalizedFile } from "@/features/files/handler/types";
 
 function svgBlob(svg: string): Blob {
   return new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
@@ -24,7 +25,10 @@ function triggerDownload(blob: Blob, fileName: string): void {
   URL.revokeObjectURL(url);
 }
 
-function safeFileName(title: string | null | undefined, extension: string): string {
+function safeFileName(
+  title: string | null | undefined,
+  extension: string,
+): string {
   const base = (title || "diagram")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -46,8 +50,14 @@ export function downloadMermaidSvg(svg: string, title?: string | null): void {
   triggerDownload(svgBlob(svg), safeFileName(title, "svg"));
 }
 
-export function downloadMermaidSource(source: string, title?: string | null): void {
-  triggerDownload(new Blob([source], { type: "text/plain;charset=utf-8" }), safeFileName(title, "mmd"));
+export function downloadMermaidSource(
+  source: string,
+  title?: string | null,
+): void {
+  triggerDownload(
+    new Blob([source], { type: "text/plain;charset=utf-8" }),
+    safeFileName(title, "mmd"),
+  );
 }
 
 /** Rasterize the SVG to PNG at `scale`x and download it. */
@@ -65,8 +75,14 @@ async function rasterizeSvgToPng(svg: string, scale: number): Promise<Blob> {
   const url = URL.createObjectURL(svgBlob(svg));
   try {
     const image = await loadImage(url);
-    const width = Math.max(1, Math.round((dimensions?.width ?? image.naturalWidth ?? 800) * scale));
-    const height = Math.max(1, Math.round((dimensions?.height ?? image.naturalHeight ?? 600) * scale));
+    const width = Math.max(
+      1,
+      Math.round((dimensions?.width ?? image.naturalWidth ?? 800) * scale),
+    );
+    const height = Math.max(
+      1,
+      Math.round((dimensions?.height ?? image.naturalHeight ?? 600) * scale),
+    );
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -84,7 +100,9 @@ async function rasterizeSvgToPng(svg: string, scale: number): Promise<Blob> {
   }
 }
 
-function readSvgDimensions(svg: string): { width: number; height: number } | null {
+function readSvgDimensions(
+  svg: string,
+): { width: number; height: number } | null {
   const viewBox = /viewBox="([\d.\s-]+)"/.exec(svg);
   if (viewBox) {
     const parts = viewBox[1].trim().split(/\s+/).map(Number);

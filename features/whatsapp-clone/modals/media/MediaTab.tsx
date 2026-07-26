@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
-import { InlineMediaRef } from "@/features/files";
-import { useInfiniteWindow } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 import {
   formatDuration,
   formatRangeHeader,
@@ -76,8 +76,7 @@ const PAGE = 60;
 
 export function MediaTab({ items }: MediaTabProps) {
   const sorted = useMemo(
-    () =>
-      [...items].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
+    () => [...items].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
     [items],
   );
 
@@ -172,9 +171,7 @@ function MediaTile({ item }: { item: WAMediaItem }) {
   // InlineMediaRef does the cloud-files URL hop internally — we pass the
   // preferred reference and let the universal handler pick the right URL
   // flavour (cloud_file_id → CDN, else inline URL).
-  const ref = isVisible
-    ? (inlineUrl || item.cloudFileId || null)
-    : null;
+  const ref = isVisible ? inlineUrl || item.cloudFileId || null : null;
 
   return (
     <button

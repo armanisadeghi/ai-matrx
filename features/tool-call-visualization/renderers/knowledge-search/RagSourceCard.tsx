@@ -1,6 +1,6 @@
 "use client";
 
-import { useFileNode } from "@/features/files";
+import { useFileNode } from "@/features/files/hooks/useFileNode";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
 import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";

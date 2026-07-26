@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import { CreateShowDialog } from "@/features/podcasts/generator/components/CreateShowDialog";
@@ -52,7 +52,9 @@ function ShowChip({ show }: { show: PcShow }) {
           {show.title}
         </p>
         {show.author && (
-          <p className="truncate text-xs text-muted-foreground">{show.author}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {show.author}
+          </p>
         )}
       </div>
       <Settings2 className="h-4 w-4 shrink-0 text-muted-foreground" />

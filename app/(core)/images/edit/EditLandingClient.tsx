@@ -9,7 +9,7 @@ import {
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
 import { Button } from "@/components/ui/button";
-import { CloudFolders } from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { fileHandler } from "@/features/files/handler/handler";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 

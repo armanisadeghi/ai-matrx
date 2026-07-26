@@ -452,7 +452,7 @@ await m.bulk({ ids, op: "move"|"delete"|"restore"|"visibility"|"share", ...args 
 #### Facade — for non-React callers (thunks, services, agent prep)
 
 ```ts
-import { fileHandler } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
 
 await fileHandler.upload(source, opts);
 await fileHandler.mutate(fileId).patch({ ... });
@@ -768,19 +768,30 @@ Per the backend plan §5, plus a few FE additions:
 
 ```ts
 // hooks
-import { useFile, useFileSrc, useFileBlob, useFileUpload, useFileMutation } from "@/features/files";
+import { useFile } from "@/features/files/handler/hooks/useFile";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileMutation } from "@/features/files/hooks/useFileMutation";
 
 // facade (non-React)
-import { fileHandler } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
 
 // components
-import { InlineMediaRef, FilePreview, FileUploadDropzone, FilePicker } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
+import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
 
 // types
-import type { MediaRef, Asset, AssetVariant, AssetPreset, FileSource, NormalizedFile } from "@/features/files";
+import type { MediaRef, Asset, AssetVariant, AssetPreset } from "@/features/files/types";
+import type { FileSource, NormalizedFile } from "@/features/files/handler/types";
 
 // MediaRef builders
-import { cloudFileToMediaRef, fileIdToMediaRef, urlToMediaRef, fileUriToMediaRef } from "@/features/files";
+import {
+  cloudFileToMediaRef,
+  fileIdToMediaRef,
+  urlToMediaRef,
+} from "@/features/files/redux/converters";
 ```
 
 ### Forbidden everywhere outside `features/files/`

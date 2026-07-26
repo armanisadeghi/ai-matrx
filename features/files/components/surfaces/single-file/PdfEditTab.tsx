@@ -61,7 +61,7 @@ import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { PdfRegionContextMenu } from "@/features/file-analysis/components/RegionContextMenu";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
-import type { AnnotationLayerMode, PdfRegion } from "@/features/files";
+import type { AnnotationLayerMode, PdfRegion } from "@/features/files/components/core/PdfAnnotationLayer";
 
 export interface PdfEditTabProps {
   fileId: string;

@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectFileById } from "@/features/files/redux/selectors";
-import { useCloudTree } from "@/features/files";
+import { useCloudTree } from "@/features/files/hooks/useCloudTree";
 import { filesDb } from "@/features/files/filesDb";
 import { supabase } from "@/utils/supabase/client";
 import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";

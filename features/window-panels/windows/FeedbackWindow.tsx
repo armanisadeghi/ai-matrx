@@ -34,7 +34,8 @@ import {
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
 import { submitFeedback, getUserFeedback } from "@/actions/feedback.actions";
-import { InlineMediaRef, useFileUpload } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   FileUploadWithStorage,
   type UploadedFileResult,

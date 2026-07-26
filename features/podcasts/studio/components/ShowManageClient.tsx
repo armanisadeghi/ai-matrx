@@ -50,10 +50,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { AssetUploader, type AssetUrls } from "@/features/podcasts/components/admin/AssetUploader";
+import {
+  AssetUploader,
+  type AssetUrls,
+} from "@/features/podcasts/components/admin/AssetUploader";
 import { podcastService } from "@/features/podcasts/service";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import {
@@ -94,8 +97,18 @@ function CopyButton({ value, label }: { value: string; label: string }) {
     }
   };
   return (
-    <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onCopy}>
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="gap-1.5"
+      onClick={onCopy}
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5 text-emerald-500" />
+      ) : (
+        <Copy className="h-3.5 w-3.5" />
+      )}
       Copy
     </Button>
   );
@@ -127,7 +140,6 @@ function SectionCard({
 }
 
 export function ShowManageClient({ showId }: { showId: string }) {
-
   const [show, setShow] = useState<PcShow | null>(null);
   const [episodes, setEpisodes] = useState<PcEpisodeWithShow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,7 +202,9 @@ export function ShowManageClient({ showId }: { showId: string }) {
         }
       } catch (e) {
         if (active) {
-          toast.error(e instanceof Error ? e.message : "Failed to load podcast");
+          toast.error(
+            e instanceof Error ? e.message : "Failed to load podcast",
+          );
           setNotFound(true);
         }
       } finally {
@@ -268,15 +282,19 @@ export function ShowManageClient({ showId }: { showId: string }) {
   };
 
   const feedUrl = show ? `${SITE_URL}/podcast/${show.slug}/feed.xml` : "";
-  const emailInvalid = ownerEmail.trim().length > 0 && !isValidEmail(ownerEmail);
+  const emailInvalid =
+    ownerEmail.trim().length > 0 && !isValidEmail(ownerEmail);
   // Apple/Spotify require a category + owner email before a feed is accepted.
-  const submitReady = Boolean(category) && isValidEmail(ownerEmail) && isPublished;
+  const submitReady =
+    Boolean(category) && isValidEmail(ownerEmail) && isPublished;
 
   if (loading) {
     return (
       <>
         <PageHeader>
-          <span className="ml-2 text-sm font-medium text-foreground truncate">Manage podcast</span>
+          <span className="ml-2 text-sm font-medium text-foreground truncate">
+            Manage podcast
+          </span>
         </PageHeader>
         <div className="mx-auto max-w-4xl px-4 py-8">
           <Skeleton className="mb-6 h-10 w-48" />
@@ -292,12 +310,17 @@ export function ShowManageClient({ showId }: { showId: string }) {
   if (notFound || !show) {
     return (
       <>
-        <EntityModeHeader backHref="/podcast/studio" entityLabel="Podcast not found" />
+        <EntityModeHeader
+          backHref="/podcast/studio"
+          entityLabel="Podcast not found"
+        />
         <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
             <Radio className="h-7 w-7" />
           </span>
-          <h1 className="text-lg font-semibold text-foreground">Podcast not found</h1>
+          <h1 className="text-lg font-semibold text-foreground">
+            Podcast not found
+          </h1>
           <p className="text-sm text-muted-foreground">
             This podcast doesn&apos;t exist or you don&apos;t have access to it.
           </p>
@@ -321,324 +344,412 @@ export function ShowManageClient({ showId }: { showId: string }) {
           {
             label: "View public page",
             icon: ExternalLink,
-            onPress: () => window.open(`/podcast/${show.slug}`, "_blank", "noopener,noreferrer"),
+            onPress: () =>
+              window.open(
+                `/podcast/${show.slug}`,
+                "_blank",
+                "noopener,noreferrer",
+              ),
           },
         ]}
       />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:py-10">
-      {/* Cover + slug context */}
-      <div className="mb-6 flex items-center gap-3">
-        <span className="relative flex h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-muted">
-          <InlineMediaRef
-            ref={podcastMediaRef(imageUrl ?? thumbnailUrl)}
-            size="fill"
-            fit="cover"
-            alt={show.title}
-            fallbackIcon={<Radio className="h-5 w-5 text-primary/50" />}
-          />
-        </span>
-        <p className="truncate font-mono text-xs text-muted-foreground">
-          /podcast/{show.slug}
-        </p>
-      </div>
-
-      <div className="space-y-5">
-        {/* ── Basics ─────────────────────────────────────────────────────── */}
-        <SectionCard title="Podcast details" icon={<Radio className="h-4 w-4" />}>
-          <div className="grid gap-5 sm:grid-cols-[200px_1fr]">
-            {/* Cover */}
-            <div>
-              <Label className="mb-1.5 block text-xs uppercase tracking-wide text-muted-foreground">
-                Cover art
-              </Label>
-              <AssetUploader
-                onComplete={handleAssetComplete}
-                currentImageUrl={imageUrl}
-                showVideoUpload={false}
-                podcastId={show.id}
-              />
-            </div>
-
-            {/* Fields */}
-            <div className="space-y-4">
-              <div className="grid gap-1.5">
-                <Label htmlFor="show-title">Title</Label>
-                <Input
-                  id="show-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="My Podcast"
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="show-author">Author / host</Label>
-                <Input
-                  id="show-author"
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                  placeholder="Who hosts this podcast?"
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="show-desc">Description</Label>
-                <Textarea
-                  id="show-desc"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  placeholder="What is this podcast about?"
-                />
-              </div>
-              <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-                <Switch id="show-published" checked={isPublished} onCheckedChange={setIsPublished} />
-                <Label htmlFor="show-published" className="flex items-center gap-1.5 cursor-pointer">
-                  {isPublished ? (
-                    <Globe className="h-3.5 w-3.5 text-emerald-500" />
-                  ) : (
-                    <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                  )}
-                  {isPublished ? "Public — anyone with the link can listen" : "Private"}
-                </Label>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 flex justify-end">
-            <Button onClick={saveBasics} disabled={savingBasics} className="gap-2">
-              {savingBasics ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Save details
-            </Button>
-          </div>
-        </SectionCard>
-
-        {/* ── Distribution / RSS ─────────────────────────────────────────── */}
-        <SectionCard title="RSS &amp; distribution" icon={<Rss className="h-4 w-4" />}>
-          <p className="mb-4 -mt-1 text-xs text-muted-foreground">
-            Configure how your podcast appears in Apple Podcasts, Spotify, and other
-            directories. These fields populate your public RSS feed.
+        {/* Cover + slug context */}
+        <div className="mb-6 flex items-center gap-3">
+          <span className="relative flex h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-muted">
+            <InlineMediaRef
+              ref={podcastMediaRef(imageUrl ?? thumbnailUrl)}
+              size="fill"
+              fit="cover"
+              alt={show.title}
+              fallbackIcon={<Radio className="h-5 w-5 text-primary/50" />}
+            />
+          </span>
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            /podcast/{show.slug}
           </p>
+        </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="rss-category">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger id="rss-category">
-                  <SelectValue placeholder="Choose an Apple category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PC_APPLE_CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!category && (
-                <p className="text-xs text-muted-foreground">
-                  Required before submitting to directories.
-                </p>
-              )}
-            </div>
-
-            <div className="grid gap-1.5">
-              <Label htmlFor="rss-language">Language</Label>
-              <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger id="rss-language">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PC_FEED_LANGUAGES.map((l) => (
-                    <SelectItem key={l.code} value={l.code}>
-                      {l.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-1.5">
-              <Label htmlFor="rss-owner-name">Owner name</Label>
-              <Input
-                id="rss-owner-name"
-                value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="Shown to podcast directories"
-              />
-            </div>
-
-            <div className="grid gap-1.5">
-              <Label htmlFor="rss-owner-email">Owner email</Label>
-              <Input
-                id="rss-owner-email"
-                type="email"
-                value={ownerEmail}
-                onChange={(e) => setOwnerEmail(e.target.value)}
-                placeholder="you@example.com"
-                aria-invalid={emailInvalid}
-                className={emailInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
-              {emailInvalid ? (
-                <p className="text-xs text-destructive">Enter a valid email address.</p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Required by Apple Podcasts to verify ownership.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-            <Switch id="rss-explicit" checked={explicit} onCheckedChange={setExplicit} />
-            <Label htmlFor="rss-explicit" className="cursor-pointer">
-              Explicit content
-            </Label>
-          </div>
-
-          <div className="mt-5 flex justify-end">
-            <Button onClick={saveRss} disabled={savingRss || emailInvalid} className="gap-2">
-              {savingRss ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Save distribution
-            </Button>
-          </div>
-
-          {/* Feed URL + submit helpers */}
-          <div className="mt-5 rounded-xl border border-border bg-muted/20 p-4">
-            <Label className="mb-1.5 block text-xs uppercase tracking-wide text-muted-foreground">
-              Your podcast feed
-            </Label>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground">
-                {feedUrl}
-              </code>
-              <div className="flex shrink-0 gap-2">
-                <CopyButton value={feedUrl} label="Feed URL" />
-                <Button asChild variant="outline" size="sm" className="gap-1.5">
-                  <Link href={feedUrl} target="_blank">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Open
-                  </Link>
-                </Button>
+        <div className="space-y-5">
+          {/* ── Basics ─────────────────────────────────────────────────────── */}
+          <SectionCard
+            title="Podcast details"
+            icon={<Radio className="h-4 w-4" />}
+          >
+            <div className="grid gap-5 sm:grid-cols-[200px_1fr]">
+              {/* Cover */}
+              <div>
+                <Label className="mb-1.5 block text-xs uppercase tracking-wide text-muted-foreground">
+                  Cover art
+                </Label>
+                <AssetUploader
+                  onComplete={handleAssetComplete}
+                  currentImageUrl={imageUrl}
+                  showVideoUpload={false}
+                  podcastId={show.id}
+                />
               </div>
-            </div>
 
-            <div className="mt-4 space-y-2">
-              <p className="text-xs font-medium text-foreground">Submit to directories</p>
-              <div className="flex flex-wrap gap-2">
-                <Button asChild variant="secondary" size="sm" className="gap-1.5">
-                  <Link
-                    href="https://podcastsconnect.apple.com/my-podcasts/new-feed"
-                    target="_blank"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Apple Podcasts Connect
-                  </Link>
-                </Button>
-                <Button asChild variant="secondary" size="sm" className="gap-1.5">
-                  <Link href="https://podcasters.spotify.com/" target="_blank">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Spotify for Podcasters
-                  </Link>
-                </Button>
-              </div>
-              <div className="flex items-start gap-2 pt-1">
-                <Button variant="outline" size="sm" disabled className="gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Verify &amp; submit
-                </Button>
-                <ComingSoonBadge className="mt-1.5" />
-              </div>
-              {!submitReady && (
-                <div className="flex items-start gap-1.5 pt-1 text-xs text-muted-foreground">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-                  <span>
-                    Before submitting, set a category, a valid owner email, and make the
-                    podcast public.
-                  </span>
+              {/* Fields */}
+              <div className="space-y-4">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="show-title">Title</Label>
+                  <Input
+                    id="show-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="My Podcast"
+                  />
                 </div>
-              )}
+                <div className="grid gap-1.5">
+                  <Label htmlFor="show-author">Author / host</Label>
+                  <Input
+                    id="show-author"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                    placeholder="Who hosts this podcast?"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="show-desc">Description</Label>
+                  <Textarea
+                    id="show-desc"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    placeholder="What is this podcast about?"
+                  />
+                </div>
+                <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                  <Switch
+                    id="show-published"
+                    checked={isPublished}
+                    onCheckedChange={setIsPublished}
+                  />
+                  <Label
+                    htmlFor="show-published"
+                    className="flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {isPublished ? (
+                      <Globe className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                    {isPublished
+                      ? "Public — anyone with the link can listen"
+                      : "Private"}
+                  </Label>
+                </div>
+              </div>
             </div>
-          </div>
-        </SectionCard>
 
-        {/* ── Episodes ───────────────────────────────────────────────────── */}
-        <SectionCard title={`Episodes (${episodes.length})`} icon={<Music className="h-4 w-4" />}>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              {episodes.length === 0
-                ? "No episodes yet."
-                : `${episodes.length} episode${episodes.length === 1 ? "" : "s"}`}
-            </p>
-            <Button size="sm" className="gap-1.5" onClick={() => setUploadOpen(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              Upload an episode
-            </Button>
-          </div>
-
-          {episodes.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
-              <Music className="h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">
-                Upload audio or video you already have, or generate one in the studio.
-              </p>
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setUploadOpen(true)}>
-                <Plus className="h-3.5 w-3.5" />
-                Upload your first episode
+            <div className="mt-5 flex justify-end">
+              <Button
+                onClick={saveBasics}
+                disabled={savingBasics}
+                className="gap-2"
+              >
+                {savingBasics ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Save details
               </Button>
             </div>
-          ) : (
-            <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-              {episodes.map((ep) => (
-                <Link
-                  key={ep.id}
-                  href={`/podcast/${ep.slug}`}
-                  target="_blank"
-                  className="flex items-center gap-3 bg-card px-3 py-2.5 transition-colors hover:bg-muted/40"
+          </SectionCard>
+
+          {/* ── Distribution / RSS ─────────────────────────────────────────── */}
+          <SectionCard
+            title="RSS &amp; distribution"
+            icon={<Rss className="h-4 w-4" />}
+          >
+            <p className="mb-4 -mt-1 text-xs text-muted-foreground">
+              Configure how your podcast appears in Apple Podcasts, Spotify, and
+              other directories. These fields populate your public RSS feed.
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="rss-category">Category</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="rss-category">
+                    <SelectValue placeholder="Choose an Apple category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PC_APPLE_CATEGORIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!category && (
+                  <p className="text-xs text-muted-foreground">
+                    Required before submitting to directories.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="rss-language">Language</Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger id="rss-language">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PC_FEED_LANGUAGES.map((l) => (
+                      <SelectItem key={l.code} value={l.code}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="rss-owner-name">Owner name</Label>
+                <Input
+                  id="rss-owner-name"
+                  value={ownerName}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                  placeholder="Shown to podcast directories"
+                />
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="rss-owner-email">Owner email</Label>
+                <Input
+                  id="rss-owner-email"
+                  type="email"
+                  value={ownerEmail}
+                  onChange={(e) => setOwnerEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  aria-invalid={emailInvalid}
+                  className={
+                    emailInvalid
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }
+                />
+                {emailInvalid ? (
+                  <p className="text-xs text-destructive">
+                    Enter a valid email address.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Required by Apple Podcasts to verify ownership.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+              <Switch
+                id="rss-explicit"
+                checked={explicit}
+                onCheckedChange={setExplicit}
+              />
+              <Label htmlFor="rss-explicit" className="cursor-pointer">
+                Explicit content
+              </Label>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <Button
+                onClick={saveRss}
+                disabled={savingRss || emailInvalid}
+                className="gap-2"
+              >
+                {savingRss ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Save distribution
+              </Button>
+            </div>
+
+            {/* Feed URL + submit helpers */}
+            <div className="mt-5 rounded-xl border border-border bg-muted/20 p-4">
+              <Label className="mb-1.5 block text-xs uppercase tracking-wide text-muted-foreground">
+                Your podcast feed
+              </Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground">
+                  {feedUrl}
+                </code>
+                <div className="flex shrink-0 gap-2">
+                  <CopyButton value={feedUrl} label="Feed URL" />
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <Link href={feedUrl} target="_blank">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Open
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-medium text-foreground">
+                  Submit to directories
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    asChild
+                    variant="secondary"
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <Link
+                      href="https://podcastsconnect.apple.com/my-podcasts/new-feed"
+                      target="_blank"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Apple Podcasts Connect
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="secondary"
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <Link
+                      href="https://podcasters.spotify.com/"
+                      target="_blank"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Spotify for Podcasters
+                    </Link>
+                  </Button>
+                </div>
+                <div className="flex items-start gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="gap-1.5"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Verify &amp; submit
+                  </Button>
+                  <ComingSoonBadge className="mt-1.5" />
+                </div>
+                {!submitReady && (
+                  <div className="flex items-start gap-1.5 pt-1 text-xs text-muted-foreground">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                    <span>
+                      Before submitting, set a category, a valid owner email,
+                      and make the podcast public.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* ── Episodes ───────────────────────────────────────────────────── */}
+          <SectionCard
+            title={`Episodes (${episodes.length})`}
+            icon={<Music className="h-4 w-4" />}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {episodes.length === 0
+                  ? "No episodes yet."
+                  : `${episodes.length} episode${episodes.length === 1 ? "" : "s"}`}
+              </p>
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setUploadOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Upload an episode
+              </Button>
+            </div>
+
+            {episodes.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
+                <Music className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">
+                  Upload audio or video you already have, or generate one in the
+                  studio.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setUploadOpen(true)}
                 >
-                  <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
-                    <InlineMediaRef
-                      ref={podcastMediaRef(ep.thumbnail_url ?? ep.image_url)}
-                      size="fill"
-                      fit="cover"
-                      alt={ep.title}
-                      fallbackIcon={<Music className="h-4 w-4 text-muted-foreground" />}
-                    />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      {ep.episode_number != null && (
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          Ep {ep.episode_number}
+                  <Plus className="h-3.5 w-3.5" />
+                  Upload your first episode
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                {episodes.map((ep) => (
+                  <Link
+                    key={ep.id}
+                    href={`/podcast/${ep.slug}`}
+                    target="_blank"
+                    className="flex items-center gap-3 bg-card px-3 py-2.5 transition-colors hover:bg-muted/40"
+                  >
+                    <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+                      <InlineMediaRef
+                        ref={podcastMediaRef(ep.thumbnail_url ?? ep.image_url)}
+                        size="fill"
+                        fit="cover"
+                        alt={ep.title}
+                        fallbackIcon={
+                          <Music className="h-4 w-4 text-muted-foreground" />
+                        }
+                      />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        {ep.episode_number != null && (
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            Ep {ep.episode_number}
+                          </span>
+                        )}
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {ep.title}
+                        </p>
+                        {ep.is_published ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        ) : (
+                          <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        )}
+                      </div>
+                      {ep.duration_seconds != null && (
+                        <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {formatDuration(ep.duration_seconds)}
                         </span>
                       )}
-                      <p className="truncate text-sm font-medium text-foreground">{ep.title}</p>
-                      {ep.is_published ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                      ) : (
-                        <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      )}
                     </div>
-                    {ep.duration_seconds != null && (
-                      <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {formatDuration(ep.duration_seconds)}
-                      </span>
-                    )}
-                  </div>
-                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-      </div>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+        </div>
 
-      <UploadEpisodeDialog
-        open={uploadOpen}
-        onOpenChange={setUploadOpen}
-        shows={[show]}
-        defaultShowId={show.id}
-        onCreated={(ep) => setEpisodes((prev) => [ep, ...prev])}
-      />
+        <UploadEpisodeDialog
+          open={uploadOpen}
+          onOpenChange={setUploadOpen}
+          shows={[show]}
+          defaultShowId={show.id}
+          onCreated={(ep) => setEpisodes((prev) => [ep, ...prev])}
+        />
       </div>
     </>
   );

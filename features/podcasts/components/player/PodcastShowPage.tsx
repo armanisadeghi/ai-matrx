@@ -16,7 +16,7 @@ import Link from "next/link";
 import { toast } from "@/lib/toast";
 import type { PcShow, PcEpisode } from "../../types";
 import { useShare } from "../../hooks/useShare";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface PodcastShowPageProps {
   show: PcShow;
@@ -164,8 +164,8 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
                   Subscribe with any podcast app
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
-                  Copy this RSS feed, then submit it to Apple Podcasts or Spotify
-                  to publish the show.
+                  Copy this RSS feed, then submit it to Apple Podcasts or
+                  Spotify to publish the show.
                 </p>
                 <div className="mt-2.5 flex items-center gap-2">
                   <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground">
@@ -208,11 +208,15 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
                 >
                   <div className="relative shrink-0">
                     <InlineMediaRef
-                      ref={(ep.thumbnail_url ?? ep.image_url ?? coverImage) ?? null}
+                      ref={
+                        ep.thumbnail_url ?? ep.image_url ?? coverImage ?? null
+                      }
                       size={{ width: 56, height: 56 }}
                       fit="cover"
                       rounded="lg"
-                      fallbackIcon={<Music className="h-6 w-6 text-muted-foreground/50" />}
+                      fallbackIcon={
+                        <Music className="h-6 w-6 text-muted-foreground/50" />
+                      }
                       errorFallback="icon"
                       className="shadow-sm"
                       alt={ep.title}

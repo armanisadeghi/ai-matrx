@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
-import { useFileResourceFamily } from "@/features/files";
+import { useFileResourceFamily } from "@/features/files/hooks/useFileResourceFamily";
 import { cn } from "@/lib/utils";
 import {
   addFamilyPromotion,

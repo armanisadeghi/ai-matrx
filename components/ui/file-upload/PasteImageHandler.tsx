@@ -15,8 +15,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { useFileUpload, composeUploadFolderPath } from "@/features/files";
-import type { Visibility } from "@/features/files";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
+import type { Visibility } from "@/features/files/types";
 
 type SaveToOption = "public" | "personal";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useFileBlob } from "@/features/files";
+import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import Link from "next/link";
 import {
   AlertTriangle,

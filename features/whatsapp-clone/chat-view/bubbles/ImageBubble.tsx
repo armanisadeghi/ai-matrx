@@ -4,7 +4,7 @@ import { cn } from "@/styles/themes/utils";
 import { formatBubbleTime } from "../../shared/relative-time";
 import { MessageStatusTicks } from "../MessageStatusTicks";
 import type { WAMessage } from "../../types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface ImageBubbleProps {
   message: WAMessage;
@@ -24,9 +24,7 @@ export function ImageBubble({ message }: ImageBubbleProps) {
       <div
         className={cn(
           "relative max-w-[60%] overflow-hidden rounded-lg p-1 shadow-sm",
-          isOwn
-            ? "bg-emerald-100 dark:bg-emerald-800/80"
-            : "bg-card",
+          isOwn ? "bg-emerald-100 dark:bg-emerald-800/80" : "bg-card",
         )}
       >
         <div className="overflow-hidden rounded-md">

@@ -27,8 +27,8 @@ import {
 import { Youtube } from "@/components/icons/brand-icons";
 
 import { VoiceMicButton } from "./VoiceMicButton";
-import { useFileUpload } from "@/features/files";
-import type { NormalizedFile } from "@/features/files";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import type { NormalizedFile } from "@/features/files/handler/types";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import {
   Popover,
@@ -40,7 +40,7 @@ import {
   TapTargetButtonSolid,
 } from "@/components/icons/TapTargetButton";
 import { PublicResourcePickerMenu } from "./resource-picker/PublicResourcePickerMenu";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 import type { PublicResource, PublicResourceType } from "../types/content";
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
@@ -517,10 +517,18 @@ export function ChatInputWithControls({
   const textInputRef = externalTextInputRef || internalTextInputRef;
 
   // Universal file handler — same path for authenticated and anonymous users
-  const { upload, uploading: isUploading, error: uploadError } = useFileUpload();
+  const {
+    upload,
+    uploading: isUploading,
+    error: uploadError,
+  } = useFileUpload();
 
   const normalizedToResource = useCallback(
-    (normalized: NormalizedFile, originalName: string, originalSize: number): PublicResource => {
+    (
+      normalized: NormalizedFile,
+      originalName: string,
+      originalSize: number,
+    ): PublicResource => {
       const mimeType = normalized.meta.mime ?? "";
 
       let resourceType: PublicResourceType = "file";
@@ -528,7 +536,9 @@ export function ChatInputWithControls({
       else if (mimeType.startsWith("audio/")) resourceType = "audio";
       else if (mimeType.startsWith("video/")) resourceType = "file";
 
-      const url = normalized.url ?? (normalized.fileId ? `cld_files:${normalized.fileId}` : "");
+      const url =
+        normalized.url ??
+        (normalized.fileId ? `cld_files:${normalized.fileId}` : "");
       return {
         type: resourceType,
         data: {
@@ -551,7 +561,10 @@ export function ChatInputWithControls({
           { kind: "file", file },
           { folderPath: "Public Chat Uploads", visibility: "public" },
         );
-        setResources((prev) => [...prev, normalizedToResource(normalized, file.name, file.size)]);
+        setResources((prev) => [
+          ...prev,
+          normalizedToResource(normalized, file.name, file.size),
+        ]);
       } catch {
         if (file.type === "application/pdf" && file.size > 10 * 1024 * 1024) {
           setOversizedPdf(file);

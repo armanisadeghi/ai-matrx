@@ -12,8 +12,8 @@ import {
   adminReplyUserReview,
   forceCloseFeedback,
 } from "@/actions/feedback.actions";
-import { useFileUpload } from "@/features/files";
-import { imageViewUrl } from "@/features/files";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { imageViewUrl } from "@/features/files/handler/utils/python-base";
 import {
   UserFeedback,
   FeedbackStatus,
@@ -92,7 +92,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface FeedbackDetailDialogProps {
   feedback: UserFeedback;

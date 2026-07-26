@@ -18,13 +18,13 @@ import React from "react";
 import { Copy } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { MediaThumbnail } from "@/features/files";
+import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import type { CloudFileRecord } from "@/features/files/types";
 import {
   formatAbsoluteDate,
   formatFileSize,
   formatRelativeTime,
-} from "@/features/files";
-import type { CloudFileRecord } from "@/features/files";
+} from "@/features/files/utils/format";
 import { toast } from "@/lib/toast";
 
 export interface CloudFileMetadataSheetProps {
