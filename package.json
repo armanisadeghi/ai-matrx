@@ -3,7 +3,7 @@
   "version": "0.4.42",
   "private": true,
   "scripts": {
-    "dev": "set NODE_OPTIONS=--dns-result-order=ipv4first && next dev",
+    "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
     "build": "ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:pdfjs-worker && next build",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
     "build:pdfjs-worker": "tsx scripts/copy-pdfjs-worker.ts",
@@ -137,6 +137,8 @@
     "clean:next": "rm -rf .next-preview* .next-qa* && echo 'removed alternate NEXT_DISTDIR build dirs (.next left intact)'",
     "clean:next:all": "bash scripts/dev-cleanup.sh next",
     "dev:status": "bash scripts/dev-cleanup.sh status",
+    "dev:reap": "bash scripts/dev-cleanup.sh reap",
+    "dev:reap:dry": "bash scripts/dev-cleanup.sh reap --dry-run",
     "dev:stop": "bash scripts/dev-cleanup.sh ports",
     "dev:nuke": "bash scripts/dev-cleanup.sh all"
   },

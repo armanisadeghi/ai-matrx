@@ -110,6 +110,14 @@ cmd_start() {
   mkdir -p "$STATE_DIR"
   reap_dead
 
+  # Kill runaway / abandoned / untracked servers BEFORE we consider starting a
+  # new one. reap_dead only forgets state for servers that already died; it has
+  # no answer for a server that OUTLIVES its session — which is the whole
+  # problem (a SessionEnd hook that never fires leaves an immortal multi-GB
+  # process, and enough of those take the machine down). Ordering matters: this
+  # runs before the launch below, so it can never reap the server we just made.
+  bash "$REPO_ROOT/scripts/dev-cleanup.sh" reap >/dev/null 2>&1 || true
+
   # Resume / re-fire: reuse an existing healthy server for this session.
   if [[ -f "$META" ]]; then
     local ppid pport
@@ -144,6 +152,12 @@ cmd_start() {
   # Launch detached. Own NEXT_DISTDIR => own lock, no collision with .next.
   (
     cd "$REPO_ROOT" || exit 1
+    # NOTE: do NOT add --max-old-space-size here. Node's default heap cap on this
+    # machine is already ~4.2 GB, yet a single next-server was measured at 22.8 GB
+    # RSS — i.e. ~18 GB of it is Turbopack's native (Rust) allocation plus ~17
+    # worker processes, none of which V8 flags bound. Raising the JS heap ceiling
+    # makes it worse, not better. The RSS reaper in dev-cleanup.sh is the guard
+    # that actually works, because it measures RSS rather than heap.
     NODE_OPTIONS=--dns-result-order=ipv4first NEXT_DISTDIR="$DISTDIR" \
       nohup "$nextbin" dev -p "$port" >"$logf" 2>&1 &
     echo "$!" > "$STATE_DIR/$SHORT_SID.pid.tmp"
