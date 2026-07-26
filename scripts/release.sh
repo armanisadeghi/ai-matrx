@@ -31,26 +31,21 @@
 #   ./scripts/release.sh --major      # major bump
 #   ./scripts/release.sh --message "document shared OAuth"  # → commit "release: …"
 #   ./scripts/release.sh --dry-run    # preview without changes
-#   ./scripts/release.sh --monitor    # poll Vercel deployment status after push
 #   ./scripts/release.sh --no-migrate # skip applying FE migrations
 #   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
 #
-# Vercel builds (CRITICAL — billing):
-#   Production builds ONLY run for commits whose message starts with `release:`
-#   (see vercel.json ignoreCommand → scripts/vercel-ignore-build.sh). Plain
-#   pushes to main are skipped. Custom --message text is always prefixed with
-#   `release:` so a release can never accidentally skip its own deploy.
-#   After push we also cancel any still-BUILDING deployments for older SHAs
-#   so a leftover agent push cannot run in parallel with this release.
+# This script talks to git only (and optionally the co-located aidream migration
+# applier). It never calls Vercel. Deploy is: one atomic push of branch + tag to
+# origin/main; Vercel/GitHub handle the rest.
+#
+# Production builds ONLY run for commits whose message starts with `release:`
+# (vercel.json ignoreCommand → scripts/vercel-ignore-build.sh). Plain pushes to
+# main are skipped. Custom --message text is always prefixed with `release:` so
+# a release can never accidentally skip its own deploy.
 #
 # Quality gates (doctrine, UI primitives, migration ledger, …) stay ADVISORY —
 # they scream loudly and never block the ship. Only git (and a failed migration
 # apply) can stop a release. Manual hard-fail: pnpm check:release-gates:strict
-#
-# --monitor / stale-build cancel use (first match wins):
-#   - VERCEL_TOKEN env var (personal access token from vercel.com/account/tokens)
-#   - Vercel CLI login token on this machine
-#   - VERCEL_TEAM_ID / VERCEL_PROJECT_ID (optional; defaults from .vercel/project.json)
 set -euo pipefail
 
 # ── Failure trap ─────────────────────────────────────────────────────────────
@@ -80,12 +75,6 @@ GITHUB_REPO="armanisadeghi/ai-matrx"
 VERSION_FILE="package.json"
 REMOTE="origin"
 BRANCH="main"
-
-# Vercel project defaults from the linked CLI project (overridable via env).
-if [[ -f "$REPO_ROOT/.vercel/project.json" ]]; then
-    VERCEL_PROJECT_ID="${VERCEL_PROJECT_ID:-$(node -p "require('$REPO_ROOT/.vercel/project.json').projectId" 2>/dev/null || true)}"
-    VERCEL_TEAM_ID="${VERCEL_TEAM_ID:-$(node -p "require('$REPO_ROOT/.vercel/project.json').orgId" 2>/dev/null || true)}"
-fi
 
 # ── Colors ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -124,7 +113,6 @@ diverge_summary() {
 BUMP_TYPE="patch"
 CUSTOM_MESSAGE=""
 DRY_RUN=false
-MONITOR=false
 NO_MIGRATE=false
 NO_GATES=false
 
@@ -142,13 +130,12 @@ while [[ $# -gt 0 ]]; do
             [[ -n "${2:-}" ]] || fail "--message requires an argument."
             CUSTOM_MESSAGE="$2"; shift 2 ;;
         --dry-run) DRY_RUN=true; shift ;;
-        --monitor) MONITOR=true; shift ;;
         --no-migrate) NO_MIGRATE=true; shift ;;
         --no-gates) NO_GATES=true; shift ;;
         -h|--help)
             grep '^#' "$0" | head -40 | sed 's/^# \?//'
             exit 0 ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --dry-run, --monitor, --no-migrate, or --no-gates." ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --dry-run, --no-migrate, or --no-gates." ;;
     esac
 done
 
@@ -514,91 +501,7 @@ echo -e "${GREEN}  Released ${PROJECT_NAME} ${NEW_VERSION}${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "  GitHub:  ${CYAN}https://github.com/${GITHUB_REPO}${NC}"
-echo -e "  Vercel:  ${CYAN}https://vercel.com/dashboard${NC}"
 echo ""
-
-# ── Cancel superseded in-progress Vercel builds (billing guard) ──────────────
-# A prior push can still be BUILDING when this release lands. Vercel does not
-# always cancel it; two ~20-minute production builds then run at once.
-_resolve_vercel_token() {
-    if [[ -n "${VERCEL_TOKEN:-}" ]]; then
-        printf '%s' "$VERCEL_TOKEN"
-        return 0
-    fi
-    local auth_file tok
-    for auth_file in \
-        "$HOME/Library/Application Support/com.vercel.cli/auth.json" \
-        "$HOME/.local/share/com.vercel.cli/auth.json" \
-        "$HOME/.config/vercel/auth.json" \
-        "$HOME/.vercel/auth.json"
-    do
-        if [[ -f "$auth_file" ]]; then
-            tok="$(node -p "const d=require(process.argv[1]); d.token||d.authToken||''" "$auth_file" 2>/dev/null || true)"
-            if [[ -n "$tok" ]]; then
-                printf '%s' "$tok"
-                return 0
-            fi
-        fi
-    done
-    return 1
-}
-
-_cancel_stale_vercel_builds() {
-    local token project_id team_id head_sha deploy_url id sha cancel_url state
-    token="$(_resolve_vercel_token)" || {
-        warn "No VERCEL_TOKEN / Vercel CLI login — cannot cancel stale builds. Set VERCEL_TOKEN to enable."
-        return 0
-    }
-    project_id="${VERCEL_PROJECT_ID:-}"
-    team_id="${VERCEL_TEAM_ID:-}"
-    if [[ -z "$project_id" ]]; then
-        warn "VERCEL_PROJECT_ID unset — skipping stale-build cancel."
-        return 0
-    fi
-
-    head_sha="$(git rev-parse HEAD)"
-    deploy_url="https://api.vercel.com/v6/deployments?projectId=${project_id}&limit=10&state=BUILDING"
-    [[ -n "$team_id" ]] && deploy_url="${deploy_url}&teamId=${team_id}"
-
-    info "Canceling any in-progress Vercel builds that are not this release..."
-    local canceled=0
-    # TSV: id<TAB>sha for every BUILDING deploy whose sha ≠ HEAD
-    while IFS=$'\t' read -r id sha; do
-        [[ -n "$id" ]] || continue
-        cancel_url="https://api.vercel.com/v12/deployments/${id}/cancel"
-        [[ -n "$team_id" ]] && cancel_url="${cancel_url}?teamId=${team_id}"
-        state="$(curl -sf -X PATCH \
-            -H "Authorization: Bearer ${token}" \
-            -H "Content-Type: application/json" \
-            "${cancel_url}" 2>/dev/null \
-            | node -p "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); d.readyState||d.state||''" 2>/dev/null || true)"
-        if [[ "$state" == "CANCELED" ]]; then
-            ok "  canceled ${id} (sha=${sha:0:10})"
-            canceled=$((canceled + 1))
-        else
-            warn "  cancel ${id} → ${state:-no-response}"
-        fi
-    done < <(curl -sf -H "Authorization: Bearer ${token}" "${deploy_url}" 2>/dev/null \
-        | node -e "
-            const head = process.argv[1];
-            let d; try { d = JSON.parse(require('fs').readFileSync(0,'utf8')); } catch { process.exit(0); }
-            for (const x of d.deployments || []) {
-              const sha = (x.meta && x.meta.githubCommitSha) || '';
-              const st = x.state || x.readyState || '';
-              if (sha && sha !== head && st === 'BUILDING') {
-                process.stdout.write((x.uid || x.id) + '\t' + sha + '\n');
-              }
-            }
-          " "$head_sha" 2>/dev/null || true)
-
-    if [[ "$canceled" -gt 0 ]]; then
-        ok "Canceled ${canceled} stale in-progress build(s)."
-    else
-        ok "No stale in-progress builds to cancel."
-    fi
-}
-
-_cancel_stale_vercel_builds
 
 # ── Advisory quality gates (post-push — never block the ship) ────────────────
 # Only git may stop a release. Each gate announces itself before it starts so
@@ -618,142 +521,4 @@ if [[ "${SOURCE_ATTRIBUTION_FAILED:-false}" == "true" ]]; then
     echo -e "${RED}REMINDER: source-attribution violations shipped in ${NEW_VERSION}.${NC}" >&2
     echo -e "${RED}Fix them and they stop nagging: pnpm check:source-attribution${NC}" >&2
     echo "" >&2
-fi
-
-# ── Vercel deployment monitor ─────────────────────────────────────────────────
-_monitor_vercel() {
-    local token="${VERCEL_TOKEN:-}"
-    local team_id="${VERCEL_TEAM_ID:-}"
-    local project_id="${VERCEL_PROJECT_ID:-}"
-
-    if [[ -z "$token" ]]; then
-        warn "--monitor requires VERCEL_TOKEN env var. Skipping."
-        warn "Get one at: https://vercel.com/account/tokens"
-        return
-    fi
-
-    local api_base="https://api.vercel.com"
-    local team_param=""
-    [[ -n "$team_id" ]] && team_param="?teamId=${team_id}"
-
-    # Resolve project ID from name if not provided
-    if [[ -z "$project_id" ]]; then
-        info "Resolving Vercel project ID for '${PROJECT_NAME}'..."
-        local projects_resp
-        projects_resp=$(curl -sf \
-            -H "Authorization: Bearer ${token}" \
-            "${api_base}/v9/projects${team_param}" 2>/dev/null) || {
-            warn "Could not reach Vercel API. Check VERCEL_TOKEN."; return
-        }
-        project_id=$(echo "$projects_resp" \
-            | node -e "
-                const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
-                const p=(d.projects||[]).find(p=>p.name==='${PROJECT_NAME}');
-                process.stdout.write(p?p.id:'');
-              " 2>/dev/null)
-        if [[ -z "$project_id" ]]; then
-            warn "Project '${PROJECT_NAME}' not found on Vercel. Set VERCEL_PROJECT_ID to override."
-            return
-        fi
-        ok "Found project ID: ${project_id}"
-    fi
-
-    # Wait briefly for Vercel to register the push-triggered build
-    info "Waiting for Vercel to pick up the push..."
-    sleep 8
-
-    # Fetch the most recent deployment
-    local deploy_url="${api_base}/v6/deployments?projectId=${project_id}&limit=1"
-    [[ -n "$team_id" ]] && deploy_url="${deploy_url}&teamId=${team_id}"
-
-    local deploy_id deploy_inspect_url
-    deploy_id=$(curl -sf \
-        -H "Authorization: Bearer ${token}" \
-        "${deploy_url}" 2>/dev/null \
-        | node -e "
-            const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
-            process.stdout.write((d.deployments&&d.deployments[0])?d.deployments[0].uid:'');
-          " 2>/dev/null)
-
-    if [[ -z "$deploy_id" ]]; then
-        warn "No recent deployment found. It may still be queuing — check the Vercel dashboard."
-        return
-    fi
-
-    deploy_inspect_url="https://vercel.com/${PROJECT_NAME}/_logs?deploymentId=${deploy_id}"
-    [[ -n "$team_id" ]] && deploy_inspect_url="https://vercel.com/dashboard"
-    ok "Deployment ID: ${deploy_id}"
-    echo -e "  Logs:    ${CYAN}${deploy_inspect_url}${NC}"
-    echo ""
-
-    # Poll until terminal state
-    local poll_url="${api_base}/v13/deployments/${deploy_id}"
-    [[ -n "$team_id" ]] && poll_url="${poll_url}?teamId=${team_id}"
-
-    local status prev_status="" elapsed=0 interval=10 max_wait=900
-    local spinner=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-    local spin_i=0
-
-    echo -e "${CYAN}[INFO]${NC}  Polling Vercel build status (max ${max_wait}s)..."
-    echo ""
-
-    while [[ $elapsed -lt $max_wait ]]; do
-        status=$(curl -sf \
-            -H "Authorization: Bearer ${token}" \
-            "${poll_url}" 2>/dev/null \
-            | node -e "
-                const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
-                process.stdout.write(d.readyState||d.status||'UNKNOWN');
-              " 2>/dev/null) || status="UNKNOWN"
-
-        if [[ "$status" != "$prev_status" ]]; then
-            echo ""
-            case "$status" in
-                QUEUED)      echo -e "  ${CYAN}⏳  QUEUED${NC}     — waiting in build queue" ;;
-                INITIALIZING) echo -e "  ${CYAN}🔧  INITIALIZING${NC} — preparing build environment" ;;
-                BUILDING)    echo -e "  ${CYAN}🔨  BUILDING${NC}   — compiling your app" ;;
-                DEPLOYING)   echo -e "  ${CYAN}🚀  DEPLOYING${NC}  — uploading to edge network" ;;
-                READY)       break ;;
-                ERROR)       break ;;
-                CANCELED)    break ;;
-                *)           echo -e "  ${YELLOW}❓  ${status}${NC}" ;;
-            esac
-            prev_status="$status"
-        fi
-
-        # Animate spinner on same line between status changes
-        printf "\r  ${spinner[$spin_i]}  %ds elapsed..." "$elapsed"
-        spin_i=$(( (spin_i + 1) % ${#spinner[@]} ))
-
-        sleep "$interval"
-        elapsed=$(( elapsed + interval ))
-    done
-
-    printf "\r%60s\r" ""  # clear spinner line
-
-    case "$status" in
-        READY)
-            echo ""
-            echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            echo -e "${GREEN}  ✓  Vercel deployment READY — ${NEW_VERSION} is live!${NC}"
-            echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            ;;
-        ERROR)
-            echo ""
-            echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            echo -e "${RED}  ✗  Vercel deployment FAILED — check logs above${NC}"
-            echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            ;;
-        CANCELED)
-            warn "Deployment was canceled."
-            ;;
-        *)
-            warn "Timed out after ${max_wait}s. Last status: ${status}. Check the dashboard."
-            ;;
-    esac
-    echo ""
-}
-
-if $MONITOR; then
-    _monitor_vercel
 fi

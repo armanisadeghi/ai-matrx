@@ -4,9 +4,9 @@
 # Usage:
 #   ./ship.sh "feat: describe your change"
 #   ./ship.sh "fix: thing" --minor
-#   ./ship.sh "chore: bump deps" --monitor
+#   ./ship.sh "chore: bump deps"
 #
-# Extra flags are passed through to scripts/release.sh (--patch|--minor|--major|--dry-run|--monitor).
+# Extra flags are passed through to scripts/release.sh (--patch|--minor|--major|--dry-run|--no-migrate|--no-gates).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,7 +14,7 @@ cd "$ROOT"
 
 if [[ $# -lt 1 ]]; then
     echo "Usage: ./ship.sh \"commit message\" [release.sh flags...]" >&2
-    echo "  Example: ./ship.sh \"added mcp tools\" --monitor" >&2
+    echo "  Example: ./ship.sh \"added mcp tools\"" >&2
     exit 1
 fi
 

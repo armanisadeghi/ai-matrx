@@ -126,6 +126,42 @@ export function authorityTier(
   return "low";
 }
 
+// ============================================================================
+// SCRAPE WORTHINESS — predicts whether FETCHING a URL will return usable
+// article text (paywall / login wall / JS-only shell / aggregator stub score
+// low). This is about page DELIVERY, not content quality — a superb paywalled
+// study still scores low here. Sources below this threshold are silently
+// skipped by the scraper, so the UI must explain WHY a source was never read
+// rather than leaving it looking stuck at "Pending" forever.
+// NULL means "not assessed", NOT zero — never render it as 0/empty/red.
+// ============================================================================
+
+export const SCRAPE_WORTHINESS_SKIP_THRESHOLD = 20;
+
+export function isLowScrapeWorthiness(
+  scrapeWorthiness: number | null | undefined,
+): boolean {
+  return (
+    scrapeWorthiness != null &&
+    Number.isFinite(scrapeWorthiness) &&
+    scrapeWorthiness < SCRAPE_WORTHINESS_SKIP_THRESHOLD
+  );
+}
+
+// ============================================================================
+// REDUNDANCY GROUP — short slug clustering near-duplicate sources within a
+// topic (e.g. `pbw_city_pages` for a law firm's per-city landing pages). NULL
+// = ungrouped/unique, the common case; not an error state.
+// ============================================================================
+
+export function formatRedundancyGroupLabel(slug: string): string {
+  return slug
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export const SOURCE_TYPE_CONFIG: Record<
   SourceType,
   { label: string; icon: string }
