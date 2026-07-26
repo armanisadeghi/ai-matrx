@@ -117,6 +117,8 @@ const nextConfig = {
     // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
     reactCompiler: true,
     experimental: {
+        // EXPERIMENT 1: Turbopack persistent build cache (default false in 16.2).
+        turbopackFileSystemCacheForBuild: true,
         serverActions: {
             bodySizeLimit: "10mb",
         },
