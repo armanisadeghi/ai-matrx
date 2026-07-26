@@ -133,17 +133,16 @@ const nextConfig = {
         // optimized without being listed here. Only add packages NOT in that default
         // list — adding a defaulted one is a no-op, not a build win.
         optimizePackageImports: ['lucide-react', 'zustand'],
-        // Turbopack's persistent build cache. Defaults to FALSE, which meant every
-        // production deploy recompiled all ~8k first-party modules (plus node_modules)
-        // from scratch. Vercel's own log proves it: "Restored build cache from previous
-        // deployment" followed by "Build cache: <1 MB" — it restored nothing Turbopack
-        // could use, and the compile phase alone was 14.6 of a 16 min build while
-        // page-data collection was only 51s.
-        //
-        // EXPECTATION: the FIRST build after enabling this is NOT faster — it writes the
-        // cache. The benefit shows on the SECOND and later builds. Judge it on build N+1,
-        // not N. Experimental: if a deploy ever ships stale output, revert this line first.
-        turbopackFileSystemCacheForBuild: true,
+        // DO NOT RE-ENABLE `turbopackFileSystemCacheForBuild` ON A 60 GB BUILDER.
+        // Tried 2026-07-26 (commit 3836ca244) and it OOM-killed the build:
+        // SIGKILL 3m24s into "Creating an optimized production build", where the same
+        // build previously compiled for 14.6 min and finished. Writing the persistent
+        // cache holds the module graph in memory ON TOP of the normal compile working
+        // set, and this app's graph is already near the 60 GB ceiling — the page-data
+        // phase had OOM'd on its own before this flag existed (v0.4.44).
+        // It did not even pay for itself: the build system still reported
+        // "Build cache: <1 MB" WITH the flag on, so it was pure added memory pressure.
+        // Revisit only on an Enhanced Build machine with more RAM, and measure.
     },
     // Turbopack configuration (Next.js 16 default bundler)
     turbopack: {
