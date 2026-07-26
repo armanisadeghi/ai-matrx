@@ -113,9 +113,10 @@ Standing rules he restated: **do not rename things that already have names**, an
    the raw extracted images (verified: 35 curated from 59 raw on one topic). Both
    are offered with honest labels; consider collapsing to one.
 
-**Blocked externally:** nothing here reaches production until the repo-wide build
-OOM (FOUND_DEFECTS **D103**) is resolved — owned by another session, which
-deleted the offending admin routes and added a `check:turbopack-fs` guard.
+**Deploy note:** the repo-wide build OOM that blocked every deploy is RESOLVED
+(FOUND_DEFECTS D103, closed by another session — offending admin routes deleted,
+`check:turbopack-fs` guard added). Confirm a green production build carries this
+work before calling it live.
 
 ## Done
 

@@ -13,6 +13,24 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D104 — `condensedAuthorityExport.ts` does not compile on main (2026-07-25)
+
+`features/research/utils/condensedAuthorityExport.ts:98` calls
+`stringArrayFromJson(raw as Json)` — neither defined nor imported in that file.
+`pnpm type-check` fails on it (TS2304) at HEAD, so no new consumer can import the
+module. `features/research/components/sources/SourceList.tsx:1296` fails in the
+same area (TS2322, string assigned to number). The type gate is advisory here
+(`typescript.ignoreBuildErrors: true`), which is how both landed. The fix is
+small — define/import the helper, mirroring `normalizeSearchSnippets`'s
+object/array handling — but the file belongs to whoever is mid-change on the
+condensed authority export, so it is filed rather than patched.
+
+**Consequence today:** the research resource catalog needs the same snippet
+normalization for the condensed Sources render and cannot import it without
+inheriting the compile error, so it carries a private copy (`readSnippets` /
+`capSnippets` in `features/research/resources/catalog.ts`). Consolidate onto ONE
+normalizer once this compiles — the duplication is tracked, not accepted.
+
 ### D102 — a structured server validation error reaches the user as bare "HTTP 422" (2026-07-25)
 
 Every aidream 4xx with a validation body is surfaced to the user as just the
