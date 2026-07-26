@@ -2,11 +2,10 @@
 
 import * as React from "react";
 import {
-  BookOpen,
   Check,
-  EyeOff,
+  ChevronRight,
+  FileText,
   Folder,
-  ListOrdered,
   Search,
   ShieldCheck,
   X,
@@ -24,8 +23,14 @@ import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { useSkillCategories } from "../hooks/useSkillCategories";
 import { useSkills } from "../hooks/useSkills";
 import type { CategoryRow, SkillConfig, SkillRow } from "../types";
+import { SkillDetailView } from "./SkillDetailView";
+import {
+  SKILL_TIER_META,
+  SKILL_TIER_ORDER,
+  type SkillTierKey,
+} from "./skill-tiers";
 
-type Tier = "included" | "listed" | "forbidden";
+type Tier = SkillTierKey;
 type CatalogueFilter = "all" | "configured" | "unassigned";
 
 interface SkillConfigPickerProps {
@@ -37,43 +42,8 @@ interface SkillConfigPickerProps {
   disabled?: boolean;
 }
 
-const TIER_META = {
-  included: {
-    label: "Included",
-    shortLabel: "Include",
-    hint: "Full instructions are always in the agent's context.",
-    icon: BookOpen,
-    activeClass:
-      "border-violet-500/50 bg-violet-500/10 text-violet-700 dark:text-violet-300",
-  },
-  listed: {
-    label: "Listed",
-    shortLabel: "List",
-    hint: "The agent sees the summary and can load the full skill.",
-    icon: ListOrdered,
-    activeClass:
-      "border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  },
-  forbidden: {
-    label: "Forbidden",
-    shortLabel: "Forbid",
-    hint: "The skill is hidden from this agent completely.",
-    icon: EyeOff,
-    activeClass:
-      "border-rose-500/50 bg-rose-500/10 text-rose-700 dark:text-rose-300",
-  },
-} satisfies Record<
-  Tier,
-  {
-    label: string;
-    shortLabel: string;
-    hint: string;
-    icon: typeof BookOpen;
-    activeClass: string;
-  }
->;
-
-const TIER_ORDER: Tier[] = ["included", "listed", "forbidden"];
+const TIER_META = SKILL_TIER_META;
+const TIER_ORDER = SKILL_TIER_ORDER;
 const UNCATEGORIZED_CATEGORY_ID = "__uncategorized__";
 
 /** Large-catalogue editor for an agent's three skill assignment tiers. */
@@ -88,6 +58,8 @@ export function SkillConfigPicker({
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
   const [catalogueFilter, setCatalogueFilter] =
     React.useState<CatalogueFilter>("all");
+  /** Skill whose full instructions are being read. Null → review pane. */
+  const [detailSkillId, setDetailSkillId] = React.useState<string | null>(null);
 
   const categoryById = new Map(
     categories.map((category) => [category.id, category]),
@@ -163,6 +135,24 @@ export function SkillConfigPicker({
     value.included.length + value.listed.length + value.forbidden.length;
   const assignmentDisabled = disabled || value.disabled;
 
+  // The detail pane is driven by id, not by the row object, so it survives a
+  // catalogue refetch (skills reload on every sandbox auto-discovery event).
+  const detailSkill = detailSkillId ? skillById.get(detailSkillId) : undefined;
+  const detailPane = detailSkill ? (
+    <SkillDetailView
+      skill={detailSkill}
+      categoryLabel={
+        detailSkill.categoryId
+          ? categoryById.get(detailSkill.categoryId)?.label
+          : undefined
+      }
+      tier={tierBySkillId.get(detailSkill.id) ?? null}
+      onMove={(target) => move(detailSkill.id, target)}
+      onBack={() => setDetailSkillId(null)}
+      disabled={assignmentDisabled}
+    />
+  ) : null;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 flex-col gap-3 border-b border-border bg-muted/20 px-4 py-3 lg:flex-row lg:items-center">
@@ -199,7 +189,10 @@ export function SkillConfigPicker({
 
       <div
         className={cn(
-          "grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_320px]",
+          "relative grid min-h-0 flex-1 grid-cols-1",
+          detailPane
+            ? "lg:grid-cols-[220px_minmax(0,1fr)_minmax(380px,460px)]"
+            : "lg:grid-cols-[220px_minmax(0,1fr)_320px]",
           assignmentDisabled && "opacity-65",
         )}
       >
@@ -341,6 +334,8 @@ export function SkillConfigPicker({
                     }
                     tier={tierBySkillId.get(skill.id) ?? null}
                     onMove={(target) => move(skill.id, target)}
+                    onOpen={() => setDetailSkillId(skill.id)}
+                    isOpen={detailSkillId === skill.id}
                     disabled={assignmentDisabled}
                   />
                 ))}
@@ -349,28 +344,44 @@ export function SkillConfigPicker({
           </ScrollArea>
         </main>
 
-        <aside className="hidden min-h-0 bg-muted/5 lg:flex lg:flex-col">
-          <div className="shrink-0 border-b border-border px-4 py-3">
-            <h3 className="text-sm font-semibold">Agent configuration</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Review everything assigned without losing your search position.
-            </p>
-          </div>
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="space-y-5 p-4">
-              {TIER_ORDER.map((tier) => (
-                <SelectedTier
-                  key={tier}
-                  tier={tier}
-                  ids={value[tier]}
-                  skillById={skillById}
-                  onRemove={(id) => move(id, null)}
-                  disabled={assignmentDisabled}
-                />
-              ))}
-            </div>
-          </ScrollArea>
+        {/* `min-w-0` is load-bearing: the detail pane renders markdown whose
+            intrinsic width (code fences, long tokens) would otherwise blow the
+            grid column past its max and clip against the window edge. */}
+        <aside className="hidden min-h-0 min-w-0 overflow-hidden bg-muted/5 lg:flex lg:flex-col">
+          {detailPane ?? (
+            <>
+              <div className="shrink-0 border-b border-border px-4 py-3">
+                <h3 className="text-sm font-semibold">Agent configuration</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Review everything assigned without losing your search
+                  position.
+                </p>
+              </div>
+              <ScrollArea className="min-h-0 flex-1">
+                <div className="space-y-5 p-4">
+                  {TIER_ORDER.map((tier) => (
+                    <SelectedTier
+                      key={tier}
+                      tier={tier}
+                      ids={value[tier]}
+                      skillById={skillById}
+                      onSelect={(id) => setDetailSkillId(id)}
+                      onRemove={(id) => move(id, null)}
+                      disabled={assignmentDisabled}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </>
+          )}
         </aside>
+
+        {/* Below `lg` the review/detail column is collapsed away, so the
+            detail takes over the whole picker body instead of being
+            unreachable. */}
+        {detailPane && (
+          <div className="absolute inset-0 z-20 lg:hidden">{detailPane}</div>
+        )}
       </div>
     </div>
   );
@@ -415,20 +426,38 @@ function SkillCatalogueRow({
   categoryLabel,
   tier,
   onMove,
+  onOpen,
+  isOpen,
   disabled,
 }: {
   skill: SkillRow;
   categoryLabel?: string;
   tier: Tier | null;
   onMove: (tier: Tier | null) => void;
+  /** Opens the read-only detail pane for this skill. */
+  onOpen: () => void;
+  isOpen: boolean;
   disabled: boolean;
 }) {
   return (
-    <div className="px-4 py-3 transition-colors hover:bg-muted/25">
+    <div
+      className={cn(
+        "px-4 py-3 transition-colors hover:bg-muted/25",
+        isOpen && "bg-accent/40",
+      )}
+    >
       <div className="flex min-w-0 items-start gap-3">
-        <div className="min-w-0 flex-1">
+        {/* The whole text block is the "read this skill" affordance —
+            assignment stays on the explicit tier buttons to the right. */}
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-expanded={isOpen}
+          title={`Open ${skill.label}`}
+          className="min-w-0 flex-1 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <h4 className="truncate text-sm font-medium text-foreground">
+            <h4 className="truncate text-sm font-medium text-foreground group-hover:underline">
               {skill.label}
             </h4>
             {skill.isSystem && (
@@ -440,6 +469,11 @@ function SkillCatalogueRow({
                 System
               </Badge>
             )}
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-primary">
+              <FileText className="h-3 w-3" />
+              View
+              <ChevronRight className="h-3 w-3" />
+            </span>
           </div>
           <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
             {skill.description || "No description provided."}
@@ -451,7 +485,7 @@ function SkillCatalogueRow({
             <span aria-hidden="true">·</span>
             <span className="font-mono">{skill.skillId}</span>
           </div>
-        </div>
+        </button>
 
         <div
           className="grid shrink-0 grid-cols-4 gap-1"
@@ -512,12 +546,15 @@ function SelectedTier({
   tier,
   ids,
   skillById,
+  onSelect,
   onRemove,
   disabled,
 }: {
   tier: Tier;
   ids: string[];
   skillById: Map<string, SkillRow>;
+  /** Opens the read-only detail pane for the clicked skill. */
+  onSelect: (id: string) => void;
   onRemove: (id: string) => void;
   disabled: boolean;
 }) {
@@ -552,9 +589,14 @@ function SelectedTier({
                 className="group flex items-center gap-2 rounded-md border border-border/70 bg-background px-2.5 py-1.5"
                 title={skill?.description ?? id}
               >
-                <span className="min-w-0 flex-1 truncate text-xs">
+                <button
+                  type="button"
+                  onClick={() => onSelect(id)}
+                  disabled={!skill}
+                  className="min-w-0 flex-1 truncate rounded-sm text-left text-xs hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:no-underline"
+                >
                   {skill?.label ?? `Unknown skill ${id.slice(0, 8)}`}
-                </span>
+                </button>
                 <button
                   type="button"
                   onClick={() => onRemove(id)}

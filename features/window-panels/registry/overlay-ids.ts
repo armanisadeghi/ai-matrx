@@ -52,6 +52,7 @@ export const OVERLAY_IDS = [
   "agentRunHistoryWindow",
   "agentRunWindow",
   "agentSettingsWindow",
+  "agentSkillsWindow",
   "agentSidebarOverlay",
   "agentToastOverlay",
   "aiVoiceWindow",

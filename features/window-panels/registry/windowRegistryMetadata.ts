@@ -1920,6 +1920,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "singleton",
   },
 
+  // ── Agent Skills ──────────────────────────────────────────────────────────
+  {
+    slug: "agent-skills-window",
+    overlayId: "agentSkillsWindow",
+    kind: "window",
+    label: "Agent Skills",
+    defaultData: { agentId: null },
+    // The picker edits the agent draft in Redux (setAgentSkillConfig); the
+    // window itself holds only search/filter UI state, which is not worth
+    // restoring across a reload.
+    ephemeral: true,
+    // Three-column catalogue workspace → full viewport on mobile.
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+  },
+
   // ── Agent Memory ────────────────────────────────────────────────────────
   {
     slug: "agent-memory-window",

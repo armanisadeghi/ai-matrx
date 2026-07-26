@@ -27,7 +27,7 @@ import type {
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { AgentVariablesModal } from "@/features/agents/components/variables-management/AgentVariablesModal";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
-import { AgentSkillsModal } from "@/features/agents/components/skills-management/AgentSkillsModal";
+import { AgentSkillsButton } from "@/features/agents/components/skills-management/AgentSkillsButton";
 import { Label } from "@/components/ui/label";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { cn } from "@/lib/utils";
@@ -133,7 +133,7 @@ export function AgentModelConfiguration({
         <AgentSettingsModal agentId={agentId} />
         <AgentVariablesModal agentId={agentId} />
         <AgentToolsModal agentId={agentId} />
-        <AgentSkillsModal agentId={agentId} />
+        <AgentSkillsButton agentId={agentId} />
       </div>
     </div>
   );

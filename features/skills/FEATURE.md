@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-07-24`
+**Last updated:** `2026-07-25`
 
 ---
 
@@ -45,9 +45,22 @@ delete / categorise / ingest, plus the per-agent `skill_config` picker.
   weighted search, hierarchical category filtering, assignment filters,
   direct tier controls, and a persistent configuration review pane
   (`features/skills/components/SkillConfigPicker.tsx`).
-- `AgentSkillsModal` — large desktop dialog / bounded mobile drawer that
-  hosts `SkillConfigPicker` in the agent builder
-  (`features/agents/components/skills-management/AgentSkillsModal.tsx`).
+- `SkillDetailView` — read-only detail pane for one skill: full markdown
+  body (`MarkdownStream`), metadata, allowed tools, trigger patterns, plus
+  the tier controls so a skill can be assigned while it is being read
+  (`features/skills/components/SkillDetailView.tsx`). Editing lives in
+  `SkillDetailEditor`; this is the "what does this skill actually say?" view.
+- `skill-tiers.ts` — the ONE definition of the three assignment tiers
+  (label / hint / icon / active style), shared by the picker and the detail
+  pane so they cannot drift.
+- `AgentSkillsWindow` — **non-blocking** floating window hosting
+  `SkillConfigPicker` for the agent builder
+  (`features/window-panels/windows/agents/AgentSkillsWindow.tsx`, overlay id
+  `agentSkillsWindow`, opener `features/overlays/openers/agentSkillsWindow.tsx`).
+  Triggered by `AgentSkillsButton`
+  (`features/agents/components/skills-management/AgentSkillsButton.tsx`).
+  It replaced the blocking `AgentSkillsModal` Dialog — **do not reintroduce a
+  modal here**; the builder must stay usable while the catalogue is open.
 
 **Services**
 
@@ -144,14 +157,20 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
 
 ### 4. Configure an agent's skills
 
-1. The builder opens `AgentSkillsModal`; desktop uses a near-viewport
-   workspace and mobile uses a 94dvh drawer.
+1. The builder's `AgentSkillsButton` dispatches `openOverlay({ overlayId:
+   "agentSkillsWindow", data: { agentId } })`; `AgentSkillsWindow` renders a
+   draggable, non-blocking `WindowPanel` (fullscreen presentation on mobile).
 2. `SkillConfigPicker` consumes the canonical `useSkills()` and
    `useSkillCategories()` hooks. Search uses `filterAndSortBySearch`;
    category selection includes descendants.
 3. Each catalogue row moves directly among `included`, `listed`,
    `forbidden`, and unassigned. A persistent review pane exposes every
    configured skill without opening a nested popover.
+4. Clicking a row's text (or a chip in the review pane) opens
+   `SkillDetailView` in the right column — the full instruction markdown,
+   metadata, tools, and triggers — so a skill is never assigned blind. Below
+   `lg` the detail takes over the picker body (the right column is collapsed
+   at that width) and a back arrow returns to the list.
 4. `setAgentSkillConfig` marks the definition dirty; the existing agent
    save flow persists `skill_config`.
 
@@ -239,11 +258,13 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
   inline rename, color + icon pickers, "+ New" / "Delete" / "+ Add child".
 - ✅ Resources panel: Supabase-direct CRUD mounted in
   `SkillDetailEditor` with drag-to-reorder and 256 KB content soft-cap.
-- ✅ Per-agent picker: `AgentSkillsModal` is a large catalogue workspace
-  mounted next to `AgentToolsModal`; weighted search, hierarchical
+- ✅ Per-agent picker: the `agentSkillsWindow` floating panel is a large
+  catalogue workspace opened from the builder toolbar; weighted search, hierarchical
   categories, assignment filters, direct tier controls, and persistent
-  review replace the per-tier popovers. `setAgentSkillConfig` round-trips
-  through Supabase via `agentDefinitionToUpdate`.
+  review replace the per-tier popovers. Rows open a read-only
+  `SkillDetailView` with the full instruction body.
+  `setAgentSkillConfig` round-trips through Supabase via
+  `agentDefinitionToUpdate`.
 - ✅ Legacy slice strip: `definitions` + `categories` removed from
   `features/agent-connections/redux/skl/`. Render-blocks /
   render-components / render-block-categories / resources stay in the
@@ -258,6 +279,15 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
 
 ## Change log
 
+- `2026-07-25` — claude: Agent-builder skills went **non-blocking + readable**.
+  Deleted `AgentSkillsModal` (blocking Dialog/Drawer) in favour of the
+  `agentSkillsWindow` floating `WindowPanel` + `AgentSkillsButton` trigger, so
+  the builder stays usable while the catalogue is open. Added
+  `SkillDetailView` — clicking a catalogue row (or a review-pane chip) now
+  opens the skill's full instruction markdown, metadata, allowed tools, and
+  trigger patterns; previously there was **no way at all** to see what a skill
+  actually contained from the builder. Tier metadata extracted to
+  `skill-tiers.ts` so picker and detail share one definition.
 - `2026-07-24` — codex: Rebuilt the agent-builder skill picker as a
   near-viewport catalogue workspace with weighted search, hierarchical
   category filters, direct tier assignment, persistent configuration

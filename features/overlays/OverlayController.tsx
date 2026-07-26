@@ -171,6 +171,10 @@ const AgentCreateAppWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentCreateAppWindow"),
   { ssr: false },
 );
+const AgentSkillsWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/AgentSkillsWindow"),
+  { ssr: false },
+);
 const AgentDataStorageWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
@@ -972,6 +976,9 @@ export default function OverlayController() {
     agentCreateAppWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentCreateAppWindow"),
     ),
+    agentSkillsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentSkillsWindow"),
+    ),
     agentDataStorageWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentDataStorageWindow"),
     ),
@@ -1281,6 +1288,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     agentCreateAppWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentCreateAppWindow"),
+    ) as Record<string, unknown> | null,
+    agentSkillsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentSkillsWindow"),
     ) as Record<string, unknown> | null,
     agentDataStorageWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentDataStorageWindow"),
@@ -2056,6 +2066,25 @@ export default function OverlayController() {
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "agentCreateAppWindow" }))
+            }
+            agentId={typeof data?.agentId === "string" ? data.agentId : null}
+          />
+        );
+      })()}
+
+      {/* agentSkillsWindow */}
+      {(() => {
+        const isOpen = isOpenById.agentSkillsWindow;
+        const data = dataById.agentSkillsWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <AgentSkillsWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentSkillsWindow" }))
             }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />

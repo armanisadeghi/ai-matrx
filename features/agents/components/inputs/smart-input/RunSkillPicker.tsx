@@ -5,7 +5,7 @@
  *
  *   1. "This agent's skills" — the agent's REAL configured skill tiers, read
  *      live from the agentDefinition slice. Read-only here; edited in the
- *      Agent Builder via AgentSkillsModal.
+ *      Agent Builder via the Agent Skills window.
  *
  *   2. "Add skills to this run" — additive registry picks stored on
  *      `builderAdvancedSettings.addedSkills`, folded into the request's
