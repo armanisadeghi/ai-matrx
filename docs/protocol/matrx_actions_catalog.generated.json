@@ -1,0 +1,7438 @@
+{
+ "aliases": {
+  "agent_app": "app",
+  "context_item_value": "context_value",
+  "data_table": "dataset",
+  "dataset_cell": "table_cell",
+  "document": "udt_document",
+  "media": "file",
+  "picklist": "structured_list",
+  "picklist_group": "structured_list_group",
+  "picklist_item": "structured_list_item",
+  "podcast_episode": "pc_episode",
+  "podcast_show": "pc_show",
+  "sandbox": "sandbox_instance",
+  "table": "dataset",
+  "transcript_session": "studio_session",
+  "war_room_thread": "thread"
+ },
+ "functions": [
+  {
+   "deprecated": false,
+   "doc": "Groom conversation context: stub (or retain) tool results linked to stored values. Turn-scoped; reversible; confined to the requester's own conversation.",
+   "item_schema": {
+    "description": "One groom instruction: stub (default) or retain (un-stub) a stored key.",
+    "properties": {
+     "action": {
+      "default": "stub",
+      "enum": [
+       "stub",
+       "retain"
+      ],
+      "title": "Action",
+      "type": "string"
+     },
+     "key": {
+      "title": "Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "key"
+    ],
+    "title": "GroomItem",
+    "type": "object"
+   },
+   "kind": "function",
+   "name": "context_groom"
+  },
+  {
+   "deprecated": false,
+   "doc": "Patch one plan.node addressed by node_id or site_id+route.",
+   "item_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "attributes": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Attributes"
+     },
+     "brief": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Brief"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Label"
+     },
+     "needs_reviewer": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Needs Reviewer"
+     },
+     "node_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Node Id"
+     },
+     "node_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Node Type"
+     },
+     "page_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Page Type"
+     },
+     "parent_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Parent Id"
+     },
+     "primary_keyword_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Primary Keyword Id"
+     },
+     "primary_keyword_phrase": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "Plain-text target keyword \u2014 matched to an existing seo.keyword by phrase or created automatically. Prefer this over primary_keyword_id.",
+      "title": "Primary Keyword Phrase"
+     },
+     "priority": {
+      "anyOf": [
+       {
+        "maximum": 3,
+        "minimum": 1,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Priority"
+     },
+     "route": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Route"
+     },
+     "site": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "The site as a plain-text domain or name (alternative to site_id when addressing by route). Must already exist.",
+      "title": "Site"
+     },
+     "site_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Site Id"
+     },
+     "slug": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Slug"
+     },
+     "status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Status"
+     },
+     "technical_depth": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Technical Depth"
+     }
+    },
+    "title": "PlanNodePatchItem",
+    "type": "object"
+   },
+   "kind": "function",
+   "name": "plan_node_patch"
+  },
+  {
+   "deprecated": false,
+   "doc": "Apply a declarative content-plan tree to a site (get-or-create by site+parent+slug \u2014 idempotent; topics/sources land as edges; plain-text keywords/topics resolved or created). One item = one site's tree.",
+   "item_schema": {
+    "$defs": {
+     "PlanSourceSpec": {
+      "additionalProperties": false,
+      "description": "A cited source attached to a planned node \u2014 lands as a `plan.entity`\nrow (entity_type='source') plus a `cites` edge.",
+      "properties": {
+       "label": {
+        "title": "Label",
+        "type": "string"
+       },
+       "notes": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Notes"
+       },
+       "source_type": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Source Type"
+       },
+       "url": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Url"
+       }
+      },
+      "required": [
+       "label"
+      ],
+      "title": "PlanSourceSpec",
+      "type": "object"
+     },
+     "PlanTreeNodeSpec": {
+      "additionalProperties": false,
+      "description": "One node in a declarative plan tree (generator output / `plan_tree`\ndirective item). Derived cache fields are deliberately absent \u2014 the DB\ntrigger owns them.",
+      "properties": {
+       "attributes": {
+        "additionalProperties": true,
+        "title": "Attributes",
+        "type": "object"
+       },
+       "brief": {
+        "description": "Short bullet points describing what the page must cover.",
+        "items": {
+         "type": "string"
+        },
+        "title": "Brief",
+        "type": "array"
+       },
+       "children": {
+        "items": {
+         "$ref": "#/$defs/PlanTreeNodeSpec"
+        },
+        "title": "Children",
+        "type": "array"
+       },
+       "label": {
+        "description": "Human page title, e.g. 'What is platelet-rich plasma?'",
+        "title": "Label",
+        "type": "string"
+       },
+       "needs_reviewer": {
+        "default": false,
+        "title": "Needs Reviewer",
+        "type": "boolean"
+       },
+       "node_type": {
+        "description": "home = site root \u00b7 pillar = top-level hub \u00b7 cluster = grouping hub under a pillar \u00b7 article = an individual page \u00b7 index = a listing/directory page.",
+        "enum": [
+         "home",
+         "pillar",
+         "cluster",
+         "article",
+         "index"
+        ],
+        "title": "Node Type",
+        "type": "string"
+       },
+       "page_type": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Page Type"
+       },
+       "primary_keyword_id": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Primary Keyword Id"
+       },
+       "primary_keyword_phrase": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "description": "The page's target keyword as PLAIN TEXT (e.g. 'prp injection for knee'). Matched to an existing seo.keyword or created automatically \u2014 never pass an id here, and never omit the keyword because you don't know its id.",
+        "title": "Primary Keyword Phrase"
+       },
+       "priority": {
+        "anyOf": [
+         {
+          "maximum": 3,
+          "minimum": 1,
+          "type": "integer"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "description": "1 = build first, 3 = build last.",
+        "title": "Priority"
+       },
+       "slug": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "description": "kebab-case URL segment (required for every node except home). The full route is derived from the tree \u2014 never include slashes.",
+        "title": "Slug"
+       },
+       "sources": {
+        "items": {
+         "$ref": "#/$defs/PlanSourceSpec"
+        },
+        "title": "Sources",
+        "type": "array"
+       },
+       "status": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Status"
+       },
+       "technical_depth": {
+        "anyOf": [
+         {
+          "enum": [
+           "low",
+           "medium",
+           "high"
+          ],
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "description": "high = genuinely technical/authority content most competitors skip.",
+        "title": "Technical Depth"
+       },
+       "topics": {
+        "description": "Topic names as plain text \u2014 matched or created automatically.",
+        "items": {
+         "type": "string"
+        },
+        "title": "Topics",
+        "type": "array"
+       }
+      },
+      "required": [
+       "label",
+       "node_type"
+      ],
+      "title": "PlanTreeNodeSpec",
+      "type": "object"
+     }
+    },
+    "additionalProperties": false,
+    "properties": {
+     "default_status": {
+      "default": "planned",
+      "title": "Default Status",
+      "type": "string"
+     },
+     "nodes": {
+      "items": {
+       "$ref": "#/$defs/PlanTreeNodeSpec"
+      },
+      "title": "Nodes",
+      "type": "array"
+     },
+     "site": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "The site as a plain-text domain (preferred, e.g. 'prpguide.com') or name \u2014 found or created automatically. Use this when you don't have a site_id; one of the two is required.",
+      "title": "Site"
+     },
+     "site_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Site Id"
+     }
+    },
+    "required": [
+     "nodes"
+    ],
+    "title": "PlanTreeItem",
+    "type": "object"
+   },
+   "kind": "function",
+   "name": "plan_tree"
+  },
+  {
+   "deprecated": true,
+   "doc": "Create a project with its tasks and subtasks atomically (one item = one project tree).",
+   "item_schema": {
+    "$defs": {
+     "SubtaskInput": {
+      "properties": {
+       "description": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Description"
+       },
+       "name": {
+        "title": "Name",
+        "type": "string"
+       }
+      },
+      "required": [
+       "name"
+      ],
+      "title": "SubtaskInput",
+      "type": "object"
+     },
+     "TaskInput": {
+      "properties": {
+       "description": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Description"
+       },
+       "name": {
+        "title": "Name",
+        "type": "string"
+       },
+       "subtasks": {
+        "items": {
+         "$ref": "#/$defs/SubtaskInput"
+        },
+        "title": "Subtasks",
+        "type": "array"
+       }
+      },
+      "required": [
+       "name"
+      ],
+      "title": "TaskInput",
+      "type": "object"
+     }
+    },
+    "properties": {
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Description"
+     },
+     "end_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "End Date"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "slug": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Slug"
+     },
+     "start_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Start Date"
+     },
+     "tasks": {
+      "items": {
+       "$ref": "#/$defs/TaskInput"
+      },
+      "title": "Tasks",
+      "type": "array"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ProjectInput",
+    "type": "object"
+   },
+   "kind": "output_directive",
+   "name": "create_project_with_tasks"
+  },
+  {
+   "deprecated": true,
+   "doc": "Create one task (optional project_id / parent_task_id). Multiple items = multiple tasks.",
+   "item_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Description"
+     },
+     "parent_task_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Parent Task Id"
+     },
+     "project_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Project Id"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     }
+    },
+    "required": [
+     "title"
+    ],
+    "title": "CreateTaskItem",
+    "type": "object"
+   },
+   "kind": "output_directive",
+   "name": "create_task"
+  },
+  {
+   "deprecated": true,
+   "doc": "Create one row of any agent_data resource (RLS + field policy). Items may mix resource_types.",
+   "item_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "data": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Data",
+      "type": "object"
+     },
+     "resource_type": {
+      "title": "Resource Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "resource_type"
+    ],
+    "title": "DbCreateItem",
+    "type": "object"
+   },
+   "kind": "output_directive",
+   "name": "db_create"
+  },
+  {
+   "deprecated": true,
+   "doc": "Update one agent_data row by id (RLS + field policy). Idempotent by nature.",
+   "item_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "data": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Data",
+      "type": "object"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "resource_type": {
+      "title": "Resource Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "resource_type",
+     "id"
+    ],
+    "title": "DbUpdateItem",
+    "type": "object"
+   },
+   "kind": "output_directive",
+   "name": "db_update"
+  }
+ ],
+ "matrx_version": 1,
+ "nouns": [
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Agents",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Agent",
+   "noun": "agent",
+   "reference": "yes",
+   "schemas": null,
+   "table": "agent.definition",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Agents",
+   "identity_fields": [],
+   "label": "Agent Definition Version",
+   "noun": "agent_definition_version",
+   "reference": "no",
+   "schemas": null,
+   "table": "agent.definition_version",
+   "title_column": "name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Agents",
+   "identity_fields": [],
+   "label": "Agent Drift Alert",
+   "noun": "agent_drift_alert",
+   "reference": "no",
+   "schemas": null,
+   "table": "agent.drift_alert",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Agents",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Agent Shortcut",
+   "noun": "agent_shortcut",
+   "reference": "yes",
+   "schemas": null,
+   "table": "agent.shortcut",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Agents",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Agent Surface Binding",
+   "noun": "agent_surface_binding",
+   "reference": "yes",
+   "schemas": null,
+   "table": "platform.associations",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Agents",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Agent Template",
+   "noun": "agent_template",
+   "reference": "yes",
+   "schemas": null,
+   "table": "agent.template",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Agents",
+   "identity_fields": [],
+   "label": "Agent Usage",
+   "noun": "agent_usage",
+   "reference": "no",
+   "schemas": null,
+   "table": "agent.usage",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Apps",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "App",
+   "noun": "app",
+   "reference": "yes",
+   "schemas": null,
+   "table": "app.definition",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Apps",
+   "identity_fields": [],
+   "label": "App Definition Version",
+   "noun": "app_definition_version",
+   "reference": "no",
+   "schemas": null,
+   "table": "app.definition_version",
+   "title_column": "name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Apps",
+   "identity_fields": [],
+   "label": "App Error",
+   "noun": "app_error",
+   "reference": "no",
+   "schemas": null,
+   "table": "app.error",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Apps",
+   "identity_fields": [],
+   "label": "App Execution",
+   "noun": "app_execution",
+   "reference": "no",
+   "schemas": null,
+   "table": "app.execution",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Apps",
+   "identity_fields": [],
+   "label": "App Rate Limit",
+   "noun": "app_rate_limit",
+   "reference": "no",
+   "schemas": null,
+   "table": "app.rate_limit",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Conversations",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Agent Memory",
+   "noun": "cx_agent_memory",
+   "reference": "yes",
+   "schemas": null,
+   "table": "chat.agent_memory",
+   "title_column": "key",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Agent Plan",
+   "noun": "cx_agent_plan",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.agent_plan",
+   "title_column": "title",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Agent Task",
+   "noun": "cx_agent_task",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.agent_task",
+   "title_column": "title",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Code Edit",
+   "noun": "cx_code_edit",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.code_edit",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Code Message File",
+   "noun": "cx_code_message_file",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.code_message_file",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Conversation Documents",
+   "noun": "cx_conversation_documents",
+   "reference": "no",
+   "schemas": null,
+   "table": "graveyard.conversation_documents",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Media",
+   "noun": "cx_media",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.media",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Observational Memory",
+   "noun": "cx_observational_memory",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.observational_memory",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Observational Memory Event",
+   "noun": "cx_observational_memory_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.observational_memory_event",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Pending Injection",
+   "noun": "cx_pending_injection",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.pending_injection",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Conversation Request",
+   "noun": "cx_request",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.request",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Request Snapshot",
+   "noun": "cx_request_snapshot",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.request_snapshot",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "Tool Trace",
+   "noun": "cx_tool_trace",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.tool_trace",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "User Request",
+   "noun": "cx_user_request",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.user_request",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Conversations",
+   "identity_fields": [],
+   "label": "User Todo",
+   "noun": "cx_user_todo",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.user_todo",
+   "title_column": "title",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Conversations",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Working Documents",
+   "noun": "working_document",
+   "reference": "yes",
+   "schemas": null,
+   "table": "workbench.working_documents",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Outputs",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Conversation",
+   "noun": "conversation",
+   "reference": "yes",
+   "schemas": null,
+   "table": "chat.conversation",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Skills",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Skill",
+   "noun": "skill",
+   "reference": "yes",
+   "schemas": null,
+   "table": "skill.definition",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Skills",
+   "identity_fields": [],
+   "label": "Skill Category",
+   "noun": "skill_category",
+   "reference": "no",
+   "schemas": null,
+   "table": "graveyard.skill_category_legacy",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Skills",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Skill Render Definition",
+   "noun": "skill_render_definition",
+   "reference": "yes",
+   "schemas": null,
+   "table": "skill.render_definition",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Sources",
+   "identity_fields": [
+    "file_id"
+   ],
+   "label": "File",
+   "noun": "file",
+   "reference": "yes",
+   "schemas": null,
+   "table": "files.files",
+   "title_column": "file_name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Sources",
+   "identity_fields": [],
+   "label": "File Version",
+   "noun": "file_version",
+   "reference": "no",
+   "schemas": null,
+   "table": "files.file_versions",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Sources",
+   "identity_fields": [],
+   "label": "Folder",
+   "noun": "folder",
+   "reference": "planned",
+   "schemas": null,
+   "table": "files.folders",
+   "title_column": "folder_name",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "yes",
+   "delete": "yes",
+   "family": "Sources",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Transcript",
+   "noun": "transcript",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "audio_file_path": {
+       "default": null,
+       "title": "Audio File Path"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "draft_saved_at": {
+       "default": null,
+       "title": "Draft Saved At"
+      },
+      "folder_name": {
+       "default": null,
+       "title": "Folder Name"
+      },
+      "is_draft": {
+       "default": null,
+       "title": "Is Draft"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "segments": {
+       "default": null,
+       "title": "Segments"
+      },
+      "source_type": {
+       "default": null,
+       "title": "Source Type"
+      },
+      "tags": {
+       "default": null,
+       "title": "Tags"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      },
+      "video_file_path": {
+       "default": null,
+       "title": "Video File Path"
+      }
+     },
+     "title": "CreateTranscriptItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteTranscriptItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "audio_file_path": {
+       "default": null,
+       "title": "Audio File Path"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "draft_saved_at": {
+       "default": null,
+       "title": "Draft Saved At"
+      },
+      "folder_name": {
+       "default": null,
+       "title": "Folder Name"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_draft": {
+       "default": null,
+       "title": "Is Draft"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "segments": {
+       "default": null,
+       "title": "Segments"
+      },
+      "source_type": {
+       "default": null,
+       "title": "Source Type"
+      },
+      "tags": {
+       "default": null,
+       "title": "Tags"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      },
+      "video_file_path": {
+       "default": null,
+       "title": "Video File Path"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateTranscriptItem",
+     "type": "object"
+    }
+   },
+   "table": "transcripts.transcripts",
+   "title_column": "title",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "yes",
+   "delete": "yes",
+   "family": "Sources & Outputs",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Note",
+   "noun": "note",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "content": {
+       "default": null,
+       "title": "Content"
+      },
+      "file_path": {
+       "default": null,
+       "title": "File Path"
+      },
+      "folder_id": {
+       "default": null,
+       "title": "Folder Id"
+      },
+      "folder_name": {
+       "default": null,
+       "title": "Folder Name"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "position": {
+       "default": null,
+       "title": "Position"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "tags": {
+       "default": null,
+       "title": "Tags"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "title": "CreateNoteItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteNoteItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "content": {
+       "default": null,
+       "title": "Content"
+      },
+      "file_path": {
+       "default": null,
+       "title": "File Path"
+      },
+      "folder_id": {
+       "default": null,
+       "title": "Folder Id"
+      },
+      "folder_name": {
+       "default": null,
+       "title": "Folder Name"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "position": {
+       "default": null,
+       "title": "Position"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "tags": {
+       "default": null,
+       "title": "Tags"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateNoteItem",
+     "type": "object"
+    }
+   },
+   "table": "workbench.notes",
+   "title_column": "label",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "System",
+   "identity_fields": [],
+   "label": "Share Link",
+   "noun": "share_link",
+   "reference": "no",
+   "schemas": null,
+   "table": "graveyard.files_share_links",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Tools",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Tool",
+   "noun": "tool",
+   "reference": "yes",
+   "schemas": null,
+   "table": "tool.definition",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Tools",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Tool Bundle",
+   "noun": "tool_bundle",
+   "reference": "yes",
+   "schemas": null,
+   "table": "tool.bundle",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Tools",
+   "identity_fields": [],
+   "label": "Tool Definition Version",
+   "noun": "tool_definition_version",
+   "reference": "no",
+   "schemas": null,
+   "table": "tool.definition_version",
+   "title_column": "name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Tools",
+   "identity_fields": [],
+   "label": "Tool Test Sample",
+   "noun": "tool_test_sample",
+   "reference": "no",
+   "schemas": null,
+   "table": "tool.test_sample",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Tools",
+   "identity_fields": [],
+   "label": "Tool UI",
+   "noun": "tool_ui",
+   "reference": "no",
+   "schemas": null,
+   "table": "tool.ui",
+   "title_column": "display_name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Tools",
+   "identity_fields": [],
+   "label": "Tool UI Incident",
+   "noun": "tool_ui_incident",
+   "reference": "no",
+   "schemas": null,
+   "table": "tool.ui_incident",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Tools",
+   "identity_fields": [],
+   "label": "Tool UI Version",
+   "noun": "tool_ui_version",
+   "reference": "no",
+   "schemas": null,
+   "table": "tool.ui_version",
+   "title_column": "display_name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "yes",
+   "delete": "yes",
+   "family": "Workspaces",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Project",
+   "noun": "project",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "priority": {
+       "default": null,
+       "title": "Priority"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "slug": {
+       "default": null,
+       "title": "Slug"
+      },
+      "start_date": {
+       "default": null,
+       "title": "Start Date"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "target_date": {
+       "default": null,
+       "title": "Target Date"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "name"
+     ],
+     "title": "CreateProjectItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteProjectItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "priority": {
+       "default": null,
+       "title": "Priority"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "slug": {
+       "default": null,
+       "title": "Slug"
+      },
+      "start_date": {
+       "default": null,
+       "title": "Start Date"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "target_date": {
+       "default": null,
+       "title": "Target Date"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateProjectItem",
+     "type": "object"
+    }
+   },
+   "table": "workspace.projects",
+   "title_column": "name",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "yes",
+   "delete": "yes",
+   "family": "Workspaces",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Task",
+   "noun": "task",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "assignee_id": {
+       "default": null,
+       "title": "Assignee Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "due_date": {
+       "default": null,
+       "title": "Due Date"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "parent_task_id": {
+       "default": null,
+       "title": "Parent Task Id"
+      },
+      "priority": {
+       "default": null,
+       "title": "Priority"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "title": {
+       "title": "Title"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "title"
+     ],
+     "title": "CreateTaskItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteTaskItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "assignee_id": {
+       "default": null,
+       "title": "Assignee Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "due_date": {
+       "default": null,
+       "title": "Due Date"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "parent_task_id": {
+       "default": null,
+       "title": "Parent Task Id"
+      },
+      "priority": {
+       "default": null,
+       "title": "Priority"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateTaskItem",
+     "type": "object"
+    }
+   },
+   "table": "workspace.tasks",
+   "title_column": "title",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "documentation",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Feature Doc",
+   "noun": "feature_doc",
+   "reference": "yes",
+   "schemas": null,
+   "table": "admin.feature_docs",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "research",
+   "identity_fields": [],
+   "label": "Research Context Bundle",
+   "noun": "research_context_bundle",
+   "reference": "no",
+   "schemas": null,
+   "table": "research.rs_context_bundle",
+   "title_column": "name",
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "SEO Collection Run",
+   "noun": "seo_collection_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.collection_run",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "SEO Keyword",
+   "noun": "seo_keyword",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.keyword",
+   "title_column": "phrase",
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "Keyword Edge",
+   "noun": "seo_keyword_edge",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.keyword_edge",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "Keyword Market Data",
+   "noun": "seo_keyword_market",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.keyword_market",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "Keyword Topic Assignment",
+   "noun": "seo_keyword_topic",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.keyword_topic",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "SEO Rank Target",
+   "noun": "seo_rank_target",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.rank_target",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "Site Keyword Value",
+   "noun": "seo_site_keyword_value",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.site_keyword_value",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "Site Topic Value",
+   "noun": "seo_site_topic_value",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.site_topic_value",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "SEO Topic",
+   "noun": "seo_topic",
+   "reference": "planned",
+   "schemas": null,
+   "table": "seo.topic",
+   "title_column": "name",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Activity Log Entry",
+   "noun": "activity",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.activity_log",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Agent Card",
+   "noun": "agent_card",
+   "reference": "no",
+   "schemas": null,
+   "table": "agent.card",
+   "title_column": "name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Agent Run",
+   "noun": "agent_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.agent_run",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Agent Run Stage",
+   "noun": "agent_run_stage",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.agent_run_stage",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Agent User KV",
+   "noun": "agent_user_kv",
+   "reference": "no",
+   "schemas": null,
+   "table": "agent_user_kv",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "AI API",
+   "noun": "ai_api",
+   "reference": "yes",
+   "schemas": null,
+   "table": "ai.api",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "AI Endpoint",
+   "noun": "ai_endpoint",
+   "reference": "yes",
+   "schemas": null,
+   "table": "ai.endpoint",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "AI Model",
+   "noun": "ai_model",
+   "reference": "yes",
+   "schemas": null,
+   "table": "ai.model_definition",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "AI Model Alias",
+   "noun": "ai_model_alias",
+   "reference": "no",
+   "schemas": null,
+   "table": "ai.model_alias",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "AI Offering",
+   "noun": "ai_offering",
+   "reference": "no",
+   "schemas": null,
+   "table": "ai.offering",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "AI Provider",
+   "noun": "ai_provider",
+   "reference": "yes",
+   "schemas": null,
+   "table": "ai.provider",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "AI Setting",
+   "noun": "ai_setting",
+   "reference": "yes",
+   "schemas": null,
+   "table": "ai.setting",
+   "title_column": "key",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Analysis Recipe",
+   "noun": "analysis_recipes",
+   "reference": "yes",
+   "schemas": null,
+   "table": "analysis_recipes",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "App Instance",
+   "noun": "app_instance",
+   "reference": "no",
+   "schemas": null,
+   "table": "app_instances",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "App Log",
+   "noun": "app_log",
+   "reference": "no",
+   "schemas": null,
+   "table": "app_log",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "App Setting",
+   "noun": "app_setting",
+   "reference": "no",
+   "schemas": null,
+   "table": "app_settings",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "App Sync Status",
+   "noun": "app_sync_status",
+   "reference": "no",
+   "schemas": null,
+   "table": "app_sync_status",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Applet",
+   "noun": "applet",
+   "reference": "yes",
+   "schemas": null,
+   "table": "applet",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Artifact",
+   "noun": "artifact",
+   "reference": "yes",
+   "schemas": null,
+   "table": "chat.artifact",
+   "title_column": "title",
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Assessment",
+   "noun": "assessment",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.assessment",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Assessment Item",
+   "noun": "assessment_item",
+   "reference": "no",
+   "schemas": null,
+   "table": "education.assessment_item",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Assessment Result",
+   "noun": "assessment_result",
+   "reference": "no",
+   "schemas": null,
+   "table": "education.assessment_result",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Auto Ingest Batch",
+   "noun": "auto_ingest_batch",
+   "reference": "no",
+   "schemas": null,
+   "table": "auto_ingest_batch",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Auto Ingest Cost Event",
+   "noun": "auto_ingest_cost_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "auto_ingest_cost_event",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Canvas Comment",
+   "noun": "canvas_comment",
+   "reference": "yes",
+   "schemas": null,
+   "table": "canvas.canvas_comments",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Canvas Comment Like",
+   "noun": "canvas_comment_like",
+   "reference": "no",
+   "schemas": null,
+   "table": "canvas.canvas_comment_likes",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Canvas Item",
+   "noun": "canvas_item",
+   "reference": "yes",
+   "schemas": null,
+   "table": "canvas.canvas_items",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Canvas Item State",
+   "noun": "canvas_item_state",
+   "reference": "no",
+   "schemas": null,
+   "table": "canvas.canvas_item_state",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Canvas Like",
+   "noun": "canvas_like",
+   "reference": "no",
+   "schemas": null,
+   "table": "canvas.canvas_likes",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Canvas Score",
+   "noun": "canvas_score",
+   "reference": "yes",
+   "schemas": null,
+   "table": "canvas.canvas_scores",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Canvas View",
+   "noun": "canvas_view",
+   "reference": "no",
+   "schemas": null,
+   "table": "canvas.canvas_views",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Category",
+   "noun": "category",
+   "reference": "yes",
+   "schemas": null,
+   "table": "platform.categories",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Comparison Entry",
+   "noun": "cmp_entry",
+   "reference": "no",
+   "schemas": null,
+   "table": "agent.cmp_comparison_entries",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Comparison Response Feedback",
+   "noun": "cmp_feedback",
+   "reference": "no",
+   "schemas": null,
+   "table": "agent.cmp_response_feedback",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Code File",
+   "noun": "code_file",
+   "reference": "yes",
+   "schemas": null,
+   "table": "code.code_files",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Code Folder",
+   "noun": "code_folder",
+   "reference": "yes",
+   "schemas": null,
+   "table": "code.code_file_folders",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Code Repository",
+   "noun": "code_repository",
+   "reference": "yes",
+   "schemas": null,
+   "table": "code.code_repositories",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Comment",
+   "noun": "comment",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.comments",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Comparison Set",
+   "noun": "comparison_set",
+   "reference": "yes",
+   "schemas": null,
+   "table": "agent.cmp_comparison_sets",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Component Group",
+   "noun": "component_group",
+   "reference": "no",
+   "schemas": null,
+   "table": "component_groups",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Contact Submission",
+   "noun": "contact_submission",
+   "reference": "yes",
+   "schemas": null,
+   "table": "contact_submissions",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Content Block",
+   "noun": "content_block",
+   "reference": "yes",
+   "schemas": null,
+   "table": "content_blocks",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Content-IR Kind",
+   "noun": "content_ir_kind",
+   "reference": "yes",
+   "schemas": null,
+   "table": "content_ir.kind_definition",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Kind Component",
+   "noun": "content_ir_kind_component",
+   "reference": "no",
+   "schemas": null,
+   "table": "content_ir.kind_component",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Kind Component Incident",
+   "noun": "content_ir_kind_component_incident",
+   "reference": "no",
+   "schemas": null,
+   "table": "content_ir.kind_component_incident",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Content-IR Kind Edge",
+   "noun": "content_ir_kind_edge",
+   "reference": "no",
+   "schemas": null,
+   "table": "content_ir.kind_edge",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Kind Example",
+   "noun": "content_ir_kind_example",
+   "reference": "no",
+   "schemas": null,
+   "table": "content_ir.kind_example",
+   "title_column": "label",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Kind Instance",
+   "noun": "content_ir_kind_instance",
+   "reference": "yes",
+   "schemas": null,
+   "table": "content_ir.kind_instance",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Kind Surface",
+   "noun": "content_ir_kind_surface",
+   "reference": "no",
+   "schemas": null,
+   "table": "content_ir.kind_surface",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Content Template",
+   "noun": "content_template",
+   "reference": "yes",
+   "schemas": null,
+   "table": "content_template",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Context Item",
+   "noun": "context_item",
+   "reference": "yes",
+   "schemas": null,
+   "table": "context.context_items",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Context Item Suggestion",
+   "noun": "context_item_suggestion",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.context_item_suggestions",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "key"
+   ],
+   "label": "Conversation Value",
+   "noun": "conversation_value",
+   "reference": "yes",
+   "schemas": null,
+   "table": "chat.conversation_value",
+   "title_column": "key",
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Custom App Config",
+   "noun": "custom_app_config",
+   "reference": "yes",
+   "schemas": null,
+   "table": "custom_app_configs",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Custom Applet Config",
+   "noun": "custom_applet_config",
+   "reference": "yes",
+   "schemas": null,
+   "table": "custom_applet_configs",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Dashboard Saved View",
+   "noun": "dashboard_saved_view",
+   "reference": "yes",
+   "schemas": null,
+   "table": "dashboard_saved_views",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Data Store",
+   "noun": "data_store",
+   "reference": "planned",
+   "schemas": null,
+   "table": "rag.data_stores",
+   "title_column": "name",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "yes",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Dataset",
+   "noun": "dataset",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "table_name": {
+       "title": "Table Name"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "template_id": {
+       "default": null,
+       "title": "Template Id"
+      },
+      "template_version": {
+       "default": null,
+       "title": "Template Version"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "table_name"
+     ],
+     "title": "CreateDatasetItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteDatasetItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "table_name": {
+       "default": null,
+       "title": "Table Name"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "template_id": {
+       "default": null,
+       "title": "Template Id"
+      },
+      "template_version": {
+       "default": null,
+       "title": "Template Version"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateDatasetItem",
+     "type": "object"
+    }
+   },
+   "table": "workbench.udt_datasets",
+   "title_column": "description",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Derive Run",
+   "noun": "derive_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "docproc.derive_runs",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Dict Setting",
+   "noun": "dict_setting",
+   "reference": "no",
+   "schemas": null,
+   "table": "dict_settings",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Direct Conversation",
+   "noun": "dm_conversation",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.dm_conversations",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Direct Message",
+   "noun": "dm_message",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.dm_messages",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "DM Conversation Participant",
+   "noun": "dm_participant",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.dm_conversation_participants",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "yes",
+   "delete": "yes",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Flashcard",
+   "noun": "fc_card",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "back": {
+       "title": "Back"
+      },
+      "card_kind": {
+       "default": null,
+       "title": "Card Kind"
+      },
+      "difficulty": {
+       "default": null,
+       "title": "Difficulty"
+      },
+      "dynamic_content": {
+       "default": null,
+       "title": "Dynamic Content"
+      },
+      "front": {
+       "title": "Front"
+      },
+      "lesson": {
+       "default": null,
+       "title": "Lesson"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "personal_notes": {
+       "default": null,
+       "title": "Personal Notes"
+      },
+      "topic": {
+       "default": null,
+       "title": "Topic"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "front",
+      "back"
+     ],
+     "title": "CreateFcCardItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteFcCardItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "back": {
+       "default": null,
+       "title": "Back"
+      },
+      "card_kind": {
+       "default": null,
+       "title": "Card Kind"
+      },
+      "difficulty": {
+       "default": null,
+       "title": "Difficulty"
+      },
+      "dynamic_content": {
+       "default": null,
+       "title": "Dynamic Content"
+      },
+      "front": {
+       "default": null,
+       "title": "Front"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "lesson": {
+       "default": null,
+       "title": "Lesson"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "personal_notes": {
+       "default": null,
+       "title": "Personal Notes"
+      },
+      "topic": {
+       "default": null,
+       "title": "Topic"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateFcCardItem",
+     "type": "object"
+    }
+   },
+   "table": "education.fc_card",
+   "title_column": null,
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Flashcard Detail",
+   "noun": "fc_detail",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.fc_detail",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "yes",
+   "delete": "yes",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Flashcard Set",
+   "noun": "fc_set",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "audio_overview_file_id": {
+       "default": null,
+       "title": "Audio Overview File Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "difficulty": {
+       "default": null,
+       "title": "Difficulty"
+      },
+      "lesson": {
+       "default": null,
+       "title": "Lesson"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "topic": {
+       "default": null,
+       "title": "Topic"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "name"
+     ],
+     "title": "CreateFcSetItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteFcSetItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "audio_overview_file_id": {
+       "default": null,
+       "title": "Audio Overview File Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "difficulty": {
+       "default": null,
+       "title": "Difficulty"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "lesson": {
+       "default": null,
+       "title": "Lesson"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "topic": {
+       "default": null,
+       "title": "Topic"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateFcSetItem",
+     "type": "object"
+    }
+   },
+   "table": "education.fc_set",
+   "title_column": "name",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Field Component",
+   "noun": "field_component",
+   "reference": "no",
+   "schemas": null,
+   "table": "field_components",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "File Analysis",
+   "noun": "file_analysis",
+   "reference": "no",
+   "schemas": null,
+   "table": "files.analysis",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Extracted Term",
+   "noun": "file_entities",
+   "reference": "no",
+   "schemas": null,
+   "table": "files.entities",
+   "title_column": "label",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "File Override",
+   "noun": "file_overrides",
+   "reference": "no",
+   "schemas": null,
+   "table": "files.overrides",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Page Annotation",
+   "noun": "file_page_annotations",
+   "reference": "no",
+   "schemas": null,
+   "table": "files.page_annotations",
+   "title_column": "label",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "File Page",
+   "noun": "file_pages",
+   "reference": "no",
+   "schemas": null,
+   "table": "files.pages",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Flashcard",
+   "noun": "flashcard_data",
+   "reference": "no",
+   "schemas": null,
+   "table": "education.flashcard_data",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Flashcard History",
+   "noun": "flashcard_history",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.flashcard_history",
+   "title_column": null,
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Flashcard Review",
+   "noun": "flashcard_review",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_flashcard_reviews",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Flashcard Set",
+   "noun": "flashcard_set",
+   "reference": "yes",
+   "schemas": null,
+   "table": "users.user_flashcard_sets",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Flashcard Set",
+   "noun": "flashcard_sets",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.flashcard_sets",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Flexible Data",
+   "noun": "flexible_data",
+   "reference": "yes",
+   "schemas": null,
+   "table": "flexible_data",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Game Badge",
+   "noun": "game_badge",
+   "reference": "no",
+   "schemas": null,
+   "table": "education.game_badge",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Game Result",
+   "noun": "game_result",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.game_result",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Game Room",
+   "noun": "game_room",
+   "reference": "no",
+   "schemas": null,
+   "table": "education.game_room",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Runtime Execution",
+   "noun": "global_execution",
+   "reference": "no",
+   "schemas": null,
+   "table": "runtime.global_execution",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Runtime Checkpoint",
+   "noun": "global_execution_checkpoint",
+   "reference": "no",
+   "schemas": null,
+   "table": "runtime.global_execution_checkpoint",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Runtime Event",
+   "noun": "global_execution_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "runtime.global_execution_event",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Runtime Meter Entry",
+   "noun": "global_meter_entry",
+   "reference": "no",
+   "schemas": null,
+   "table": "runtime.global_meter_entry",
+   "title_column": "label",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Runtime Origin",
+   "noun": "global_origin",
+   "reference": "no",
+   "schemas": null,
+   "table": "runtime.global_origin",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Runtime Request",
+   "noun": "global_request",
+   "reference": "no",
+   "schemas": null,
+   "table": "runtime.global_request",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Heatmap Save",
+   "noun": "heatmap_save",
+   "reference": "yes",
+   "schemas": null,
+   "table": "heatmap_saves",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Industry Curator",
+   "noun": "industry_curator",
+   "reference": "no",
+   "schemas": null,
+   "table": "iam.industry_curators",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Invitation",
+   "noun": "invitation",
+   "reference": "no",
+   "schemas": null,
+   "table": "iam.invitations",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Invitation Code",
+   "noun": "invitation_code",
+   "reference": "no",
+   "schemas": null,
+   "table": "user.invitation_codes",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Invitation Request",
+   "noun": "invitation_request",
+   "reference": "no",
+   "schemas": null,
+   "table": "user.invitation_requests",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Item Mastery",
+   "noun": "item_mastery",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.item_mastery",
+   "title_column": null,
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "KG Alert",
+   "noun": "kg_alert",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.kg_alerts",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "KG Suggestion Ack",
+   "noun": "kg_suggestion_ack",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.kg_suggestion_ack",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "KG Sweep Queue",
+   "noun": "kg_sweep_queue",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.kg_sweep_queue",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "KG Sweep Run",
+   "noun": "kg_sweep_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.kg_sweep_run",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "KG Sweep State",
+   "noun": "kg_sweep_state",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.kg_sweep_state",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "KG Value Match",
+   "noun": "kg_value_match",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.kg_value_matches",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "League Membership",
+   "noun": "league_membership",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.league_membership",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Study Guide",
+   "noun": "learn_doc",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.learn_doc",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Membership",
+   "noun": "membership",
+   "reference": "no",
+   "schemas": null,
+   "table": "iam.memberships",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Message",
+   "noun": "message",
+   "reference": "yes",
+   "schemas": null,
+   "table": "chat.message",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Microservice Project",
+   "noun": "microservice_project",
+   "reference": "no",
+   "schemas": null,
+   "table": "microservice_project",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "NER Shadow",
+   "noun": "ner_shadow",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.ner_canonicalizer_shadow",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Note Folder",
+   "noun": "note_folder",
+   "reference": "yes",
+   "schemas": null,
+   "table": "workbench.note_folders",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Ops Issue Event",
+   "noun": "ops_issue_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "ops_issue_event",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Organization",
+   "noun": "organization",
+   "reference": "yes",
+   "schemas": null,
+   "table": "iam.organizations",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Extraction Dataset",
+   "noun": "page_extraction_job",
+   "reference": "yes",
+   "schemas": null,
+   "table": "docproc.page_extraction_jobs",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Page Extraction Page Run",
+   "noun": "page_extraction_page_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "docproc.page_extraction_page_runs",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Podcast Article",
+   "noun": "pc_article",
+   "reference": "yes",
+   "schemas": null,
+   "table": "podcast.pc_articles",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Podcast Episode",
+   "noun": "pc_episode",
+   "reference": "yes",
+   "schemas": null,
+   "table": "podcast.pc_episodes",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Podcast Show",
+   "noun": "pc_show",
+   "reference": "yes",
+   "schemas": null,
+   "table": "podcast.pc_shows",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Podcast Studio Run",
+   "noun": "pc_studio_run",
+   "reference": "yes",
+   "schemas": null,
+   "table": "podcast.pc_studio_runs",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Podcast Studio Run Asset",
+   "noun": "pc_studio_run_asset",
+   "reference": "no",
+   "schemas": null,
+   "table": "podcast.pc_studio_run_assets",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "PDF Redaction Audit",
+   "noun": "pdf_redaction_audit",
+   "reference": "no",
+   "schemas": null,
+   "table": "pdf.pdf_redaction_audits",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Plan Entity",
+   "noun": "plan_entity",
+   "reference": "no",
+   "schemas": null,
+   "table": "plan.entity",
+   "title_column": "label",
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Plan Node",
+   "noun": "plan_node",
+   "reference": "no",
+   "schemas": null,
+   "table": "plan.node",
+   "title_column": "label",
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Plan Vertical Profile",
+   "noun": "plan_profile",
+   "reference": "no",
+   "schemas": null,
+   "table": "plan.profile",
+   "title_column": "vertical",
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Processed document",
+   "noun": "processed_document",
+   "reference": "yes",
+   "schemas": null,
+   "table": "docproc.processed_documents",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Processed document page",
+   "noun": "processed_document_page",
+   "reference": "no",
+   "schemas": null,
+   "table": "docproc.processed_document_pages",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Profile",
+   "noun": "profile",
+   "reference": "no",
+   "schemas": null,
+   "table": "user.profiles",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Prompt",
+   "noun": "prompt",
+   "reference": "no",
+   "schemas": null,
+   "table": "prompts",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "yes",
+   "delete": "yes",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Quiz Session",
+   "noun": "quiz_session",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "category": {
+       "default": null,
+       "title": "Category"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "is_completed": {
+       "default": null,
+       "title": "Is Completed"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "quiz_metadata": {
+       "default": null,
+       "title": "Quiz Metadata"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "title": "CreateQuizSessionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteQuizSessionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "category": {
+       "default": null,
+       "title": "Category"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_completed": {
+       "default": null,
+       "title": "Is Completed"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "quiz_metadata": {
+       "default": null,
+       "title": "Quiz Metadata"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateQuizSessionItem",
+     "type": "object"
+    }
+   },
+   "table": "education.quiz_sessions",
+   "title_column": "title",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Redaction Mapping",
+   "noun": "redaction_mapping",
+   "reference": "no",
+   "schemas": null,
+   "table": "pdf.redaction_mapping",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Analysis",
+   "noun": "research_analysis",
+   "reference": "yes",
+   "schemas": null,
+   "table": "research.rs_analysis",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Content",
+   "noun": "research_content",
+   "reference": "yes",
+   "schemas": null,
+   "table": "research.rs_content",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "yes",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Document",
+   "noun": "research_document",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_id": {
+       "default": null,
+       "title": "Agent Id"
+      },
+      "agent_type": {
+       "default": null,
+       "title": "Agent Type"
+      },
+      "content": {
+       "default": null,
+       "title": "Content"
+      },
+      "content_structured": {
+       "default": null,
+       "title": "Content Structured"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "is_current": {
+       "default": null,
+       "title": "Is Current"
+      },
+      "model_id": {
+       "default": null,
+       "title": "Model Id"
+      },
+      "source_consolidation_ids": {
+       "default": null,
+       "title": "Source Consolidation Ids"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "token_usage": {
+       "default": null,
+       "title": "Token Usage"
+      },
+      "topic_id": {
+       "title": "Topic Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "topic_id"
+     ],
+     "title": "CreateResearchDocumentItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteResearchDocumentItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_id": {
+       "default": null,
+       "title": "Agent Id"
+      },
+      "agent_type": {
+       "default": null,
+       "title": "Agent Type"
+      },
+      "content": {
+       "default": null,
+       "title": "Content"
+      },
+      "content_structured": {
+       "default": null,
+       "title": "Content Structured"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_current": {
+       "default": null,
+       "title": "Is Current"
+      },
+      "model_id": {
+       "default": null,
+       "title": "Model Id"
+      },
+      "source_consolidation_ids": {
+       "default": null,
+       "title": "Source Consolidation Ids"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "token_usage": {
+       "default": null,
+       "title": "Token Usage"
+      },
+      "topic_id": {
+       "default": null,
+       "title": "Topic Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateResearchDocumentItem",
+     "type": "object"
+    }
+   },
+   "table": "research.rs_document",
+   "title_column": "title",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Keyword",
+   "noun": "research_keyword",
+   "reference": "yes",
+   "schemas": null,
+   "table": "research.rs_keyword",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Media",
+   "noun": "research_media",
+   "reference": "yes",
+   "schemas": null,
+   "table": "research.rs_media",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "yes",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Source",
+   "noun": "research_source",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "analysis_status": {
+       "default": null,
+       "title": "Analysis Status"
+      },
+      "authority_ranked_at": {
+       "default": null,
+       "title": "Authority Ranked At"
+      },
+      "authority_reasoning": {
+       "default": null,
+       "title": "Authority Reasoning"
+      },
+      "authority_score": {
+       "default": null,
+       "title": "Authority Score"
+      },
+      "authority_tier": {
+       "default": null,
+       "title": "Authority Tier"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "discovered_at": {
+       "default": null,
+       "title": "Discovered At"
+      },
+      "entity_match_confidence": {
+       "default": null,
+       "title": "Entity Match Confidence"
+      },
+      "extra_snippets": {
+       "default": null,
+       "title": "Extra Snippets"
+      },
+      "final_source_score": {
+       "default": null,
+       "title": "Final Source Score"
+      },
+      "hostname": {
+       "default": null,
+       "title": "Hostname"
+      },
+      "is_included": {
+       "default": null,
+       "title": "Is Included"
+      },
+      "is_stale": {
+       "default": null,
+       "title": "Is Stale"
+      },
+      "last_seen_at": {
+       "default": null,
+       "title": "Last Seen At"
+      },
+      "last_server_attempt_at": {
+       "default": null,
+       "title": "Last Server Attempt At"
+      },
+      "last_server_failure_reason": {
+       "default": null,
+       "title": "Last Server Failure Reason"
+      },
+      "origin": {
+       "default": null,
+       "title": "Origin"
+      },
+      "page_age": {
+       "default": null,
+       "title": "Page Age"
+      },
+      "page_analysis": {
+       "default": null,
+       "title": "Page Analysis"
+      },
+      "policy_category": {
+       "default": null,
+       "title": "Policy Category"
+      },
+      "policy_reason": {
+       "default": null,
+       "title": "Policy Reason"
+      },
+      "post_read_score": {
+       "default": null,
+       "title": "Post Read Score"
+      },
+      "pre_read_breakdown": {
+       "default": null,
+       "title": "Pre Read Breakdown"
+      },
+      "pre_read_score": {
+       "default": null,
+       "title": "Pre Read Score"
+      },
+      "rank": {
+       "default": null,
+       "title": "Rank"
+      },
+      "raw_search_result": {
+       "default": null,
+       "title": "Raw Search Result"
+      },
+      "recommended_use": {
+       "default": null,
+       "title": "Recommended Use"
+      },
+      "redundancy_group": {
+       "default": null,
+       "title": "Redundancy Group"
+      },
+      "scrape_status": {
+       "default": null,
+       "title": "Scrape Status"
+      },
+      "scrape_worthiness": {
+       "default": null,
+       "title": "Scrape Worthiness"
+      },
+      "server_attempts": {
+       "default": null,
+       "title": "Server Attempts"
+      },
+      "server_gave_up": {
+       "default": null,
+       "title": "Server Gave Up"
+      },
+      "snippet_relevance": {
+       "default": null,
+       "title": "Snippet Relevance"
+      },
+      "source_type": {
+       "default": null,
+       "title": "Source Type"
+      },
+      "thumbnail_url": {
+       "default": null,
+       "title": "Thumbnail Url"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "topic_id": {
+       "title": "Topic Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      },
+      "url": {
+       "title": "Url"
+      },
+      "user_verdict": {
+       "default": null,
+       "title": "User Verdict"
+      },
+      "user_verdict_at": {
+       "default": null,
+       "title": "User Verdict At"
+      },
+      "user_verdict_notes": {
+       "default": null,
+       "title": "User Verdict Notes"
+      }
+     },
+     "required": [
+      "topic_id",
+      "url"
+     ],
+     "title": "CreateResearchSourceItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteResearchSourceItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "analysis_status": {
+       "default": null,
+       "title": "Analysis Status"
+      },
+      "authority_ranked_at": {
+       "default": null,
+       "title": "Authority Ranked At"
+      },
+      "authority_reasoning": {
+       "default": null,
+       "title": "Authority Reasoning"
+      },
+      "authority_score": {
+       "default": null,
+       "title": "Authority Score"
+      },
+      "authority_tier": {
+       "default": null,
+       "title": "Authority Tier"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "discovered_at": {
+       "default": null,
+       "title": "Discovered At"
+      },
+      "entity_match_confidence": {
+       "default": null,
+       "title": "Entity Match Confidence"
+      },
+      "extra_snippets": {
+       "default": null,
+       "title": "Extra Snippets"
+      },
+      "final_source_score": {
+       "default": null,
+       "title": "Final Source Score"
+      },
+      "hostname": {
+       "default": null,
+       "title": "Hostname"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_included": {
+       "default": null,
+       "title": "Is Included"
+      },
+      "is_stale": {
+       "default": null,
+       "title": "Is Stale"
+      },
+      "last_seen_at": {
+       "default": null,
+       "title": "Last Seen At"
+      },
+      "last_server_attempt_at": {
+       "default": null,
+       "title": "Last Server Attempt At"
+      },
+      "last_server_failure_reason": {
+       "default": null,
+       "title": "Last Server Failure Reason"
+      },
+      "origin": {
+       "default": null,
+       "title": "Origin"
+      },
+      "page_age": {
+       "default": null,
+       "title": "Page Age"
+      },
+      "page_analysis": {
+       "default": null,
+       "title": "Page Analysis"
+      },
+      "policy_category": {
+       "default": null,
+       "title": "Policy Category"
+      },
+      "policy_reason": {
+       "default": null,
+       "title": "Policy Reason"
+      },
+      "post_read_score": {
+       "default": null,
+       "title": "Post Read Score"
+      },
+      "pre_read_breakdown": {
+       "default": null,
+       "title": "Pre Read Breakdown"
+      },
+      "pre_read_score": {
+       "default": null,
+       "title": "Pre Read Score"
+      },
+      "rank": {
+       "default": null,
+       "title": "Rank"
+      },
+      "raw_search_result": {
+       "default": null,
+       "title": "Raw Search Result"
+      },
+      "recommended_use": {
+       "default": null,
+       "title": "Recommended Use"
+      },
+      "redundancy_group": {
+       "default": null,
+       "title": "Redundancy Group"
+      },
+      "scrape_status": {
+       "default": null,
+       "title": "Scrape Status"
+      },
+      "scrape_worthiness": {
+       "default": null,
+       "title": "Scrape Worthiness"
+      },
+      "server_attempts": {
+       "default": null,
+       "title": "Server Attempts"
+      },
+      "server_gave_up": {
+       "default": null,
+       "title": "Server Gave Up"
+      },
+      "snippet_relevance": {
+       "default": null,
+       "title": "Snippet Relevance"
+      },
+      "source_type": {
+       "default": null,
+       "title": "Source Type"
+      },
+      "thumbnail_url": {
+       "default": null,
+       "title": "Thumbnail Url"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "topic_id": {
+       "default": null,
+       "title": "Topic Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      },
+      "url": {
+       "default": null,
+       "title": "Url"
+      },
+      "user_verdict": {
+       "default": null,
+       "title": "User Verdict"
+      },
+      "user_verdict_at": {
+       "default": null,
+       "title": "User Verdict At"
+      },
+      "user_verdict_notes": {
+       "default": null,
+       "title": "User Verdict Notes"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateResearchSourceItem",
+     "type": "object"
+    }
+   },
+   "table": "research.rs_source",
+   "title_column": "title",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Synthesis",
+   "noun": "research_synthesis",
+   "reference": "yes",
+   "schemas": null,
+   "table": "research.rs_synthesis",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Research Tag",
+   "noun": "research_tag",
+   "reference": "no",
+   "schemas": null,
+   "table": "research.rs_tag",
+   "title_column": "name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Template",
+   "noun": "research_template",
+   "reference": "yes",
+   "schemas": null,
+   "table": "research.rs_template",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "yes",
+   "delete": "yes",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Research Topic",
+   "noun": "research_topic",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_config": {
+       "default": null,
+       "title": "Agent Config"
+      },
+      "analyses_per_keyword": {
+       "default": null,
+       "title": "Analyses Per Keyword"
+      },
+      "autonomy_level": {
+       "default": null,
+       "title": "Autonomy Level"
+      },
+      "default_search_params": {
+       "default": null,
+       "title": "Default Search Params"
+      },
+      "default_search_provider": {
+       "default": null,
+       "title": "Default Search Provider"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "good_scrape_threshold": {
+       "default": null,
+       "title": "Good Scrape Threshold"
+      },
+      "max_auto_tag_calls": {
+       "default": null,
+       "title": "Max Auto Tag Calls"
+      },
+      "max_documents": {
+       "default": null,
+       "title": "Max Documents"
+      },
+      "max_keyword_syntheses": {
+       "default": null,
+       "title": "Max Keyword Syntheses"
+      },
+      "max_keywords": {
+       "default": null,
+       "title": "Max Keywords"
+      },
+      "max_tag_consolidations": {
+       "default": null,
+       "title": "Max Tag Consolidations"
+      },
+      "max_topic_syntheses": {
+       "default": null,
+       "title": "Max Topic Syntheses"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "outputs": {
+       "default": null,
+       "title": "Outputs"
+      },
+      "scrapes_per_keyword": {
+       "default": null,
+       "title": "Scrapes Per Keyword"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "tag_suggestions": {
+       "default": null,
+       "title": "Tag Suggestions"
+      },
+      "template_id": {
+       "default": null,
+       "title": "Template Id"
+      },
+      "tone_profile": {
+       "default": null,
+       "title": "Tone Profile"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "title": "CreateResearchTopicItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteResearchTopicItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_config": {
+       "default": null,
+       "title": "Agent Config"
+      },
+      "analyses_per_keyword": {
+       "default": null,
+       "title": "Analyses Per Keyword"
+      },
+      "autonomy_level": {
+       "default": null,
+       "title": "Autonomy Level"
+      },
+      "default_search_params": {
+       "default": null,
+       "title": "Default Search Params"
+      },
+      "default_search_provider": {
+       "default": null,
+       "title": "Default Search Provider"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "good_scrape_threshold": {
+       "default": null,
+       "title": "Good Scrape Threshold"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "max_auto_tag_calls": {
+       "default": null,
+       "title": "Max Auto Tag Calls"
+      },
+      "max_documents": {
+       "default": null,
+       "title": "Max Documents"
+      },
+      "max_keyword_syntheses": {
+       "default": null,
+       "title": "Max Keyword Syntheses"
+      },
+      "max_keywords": {
+       "default": null,
+       "title": "Max Keywords"
+      },
+      "max_tag_consolidations": {
+       "default": null,
+       "title": "Max Tag Consolidations"
+      },
+      "max_topic_syntheses": {
+       "default": null,
+       "title": "Max Topic Syntheses"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "outputs": {
+       "default": null,
+       "title": "Outputs"
+      },
+      "scrapes_per_keyword": {
+       "default": null,
+       "title": "Scrapes Per Keyword"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "tag_suggestions": {
+       "default": null,
+       "title": "Tag Suggestions"
+      },
+      "template_id": {
+       "default": null,
+       "title": "Template Id"
+      },
+      "tone_profile": {
+       "default": null,
+       "title": "Tone Profile"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateResearchTopicItem",
+     "type": "object"
+    }
+   },
+   "table": "research.rs_topic",
+   "title_column": "name",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Sandbox Instance",
+   "noun": "sandbox_instance",
+   "reference": "yes",
+   "schemas": null,
+   "table": "sandbox_instances",
+   "title_column": null,
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Agent Task Config",
+   "noun": "sch_agent_task",
+   "reference": "no",
+   "schemas": null,
+   "table": "scheduler.sch_agent_task",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Task Run",
+   "noun": "sch_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "scheduler.sch_run",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Scheduled Task",
+   "noun": "sch_task",
+   "reference": "yes",
+   "schemas": null,
+   "table": "scheduler.sch_task",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Task Trigger",
+   "noun": "sch_trigger",
+   "reference": "no",
+   "schemas": null,
+   "table": "scheduler.sch_trigger",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Scope",
+   "noun": "scope",
+   "reference": "yes",
+   "schemas": null,
+   "table": "context.scopes",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Scope Association Suggestion",
+   "noun": "scope_association_suggestion",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.scope_association_suggestions",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Scope Item Value Suggestion",
+   "noun": "scope_item_value_suggestion",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.scope_item_value_suggestions",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Scope Suggestion",
+   "noun": "scope_suggestion",
+   "reference": "no",
+   "schemas": null,
+   "table": "reg.scope_suggestions",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Scope Type",
+   "noun": "scope_type",
+   "reference": "yes",
+   "schemas": null,
+   "table": "context.scope_types",
+   "title_column": "slug",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Crawl Preset",
+   "noun": "scraper_preset",
+   "reference": "planned",
+   "schemas": null,
+   "table": "scraper.crawl_presets",
+   "title_column": "name",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Crawl Run",
+   "noun": "scraper_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "scraper.crawl_runs",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Crawl Schedule",
+   "noun": "scraper_schedule",
+   "reference": "planned",
+   "schemas": null,
+   "table": "scraper.crawl_schedules",
+   "title_column": "name",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Tracked Website",
+   "noun": "scraper_site",
+   "reference": "planned",
+   "schemas": null,
+   "table": "scraper.sites",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Shared Canvas Item",
+   "noun": "shared_canvas_item",
+   "reference": "yes",
+   "schemas": null,
+   "table": "canvas.shared_canvas_items",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Shortcut Category",
+   "noun": "shortcut_category",
+   "reference": "no",
+   "schemas": null,
+   "table": "graveyard.shortcut_categories_legacy",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SMS Consent",
+   "noun": "sms_consent",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.sms_consent",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SMS Conversation",
+   "noun": "sms_conversation",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.sms_conversations",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SMS Message",
+   "noun": "sms_message",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.sms_messages",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SMS Media",
+   "noun": "sms_message_media",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.sms_media",
+   "title_column": "file_name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SMS Notification",
+   "noun": "sms_notification",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.sms_notifications",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SMS Notification Preference",
+   "noun": "sms_notification_preference",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.sms_notification_preferences",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SMS Phone Number",
+   "noun": "sms_phone_number",
+   "reference": "no",
+   "schemas": null,
+   "table": "communication.sms_phone_numbers",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "yes",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "list_id"
+   ],
+   "label": "Structured List",
+   "noun": "structured_list",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "list_name": {
+       "default": null,
+       "title": "List Name"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "title": "CreateStructuredListItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteStructuredListItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "list_name": {
+       "default": null,
+       "title": "List Name"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateStructuredListItem",
+     "type": "object"
+    }
+   },
+   "table": "workbench.udt_structured_lists",
+   "title_column": null,
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Studio Document",
+   "noun": "studio_documents",
+   "reference": "no",
+   "schemas": null,
+   "table": "transcripts.studio_documents",
+   "title_column": "title",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Studio Recording Chunk",
+   "noun": "studio_recording_chunks",
+   "reference": "no",
+   "schemas": null,
+   "table": "transcripts.studio_recording_chunks",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Studio Recording Segment",
+   "noun": "studio_recording_segments",
+   "reference": "no",
+   "schemas": null,
+   "table": "transcripts.studio_recording_segments",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Studio Run",
+   "noun": "studio_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "transcripts.studio_runs",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Audio Session",
+   "noun": "studio_session",
+   "reference": "yes",
+   "schemas": null,
+   "table": "transcripts.studio_sessions",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Studio Session Settings",
+   "noun": "studio_session_settings",
+   "reference": "no",
+   "schemas": null,
+   "table": "transcripts.studio_session_settings",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Study Attempt",
+   "noun": "study_attempt",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.study_attempt",
+   "title_column": null,
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Study Goal",
+   "noun": "study_goal",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.study_goal",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Study Media",
+   "noun": "study_media",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.study_media",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Study Plan",
+   "noun": "study_plan",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.study_plan",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Study Plan Block",
+   "noun": "study_plan_block",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.study_plan_block",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Study Plan Day",
+   "noun": "study_plan_day",
+   "reference": "no",
+   "schemas": null,
+   "table": "education.study_plan_day",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Study Session",
+   "noun": "study_session",
+   "reference": "yes",
+   "schemas": null,
+   "table": "education.study_session",
+   "title_column": null,
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "UI Surface",
+   "noun": "surface",
+   "reference": "yes",
+   "schemas": null,
+   "table": "ui.ui_surface",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "System Error",
+   "noun": "system_error",
+   "reference": "no",
+   "schemas": null,
+   "table": "system_error",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "System Personal Org Failure",
+   "noun": "system_personal_org_failure",
+   "reference": "no",
+   "schemas": null,
+   "table": "iam.system_personal_org_failures",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "System Write Failure",
+   "noun": "system_write_failure",
+   "reference": "no",
+   "schemas": null,
+   "table": "system_write_failure",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Thread",
+   "noun": "thread",
+   "reference": "yes",
+   "schemas": null,
+   "table": "workspace.threads",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Tool Call",
+   "noun": "tool_call",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.tool_call",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Dataset Field",
+   "noun": "udt_dataset_fields",
+   "reference": "no",
+   "schemas": null,
+   "table": "workbench.udt_dataset_fields",
+   "title_column": "display_name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Dataset Row",
+   "noun": "udt_dataset_rows",
+   "reference": "no",
+   "schemas": null,
+   "table": "workbench.udt_dataset_rows",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "yes",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Document",
+   "noun": "udt_document",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "document_name": {
+       "title": "Document Name"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "document_name"
+     ],
+     "title": "CreateUdtDocumentItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteUdtDocumentItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "document_name": {
+       "default": null,
+       "title": "Document Name"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateUdtDocumentItem",
+     "type": "object"
+    }
+   },
+   "table": "workbench.udt_documents",
+   "title_column": "document_name",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Structured List Item",
+   "noun": "udt_structured_list_items",
+   "reference": "no",
+   "schemas": null,
+   "table": "workbench.udt_structured_list_items",
+   "title_column": "label",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "UI Surface Agent Pref",
+   "noun": "ui_surface_agent_pref",
+   "reference": "no",
+   "schemas": null,
+   "table": "ui.ui_surface_agent_pref",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "UI Surface Config",
+   "noun": "ui_surface_config",
+   "reference": "no",
+   "schemas": null,
+   "table": "ui.ui_surface_config",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Achievement",
+   "noun": "user_achievement",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_achievements",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Analysis Preference",
+   "noun": "user_analysis_preference",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_analysis_preferences",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Bookmark",
+   "noun": "user_bookmark",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_bookmarks",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Email Preference",
+   "noun": "user_email_preference",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_email_preferences",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Feedback",
+   "noun": "user_feedback",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_feedback",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Form Profile",
+   "noun": "user_form_profile",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_form_profile",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "User Markdown Sample",
+   "noun": "user_markdown_sample",
+   "reference": "yes",
+   "schemas": null,
+   "table": "users.user_markdown_samples",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Memory",
+   "noun": "user_memory",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_memory",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Preference",
+   "noun": "user_preference",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_preferences",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "User Profile",
+   "noun": "user_profile",
+   "reference": "yes",
+   "schemas": null,
+   "table": "users.profiles",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Stats",
+   "noun": "user_stat",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_stats",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "User Surface State",
+   "noun": "user_surface_state",
+   "reference": "no",
+   "schemas": null,
+   "table": "users.user_surface_state",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Voice",
+   "noun": "voice",
+   "reference": "yes",
+   "schemas": null,
+   "table": "ai.voices",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "War Room",
+   "noun": "war_room",
+   "reference": "yes",
+   "schemas": null,
+   "table": "workspace.war_rooms",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Extension Web Capture",
+   "noun": "wbx_capture",
+   "reference": "yes",
+   "schemas": null,
+   "table": "extend.wbx_capture",
+   "title_column": "title",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Extension Guidance",
+   "noun": "wbx_guidance",
+   "reference": "no",
+   "schemas": null,
+   "table": "extend.wbx_guidance",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Extension Highlight",
+   "noun": "wbx_highlight",
+   "reference": "no",
+   "schemas": null,
+   "table": "extend.wbx_highlight",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Extension Scrape Pattern",
+   "noun": "wbx_pattern",
+   "reference": "yes",
+   "schemas": null,
+   "table": "extend.wbx_pattern",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Extension Screenshot",
+   "noun": "wbx_screenshot",
+   "reference": "no",
+   "schemas": null,
+   "table": "extend.wbx_screenshot",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Extension SEO Audit",
+   "noun": "wbx_seo_audit",
+   "reference": "no",
+   "schemas": null,
+   "table": "extend.wbx_seo_audit",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "WC Claim",
+   "noun": "wc_claim",
+   "reference": "yes",
+   "schemas": null,
+   "table": "legal.wc_claim",
+   "title_column": null,
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "WC Impairment Definition",
+   "noun": "wc_impairment_definition",
+   "reference": "no",
+   "schemas": null,
+   "table": "legal.wc_impairment_definition",
+   "title_column": "name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "WC Injury",
+   "noun": "wc_injury",
+   "reference": "no",
+   "schemas": null,
+   "table": "legal.wc_injury",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "WC Report",
+   "noun": "wc_report",
+   "reference": "no",
+   "schemas": null,
+   "table": "legal.wc_report",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Analysis Item",
+   "noun": "web_analysis_item",
+   "reference": "planned",
+   "schemas": null,
+   "table": "web.analysis_item",
+   "title_column": "label",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Batch Item",
+   "noun": "web_batch_item",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.batch_item",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Batch Job",
+   "noun": "web_batch_job",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.batch_job",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Brand",
+   "noun": "web_brand",
+   "reference": "planned",
+   "schemas": null,
+   "table": "web.brand",
+   "title_column": "name",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Brand Asset",
+   "noun": "web_brand_asset",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.brand_asset",
+   "title_column": "title",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Business Fact",
+   "noun": "web_business_fact",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.business_fact",
+   "title_column": "label",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Web Crawl Event",
+   "noun": "web_crawl_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.crawl_event",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Web Crawl Schedule",
+   "noun": "web_crawl_schedule",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.crawl_schedule",
+   "title_column": "name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Crawl Session",
+   "noun": "web_crawl_session",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.crawl_session",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Web Crawl URL",
+   "noun": "web_crawl_url",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.crawl_url",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Discovered Item",
+   "noun": "web_discovered_item",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.discovered_item",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Finding",
+   "noun": "web_finding",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.finding",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "GSC Page Stat",
+   "noun": "web_gsc_page_stat",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.gsc_page_stat",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Link Edge",
+   "noun": "web_link_edge",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.link_edge",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Canonical Page",
+   "noun": "web_page",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.page",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Web Page Evidence",
+   "noun": "web_page_evidence",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.page_evidence",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Page Sitemap Membership",
+   "noun": "web_page_sitemap",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.page_sitemap",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Brand Property",
+   "noun": "web_property",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.property",
+   "title_column": "display_name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Provider",
+   "noun": "web_provider",
+   "reference": "planned",
+   "schemas": null,
+   "table": "web.provider",
+   "title_column": "label",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Analysis Result",
+   "noun": "web_result",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.analysis_result",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Screenshot",
+   "noun": "web_screenshot",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.screenshot",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Site",
+   "noun": "web_site",
+   "reference": "planned",
+   "schemas": null,
+   "table": "web.site",
+   "title_column": "name",
+   "update": "planned",
+   "view": "planned"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Site Item Config",
+   "noun": "web_site_item_config",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.site_item_config",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Sitemap",
+   "noun": "web_sitemap",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.sitemap",
+   "title_column": "url",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Snapshot",
+   "noun": "web_snapshot",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.snapshot",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Node Data Slot",
+   "noun": "wf_node_data_slot",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.node_data_slot",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Window Session",
+   "noun": "window_session",
+   "reference": "yes",
+   "schemas": null,
+   "table": "window_sessions",
+   "title_column": "label",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "yes",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Workbook",
+   "noun": "workbook",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      },
+      "workbook_name": {
+       "title": "Workbook Name"
+      }
+     },
+     "required": [
+      "workbook_name"
+     ],
+     "title": "CreateWorkbookItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteWorkbookItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "project_id": {
+       "default": null,
+       "title": "Project Id"
+      },
+      "task_id": {
+       "default": null,
+       "title": "Task Id"
+      },
+      "updated_by": {
+       "default": null,
+       "title": "Updated By"
+      },
+      "workbook_name": {
+       "default": null,
+       "title": "Workbook Name"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateWorkbookItem",
+     "type": "object"
+    }
+   },
+   "table": "workbench.udt_workbooks",
+   "title_column": "description",
+   "update": "yes",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Workflow",
+   "noun": "workflow",
+   "reference": "yes",
+   "schemas": null,
+   "table": "workflow.definition",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Checkpoint",
+   "noun": "workflow_checkpoint",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.checkpoint",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Definition Version",
+   "noun": "workflow_definition_version",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.definition_version",
+   "title_column": "name",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Idempotency",
+   "noun": "workflow_idempotency",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.idempotency",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Job",
+   "noun": "workflow_job",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.job",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Node Events",
+   "noun": "workflow_node_events",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.node_events",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Node Outcome",
+   "noun": "workflow_node_outcome",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.node_outcome",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Recovery Audit",
+   "noun": "workflow_recovery_audit",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.recovery_audit",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Run",
+   "noun": "workflow_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.run",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Workflow Template",
+   "noun": "workflow_template",
+   "reference": "yes",
+   "schemas": null,
+   "table": "workflow.template",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Workflow Trigger",
+   "noun": "workflow_trigger",
+   "reference": "yes",
+   "schemas": null,
+   "table": "workflow.trigger",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Trigger Fire",
+   "noun": "workflow_trigger_fire",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.trigger_fire",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "list_id",
+    "group_name"
+   ],
+   "label": "Structured List Group",
+   "noun": "structured_list_group",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "list_id",
+    "item_id"
+   ],
+   "label": "Structured List Item",
+   "noun": "structured_list_item",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "table_id",
+    "column_name"
+   ],
+   "label": "Table Column",
+   "noun": "table_column",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "table_id",
+    "row_id"
+   ],
+   "label": "Table Row",
+   "noun": "table_row",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "table_id",
+    "row_id",
+    "column_name"
+   ],
+   "label": "Table Cell",
+   "noun": "table_cell",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "table_id"
+   ],
+   "label": "Table Schema",
+   "noun": "table_schema",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "context_item_id"
+   ],
+   "label": "Context Value",
+   "noun": "context_value",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "agent_id",
+    "name"
+   ],
+   "label": "Agent Variable",
+   "noun": "agent_variable",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "transcript_id",
+    "segment_index"
+   ],
+   "label": "Transcript Segment",
+   "noun": "transcript_segment",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "session_id"
+   ],
+   "label": "Session Transcript",
+   "noun": "session_transcript",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "workbook_id",
+    "sheet_id"
+   ],
+   "label": "Workbook Sheet",
+   "noun": "workbook_sheet",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "document_id",
+    "page_index"
+   ],
+   "label": "Document Page",
+   "noun": "document_page",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "file_id",
+    "page_number"
+   ],
+   "label": "File Page",
+   "noun": "file_page",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Agent Version",
+   "noun": "agent_version",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Derived shapes",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Kg Entity",
+   "noun": "kg_entity",
+   "reference": "yes",
+   "schemas": null,
+   "table": "",
+   "title_column": null,
+   "update": "no",
+   "view": "yes"
+  }
+ ],
+ "verbs": [
+  "reference",
+  "view",
+  "create",
+  "update",
+  "delete"
+ ]
+}

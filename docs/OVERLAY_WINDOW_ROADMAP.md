@@ -1,6 +1,6 @@
 # Overlay & Window Roadmap
 
-> Companion to [`features/overlays/FEATURE.md`](../features/overlays/FEATURE.md), [`features/window-panels/FEATURE.md`](../features/window-panels/FEATURE.md), and [`docs/OVERLAY_WINDOW_OVERHAUL.md`](./OVERLAY_WINDOW_OVERHAUL.md). This doc is the **honest list of what's still rough** in the post-overhaul state plus where the system can grow.
+> Companion to [`features/overlays/FEATURE.md`](../features/overlays/FEATURE.md), [`features/window-panels/FEATURE.md`](../features/window-panels/FEATURE.md), and [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](./archive/2026/OVERLAY_WINDOW_OVERHAUL.md). This doc is the **honest list of what's still rough** in the post-overhaul state plus where the system can grow.
 
 ## 1. Known gaps (real debt — would fix today if time allowed)
 

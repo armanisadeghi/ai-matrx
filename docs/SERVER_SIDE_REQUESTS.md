@@ -7,7 +7,7 @@
 > duplicate the per-feature asks.
 >
 > Inbound contracts (changes the backend ships to us) live in
-> `docs/PYTHON_UPDATES.md` and `features/*/from_python/`.
+> `docs/archive/2026/PYTHON_UPDATES.md` and `features/*/from_python/`.
 
 ---
 
