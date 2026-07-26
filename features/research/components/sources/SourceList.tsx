@@ -99,6 +99,7 @@ import {
   SCRAPE_STATUS_CONFIG,
   SOURCE_TYPE_CONFIG,
   ORIGIN_CONFIG,
+  NEEDS_SCRAPE_STATUSES,
 } from "../../constants";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
@@ -474,10 +475,7 @@ function SourceRow({
   const scores = sourceScoreValues(source, importance?.bestRank ?? null);
   const canExpand = hasSnippets || hasReasoning;
   const isExpanded = expanded && canExpand;
-  const needsScrape =
-    source.scrape_status === "pending" ||
-    source.scrape_status === "failed" ||
-    source.scrape_status === "thin";
+  const needsScrape = NEEDS_SCRAPE_STATUSES.has(source.scrape_status);
 
   // Every data cell gets a right + bottom hairline → real gridlines. The final
   // (actions) column drops the right border so the table edge stays clean.
@@ -1525,10 +1523,9 @@ export default function SourceList() {
           {pagedSources.map((source) => {
             const { display: pageAgeDisplay } = formatPageAge(source.page_age);
             const isNavigating = navigatingId === source.id;
-            const needsScrape =
-              source.scrape_status === "pending" ||
-              source.scrape_status === "failed" ||
-              source.scrape_status === "thin";
+            const needsScrape = NEEDS_SCRAPE_STATUSES.has(
+              source.scrape_status,
+            );
             const imp = importanceMap?.get(source.id);
             const scores = sourceScoreValues(source, imp?.bestRank ?? null);
             return (

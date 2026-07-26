@@ -78,6 +78,7 @@ import type {
   BiasAndRiskSignals,
   EntitiesMentioned,
 } from "../../types";
+import { NOT_YET_SCRAPED_STATUSES } from "../../constants";
 import {
   jsonArrayLength,
   pageAnalysisFromJson,
@@ -976,7 +977,8 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   const extraSnippets = typedSource
     ? stringArrayFromJson(typedSource.extra_snippets)
     : [];
-  const hasBeenScraped = typedSource && typedSource.scrape_status !== "pending";
+  const hasBeenScraped =
+    typedSource && !NOT_YET_SCRAPED_STATUSES.has(typedSource.scrape_status);
   // The deep per-page read (rs_source.page_analysis), defensively narrowed.
   // null = never analyzed → the section shows an honest empty state.
   const pageAnalysis: PageAnalysis | null = typedSource

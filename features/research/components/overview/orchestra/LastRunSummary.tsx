@@ -65,10 +65,15 @@ function relativeTime(iso: string | null | undefined): string | null {
 // attempted from `sources_by_status` so the two numbers are honest and never
 // fabricated; if the breakdown is empty we simply omit the "/ attempted" half.
 //
-// `pending` is the only NON-attempt status (queued, never tried). Every other
-// terminal verdict — success, thin, failed, dead_link, gated, skipped,
-// complete, manual, ignored, content_mismatch — counts as an attempt.
-const NON_ATTEMPT_STATUSES: ReadonlySet<ScrapeStatus> = new Set(["pending"]);
+// `pending` = queued / in flight. `skipped` = considered but never attempted
+// — the normal terminal state for sources below the scrape quota, so it is
+// COMMON, not an edge case. Neither counts as an attempt. Every other
+// terminal verdict — success, thin, failed, dead_link, gated, complete,
+// manual, ignored, content_mismatch — counts as an attempt.
+const NON_ATTEMPT_STATUSES: ReadonlySet<ScrapeStatus> = new Set([
+  "pending",
+  "skipped",
+]);
 
 function pagesAttempted(
   byStatus: Record<ScrapeStatus, number> | undefined,

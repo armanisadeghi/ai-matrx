@@ -85,6 +85,27 @@ export const SCRAPE_STATUS_CONFIG: Record<
   },
 };
 
+// `pending` = queued / in flight. `skipped` = considered but never attempted
+// (the normal terminal state for sources below the scrape quota — this is
+// COMMON, not an edge case). Neither one represents an actual scrape attempt.
+// Typed as `ReadonlySet<string>` (rather than `ReadonlySet<ScrapeStatus>`) so
+// it accepts both the `ScrapeStatus` enum and the raw `string` column type
+// (`ResearchSource.scrape_status`) call sites read from.
+export const NOT_YET_SCRAPED_STATUSES: ReadonlySet<string> = new Set([
+  "pending",
+  "skipped",
+]);
+
+// Sources whose scrape state warrants a "scrape this" affordance: never
+// attempted (`pending`/`skipped`), or attempted and came back weak (`failed`,
+// `thin`).
+export const NEEDS_SCRAPE_STATUSES: ReadonlySet<string> = new Set([
+  "pending",
+  "skipped",
+  "failed",
+  "thin",
+]);
+
 export const SOURCE_TYPE_CONFIG: Record<
   SourceType,
   { label: string; icon: string }
