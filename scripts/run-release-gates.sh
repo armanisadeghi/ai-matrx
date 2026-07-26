@@ -65,6 +65,11 @@ else
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
+        # Advisory-only for now: known Wave-5 backlog (confident-title claims,
+        # stale common-docs pointers) would hard-block strict mode. Promote to
+        # the strict list once docs/handoffs/doc-consolidation-campaign.md
+        # Wave 5 cleanup lands.
+        "Docs guards (titles/root-md/pointers)|pnpm exec tsx scripts/check-docs-guards.ts"
     )
 fi
 

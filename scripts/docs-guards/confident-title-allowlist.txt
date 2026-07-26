@@ -1,0 +1,22 @@
+# Confident-title allowlist — files legitimately claiming SOURCE OF TRUTH /
+# CANONICAL / OFFICIAL / SSOT in their title or first 10 lines.
+# Checked by scripts/check-docs-guards.ts (pnpm check:docs-guards).
+#
+# Additions ONLY via PR. Pointer stubs to common-docs are auto-allowed by the
+# script (they point at authority, they don't claim it) and do not belong here.
+#
+# Line forms:
+#   exact/path/to/file.md      — that file only
+#   dir/prefix/                — everything under the directory
+#   basename:NAME.md           — any file with that basename
+#
+# Category rulings (2026-07-26, Wave 5 seeding):
+# - FEATURE.md is the sanctioned durable-truth doc beside code (repo doctrine).
+basename:FEATURE.md
+# - Root doctrine docs are the repo's canonical set by definition.
+CLAUDE.md
+AGENTS.md
+PRINCIPLES.md
+TYPESCRIPT_STANDARDS.md
+# - docs/official/ is the repo's explicitly sanctioned official-docs directory.
+docs/official/

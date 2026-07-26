@@ -1,5 +1,14 @@
 #!/usr/bin/env tsx
 /**
+ * ⛔ RETIRED (2026-07-26, doc-consolidation Wave 5) — DO NOT RUN.
+ * The type-drift campaign is complete and its output directory
+ * (docs/type-drift/generated/) was ARCHIVED in Wave 2 (see
+ * docs/handoffs/doc-consolidation-campaign.md). Re-running this script would
+ * recreate the archived directory and regrow the doc jungle. The script is
+ * kept for reference only; it exits with a loud error below. If a new
+ * type-drift campaign ever starts, retarget OUT_DIR to a live location and
+ * remove the guard.
+ *
  * Type-drift hitlist generator — finds hand-written types that duplicate names
  * already defined in types/python-generated/.
  *
@@ -19,6 +28,26 @@
 import { execSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+
+// ⛔ Wave-5 guard: campaign complete, output dir archived. See banner above.
+// Escape hatch (deliberate friction): set MATRX_ALLOW_ARCHIVED_REGENERATOR=1
+// only after retargeting OUT_DIR to a live, non-archived location.
+if (process.env.MATRX_ALLOW_ARCHIVED_REGENERATOR !== "1") {
+console.error("");
+console.error("============================================================");
+console.error("  [FAIL] generate-type-drift-hitlists.ts is RETIRED");
+console.error("============================================================");
+console.error("  The type-drift campaign is COMPLETE and its output directory");
+console.error("  (docs/type-drift/generated/) was ARCHIVED in the doc-consolidation");
+console.error("  campaign, Wave 2. Running this script would recreate the archived");
+console.error("  directory and regrow the doc jungle.");
+console.error("");
+console.error("  See: docs/handoffs/doc-consolidation-campaign.md (Regenerator hazard)");
+console.error("  If you truly need a new campaign, retarget OUT_DIR to a live");
+console.error("  location and remove this guard in the same PR.");
+console.error("");
+process.exit(1);
+}
 
 const ROOT = process.cwd();
 const OUT_DIR = join(ROOT, "docs/type-drift/generated");
