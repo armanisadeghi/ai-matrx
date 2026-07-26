@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — one-off dependency audit from 2026-04; kept for history. Current dependency state lives in package.json + the repo's release gates.
+
 # Package analysis
 
 ## array-move, qss, cors, nodemailer, replicate, js-tiktoken

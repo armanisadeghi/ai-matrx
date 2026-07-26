@@ -213,7 +213,7 @@ The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer aga
   - [`features/sharing/FEATURE.md`](../sharing/FEATURE.md) — cross-org/user/project sharing of resources
   - [`features/projects/README.md`](../projects/README.md) — projects mirror this architecture
   - [`features/agents/FEATURE.md`](../agents/FEATURE.md) — agents are org-scoped; shortcuts/apps are multi-scope
-  - Cross-repo system-of-record for the full access model (ownership, `iam.permissions`, `iam.memberships` incl. org membership roles, `platform.associations` conveyance, admin level): [`common-docs/systems/access-architecture/FEATURE.md`](/Volumes/Samsung2TB/code/common-docs/systems/access-architecture/FEATURE.md)
+  - Cross-repo system-of-record for the full access model (ownership, `iam.permissions`, `iam.memberships` incl. org membership roles, `platform.associations` conveyance, admin level): [`common-docs/systems/access-architecture/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/access-architecture/FEATURE.md)
 
 ---
 

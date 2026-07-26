@@ -245,7 +245,7 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
   - `features/invitations/` — org invitation flow; separate system, don't fold it in
   - `features/organizations/` — target source for org-level shares
   - Reference integration: `features/prompts/` — list page, shared cards, edit-page banner, save-warning modal
-  - Cross-repo system-of-record for the full access model (ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, admin level): [`common-docs/systems/access-architecture/FEATURE.md`](/Volumes/Samsung2TB/code/common-docs/systems/access-architecture/FEATURE.md)
+  - Cross-repo system-of-record for the full access model (ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, admin level): [`common-docs/systems/access-architecture/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/access-architecture/FEATURE.md)
 
 ---
 

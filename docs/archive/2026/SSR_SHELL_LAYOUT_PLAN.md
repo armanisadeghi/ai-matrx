@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — SSR shell layout plan; the SSR/public-demo routes it planned were deleted (2026-06-22). Historical only.
+
 # SSR Shell Layout - Implementation Plan
 
 ## Overview

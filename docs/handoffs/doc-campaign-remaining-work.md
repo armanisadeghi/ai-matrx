@@ -23,15 +23,25 @@ complete list of what remains — each item is independent; pick any.
 ## Guard-violation backlog (mechanical, sizeable)
 
 The new advisory guards (`pnpm check:docs-guards` in ai-matrx; `scripts/check_docs_guards.py`
-in aidream, run inside release.sh) currently report ~108 (ai-matrx) + ~83 (aidream) violations:
-mostly confident-title claimants that predate the policy, a handful of root-level strays
-(aidream: ACCEPTANCE_DEV_SERVER, AUDIO_STREAMING, ENV_FLAG_ERADICATION,
-PERSISTENCE_AND_ERROR_HANDLING_BUGS, TASK-systemwide-error-tracking, audit_api_types;
-ai-matrx: package-analysis.md, plan.md, tool_schema_design.md), and old
-`/Volumes/.../matrx-common-docs/` pointer spellings. Work: triage each (demote title / move
-file / fix spelling / allowlist-with-reason), then flip the guards from advisory to strict.
-The weekly `docs-hygiene` scheduled task chips at this; a dedicated session could clear it in
-one pass.
+in aidream, run inside release.sh) started at ~108 (ai-matrx) + ~83 (aidream) violations.
+
+**Cleared by the 2026-07-26 docs-hygiene sweep:** all pointer-path violations in both repos
+(19 → 0; canonical spelling is now `/Users/armanisadeghi/code/common-docs/<systems|projects|
+policies|meta|skills>/...`), and ai-matrx's three root-level strays (archived to
+`docs/archive/2026/` with banners). Counts now **93 (ai-matrx) + 76 (aidream)**.
+
+**Remaining:**
+- **Confident-title claimants** (93 ai-matrx + 70 aidream) that predate the policy — each needs
+  demote-or-allowlist-with-reason. This is the bulk of the backlog.
+- **aidream root-level strays** (6): ACCEPTANCE_DEV_SERVER, AUDIO_STREAMING,
+  ENV_FLAG_ERADICATION, PERSISTENCE_AND_ERROR_HANDLING_BUGS, TASK-systemwide-error-tracking,
+  audit_api_types. Unlike ai-matrx's, these have **live referrers** — CLAUDE.md, `.claude/skills/`,
+  code comments, and CI (`audit_api_types.md` is written by `scripts/audit_api_types.py` and read by
+  `.github/workflows/audit-api-types.yml`). Moving them means updating every referrer and the
+  generator's output path in the same change; not a drive-by fix.
+
+Then flip the guards from advisory to strict. The weekly `docs-hygiene` scheduled task chips at
+this; a dedicated session could clear the confident-title bulk in one pass.
 
 ## Deferred / blocked small items
 
