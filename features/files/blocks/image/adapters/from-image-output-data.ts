@@ -61,10 +61,19 @@ function metaVisibility(
   const value = metaString(metadata, "visibility");
   if (value === "public" || value === "personal" || value === "shared")
     return value;
+  // `metadata` is an untyped passthrough of the cld_files row, so it carries
+  // RAW `platform.visibility` labels (personal < internal < link < public), not
+  // the block domain's vocabulary. Translate them the same way the other read
+  // boundaries do (redux/converters.ts::toVisibility) — before this, `internal`
+  // (the column DEFAULT and the most common value in files.files) fell through
+  // to the `public` default below, which tells the UI the image has a permanent
+  // CDN URL and suppresses signed-URL refresh: the image dies at expiry.
+  if (value === "link") return "shared";
+  if (value === "internal" || value === "private") return "personal";
   // Default assumption: AI-generated images are stored with `visibility: "public"`
   // in cld_files (see the example row in UNIFIED_IMAGE_BLOCK.md). When Python
-  // doesn't tell us, public is the safer fallback because it never tries to
-  // refresh a signed URL that doesn't exist.
+  // doesn't tell us AT ALL, public is the safer fallback because it never tries
+  // to refresh a signed URL that doesn't exist.
   return "public";
 }
 
