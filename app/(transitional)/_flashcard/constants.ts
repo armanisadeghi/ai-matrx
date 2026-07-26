@@ -20,7 +20,7 @@ import {
     vocabFlashcards,
     historyFlashcards,
     americasBlueprint,
-} from "./app-data";
+} from "@/components/flashcard-app/app-data";
 
 export const base_app_path = 'flashcard';
 

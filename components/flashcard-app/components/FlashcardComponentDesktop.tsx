@@ -15,7 +15,7 @@ import {
   CardLoading,
 } from "@/components/matrx/LoadingComponents";
 import { ensureId } from "@/utils/schema/lite";
-import { getFlashcardSet } from "@/app/(transitional)/_flashcard/app-data";
+import { getFlashcardSet } from "@/components/flashcard-app/app-data";
 import SmartFlashcardControls from "./SmartFlashcardControls/SmartFlashcardControls";
 import type { TableData } from "@/types/tableTypes";
 import type { Flashcard } from "@/types/flashcards.types";

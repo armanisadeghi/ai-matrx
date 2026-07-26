@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import AiChatModal from "@/app/(transitional)/_flash-cards/ai/AiChatModal";
 import { useFlashcard } from "@/hooks/flashcard-app/useFlashcard";
-import { introOutroText } from "@/app/(transitional)/_flashcard/app-data";
+import { introOutroText } from "@/components/flashcard-app/app-data";
 import AiAssistModal from "@/app/(transitional)/_flash-cards/ai/AiAssistModal";
 
 const FlashcardControls: React.FC<{

@@ -1,6 +1,6 @@
 import { createAgentFromSeed } from "@/lib/agents/actions";
 import { TEMPLATE_DATA } from "@/features/agents/constants/local-agent-templates";
-import { AutoSubmitForm } from "./AutoSubmitForm";
+import { AutoSubmitForm } from "@/features/agents/components/AutoSubmitForm";
 import { DesktopBuilderSkeleton } from "@/features/agents/components/builder/AgentBuilderSkeletons";
 
 
