@@ -13,7 +13,7 @@
 
 import { useState } from "react";
 
-import { Check, Loader2, Sparkles, X } from "lucide-react";
+import { Check, ListChecks, Loader2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { confirmDirective } from "@/features/action-catalog/service";
@@ -23,6 +23,7 @@ import {
   selectProposedDirectives,
   type ProposedDirective,
 } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+import { BackendApiError } from "@/lib/api/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +88,13 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       }
       dismiss();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Confirm failed");
+      const message =
+        err instanceof BackendApiError
+          ? err.userMessage
+          : err instanceof Error
+            ? err.message
+            : "That couldn't be applied just now. Please try again.";
+      toast.error(message);
       setBusy(false);
     }
   };
@@ -96,7 +103,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
     <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Sparkles className="size-4 shrink-0 text-primary" />
+          <ListChecks className="size-4 shrink-0 text-primary" />
           <div className="min-w-0">
             <div className="truncate text-sm font-medium capitalize text-foreground">
               {title}

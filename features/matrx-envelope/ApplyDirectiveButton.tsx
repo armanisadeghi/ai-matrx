@@ -20,11 +20,12 @@
  * site+parent+slug), so a double-click cannot duplicate rows.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Play, TriangleAlert } from "lucide-react";
 
 import { confirmDirective } from "@/features/action-catalog/service";
 import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
+import { BackendApiError } from "@/lib/api/errors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 
@@ -38,14 +39,34 @@ export interface ApplyDirectiveButtonProps {
   envelope: MatrxEnvelope;
   /** Optional label override, e.g. "Apply plan". */
   label?: string;
+  /** How many things this will write — shown during the wait so a long apply
+   *  reads as "working on 219 pages", never as a frozen spinner. */
+  itemCount?: number;
+  onApplied?: () => void;
 }
 
 export function ApplyDirectiveButton({
   envelope,
   label = "Apply",
+  itemCount,
+  onApplied,
 }: ApplyDirectiveButtonProps) {
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const [state, setState] = useState<ApplyState>({ status: "idle" });
+  const [elapsed, setElapsed] = useState(0);
+  const startedAt = useRef<number | null>(null);
+
+  // An honest clock beats a fake progress bar: the server does not stream
+  // per-row progress, so we report the ONE thing we actually know.
+  useEffect(() => {
+    if (state.status !== "applying") return;
+    startedAt.current = Date.now();
+    const id = setInterval(
+      () => setElapsed(Math.round((Date.now() - (startedAt.current ?? 0)) / 1000)),
+      1000,
+    );
+    return () => clearInterval(id);
+  }, [state.status]);
 
   // Only side-effect envelopes are applicable; a reference/secret never is.
   // Both executing kinds confirm through the same endpoint (Plane 1 + Plane 2).
@@ -67,11 +88,16 @@ export function ApplyDirectiveButton({
         applied: result.applied,
         failed: result.failed,
       });
+      onApplied?.();
     } catch (error) {
-      setState({
-        status: "error",
-        message: error instanceof Error ? error.message : String(error),
-      });
+      // Prefer the server's gentle user_message; never dump Pydantic/wire detail.
+      const message =
+        error instanceof BackendApiError
+          ? error.userMessage
+          : error instanceof Error
+            ? error.message
+            : "That couldn't be applied just now. Please try again.";
+      setState({ status: "error", message });
     }
   }
 
@@ -105,10 +131,15 @@ export function ApplyDirectiveButton({
         ) : (
           <Play className="h-3.5 w-3.5" />
         )}
-        {state.status === "applying" ? "Applying…" : label}
+        {state.status === "applying"
+          ? `Applying${itemCount ? ` ${itemCount} pages` : ""}…${elapsed ? ` ${elapsed}s` : ""}`
+          : label}
       </button>
       {state.status === "error" ? (
-        <span className="text-xs text-destructive">{state.message}</span>
+        <span className="inline-flex max-w-sm items-start gap-1 text-xs text-destructive">
+          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{state.message}</span>
+        </span>
       ) : null}
     </span>
   );

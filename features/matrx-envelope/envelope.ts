@@ -141,7 +141,7 @@ export const REFERENCE_TYPES = [
   "structured_list_group",
   "structured_list_item",
   // Legacy (read-only): pre-rename historical references. NEW content emits the
-  // structured_list* tokens above. See common-docs/structured-lists-rename.
+  // structured_list* tokens above. See common-docs/projects/structured-lists-rename.
   "picklist",
   "picklist_group",
   "picklist_item",
