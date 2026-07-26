@@ -1,0 +1,391 @@
+# Pending: archive/oom-batch-v0.4.66 vs main@A1 (29dc5740b)
+# Regenerated after reset to A1 READY (~18 min build).
+# Parked previous main tip: archive/pre-a1-reset-20260726 (had v0.4.66 action+md+scripts re-apply)
+#
+# API ROUTES: ZERO new Next.js API routes in park or pre-reset vs A1.
+#   Only modified: app/api/agent-apps/generate-favicon/route.ts (M in both)
+#
+# TOTAL files differing A1 → park: 387
+# Docs-only batch applied locally: 36 .md/.txt files
+
+## SKIP — fake-dynamic / audit scripts opt (2)
+A	scripts/audit-index-files.mjs
+A	scripts/check-fake-dynamic-imports.mjs
+
+## BATCH — action-catalog + directives (8)
+M	features/action-catalog/buildEnvelope.ts
+M	features/action-catalog/components/ActionBuilderPanel.tsx
+M	features/action-catalog/components/ActionCatalogGrid.tsx
+M	features/action-catalog/service.ts
+M	features/action-catalog/types.ts
+M	features/agents/components/settings-management/matrx-actions/directiveOptions.ts
+D	features/agents/components/settings-management/output-schema/applyDirectives.ts
+
+## BATCH — sharing UI (13)
+M	features/overlays/openers/shareModal.tsx
+M	features/sharing/components/PermissionBadge.tsx
+M	features/sharing/components/PermissionsList.tsx
+M	features/sharing/components/ShareButton.tsx
+M	features/sharing/components/ShareLinkPanel.tsx
+M	features/sharing/components/ShareModal.tsx
+M	features/sharing/components/tabs/PublicAccessTab.tsx
+M	features/sharing/components/tabs/ShareWithOrgTab.tsx
+M	features/sharing/components/tabs/ShareWithUserTab.tsx
+M	features/sharing/index.ts
+M	features/window-panels/windows/ShareModalWindow.tsx
+
+## BATCH — applet (59)
+M	features/applet/builder/modules/applet-builder/CreateAppletTab.tsx
+M	features/applet/builder/modules/smart-parts/applets/SmartAppletList.tsx
+M	features/applet/builder/modules/smart-parts/apps/SmartAppList.tsx
+M	features/applet/builder/previews/AppPreviewCard.tsx
+M	features/applet/builder/previews/AppletPreviewCard.tsx
+M	features/applet/contepts/BrokerDebugger.tsx
+M	features/applet/home/app-display/Banner.tsx
+M	features/applet/home/app-display/Default.tsx
+M	features/applet/home/app-display/Minimal.tsx
+M	features/applet/home/app-display/Modern.tsx
+M	features/applet/home/app-display/ModernGlass.tsx
+M	features/applet/home/app-display/QuarterThreeQuarters.tsx
+M	features/applet/home/app-display/SavedDefault.tsx
+M	features/applet/home/app-display/SideBySide.tsx
+M	features/applet/home/applet-card/Default.tsx
+M	features/applet/home/applet-card/Enhanced.tsx
+M	features/applet/home/applet-card/Modern.tsx
+M	features/applet/home/main-layout/Grid.tsx
+M	features/applet/home/main-layout/Sidebar.tsx
+M	features/applet/hooks/useAppletRecipe.ts
+M	features/applet/hooks/useAppletRecipeFastAPI.ts
+M	features/applet/runner/fields/AddressBlockField.tsx
+M	features/applet/runner/fields/ButtonGroupField.tsx
+M	features/applet/runner/fields/ButtonSelectionField.tsx
+M	features/applet/runner/fields/CheckboxGroupField.tsx
+M	features/applet/runner/fields/DateField.tsx
+M	features/applet/runner/fields/DateRangePicker.tsx
+M	features/applet/runner/fields/DependentDropdownField.tsx
+M	features/applet/runner/fields/DirectMultiSelectField.tsx
+M	features/applet/runner/fields/FileUploadField.tsx
+M	features/applet/runner/fields/InputField.tsx
+M	features/applet/runner/fields/JSONField.tsx
+M	features/applet/runner/fields/MultiDateField.tsx
+M	features/applet/runner/fields/MultiSearchableSelectField.tsx
+M	features/applet/runner/fields/NumberInputField.tsx
+M	features/applet/runner/fields/PhoneNumberField.tsx
+M	features/applet/runner/fields/RadioGroupField.tsx
+M	features/applet/runner/fields/RangeSlider.tsx
+M	features/applet/runner/fields/SearchableSelectField.tsx
+M	features/applet/runner/fields/SelectField.tsx
+M	features/applet/runner/fields/SimpleNumberField.tsx
+M	features/applet/runner/fields/SliderField.tsx
+M	features/applet/runner/fields/SortableField.tsx
+M	features/applet/runner/fields/StarRatingField.tsx
+M	features/applet/runner/fields/StepperNumberField.tsx
+M	features/applet/runner/fields/SwitchField.tsx
+M	features/applet/runner/fields/TagInputField.tsx
+M	features/applet/runner/fields/TextareaField.tsx
+M	features/applet/runner/fields/concept-broker-options/DragEditModifyTableField.tsx
+M	features/applet/runner/fields/concept-broker-options/SearchableSelectField.tsx
+M	features/applet/runner/fields/concepts/DragEditModifyTableField.tsx
+M	features/applet/runner/fields/concepts/DragTableRowAndColumnField.tsx
+M	features/applet/runner/fields/concepts/DraggableEditableTableField.tsx
+M	features/applet/runner/fields/concepts/DraggableTableField.tsx
+M	features/applet/runner/fields/core/DirectFields.tsx
+M	features/applet/runner/header/CustomAppHeader.tsx
+M	features/applet/runner/response/BrokerMapViewer.tsx
+M	features/applet/runner/response/BrokerValuesSimpleViewer.tsx
+M	features/applet/runner/response/ResponseLayoutManager.tsx
+
+## BATCH — podcasts (22)
+M	app/(core)/podcast/PodcastGrid.tsx
+M	app/(core)/podcast/studio/run-c/_components/StreamingResults.tsx
+M	app/(core)/podcast/studio/run-refine/[id]/_components/ProductionStage.tsx
+M	app/(core)/podcast/studio/run-reimagine/[id]/_components/StageCanvas.tsx
+M	features/podcasts/components/admin/AssetUploader.tsx
+M	features/podcasts/components/admin/PodcastsTable.tsx
+M	features/podcasts/components/admin/ShowDetailClient.tsx
+M	features/podcasts/components/admin/ShowsClient.tsx
+M	features/podcasts/components/player/PodcastAudioPlayer.tsx
+M	features/podcasts/components/player/PodcastBlogPage.tsx
+M	features/podcasts/components/player/PodcastEpisodePage.tsx
+M	features/podcasts/components/player/PodcastShowPage.tsx
+M	features/podcasts/generator/components/ProductionTeaser.tsx
+M	features/podcasts/generator/media.ts
+M	features/podcasts/generator/useSourceResolvers.ts
+M	features/podcasts/studio/components/RunHistoryCard.tsx
+M	features/podcasts/studio/components/ShowManageClient.tsx
+M	features/podcasts/studio/components/StudioDashboard.tsx
+M	features/podcasts/studio/components/UploadEpisodeDialog.tsx
+
+## BATCH — admin applications (9)
+M	app/(admin)/administration/applications/catalogs/page.tsx
+M	app/(admin)/administration/applications/configuration/page.tsx
+M	features/admin/applications/catalogs/components/CatalogsClient.tsx
+M	features/admin/applications/catalogs/resolver.ts
+M	features/admin/applications/catalogs/schemas.ts
+M	features/admin/applications/catalogs/types.ts
+M	features/admin/applications/config/components/AppConfigClient.tsx
+M	features/admin/applications/config/schema.ts
+M	features/admin/applications/config/types.ts
+
+## BATCH — media-capture (12)
+M	features/media-capture/components/CameraAdminDiagnostics.tsx
+M	features/media-capture/components/CameraControlTab.tsx
+M	features/media-capture/components/CaptureItemActions.tsx
+M	features/media-capture/components/CaptureLibrary.tsx
+M	features/media-capture/components/CaptureReview.tsx
+M	features/media-capture/components/CaptureThumb.tsx
+M	features/media-capture/components/CaptureTransportStrip.tsx
+M	features/media-capture/core/capture-types.ts
+M	features/media-capture/hooks/useCaptureUploadFeed.ts
+M	features/media-capture/upload/__tests__/capture-uploader.test.ts
+M	features/media-capture/upload/capture-uploader.ts
+
+## BATCH — research (9)
+M	features/research/__tests__/condensedAuthorityExport.test.ts
+M	features/research/__tests__/serviceTopics.test.ts
+M	features/research/__tests__/sourceScoreDisplay.test.ts
+M	features/research/hooks/usePipelineProgress.ts
+M	features/research/service.ts
+M	features/research/youtube-discovery/YouTubeDiscoveryDemo.tsx
+
+## BATCH — tool-call-visualization (11)
+M	features/tool-call-visualization/registry/registry.tsx
+M	features/tool-call-visualization/renderers/document-content/DocumentContentInline.tsx
+M	features/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx
+M	features/tool-call-visualization/renderers/knowledge-browse/KnowledgeSourcesInline.tsx
+M	features/tool-call-visualization/renderers/knowledge-search/RagSourceCard.tsx
+D	features/tool-call-visualization/renderers/news-api/index.ts
+D	features/tool-call-visualization/renderers/random-wheel/index.ts
+M	features/tool-call-visualization/renderers/scrape/ScrapeInline.tsx
+M	features/tool-call-visualization/renderers/scrape/ScrapeOverlay.tsx
+M	features/tool-call-visualization/result-fields/ResultFile.tsx
+M	features/tool-call-visualization/result-fields/shape.ts
+
+## BATCH — transcript-studio (3)
+A	features/transcript-studio/redux/actionTypes.ts
+M	features/transcript-studio/redux/realtimeMiddleware.ts
+M	features/transcript-studio/redux/thunks.ts
+
+## BATCH — markdown docs (26)
+
+## BATCH — scripts / package.json (5)
+M	package.json
+M	scripts/check-access-guards.ts
+M	scripts/check-protocol-sync.ts
+A	scripts/gen-action-nouns.mjs
+D	scripts/migrate-brokerSlice-imports.mjs
+
+## BATCH — python-generated types (2)
+M	types/python-generated/api-types.ts
+M	types/python-generated/openapi.json
+
+## BATCH — barrel index deletes (7)
+D	features/code/views/source-control/index.ts
+D	features/files/api/index.ts
+D	features/files/index.ts
+D	features/workflow-emit/index.ts
+D	lib/redux/brokerSlice/index.ts
+D	packages/matrx-agents/src/redux/index.ts
+D	utils/permissions/index.ts
+
+## BATCH — other (199)
+M	app/(admin)/administration/ui/official-components/component-displays/image-asset-uploader.tsx
+M	app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx
+M	app/(admin)/administration/users/feedback/components/FeedbackTable.tsx
+M	app/(core)/cms/admin/page.tsx
+M	app/(core)/images/edit/EditLandingClient.tsx
+M	app/(core)/images/generate/GenerateShellClient.tsx
+M	app/(core)/images/library/page.tsx
+M	app/(core)/invitations/organization/accept/[token]/page.tsx
+M	app/(core)/organizations/page.tsx
+M	app/(dev)/demos/tests/oauth/components/SlackManager.tsx
+M	app/(dev)/demos/tests/slack/with-brokers/SlackBrokersLayoutClient.tsx
+M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx
+M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerSlackClient.tsx
+M	app/(dev)/demos/tests/slack/with-brokers/components/ChannelSelector.tsx
+M	app/(dev)/demos/tests/slack/with-brokers/components/SlackAuthentication.tsx
+M	app/(dev)/demos/tests/slack/with-brokers/components/TokenManager.tsx
+M	app/(dev)/demos/tests/slack/with-brokers/page.dev.tsx
+M	app/(public)/s/[token]/SharedResourceView.tsx
+M	app/(transitional)/apps/custom/[slug]/CustomAppSlugLayoutClient.tsx
+M	app/(transitional)/settings/feedback/page.tsx
+M	app/api/agent-apps/generate-favicon/route.ts
+M	components/applet/apps/AppletCard.tsx
+M	components/broker/UserBrokerInitializer.tsx
+M	components/image/ImageManager.tsx
+M	components/image/cloud/CloudFilesBrowserTable.tsx
+M	components/image/cloud/CloudFilesTab.tsx
+M	components/image/cloud/CloudImageGrid.test.tsx
+M	components/image/cloud/CloudImageGrid.tsx
+M	components/image/cloud/CloudImageList.tsx
+M	components/image/cloud/CloudImagesTab.tsx
+M	components/image/cloud/CloudUploadTab.tsx
+M	components/image/cloud/ImageStudioTab.tsx
+M	components/image/cloud/__tests__/cloudFilesBrowserUtils.test.ts
+M	components/image/cloud/cloudFilesBrowserUtils.ts
+M	components/image/cloud/resolveCloudFileUrl.ts
+M	components/layout/new-layout/MobileUnifiedMenu.tsx
+M	components/mardown-display/blocks/presentations/SlideView.tsx
+M	components/mardown-display/blocks/tasks/tasklist-parser.tsx
+M	components/mardown-display/blocks/videos/VideoOutputBlockRenderer.tsx
+M	components/mardown-display/markdown-classification/DirectMarkdownRenderer.tsx
+M	components/mermaid/export.ts
+M	components/official/ImageAssetUploader.tsx
+M	components/official/ImageCropModal.tsx
+M	components/official/ImageCropUploader.tsx
+M	components/official/ProTextarea.tsx
+M	components/official/image-cropper/ImageCropper.tsx
+M	components/ui/file-upload/FileUploadWithStorage.tsx
+M	components/ui/file-upload/ImageUploadField.tsx
+M	components/ui/file-upload/PasteImageHandler.tsx
+M	features/agent-apps/components/inputs/AgentAppImageField.tsx
+M	features/agent-apps/route/AgentAppOverviewContent.tsx
+M	features/agents/components/builder/AgentResourcesManager.tsx
+M	features/agents/components/builder/message-builders/AddBlockButton.tsx
+M	features/agents/components/inputs/input-components/MediaVariableInput.tsx
+M	features/agents/components/inputs/resources/ResourceFamilyPolicyEditor.tsx
+M	features/agents/components/inputs/resources/SmartAgentResourceChips.tsx
+M	features/agents/components/inputs/resources/attached-documents.ts
+M	features/agents/components/inputs/resources/usePasteImageResource.ts
+M	features/agents/components/messages-display/message-options/messageActionRegistry.ts
+M	features/agents/components/messages-display/user/AgentUserMessage.tsx
+M	features/agents/components/settings-management/AgentSettingMediaPicker.tsx
+M	features/agents/components/settings-management/validation/__tests__/constraint-eval-fixture.test.ts
+M	features/agents/components/sharing/AgentSharePanel.tsx
+M	features/agents/components/variables-management/CustomComponentConfigurator.tsx
+M	features/agents/redux/execution-system/instance-resources/instance-resources.selectors.ts
+M	features/agents/redux/execution-system/instance-resources/resource-source.ts
+M	features/canvas/artifact-types/renderers/ImageArtifact.tsx
+M	features/canvas/social/CanvasShareSheet.tsx
+M	features/canvas/social/ShareCoverImagePicker.tsx
+M	features/cms/components/admin/AssetsPanel.tsx
+M	features/code/editor/BinaryFileViewer.tsx
+M	features/code/editor/CloudFilePreviewer.tsx
+M	features/code/hooks/useOpenFile.ts
+M	features/code/views/explorer/CloudFilesExplorer.tsx
+M	features/code/views/explorer/ExplorerPanel.tsx
+M	features/context-menu-v3/types.ts
+M	features/cx-chat/components/messages/UserMessage.tsx
+M	features/cx-chat/components/user-input/ConversationInput.tsx
+M	features/cx-conversation/ConversationInput.tsx
+M	features/cx-conversation/UserMessage.tsx
+M	features/education/assessment/data/imageGrading.ts
+M	features/education/media/audio/components/AudioStudyDetail.tsx
+M	features/education/media/mindmap/components/MindMapDetail.tsx
+M	features/education/memory/components/MemoryDetail.tsx
+M	features/education/onboard/useIngest.ts
+M	features/education/study/components/SessionAudio.tsx
+M	features/education/trust/open-source.ts
+M	features/file-analysis/components/AnnotatablePdfCanvas.tsx
+M	features/file-analysis/studio/StudioShell.tsx
+M	features/file-analysis/studio/panels/AnnotationsPanel.tsx
+M	features/files/agent-context/buildFilesContextData.ts
+M	features/files/blocks/image/ImageSharePopover.tsx
+M	features/files/blocks/video/VideoSharePopover.tsx
+M	features/files/cache/admin/BlobCacheInspector.tsx
+M	features/files/components/surfaces/single-file/PdfEditTab.tsx
+M	features/files/types.ts
+M	features/files/upload/tusUpload.ts
+M	features/flashcards/components/set-detail/SetDetailView.tsx
+M	features/flashcards/fast-fire/agents/gradeCard.thunk.ts
+M	features/flashcards/fast-fire/agents/gradeSpokenAnswer.thunk.ts
+M	features/flashcards/fast-fire/agents/grading-core.ts
+M	features/flashcards/fast-fire/components/FastFireReviewPlayer.tsx
+M	features/flashcards/fast-fire/components/SpokenFrontPlayer.tsx
+M	features/flashcards/fast-fire/hooks/useFastFireDrill.ts
+M	features/gallery/components/GalleryFloatingWorkspace.tsx
+M	features/html-pages/components/HtmlPreviewModal.tsx
+M	features/image-manager/components/BrandedUploadTab.tsx
+M	features/image-manager/components/CloudFileMetadataSheet.tsx
+M	features/image-manager/components/ProfilePhotoTab.tsx
+M	features/image-manager/components/PublicImagesSection.tsx
+M	features/image-manager/components/StudioLibraryTab.tsx
+M	features/image-manager/registry/types.ts
+M	features/image-studio/components/StudioVariantTile.tsx
+M	features/image-studio/components/useCropStudioController.ts
+M	features/image-studio/hooks/useBase64Decoder.ts
+M	features/image-studio/hooks/useImageStudio.ts
+M	features/image-studio/modes/edit/EditAiToolbar.tsx
+M	features/image-studio/modes/shared/save-edited-image.ts
+M	features/item-presentation/registry.tsx
+M	features/item-presentation/types.ts
+M	features/marketing/components/crawls/CrawlReportWorkspace.tsx
+M	features/marketing/components/pages/PageContentCard.tsx
+M	features/marketing/components/pages/PageWorkspace.tsx
+M	features/marketing/components/shared/CaptureThumb.tsx
+M	features/marketing/components/site/SiteOverview.tsx
+M	features/matrx-envelope/ApplyDirectiveButton.tsx
+A	features/matrx-envelope/catalog-nouns.generated.ts
+M	features/matrx-envelope/components/ProposedDirectivesZone.tsx
+A	features/matrx-envelope/directives/planTree/PlanTreePreview.tsx
+M	features/matrx-envelope/directives/planTree/PlanTreeRenderer.tsx
+M	features/matrx-envelope/directives/planTree/resolvePlanTree.ts
+M	features/matrx-envelope/envelope.ts
+M	features/matrx-envelope/referenceResolvers.ts
+M	features/matrx-envelope/registry.tsx
+M	features/news/components/NewsFloatingWorkspace.tsx
+M	features/organizations/components/CreateOrgModal.tsx
+M	features/organizations/components/GeneralSettings.tsx
+M	features/organizations/components/OrgManage.tsx
+M	features/organizations/components/OrgWorkspace.tsx
+M	features/organizations/components/OrganizationCard.tsx
+M	features/organizations/orgModuleSettings.ts
+M	features/overlays/OverlayController.tsx
+M	features/pdf-demo/components/PdfSourcePicker.tsx
+M	features/pdf-demo/components/PdfWorkbench.tsx
+M	features/pdf-extractor/studio/PdfManipulationWorkbench.tsx
+M	features/pdf-extractor/studio/PdfStudioHeaderControls.tsx
+M	features/pdf/scanner/components/CropSheet.tsx
+M	features/pdf/scanner/components/ReviewList.tsx
+M	features/pdf/scanner/components/desktop/ScannerDesktop.tsx
+M	features/pdf/scanner/useScanSession.ts
+M	features/pdf/services/saveDerivative.ts
+M	features/public-chat/components/ChatInputWithControls.tsx
+M	features/public-chat/components/MessageDisplay.tsx
+M	features/public-chat/components/resource-picker/PublicUploadResourcePicker.tsx
+M	features/quick-actions/components/UtilitiesOverlay.tsx
+M	features/rag/components/data-stores/DataStoresPage.tsx
+M	features/rag/components/hit-card/RagHitCard.tsx
+M	features/rag/components/library/LibraryDocDetailSheet.tsx
+M	features/rag/components/library/LibraryPage.tsx
+M	features/rag/components/search/RagPageReferences.tsx
+M	features/rag/components/search/SelectedPdfPages.tsx
+M	features/rag/components/source-inspector/SourceInspectorPane.tsx
+M	features/resource-manager/resource-picker/FilesResourcePicker.tsx
+M	features/resource-manager/resource-picker/ImageUrlResourcePicker.tsx
+M	features/resource-manager/resource-picker/UploadResourcePicker.tsx
+M	features/scopes/components/management/ScopesManager.tsx
+M	features/scraper/parts/ScrapedResultDetailTabs.tsx
+M	features/shell/navigation/navActions.ts
+M	features/transcripts/components/TranscriptViewer.tsx
+M	features/user-profile/components/UserProfilePage.tsx
+M	features/war-room/components/thread/ThreadNewFileDialog.tsx
+M	features/war-room/components/thread/ThreadResourcesTab.tsx
+M	features/war-room/service/prefetchThreadFileSignals.ts
+M	features/war-room/service/warRoomAgentContext.ts
+M	features/whatsapp-clone/chat-view/MessageInputBar.tsx
+M	features/whatsapp-clone/chat-view/bubbles/ImageBubble.tsx
+M	features/whatsapp-clone/chat-view/bubbles/VideoBubble.tsx
+M	features/whatsapp-clone/hooks/useWhatsAppMedia.ts
+M	features/whatsapp-clone/modals/media/LinksTab.tsx
+M	features/whatsapp-clone/modals/media/MediaTab.tsx
+M	features/window-panels/windows/FeedbackWindow.tsx
+M	features/window-panels/windows/cloud-files/CloudFilesWindow.tsx
+M	features/window-panels/windows/cloud-files/FilePreviewWindow.tsx
+M	features/window-panels/windows/image/ImageUploaderWindow.tsx
+M	features/window-panels/windows/image/ImageViewerWindow.tsx
+M	features/window-panels/windows/image/callbacks.ts
+M	features/window-panels/windows/image/useOpenImageUploaderWindow.ts
+M	hooks/brokers/useGeolocation.ts
+M	hooks/brokers/useSetGlobalBasics.ts
+M	lib/api/broker/types.ts
+M	lib/list-scope/types.ts
+M	lib/media/our-file-sources.ts
+M	lib/redux/app-runner/thunks/appRunnerThunks.ts
+M	lib/redux/app-runner/thunks/loadApplet.ts
+M	packages/matrx-agents/package.json
+R	packages/matrx-agents/src/public.ts
+R	packages/matrx-agents/src/types/agents-types.ts
+M	types/generated/entity-types.generated.ts
+M	utils/permissions/access.ts
+

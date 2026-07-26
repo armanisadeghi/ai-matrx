@@ -8,7 +8,7 @@
 Current cross-repository vision, verified implementation status, complete document
 map, gap analysis, and agent-ready project decomposition:
 
-`/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`
+`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md`
 
 Frontend kernel detail remains in [`../FEATURE.md`](../FEATURE.md), and the generated
 live per-kind matrix remains in [`SHAPES_STATUS.md`](./SHAPES_STATUS.md).
