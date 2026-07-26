@@ -54,36 +54,46 @@ const MATRX_PROFILE = FORCE_MATRX_PROFILE
       : "full";
 const INCLUDE_DEV = MATRX_PROFILE === "full" || MATRX_PROFILE === "user";
 const EXCLUDE_ADMIN = MATRX_PROFILE === "user" || MATRX_PROFILE === "slim";
+// TEMP build A/B: park app/(public) regardless of profile. Flip false after test.
+const FORCE_EXCLUDE_PUBLIC = true;
 
-const ADMIN_LIVE = path.join(__dirname, "app", "(admin)");
-const ADMIN_PARKED = path.join(__dirname, "app", "_admin_build_excluded");
-if (EXCLUDE_ADMIN) {
-    if (fs.existsSync(ADMIN_LIVE)) {
-        fs.renameSync(ADMIN_LIVE, ADMIN_PARKED);
-        console.log(
-            `[matrx] MATRX_PROFILE=${MATRX_PROFILE}: parked app/(admin) → app/_admin_build_excluded`,
-        );
-    } else if (fs.existsSync(ADMIN_PARKED)) {
-        console.log(
-            `[matrx] MATRX_PROFILE=${MATRX_PROFILE}: app/(admin) already parked`,
-        );
-    } else {
-        console.warn(
-            `[matrx] MATRX_PROFILE=${MATRX_PROFILE}: neither app/(admin) nor parked folder found`,
-        );
+/**
+ * Park a route group as a Next private `_` folder (not routed/compiled), or
+ * restore it. Source of truth in git is always the live `(name)` path; parked
+ * names are gitignored.
+ * @param {boolean} exclude
+ * @param {string} liveName e.g. "(admin)"
+ * @param {string} parkedName e.g. "_admin_build_excluded"
+ */
+function syncRouteGroupPark(exclude, liveName, parkedName) {
+    const live = path.join(__dirname, "app", liveName);
+    const parked = path.join(__dirname, "app", parkedName);
+    if (exclude) {
+        if (fs.existsSync(live)) {
+            fs.renameSync(live, parked);
+            console.log(`[matrx] parked app/${liveName} → app/${parkedName}`);
+        } else if (fs.existsSync(parked)) {
+            console.log(`[matrx] app/${liveName} already parked at app/${parkedName}`);
+        } else {
+            console.warn(
+                `[matrx] neither app/${liveName} nor app/${parkedName} found`,
+            );
+        }
+    } else if (fs.existsSync(parked) && !fs.existsSync(live)) {
+        fs.renameSync(parked, live);
+        console.log(`[matrx] restored app/${liveName} from park`);
     }
-} else if (fs.existsSync(ADMIN_PARKED) && !fs.existsSync(ADMIN_LIVE)) {
-    fs.renameSync(ADMIN_PARKED, ADMIN_LIVE);
-    console.log(
-        `[matrx] MATRX_PROFILE=${MATRX_PROFILE}: restored app/(admin) from park`,
-    );
 }
+
+syncRouteGroupPark(EXCLUDE_ADMIN, "(admin)", "_admin_build_excluded");
+syncRouteGroupPark(FORCE_EXCLUDE_PUBLIC, "(public)", "_public_build_excluded");
 
 console.log(
     `[matrx] MATRX_PROFILE=${MATRX_PROFILE}` +
         (FORCE_MATRX_PROFILE
             ? ` (FORCE_MATRX_PROFILE=${FORCE_MATRX_PROFILE})`
             : "") +
+        (FORCE_EXCLUDE_PUBLIC ? " (FORCE_EXCLUDE_PUBLIC=true)" : "") +
         ` (NODE_ENV=${process.env.NODE_ENV || "undefined"})`,
 );
 // When (dev) is included, `tsx` is listed FIRST so any plain page.tsx wins over
