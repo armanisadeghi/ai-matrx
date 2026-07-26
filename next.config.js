@@ -24,6 +24,11 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 // Helper .tsx files under (dev) (e.g. (dev)/demos/tests/matrx-table/components/
 // MatrxTable.tsx) keep plain .tsx because production code imports them directly;
 // pageExtensions only filters routes, not arbitrary components.
+//
+// TEMP build A/B: force core regardless of MATRX_PROFILE env (leave Vercel
+// env alone). Strips (dev) `*.dev.tsx` route leaves from the compile.
+// Flip back to false after the experiment.
+const FORCE_CORE_PROFILE = true;
 const rawProfile = (process.env.MATRX_PROFILE || "").trim().toLowerCase();
 if (rawProfile && rawProfile !== "full" && rawProfile !== "core") {
     console.warn(
@@ -31,9 +36,16 @@ if (rawProfile && rawProfile !== "full" && rawProfile !== "core") {
             `Valid values: "full" | "core". Falling back to "full".`,
     );
 }
-const MATRX_PROFILE =
-    rawProfile === "full" || rawProfile === "core" ? rawProfile : "full";
-console.log(`[matrx] MATRX_PROFILE=${MATRX_PROFILE} (NODE_ENV=${process.env.NODE_ENV || "undefined"})`);
+const MATRX_PROFILE = FORCE_CORE_PROFILE
+    ? "core"
+    : rawProfile === "full" || rawProfile === "core"
+      ? rawProfile
+      : "full";
+console.log(
+    `[matrx] MATRX_PROFILE=${MATRX_PROFILE}` +
+        (FORCE_CORE_PROFILE ? " (FORCE_CORE_PROFILE=true)" : "") +
+        ` (NODE_ENV=${process.env.NODE_ENV || "undefined"})`,
+);
 // In full mode `tsx` is listed FIRST so any plain page.tsx wins over a
 // page.dev.tsx in the same directory — a guard for stray duplicates from
 // partial renames. No directory currently has both; this is defensive.
