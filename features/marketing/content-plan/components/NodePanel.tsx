@@ -27,6 +27,7 @@ import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
+import { NODE_TYPE_LABELS } from "../constants";
 import {
   useDeletePlanNode,
   usePlanNodes,
@@ -123,15 +124,26 @@ export function NodePanel({
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+    <div className="flex h-full flex-col bg-background">
+      <div className="flex items-start gap-2 border-b border-border px-4 py-2.5">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{node.label}</p>
-          <p className="truncate font-mono text-xs text-muted-foreground">
-            {node.route ?? "(no route yet)"} · depth {node.depth}
-            {node.pillar_label ? ` · pillar: ${node.pillar_label}` : ""}
-            {node.cluster_label ? ` · cluster: ${node.cluster_label}` : ""}
+          <p className="break-words text-sm font-semibold leading-snug text-foreground">
+            {node.label}
           </p>
+          <p className="break-all font-mono text-xs text-muted-foreground">
+            {node.route ?? "(no route yet)"}
+          </p>
+          {node.pillar_label || node.cluster_label ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {[
+                node.pillar_label ? `Pillar: ${node.pillar_label}` : null,
+                node.cluster_label ? `Cluster: ${node.cluster_label}` : null,
+                `Depth ${node.depth}`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          ) : null}
         </div>
         <Button
           size="sm"
@@ -152,10 +164,12 @@ export function NodePanel({
         </Button>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
-        <div className="grid grid-cols-2 gap-2">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-4">
+        <PanelSection title="Page">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-3">
           <div className="col-span-2">
-            <Label className="text-xs">Label</Label>
+            <Label className="mb-1 block text-xs font-medium">Label</Label>
             <Input
               value={current.label}
               onChange={(event) =>
@@ -165,7 +179,7 @@ export function NodePanel({
             />
           </div>
           <div>
-            <Label className="text-xs">Slug (kebab-case)</Label>
+            <Label className="mb-1 block text-xs font-medium">Slug (kebab-case)</Label>
             <Input
               value={current.slug ?? ""}
               placeholder={current.node_type === "home" ? "(home — none)" : "my-page-slug"}
@@ -179,7 +193,7 @@ export function NodePanel({
             />
           </div>
           <div>
-            <Label className="text-xs">Node type</Label>
+            <Label className="mb-1 block text-xs font-medium">Node type</Label>
             <Select
               value={current.node_type}
               onValueChange={(next) =>
@@ -192,14 +206,14 @@ export function NodePanel({
               <SelectContent>
                 {PLAN_NODE_TYPES.map((type) => (
                   <SelectItem key={type} value={type}>
-                    {type}
+                    {NODE_TYPE_LABELS[type]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Page type</Label>
+            <Label className="mb-1 block text-xs font-medium">Page type</Label>
             <CategorySelect
               dimension={CATEGORY_DIMENSIONS.planPageType}
               value={current.page_type_id}
@@ -208,7 +222,7 @@ export function NodePanel({
             />
           </div>
           <div>
-            <Label className="text-xs">Status</Label>
+            <Label className="mb-1 block text-xs font-medium">Status</Label>
             <CategorySelect
               dimension={CATEGORY_DIMENSIONS.planStatus}
               value={current.status_id}
@@ -217,7 +231,7 @@ export function NodePanel({
             />
           </div>
           <div>
-            <Label className="text-xs">Priority (1 = highest)</Label>
+            <Label className="mb-1 block text-xs font-medium">Priority (1 = highest)</Label>
             <Select
               value={current.priority == null ? "none" : String(current.priority)}
               onValueChange={(next) =>
@@ -241,7 +255,7 @@ export function NodePanel({
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Technical depth</Label>
+            <Label className="mb-1 block text-xs font-medium">Technical depth</Label>
             <Select
               value={current.technical_depth ?? "none"}
               onValueChange={(next) =>
@@ -275,44 +289,55 @@ export function NodePanel({
                 setDraft((d) => ({ ...d, needs_reviewer: checked === true }))
               }
             />
-            <Label htmlFor={`needs-reviewer-${node.id}`} className="text-xs">
+            <Label htmlFor={`needs-reviewer-${node.id}`} className="text-xs font-medium">
               Needs reviewer (E-E-A-T)
             </Label>
           </div>
         </div>
+        </PanelSection>
 
-        <MoveNodeControl node={node} siteId={siteId} />
+        <PanelSection title="Placement">
+          <MoveNodeControl node={node} siteId={siteId} />
+        </PanelSection>
 
-        <div>
-          <Label className="text-xs">Primary keyword</Label>
-          <KeywordPicker
-            siteId={siteId}
-            value={current.primary_keyword_id}
-            onChange={(keywordId) =>
-              setDraft((d) => ({ ...d, primary_keyword_id: keywordId }))
-            }
-          />
-        </div>
+        <PanelSection title="Targeting">
+          <div>
+            <Label className="mb-1 block text-xs font-medium">
+              Primary keyword
+            </Label>
+            <KeywordPicker
+              siteId={siteId}
+              value={current.primary_keyword_id}
+              onChange={(keywordId) =>
+                setDraft((d) => ({ ...d, primary_keyword_id: keywordId }))
+              }
+            />
+          </div>
+        </PanelSection>
 
-        <div>
-          <Label className="text-xs">Brief (one point per line)</Label>
-          <Textarea
-            value={briefText ?? (node.brief ?? []).join("\n")}
-            onChange={(event) => {
-              const text = event.target.value;
-              setBriefText(text);
-              setDraft((d) => ({
-                ...d,
-                brief: text
-                  .split("\n")
-                  .map((line) => line.trim())
-                  .filter((line) => line.length > 0),
-              }));
-            }}
-            placeholder={"What this page must cover…\nOne bullet per line"}
-            className="min-h-28 text-sm"
-          />
-        </div>
+        <PanelSection title="Brief">
+          <div>
+            <Label className="mb-1 block text-xs font-medium">
+              One point per line
+            </Label>
+            <Textarea
+              value={briefText ?? (node.brief ?? []).join("\n")}
+              onChange={(event) => {
+                const text = event.target.value;
+                setBriefText(text);
+                setDraft((d) => ({
+                  ...d,
+                  brief: text
+                    .split("\n")
+                    .map((line) => line.trim())
+                    .filter((line) => line.length > 0),
+                }));
+              }}
+              placeholder={"What this page must cover…\nOne bullet per line"}
+              className="min-h-28 text-sm"
+            />
+          </div>
+        </PanelSection>
 
         <AttributesEditor
           value={current.attributes}
@@ -321,6 +346,7 @@ export function NodePanel({
         />
 
         <NodeAssociations nodeId={node.id} siteId={siteId} entities={entities} />
+        </div>
       </div>
 
       <ConfirmDialogSection
@@ -331,6 +357,28 @@ export function NodePanel({
         onDeleted={onDeleted}
       />
     </div>
+  );
+}
+
+/**
+ * One visual grammar for every panel section: a readable (foreground, not
+ * gray) uppercase header + consistent inner rhythm. AttributesEditor and
+ * NodeAssociations mirror the same header classes for their own sections.
+ */
+function PanelSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2.5">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+        {title}
+      </h4>
+      {children}
+    </section>
   );
 }
 
@@ -372,8 +420,8 @@ function MoveNodeControl({
 
   return (
     <div>
-      <Label className="text-xs">
-        Parent (move — routes recompute in the database)
+      <Label className="mb-1 block text-xs font-medium">
+        Parent — moving recomputes routes in the database
       </Label>
       <Select
         value={node.parent_id ?? "__root__"}

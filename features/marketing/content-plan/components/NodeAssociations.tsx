@@ -153,8 +153,8 @@ function Chip({
   onRemove: () => void;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs">
-      <span className="max-w-40 truncate">{text}</span>
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-foreground">
+      <span className="max-w-48 truncate" title={text}>{text}</span>
       <button
         type="button"
         aria-label={`Remove ${text}`}
@@ -189,7 +189,7 @@ function TopicSection({
   return (
     <section>
       <div className="mb-1 flex items-center justify-between">
-        <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
           Topics
         </h4>
         <Popover open={open} onOpenChange={setOpen}>
@@ -279,7 +279,7 @@ function SecondaryKeywordSection({
   );
   return (
     <section>
-      <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-foreground">
         Secondary keywords
       </h4>
       <KeywordPicker
@@ -333,7 +333,7 @@ function EntitySection({
 
   return (
     <section>
-      <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-foreground">
         People &amp; sources
       </h4>
       <div className="space-y-1.5">
@@ -348,7 +348,7 @@ function EntitySection({
               <span className="rounded bg-muted px-1 text-[10px] uppercase text-muted-foreground">
                 {ROLE_LABELS[edgeRole] ?? edge.role}
               </span>
-              <span className="min-w-0 flex-1 truncate">
+              <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                 {entity?.label ?? edge.label ?? edge.otherId.slice(0, 8)}
               </span>
               <button

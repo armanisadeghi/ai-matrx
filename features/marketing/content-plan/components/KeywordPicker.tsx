@@ -138,7 +138,7 @@ export function KeywordPicker({
                         ) : null}
                       </span>
                     ) : (
-                      <span className="shrink-0 text-[10px] text-muted-foreground/60">
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
                         no site value
                       </span>
                     )}
