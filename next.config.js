@@ -33,7 +33,7 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 // only filters route leaves, not arbitrary components.
 const VALID_PROFILES = new Set(["full", "core", "user", "slim"]);
 /** @type {null | "full" | "core" | "user" | "slim"} — null = use env / default */
-const FORCE_MATRX_PROFILE = null;
+const FORCE_MATRX_PROFILE = "core";
 if (FORCE_MATRX_PROFILE && !VALID_PROFILES.has(FORCE_MATRX_PROFILE)) {
     throw new Error(
         `[matrx] Invalid FORCE_MATRX_PROFILE="${FORCE_MATRX_PROFILE}". ` +
@@ -55,7 +55,7 @@ const MATRX_PROFILE = FORCE_MATRX_PROFILE
 const INCLUDE_DEV = MATRX_PROFILE === "full" || MATRX_PROFILE === "user";
 const EXCLUDE_ADMIN = MATRX_PROFILE === "user" || MATRX_PROFILE === "slim";
 // TEMP build A/B: park app/(public) regardless of profile. Flip false after test.
-const FORCE_EXCLUDE_PUBLIC = true;
+const FORCE_EXCLUDE_PUBLIC = false;
 
 /**
  * Park a route group as a Next private `_` folder (not routed/compiled), or
