@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { toast } from "@/lib/toast";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { extractErrorMessage } from "@/utils/errors";
@@ -189,6 +190,7 @@ export function useRunRankCheck(onComplete: (item: RankPortfolioItem) => void) {
         [targetId]: { status: "running", stage: "Connecting" },
       }));
       let doneItem: RankPortfolioItem | null = null;
+      let streamError: string | null = null;
       const result = await dispatch(
         callApi({
           path: RANK_TARGET_CHECK_PATH,
@@ -196,6 +198,13 @@ export function useRunRankCheck(onComplete: (item: RankPortfolioItem) => void) {
           pathParams: { target_id: targetId },
           stream: true,
           onStreamEvent: (event) => {
+            // Backend failures arrive as in-band `error` events on an
+            // otherwise-successful stream — result.error stays null, so
+            // ignoring these left the row spinning forever.
+            if (event.event === "error") {
+              streamError = extractErrorMessage(event.data);
+              return;
+            }
             const data = streamData(event);
             if (!data) return;
             const kind = typeof data.kind === "string" ? data.kind : null;
@@ -203,10 +212,6 @@ export function useRunRankCheck(onComplete: (item: RankPortfolioItem) => void) {
             if (kind === "seo.rank_check_completed") {
               const item = data.portfolio_item as RankPortfolioItem | null;
               if (item) doneItem = item;
-              setChecking((current) => ({
-                ...current,
-                [targetId]: { status: "done", stage: "Check complete" },
-              }));
               return;
             }
             setChecking((current) => ({
@@ -216,14 +221,26 @@ export function useRunRankCheck(onComplete: (item: RankPortfolioItem) => void) {
           },
         }),
       );
-      if (result.error) {
+      // The stream is over — the row MUST land on a terminal state here, no
+      // matter what shape the failure took (transport error, in-band error
+      // event, or a stream that simply ended without the completion event).
+      if (doneItem && !result.error && !streamError) {
         setChecking((current) => ({
           ...current,
-          [targetId]: { status: "error", error: result.error?.message },
+          [targetId]: { status: "done", stage: "Check complete" },
         }));
+        onComplete(doneItem);
         return;
       }
-      if (doneItem) onComplete(doneItem);
+      const message =
+        result.error?.message ??
+        streamError ??
+        "The check ended without a result — try again.";
+      setChecking((current) => ({
+        ...current,
+        [targetId]: { status: "error", error: message },
+      }));
+      toast.error("Rank check failed", { description: message });
     },
     [dispatch, onComplete],
   );
