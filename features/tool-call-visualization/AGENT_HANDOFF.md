@@ -21,7 +21,7 @@
   - **Waves 2 + 3 — Scrape cards + Research streaming report: built by a background agent** that self-verifies and self-pushes each wave. Look for `feat(tool-viz): …` commits + new sections in the gallery.
 
 ### The demo (test everything here)
-- **`/demos/tool-viz/result-fields`** — the gallery: field library, DB renderers, shell behaviors, **Live search (press Play)** + a static mid-stream snapshot, the ctx_patch diff, and the scrape / research sections as they land. *(Dev-profile route — 404s on prod `core`; to test a DB renderer on prod, run the tool in a real chat.)*
+- **`/demos/tool-viz/result-fields`** — the gallery: field library, DB renderers, shell behaviors, **Live search (press Play)** + a static mid-stream snapshot, the ctx_patch diff, and the scrape / research sections as they land. *(Dev-profile route — ships under default `MATRX_PROFILE=full`; only 404s if you build with `MATRX_PROFILE=core`.)*
 - **`/demos/tool-viz/in-action`** — a paced single-tool agent turn (text → tool → text) + real saved runs.
 - **`/tool-call-visualization/admin`** — the FeatureAdminMap (every URL / panel / slice / renderer).
 - Per-tool stage: **`RENDERER_STATUS.md`**. Living task tracker: **`OVERHAUL_STATUS.md`**.

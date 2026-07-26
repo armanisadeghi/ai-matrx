@@ -52,7 +52,10 @@ const PKG = JSON.parse(read("package.json")) as {
 function installedVersion(pkg: string): string | null {
   const p = join(ROOT, "node_modules", pkg, "package.json");
   if (!existsSync(p)) return null;
-  return (JSON.parse(readFileSync(p, "utf8")) as { version?: string }).version ?? null;
+  return (
+    (JSON.parse(readFileSync(p, "utf8")) as { version?: string }).version ??
+    null
+  );
 }
 
 /**
@@ -83,12 +86,16 @@ interface Claim {
 const claims: Claim[] = [
   {
     id: "react-compiler",
-    claim: "React Compiler is on — no manual useMemo / useCallback / React.memo",
+    claim:
+      "React Compiler is on — no manual useMemo / useCallback / React.memo",
     where: "CLAUDE.md § Core invariants",
     check: () => {
       const v = nextConfigSetting("reactCompiler");
-      if (v === null) return "next.config.js declares no `reactCompiler` setting at all";
-      return v.startsWith("true") ? null : `next.config.js has reactCompiler: ${v}`;
+      if (v === null)
+        return "next.config.js declares no `reactCompiler` setting at all";
+      return v.startsWith("true")
+        ? null
+        : `next.config.js has reactCompiler: ${v}`;
     },
     fix: "Set reactCompiler: true, or rewrite the memoization doctrine in CLAUDE.md AND PRINCIPLES.md. Do not leave them disagreeing — that is D62.",
   },
@@ -109,9 +116,8 @@ const claims: Claim[] = [
       // directive as usable), and no source file may actually use it.
       // Tolerate the surrounding markdown (backticks, bold) between the directive
       // and the negation — the doc writes: **`'use cache'` is NOT available**
-      const docAdmitsUnavailable = /use cache['"`*\s]+is\s+NOT\s+available/i.test(
-        CLAUDE_MD,
-      );
+      const docAdmitsUnavailable =
+        /use cache['"`*\s]+is\s+NOT\s+available/i.test(CLAUDE_MD);
       const problems: string[] = [];
       if (!docAdmitsUnavailable) {
         problems.push(
@@ -128,7 +134,9 @@ const claims: Claim[] = [
     where: "CLAUDE.md § Route groups",
     check: () => {
       const documented = new Set(
-        [...CLAUDE_MD.matchAll(/^\|\s*`(\([a-z-]+\))`\s*\|/gm)].map((m) => m[1]),
+        [...CLAUDE_MD.matchAll(/^\|\s*`(\([a-z-]+\))`\s*\|/gm)].map(
+          (m) => m[1],
+        ),
       );
       if (documented.size === 0) return null; // table restructured; nothing to compare
       const onDisk = new Set(
@@ -140,8 +148,11 @@ const claims: Claim[] = [
       const undocumented = [...onDisk].filter((g) => !documented.has(g));
       const parts: string[] = [];
       if (ghosts.length)
-        parts.push(`documented but NOT on disk: ${ghosts.join(", ")} (agents are told to create files there)`);
-      if (undocumented.length) parts.push(`on disk but undocumented: ${undocumented.join(", ")}`);
+        parts.push(
+          `documented but NOT on disk: ${ghosts.join(", ")} (agents are told to create files there)`,
+        );
+      if (undocumented.length)
+        parts.push(`on disk but undocumented: ${undocumented.join(", ")}`);
       return parts.length ? parts.join("; ") : null;
     },
     fix: "Update the route-group table. A ghost group also means dead redirects in next.config.js pointing at 404s — check those too.",
@@ -156,11 +167,14 @@ const claims: Claim[] = [
       );
       if (named.size === 0) return null;
       const dir = join(ROOT, ".claude", "skills");
-      const available = existsSync(dir) ? new Set(readdirSync(dir)) : new Set<string>();
+      const available = existsSync(dir)
+        ? new Set(readdirSync(dir))
+        : new Set<string>();
       // A skill may legitimately be user-global rather than repo-local; only flag ones
       // that exist NOWHERE, plus any still stranded in the pre-2026-07 .cursor location.
       const stranded = [...named].filter(
-        (s) => !available.has(s) && existsSync(join(ROOT, ".cursor", "skills", s)),
+        (s) =>
+          !available.has(s) && existsSync(join(ROOT, ".cursor", "skills", s)),
       );
       return stranded.length
         ? `stranded in .cursor/skills (invisible to Claude Code): ${stranded.join(", ")}`
@@ -182,13 +196,16 @@ const claims: Claim[] = [
   },
   {
     id: "typecheck-is-the-gate",
-    claim: "TypeScript 5.9 (strict, no `any`) / typecheck with `pnpm type-check`",
+    claim:
+      "TypeScript 5.9 (strict, no `any`) / typecheck with `pnpm type-check`",
     where: "CLAUDE.md § Architecture, § Core invariants",
     check: () => {
       // Not a contradiction to fix in config (flipping it can red a deploy), but the doc
       // must not imply the BUILD type-checks when it does not. We assert the doc admits it.
       const ignoring = /ignoreBuildErrors\s*:\s*true/.test(
-        NEXT_CONFIG.split("\n").filter((l) => !l.trim().startsWith("//")).join("\n"),
+        NEXT_CONFIG.split("\n")
+          .filter((l) => !l.trim().startsWith("//"))
+          .join("\n"),
       );
       if (!ignoring) return null;
       const admitted = /ignoreBuildErrors/.test(CLAUDE_MD);
@@ -205,8 +222,10 @@ const claims: Claim[] = [
     check: () => {
       const raw = readIfExists("tsconfig.typecheck.json");
       if (!raw) return "tsconfig.typecheck.json is missing";
-      const cfg = JSON.parse(raw.replace(/^\s*\/\/.*$/gm, "")) as { exclude?: string[] };
-      // (dev) is legitimately excluded — it is stripped from the core production profile.
+      const cfg = JSON.parse(raw.replace(/^\s*\/\/.*$/gm, "")) as {
+        exclude?: string[];
+      };
+      // (dev) is legitimately excluded — optional slim builds use MATRX_PROFILE=core.
       // Anything else that SHIPS must not be silently outside the only type gate.
       const shippedExclusions = (cfg.exclude ?? []).filter(
         (e) =>
@@ -238,7 +257,8 @@ const claims: Claim[] = [
       const huskyDir = join(ROOT, ".husky");
       const gitHook = join(ROOT, ".git", "hooks", "pre-commit");
       const configured =
-        (existsSync(huskyDir) && readdirSync(huskyDir).some((f) => f === "pre-commit")) ||
+        (existsSync(huskyDir) &&
+          readdirSync(huskyDir).some((f) => f === "pre-commit")) ||
         existsSync(gitHook) ||
         PKG.devDependencies?.["simple-git-hooks"] !== undefined ||
         // a configured runner counts only if something actually wires it
@@ -272,7 +292,9 @@ const claims: Claim[] = [
         const docMajor = m[1];
         const realMajor = installed.split(".")[0];
         if (docMajor !== realMajor) {
-          bad.push(`${label}: doc says ${docMajor}.x, installed is ${installed}`);
+          bad.push(
+            `${label}: doc says ${docMajor}.x, installed is ${installed}`,
+          );
         }
       }
       return bad.length ? bad.join("; ") : null;
@@ -285,16 +307,22 @@ const claims: Claim[] = [
     where: "CLAUDE.md (all markdown links)",
     check: () => {
       const dead: string[] = [];
-      for (const m of CLAUDE_MD.matchAll(/\]\(\.?\/?([^)#\s]+\.(?:md|ts|tsx|sql|mjs|json))(?:#[^)]*)?\)/g)) {
+      for (const m of CLAUDE_MD.matchAll(
+        /\]\(\.?\/?([^)#\s]+\.(?:md|ts|tsx|sql|mjs|json))(?:#[^)]*)?\)/g,
+      )) {
         const rel = m[1].replace(/^\.\//, "");
         if (rel.startsWith("http")) continue;
         if (!existsSync(join(ROOT, rel))) dead.push(rel);
       }
       // Absolute cross-repo pointers: catch a path on a volume that no longer mounts.
-      for (const m of CLAUDE_MD.matchAll(/`?(\/(?:Volumes|Users)\/[^\s`)]+\.md)`?/g)) {
+      for (const m of CLAUDE_MD.matchAll(
+        /`?(\/(?:Volumes|Users)\/[^\s`)]+\.md)`?/g,
+      )) {
         if (!existsSync(m[1])) dead.push(m[1]);
       }
-      return dead.length ? `dead pointers: ${[...new Set(dead)].join(", ")}` : null;
+      return dead.length
+        ? `dead pointers: ${[...new Set(dead)].join(", ")}`
+        : null;
     },
     fix: "Repoint or delete. A dead pointer silently drops a whole ruleset for every agent that follows it.",
   },
@@ -312,12 +340,22 @@ for (const c of claims) {
 }
 
 if (failures.length > 0) {
-  console.error(`\n${RED}┌───────────────────────────────────────────────────────────────┐`);
-  console.error(`│ CLAUDE.md IS LYING TO AGENTS — a documented fact is no longer  │`);
-  console.error(`│ true of this repo. Agents act on the doc, not the config.      │`);
-  console.error(`└───────────────────────────────────────────────────────────────┘${RESET}`);
+  console.error(
+    `\n${RED}┌───────────────────────────────────────────────────────────────┐`,
+  );
+  console.error(
+    `│ CLAUDE.md IS LYING TO AGENTS — a documented fact is no longer  │`,
+  );
+  console.error(
+    `│ true of this repo. Agents act on the doc, not the config.      │`,
+  );
+  console.error(
+    `└───────────────────────────────────────────────────────────────┘${RESET}`,
+  );
   for (const { claim, reality } of failures) {
-    console.error(`\n  ${RED}✗ ${claim.id}${RESET}  ${DIM}(${claim.where})${RESET}`);
+    console.error(
+      `\n  ${RED}✗ ${claim.id}${RESET}  ${DIM}(${claim.where})${RESET}`,
+    );
     console.error(`    ${DIM}doc claims:${RESET} "${claim.claim}"`);
     console.error(`    ${YELLOW}reality:${RESET}    ${reality}`);
     console.error(`    ${DIM}fix:${RESET}        ${claim.fix}`);

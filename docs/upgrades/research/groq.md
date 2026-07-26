@@ -167,7 +167,7 @@ Concrete user-facing surfaces that exercise Groq through the 8 files. Arman revi
 | **Debate assistant (demo)** | `/demos/general/voice/debate-assistant` | Voice debate coach | #8 `processDebate` (`groq-debate.ts`) | Speak; confirm reply. Uses `openai/gpt-oss-20b` + `distil-whisper-large-v3-en`. |
 | **Modular multi-provider assistant** | via `hooks/ai/useDynamicVoiceAiProcessing` (`processAiRequest`) | text/audio in → Groq/OpenAI/Anthropic out | #6 `assistant-modular.ts` | Trigger a Groq-routed request; confirm completion text returns (validates B12 null-guard). |
 
-> The `(dev)/demos/general/voice/*` routes only build under `MATRX_PROFILE=full` (default in dev) — test locally with `pnpm dev`. The `/transcripts/*` and TTS read-aloud surfaces are core/production and the **most important** to verify.
+> The `(dev)/demos/general/voice/*` routes only build under `MATRX_PROFILE=full` (the default) — test locally with `pnpm dev`. The `/transcripts/*` and TTS read-aloud surfaces ship in every profile and are the **most important** to verify.
 
 ---
 

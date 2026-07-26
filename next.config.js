@@ -13,17 +13,14 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 });
 
 // MATRX_PROFILE controls which routes are compiled into the build:
-//   core (default in production) — main app: (core), (admin), (transitional),
-//                    (legacy), (public), (public-demos), (auth-pages),
-//                    (popup). Internal dev/test surfaces under app/(dev)/ —
-//                    whose route leaves are renamed *.dev.tsx — are NOT
-//                    compiled because `dev.tsx` is not in pageExtensions.
-//   full (default in development) — everything above PLUS app/(dev)/ routes.
-//                    `pnpm dev` defaults to this so /demos/* works locally
-//                    without per-developer env setup. The internal-demos
-//                    Vercel project also runs `full`. To preview the
-//                    production-core build locally, run with
-//                    `MATRX_PROFILE=core pnpm dev`.
+//   full (default everywhere — matches production / aimatrx.com) —
+//                    main app PLUS app/(dev)/ routes (`*.dev.tsx` in
+//                    pageExtensions). `pnpm build` and `pnpm dev` both
+//                    default here so local builds match the real server.
+//   core — main app only: (core), (admin), (transitional), (public),
+//                    (auth-pages), (popup). Internal (dev) surfaces are
+//                    NOT compiled. Opt in explicitly:
+//                    `MATRX_PROFILE=core pnpm build` / `pnpm dev`.
 // Helper .tsx files under (dev) (e.g. (dev)/demos/tests/matrx-table/components/
 // MatrxTable.tsx) keep plain .tsx because production code imports them directly;
 // pageExtensions only filters routes, not arbitrary components.
@@ -31,15 +28,11 @@ const rawProfile = (process.env.MATRX_PROFILE || "").trim().toLowerCase();
 if (rawProfile && rawProfile !== "full" && rawProfile !== "core") {
     console.warn(
         `[matrx] Unknown MATRX_PROFILE="${process.env.MATRX_PROFILE}". ` +
-            `Valid values: "full" | "core". Falling back to NODE_ENV default.`,
+            `Valid values: "full" | "core". Falling back to "full".`,
     );
 }
 const MATRX_PROFILE =
-    rawProfile === "full" || rawProfile === "core"
-        ? rawProfile
-        : process.env.NODE_ENV === "production"
-          ? "core"
-          : "full";
+    rawProfile === "full" || rawProfile === "core" ? rawProfile : "full";
 console.log(`[matrx] MATRX_PROFILE=${MATRX_PROFILE} (NODE_ENV=${process.env.NODE_ENV || "undefined"})`);
 // In full mode `tsx` is listed FIRST so any plain page.tsx wins over a
 // page.dev.tsx in the same directory — a guard for stray duplicates from
