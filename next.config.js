@@ -115,9 +115,7 @@ const nextConfig = {
     // useMemo/useCallback") and all agent-written code since 2026-02 assume the compiler.
     // A/B build benchmark (MATRX_PROFILE=core): off 10.6min / on 12.0min (+13%) —
     // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
-    // EXPERIMENT 4: compiler OFF to measure its true cost on the FULL profile
-    // (prior A/B was core-only: 10.6 -> 12.0 min). TEMPORARY — reverted next release.
-    reactCompiler: false,
+    reactCompiler: true,
     experimental: {
         serverActions: {
             bodySizeLimit: "10mb",

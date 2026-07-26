@@ -18,6 +18,12 @@
  *
  * Handlers must be cheap to build every render — they're plain closures over
  * opener hooks (React Compiler handles memoization; do not hand-memoize).
+ *
+ * IMPORT RULE (load-bearing): this file is in the static graph of EVERY route
+ * via Sidebar → NavFlyoutGroup. Feature thunks/services MUST be imported
+ * lazily inside the handler (`await import(...)`), never at the top level —
+ * the previous static `war-room/redux/thunks` import alone dragged 341
+ * modules (~3 MB) into all ~1000 route graphs.
  */
 
 import { useRouter } from "next/navigation";
@@ -27,11 +33,6 @@ import { useOpenStructuredListManagerV2Window } from "@/features/overlays/opener
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { createWarRoomSession } from "@/features/war-room/redux/thunks";
-import { createNewNote } from "@/features/notes/redux/thunks";
-import { createDocument } from "@/features/data-tables/document-service";
-import { createWorkbook } from "@/features/data-tables/workbook-service";
-import { isServiceFailure } from "@/features/data-tables/types";
 import type { ShellNavActionId } from "../constants/nav-data";
 
 export type ShellNavActionHandlers = Record<ShellNavActionId, () => void>;
@@ -55,6 +56,9 @@ export function useNavActions(): ShellNavActionHandlers {
       // Creates the session server-side, then navigates into it. The thunk
       // raises its own error toast on failure (returns null).
       void (async () => {
+        const { createWarRoomSession } = await import(
+          "@/features/war-room/redux/thunks"
+        );
         const session = await dispatch(createWarRoomSession());
         if (session) router.push(`/war-room/${session.id}`);
       })();
@@ -64,6 +68,9 @@ export function useNavActions(): ShellNavActionHandlers {
       // in-page "New Note" button behavior (create-then-open).
       void (async () => {
         try {
+          const { createNewNote } = await import(
+            "@/features/notes/redux/thunks"
+          );
           const note = await dispatch(createNewNote({})).unwrap();
           if (note?.id) router.push(`/notes/${note.id}`);
         } catch {
@@ -75,6 +82,10 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /documents page "New" button: create a blank cloud doc,
       // then open it.
       void (async () => {
+        const [{ createDocument }, { isServiceFailure }] = await Promise.all([
+          import("@/features/data-tables/document-service"),
+          import("@/features/data-tables/types"),
+        ]);
         const res = await createDocument({ name: "Untitled document" });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the document");
@@ -87,6 +98,10 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /workbooks page "New" button: create a blank workbook,
       // then open it.
       void (async () => {
+        const [{ createWorkbook }, { isServiceFailure }] = await Promise.all([
+          import("@/features/data-tables/workbook-service"),
+          import("@/features/data-tables/types"),
+        ]);
         const res = await createWorkbook({ name: "Untitled workbook" });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the workbook");
