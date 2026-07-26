@@ -361,21 +361,21 @@ export function SourceResultsTable({
               {interactive ? (
                 <div className="flex items-center gap-1">
                   <SortHeader
-                    label="Scrape"
+                    label="Read"
                     field="scrape"
                     active={sort.key === "scrape"}
                     dir={sort.dir}
                     onSort={onSort}
                   />
                   <ColumnFilterMenu
-                    label="Scrape"
+                    label="Read"
                     options={statusFilterOptions}
                     selectedId={statusFilter}
                     onSelect={setStatusFilter}
                   />
                 </div>
               ) : (
-                "Scrape"
+                "Read"
               )}
             </th>
             <th className="py-1.5 px-2 font-medium whitespace-nowrap text-right">
@@ -608,8 +608,8 @@ export function SourceResultsTable({
                     )}
                     title={
                       dataSize != null
-                        ? `${dataSize.toLocaleString()} characters scraped`
-                        : "No scraped content recorded"
+                        ? `${dataSize.toLocaleString()} characters read`
+                        : "No page content recorded"
                     }
                   >
                     {dataSize != null

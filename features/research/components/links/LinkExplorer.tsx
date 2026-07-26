@@ -120,7 +120,7 @@ export default function LinkExplorer() {
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
                             {linkList.length === 0
-                                ? 'Links are automatically extracted from pages when you scrape your sources.'
+                                ? 'Links are automatically extracted from pages when you read your sources.'
                                 : 'Try adjusting your search to find what you\'re looking for.'}
                         </p>
                     </div>

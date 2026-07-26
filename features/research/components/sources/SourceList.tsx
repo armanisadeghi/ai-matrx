@@ -175,8 +175,8 @@ function tierFromSource(source: ResearchSource): string | null {
  */
 type ScrapeTone = "ok" | "warn" | "bad" | "muted";
 const SCRAPE_OUTCOME: Record<string, { label: string; tone: ScrapeTone }> = {
-  success: { label: "Scraped", tone: "ok" },
-  complete: { label: "Scraped", tone: "ok" },
+  success: { label: "Read", tone: "ok" },
+  complete: { label: "Read", tone: "ok" },
   manual: { label: "Added by hand", tone: "ok" },
   thin: { label: "Thin content", tone: "warn" },
   gated: { label: "Gated", tone: "warn" },
@@ -590,7 +590,7 @@ function SourceRow({
 
         {/* Scrape — status + an ALWAYS-VISIBLE trigger ([status] [▶ button]).
             One of the two PRIMARY actions on the page: never buried in the row
-            dropdown. "Scrape" when pending/never-scraped, "Re-scrape" otherwise. */}
+            dropdown. "Read" when pending/never-read, "Re-read" otherwise. */}
         <td
           className={cn("px-2 py-2.5 w-32 align-top", cellBase)}
           onClick={(e) => e.stopPropagation()}
@@ -598,7 +598,7 @@ function SourceRow({
           <div className="flex flex-col items-start gap-1.5">
             <ScrapeOutcomeCell status={source.scrape_status} />
             <ActionTrigger
-              label={needsScrape ? "Scrape" : "Re-scrape"}
+              label={needsScrape ? "Read" : "Re-read"}
               busy={scraping}
               disabled={anyNavigating}
               onClick={(e) => onScrape(source, e)}
@@ -744,7 +744,7 @@ function SourceRow({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => onScrape(source, e)}>
                     <Download className="h-4 w-4 mr-2" />
-                    {needsScrape ? "Scrape" : "Re-scrape"}
+                    {needsScrape ? "Read" : "Re-read"}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => onAnalyze(source, e)}>
                     <Play className="h-4 w-4 mr-2" />
@@ -1187,7 +1187,7 @@ export default function SourceList() {
         });
         debug.pushEvents(stream.rawEvents, `scrape-${source.id}`);
       } catch {
-        toast.error("Couldn't start the scrape. Please try again.");
+        toast.error("Couldn't start reading. Please try again.");
         setScrapingIds((prev) => {
           const next = new Set(prev);
           next.delete(source.id);
@@ -1238,7 +1238,7 @@ export default function SourceList() {
   // Per-column header filter options (mirror the top SourceFilters bar configs).
   // The Scrape filter uses the SAME clear "what happened" labels as the cells
   // (`scrapeOutcomeFor`) so the dropdown and the column read identically — e.g.
-  // the option is "Scraped", not the ambiguous raw "Success".
+  // the option is "Read", not the ambiguous raw "Success".
   const statusFilterOptions: ColumnFilterOption[] = useMemo(
     () =>
       Object.keys(SCRAPE_STATUS_CONFIG).map((id) => ({
@@ -1349,14 +1349,14 @@ export default function SourceList() {
                 <th className="w-32 px-2 py-2 text-left">
                   <div className="flex items-center gap-1">
                     <SortHeader
-                      label="Scrape"
+                      label="Read"
                       field="scrape_status"
                       currentSort={activeSort}
                       currentDir={activeDir}
                       onSort={handleSort}
                     />
                     <ColumnFilterMenu
-                      label="Scrape"
+                      label="Read"
                       options={statusFilterOptions}
                       selectedId={filters.scrape_status ?? null}
                       onSelect={(id) =>
@@ -1662,7 +1662,7 @@ export default function SourceList() {
                     }}
                   >
                     <ActionTrigger
-                      label={needsScrape ? "Scrape" : "Re-scrape"}
+                      label={needsScrape ? "Read" : "Re-read"}
                       busy={scrapingIds.has(source.id)}
                       disabled={anyNavigating}
                       onClick={(e) => handleScrapeSource(source, e)}

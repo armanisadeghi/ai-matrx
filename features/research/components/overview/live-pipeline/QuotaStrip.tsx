@@ -76,7 +76,7 @@ export function QuotaStrip({ topic, state, derived }: Props) {
           cap={topic.max_keywords}
         />
         <Bar
-          label="Scrapes"
+          label="Reads"
           current={scrapesGood}
           cap={scrapesGoodMax}
           unit={`(${sourcesPerKeyword}/kw)`}

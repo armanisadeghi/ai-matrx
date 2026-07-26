@@ -128,7 +128,7 @@ export default function MediaDebugPanel({
           {q.dbDimensions === 0 && (
             <p className="text-[10px] text-warning">
               rs_media.width/height are null for this topic — aspect splits use
-              URL parsing (?w=&amp;h=, 384x256 paths, etc.) until scrape stores
+              URL parsing (?w=&amp;h=, 384x256 paths, etc.) until reads store
               dims.
             </p>
           )}

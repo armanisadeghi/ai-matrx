@@ -91,7 +91,7 @@ export function PipelineNextSteps({
               gates mean it will NOT touch the report or the document. Saying so
               here is what turns two silent no-ops into a user decision. */}
           <p className="mt-1 text-muted-foreground/85">
-            Reuses everything already captured — pages you have scraped are not
+            Reuses everything already captured — pages you have read are not
             fetched again and existing analyses are not re-run. It will{" "}
             <strong className="font-medium text-foreground/80">not</strong>{" "}
             rewrite your topic report or document; you will be asked about those

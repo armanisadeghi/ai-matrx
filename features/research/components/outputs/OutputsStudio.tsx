@@ -330,7 +330,7 @@ function DomainReportsCard({ topicId }: { topicId: string }) {
             Domain reports
           </div>
           <div className="text-[11px] text-muted-foreground">
-            Built from the research itself — search results, scraped pages,
+            Built from the research itself — search results, pages read,
             analyses and syntheses — not from the finished report. Each opens with
             its inputs already selected so you can see the cost before running.
           </div>

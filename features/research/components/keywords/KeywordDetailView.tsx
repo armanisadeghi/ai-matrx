@@ -151,9 +151,9 @@ export function KeywordDetailView({
                 This keyword has not been researched yet
               </p>
               <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-                Running searches it, scrapes what is missing, and writes its
+                Running searches it, reads what is missing, and writes its
                 synthesis. Sources this topic already holds are reused — pages
-                already scraped are not fetched again and existing analyses are
+                already read are not fetched again and existing analyses are
                 not re-run. Your other keywords are left untouched.
               </p>
             </div>

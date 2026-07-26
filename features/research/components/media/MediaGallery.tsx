@@ -221,7 +221,7 @@ export default function MediaGallery() {
             </p>
             <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
               {mediaList.length === 0
-                ? "Images, videos, and other media are automatically extracted when you scrape sources."
+                ? "Images, videos, and other media are automatically extracted when you read sources."
                 : "Try adjusting your search or filters to find what you're looking for."}
             </p>
           </div>

@@ -232,12 +232,12 @@ export function ScrapeStageView({
       title={
         <>
           <Download className="h-3 w-3 text-emerald-500" />
-          <span>Scraping content</span>
+          <span>Reading content</span>
         </>
       }
     >
       <StageHeader
-        title="Concurrent scraping"
+        title="Concurrent reading"
         icon={<Download className="h-3 w-3" />}
         stage={stage}
         subtitle={

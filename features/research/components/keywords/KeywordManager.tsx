@@ -252,7 +252,7 @@ export default function KeywordManager() {
             </p>
             <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
               Running picks these up and reuses everything already captured —
-              pages already scraped are not fetched again, and existing analyses
+              pages already read are not fetched again, and existing analyses
               are not re-run.
             </p>
           </div>

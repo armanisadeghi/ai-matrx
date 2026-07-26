@@ -11,7 +11,7 @@ const FEATURES = [
     },
     {
         icon: Globe,
-        title: 'Multi-Source Scraping',
+        title: 'Multi-Source Reading',
         description: 'Handles web pages, PDFs, YouTube transcripts, and file uploads. Chrome extension catches what automation misses.',
     },
     {
@@ -39,7 +39,7 @@ const FEATURES = [
 const STEPS = [
     { number: '01', title: 'Enter Your Topic', description: 'Type any subject — a company, person, scientific topic, product, or anything else.' },
     { number: '02', title: 'AI Suggests Keywords', description: 'An LLM suggests research keywords, a title, and a description. Pick what fits.' },
-    { number: '03', title: 'Automated Pipeline', description: 'The system searches, scrapes, analyzes, and generates an initial research report.' },
+    { number: '03', title: 'Automated Pipeline', description: 'The system searches, reads, analyzes, and generates an initial research report.' },
     { number: '04', title: 'Curate & Refine', description: 'Review sources, edit content, add tags, and iterate until the research is complete.' },
 ];
 
@@ -61,7 +61,7 @@ export default function ResearchLanding() {
                         </span>
                     </h1>
                     <p className="mt-6 mx-auto max-w-2xl text-[clamp(1rem,0.95rem+0.25vw,1.25rem)] text-muted-foreground leading-relaxed">
-                        Enter a topic, and our AI pipeline searches the web, scrapes content, analyzes sources,
+                        Enter a topic, and our AI pipeline searches the web, reads content, analyzes sources,
                         and generates a comprehensive research report — with you in control at every step.
                     </p>
                     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">

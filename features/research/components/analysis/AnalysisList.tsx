@@ -402,7 +402,7 @@ function DetailPanel({
             </p>
             <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
               This source was processed but produced no summary — usually the
-              page had too little usable text. Re-scrape it or retry the
+              page had too little usable text. Re-read it or retry the
               analysis.
             </p>
           </div>

@@ -203,7 +203,7 @@ export default function ContentList() {
               </p>
               <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
                 {scraped.length === 0
-                  ? "Scrape your sources to collect page content for analysis and synthesis."
+                  ? "Read your sources to collect page content for analysis and synthesis."
                   : "Try adjusting your search or filters to find what you're looking for."}
               </p>
             </div>

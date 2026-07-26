@@ -60,7 +60,7 @@ interface LevelMeta {
 
 const LEVEL_META: Record<CaptureLevel, LevelMeta> = {
   1: {
-    title: "Level 1 — Quick scrape",
+    title: "Level 1 — Quick read",
     short: "Quick",
     blurb:
       "New or untried sources. The extension will batch these on its next run with a quick capture (no wait, no scroll).",
@@ -73,7 +73,7 @@ const LEVEL_META: Record<CaptureLevel, LevelMeta> = {
     title: "Level 2 — Wait & scroll",
     short: "Scroll",
     blurb:
-      "Quick scrape returned thin content. The extension will retry with a full page load + auto-scroll for lazy content.",
+      "Quick read returned thin content. The extension will retry with a full page load + auto-scroll for lazy content.",
     icon: MousePointerClick,
     accent: "text-violet-600 dark:text-violet-400",
     badge:

@@ -31,8 +31,8 @@ const VISIBLE_FIELDS: FieldSpec[] = [
   },
   {
     key: "scrapes_per_keyword",
-    label: "Scrapes / keyword",
-    hint: "Successful scrapes attempted per keyword.",
+    label: "Reads / keyword",
+    hint: "Successful page reads attempted per keyword.",
     min: 1,
     max: 30,
   },

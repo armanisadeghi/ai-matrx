@@ -119,7 +119,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
                     {liveStats.scraped > 0 && (
                         <span className="flex items-center gap-1">
                             <Download className="h-3 w-3 text-green-400" />
-                            <span className="tabular-nums font-medium text-foreground">{liveStats.scrapeGood}/{liveStats.scraped}</span> scraped
+                            <span className="tabular-nums font-medium text-foreground">{liveStats.scrapeGood}/{liveStats.scraped}</span> read
                         </span>
                     )}
                     {liveStats.analyzed > 0 && (

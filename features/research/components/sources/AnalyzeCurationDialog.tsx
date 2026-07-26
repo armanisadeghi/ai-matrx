@@ -78,7 +78,7 @@ export function AnalyzeCurationDialog({
           </DialogTitle>
           <DialogDescription className="text-xs">
             Trim the junk so the model — and downstream RAG — only see what
-            matters. The original scrape is backed up and recoverable.
+            matters. The original page content is backed up and recoverable.
           </DialogDescription>
         </DialogHeader>
 
@@ -140,7 +140,7 @@ export function AnalyzeCurationDialog({
           value={text}
           onChange={(e) => setText(e.target.value)}
           spellCheck={false}
-          placeholder="No scraped content for this source."
+          placeholder="No page content for this source."
           className="w-full min-h-[45vh] resize-y rounded-lg border border-border bg-background p-3 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary"
         />
 

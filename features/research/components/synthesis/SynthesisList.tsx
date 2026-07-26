@@ -520,7 +520,7 @@ export default function SynthesisList() {
               </p>
               <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
                 {synthList.length === 0
-                  ? "Synthesize your scraped content and analyses into cohesive research summaries."
+                  ? "Synthesize the content you've read and your analyses into cohesive research summaries."
                   : "Try adjusting your search or filters to find what you're looking for."}
               </p>
             </div>

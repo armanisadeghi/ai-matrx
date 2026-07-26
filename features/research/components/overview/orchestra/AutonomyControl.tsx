@@ -23,7 +23,7 @@ const OPTIONS: {
     label: "Auto",
     icon: Zap,
     description:
-      "Every step chains automatically — keywords, search, scrape, analysis, synthesis, and report all run end-to-end without prompts.",
+      "Every step chains automatically — keywords, search, reading, analysis, synthesis, and report all run end-to-end without prompts.",
   },
   {
     value: "semi",

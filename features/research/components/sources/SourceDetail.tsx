@@ -965,7 +965,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
     try {
       await restoreOriginalContent(currentContent);
       refetchContent();
-      toast.success("Restored the original scrape");
+      toast.success("Restored the original page content");
     } catch (err) {
       toast.error(
         `Couldn't restore: ${err instanceof Error ? err.message : "unknown error"}`,
@@ -1298,7 +1298,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                         </div>
                       )}
                       <div className="flex justify-between py-1">
-                        <span className="text-muted-foreground">Scraped</span>
+                        <span className="text-muted-foreground">Read</span>
                         <span>
                           {currentContent.scraped_at
                             ? new Date(
@@ -1386,10 +1386,10 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 <Download className="h-3.5 w-3.5" />
               )}
               {isScraping
-                ? "Scraping…"
+                ? "Reading…"
                 : hasBeenScraped
-                  ? "Re-scrape"
-                  : "Scrape"}
+                  ? "Re-read"
+                  : "Read"}
             </Button>
             <Button
               variant="outline"
@@ -1406,7 +1406,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 size="sm"
                 className="gap-1.5 h-8"
                 onClick={handleRestoreOriginal}
-                title="Replace the curated content with the original scrape"
+                title="Replace the curated content with the original page content"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Restore original
@@ -1505,7 +1505,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     <Loader2 className="h-5 w-5 text-primary/60 animate-spin" />
                   </div>
                   <p className="text-xs font-medium text-foreground/70">
-                    Scraping…
+                    Reading…
                   </p>
                   {scrapeStream.messages.length > 0 && (
                     <p className="text-[10px] text-muted-foreground max-w-[240px]">
@@ -1523,11 +1523,11 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   </div>
                   <div>
                     <p className="text-xs font-medium text-foreground/70">
-                      Scrape failed
+                      Read failed
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[240px]">
-                      The scraper couldn&apos;t retrieve this page. Try
-                      re-scraping or paste content manually.
+                      We couldn&apos;t retrieve this page. Try
+                      re-reading or paste content manually.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1537,7 +1537,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all min-h-[44px]"
                     >
                       <RefreshCw className="h-3 w-3" />
-                      Re-scrape
+                      Re-read
                     </button>
                     <button
                       onClick={() => setPasteOpen(true)}
@@ -1558,7 +1558,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       No content yet
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[240px]">
-                      Scrape this source to fetch its page content, or paste
+                      Read this source to fetch its page content, or paste
                       content manually.
                     </p>
                   </div>
@@ -1569,7 +1569,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all min-h-[44px]"
                     >
                       <Download className="h-3 w-3" />
-                      Scrape
+                      Read
                     </button>
                     <button
                       onClick={() => setPasteOpen(true)}
@@ -1693,7 +1693,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 <Brain className="h-5 w-5 text-muted-foreground/30" />
               </div>
               <p className="text-[10px] text-muted-foreground max-w-[200px]">
-                Scrape content first, then run analysis to extract insights.
+                Read content first, then run analysis to extract insights.
               </p>
             </div>
           )}

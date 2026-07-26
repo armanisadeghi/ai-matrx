@@ -649,13 +649,13 @@ export function PipelineOrchestra() {
                   Run everything pending
                 </span>
                 <span className="pl-5 text-[10px] leading-snug text-muted-foreground">
-                  Search, scrape, analyze, then write the report — skips steps
+                  Search, read, analyze, then write the report — skips steps
                   already done.
                 </span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Iterate the report — no re-scraping
+                Iterate the report — no re-reading
               </DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={handleUpdateReport}
@@ -741,13 +741,13 @@ export function PipelineOrchestra() {
               count={p.total_sources}
               hint={hintFor(
                 "sources",
-                `${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw scraped`,
+                `${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw read`,
               )}
               status={sourcesStatus}
               href={`${base}/sources`}
               onAction={handleScrape}
               actionDisabled={!canRunScrape}
-              actionLabel="Scrape pending sources"
+              actionLabel="Read pending sources"
             />
             <VEdge state={edgeStateFor(sourcesStatus, contentStatus)} />
             <OrchestraNode
@@ -790,7 +790,7 @@ export function PipelineOrchestra() {
               href={`${base}/tags`}
               onAction={handleAutoTag}
               actionDisabled={!canRunAutoTag}
-              actionLabel="Auto-tag scraped sources"
+              actionLabel="Auto-tag sources you've read"
               onSecondaryAction={handleAutoConsolidate}
               secondaryActionIcon={Combine}
               secondaryActionDisabled={!canRunAutoConsolidate}
@@ -880,13 +880,13 @@ export function PipelineOrchestra() {
               count={p.total_sources}
               hint={hintFor(
                 "sources",
-                `${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw scraped`,
+                `${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw read`,
               )}
               status={sourcesStatus}
               href={`${base}/sources`}
               onAction={handleScrape}
               actionDisabled={!canRunScrape}
-              actionLabel="Scrape pending sources"
+              actionLabel="Read pending sources"
             />
             <div className="flex items-center px-1">
               <OrchestraEdge
@@ -900,7 +900,7 @@ export function PipelineOrchestra() {
               count={p.total_content}
               hint={hintFor(
                 "content",
-                `${p.total_sources > 0 ? Math.round((p.total_content / p.total_sources) * 100) : 0}% scraped`,
+                `${p.total_sources > 0 ? Math.round((p.total_content / p.total_sources) * 100) : 0}% read`,
               )}
               status={contentStatus}
               href={`${base}/content`}
@@ -1059,7 +1059,7 @@ export function PipelineOrchestra() {
                   hint="manual · group & consolidate"
                   onAction={handleAutoTag}
                   actionDisabled={!canRunAutoTag}
-                  actionLabel="Auto-tag scraped sources"
+                  actionLabel="Auto-tag sources you've read"
                   onSecondaryAction={handleAutoConsolidate}
                   secondaryActionIcon={Combine}
                   secondaryActionDisabled={!canRunAutoConsolidate}

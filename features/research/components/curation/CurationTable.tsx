@@ -649,14 +649,14 @@ export default function CurationTable() {
                 <th className="px-2 align-middle whitespace-nowrap">
                   <div className="flex items-center gap-1">
                     <SortHeader
-                      label="Scrape"
+                      label="Read"
                       field="scrape"
                       currentSort={sortKey}
                       currentDir={sortDir}
                       onSort={handleSort}
                     />
                     <ColumnFilterMenu
-                      label="Scrape"
+                      label="Read"
                       options={scrapeFilterOptions}
                       selectedId={scrapeFilter}
                       onSelect={setScrapeFilter}

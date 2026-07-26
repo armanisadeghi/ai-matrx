@@ -8,7 +8,7 @@ const LEVEL_CONFIG: Record<
 > = {
   1: {
     label: "L1",
-    description: "Quick scrape — outerHTML on tab open",
+    description: "Quick read — outerHTML on tab open",
     className:
       "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/40",
   },

@@ -51,7 +51,7 @@ import { searchProviderFromDb, topicStatusFromDb } from "../../types";
 const TOPIC_STATUSES: { value: TopicStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
   { value: "searching", label: "Searching" },
-  { value: "scraping", label: "Scraping" },
+  { value: "scraping", label: "Reading" },
   { value: "curating", label: "Curating" },
   { value: "analyzing", label: "Analyzing" },
   { value: "complete", label: "Complete" },
@@ -420,10 +420,10 @@ export function TopicSettingsForm({
         <AutonomySelector value={autonomyLevel} onChange={setAutonomyLevel} />
       </section>
 
-      {/* Search & Scrape */}
+      {/* Search & Read */}
       <section className="space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-          Search & Scrape
+          Search & Read
         </h2>
 
         <div className="space-y-2">
@@ -447,9 +447,9 @@ export function TopicSettingsForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="scrape-threshold">Good Scrape Threshold</Label>
+          <Label htmlFor="scrape-threshold">Good Read Threshold</Label>
           <p className="text-xs text-muted-foreground">
-            Minimum characters to consider a scrape successful.
+            Minimum characters to consider a read successful.
           </p>
           <Input
             id="scrape-threshold"
