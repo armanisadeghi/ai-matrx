@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
-import { brokerSelectors } from "@/lib/redux/brokerSlice";
+import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
 
 /**
  * A utility component to debug broker map entries and values

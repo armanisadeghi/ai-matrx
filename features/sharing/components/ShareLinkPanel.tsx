@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link2, Copy, Check, Trash2, Loader2, Plus, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import type { ResourceType } from "@/utils/permissions";
+import type { ResourceType } from "@/utils/permissions/registry";
 import {
   createShareLink,
   listShareLinks,

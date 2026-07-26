@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { brokerActions } from "@/lib/redux/brokerSlice";
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { SLACK_BROKER_IDS } from "./components/BrokerSlackClient";
 import { LoadingSpinner } from "@/components/ui/spinner";
 

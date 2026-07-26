@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { brokerActions } from "@/lib/redux/brokerSlice";
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { UserData } from "@/utils/userDataMapper";
 import { useSetGlobalBasics } from "@/hooks/brokers/useSetGlobalBasics";
 

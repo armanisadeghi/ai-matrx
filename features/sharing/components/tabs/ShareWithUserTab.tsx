@@ -14,7 +14,8 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, UserPlus, CheckCircle, XCircle, Search, Users, MessageSquare, Building2, Mail } from 'lucide-react';
-import { PermissionLevel, ResourceType, ShareActionResult } from '@/utils/permissions';
+import { PermissionLevel, ShareActionResult } from "@/utils/permissions/types";
+import { ResourceType } from "@/utils/permissions/registry";
 import { PermissionLevelDescription } from '../PermissionBadge';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/utils/supabase/client';

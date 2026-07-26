@@ -1,7 +1,7 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAppletRuntimeDataSourceConfig } from "@/lib/redux/app-runner/slices/customAppletRuntimeSlice";
 import { useCallback, useState } from "react";
-import { brokerSelectors } from "@/lib/redux/brokerSlice";
+import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
 
 export interface NeededBroker {
   id: string;

@@ -18,18 +18,16 @@ import {
   Loader2,
   CheckCircle,
 } from "lucide-react";
-import { useSharing, useIsOwner, getShareableResource } from "@/utils/permissions";
-import type { ResourceType } from "@/utils/permissions";
+import { useSharing, useIsOwner } from "@/utils/permissions/hooks";
+import { getShareableResource } from "@/utils/permissions/registry";
+import type { ResourceType } from "@/utils/permissions/registry";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Lock } from "lucide-react";
 import { PermissionsList } from "./PermissionsList";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "./tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "./tabs/PublicAccessTab";
-import {
-  getResourceTypeLabel,
-  getResourceSharePath,
-} from "@/utils/permissions";
+import { getResourceTypeLabel, getResourceSharePath } from "@/utils/permissions/registry";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ShareModalProps {

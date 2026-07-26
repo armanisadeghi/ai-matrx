@@ -10,7 +10,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import type { PermissionLevel } from "@/utils/permissions";
+import type { PermissionLevel } from "@/utils/permissions/types";
 import { isJsonObject } from "@/types/json";
 
 // Re-exported so consumers can import the level type alongside the settings type.

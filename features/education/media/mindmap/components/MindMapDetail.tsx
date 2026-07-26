@@ -17,7 +17,7 @@ import { SourceCitations } from "@/features/education/trust/components/SourceCit
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import { useAccess } from "@/utils/permissions";
+import { useAccess } from "@/utils/permissions/access";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
 import { MindMapView } from "./MindMapView";

@@ -16,7 +16,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { ResourceType } from "@/utils/permissions";
+import type { ResourceType } from "@/utils/permissions/registry";
 
 const OVERLAY_ID = "shareModal" as const;
 

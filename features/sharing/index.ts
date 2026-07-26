@@ -9,5 +9,9 @@
 export * from './components';
 
 // Hooks and utilities from permissions package
-export * from '@/utils/permissions';
+export * from "@/utils/permissions/types";
+export * from "@/utils/permissions/service";
+export * from "@/utils/permissions/hooks";
+export * from "@/utils/permissions/access-core";
+export { useAccess, getResourceAccess } from "@/utils/permissions/access";
 

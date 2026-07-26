@@ -13,11 +13,7 @@ import {
 import { X, Mail, Building2, Globe, Loader2, Lock } from "lucide-react";
 import { PermissionBadge, PublicBadge } from "./PermissionBadge";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
-import type {
-  PermissionWithDetails,
-  PermissionLevel,
-  ShareActionResult,
-} from "@/utils/permissions";
+import type { PermissionWithDetails, PermissionLevel, ShareActionResult } from "@/utils/permissions/types";
 import {
   AlertDialog,
   AlertDialogAction,

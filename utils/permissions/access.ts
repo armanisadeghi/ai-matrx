@@ -13,7 +13,7 @@
  *
  * The pure resolver + types + helpers live in `./access-core` (isomorphic, no
  * React) so the server guard can share them without a client boundary. This file
- * re-exports them for client consumers who import from `@/utils/permissions`.
+ * re-exports them for client consumers who import from `@/utils/permissions/access`.
  */
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
@@ -21,7 +21,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveResourceAccess, NO_ACCESS, type ResourceAccess } from "./access-core";
 
 // Pure types + helpers (AccessLevel, accessSatisfies, canEditAccess, …) come from
-// ./access-core — import them from there or via the @/utils/permissions barrel.
+// ./access-core — import them from there or from `@/utils/permissions/access-core`.
 
 /**
  * Resolve the current caller's access to a resource using the browser client.

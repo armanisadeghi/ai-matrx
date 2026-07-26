@@ -51,7 +51,7 @@ import type { AssetPreset } from "@/features/files/types";
 import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
-import { getShareableResource, type ResourceType } from "@/utils/permissions";
+import { getShareableResource, type ResourceType } from "@/utils/permissions/registry";
 import type {
   CodeEditorAgentConfig,
   CodeFile as AgentCodeEditorCodeFile,

@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Building2, Check } from "lucide-react";
-import { PermissionLevel, ResourceType, ShareActionResult } from "@/utils/permissions";
+import { PermissionLevel, ShareActionResult } from "@/utils/permissions/types";
+import { ResourceType } from "@/utils/permissions/registry";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { PermissionLevelDescription } from "../PermissionBadge";
 import { useToast } from "@/components/ui/use-toast";

@@ -1,7 +1,10 @@
 // components/BrokerForm.tsx
 "use client";
 
-import { brokerSelectors, BrokerIdentifier, brokerActions, useServerBrokerSync } from "@/lib/redux/brokerSlice";
+import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { BrokerIdentifier } from "@/lib/redux/brokerSlice/types";
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import { useServerBrokerSync } from "@/lib/redux/brokerSlice/hooks/useTempBroker";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SLACK_BROKER_IDS } from "./BrokerSlackClient";
 

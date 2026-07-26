@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { PermissionLevel } from '@/utils/permissions';
+import { PermissionLevel } from "@/utils/permissions/types";
 import { Crown, Shield, Eye, Users, Globe } from 'lucide-react';
 
 interface PermissionBadgeProps {

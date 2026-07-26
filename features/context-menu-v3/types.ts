@@ -22,7 +22,7 @@ import type { Scope } from "@/features/agents/redux/shared/scope";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { EntityType } from "@/features/scopes/types";
-import type { ResourceType } from "@/utils/permissions";
+import type { ResourceType } from "@/utils/permissions/registry";
 import type { SelectionRange } from "./utils/selection-tracking";
 
 // ---------------------------------------------------------------------------
