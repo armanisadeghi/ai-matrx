@@ -127,8 +127,23 @@ const nextConfig = {
         serverActions: {
             bodySizeLimit: "10mb",
         },
-        // Optimize lucide-react (the 1400+ icon barrel file) and zustand to avoid massive SSR chunks
+        // NOTE: Next MERGES this with its own 75-package default list
+        // (`[...new Set([...userProvided, ...defaults])]` in dist/server/config.js), so
+        // date-fns, @tabler/icons-react, react-icons/* and lucide-react are ALREADY
+        // optimized without being listed here. Only add packages NOT in that default
+        // list — adding a defaulted one is a no-op, not a build win.
         optimizePackageImports: ['lucide-react', 'zustand'],
+        // Turbopack's persistent build cache. Defaults to FALSE, which meant every
+        // production deploy recompiled all ~8k first-party modules (plus node_modules)
+        // from scratch. Vercel's own log proves it: "Restored build cache from previous
+        // deployment" followed by "Build cache: <1 MB" — it restored nothing Turbopack
+        // could use, and the compile phase alone was 14.6 of a 16 min build while
+        // page-data collection was only 51s.
+        //
+        // EXPECTATION: the FIRST build after enabling this is NOT faster — it writes the
+        // cache. The benefit shows on the SECOND and later builds. Judge it on build N+1,
+        // not N. Experimental: if a deploy ever ships stale output, revert this line first.
+        turbopackFileSystemCacheForBuild: true,
     },
     // Turbopack configuration (Next.js 16 default bundler)
     turbopack: {
