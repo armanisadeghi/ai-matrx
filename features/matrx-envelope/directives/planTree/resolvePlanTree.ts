@@ -10,6 +10,7 @@ import {
   listPlanNodes,
 } from "@/features/marketing/content-plan/data/service";
 import type { PlanNodeRow } from "@/features/marketing/content-plan/types";
+import { listSiteOptions } from "@/features/marketing/data/service";
 
 import type {
   PlanNodePatchItem,
@@ -21,12 +22,31 @@ import { countSpecNodes } from "./types";
 
 export const POLL_DELAYS_MS = [0, 2000, 5000] as const;
 
-function collectSlugs(nodes: PlanTreeNodeSpec[], out: Set<string>): Set<string> {
+function collectSlugs(
+  nodes: PlanTreeNodeSpec[],
+  out: Set<string>,
+): Set<string> {
   for (const node of nodes) {
     if (node.slug) out.add(node.slug);
     collectSlugs(node.children ?? [], out);
   }
   return out;
+}
+
+/** Resolve `site_id` or plain-text `site` (domain/name) to a live web.site id. */
+export async function resolvePlanTreeSiteId(
+  item: Pick<PlanTreeDirectiveItem, "site_id" | "site">,
+): Promise<string | null> {
+  if (item.site_id) return item.site_id;
+  const needle = item.site?.trim().toLowerCase();
+  if (!needle) return null;
+  const options = await listSiteOptions();
+  const match = options.find((site) => {
+    const domain = site.domain?.trim().toLowerCase();
+    const name = site.name?.trim().toLowerCase();
+    return domain === needle || name === needle;
+  });
+  return match?.id ?? null;
 }
 
 /**
@@ -36,12 +56,12 @@ function collectSlugs(nodes: PlanTreeNodeSpec[], out: Set<string>): Set<string> 
 export async function resolvePlanTree(
   item: PlanTreeDirectiveItem,
 ): Promise<ResolvedPlanTree | null> {
-  // Only a real site_id is resolvable here. A text-addressed item (`site`) is
-  // resolved server-side at apply time, so the card stays in its unresolved
-  // state rather than guessing a site — it must still RENDER (see
-  // EnvelopeFallbackCard); never let an unresolvable item hide content.
-  if (!item.site_id) return null;
-  const live = await listPlanNodes(item.site_id);
+  // Addressable by site_id OR plain-text site (domain/name). The server
+  // resolves text at apply time; the card must re-find that site so Apply
+  // + deep-link work when the agent omitted site_id (2026-07-26).
+  const siteId = await resolvePlanTreeSiteId(item);
+  if (!siteId) return null;
+  const live = await listPlanNodes(siteId);
   if (live.length === 0) return null;
 
   const bySlug = new Map<string, PlanNodeRow>();
@@ -61,7 +81,7 @@ export async function resolvePlanTree(
   if (matched === 0) return null;
 
   return {
-    siteId: item.site_id,
+    siteId,
     matchedCount: matched,
     liveCount: live.length,
     topLevel: item.nodes.map((node) => ({

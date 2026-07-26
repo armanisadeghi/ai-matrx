@@ -8,8 +8,11 @@
  * Supabase and (b) which underlying entity clicking opens (reusing the
  * item-presentation opener via its `KnownItemType` discriminant).
  *
- * Adding a new reference type later = one entry here. No switch to edit, no new
- * opener if the item-presentation registry already has the entity's window.
+ * A new SERVER-registered noun needs NO entry here — the catalog-derived
+ * generic resolver (see `derivedResolver`, fed by catalog-nouns.generated.ts)
+ * covers any plain-row noun automatically. The hand RESOLVERS map below is the
+ * bespoke OVERLAY only (compound identities, richer selects, custom open
+ * targets). Aliases come from the server-published catalog map.
  *
  * Every resolver is defensive: it NEVER throws (the chip wraps it too), and a
  * missing row / soft error returns `undefined` so the chip falls back to the
@@ -23,6 +26,10 @@ import { contextDb } from "@/utils/supabase/contextDb";
 import { supabase } from "@/utils/supabase/client";
 
 import type { KnownItemType } from "@/features/item-presentation/types";
+import {
+  CATALOG_ALIASES,
+  CATALOG_NOUNS,
+} from "@/features/matrx-envelope/catalog-nouns.generated";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 
 export interface ReferenceResolver {
@@ -786,27 +793,60 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   },
 };
 
-/** Resolve a reference `type` to its resolver, or `undefined` (graceful chip). */
+// ── Catalog-derived generic resolver ─────────────────────────────────────────
+// The server's computed action catalog ships every registered noun's table +
+// title_column + identity fields (mirrored → catalog-nouns.generated.ts). Any
+// plain-row noun WITHOUT a bespoke entry above resolves through this generic
+// path — a newly registered server noun gets a live chip with ZERO edits here.
+// The hand RESOLVERS map is now the OVERLAY for bespoke behavior (compound ids,
+// richer selects, custom open targets), never a required registration.
+
+const COMMON_TITLE_FIELDS = ["name", "title", "label", "display_name", "slug"];
+
+function derivedResolver(noun: string): ReferenceResolver | undefined {
+  const entry = CATALOG_NOUNS[noun];
+  if (!entry?.table) return undefined;
+  const idField = entry.identity_fields[0] ?? "id";
+  if (entry.identity_fields.length > 1 || idField !== "id") {
+    // Compound identity needs a bespoke resolver — surface via the fallback chip.
+    return undefined;
+  }
+  const dot = entry.table.indexOf(".");
+  const schema = dot === -1 ? "public" : entry.table.slice(0, dot);
+  const table = dot === -1 ? entry.table : entry.table.slice(dot + 1);
+  const titleFields = entry.title_column
+    ? [entry.title_column, ...COMMON_TITLE_FIELDS]
+    : COMMON_TITLE_FIELDS;
+  return {
+    openItemType: noun as KnownItemType,
+    openId: (ref) => ref.id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.id || !UUID_LIKE_RE.test(ref.id)) return stringify(ref.label);
+      try {
+        const from =
+          schema === "public" ? supabase.from(table) : supabase.schema(schema).from(table);
+        const { data } = await from.select("*").eq("id", ref.id).maybeSingle();
+        if (!data) return undefined;
+        return firstField(data as Record<string, unknown>, titleFields) ?? stringify(ref.label);
+      } catch {
+        return undefined; // graceful chip — display.label fallback
+      }
+    },
+  };
+}
+
+const UUID_LIKE_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Resolve a reference `type` to its resolver, or `undefined` (graceful chip).
+
+ * Bespoke overlay first, then the catalog-derived generic resolver. Aliases are
+ * the SERVER-PUBLISHED map (catalog manifest) — the old hand map is gone. */
 export function getReferenceResolver(
   type: string,
 ): ReferenceResolver | undefined {
-  const legacy: Record<string, string> = {
-    agent_app: "app",
-    data_table: "dataset",
-    document: "udt_document",
-    // Read-time only: pre-rename historical references still name the picklist
-    // family. NEW content always emits structured_list*. See
-    // common-docs/structured-lists-rename/FEATURE.md (history policy).
-    picklist: "structured_list",
-    picklist_group: "structured_list_group",
-    picklist_item: "structured_list_item",
-    podcast_episode: "pc_episode",
-    podcast_show: "pc_show",
-    sandbox: "sandbox_instance",
-    transcript_session: "studio_session",
-    war_room_thread: "thread",
-  };
-  return RESOLVERS[legacy[type] ?? type];
+  const canonical = CATALOG_ALIASES[type] ?? type;
+  return RESOLVERS[canonical] ?? derivedResolver(canonical);
 }
 
 /**

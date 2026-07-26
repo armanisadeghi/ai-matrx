@@ -12,7 +12,7 @@
 export const MATRX_VERSION = 1 as const;
 
 export type MatrxKind =
-  "output_directive" | "reference" | "secret" | "validation";
+  "output_directive" | "function" | "reference" | "secret" | "validation";
 
 /** The universal outer shell. Items are unknown until routed by `(kind, type)`. */
 export interface MatrxEnvelope<Item = Record<string, unknown>> {
@@ -141,7 +141,7 @@ export const REFERENCE_TYPES = [
   "structured_list_group",
   "structured_list_item",
   // Legacy (read-only): pre-rename historical references. NEW content emits the
-  // structured_list* tokens above. See common-docs/structured-lists-rename.
+  // structured_list* tokens above. See common-docs/projects/structured-lists-rename.
   "picklist",
   "picklist_group",
   "picklist_item",
