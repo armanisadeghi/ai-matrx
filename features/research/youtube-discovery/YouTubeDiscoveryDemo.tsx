@@ -288,10 +288,11 @@ export function YouTubeDiscoveryDemo() {
               </p>
             </div>
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {page.results.map((video) => (
+              {page.results.map((video, index) => (
                 <VideoCard
                   key={video.video_id}
                   video={video}
+                  eagerImage={index === 0}
                   onPreview={() => setSelected(video)}
                 />
               ))}
@@ -580,9 +581,11 @@ function ToggleFilter({
 
 function VideoCard({
   video,
+  eagerImage,
   onPreview,
 }: {
   video: YouTubeVideoCandidate;
+  eagerImage: boolean;
   onPreview: () => void;
 }) {
   const engagement = youTubeEngagementRate(
@@ -604,6 +607,7 @@ function VideoCard({
             src={video.thumbnail_url}
             alt=""
             fill
+            loading={eagerImage ? "eager" : "lazy"}
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             className="object-cover transition duration-500 group-hover:scale-[1.03]"
           />
