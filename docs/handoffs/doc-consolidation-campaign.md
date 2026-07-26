@@ -65,6 +65,13 @@ All HISTORY-class: ai-matrx `docs/type-drift/` (34), `docs/SWEEP_*` + `docs/IMPA
 - **Unsure classifications — read before touching:** aidream `db/schema_analysis/{activity,current_schema}.md` (may be consumed by the schema-drift orchestrator); aidream `docs/knowledge/` vs `docs/rag_and_ner/` (proposed merge, but knowledge/ may be partly Arman-vision — check authorship); ai-matrx root `ITEM-REGISTRY.md` / `CORE_TASKS.md` / `ARMAN_SMS_TASKS.md` (flagged as parallel task tracking but may be Arman's own — ask, don't kill).
 - **Skill fixes already done (don't re-litigate):** ai-matrx commit `a9ad0130f` — `canonical-associations` (removed retired `check_resource_access` from KEEP list; now names the `has_access`/`has_access_for` kernel) and `db-canonicalize-table` (removed the blanket `default 'private'`; now a `<TIER>` placeholder with the db-rules §6a decision rule inline).
 
+## Wave 2 execution record (2026-07-26)
+
+- **aidream** (`d5568071b`): 21 archived (`.agent/` ×11, `docs/tasks-from-outside/` ×6, socket pair, 2 shipped persistence phase plans), 1 completed handoff deleted, 29 skipped-verified-live (all 22 remaining handoffs are genuinely active; tool-registry migration guides left as Wave 3 cluster-1 claimants).
+- **ai-matrx** (`024dbc81f`): 58 archived (type-drift ×33, SWEEP/IMPACT ×11, file-handling trio, OVERLAY_WINDOW_OVERHAUL, 5 completed handoff strays, 5 self-declared-done loose docs), 3 live stray handoffs moved into `docs/handoffs/`, 17 live docs re-pointered so no links dangle.
+- **Inventory corrections found during execution:** `docs/db_changes/` (all 4) + `docs/db_rebuild/proposals/ai_model_config_parity.md` were classed HISTORY but are load-bearing live docs (skill required-reading, Phase D gate) — reclassified LIVE; `OVERLAY_WINDOW_ROADMAP.md` is a live known-gaps doc (only its OVERHAUL companion was history); earlier: `utils/code_context` is NOT byte-identical to the matrx-utils copy and has live imports (Wave 1 deletion skipped — needs real dedup).
+- **Regenerator hazard (for Wave 5):** `scripts/generate-type-drift-hitlists.ts` (ai-matrx) and `scripts/generate_impairment_aliases.py` (aidream) still write into now-archived directories and would recreate them if rerun — retarget or retire both.
+
 ## Status
 
 - [x] Full inventory (4 agents, 2026-07-22)
