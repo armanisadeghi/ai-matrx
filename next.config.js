@@ -132,6 +132,11 @@ const nextConfig = {
         // date-fns, @tabler/icons-react, react-icons/* and lucide-react are ALREADY
         // optimized without being listed here. Only add packages NOT in that default
         // list — adding a defaulted one is a no-op, not a build win.
+        // Only packages NOT already in Next's 75-package default list belong here, and
+        // adding one is NOT automatically a win: optimizePackageImports rewrites a
+        // barrel import into N direct module imports, which is better for bundle size
+        // but puts MORE modules in the graph. Measured: adding react-syntax-highlighter
+        // moved peak RSS 58.49 -> 59.79 GiB. Do not add packages here for memory.
         optimizePackageImports: ['lucide-react', 'zustand'],
         // Memory, not speed, is the binding constraint on this build. Measured with
         // `next build --experimental-debug-memory-usage`: peak RSS 62.8 GiB, on a

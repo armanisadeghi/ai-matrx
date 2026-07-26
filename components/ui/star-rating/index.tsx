@@ -1,5 +1,9 @@
 import {cn} from "@/lib/utils";
-import {Star} from "@mynaui/icons-react";
+// lucide-react, NOT @mynaui/icons-react. This was the ONLY import of @mynaui in the
+// repo and it pulled a 2,587-file icon barrel into the graph for a single glyph —
+// @mynaui is not in Next's default optimizePackageImports list, so nothing trimmed it.
+// lucide-react is the house icon library (CLAUDE.md: "Lucide only") and IS optimized.
+import { Star } from "lucide-react";
 
 interface starProps {
     rating?: number;
