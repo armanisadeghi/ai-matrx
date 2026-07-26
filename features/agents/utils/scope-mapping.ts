@@ -18,7 +18,7 @@ import type {
   ContextObjectType,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { ValueMappingMap } from "@/features/surfaces/types";
 import {
   resolveValueMappings,
@@ -265,7 +265,8 @@ export function mapScopeToInstanceWithSurface(
     );
     const fileMappedToMedia =
       Object.entries(scopeMappings ?? {}).some(
-        ([source, target]) => source === "file_id" && mediaVariables.has(target),
+        ([source, target]) =>
+          source === "file_id" && mediaVariables.has(target),
       ) ||
       Object.entries(surfaceValueMappings ?? {}).some(
         ([target, mapping]) =>
@@ -274,7 +275,9 @@ export function mapScopeToInstanceWithSurface(
           mapping.target === "file_id",
       );
     if (fileMappedToMedia) {
-      contextEntries = contextEntries.filter((entry) => entry.key !== "file_id");
+      contextEntries = contextEntries.filter(
+        (entry) => entry.key !== "file_id",
+      );
     }
   }
 

@@ -11,8 +11,7 @@
  */
 
 import type { AgentType } from "./agent-definition.types";
-import { ContextObjectType, LLMParams } from "./agent-api-types";
-import type { SystemInstruction } from "./agent-api-types";
+import type { ContextObjectType, LLMParams, SystemInstruction } from "./agent-api-types";
 import type { ApplicationScope } from "./scope.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";

@@ -8,11 +8,7 @@
  * shares them so analytics can attribute all runs to /agents/battle.
  */
 
-import {
-  createAsyncThunk,
-  type ThunkDispatch,
-  type UnknownAction,
-} from "@reduxjs/toolkit";
+import { createAsyncThunk, type ThunkDispatch, type UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
 import {

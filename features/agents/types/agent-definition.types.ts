@@ -1,10 +1,10 @@
-import {
+import type {
   ContextSlot,
   CustomToolDefinition,
   LLMParams,
 } from "@/features/agents/types/agent-api-types";
-import { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
-import { OutputSchema } from "@/features/agents/types/json-schema";
+import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+import type { OutputSchema } from "@/features/agents/types/json-schema";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
 import type { SkillConfig } from "@/features/skills/types";

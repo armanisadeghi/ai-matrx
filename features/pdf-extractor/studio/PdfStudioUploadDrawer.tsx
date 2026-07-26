@@ -18,7 +18,7 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { PdfStudioUpload } from "./PdfStudioUpload";
-import type { usePdfExtractor } from "../hooks/usePdfExtractor";
+import { usePdfExtractor } from "../hooks/usePdfExtractor";
 
 interface PdfStudioUploadDrawerProps {
   open: boolean;

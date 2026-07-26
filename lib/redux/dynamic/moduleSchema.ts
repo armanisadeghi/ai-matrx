@@ -1,8 +1,8 @@
 // lib/redux/moduleSchema.ts
 
-import {AiAudioConfig, AiAudioData, AiAudioSchema, AiAudioUserPreferences} from "@/types/aiAudioTypes";
-import {AiChatSchema} from "@/types/aiChatTypes";
-import {ImageEditorSchema} from "@/types/imageEditorTypes";
+import type {AiAudioConfig, AiAudioData, AiAudioSchema, AiAudioUserPreferences} from "@/types/aiAudioTypes";
+import type {AiChatSchema} from "@/types/aiChatTypes";
+import type {ImageEditorSchema} from "@/types/imageEditorTypes";
 import {
     aiAudioConfig,
 } from "@/features/audio/voice/aiVoiceModuleConfig";

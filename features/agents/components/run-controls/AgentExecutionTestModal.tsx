@@ -47,7 +47,7 @@ import {
   X,
 } from "lucide-react";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
-import { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 
 interface AgentExecutionTestModalProps {
   surfaceKey: string;

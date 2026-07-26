@@ -28,7 +28,7 @@ import {
   deriveConversationLifecycle,
 } from "@/features/agents/types/instance.types";
 import { generateConversationId } from "../utils/ids";
-import { AgentType } from "@/features/agents/types/agent-definition.types";
+import type { AgentType } from "@/features/agents/types/agent-definition.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 import { createInstanceFull } from "../create-instance-full";

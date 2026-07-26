@@ -39,7 +39,7 @@ import type {
 import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 import {
   TesterSettingsPanel,
@@ -306,7 +306,9 @@ export function AgentWidgetsPage({
       },
       runtime: {
         ...(userInput ? { userInput } : {}),
-        ...(includeEditorContext && editorSelection ? { originalText: editorSelection } : {}),
+        ...(includeEditorContext && editorSelection
+          ? { originalText: editorSelection }
+          : {}),
         ...(applicationScope ? { applicationScope } : {}),
       },
     };

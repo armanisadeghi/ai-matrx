@@ -11,12 +11,31 @@
 ✓ 24 feature slices mounted by rootReducer (PayloadAction)
 ✓ lib/redux/app-runner/thunks/loadApplet.ts — CustomAppletConfig → import type
 
+## APPLIED (2026-07-26) — batch 2: shell utils + missed rootReducer slices
+✓ 5 RTK slices missed in batch 1 (single-quote PayloadAction): flashcardChat, layout, urlSync, moduleSliceCreator, themeSlice
+✓ SupabaseClient → import type in ssrShellData, userSessionData, user-table utils, cms API routes
+✓ customAppTypes / flashcards.types / MatrxRecordId → import type across lib/redux app-builder + app-runner (~25 files)
+
 ## WILL NOT DO (3)
 X	components/official/ProTextarea.tsx
 X	features/shell/navigation/navActions.ts
 X	scripts/check-fake-dynamic-imports.mjs
 
-## APPLIED (2026-07-26) — batch 2: shell utils + missed rootReducer slices
-✓ 5 RTK slices missed in batch 1 (single-quote PayloadAction): flashcardChat, layout, urlSync, moduleSliceCreator, themeSlice
-✓ SupabaseClient → import type in ssrShellData, userSessionData, user-table utils, cms API routes
-✓ customAppTypes / flashcards.types / MatrxRecordId → import type across lib/redux app-builder + app-runner (~25 files)
+## APPLIED (2026-07-26) — batch 3: agent type hubs + leaf fixes
+✓ features/agents/types/instance.types.ts — merged agent-api-types → import type
+✓ features/agents/types/agent-definition.types.ts — ContextSlot, LLMParams, etc. → import type
+✓ lib/redux/dynamic/moduleSchema.ts — AiAudio*, AiChatSchema, ImageEditorSchema → import type
+✓ features/agents/redux/agent-shortcuts/types.ts — all type imports
+✓ features/agents/redux/execution-system/conversations/conversations.slice.ts — AgentType
+✓ features/agents/redux/execution-system/thunks/create-instance.thunk.ts — InstanceOrigin, ResultDisplayMode inline type
+✓ features/agents/utils/scope-mapping.ts — ApplicationScope
+✓ features/ai-models/components/smart/SmartModelConfigs.tsx — FeLlmParams
+✓ features/agent-comparison/redux/thunks.ts — ThunkDispatch, UnknownAction inline type
+
+## APPLIED (2026-07-26) — batch 4: shared type modules + run-controls + hook fixes
+✓ types/customAppTypes.ts, types/audio.ts, types/audioHelp.ts — ReactNode/LucideIcon → import type
+✓ ApiEndpointMode → import type: AgentWidgetsPage, TesterSettingsPanel, AgentExecutionTestModal
+✓ Reverted bad import type on hooks: AddClassContentSheet, AssignResourceSheet, PdfStudioUpload*, (ReturnType<typeof hook> pattern)
+
+## RECOVERED — blanket agent-api-types script reverted (19 files git checkout HEAD)
+Do NOT re-run multiline regex across files. Per-file import type only.

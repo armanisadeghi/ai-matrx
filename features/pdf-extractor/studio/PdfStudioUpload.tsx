@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import type { usePdfExtractor } from "../hooks/usePdfExtractor";
+import { usePdfExtractor } from "../hooks/usePdfExtractor";
 import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugTrigger";
 
 type Extractor = ReturnType<typeof usePdfExtractor>;

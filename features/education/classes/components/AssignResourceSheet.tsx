@@ -23,7 +23,7 @@ import { UniversalAssociationPicker } from "@/features/scopes/components/associa
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import { ASSIGNABLE_TOKENS } from "../constants";
 import type { AssignableToken } from "../types";
-import type { useClassAssignments } from "../hooks/useClassAssignments";
+import { useClassAssignments } from "../hooks/useClassAssignments";
 
 interface AssignResourceSheetProps {
   open: boolean;

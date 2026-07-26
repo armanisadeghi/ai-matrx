@@ -1,6 +1,6 @@
 import { defaultTableRules } from "@/types/appletDefaultTableRules";
 import type { Json } from "@/types/database.types";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 export type ComponentType =
   | "input"

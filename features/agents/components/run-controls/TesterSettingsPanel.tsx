@@ -11,7 +11,7 @@ import {
   VARIABLE_PANEL_STYLE_OPTIONS,
   type VariablesPanelStyle,
 } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 
 // =============================================================================

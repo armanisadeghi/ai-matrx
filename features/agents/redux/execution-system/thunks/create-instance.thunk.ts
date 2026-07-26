@@ -65,8 +65,8 @@ import {
 } from "../instance-ui-state/instance-ui-state.slice";
 import { initInstanceMessages } from "../messages/messages.slice";
 import {
-  InstanceOrigin,
-  ResultDisplayMode,
+  type InstanceOrigin,
+  type ResultDisplayMode,
   type JsonExtractionConfig,
   type SourceFeature,
   type VariablesPanelStyle,

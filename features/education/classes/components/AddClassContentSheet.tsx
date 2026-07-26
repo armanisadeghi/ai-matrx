@@ -18,7 +18,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { UniversalAssociationPicker } from "@/features/scopes/components/associations/UniversalAssociationPicker";
 import { CLASS_PICKER_TOKENS } from "../hooks/useClassContent";
-import type { useClassContent } from "../hooks/useClassContent";
+import { useClassContent } from "../hooks/useClassContent";
 
 interface AddClassContentSheetProps {
   open: boolean;

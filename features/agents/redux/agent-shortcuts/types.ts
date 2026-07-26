@@ -1,11 +1,11 @@
-import {
+import type {
   ContextSlot,
   LLMParams,
 } from "@/features/agents/types/agent-api-types";
-import { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
-import { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import type { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
+import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
 import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
 import type { Database } from "@/types/database.types";
 import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
