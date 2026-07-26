@@ -24,9 +24,6 @@ M	features/action-catalog/service.ts
 M	features/action-catalog/types.ts
 M	features/agents/components/settings-management/matrx-actions/directiveOptions.ts
 
-## BATCH — permissions utils (2)
-A	utils/permissions/index.ts
-M	utils/permissions/access.ts
 
 ## BATCH — applet (59)
 M	features/applet/builder/modules/applet-builder/CreateAppletTab.tsx
@@ -143,8 +140,6 @@ M	features/research/service.ts
 M	features/research/youtube-discovery/YouTubeDiscoveryDemo.tsx
 
 ## BATCH — tool-call-visualization (11)
-A	features/tool-call-visualization/renderers/news-api/index.ts
-A	features/tool-call-visualization/renderers/random-wheel/index.ts
 M	features/tool-call-visualization/registry/registry.tsx
 M	features/tool-call-visualization/renderers/document-content/DocumentContentInline.tsx
 M	features/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx
