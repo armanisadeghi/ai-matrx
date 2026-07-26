@@ -104,6 +104,22 @@ render through the SAME live chip renderer.
   and record resolvers return `"heading\nbody"`, so both chips print the first line and keep
   the full value in the tooltip.
 
+## A REGISTERED RENDERER MUST NEVER RETURN `null`
+
+`MatrxEnvelopeBlock` step 2 renders a found renderer's output **verbatim** — so a
+renderer that bails with `null` deletes the assistant's whole message block, on
+first paint and every reload, with no error anywhere. The step-3 neutral card
+cannot save it: a renderer *was* found. **Degrade to
+`<EnvelopeFallbackCard envelope reason="…" />`** (`EnvelopeFallbackCard.tsx`),
+never to nothing.
+
+Cost of learning this (2026-07-26): `plan_tree` items addressed by plain-text
+`site` (instead of `site_id`) parsed to an empty list → `return null` → a 70KB
+content plan, prose included, vanished permanently while sitting intact in the
+DB. **Parsers are the other half:** a directive parser must accept every
+addressing form its aidream item model accepts (`site_id` OR `site`), or it
+silently drops items the server would have happily applied.
+
 ## Recognition contract (the four guarantees)
 
 1. **Outer first** — `isMatrxEnvelope` recognizes `{matrx_version,kind,type,items}` before

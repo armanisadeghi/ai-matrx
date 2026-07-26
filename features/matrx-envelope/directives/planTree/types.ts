@@ -34,7 +34,10 @@ export interface PlanTreeNodeSpec {
 }
 
 export interface PlanTreeDirectiveItem {
-  site_id: string;
+  /** Either identifier may be absent: an agent addresses the site by `site_id`
+   *  OR by plain-text `site` (domain/name, created server-side if missing). */
+  site_id: string | null;
+  site: string | null;
   default_status?: string | null;
   nodes: PlanTreeNodeSpec[];
 }
@@ -42,6 +45,8 @@ export interface PlanTreeDirectiveItem {
 export interface PlanNodePatchItem {
   node_id?: string | null;
   site_id?: string | null;
+  /** Plain-text site (domain/name) — the text-addressed twin of `site_id`. */
+  site?: string | null;
   route?: string | null;
   label?: string | null;
   slug?: string | null;

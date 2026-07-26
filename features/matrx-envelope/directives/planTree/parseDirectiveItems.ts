@@ -50,15 +50,21 @@ export function parsePlanTreeItems(
   for (const raw of envelope.items) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
     const record = raw as Record<string, unknown>;
+    // The site is addressable EITHER way (aidream PlanTreeItem accepts both):
+    // `site_id`, or plain-text `site` which the server resolves/creates. A
+    // parser that demanded site_id silently dropped every text-addressed plan
+    // and the renderer then vanished the whole message (2026-07-26).
     const siteId = asString(record.site_id);
-    if (!siteId) continue;
+    const site = asString(record.site);
+    if (!siteId && !site) continue;
     const nodes = Array.isArray(record.nodes)
       ? record.nodes
           .map(parseNode)
           .filter((node): node is PlanTreeNodeSpec => node !== null)
       : [];
     items.push({
-      site_id: siteId,
+      site_id: siteId ?? null,
+      site: site ?? null,
       default_status: asString(record.default_status) ?? null,
       nodes,
     });
@@ -77,12 +83,16 @@ export function parsePlanNodePatchItems(
     const record = raw as Record<string, unknown>;
     const nodeId = asString(record.node_id);
     const siteId = asString(record.site_id);
+    const site = asString(record.site);
     const route = asString(record.route);
-    // Addressable by node_id OR site_id+route — otherwise unrenderable.
-    if (!nodeId && !(siteId && route)) continue;
+    // Addressable by node_id OR (site_id | plain-text site) + route. aidream's
+    // PlanNodePatchItem accepts `site` too — demanding site_id dropped the item
+    // and the renderer then hid the message (2026-07-26).
+    if (!nodeId && !((siteId || site) && route)) continue;
     items.push({
       node_id: nodeId ?? null,
       site_id: siteId ?? null,
+      site: site ?? null,
       route: route ?? null,
       label: asString(record.label) ?? null,
       slug: asString(record.slug) ?? null,

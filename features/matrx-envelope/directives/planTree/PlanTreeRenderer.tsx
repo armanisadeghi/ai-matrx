@@ -10,23 +10,40 @@
 import Link from "next/link";
 import { ExternalLink, ListTree, Loader2 } from "lucide-react";
 
+import { ApplyDirectiveButton } from "@/features/matrx-envelope/ApplyDirectiveButton";
+import { EnvelopeFallbackCard } from "@/features/matrx-envelope/EnvelopeFallbackCard";
 import type { EnvelopeRendererProps } from "@/features/matrx-envelope/registry";
 
 import { parsePlanTreeItems } from "./parseDirectiveItems";
 import { useResolvePlanTree } from "./useResolvePlanTree";
 import { countSpecNodes, type PlanTreeDirectiveItem } from "./types";
 
-function PlanTreeItemCard({ item }: { item: PlanTreeDirectiveItem }) {
+function PlanTreeItemCard({
+  item,
+  envelope,
+}: {
+  item: PlanTreeDirectiveItem;
+  envelope: EnvelopeRendererProps["envelope"];
+}) {
   const { status, data } = useResolvePlanTree(item);
   const specTotal = countSpecNodes(item.nodes);
+  // Unresolved = the server never applied this (e.g. the agent had no output
+  // schema, so the structured-output dispatcher never fired). It is NOT inert:
+  // the user applies it with one click. See ApplyDirectiveButton.
+  const unapplied = status === "exhausted" || (!item.site_id && !data);
 
   return (
     <div className="my-2 rounded-lg border border-border bg-card p-3">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <ListTree className="h-4 w-4 shrink-0 text-primary" />
         <span className="text-sm font-medium">
           Content plan tree · {specTotal} node{specTotal === 1 ? "" : "s"}
         </span>
+        {item.site ? (
+          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+            {item.site}
+          </span>
+        ) : null}
         {status === "polling" ? (
           <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" /> applying…
@@ -35,9 +52,11 @@ function PlanTreeItemCard({ item }: { item: PlanTreeDirectiveItem }) {
           <span className="ml-auto text-xs text-muted-foreground">
             {data.matchedCount}/{specTotal} live · site total {data.liveCount}
           </span>
-        ) : status === "exhausted" ? (
-          <span className="ml-auto text-xs text-destructive">
-            not visible yet — check the apply receipt above
+        ) : null}
+        {unapplied ? (
+          <span className="ml-auto inline-flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">not applied yet</span>
+            <ApplyDirectiveButton envelope={envelope} label="Apply plan" />
           </span>
         ) : null}
       </div>
@@ -68,7 +87,11 @@ function PlanTreeItemCard({ item }: { item: PlanTreeDirectiveItem }) {
         ) : null}
       </ul>
       <Link
-        href={`/content-plan?site=${item.site_id}`}
+        href={
+          item.site_id
+            ? `/content-plan?site=${item.site_id}`
+            : "/content-plan"
+        }
         className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
       >
         Open in Content Plan <ExternalLink className="h-3 w-3" />
@@ -79,11 +102,24 @@ function PlanTreeItemCard({ item }: { item: PlanTreeDirectiveItem }) {
 
 const PlanTreeRenderer = ({ envelope }: EnvelopeRendererProps) => {
   const items = parsePlanTreeItems(envelope);
-  if (items.length === 0) return null;
+  // NEVER return null — that deletes the whole message block (see
+  // EnvelopeFallbackCard). Degrade visibly instead.
+  if (items.length === 0) {
+    return (
+      <EnvelopeFallbackCard
+        envelope={envelope}
+        reason="no readable plan items"
+      />
+    );
+  }
   return (
     <>
       {items.map((item, index) => (
-        <PlanTreeItemCard key={`${item.site_id}:${index}`} item={item} />
+        <PlanTreeItemCard
+          key={`${item.site_id ?? item.site ?? "site"}:${index}`}
+          item={item}
+          envelope={envelope}
+        />
       ))}
     </>
   );

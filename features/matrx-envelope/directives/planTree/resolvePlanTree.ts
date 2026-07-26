@@ -36,6 +36,11 @@ function collectSlugs(nodes: PlanTreeNodeSpec[], out: Set<string>): Set<string> 
 export async function resolvePlanTree(
   item: PlanTreeDirectiveItem,
 ): Promise<ResolvedPlanTree | null> {
+  // Only a real site_id is resolvable here. A text-addressed item (`site`) is
+  // resolved server-side at apply time, so the card stays in its unresolved
+  // state rather than guessing a site — it must still RENDER (see
+  // EnvelopeFallbackCard); never let an unresolvable item hide content.
+  if (!item.site_id) return null;
   const live = await listPlanNodes(item.site_id);
   if (live.length === 0) return null;
 

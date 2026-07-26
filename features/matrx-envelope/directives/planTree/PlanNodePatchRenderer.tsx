@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { ExternalLink, PencilLine, Loader2 } from "lucide-react";
 
+import { EnvelopeFallbackCard } from "@/features/matrx-envelope/EnvelopeFallbackCard";
 import type { EnvelopeRendererProps } from "@/features/matrx-envelope/registry";
 
 import { parsePlanNodePatchItems } from "./parseDirectiveItems";
@@ -59,7 +60,15 @@ function PatchCard({ item }: { item: PlanNodePatchItem }) {
 
 const PlanNodePatchRenderer = ({ envelope }: EnvelopeRendererProps) => {
   const items = parsePlanNodePatchItems(envelope);
-  if (items.length === 0) return null;
+  // NEVER return null — see EnvelopeFallbackCard.
+  if (items.length === 0) {
+    return (
+      <EnvelopeFallbackCard
+        envelope={envelope}
+        reason="no addressable patch items"
+      />
+    );
+  }
   return (
     <>
       {items.map((item, index) => (

@@ -21,7 +21,7 @@
  */
 
 import React from "react";
-import { Boxes } from "lucide-react";
+import { EnvelopeFallbackCard } from "@/features/matrx-envelope/EnvelopeFallbackCard";
 
 import {
   isMatrxEnvelope,
@@ -65,17 +65,10 @@ const MatrxEnvelopeBlock: React.FC<MatrxEnvelopeBlockProps> = ({ content }) => {
   }
 
   // 3. Graceful fallback — unknown (kind, type) is still shown, never dropped.
-  const count = Array.isArray(envelope.items) ? envelope.items.length : 0;
-  return (
-    <div className="my-3 inline-flex items-center gap-2 rounded-md border border-border bg-muted px-2.5 py-1 text-sm">
-      <Boxes className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <span className="text-foreground">{envelope.kind}</span>
-      <span className="text-muted-foreground">/ {envelope.type}</span>
-      <span className="text-muted-foreground">
-        · {count} {count === 1 ? "item" : "items"}
-      </span>
-    </div>
-  );
+  //    A REGISTERED renderer must degrade to this same card rather than return
+  //    null: step 2 renders a found renderer's output verbatim, so a null there
+  //    deletes the message block outright (see EnvelopeFallbackCard).
+  return <EnvelopeFallbackCard envelope={envelope} />;
 };
 
 export default MatrxEnvelopeBlock;
