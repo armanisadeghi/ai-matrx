@@ -6,7 +6,7 @@
 // (lib/api/backend-client.ts — same bearer path every aidream call uses).
 // The endpoint ships in a parallel aidream session — a 404 / network failure
 // is reported as "resolver not deployed yet", never as a crash.
-// Contract: common-docs/systems/remote-catalogs/FEATURE.md
+// Contract: common-docs/remote-catalogs/FEATURE.md
 
 import { createAuthenticatedClient } from "@/lib/api/backend-client";
 import { BackendApiError } from "@/lib/api/errors";

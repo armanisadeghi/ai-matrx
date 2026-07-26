@@ -41,7 +41,7 @@ import {
   messageContainsResources,
 } from "@/features/agents/resources/utils";
 import { ResourcesContainer } from "@/features/agents/resources/ResourceDisplay";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 
 // ============================================================================
 // MESSAGE ERROR BOUNDARY

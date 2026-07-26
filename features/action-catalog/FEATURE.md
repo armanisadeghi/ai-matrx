@@ -42,33 +42,10 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
   server). Idempotent by content key — a repeat is `already_applied`; `force` opts out.
   Per-item receipts render below. `service.ts::executeAction` attaches the Supabase JWT
   (`supabase.auth.getSession`); never writes Supabase directly.
-- **Any write verb whose cell is `yes` executes** — the catalog state is the only gate
-  (no verb allowlist in FE code). `delete` is a soft delete server-side; `planned` /
-  `no` cells stay disabled + explained.
-
-## Server-derived, not hand-authored (2026-07-26)
-
-The catalog is COMPUTED server-side from `platform.entity_types` + the envelope shape
-registry, and the payload is enriched: per-noun `label` / `title_column` /
-`identity_fields` (required fields of the registered reference item model) / per-verb
-write `schemas`, plus a `functions` section (Plane-2 registered procedures + deprecated
-legacy named directives) and the server's alias map. Consequences here:
-
-- `buildEnvelope.ts::refFieldsForNoun(noun, catalogNoun)` derives identity fields from
-  the catalog row; the hand `REF_FIELDS` map is only uuid/label polish + offline
-  fallback — **never add entries for new nouns**.
-- `isReferenceVerb` = "not a write verb" (`types.ts::isWriteVerb`); a server-added verb
-  is a write by default, no FE edit.
-- The grid renders the `functions` section below the matrix (search-filtered).
-- The mirrored manifest also generates `features/matrx-envelope/catalog-nouns.generated.ts`
-  (`pnpm gen:action-nouns`, auto-run by `check-protocol-sync --fix`) — the slim table the
-  reference resolvers derive from.
+- `delete` is soft-delete → **planned** (disabled). `planned` / `no` write cells are
+  disabled + explained.
 
 ## Change Log
-
-- 2026-07-26 — Catalog is server-computed; FE derives identity fields, write gating,
-  and the functions section from the payload. Verb allowlist + delete explainer copy
-  removed; `FunctionEntry` type added.
 
 - 2026-07-13 — Route moved into the Relationships hub as the Actions tab
   (`/administration/agents/relationships/actions`); old route deleted + redirected.
@@ -78,9 +55,6 @@ legacy named directives) and the server's alias map. Consequences here:
   (`components["schemas"]` in `types.ts`); derived `ActionState` / `ActionVerb` from
   `NounActions`; removed `?? ""` form-default hatches in `ActionBuilderPanel`; confirm
   consumer now passes required `force: false` on `DirectiveConfirmRequest`.
-- 2026-07-26 — `confirmDirective` uses `parseHttpError` → `BackendApiError` so callers
-  show the gentle `user_message` from `/actions/confirm` (plus structured
-  `details.issues` on the wire), not a Pydantic dump.
 - 2026-06-24 — Added the `ask`-policy **confirm round-trip**: `confirmDirective` +
   `POST /actions/confirm` (`service.ts` / `endpoints.ts` / `types.ts`). When a directive's
   resolved apply policy is `ask`, the brain streams `directive_apply.proposed`;

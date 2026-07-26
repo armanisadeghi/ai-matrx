@@ -45,8 +45,7 @@ image, favicon, cover, …):
 
 5. **Render** — prefer the id; fall back to the url:
    ```tsx
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { useFileAsset } from "@/features/files/hooks/useFileAsset";
+   import { InlineMediaRef, useFileAsset } from "@/features/files";
 
    // inline <img>:
    <InlineMediaRef ref={logoFileId ? { file_id: logoFileId } : logoUrl} />

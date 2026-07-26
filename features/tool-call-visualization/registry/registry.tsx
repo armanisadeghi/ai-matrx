@@ -56,8 +56,7 @@ import { parseScrape } from "../renderers/scrape/parseScrape";
 import { WebInline } from "../renderers/web/WebInline";
 import { WebOverlay } from "../renderers/web/WebOverlay";
 import { resolveWebActionKind } from "../renderers/web/webAction";
-import { NewsInline } from "../renderers/news-api/NewsInline";
-import { NewsOverlay } from "../renderers/news-api/NewsOverlay";
+import { NewsInline, NewsOverlay } from "../renderers/news-api";
 import { SeoInline } from "../renderers/seo/SeoInline";
 import { SeoOverlay } from "../renderers/seo/SeoOverlay";
 import { resolveSeoVariant, seoVariantSub } from "../renderers/seo/resolve";
@@ -83,7 +82,7 @@ import { DocumentSearchInline } from "../renderers/document-search/DocumentSearc
 import { KnowledgeBrowseInline } from "../renderers/knowledge-browse/KnowledgeBrowseInline";
 import { DocumentContentInline } from "../renderers/document-content/DocumentContentInline";
 import { resolveDocumentContentView } from "../renderers/document-content/documentContentView";
-import { RandomWheelInline } from "../renderers/random-wheel/RandomWheelInline";
+import { RandomWheelInline } from "../renderers/random-wheel";
 import { NoteToolInline } from "../renderers/note/NoteToolInline";
 import { NoteToolOverlay } from "../renderers/note/NoteToolOverlay";
 import { CtxGetInline } from "../renderers/ctx/CtxGetInline";
@@ -135,9 +134,7 @@ function seoHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
             {variant.failed} Need Attention
           </span>
         )}
-        <span className="ml-auto text-white/60">
-          Total: {variant.entries.length}
-        </span>
+        <span className="ml-auto text-white/60">Total: {variant.entries.length}</span>
       </div>
     );
   }

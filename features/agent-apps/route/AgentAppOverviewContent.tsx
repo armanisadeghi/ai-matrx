@@ -39,7 +39,7 @@ import {
   Tag,
   Variable,
   Webhook,
-  type LucideIcon,
+  type LucideIcon
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -49,7 +49,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { siteConfig } from "@/config/extras/site";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
@@ -124,18 +124,11 @@ interface LabeledPillProps {
  * Pill that always shows what it represents. "Status: Published", not just
  * a "Published" badge floating with no context.
  */
-function LabeledPill({
-  label,
-  children,
-  icon: Icon,
-  accent,
-}: LabeledPillProps) {
+function LabeledPill({ label, children, icon: Icon, accent }: LabeledPillProps) {
   return (
     <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/60 text-xs">
       {Icon && (
-        <Icon
-          className={cn("w-3 h-3 shrink-0", accent ?? "text-muted-foreground")}
-        />
+        <Icon className={cn("w-3 h-3 shrink-0", accent ?? "text-muted-foreground")} />
       )}
       <span className="text-muted-foreground">{label}:</span>
       <span className="font-medium text-foreground">{children}</span>
@@ -143,9 +136,7 @@ function LabeledPill({
   );
 }
 
-export function AgentAppOverviewContent({
-  appId,
-}: AgentAppOverviewContentProps) {
+export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps) {
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
   const agent = useAppSelector((state) =>
@@ -219,7 +210,8 @@ export function AgentAppOverviewContent({
     ? (app.allowed_imports as unknown[]).length
     : 0;
 
-  const statusLabel = app.status.charAt(0).toUpperCase() + app.status.slice(1);
+  const statusLabel =
+    app.status.charAt(0).toUpperCase() + app.status.slice(1);
   const visibilityLabel = app.is_public ? "Public" : "Personal";
 
   return (
@@ -520,7 +512,10 @@ export function AgentAppOverviewContent({
                             </Badge>
                           )}
                           {Array.isArray(options) && options.length > 0 && (
-                            <Badge variant="outline" className="text-[10px]">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px]"
+                            >
                               {options.length} options
                             </Badge>
                           )}
@@ -534,10 +529,7 @@ export function AgentAppOverviewContent({
                         </div>
                       </div>
                       {v.required && (
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] shrink-0"
-                        >
+                        <Badge variant="outline" className="text-[10px] shrink-0">
                           required
                         </Badge>
                       )}
@@ -582,7 +574,10 @@ export function AgentAppOverviewContent({
                       )}
                     </div>
                     {slot.type && (
-                      <Badge variant="outline" className="text-[10px] shrink-0">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] shrink-0"
+                      >
                         {slot.type}
                       </Badge>
                     )}

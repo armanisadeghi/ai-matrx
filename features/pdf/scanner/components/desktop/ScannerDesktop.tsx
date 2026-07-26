@@ -43,7 +43,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderBack from "@/features/shell/components/header/variants/shared/HeaderBack";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@/features/files";
 
 import { fetchRecentScans, type RecentScanRow } from "../../processing";
 import type { Quad, ScanItem, ScanRotation } from "../../types";

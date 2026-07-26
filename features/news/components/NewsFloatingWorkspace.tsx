@@ -1,19 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  Loader2,
-  RefreshCcw,
-  ExternalLink,
-  Globe,
-  Hash,
-  Newspaper,
-} from "lucide-react";
+import { Loader2, RefreshCcw, ExternalLink, Globe, Hash, Newspaper } from "lucide-react";
 import { fetchNews } from "@/actions/ai-actions/news-api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 
 const CATEGORIES = [
   "general",
@@ -87,7 +80,7 @@ export function NewsFloatingWorkspace() {
                 "w-full text-left px-2 py-1.5 rounded-md text-[11px] capitalize transition-colors font-medium",
                 category === cat
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
               {cat}
@@ -108,7 +101,7 @@ export function NewsFloatingWorkspace() {
                 "w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-colors font-medium",
                 country === c.code
                   ? "bg-primary/20 text-primary hover:bg-primary/30"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
               {c.name}
@@ -121,56 +114,47 @@ export function NewsFloatingWorkspace() {
       <div className="flex-1 flex flex-col min-h-0 bg-background relative">
         {/* Header Bar */}
         <div className="h-10 border-b border-border flex items-center justify-between px-4 shrink-0 bg-background/95 backdrop-blur z-10 sticky top-0 shadow-sm">
-          <div className="flex items-center space-x-2">
-            <Newspaper className="h-4 w-4 text-primary" />
-            <span className="text-xs font-semibold capitalize">
-              {category} News
-            </span>
-            <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full uppercase">
-              {country}
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFetchNews}
-            disabled={loading}
-            className="h-6 px-2 text-[10px]"
-          >
-            {loading ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCcw className="h-3 w-3 mr-1.5" />
-            )}
-            Refresh
-          </Button>
+           <div className="flex items-center space-x-2">
+              <Newspaper className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold capitalize">{category} News</span>
+              <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full uppercase">{country}</span>
+           </div>
+           <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleFetchNews}
+              disabled={loading}
+              className="h-6 px-2 text-[10px]"
+            >
+              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1.5" />}
+              Refresh
+           </Button>
         </div>
 
         {/* Scrollable Feed */}
         <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin">
-          {loading ? (
-            // Loading Skeletons
-            Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-lg border border-border p-3 space-y-3 flex gap-3 opacity-60"
-              >
-                <div className="w-20 h-20 bg-muted shrink-0 rounded-md animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted w-3/4 rounded animate-pulse" />
-                  <div className="h-3 bg-muted w-1/2 rounded animate-pulse" />
-                  <div className="h-3 bg-muted w-full mt-2 rounded animate-pulse" />
-                </div>
-              </div>
-            ))
-          ) : news.length > 0 ? (
-            news.map((article, i) => <NewsItem key={i} article={article} />)
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground opacity-60">
-              <Newspaper className="w-10 h-10 mb-3" />
-              <p className="text-xs">No articles found for this selection.</p>
-            </div>
-          )}
+           {loading ? (
+             // Loading Skeletons
+             Array.from({ length: 4 }).map((_, i) => (
+               <div key={i} className="rounded-lg border border-border p-3 space-y-3 flex gap-3 opacity-60">
+                 <div className="w-20 h-20 bg-muted shrink-0 rounded-md animate-pulse" />
+                 <div className="flex-1 space-y-2">
+                   <div className="h-4 bg-muted w-3/4 rounded animate-pulse" />
+                   <div className="h-3 bg-muted w-1/2 rounded animate-pulse" />
+                   <div className="h-3 bg-muted w-full mt-2 rounded animate-pulse" />
+                 </div>
+               </div>
+             ))
+           ) : news.length > 0 ? (
+             news.map((article, i) => (
+               <NewsItem key={i} article={article} />
+             ))
+           ) : (
+             <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground opacity-60">
+               <Newspaper className="w-10 h-10 mb-3" />
+               <p className="text-xs">No articles found for this selection.</p>
+             </div>
+           )}
         </div>
       </div>
     </div>
@@ -213,18 +197,12 @@ function NewsItem({ article }: { article: Article }) {
               {article.description}
             </p>
           </div>
-
+          
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
             <div className="flex items-center gap-1.5 text-[9px] font-medium text-muted-foreground">
-              <span className="truncate max-w-[100px]">
-                {article.source?.name}
-              </span>
+              <span className="truncate max-w-[100px]">{article.source?.name}</span>
               <span>•</span>
-              <span>
-                {article.publishedAt
-                  ? new Date(article.publishedAt).toLocaleDateString()
-                  : ""}
-              </span>
+              <span>{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ""}</span>
             </div>
             <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>

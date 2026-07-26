@@ -1,12 +1,9 @@
-"use client";
-import React from "react";
-import {
-  getAppIconWithBg,
-  getAppIcon,
-  COLOR_VARIANTS,
-} from "@/features/applet/styles/StyledComponents";
-import { AppDisplayProps } from "@/features/applet/home/types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+'use client';
+import React from 'react';
+import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
+import { AppDisplayProps } from '@/features/applet/home/types';
+import { InlineMediaRef } from '@/features/files';
+
 
 const MinimalAppDisplay: React.FC<AppDisplayProps> = ({
   appName,
@@ -29,14 +26,13 @@ const MinimalAppDisplay: React.FC<AppDisplayProps> = ({
                 {getAppIconWithBg({
                   icon: appIcon,
                   size: 36,
-                  color: accentColor || "blue",
-                  primaryColor: primaryColor || "gray",
-                  className:
-                    "rounded-md bg-gray-100 dark:bg-gray-800 shadow-sm w-full h-full flex items-center justify-center",
+                  color: accentColor || 'blue',
+                  primaryColor: primaryColor || 'gray',
+                  className: 'rounded-md bg-gray-100 dark:bg-gray-800 shadow-sm w-full h-full flex items-center justify-center'
                 })}
               </div>
             )}
-
+            
             <div className="flex flex-col justify-center">
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
                 {appName}
@@ -48,7 +44,7 @@ const MinimalAppDisplay: React.FC<AppDisplayProps> = ({
               )}
             </div>
           </div>
-
+          
           {/* Description - Full width on mobile */}
           {appDescription && (
             <p className="text-sm text-gray-600 dark:text-gray-300 mt-3 sm:mt-3">
@@ -56,7 +52,7 @@ const MinimalAppDisplay: React.FC<AppDisplayProps> = ({
             </p>
           )}
         </div>
-
+        
         {/* App image - Full width on mobile */}
         {appImageUrl && (
           <div className="w-full sm:w-2/3">

@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { podcastService } from "../../service";
 import type { PcShow } from "../../types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -70,9 +70,7 @@ export function ShowsClient() {
       const params = new URLSearchParams(searchParams.toString());
       if (value) params.set("q", value);
       else params.delete("q");
-      router.replace(
-        `/administration/knowledge/podcasts/shows?${params.toString()}`,
-      );
+      router.replace(`/administration/knowledge/podcasts/shows?${params.toString()}`);
     });
   };
 
@@ -214,9 +212,7 @@ export function ShowsClient() {
                   key={show.id}
                   onClick={() =>
                     startTransition(() =>
-                      router.push(
-                        `/administration/knowledge/podcasts/shows/${show.id}`,
-                      ),
+                      router.push(`/administration/knowledge/podcasts/shows/${show.id}`),
                     )
                   }
                   className="border-b cursor-pointer group transition-colors hover:bg-muted/40"
@@ -228,9 +224,7 @@ export function ShowsClient() {
                         size={{ width: 32, height: 32 }}
                         fit="cover"
                         rounded="md"
-                        fallbackIcon={
-                          <Mic className="h-4 w-4 text-muted-foreground" />
-                        }
+                        fallbackIcon={<Mic className="h-4 w-4 text-muted-foreground" />}
                         className="shrink-0"
                         alt=""
                       />

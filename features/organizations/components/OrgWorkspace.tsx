@@ -44,13 +44,10 @@ import {
   getUserRole,
   getOrganizationMembers,
 } from "@/features/organizations/service";
-import type {
-  Organization,
-  OrganizationMemberWithUser,
-} from "@/features/organizations/types";
+import type { Organization, OrganizationMemberWithUser } from "@/features/organizations/types";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { format } from "date-fns";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -89,9 +86,7 @@ export function OrgWorkspace() {
   const dispatch = useAppDispatch();
   const orgId = params.orgId as string;
 
-  const [organization, setOrganization] = React.useState<Organization | null>(
-    null,
-  );
+  const [organization, setOrganization] = React.useState<Organization | null>(null);
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [members, setMembers] = React.useState<OrganizationMemberWithUser[]>(
     [],
@@ -290,298 +285,296 @@ export function OrgWorkspace() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-      <div className="h-dvh overflow-y-auto bg-textured">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-[var(--shell-header-h)] pb-12 space-y-5">
-          {/* ─── Hero ─────────────────────────────────────────────────── */}
-          <Card className="p-5 md:p-6 relative overflow-hidden">
-            <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
-            <div className="flex flex-col md:flex-row md:items-start gap-5">
-              {organization.logoUrl ? (
-                <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20">
-                  <InlineMediaRef
-                    ref={organization.logoUrl}
-                    size="fill"
-                    fit="cover"
-                    rounded="lg"
-                    fallback={null}
-                    className="border border-border shadow-sm"
-                    alt={organization.name}
-                  />
-                </div>
-              ) : (
-                <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center text-white text-2xl font-bold">
-                  {organization.name?.[0]?.toUpperCase() ?? "?"}
-                </div>
-              )}
+    <div className="h-dvh overflow-y-auto bg-textured">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-[var(--shell-header-h)] pb-12 space-y-5">
+        {/* ─── Hero ─────────────────────────────────────────────────── */}
+        <Card className="p-5 md:p-6 relative overflow-hidden">
+          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
+          <div className="flex flex-col md:flex-row md:items-start gap-5">
+            {organization.logoUrl ? (
+              <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20">
+                <InlineMediaRef
+                  ref={organization.logoUrl}
+                  size="fill"
+                  fit="cover"
+                  rounded="lg"
+                  fallback={null}
+                  className="border border-border shadow-sm"
+                  alt={organization.name}
+                />
+              </div>
+            ) : (
+              <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center text-white text-2xl font-bold">
+                {organization.name?.[0]?.toUpperCase() ?? "?"}
+              </div>
+            )}
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                      {organization.name}
-                    </h1>
-                    <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                      {organization.isPersonal && (
-                        <Badge variant="secondary">Personal</Badge>
-                      )}
-                      {userRole && (
-                        <Badge variant="outline" className="text-xs capitalize">
-                          You: {userRole}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={() => openContribute()}>
-                      <Share2 className="h-4 w-4 mr-1.5" />
-                      Contribute
-                    </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                    {organization.name}
+                  </h1>
+                  <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                    {organization.isPersonal && (
+                      <Badge variant="secondary">Personal</Badge>
+                    )}
+                    {userRole && (
+                      <Badge variant="outline" className="text-xs capitalize">
+                        You: {userRole}
+                      </Badge>
+                    )}
                   </div>
                 </div>
-
-                {organization.description && (
-                  <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-                    {organization.description}
-                  </p>
-                )}
-
-                {/* Stats + meta */}
-                <div className="flex items-center gap-5 flex-wrap mt-4">
-                  <Stat
-                    icon={<Users className="h-4 w-4" />}
-                    value={members.length}
-                    label={members.length === 1 ? "member" : "members"}
-                  />
-                  <Stat
-                    icon={<Layers3 className="h-4 w-4" />}
-                    value={totalScopes}
-                    label="scopes"
-                  />
-                  <Stat
-                    icon={<Boxes className="h-4 w-4" />}
-                    value={countsLoading ? "…" : totalResources}
-                    label="resources"
-                  />
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {organization.createdAt
-                      ? format(new Date(organization.createdAt), "PP")
-                      : "Unknown"}
-                  </div>
-                  {organization.website && (
-                    <a
-                      href={organization.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Website
-                    </a>
-                  )}
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => openContribute()}>
+                    <Share2 className="h-4 w-4 mr-1.5" />
+                    Contribute
+                  </Button>
                 </div>
               </div>
-            </div>
 
-            {/* Member avatars */}
-            {members.length > 0 && (
-              <div className="flex items-center gap-3 mt-5 pt-4 border-t border-border">
-                <div className="flex -space-x-2">
-                  {members.slice(0, 8).map((member) => (
-                    <MemberAvatar key={member.id} member={member} />
-                  ))}
+              {organization.description && (
+                <p className="text-sm text-muted-foreground leading-relaxed mt-3">
+                  {organization.description}
+                </p>
+              )}
+
+              {/* Stats + meta */}
+              <div className="flex items-center gap-5 flex-wrap mt-4">
+                <Stat
+                  icon={<Users className="h-4 w-4" />}
+                  value={members.length}
+                  label={members.length === 1 ? "member" : "members"}
+                />
+                <Stat
+                  icon={<Layers3 className="h-4 w-4" />}
+                  value={totalScopes}
+                  label="scopes"
+                />
+                <Stat
+                  icon={<Boxes className="h-4 w-4" />}
+                  value={countsLoading ? "…" : totalResources}
+                  label="resources"
+                />
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {organization.createdAt
+                    ? format(new Date(organization.createdAt), "PP")
+                    : "Unknown"}
                 </div>
-                {members.length > 8 && (
-                  <span className="text-xs text-muted-foreground">
-                    +{members.length - 8} more
-                  </span>
+                {organization.website && (
+                  <a
+                    href={organization.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Website
+                  </a>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Member avatars */}
+          {members.length > 0 && (
+            <div className="flex items-center gap-3 mt-5 pt-4 border-t border-border">
+              <div className="flex -space-x-2">
+                {members.slice(0, 8).map((member) => (
+                  <MemberAvatar key={member.id} member={member} />
+                ))}
+              </div>
+              {members.length > 8 && (
+                <span className="text-xs text-muted-foreground">
+                  +{members.length - 8} more
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto text-muted-foreground h-7"
+                onClick={() =>
+                  router.push(`/organizations/${slug}/settings?tab=members`)
+                }
+              >
+                Members
+                <ChevronRight className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </div>
+          )}
+        </Card>
+
+        {/* ─── Knowledge-graph suggestions ──────────────────────────── */}
+        {orgSuggestions.length > 0 && (
+          <KgSuggestionHint
+            variant="banner"
+            rows={orgSuggestions}
+            accept={suggestions.accept}
+            reject={suggestions.reject}
+            defer={suggestions.defer}
+            label={organization.name}
+            align="start"
+          />
+        )}
+
+        {/* ─── Knowledge graph (live preview card → full org-filtered graph) ── */}
+        <KgGraphCard
+          variant="org"
+          id={organization.id}
+          orgSlugOrId={slug}
+          title={`${organization.name} · knowledge graph`}
+        />
+
+        {/* ─── Context & Scopes ─────────────────────────────────────── */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <FolderTree className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+              <h2 className="text-lg font-semibold">Context &amp; Scopes</h2>
+            </div>
+            {scopeTypes.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                >
+                  <Link href={`/organizations/${slug}/scopes`}>
+                    <FolderTree className="h-4 w-4 mr-1.5" />
+                    Scope Type Hub
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                >
+                  <Link href={`/organizations/${slug}/context-items`}>
+                    <ListChecks className="h-4 w-4 mr-1.5" />
+                    Context items
+                  </Link>
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-auto text-muted-foreground h-7"
-                  onClick={() =>
-                    router.push(`/organizations/${slug}/settings?tab=members`)
-                  }
+                  onClick={() => setAddScopeOpen(true)}
+                  className="text-muted-foreground"
                 >
-                  Members
-                  <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Add Scope Type
                 </Button>
-              </div>
-            )}
-          </Card>
-
-          {/* ─── Knowledge-graph suggestions ──────────────────────────── */}
-          {orgSuggestions.length > 0 && (
-            <KgSuggestionHint
-              variant="banner"
-              rows={orgSuggestions}
-              accept={suggestions.accept}
-              reject={suggestions.reject}
-              defer={suggestions.defer}
-              label={organization.name}
-              align="start"
-            />
-          )}
-
-          {/* ─── Knowledge graph (live preview card → full org-filtered graph) ── */}
-          <KgGraphCard
-            variant="org"
-            id={organization.id}
-            orgSlugOrId={slug}
-            title={`${organization.name} · knowledge graph`}
-          />
-
-          {/* ─── Context & Scopes ─────────────────────────────────────── */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <FolderTree className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                <h2 className="text-lg font-semibold">Context &amp; Scopes</h2>
-              </div>
-              {scopeTypes.length > 0 && (
-                <div className="flex items-center gap-1 flex-wrap justify-end">
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                  >
-                    <Link href={`/organizations/${slug}/scopes`}>
-                      <FolderTree className="h-4 w-4 mr-1.5" />
-                      Scope Type Hub
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                  >
-                    <Link href={`/organizations/${slug}/context-items`}>
-                      <ListChecks className="h-4 w-4 mr-1.5" />
-                      Context items
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAddScopeOpen(true)}
-                    className="text-muted-foreground"
-                  >
-                    <Plus className="h-4 w-4 mr-1.5" />
-                    Add Scope Type
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setGalleryOpen(true)}
-                    className="text-muted-foreground"
-                  >
-                    <LayoutTemplate className="h-4 w-4 mr-1.5" />
-                    Templates
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {scopeTypes.length === 0 ? (
-              <Card className="p-6 md:p-8">
-                <ScopeOnboarding
-                  orgId={organization.id}
-                  isPersonal={organization.isPersonal ?? undefined}
-                  onChanged={() => {
-                    dispatch(fetchScopeTypes(organization.id));
-                    dispatch(fetchScopes({ org_id: organization.id }));
-                  }}
-                />
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {scopeTypes.map((scopeType) => (
-                  <OrgHomeScopeSection
-                    key={scopeType.id}
-                    scopeType={scopeType}
-                    orgId={organization.id}
-                    orgSlugOrId={slug}
-                  />
-                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setGalleryOpen(true)}
+                  className="text-muted-foreground"
+                >
+                  <LayoutTemplate className="h-4 w-4 mr-1.5" />
+                  Templates
+                </Button>
               </div>
             )}
           </div>
 
-          {/* ─── Resources by content role (legacy iam.permissions sharing) ──
+          {scopeTypes.length === 0 ? (
+            <Card className="p-6 md:p-8">
+              <ScopeOnboarding
+                orgId={organization.id}
+                isPersonal={organization.isPersonal ?? undefined}
+                onChanged={() => {
+                  dispatch(fetchScopeTypes(organization.id));
+                  dispatch(fetchScopes({ org_id: organization.id }));
+                }}
+              />
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {scopeTypes.map((scopeType) => (
+                <OrgHomeScopeSection
+                  key={scopeType.id}
+                  scopeType={scopeType}
+                  orgId={organization.id}
+                  orgSlugOrId={slug}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ─── Resources by content role (legacy iam.permissions sharing) ──
             The original role-bucketed grid (Utilities / Sources / Outputs /
             Workspaces) with the share-your-own contribute flow. KEPT alongside
             the canonical association grid below until the sharing surface is
             reconciled — do not remove without confirming. */}
-          <div className="space-y-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Boxes className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-lg font-semibold">Resources</h2>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Info className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">
-                  Grouped by what they do
-                </span>
-              </div>
+        <div className="space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Boxes className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Resources</h2>
             </div>
-
-            {CONTENT_ROLES.map((role) => (
-              <OrgResourceRoleSection
-                key={role.id}
-                role={role.id}
-                entries={entriesByRole(role.id)}
-                counts={inventoryCounts}
-                loading={inventoryLoading}
-                onOpen={handleOpenEntry}
-                onContribute={openContribute}
-              />
-            ))}
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Grouped by what they do</span>
+            </div>
           </div>
 
-          {/* NOTE: the canonical association grid (AssociationCardGrid) lives on
+          {CONTENT_ROLES.map((role) => (
+            <OrgResourceRoleSection
+              key={role.id}
+              role={role.id}
+              entries={entriesByRole(role.id)}
+              counts={inventoryCounts}
+              loading={inventoryLoading}
+              onOpen={handleOpenEntry}
+              onContribute={openContribute}
+            />
+          ))}
+        </div>
+
+        {/* NOTE: the canonical association grid (AssociationCardGrid) lives on
             the scope-type and scope pages, where attaching things to a
             container is the actual job. The org overview shows the Resources
             grid above instead — one resource surface per page, not two. */}
 
-          {/* ─── Member contributions (moderation) ────────────────────── */}
-          <OrgShareReviewCard
-            orgId={organization.id}
-            isAdmin={isAdmin}
-            members={members}
-            refreshKey={refreshKey}
-            onChanged={() => setRefreshKey((k) => k + 1)}
-          />
-        </div>
-
-        {/* Modals / sheets */}
-        {organization?.id && (
-          <>
-            <ContributeResourceSheet
-              open={contributeOpen}
-              onOpenChange={setContributeOpen}
-              orgId={organization.id}
-              orgName={organization.name}
-              initialEntryKey={contributeKey}
-              onContributed={() => setRefreshKey((k) => k + 1)}
-            />
-            <AddScopeModal
-              open={addScopeOpen}
-              onOpenChange={setAddScopeOpen}
-              orgId={organization.id}
-            />
-            <TemplateGalleryDrawer
-              open={galleryOpen}
-              onOpenChange={setGalleryOpen}
-              orgId={organization.id}
-              personalOnly={organization.isPersonal ? true : undefined}
-            />
-          </>
-        )}
+        {/* ─── Member contributions (moderation) ────────────────────── */}
+        <OrgShareReviewCard
+          orgId={organization.id}
+          isAdmin={isAdmin}
+          members={members}
+          refreshKey={refreshKey}
+          onChanged={() => setRefreshKey((k) => k + 1)}
+        />
       </div>
+
+      {/* Modals / sheets */}
+      {organization?.id && (
+        <>
+          <ContributeResourceSheet
+            open={contributeOpen}
+            onOpenChange={setContributeOpen}
+            orgId={organization.id}
+            orgName={organization.name}
+            initialEntryKey={contributeKey}
+            onContributed={() => setRefreshKey((k) => k + 1)}
+          />
+          <AddScopeModal
+            open={addScopeOpen}
+            onOpenChange={setAddScopeOpen}
+            orgId={organization.id}
+          />
+          <TemplateGalleryDrawer
+            open={galleryOpen}
+            onOpenChange={setGalleryOpen}
+            orgId={organization.id}
+            personalOnly={organization.isPersonal ? true : undefined}
+          />
+        </>
+      )}
+    </div>
     </SurfaceRuntimeProvider>
   );
 }

@@ -27,7 +27,7 @@ import {
   type ImageResult,
 } from "@/features/image-studio/api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 
 type Size = "square" | "portrait" | "landscape" | "wide" | "tall";
 

@@ -29,7 +29,7 @@ export type TopicUpdate = {
   // TopicUpdate. The project relationship is an optional canonical
   // `platform.associations` edge (research_topic → project) written through
   // `associationsService` — never a physical column write. See
-  // common-docs/projects/research-project-decoupling/FEATURE.md.
+  // common-docs/research-project-decoupling/FEATURE.md.
   // Quota ladder fields (migration 0013).
   max_keywords?: number | null;
   analyses_per_keyword?: number | null;
@@ -227,7 +227,7 @@ export type SourceOrigin =
  * `normalizeSynthesisScope`, never write it as feature vocabulary.
  * PHASE-4 COMPAT: after the Phase-4 data migration + backend Phase-3 deploy,
  * `'project'` disappears from the wire and the compat parsing can be deleted.
- * See common-docs/projects/research-project-decoupling/FEATURE.md.
+ * See common-docs/research-project-decoupling/FEATURE.md.
  */
 export type SynthesisScope = "keyword" | "topic";
 
@@ -571,32 +571,6 @@ export interface ResearchSource {
   pre_read_score: number | null;
   /** Structured breakdown behind `pre_read_score` (raw JSONB). */
   pre_read_breakdown: Json | null;
-  /**
-   * Predicted likelihood (0-100) that FETCHING this URL returns usable article
-   * text. Low = paywall / login wall / JS-only shell / aggregator stub. This is
-   * about page DELIVERY, not quality — a superb paywalled study scores low.
-   * Sources below 20 are skipped by the scraper entirely. null = not assessed;
-   * NEVER render a null as 0 or as a bad/red state.
-   */
-  scrape_worthiness: number | null;
-  /**
-   * Short slug clustering near-duplicate sources within a topic (e.g.
-   * `pbw_city_pages` for a law firm's per-city landing pages). Analysis
-   * selection spreads its quota ACROSS groups so one cluster can't consume it.
-   * null = ungrouped/unique.
-   */
-  redundancy_group: string | null;
-  /**
-   * Confidence (0-100) this source is about the topic's actual subject rather
-   * than a namesake. null = not assessed.
-   */
-  entity_match_confidence: number | null;
-  /**
-   * Topical usefulness (0-100) judged from the search snippet alone —
-   * available for nearly every source, including the ~95% never fetched.
-   * null = not assessed.
-   */
-  snippet_relevance: number | null;
 }
 
 // ============================================================================
@@ -942,10 +916,6 @@ export function rowToResearchSource(row: ResearchSourceRow): ResearchSource {
     analysis_status: row.analysis_status,
     pre_read_score: row.pre_read_score,
     pre_read_breakdown: row.pre_read_breakdown,
-    scrape_worthiness: row.scrape_worthiness,
-    redundancy_group: row.redundancy_group,
-    entity_match_confidence: row.entity_match_confidence,
-    snippet_relevance: row.snippet_relevance,
   };
 }
 

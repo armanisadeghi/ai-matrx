@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.54",
+  "version": "0.4.47",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
@@ -77,7 +77,6 @@
     "check:backend-boundaries": "tsx scripts/check-backend-boundaries.ts",
     "check:backend-boundaries:strict": "tsx scripts/check-backend-boundaries.ts --strict",
     "gen:entity-types": "tsx scripts/generate-entity-types.ts",
-    "gen:action-nouns": "node scripts/gen-action-nouns.mjs",
     "check:entity-types": "tsx scripts/generate-entity-types.ts --check",
     "check:release-gates": "bash scripts/run-release-gates.sh",
     "check:release-gates:advisory": "bash scripts/run-release-gates.sh --advisory",
@@ -142,8 +141,7 @@
     "dev:reap:dry": "bash scripts/dev-cleanup.sh reap --dry-run",
     "dev:stop": "bash scripts/dev-cleanup.sh ports",
     "dev:nuke": "bash scripts/dev-cleanup.sh all",
-    "fix:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts --fix",
-    "check:fake-dynamic": "node scripts/check-fake-dynamic-imports.mjs"
+    "fix:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts --fix"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",

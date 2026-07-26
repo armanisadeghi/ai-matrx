@@ -6,11 +6,10 @@
  * `plan_source_type` category dimension.
  */
 import { useState } from "react";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -59,104 +58,66 @@ export function EntityManager({
   const [editing, setEditing] = useState<PlanEntityRow | null>(null);
   const [deleting, setDeleting] = useState<PlanEntityRow | null>(null);
 
-  const rows = entities.data ?? [];
-
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <div className="mx-auto w-full max-w-3xl px-4 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">
-              People &amp; sources
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              The authors, reviewers, sources, and organizations behind this
-              site's content (E-E-A-T).
-            </p>
-          </div>
-          <Button
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => {
-              setEditing(null);
-              setEditorOpen(true);
-            }}
-          >
-            <Plus className="mr-1 h-3 w-3" /> New entity
-          </Button>
-        </div>
-
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <h3 className="text-sm font-medium">People &amp; sources</h3>
+        <Button
+          size="sm"
+          className="h-7 text-xs"
+          onClick={() => {
+            setEditing(null);
+            setEditorOpen(true);
+          }}
+        >
+          <Plus className="mr-1 h-3 w-3" /> New entity
+        </Button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {entities.isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }, (_, index) => (
-              <div key={index} className="flex items-center gap-3 py-1">
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            ))}
-          </div>
+          <p className="px-3 py-4 text-xs text-muted-foreground">Loading…</p>
         ) : entities.isError ? (
-          <p className="py-4 text-sm text-destructive">
+          <p className="px-3 py-4 text-xs text-destructive">
             {extractErrorMessage(entities.error)}
           </p>
-        ) : rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border px-6 py-10 text-center">
-            <Users className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium text-foreground">
-              No entities yet
-            </p>
-            <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-              Add the authors, reviewers, and sources this site's content will
-              cite — nodes attach to them from the tree.
-            </p>
-            <Button
-              size="sm"
-              className="mt-4 h-7 text-xs"
-              onClick={() => {
-                setEditing(null);
-                setEditorOpen(true);
-              }}
-            >
-              <Plus className="mr-1 h-3 w-3" /> New entity
-            </Button>
-          </div>
+        ) : (entities.data ?? []).length === 0 ? (
+          <p className="px-3 py-4 text-xs text-muted-foreground">
+            No entities yet. Add the authors, reviewers, and sources this
+            site's content will cite.
+          </p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
-            {rows.map((entity) => (
-              <div
-                key={entity.id}
-                className="group flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 hover:bg-accent/50"
+          (entities.data ?? []).map((entity) => (
+            <div
+              key={entity.id}
+              className="group flex items-center gap-2 border-b border-border/40 px-3 py-1.5 text-sm"
+            >
+              <span className="rounded bg-muted px-1 text-[10px] uppercase text-muted-foreground">
+                {entity.entity_type}
+              </span>
+              <span className="min-w-0 flex-1 truncate">{entity.label}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                aria-label="Edit entity"
+                onClick={() => {
+                  setEditing(entity);
+                  setEditorOpen(true);
+                }}
               >
-                <span className="w-16 shrink-0 rounded bg-muted px-1.5 py-0.5 text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {entity.entity_type}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                  {entity.label}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
-                  aria-label="Edit entity"
-                  onClick={() => {
-                    setEditing(entity);
-                    setEditorOpen(true);
-                  }}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
-                  aria-label="Delete entity"
-                  onClick={() => setDeleting(entity)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))}
-          </div>
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100"
+                aria-label="Delete entity"
+                onClick={() => setDeleting(entity)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))
         )}
       </div>
 
@@ -279,7 +240,7 @@ function EntityEditorDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label className="mb-1 block text-xs font-medium">Label</Label>
+            <Label className="text-xs">Label</Label>
             <Input
               autoFocus
               value={label}
@@ -289,7 +250,7 @@ function EntityEditorDialog({
             />
           </div>
           <div>
-            <Label className="mb-1 block text-xs font-medium">Type</Label>
+            <Label className="text-xs">Type</Label>
             <Select
               value={entityType}
               onValueChange={(next) => setEntityType(next as PlanEntityType)}
@@ -299,7 +260,7 @@ function EntityEditorDialog({
               </SelectTrigger>
               <SelectContent>
                 {PLAN_ENTITY_TYPES.map((type) => (
-                  <SelectItem key={type} value={type} className="capitalize">
+                  <SelectItem key={type} value={type}>
                     {type}
                   </SelectItem>
                 ))}
@@ -307,7 +268,7 @@ function EntityEditorDialog({
             </Select>
           </div>
           <div>
-            <Label className="mb-1 block text-xs font-medium">Source type</Label>
+            <Label className="text-xs">Source type</Label>
             <CategorySelect
               dimension={CATEGORY_DIMENSIONS.planSourceType}
               value={sourceTypeId}

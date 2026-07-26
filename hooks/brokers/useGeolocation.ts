@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import { brokerActions } from "@/lib/redux/brokerSlice";
 
 /**
  * Hook to lazily request user's geolocation when needed.

@@ -16,7 +16,7 @@
  * the latter.
  */
 
-import { fileHandler } from "@/features/files/handler/handler";
+import { fileHandler } from "@/features/files";
 import { supabase } from "@/utils/supabase/client";
 
 export interface DerivativeParent {

@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import dynamic from "next/dynamic";
 import { toast } from "@/lib/toast";
 

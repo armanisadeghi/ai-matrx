@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from "react";
 import { AudioLines } from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
 import { parseScript, speakerSlot, SPEAKER_SLOT_TEXT } from "../script";
@@ -61,8 +61,7 @@ export function ProductionTeaser({ state, startedAt }: ProductionTeaserProps) {
     ...state.images.map((s) => s.prompt),
     ...state.videos.map((s) => s.prompt),
   ].filter(Boolean);
-  const concept =
-    state.description || (prompts.length ? prompts[tick % prompts.length] : "");
+  const concept = state.description || (prompts.length ? prompts[tick % prompts.length] : "");
 
   const activeImage = readyImages.length
     ? readyImages[tick % readyImages.length]
@@ -145,10 +144,7 @@ export function ProductionTeaser({ state, startedAt }: ProductionTeaserProps) {
                 </p>
                 <div className="space-y-2">
                   {teaseTurns.map((turn, i) => (
-                    <p
-                      key={windowStart + i}
-                      className="text-sm leading-relaxed"
-                    >
+                    <p key={windowStart + i} className="text-sm leading-relaxed">
                       <span
                         className={cn(
                           "font-semibold",

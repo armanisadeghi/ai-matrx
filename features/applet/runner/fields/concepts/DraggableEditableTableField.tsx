@@ -9,8 +9,7 @@ import {
     DraggableRubric
 } from "@hello-pangea/dnd";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
-import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import { brokerSelectors, brokerActions } from "@/lib/redux/brokerSlice";
 import { ensureValidWidthClass } from "@/features/applet/constants/field-constants";
 import { GripHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";

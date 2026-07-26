@@ -21,7 +21,7 @@
 
 import { useEffect, useState } from "react";
 import { AudioLines, CheckCircle2 } from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import { ElapsedTimer } from "@/features/podcasts/generator/components/ElapsedTimer";
@@ -205,10 +205,7 @@ export function StageCanvas({
                 </p>
                 <div className="space-y-2">
                   {teaseTurns.map((turn, i) => (
-                    <p
-                      key={windowStart + i}
-                      className="text-sm leading-relaxed"
-                    >
+                    <p key={windowStart + i} className="text-sm leading-relaxed">
                       <span
                         className={cn(
                           "font-semibold",

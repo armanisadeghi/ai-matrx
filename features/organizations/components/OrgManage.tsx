@@ -34,7 +34,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import {
   canManageInvitations,

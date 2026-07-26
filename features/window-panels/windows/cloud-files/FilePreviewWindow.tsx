@@ -26,7 +26,7 @@
 
 import { useCallback, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { PreviewPane } from "@/features/files/components/surfaces/PreviewPane";
+import { PreviewPane } from "@/features/files";
 import { getFileFromState } from "@/features/files/redux/selectors";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {

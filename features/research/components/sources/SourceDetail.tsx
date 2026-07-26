@@ -32,20 +32,12 @@ import {
   FlaskConical,
   MapPin,
   ShieldAlert,
-  Layers,
-  Target,
-  SearchCheck,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   useResearchSource,
   useResearchSources,
@@ -74,12 +66,6 @@ import { SourceTagPicker } from "./SourceTagPicker";
 import { SourceRankBadges } from "./SourceRankBadges";
 import { AuthorityTierBadge } from "./AuthorityTierBadge";
 import { SourceVerdictBadge } from "./SourceVerdictBadge";
-import { RedundancyGroupBadge } from "./RedundancyGroupBadge";
-import {
-  formatScrapeWorthiness,
-  formatEntityMatchConfidence,
-  formatSnippetRelevance,
-} from "./sourceScoreDisplay";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import type {
@@ -92,10 +78,7 @@ import type {
   BiasAndRiskSignals,
   EntitiesMentioned,
 } from "../../types";
-import {
-  NOT_YET_SCRAPED_STATUSES,
-  isLowScrapeWorthiness,
-} from "../../constants";
+import { NOT_YET_SCRAPED_STATUSES } from "../../constants";
 import {
   jsonArrayLength,
   pageAnalysisFromJson,
@@ -1147,88 +1130,6 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       recommendedUse={typedSource.recommended_use}
                       analysisStatus={typedSource.analysis_status}
                       showUnanalyzed
-                    />
-                  </MetaRow>
-                )}
-                <MetaRow
-                  label="Scrape worthiness"
-                  icon={<Download className="h-3 w-3" />}
-                >
-                  {typedSource.scrape_worthiness != null ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span
-                          className={cn(
-                            "cursor-help border-b border-dotted border-muted-foreground/50",
-                            isLowScrapeWorthiness(
-                              typedSource.scrape_worthiness,
-                            ) && "text-amber-700 dark:text-amber-400",
-                          )}
-                        >
-                          {formatScrapeWorthiness(
-                            typedSource.scrape_worthiness,
-                          )}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-xs">
-                          Predicted likelihood that <b>fetching</b> this URL
-                          returns usable article text — page delivery, not
-                          quality. A great paywalled source can still score low
-                          here. Sources below 20 are skipped by the scraper
-                          automatically.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </MetaRow>
-                <MetaRow
-                  label="Entity match"
-                  icon={<Target className="h-3 w-3" />}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help border-b border-dotted border-muted-foreground/50">
-                        {formatEntityMatchConfidence(
-                          typedSource.entity_match_confidence,
-                        )}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs">
-                        Confidence this source is about the topic&rsquo;s
-                        actual subject rather than a namesake.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </MetaRow>
-                <MetaRow
-                  label="Snippet relevance"
-                  icon={<SearchCheck className="h-3 w-3" />}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help border-b border-dotted border-muted-foreground/50">
-                        {formatSnippetRelevance(
-                          typedSource.snippet_relevance,
-                        )}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs">
-                        Topical usefulness judged from the search snippet
-                        alone — available for nearly every source, including
-                        the ones never fetched.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </MetaRow>
-                {typedSource.redundancy_group && (
-                  <MetaRow label="Cluster" icon={<Layers className="h-3 w-3" />}>
-                    <RedundancyGroupBadge
-                      group={typedSource.redundancy_group}
                     />
                   </MetaRow>
                 )}

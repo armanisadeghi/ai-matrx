@@ -31,8 +31,7 @@ import {
 import { Button } from "@/components/ui/button";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { getFileExtension } from "@/features/code-editor/config/languages";
-import { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
-import { folderForWarRoomThread } from "@/features/files/utils/folder-conventions";
+import { requestUpload, folderForWarRoomThread } from "@/features/files";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { attachEntityToThread } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";

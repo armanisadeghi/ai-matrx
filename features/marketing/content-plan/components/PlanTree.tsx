@@ -28,8 +28,8 @@ import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { NODE_TYPE_LABELS, planStatusColor } from "../constants";
-import type { PlanNodeRow, PlanNodeTreeItem, PlanNodeType } from "../types";
+import { planStatusColor } from "../constants";
+import type { PlanNodeRow, PlanNodeTreeItem } from "../types";
 import { buildPlanTree } from "../types";
 
 interface FlatRow {
@@ -135,14 +135,9 @@ export function PlanTree({
         <RootDropStrip onAddRoot={() => onAddChild(null)} />
         <div className="min-h-0 flex-1 overflow-y-auto">
           {rows.length === 0 ? (
-            <div className="px-4 py-8 text-center">
-              <p className="text-sm font-medium text-foreground">
-                No nodes planned yet
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Add the first pillar or the home node.
-              </p>
-            </div>
+            <p className="px-3 py-6 text-xs text-muted-foreground">
+              No nodes planned yet. Add the first pillar or the home node.
+            </p>
           ) : (
             rows.map((row) => (
               <TreeRow
@@ -162,7 +157,7 @@ export function PlanTree({
       </div>
       <DragOverlay>
         {activeNode ? (
-          <div className="rounded border border-border bg-card px-2.5 py-1.5 text-sm font-medium text-foreground shadow-md">
+          <div className="rounded border border-border bg-card px-2 py-1 text-xs shadow-md">
             {activeNode.label}
           </div>
         ) : null}
@@ -181,7 +176,7 @@ function RootDropStrip({ onAddRoot }: { onAddRoot: () => void }) {
         isOver && "bg-accent",
       )}
     >
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
         Site root — drop here for top level
       </span>
       <Button
@@ -226,26 +221,18 @@ function TreeRow({
     <div
       ref={setDropRef}
       className={cn(
-        // Two-line row: full label on line 1, full route on line 2 — page
-        // names and routes are the content of this tool, never truncated.
-        // Selection is unmistakable: primary wash + 2px left rail + heavier
-        // label weight. Hover stays visibly distinct from selected.
-        "group flex items-start gap-1 border-l-2 py-1 pr-1 transition-colors",
-        selected
-          ? "border-l-primary bg-primary/10"
-          : "border-l-transparent hover:bg-accent/50",
-        isOver &&
-          !dragging &&
-          "bg-primary/10 outline outline-1 -outline-offset-1 outline-primary/40",
+        "group flex items-center gap-1 border-b border-border/40 px-1 py-0.5 text-sm",
+        selected && "bg-accent",
+        isOver && !dragging && "bg-primary/10 outline outline-1 outline-primary/40",
         dragging && "opacity-40",
       )}
-      style={{ paddingLeft: `${row.depth * 16 + 2}px` }}
+      style={{ paddingLeft: `${row.depth * 16 + 4}px` }}
     >
       <button
         type="button"
         aria-label={collapsed ? "Expand" : "Collapse"}
         className={cn(
-          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground",
+          "flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground",
           !row.hasChildren && "invisible",
         )}
         onClick={onToggle}
@@ -260,42 +247,30 @@ function TreeRow({
         ref={setDragRef}
         {...attributes}
         {...listeners}
-        className="flex min-w-0 flex-1 cursor-grab items-start gap-1.5"
+        className="flex min-w-0 flex-1 cursor-grab items-center gap-1.5"
         onClick={onSelect}
       >
         <span
           className={cn(
-            "mt-[7px] h-2 w-2 shrink-0 rounded-full",
+            "h-2 w-2 shrink-0 rounded-full",
             planStatusColor(statusSlug),
           )}
           title={statusSlug ?? "no status"}
         />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <span
-              className={cn(
-                "min-w-0 break-words text-sm leading-snug text-foreground",
-                selected ? "font-semibold" : "font-medium",
-              )}
-            >
-              {row.node.label}
-            </span>
-            <span className="mt-px shrink-0 rounded bg-muted px-1 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {NODE_TYPE_LABELS[row.node.node_type as PlanNodeType] ??
-                row.node.node_type}
-            </span>
-          </div>
-          {row.node.route ? (
-            <span className="block break-all font-mono text-[11px] leading-tight text-muted-foreground">
-              {row.node.route}
-            </span>
-          ) : null}
-        </div>
+        <span className="truncate font-medium text-foreground">
+          {row.node.label}
+        </span>
+        <span className="truncate text-xs text-muted-foreground">
+          {row.node.route}
+        </span>
+        <span className="ml-auto shrink-0 rounded bg-muted px-1 text-[10px] uppercase text-muted-foreground">
+          {row.node.node_type}
+        </span>
       </div>
       <Button
         variant="ghost"
         size="sm"
-        className="h-5 w-5 shrink-0 p-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+        className="h-5 w-5 shrink-0 p-0 opacity-0 group-hover:opacity-100"
         aria-label="Add child node"
         onClick={onAddChild}
       >

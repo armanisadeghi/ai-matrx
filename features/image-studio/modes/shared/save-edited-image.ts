@@ -1,6 +1,6 @@
 "use client";
 
-import { fileHandler } from "@/features/files/handler/handler";
+import { fileHandler } from "@/features/files";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectFileById } from "@/features/files/redux/selectors";
 import type { RootState } from "@/lib/redux/store";

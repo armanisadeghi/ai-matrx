@@ -47,7 +47,7 @@ import {
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
-import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
+import { FileRightClickMenu } from "@/features/files";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import {

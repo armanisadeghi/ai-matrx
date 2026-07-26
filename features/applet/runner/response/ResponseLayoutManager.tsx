@@ -6,7 +6,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import FullscreenWrapper from "@/components/matrx/FullscreenWrapper";
 import AppletLayoutManager from "@/features/applet/runner/layouts/AppletLayoutManager";
 import AppletPostActionButtons from "./AppletPostActionButtons";
-import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import { brokerActions } from "@/lib/redux/brokerSlice";
 import { hasCoordinator } from "@/components/mardown-display/markdown-classification/markdown-coordinator";
 import DirectMarkdownRenderer from "@/components/mardown-display/markdown-classification/DirectMarkdownRenderer";
 import { AppletLayoutOption } from "@/types/customAppTypes";

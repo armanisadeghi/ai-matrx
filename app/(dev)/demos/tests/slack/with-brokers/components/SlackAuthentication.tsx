@@ -1,8 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
-import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import { brokerActions, brokerSelectors } from '@/lib/redux/brokerSlice';
 import { SLACK_BROKER_IDS } from './BrokerSlackClient';
 import { MessageSquare, Shield, CheckCircle2, XCircle, Loader2, ChevronRight } from 'lucide-react';
 import { FaSlack } from "react-icons/fa";

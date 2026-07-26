@@ -374,7 +374,7 @@ Single source of truth: `.claude/skills/ios-mobile-first/SKILL.md`. Rules:
 
 ## Overlays + Windows (two independent systems)
 
-After the May 2026 overhaul (see `docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`), what was one conflated system is now two:
+After the May 2026 overhaul (see `docs/OVERLAY_WINDOW_OVERHAUL.md`), what was one conflated system is now two:
 
 1. **Overlay system** — the controller that renders any component (dialog, sheet, modal, window, toast) at the top of the tree on dispatch. Lives in `features/overlays/`. Has explicit JSX prop wiring (no `{...spread}`) so TypeScript catches dispatch/component drift. **Invoke the `overlay-system` skill** before opening / adding / debugging an overlay.
 2. **WindowPanel component + Window Manager** — the draggable/resizable frame primitive (`WindowPanel.tsx`), the tray (`WindowTray.tsx`), the runtime registry slice (`windowManagerSlice.ts`), and the persistence machinery. Lives in `features/window-panels/`. A `<WindowPanel>` rendered anywhere joins the runtime manager and participates in minimize-all, focus, persistence — regardless of whether the overlay controller rendered it. **Invoke the `window-panels` skill** for tasks scoped to the component / tray / manager / persistence.

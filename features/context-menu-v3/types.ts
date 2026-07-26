@@ -22,7 +22,7 @@ import type { Scope } from "@/features/agents/redux/shared/scope";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { EntityType } from "@/features/scopes/types";
-import type { ResourceType } from "@/utils/permissions/types";
+import type { ResourceType } from "@/utils/permissions";
 import type { SelectionRange } from "./utils/selection-tracking";
 
 // ---------------------------------------------------------------------------
@@ -111,7 +111,9 @@ export type ContextMenuExtraItem =
  * existing `extraSections` producer works unchanged. Default: "after-compare".
  */
 export type ExtraSectionAnchor =
-  "after-clipboard" | "after-compare" | "after-placements";
+  | "after-clipboard"
+  | "after-compare"
+  | "after-placements";
 
 export interface ContextMenuExtraSection {
   id: string;
@@ -301,7 +303,8 @@ export interface EditableContextMenuExtras {
 
 /** Editable surfaces: text mutation callbacks light up Cut/Paste/Insert/Save/Delete. */
 export interface EditableContextMenuProps
-  extends ContextMenuV3CoreProps, EditableContextMenuExtras {}
+  extends ContextMenuV3CoreProps,
+    EditableContextMenuExtras {}
 
 /** Read-only surfaces: no text mutation. Copy/AI/Attach/Share/Export still work. */
 export type NonEditableContextMenuProps = ContextMenuV3CoreProps;
@@ -311,7 +314,8 @@ export type NonEditableContextMenuProps = ContextMenuV3CoreProps;
  * flag that the wrappers preset. Consumers should use the wrappers, not this.
  */
 export interface ContextMenuV3Props
-  extends ContextMenuV3CoreProps, EditableContextMenuExtras {
+  extends ContextMenuV3CoreProps,
+    EditableContextMenuExtras {
   isEditable: boolean;
 }
 

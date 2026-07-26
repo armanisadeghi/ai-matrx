@@ -23,7 +23,7 @@ import {
   useSelectedImages,
   type ImageSource,
 } from "@/components/image/context/SelectedImagesProvider";
-import type { CloudFileRecord } from "@/features/files/types";
+import type { CloudFileRecord } from "@/features/files";
 
 const DEFAULT_PRESET_IDS = ["og-image", "ig-square"];
 const DEFAULT_PRIMARY_PRESET = "og-image";

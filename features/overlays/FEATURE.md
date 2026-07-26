@@ -1,7 +1,7 @@
 # Overlays — FEATURE.md
 
 > **Canonical reference** for the overlay rendering system.
-> Companion docs: [`features/window-panels/FEATURE.md`](../window-panels/FEATURE.md) (the WindowPanel component primitive), [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md) (migration history + cutover plan), [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../docs/OVERLAY_WINDOW_ROADMAP.md) (known gaps + future work).
+> Companion docs: [`features/window-panels/FEATURE.md`](../window-panels/FEATURE.md) (the WindowPanel component primitive), [`docs/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/OVERLAY_WINDOW_OVERHAUL.md) (migration history + cutover plan), [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../docs/OVERLAY_WINDOW_ROADMAP.md) (known gaps + future work).
 > **Skill**: [`.claude/skills/overlay-system/SKILL.md`](../../.claude/skills/overlay-system/SKILL.md).
 
 ---
@@ -10,7 +10,7 @@
 
 The overlay system is a **transport layer**: it renders any component at the top of the React tree when Redux state says so. It knows nothing about what those components are. Dialogs, sheets, modals, toasts, draggable windows, inline agent widgets — they all dispatch the same action, they all flow through the same controller, they all get explicit prop wiring.
 
-It is deliberately **decoupled** from the WindowPanel component primitive. A window may participate in the overlay system, but it doesn't have to — and a non-window overlay (a dialog, a sheet) participates in the overlay system without ever touching window-panel code. This separation was the architectural goal of the May 2026 overhaul; see [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md) for the history of why.
+It is deliberately **decoupled** from the WindowPanel component primitive. A window may participate in the overlay system, but it doesn't have to — and a non-window overlay (a dialog, a sheet) participates in the overlay system without ever touching window-panel code. This separation was the architectural goal of the May 2026 overhaul; see [`docs/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/OVERLAY_WINDOW_OVERHAUL.md) for the history of why.
 
 ---
 

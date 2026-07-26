@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import * as Server from "@/features/files/api/server-client";
-import { folderForAgentApp } from "@/features/files/utils/folder-conventions";
+import * as Api from "@/features/files/api";
+import { folderForAgentApp } from "@/features/files";
 
 const FAVICON_COLORS = [
   "#3b82f6",
@@ -136,11 +136,11 @@ export async function POST(request: NextRequest) {
     // create a persistent share link so the URL we persist into the DB row
     // doesn't expire. Using the session JWT keeps RLS honest — the file is
     // owned by the user, which means they can see it in their Files app.
-    const ctx = Server.createServerContext({
+    const ctx = Api.Server.createServerContext({
       accessToken: session.access_token,
     });
 
-    const { fileId, directUrl } = await Server.uploadAndShare(ctx, {
+    const { fileId, directUrl } = await Api.Server.uploadAndShare(ctx, {
       file: svgBytes,
       filePath: `${folderForAgentApp(appId)}/favicon.svg`,
       fileName: "favicon.svg",

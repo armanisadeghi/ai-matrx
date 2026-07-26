@@ -198,7 +198,7 @@ is easy to fill in.
   (solo→Gemini single, 2→Gemini multi, 3–20→ElevenLabs dialogue). Verified via
   `scripts/podcast_e2e_matrix.py` (`solo`/`three_host`/`six_host_roundtable` all
   PASS with real audio). Also fixed a build-blocking dangling `human-id` pnpm
-  symlink (cartesia dep). Full status: `docs/HANDOFF_PODCAST_SYSTEM.md` (supersedes the archived `HANDOFF_2026-06-12.md`). Server work
+  symlink (cartesia dep). Full status: `docs/HANDOFF_2026-06-12.md`. Server work
   committed (`aidream 05c457d0`) but **awaits deploy** for production.
 - 2026-06-11 — **Blog posts + show notes (generate → publish → public).** Per
   episode, `EpisodeContentStudio` (on the run page) generates a blog article or

@@ -12,13 +12,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Headphones,
-  Loader2,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, Headphones, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,7 +26,7 @@ import { SourceCitations } from "@/features/education/trust/components/SourceCit
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import { useAccess } from "@/utils/permissions/access";
+import { useAccess } from "@/utils/permissions";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
@@ -129,11 +123,7 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
         <p className="text-sm text-muted-foreground">
           This audio study doesn&apos;t exist or you don&apos;t have access.
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push("/education/audio-study")}
-        >
+        <Button variant="outline" size="sm" onClick={() => router.push("/education/audio-study")}>
           Back to Audio Study
         </Button>
       </div>
@@ -146,11 +136,7 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
-      <Header
-        media={media}
-        onBack={() => router.push("/education/audio-study")}
-        onDeleted={() => router.push("/education/audio-study")}
-      />
+      <Header media={media} onBack={() => router.push("/education/audio-study")} onDeleted={() => router.push("/education/audio-study")} />
       {isReady ? (
         <ReadyAudioView media={media} />
       ) : (
@@ -175,8 +161,7 @@ function Header({
   async function handleDelete() {
     const ok = await confirm({
       title: "Delete this audio study?",
-      description:
-        "It will be removed from your library. This can't be undone.",
+      description: "It will be removed from your library. This can't be undone.",
       confirmLabel: "Delete",
       variant: "destructive",
     });
@@ -192,13 +177,7 @@ function Header({
 
   return (
     <div className="flex items-start gap-3">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="mt-0.5 shrink-0"
-        onClick={onBack}
-        aria-label="Back"
-      >
+      <Button variant="ghost" size="icon" className="mt-0.5 shrink-0" onClick={onBack} aria-label="Back">
         <ArrowLeft className="h-4 w-4" />
       </Button>
       <div className="min-w-0 flex-1">
@@ -207,30 +186,15 @@ function Header({
             {FORMAT_LABEL[media.audio_format ?? "overview"] ?? "Audio"}
           </span>
           {media.source_title && (
-            <span className="truncate text-xs text-muted-foreground">
-              from {media.source_title}
-            </span>
+            <span className="truncate text-xs text-muted-foreground">from {media.source_title}</span>
           )}
         </div>
-        <h1 className="mt-1 truncate text-lg font-semibold text-foreground">
-          {media.title}
-        </h1>
+        <h1 className="mt-1 truncate text-lg font-semibold text-foreground">{media.title}</h1>
       </div>
       {isOwner && (
         <div className="flex shrink-0 items-center gap-1">
-          <ShareButton
-            resourceType="study_media"
-            resourceId={media.id}
-            resourceName={media.title}
-            isOwner
-            size="sm"
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            aria-label="Delete"
-          >
+          <ShareButton resourceType="study_media" resourceId={media.id} resourceName={media.title} isOwner size="sm" />
+          <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="Delete">
             <Trash2 className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
@@ -250,10 +214,7 @@ function ReadyAudioView({ media }: { media: StudyMediaRow }) {
         <Headphones className="h-4 w-4 text-primary" />
         Listen
       </div>
-      <AudioPlayback
-        fileId={media.audio_file_id}
-        episodeId={media.episode_id}
-      />
+      <AudioPlayback fileId={media.audio_file_id} episodeId={media.episode_id} />
       {isOwner && (
         <div className="flex items-center gap-2 pt-1">
           <Button
@@ -288,8 +249,7 @@ function LiveAudioRun({
   // Persist the finished episode onto the artifact row — once.
   useEffect(() => {
     if (state.status !== "done" || persistedRef.current) return;
-    const fileId =
-      state.audioFileId ?? fileIdFromUserFilesUrl(state.audioUrl ?? "");
+    const fileId = state.audioFileId ?? fileIdFromUserFilesUrl(state.audioUrl ?? "");
     // A durable anchor is either the re-mintable file_id (live path) OR the
     // produced episode (recovery path — no live file_id was ever captured).
     if (!fileId && !state.episodeId) return;
@@ -308,16 +268,7 @@ function LiveAudioRun({
       toast.success("Audio study ready");
       onReady(res.data);
     })();
-  }, [
-    state.status,
-    state.audioFileId,
-    state.audioUrl,
-    state.episodeId,
-    state.title,
-    media.id,
-    media.title,
-    onReady,
-  ]);
+  }, [state.status, state.audioFileId, state.audioUrl, state.episodeId, state.title, media.id, media.title, onReady]);
 
   // Mark the artifact errored so the library reflects it (best-effort).
   useEffect(() => {
@@ -359,22 +310,16 @@ function LiveAudioRun({
             <Headphones className="h-4 w-4 text-primary" />
             Listen
           </div>
-          <AudioPlayback
-            fileId={state.audioFileId}
-            episodeId={state.episodeId}
-          />
+          <AudioPlayback fileId={state.audioFileId} episodeId={state.episodeId} />
         </div>
       )}
 
-      {(run.streaming || state.status === "running" || run.loading) &&
-        !audioReady && (
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-            <span>
-              Producing your audio — you can leave and come back; it resumes.
-            </span>
-          </div>
-        )}
+      {(run.streaming || state.status === "running" || run.loading) && !audioReady && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+          <span>Producing your audio — you can leave and come back; it resumes.</span>
+        </div>
+      )}
 
       <LiveProgressRail state={state} startedAt={run.startedAt} />
     </div>

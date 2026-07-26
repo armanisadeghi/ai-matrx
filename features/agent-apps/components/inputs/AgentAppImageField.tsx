@@ -14,8 +14,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { ImagePlus, Loader2, RotateCcw, Upload, X } from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { InlineMediaRef, useFileUpload } from "@/features/files";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
 

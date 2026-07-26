@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
-import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import { brokerSelectors, brokerActions } from "@/lib/redux/brokerSlice";
 import { ensureValidWidthClass } from "@/features/applet/constants/field-constants";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";

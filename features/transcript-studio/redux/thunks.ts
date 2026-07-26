@@ -6,7 +6,6 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { TRANSCRIPT_STUDIO_FETCH_SESSIONS } from "./actionTypes";
 import type { RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
 import type { ChunkCompleteInfo } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
@@ -108,9 +107,7 @@ export const fetchSessionsThunk = createAsyncThunk<
   StudioSession[],
   SessionListFilter | void
 >(
-  // Prefix lives in ./actionTypes so realtimeMiddleware can match this action
-  // without importing this module. Do not inline the string back here.
-  TRANSCRIPT_STUDIO_FETCH_SESSIONS,
+  "transcriptStudio/fetchSessions",
   async (filter, { dispatch, rejectWithValue }) => {
     dispatch(sessionsListLoading());
     try {

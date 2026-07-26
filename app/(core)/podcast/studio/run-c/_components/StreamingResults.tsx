@@ -11,19 +11,9 @@
 // Modeled after a build-preview pane (Vercel deploy preview): the artifact
 // materializes piece by piece, never a lone spinner.
 
-import {
-  ImageIcon,
-  Clapperboard,
-  FileText,
-  AudioLines,
-  ExternalLink,
-  Sparkles,
-} from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import type {
-  MediaSlot,
-  PodcastRunState,
-} from "@/features/podcasts/generator/types";
+import { ImageIcon, Clapperboard, FileText, AudioLines, ExternalLink, Sparkles } from "lucide-react";
+import { InlineMediaRef } from "@/features/files";
+import type { MediaSlot, PodcastRunState } from "@/features/podcasts/generator/types";
 import { cn } from "@/lib/utils";
 
 export function StreamingResults({ state }: { state: PodcastRunState }) {
@@ -65,14 +55,16 @@ export function StreamingResults({ state }: { state: PodcastRunState }) {
             <AudioLines className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-foreground">
-              Audio ready
-            </div>
+            <div className="text-sm font-semibold text-foreground">Audio ready</div>
             <div className="truncate text-xs text-muted-foreground">
               {state.title}
             </div>
           </div>
-          <audio controls src={state.audioUrl} className="h-9 max-w-[220px]" />
+          <audio
+            controls
+            src={state.audioUrl}
+            className="h-9 max-w-[220px]"
+          />
         </div>
       )}
 

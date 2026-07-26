@@ -16,8 +16,7 @@
  */
 
 import { MATRX_VERSION, type MatrxEnvelope } from "@/features/matrx-envelope/envelope";
-import type { ActionVerb, NounActions } from "@/features/action-catalog/types";
-import { isWriteVerb } from "@/features/action-catalog/types";
+import type { ActionVerb } from "@/features/action-catalog/types";
 
 /** One identity field the admin must supply for a reference type. */
 export interface RefFieldSpec {
@@ -27,17 +26,10 @@ export interface RefFieldSpec {
   uuid?: boolean;
 }
 
-function labelForKey(key: string): string {
-  const pretty = key.replace(/_/g, " ");
-  return pretty.charAt(0).toUpperCase() + pretty.slice(1);
-}
-
 /**
- * LEGACY hand map — superseded by the catalog's per-noun `identity_fields`
- * (required fields of the server's registered reference item model). Kept only
- * as the fallback for nouns the fetched catalog doesn't carry (stale cache /
- * offline) and for the richer uuid/label hints. Do NOT add entries — a new
- * compound noun's fields arrive from the server automatically.
+ * Identity-field requirements per reference `type`. The DEFAULT is the
+ * RecordRef shape (`{ id }`) — applied to any noun not listed here. The listed
+ * compound types mirror the item interfaces in `features/matrx-envelope/envelope.ts`.
  */
 const REF_FIELDS: Record<string, RefFieldSpec[]> = {
   structured_list: [{ key: "list_id", label: "List ID", uuid: true }],
@@ -49,7 +41,7 @@ const REF_FIELDS: Record<string, RefFieldSpec[]> = {
     { key: "list_id", label: "List ID", uuid: true },
     { key: "item_id", label: "Item ID", uuid: true },
   ],
-  // Legacy read-only aliases (pre-rename nouns). See common-docs/projects/structured-lists-rename.
+  // Legacy read-only aliases (pre-rename nouns). See common-docs/structured-lists-rename.
   picklist: [{ key: "list_id", label: "List ID", uuid: true }],
   picklist_group: [
     { key: "list_id", label: "List ID", uuid: true },
@@ -105,31 +97,14 @@ const DEFAULT_REF_FIELDS: RefFieldSpec[] = [
   { key: "id", label: "Record ID", uuid: true },
 ];
 
-/** The identity fields a `reference`/`view` of this noun needs.
-
- * SERVER-DERIVED first: the catalog row's `identity_fields` (the required fields
- * of the registered reference item model) is the source of truth; the hand map
- * only adds uuid/label polish for known keys; `{ id }` is the last resort. */
-export function refFieldsForNoun(noun: string, catalogNoun?: NounActions | null): RefFieldSpec[] {
-  const derived = catalogNoun?.identity_fields;
-  if (derived && derived.length > 0) {
-    const hand = REF_FIELDS[noun];
-    return derived.map(
-      (key) =>
-        hand?.find((f) => f.key === key) ?? {
-          key,
-          label: labelForKey(key),
-          uuid: key === "id" || key.endsWith("_id"),
-        },
-    );
-  }
+/** The identity fields a `reference`/`view` of this noun needs. */
+export function refFieldsForNoun(noun: string): RefFieldSpec[] {
   return REF_FIELDS[noun] ?? DEFAULT_REF_FIELDS;
 }
 
-/** A reference / view verb resolves to the `reference` kind (a pure read).
- * Anything else — including a future server-added verb — is a write. */
+/** A reference / view verb resolves to the `reference` kind (a pure read). */
 export function isReferenceVerb(verb: ActionVerb): boolean {
-  return !isWriteVerb(verb);
+  return verb === "reference" || verb === "view";
 }
 
 /**

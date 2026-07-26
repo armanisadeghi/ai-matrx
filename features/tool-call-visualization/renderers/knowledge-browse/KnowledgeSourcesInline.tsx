@@ -16,7 +16,7 @@ import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
-import { useFileNode } from "@/features/files/hooks/useFileNode";
+import { useFileNode } from "@/features/files";
 import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";

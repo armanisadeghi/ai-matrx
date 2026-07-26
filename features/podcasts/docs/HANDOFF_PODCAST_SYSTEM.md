@@ -3,7 +3,7 @@
 **Last updated: 2026-06-12.** This is the single source of truth for the state
 of the podcast generation system across both repos. If you're taking over, read
 this top to bottom — it tells you exactly what works, what doesn't, and what's a
-known weakness. Supersedes `HANDOFF_2026-06-12.md` (archived at `docs/archive/2026/HANDOFF_2026-06-12.md`).
+known weakness. Supersedes `HANDOFF_2026-06-12.md` (kept for history).
 
 - **Server (the pipeline):** `aidream` → `packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py` + the canonical contract **`PODCAST_PIPELINE.md`** beside it. **Read PODCAST_PIPELINE.md** — it is the law for the flow.
 - **Frontend:** `matrx-frontend` → `features/podcasts/` + `app/(core)/podcast/`.

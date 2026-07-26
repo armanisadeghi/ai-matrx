@@ -1,7 +1,7 @@
 "use client";
 
 import type { RootState } from "@/lib/redux/store";
-import { useFile } from "@/features/files/handler/hooks/useFile";
+import { useFile } from "@/features/files";
 
 /**
  * attached-documents — the shared vocabulary for a document attached to a chat.

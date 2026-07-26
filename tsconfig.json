@@ -34,7 +34,7 @@
         "./public/*"
       ],
       "@matrx/agents": [
-        "./packages/matrx-agents/src/public.ts"
+        "./packages/matrx-agents/src/index.ts"
       ],
       "@matrx/agents/adapters": [
         "./packages/matrx-agents/src/adapters/index.ts"
@@ -43,7 +43,7 @@
         "./packages/matrx-agents/src/config/index.ts"
       ],
       "@matrx/agents/types": [
-        "./packages/matrx-agents/src/types/agents-types.ts"
+        "./packages/matrx-agents/src/types/index.ts"
       ]
     },
     "incremental": true,
@@ -86,18 +86,8 @@
     "app/**/*",
     "packages/**/*.ts",
     "packages/**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    ".next-memprof/types/**/*.ts",
-    ".next-memprof/dev/types/**/*.ts",
-    ".next-memprof2/types/**/*.ts",
-    ".next-memprof2/dev/types/**/*.ts",
-    ".next-memprof3/types/**/*.ts",
-    ".next-memprof3/dev/types/**/*.ts",
-    ".next-memprof5/types/**/*.ts",
-    ".next-memprof5/dev/types/**/*.ts",
-    ".next-true/types/**/*.ts",
-    ".next-true/dev/types/**/*.ts"
+    ".next-agent-e93a1ebfd9cf/types/**/*.ts",
+    ".next-agent-e93a1ebfd9cf/dev/types/**/*.ts"
   ],
   "exclude": [
     ".next*/**",

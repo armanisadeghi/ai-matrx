@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * Access guard check — the enforcement piece of THE SECURITY PHILOSOPHY and
- * THE VIEW LAW (CLAUDE.md §Supabase, common-docs/systems/db-rules/FEATURE.md §6).
+ * THE VIEW LAW (CLAUDE.md §Supabase, common-docs/db-rules/FEATURE.md §6).
  *
  * The philosophy: real security = the right people get in without blinking AND
  * the wrong people can't get in at all. Over-tightening is a defect, not caution.
@@ -507,7 +507,7 @@ function main() {
   console.log("");
   console.log(`${BOLD}  ACCESS GUARD CHECK${RESET}`);
   console.log(
-    `  ${DIM}Enforcing THE SECURITY PHILOSOPHY + THE VIEW LAW (CLAUDE.md §Supabase, common-docs/systems/db-rules/FEATURE.md §6)${RESET}`
+    `  ${DIM}Enforcing THE SECURITY PHILOSOPHY + THE VIEW LAW (CLAUDE.md §Supabase, common-docs/db-rules/FEATURE.md §6)${RESET}`
   );
   console.log("");
 

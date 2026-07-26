@@ -19,8 +19,7 @@ import {
   ValidationOptions,
   ValidationResult,
 } from "../validations/appRunnerValidations";
-import { brokerActions } from "@/lib/redux/brokerSlice/slice";
-import type { BrokerMapEntry } from "@/lib/redux/brokerSlice/types";
+import { brokerActions, BrokerMapEntry } from "@/lib/redux/brokerSlice";
 import { coreSelectors as brokerSelectors } from "@/lib/redux/brokerSlice/selectors/core";
 import {
   CustomAppletConfig,

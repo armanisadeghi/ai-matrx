@@ -53,7 +53,7 @@ export interface WorkItemMetadata {
    * Normalized at ingress via `normalizeSynthesisScope` — stored metadata is
    * always canonical vocabulary (`topic` = topic-wide synthesis), even when
    * the not-yet-cut-over backend streamed legacy `scope: "project"`
-   * (PHASE-4 COMPAT — see common-docs/projects/research-project-decoupling/FEATURE.md).
+   * (PHASE-4 COMPAT — see common-docs/research-project-decoupling/FEATURE.md).
    */
   scope?: "keyword" | "topic" | "tag";
   version?: number;

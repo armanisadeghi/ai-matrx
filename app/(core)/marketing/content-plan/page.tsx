@@ -7,15 +7,10 @@
 
 import { redirect } from "next/navigation";
 
-import { readLayoutCookie } from "@/app/(dev)/demos/resizables/_lib/readLayoutCookie";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ContentPlanHeader } from "@/features/marketing/content-plan/components/ContentPlanHeader";
 import { ContentPlanWorkbench } from "@/features/marketing/content-plan/components/ContentPlanWorkbench";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-
-// Cookie-persisted tree|panel split (same pattern as /tasks) — read
-// server-side so the first paint already has the user's sizes.
-const LAYOUT_COOKIE = "panels:content-plan";
 
 export default async function ContentPlanPage() {
   const { isAuthenticated } = await getServerAuth();
@@ -23,18 +18,13 @@ export default async function ContentPlanPage() {
     redirect("/login?next=/marketing/content-plan");
   }
 
-  const defaultLayout = await readLayoutCookie(LAYOUT_COOKIE);
-
   return (
     <>
       <PageHeader>
         <ContentPlanHeader />
       </PageHeader>
       <div className="h-full overflow-hidden">
-        <ContentPlanWorkbench
-          defaultLayout={defaultLayout}
-          layoutCookieName={LAYOUT_COOKIE}
-        />
+        <ContentPlanWorkbench />
       </div>
     </>
   );

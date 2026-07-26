@@ -12,7 +12,7 @@ Admin UI + secured write API for the AI Matrx CMS platform: full multi-page clie
 (`client_*` tables) and standalone quick-publish HTML pages (`html_pages`, `features/html-pages/`,
 documented separately but same DB). This repo owns the only properly-authenticated write paths for
 both. Also ships the fleet-wide agent-activity visibility surface — see
-`common-docs/systems/cms-system/FEATURE.md` for the full cross-repo picture (aidream's agent tool layer,
+`common-docs/cms-system/FEATURE.md` for the full cross-repo picture (aidream's agent tool layer,
 my-matrx's public renderer) and `aidream/docs/cms_agent_authoring/README.md` for the multi-agent
 build plan this feature is part of (project P5).
 
@@ -259,7 +259,7 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
 
 ## Related features
 
-- Cross-links: `common-docs/systems/cms-system/FEATURE.md` (system-of-record, cross-repo), `features/html-pages/README.md` (the sibling quick-publish system, same DB), `aidream/docs/cms_agent_authoring/README.md` (the 5-project agent-authoring build this feature's P5 half belongs to), `aidream/packages/matrx-content-guard/matrx_content_guard/models.py` (F3 exception shape this feature's approvals queue is built against), `features/surfaces/FEATURE.md` (Surface Values contract the five CMS surfaces implement), `features/context-menu-v3/FEATURE.md` (canonical v3 menu every CMS route mounts), `features/cms/SKILL.md` (builder checklist for the surfaces + skill)
+- Cross-links: `common-docs/cms-system/FEATURE.md` (system-of-record, cross-repo), `features/html-pages/README.md` (the sibling quick-publish system, same DB), `aidream/docs/cms_agent_authoring/README.md` (the 5-project agent-authoring build this feature's P5 half belongs to), `aidream/packages/matrx-content-guard/matrx_content_guard/models.py` (F3 exception shape this feature's approvals queue is built against), `features/surfaces/FEATURE.md` (Surface Values contract the five CMS surfaces implement), `features/context-menu-v3/FEATURE.md` (canonical v3 menu every CMS route mounts), `features/cms/SKILL.md` (builder checklist for the surfaces + skill)
 
 ---
 

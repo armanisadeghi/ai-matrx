@@ -7,8 +7,6 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { ColumnFilterMenu, type ColumnFilterOption } from "./ColumnFilterMenu";
-import { RedundancyGroupBadge } from "./RedundancyGroupBadge";
-import { ScrapeWorthinessFlag } from "./ScrapeWorthinessFlag";
 import {
   ScoreCell,
   sourceScoreValues,
@@ -537,14 +535,9 @@ export function SourceResultsTable({
                       <div className="text-xs font-medium truncate max-w-[20rem]">
                         {src.title || src.hostname || src.url}
                       </div>
-                      {(src.hostname || src.redundancy_group) && (
-                        <div className="mt-0.5 flex items-center gap-1.5 flex-wrap">
-                          {src.hostname && (
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[20rem]">
-                              {src.hostname}
-                            </span>
-                          )}
-                          <RedundancyGroupBadge group={src.redundancy_group} />
+                      {src.hostname && (
+                        <div className="text-[10px] text-muted-foreground truncate max-w-[20rem]">
+                          {src.hostname}
                         </div>
                       )}
                     </div>
@@ -557,12 +550,7 @@ export function SourceResultsTable({
                   </span>
                 </td>
                 <td className="py-2 px-2 align-top">
-                  <div className="flex flex-col items-start gap-1">
-                    <StatusBadge status={src.scrape_status} />
-                    <ScrapeWorthinessFlag
-                      scrapeWorthiness={src.scrape_worthiness}
-                    />
-                  </div>
+                  <StatusBadge status={src.scrape_status} />
                 </td>
                 <td className="py-2 px-2 align-top text-right">
                   <ScoreCell value={scores.priority} />

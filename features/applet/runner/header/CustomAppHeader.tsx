@@ -8,7 +8,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAppRuntimeIsInitialized } from "@/lib/redux/app-runner/slices/customAppRuntimeSlice";
 import { selectActiveAppletSlug } from "@/lib/redux/app-runner/slices/customAppletRuntimeSlice";
 import { LoadingSpinner } from "@/components/ui/spinner";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerSelectors } from "@/lib/redux/brokerSlice";
 
 export interface CustomAppHeaderProps {
   appId?: string;

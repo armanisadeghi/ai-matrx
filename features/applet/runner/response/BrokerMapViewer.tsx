@@ -4,7 +4,7 @@ import React, { useState, MouseEvent } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerSelectors } from "@/lib/redux/brokerSlice";
 import { Copy, Check, Filter, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

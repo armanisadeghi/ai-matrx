@@ -44,11 +44,13 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
-import { PermissionsDialog } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
-import { RenameDialog } from "@/features/files/components/core/RenameDialog/RenameDialog";
-import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { useFileMutation } from "@/features/files/hooks/useFileMutation";
+import {
+  FileContextMenu,
+  PermissionsDialog,
+  RenameDialog,
+  openFolderPicker,
+  useFileMutation,
+} from "@/features/files";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 
 export type CaptureItemKind = "photo" | "video" | "audio";
@@ -108,7 +110,9 @@ export function CaptureItemActions({
       setTranscript(text);
     } catch (err) {
       console.error("[CaptureItemActions] transcription failed", err);
-      toast.error(err instanceof Error ? err.message : "Transcription failed.");
+      toast.error(
+        err instanceof Error ? err.message : "Transcription failed.",
+      );
     } finally {
       setTranscribing(false);
     }

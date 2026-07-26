@@ -31,7 +31,6 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { convertToKebabCase } from "@/utils/text/stringUtils";
 
-import { NODE_TYPE_LABELS } from "../constants";
 import { useCreatePlanNode } from "../data/hooks";
 import {
   PLAN_NODE_TYPES,
@@ -150,7 +149,7 @@ export function NewNodeDialog({
             </p>
           ) : null}
           <div>
-            <Label className="mb-1 block text-xs font-medium">Label</Label>
+            <Label className="text-xs">Label</Label>
             <Input
               autoFocus
               value={label}
@@ -161,7 +160,7 @@ export function NewNodeDialog({
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="mb-1 block text-xs font-medium">Node type</Label>
+              <Label className="text-xs">Node type</Label>
               <Select
                 value={nodeType}
                 onValueChange={(next) => setNodeType(next as PlanNodeType)}
@@ -172,14 +171,14 @@ export function NewNodeDialog({
                 <SelectContent>
                   {PLAN_NODE_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {NODE_TYPE_LABELS[type]}
+                      {type}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="mb-1 block text-xs font-medium">Status</Label>
+              <Label className="text-xs">Status</Label>
               <CategorySelect
                 dimension={CATEGORY_DIMENSIONS.planStatus}
                 value={statusId}
@@ -190,7 +189,7 @@ export function NewNodeDialog({
           </div>
           {nodeType !== "home" ? (
             <div>
-              <Label className="mb-1 block text-xs font-medium">Slug</Label>
+              <Label className="text-xs">Slug</Label>
               <Input
                 value={effectiveSlug}
                 onChange={(event) => {

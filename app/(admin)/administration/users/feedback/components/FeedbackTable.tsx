@@ -28,7 +28,7 @@ import {
 } from "@/types/feedback.types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -145,7 +145,11 @@ const feedbackTypeIcons: Record<FeedbackType, React.ReactNode> = {
 };
 
 type SortField =
-  "created_at" | "status" | "feedback_type" | "username" | "work_priority";
+  | "created_at"
+  | "status"
+  | "feedback_type"
+  | "username"
+  | "work_priority";
 type SortDirection = "asc" | "desc";
 
 // Mutually exclusive pipeline stages

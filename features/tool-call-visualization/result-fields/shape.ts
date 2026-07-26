@@ -15,7 +15,7 @@
  *  - Every branch is reachable and documented.
  */
 
-import type { MediaRef } from "@/features/files/types";
+import type { MediaRef } from "@/features/files";
 
 // ─── Discriminated union ────────────────────────────────────────────────────
 

@@ -33,9 +33,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
-import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
-import { useSharing } from "@/features/files/hooks/useSharing";
+import { pythonShareUrl, ShareLinkDialog, useSharing } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { shareableMediaUrl } from "@/lib/media/durability";

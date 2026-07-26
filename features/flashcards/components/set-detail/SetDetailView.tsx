@@ -43,8 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useAccess } from "@/utils/permissions/access";
-import { canEditAccess } from "@/utils/permissions/access-core";
+import { useAccess, canEditAccess } from "@/utils/permissions";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { fcService } from "../../data/fcService";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
@@ -72,34 +71,10 @@ import { ClassPicker } from "@/features/education/classes/components/ClassPicker
 
 /** Phase 1B — the extra study modes on the spine, alongside classic Study. */
 const OTHER_STUDY_MODES = [
-  {
-    key: "learn",
-    label: "Learn",
-    description: "Adaptive reshuffle toward weak cards",
-    icon: GraduationCap,
-    path: "learn",
-  },
-  {
-    key: "test",
-    label: "Test",
-    description: "Multiple-choice quiz",
-    icon: ListChecks,
-    path: "test",
-  },
-  {
-    key: "match",
-    label: "Match",
-    description: "Timed pairing game",
-    icon: Grid3x3,
-    path: "match",
-  },
-  {
-    key: "write",
-    label: "Write",
-    description: "Type the answer from memory",
-    icon: PenLine,
-    path: "write",
-  },
+  { key: "learn", label: "Learn", description: "Adaptive reshuffle toward weak cards", icon: GraduationCap, path: "learn" },
+  { key: "test", label: "Test", description: "Multiple-choice quiz", icon: ListChecks, path: "test" },
+  { key: "match", label: "Match", description: "Timed pairing game", icon: Grid3x3, path: "match" },
+  { key: "write", label: "Write", description: "Type the answer from memory", icon: PenLine, path: "write" },
 ] as const;
 
 const EDU_BASE = "/education/flashcards";
@@ -255,15 +230,7 @@ export function SetDetailView({ setId }: { setId: string }) {
   }, [setId, reloadKey]);
 
   const [pendingAction, setPendingAction] = useState<
-    | "study"
-    | "learn"
-    | "test"
-    | "match"
-    | "write"
-    | "fastfire"
-    | "edit"
-    | "sessions"
-    | null
+    "study" | "learn" | "test" | "match" | "write" | "fastfire" | "edit" | "sessions" | null
   >(null);
 
   // View-vs-edit gate (P7). Owner/editor get the full authoring surface; a
@@ -283,15 +250,7 @@ export function SetDetailView({ setId }: { setId: string }) {
   // button shows the busy state) and routes via a transition. Guards against
   // duplicate clicks while a transition is pending. (UI standards.)
   const navigate = (
-    action:
-      | "study"
-      | "learn"
-      | "test"
-      | "match"
-      | "write"
-      | "fastfire"
-      | "edit"
-      | "sessions",
+    action: "study" | "learn" | "test" | "match" | "write" | "fastfire" | "edit" | "sessions",
     path: string,
   ) => {
     if (isPending) return;
@@ -403,8 +362,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                   {viewOnly && (
                     <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
                       <BookOpen className="h-3.5 w-3.5" />
-                      Shared with you — view only. Make a copy to edit or track
-                      your own progress.
+                      Shared with you — view only. Make a copy to edit or track your own progress.
                     </div>
                   )}
                   {data.set.visibility === "public" && (
@@ -487,9 +445,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                 {canEdit && (
                   <Button
                     variant="outline"
-                    onClick={() =>
-                      navigate("edit", `${EDU_BASE}/${setId}/edit`)
-                    }
+                    onClick={() => navigate("edit", `${EDU_BASE}/${setId}/edit`)}
                     disabled={isPending}
                     className={cn(pendingAction === "edit" && "opacity-70")}
                   >
@@ -575,10 +531,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                 onFileIdChange={(fileId) =>
                   setData((prev) =>
                     prev
-                      ? {
-                          ...prev,
-                          set: { ...prev.set, audio_overview_file_id: fileId },
-                        }
+                      ? { ...prev, set: { ...prev.set, audio_overview_file_id: fileId } }
                       : prev,
                   )
                 }

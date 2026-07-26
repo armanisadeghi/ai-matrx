@@ -61,8 +61,6 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 **Source authority columns** (`rs_source`): `authority_score` (0-100), `authority_tier` (`high|medium|low`), `authority_reasoning` (one sentence), `authority_ranked_at` (null = not yet ranked). Written by the backend Source Authority Ranker; read straight through `getSources` (`select *`).
 
-**Source triage columns (2026-07-25)** — `rs_source`: `scrape_worthiness` (0-100, predicted odds that FETCHING the URL returns usable article text — page DELIVERY, not quality; a great paywalled source still scores low; the scraper silently skips sources below 20), `redundancy_group` (short slug clustering near-duplicate sources within a topic, e.g. `pbw_city_pages`; analysis selection spreads its quota ACROSS groups so one cluster can't consume it; null = ungrouped/unique), `entity_match_confidence` (0-100, confidence the source is about the topic's true subject rather than a namesake), `snippet_relevance` (0-100, topical usefulness judged from the search snippet alone — populated for nearly every source, including the ~95% never fetched). All four are set by the same LLM pass that writes `authority_score`. **NULL means "not assessed", NEVER zero** — never render a null as `0`, an empty meter, or a red/bad state; render `—` (see `formatScore100`/`formatScrapeWorthiness`/`formatEntityMatchConfidence`/`formatSnippetRelevance` in `sourceScoreDisplay.tsx`, and `isLowScrapeWorthiness`/`SCRAPE_WORTHINESS_SKIP_THRESHOLD`/`formatRedundancyGroupLabel` in `constants.ts`). Surfaced: `SourceDetail` (all four, with a scrape-worthiness tooltip explaining the delivery-vs-quality distinction); `SourceList`/`SourceResultsTable` show a compact amber "Low fetch odds" flag (`ScrapeWorthinessFlag`) when `scrape_worthiness < 20` — the explanation for why a source never gets scraped — and a `redundancy_group` chip (`RedundancyGroupBadge`) next to the hostname.
-
 ---
 
 ## Resource catalog → context bundles → agents
@@ -266,19 +264,6 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
-- `2026-07-26` — **Four new source-triage columns surfaced in the UI.**
-  `rs_source.scrape_worthiness`/`redundancy_group`/`entity_match_confidence`/
-  `snippet_relevance` (backend-only until now) regenerated into
-  `database.types.ts` and added to `ResearchSource` +
-  `rowToResearchSource`. `SourceDetail` shows all four with null-safe
-  formatting and a tooltip on scrape worthiness clarifying it predicts fetch
-  DELIVERY, not quality. New `ScrapeWorthinessFlag` (amber "Low fetch odds"
-  chip, `scrape_worthiness < 20`, `SCRAPE_WORTHINESS_SKIP_THRESHOLD` in
-  `constants.ts`) explains why a source is silently skipped by the scraper —
-  wired into `SourceList` (Read column) and `SourceResultsTable`. New
-  `RedundancyGroupBadge` chip surfaces `redundancy_group` next to the
-  hostname in both tables and on `SourceDetail`. NULL is rendered as `—`
-  everywhere, never `0` or a bad/red state.
 - `2026-07-25` — **Lazy delivery + generic preview window + "read" copy.**
   `BundleBinding.delivery: "direct" | "context"` shipped: context bindings emit
   `resource_ref` envelopes through `runtime.context` (new field on

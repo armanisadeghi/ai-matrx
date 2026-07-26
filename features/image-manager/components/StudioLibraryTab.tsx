@@ -17,8 +17,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Library, Loader2 } from "lucide-react";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { fileHandler } from "@/features/files/handler/handler";
+import { CloudFolders, fileHandler } from "@/features/files";
 import { CloudFilesTab } from "@/components/image/cloud/CloudFilesTab";
 import { extractErrorMessage } from "@/utils/errors";
 

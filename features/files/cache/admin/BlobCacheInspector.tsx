@@ -59,7 +59,7 @@ import {
   DEFAULT_BUDGET_BYTES,
 } from "@/features/files/cache/idb-store";
 import { postBlobCacheClearUser } from "@/features/files/cache/register-service-worker";
-import { formatFileSize } from "@/features/files/utils/format";
+import { formatFileSize } from "@/features/files";
 
 interface L1Stats {
   entryCount: number;

@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 // lazy-loads behind it; see contextMenuV3StaticImportBan in eslint.config.mjs).
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { useFileBlob } from "@/features/files";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";

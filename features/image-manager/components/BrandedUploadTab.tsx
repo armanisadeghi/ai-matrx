@@ -33,7 +33,7 @@ import {
   ImageAssetUploader,
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
-import type { AssetPreset } from "@/features/files/types";
+import type { AssetPreset } from "@/features/files";
 import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
 
 interface PresetOption {

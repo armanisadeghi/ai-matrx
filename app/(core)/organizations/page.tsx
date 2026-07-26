@@ -46,7 +46,7 @@ import type {
   OrganizationWithRole,
   OrgRole,
 } from "@/features/organizations/types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { useAppSelector } from "@/lib/redux/hooks";

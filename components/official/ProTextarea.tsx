@@ -81,8 +81,6 @@
 "use client";
 
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Copy,
   Check,
@@ -142,27 +140,7 @@ import {
   type ProTextareaAgentActionId,
   type ProTextareaMenuMode,
 } from "./proTextareaAgentActions";
-// Split in place (code-splitting skill, Method A). ProTextarea has 68 direct
-// importers and is inherited by TaskEditor / SmartAgentInput / NoteEditorCore, so a
-// STATIC import here put the panel's whole subtree — AgentRunner, the agent execution
-// system, framer-motion, react-syntax-highlighter + its prism theme bundle, and a bare
-// `katex/dist/katex.min.css` — into every one of those chunks. The panel renders only
-// behind the menu-mode gate below (an embedded agent action the user has to open), so
-// this buys BOTH benefits: `ssr: false` keeps it off the server render, and the
-// condition defers the fetch to the click. First open pays a short load; that is the
-// intended trade.
-const ProTextareaAgentPanel = dynamic(
-  () => import("./ProTextareaAgentPanel").then((m) => m.ProTextareaAgentPanel),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="space-y-2 p-3">
-        <Skeleton className="h-4 w-1/3" />
-        <Skeleton className="h-20 w-full" />
-      </div>
-    ),
-  },
-);
+import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
 import {
   ProTextFieldStatsBar,
   ProTextFieldStatsMenuItems,

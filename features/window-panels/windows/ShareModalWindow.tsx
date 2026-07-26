@@ -11,13 +11,13 @@ import {
   Loader2,
   CheckCircle,
 } from "lucide-react";
-import { useSharing, useIsOwner } from "@/utils/permissions/hooks";
-import { getResourceTypeLabel } from "@/utils/permissions/registry";
-import type { ResourceType } from "@/utils/permissions/types";
+import { useSharing, useIsOwner } from "@/utils/permissions";
+import type { ResourceType } from "@/utils/permissions";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
+import { getResourceTypeLabel } from "@/utils/permissions";
 import { useToast } from "@/components/ui/use-toast";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 

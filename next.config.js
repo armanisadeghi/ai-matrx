@@ -127,58 +127,8 @@ const nextConfig = {
         serverActions: {
             bodySizeLimit: "10mb",
         },
-        // NOTE: Next MERGES this with its own 75-package default list
-        // (`[...new Set([...userProvided, ...defaults])]` in dist/server/config.js), so
-        // date-fns, @tabler/icons-react, react-icons/* and lucide-react are ALREADY
-        // optimized without being listed here. Only add packages NOT in that default
-        // list — adding a defaulted one is a no-op, not a build win.
-        // Only packages NOT already in Next's 75-package default list belong here, and
-        // adding one is NOT automatically a win: optimizePackageImports rewrites a
-        // barrel import into N direct module imports, which is better for bundle size
-        // but puts MORE modules in the graph. Measured: adding react-syntax-highlighter
-        // moved peak RSS 58.49 -> 59.79 GiB. Do not add packages here for memory.
+        // Optimize lucide-react (the 1400+ icon barrel file) and zustand to avoid massive SSR chunks
         optimizePackageImports: ['lucide-react', 'zustand'],
-        // Memory, not speed, is the binding constraint on this build. Measured with
-        // `next build --experimental-debug-memory-usage`: peak RSS 62.8 GiB, on a
-        // Vercel Turbo builder that has 60 GB — so it OOMs deterministically, and
-        // Turbo is the LARGEST machine Vercel sells (standard 8GB / enhanced 16GB /
-        // turbo 60GB), so there is no hardware fix. Heap Used at peak was 46 MB of a
-        // 4,288 MB V8 limit (1.08%), i.e. ~100% of that 62.8 GiB is Turbopack's native
-        // Rust allocation — no --max-old-space-size flag can touch it.
-        //
-        // SOURCE MAPS OFF — this build is memory-bound, and source maps were the
-        // single largest retained artifact. Measured in the server output of a full
-        // production build: 14,198 .js.map files totalling 1.40 GB, against 0.99 GB of
-        // actual server JS — the maps were LARGER than the code they map. Turbopack
-        // generates them by default (`turbopackSourceMaps` defaults to true) and
-        // `productionBrowserSourceMaps: false` does NOT cover them; that flag only
-        // governs browser maps, which is why static/ had zero .map files while
-        // server/ had 14,198.
-        //
-        // TRADE-OFF, deliberate: production server stack traces will point at compiled
-        // output instead of original sources, which degrades the diagnostics capture in
-        // lib/diagnostics. A build that OOMs ships nothing at all, so this is the better
-        // side of the trade until peak memory has real headroom under 60 GB.
-        turbopackSourceMaps: false,
-        serverSourceMaps: false,
-
-        // MEASURED DEAD ENDS — do not retry these for memory:
-        //   turbopackInferModuleSideEffects: false  + RAYON_NUM_THREADS=8
-        //   -> peak RSS 63.50 GiB vs 62.81 GiB baseline. No better, slightly worse,
-        //      and it costs tree-shaking. Halving the Rust thread pool changing
-        //      nothing also proves the memory is NOT per-thread scratch — it is the
-        //      retained module graph, so only compiling fewer modules can reduce it.
-        //
-        // DO NOT RE-ENABLE `turbopackFileSystemCacheForBuild` ON A 60 GB BUILDER.
-        // Tried 2026-07-26 (commit 3836ca244) and it OOM-killed the build:
-        // SIGKILL 3m24s into "Creating an optimized production build", where the same
-        // build previously compiled for 14.6 min and finished. Writing the persistent
-        // cache holds the module graph in memory ON TOP of the normal compile working
-        // set, and this app's graph is already near the 60 GB ceiling — the page-data
-        // phase had OOM'd on its own before this flag existed (v0.4.44).
-        // It did not even pay for itself: the build system still reported
-        // "Build cache: <1 MB" WITH the flag on, so it was pure added memory pressure.
-        // Revisit only on an Enhanced Build machine with more RAM, and measure.
     },
     // Turbopack configuration (Next.js 16 default bundler)
     turbopack: {

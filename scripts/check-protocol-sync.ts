@@ -15,11 +15,12 @@
  * types missing), and MATRX_REFERENCES.md was a 6KB ancestor of aidream's 18KB
  * current doc — both discovered by hand on 2026-07-25.
  *
- * Deliberately NOT mirrored: MATRX_ACTIONS.md (pointer-only; aidream canonical).
- * matrx_actions_catalog.generated.json JOINED the mirror set 2026-07-26 — the FE
- * derives its action/reference UI from the computed catalog, so both repos carry
- * the same published snapshot (the old hand-authored
- * matrx_action_catalog.generated.json is deleted on both sides).
+ * Deliberately NOT mirrored: MATRX_ACTIONS.md + matrx_action_catalog.generated.json.
+ * Neither declares a byte-identical mandate, the FE has no consumer of the
+ * catalog (features/agents/types/matrx-actions.types.ts points at the aidream
+ * doc as canonical), and per house rules a cross-repo pointer beats a second
+ * copy that needs its own sync. Add them to MIRROR_FILES only if the docs gain
+ * the mandate and the FE gains a consumer.
  *
  * Modes:
  *   default   — advisory: loud report, exit 0
@@ -33,7 +34,6 @@
  * a hard fail — CI boxes may not have the sibling repo).
  */
 
-import { execSync } from "node:child_process";
 import { copyFileSync, existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -53,7 +53,6 @@ const MIRROR_FILES = [
   "docs/protocol/MATRX_ENVELOPE.md",
   "docs/protocol/MATRX_REFERENCES.md",
   "docs/protocol/matrx_envelope_registry.generated.json",
-  "docs/protocol/matrx_actions_catalog.generated.json",
 ];
 
 if (!existsSync(join(AIDREAM_DIR, "docs", "protocol"))) {
@@ -95,12 +94,6 @@ for (const rel of MIRROR_FILES) {
       diverged.push(`${rel} — differs from aidream (FE mtime ${feM}, aidream mtime ${aiM})`);
     }
   }
-}
-
-if (FIX) {
-  // The slim client noun table derives from the catalog manifest — regenerate it
-  // whenever the mirror may have moved so the two can never drift.
-  execSync("node scripts/gen-action-nouns.mjs", { stdio: "inherit", cwd: ROOT });
 }
 
 if (diverged.length === 0) {

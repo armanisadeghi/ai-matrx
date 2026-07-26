@@ -30,7 +30,7 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { setMode } from "@/styles/themes/themeSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerSelectors } from "@/lib/redux/brokerSlice";
 import { Notification } from "@/types/notification.types";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 

@@ -43,7 +43,7 @@ import {
 import { OptionsEditor } from "./OptionsEditor";
 import { StructuredListBindingEditor } from "./StructuredListBindingEditor";
 import { hasRandomOptionSource } from "@/features/agents/utils/auto-assignment";
-import { normalizeFileResourceId } from "@/features/files/api/resource-family";
+import { normalizeFileResourceId } from "@/features/files";
 import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
 
 interface CustomComponentConfiguratorProps {

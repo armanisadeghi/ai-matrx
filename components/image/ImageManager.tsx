@@ -27,7 +27,7 @@ import { ImagePreviewRow } from "@/components/image/shared/ImagePreviewRow";
 import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
 import type { AllowedFileKind } from "@/components/image/cloud/CloudFilesTab";
 import type { EmbeddedImageStudioProps } from "@/features/image-studio/components/EmbeddedImageStudio";
-import type { Visibility } from "@/features/files/types";
+import type { Visibility } from "@/features/files";
 import { buildImageManagerSections } from "@/features/image-manager/registry/sections";
 // Imported from the leaf `ids` module (not `sections.ts`) to avoid a circular
 // dependency: the section registry imports tab components, some of which

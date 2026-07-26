@@ -20,7 +20,7 @@ import React from "react";
 import { UnifiedVideoBlockRenderer } from "@/features/files/blocks/video/UnifiedVideoBlockRenderer";
 import { videoBlockFromMediaRef } from "@/features/files/blocks/adapters/from-media-ref";
 import { isVideoBlock } from "@/features/files/blocks/guards";
-import { fileIdToMediaRef, urlToMediaRef } from "@/features/files/redux/converters";
+import { fileIdToMediaRef, urlToMediaRef } from "@/features/files";
 import { buildMediaSource, pickStr } from "../buildMediaSource";
 
 export interface VideoOutputBlockRendererProps {

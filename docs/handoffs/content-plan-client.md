@@ -82,29 +82,6 @@
 - Test data note: the `/aesthetics` pillar (4 nodes) on prpinjectionmd.com is
   the E2E's real output — plausible content, left in place; delete if unwanted.
 
-## Status update 3 (2026-07-26, Claude — server UNBLOCKED; UI-quality push)
-
-- **aidream is no longer a blocker for Deliverables 3/4**: `POST
-  /content-plan/sites/{id}/generate` (stream), `/nodes/{id}/deepen`,
-  `/reconcile`, `/dispositions` are live in the aidream repo, plus big
-  apply-perf work. NEXT WIRING TASK: "Generate plan" / "Deepen node" buttons
-  in the workspace calling these streams (Deliverable 3), then the
-  plan-vs-reality overlay (Deliverable 4).
-- **Still open on aidream**: recursive `plan_tree` output schema breaks
-  Anthropic-model agents (relay in Status update 2). OpenAI models work.
-- Feature relocated by a parallel session to `features/marketing/content-plan/`
-  + `/marketing/content-plan`; a plan-tree approval UI was added there.
-- **UI-quality overhaul in flight (Arman 2026-07-26, "basics before
-  features")**: (1) resizable tree/panel split (react-resizable-panels,
-  persisted), (2) NO truncation of page labels/routes — full-text rows,
-  (3) kill gray-text — primary content is text-foreground, (4) unmistakable
-  selection contrast both themes, (5) node panel cleaned to semantic tokens
-  with real hierarchy, (6) entities view redesigned, (7) pillar map rebuilt:
-  multiple auto-layouts (radial/tidy-tree/grouped), all dimensions encoded
-  (color=status, shape=node_type, size=priority, ring=needs_reviewer,
-  badge=keyword coverage) + filters + legend + collapse/semantic-zoom for
-  400+ nodes.
-
 ## Deliverables (in order)
 
 ### 1. `features/marketing/content-plan/` — tree editor + node panel (the workhorse)

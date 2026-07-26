@@ -8,7 +8,7 @@ import {
 import type {
   CloudFileRecord,
   CloudFolderRecord,
-} from "@/features/files/types";
+} from "@/features/files";
 
 function file(
   patch: Partial<CloudFileRecord> & Pick<CloudFileRecord, "id" | "fileName">,

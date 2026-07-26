@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 
 interface ImageUrlResourcePickerProps {
   onBack: () => void;

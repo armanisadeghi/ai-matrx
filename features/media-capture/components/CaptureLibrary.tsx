@@ -32,11 +32,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
-import { useCloudTree } from "@/features/files/hooks/useCloudTree";
-import { useFolderContents } from "@/features/files/hooks/useFolderContents";
-import type { CloudFile } from "@/features/files/types";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import {
+  CloudFolders,
+  FileRightClickMenu,
+  useCloudTree,
+  useFolderContents,
+  type CloudFile,
+} from "@/features/files";
 import { CaptureRecoverySection } from "@/features/media-capture/components/CaptureRecoverySection";
 import { CaptureTransportStrip } from "@/features/media-capture/components/CaptureTransportStrip";
 import { CaptureItemActions } from "@/features/media-capture/components/CaptureItemActions";
@@ -105,14 +107,8 @@ export function CaptureLibrary({ refreshToken = 0 }: CaptureLibraryProps) {
 
   const items = useMemo<CaptureItem[]>(() => {
     const all: CaptureItem[] = [
-      ...photos.files.map((file) => ({
-        file,
-        kind: kindOfFile(file, "photo"),
-      })),
-      ...videos.files.map((file) => ({
-        file,
-        kind: kindOfFile(file, "video"),
-      })),
+      ...photos.files.map((file) => ({ file, kind: kindOfFile(file, "photo") })),
+      ...videos.files.map((file) => ({ file, kind: kindOfFile(file, "video") })),
       ...audio.files.map((file) => ({ file, kind: kindOfFile(file, "audio") })),
     ];
     const filtered =
@@ -189,6 +185,7 @@ export function CaptureLibrary({ refreshToken = 0 }: CaptureLibraryProps) {
     </section>
   );
 }
+
 
 // ─── Tile ────────────────────────────────────────────────────────────────────
 

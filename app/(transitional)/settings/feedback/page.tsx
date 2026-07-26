@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "@/lib/toast";
 import { formatDistanceToNow } from 'date-fns';
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from '@/features/files';
 
 // ──────────────────────────────────────────────────
 // Progress Stepper - User-facing stage definitions

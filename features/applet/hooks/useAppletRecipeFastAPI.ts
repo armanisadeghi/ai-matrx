@@ -25,7 +25,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { NeededBroker, RecipeSourceConfig } from "@/types/customAppTypes";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerSelectors } from "@/lib/redux/brokerSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAppletRuntimeDataSourceConfig } from "@/lib/redux/app-runner/slices/customAppletRuntimeSlice";
 

@@ -2,7 +2,7 @@
 //
 // App Config admin — typed rows for public.app_config / public.app_config_history.
 // All shapes derive from the generated Database types — never hand-mirrored.
-// Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/app-config/FEATURE.md
+// Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/app-config/FEATURE.md
 
 import type { Database } from "@/types/database.types";
 

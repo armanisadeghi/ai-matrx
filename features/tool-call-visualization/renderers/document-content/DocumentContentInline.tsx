@@ -14,7 +14,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { resolveDocumentContentView } from "./documentContentView";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useFileSrc } from "@/features/files";
 
 /**
  * Inline renderer for `document_content` — random access into a processed

@@ -42,10 +42,12 @@ import {
   type EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useCloudTree } from "@/features/files/hooks/useCloudTree";
-import { useFileMutation } from "@/features/files/hooks/useFileMutation";
-import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
-import { getFilePreviewProfile } from "@/features/files/utils/file-types";
+import {
+  getFilePreviewProfile,
+  useCloudTree,
+  useFileMutation,
+  useInfiniteWindow,
+} from "@/features/files";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { filesDb, FILES_TABLE_COLUMNS } from "@/features/files/filesDb";
@@ -64,10 +66,7 @@ import {
 } from "@/features/files/redux/selectors";
 import { loadFolderContents } from "@/features/files/redux/thunks";
 import { isExcludedFromRecents } from "@/features/files/utils/folder-conventions";
-import type {
-  CloudFileRecord,
-  CloudFolderRecord,
-} from "@/features/files/types";
+import type { CloudFileRecord, CloudFolderRecord } from "@/features/files";
 import { supabase } from "@/utils/supabase/client";
 import {
   cldSourceFileIdsFromStudioDocs,
@@ -926,95 +925,96 @@ export function FilesResourcePicker({
           className="h-full overflow-y-auto scrollbar-visible relative"
         >
           <div ref={listContentRef}>
-            {loading ? (
-              <div className="flex items-center justify-center h-full py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+        {loading ? (
+          <div className="flex items-center justify-center h-full py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          </div>
+        ) : error ? (
+          <div className="text-xs text-red-600 dark:text-red-400 text-center py-8 px-3">
+            {studioDocs.error ?? "Error loading files"}
+          </div>
+        ) : isPdfExtractorFilter ? (
+          visibleProcessedFiles.length === 0 ? (
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8 px-3">
+              {isSearching
+                ? "No processed documents match this search"
+                : "No processed documents yet — extract a file in PDF Extractor first"}
+            </div>
+          ) : (
+            <div className="p-1">
+              <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+                Processed documents
               </div>
-            ) : error ? (
-              <div className="text-xs text-red-600 dark:text-red-400 text-center py-8 px-3">
-                {studioDocs.error ?? "Error loading files"}
+              <FileListOrGrid
+                files={visibleProcessedFiles}
+                viewMode={viewMode}
+                onSelect={handleFileSelect}
+              />
+            </div>
+          )
+        ) : isSearching ? (
+          searchQuery.trim() !== debouncedSearchQuery ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Searching all cloud files…
+            </div>
+          ) : visibleSearchResults.length === 0 ? (
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+              No files match this search
+            </div>
+          ) : (
+            <div className="p-1">
+              <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+                Search results
               </div>
-            ) : isPdfExtractorFilter ? (
-              visibleProcessedFiles.length === 0 ? (
-                <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8 px-3">
-                  {isSearching
-                    ? "No processed documents match this search"
-                    : "No processed documents yet — extract a file in PDF Extractor first"}
+              <FileListOrGrid
+                files={visibleSearchResults}
+                viewMode={viewMode}
+                onSelect={handleFileSelect}
+              />
+            </div>
+          )
+        ) : visibleRecentFiles.length === 0 && rootFolders.length === 0 ? (
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+            No files yet
+          </div>
+        ) : (
+          <div className="p-1">
+            {visibleRecentFiles.length > 0 && (
+              <div>
+                <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+                  Recent
                 </div>
-              ) : (
-                <div className="p-1">
-                  <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
-                    Processed documents
-                  </div>
-                  <FileListOrGrid
-                    files={visibleProcessedFiles}
-                    viewMode={viewMode}
-                    onSelect={handleFileSelect}
-                  />
-                </div>
-              )
-            ) : isSearching ? (
-              searchQuery.trim() !== debouncedSearchQuery ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Searching all cloud files…
-                </div>
-              ) : visibleSearchResults.length === 0 ? (
-                <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
-                  No files match this search
-                </div>
-              ) : (
-                <div className="p-1">
-                  <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
-                    Search results
-                  </div>
-                  <FileListOrGrid
-                    files={visibleSearchResults}
-                    viewMode={viewMode}
-                    onSelect={handleFileSelect}
-                  />
-                </div>
-              )
-            ) : visibleRecentFiles.length === 0 && rootFolders.length === 0 ? (
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
-                No files yet
-              </div>
-            ) : (
-              <div className="p-1">
-                {visibleRecentFiles.length > 0 && (
-                  <div>
-                    <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
-                      Recent
-                    </div>
-                    <FileListOrGrid
-                      files={visibleRecentFiles}
-                      viewMode={viewMode}
-                      onSelect={handleFileSelect}
-                    />
-                  </div>
-                )}
-                {rootFolders.length > 0 && (
-                  <div className="mt-1">
-                    <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
-                      Folders
-                    </div>
-                    {rootFolders.map((folder) => (
-                      <FolderNode
-                        key={folder.id}
-                        folderId={folder.id}
-                        label={folder.folderName}
-                        level={0}
-                        onFileSelect={handleFileSelect}
-                        viewMode={viewMode}
-                        fileFilter={fileFilter}
-                        fileSort={fileSort}
-                        processedFileIds={processedFileIds}
-                      />
-                    ))}
-                  </div>
-                )}
+                <FileListOrGrid
+                  files={visibleRecentFiles}
+                  viewMode={viewMode}
+                  onSelect={handleFileSelect}
+                />
               </div>
             )}
+            {rootFolders.length > 0 && (
+              <div className="mt-1">
+                <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+                  Folders
+                </div>
+                {rootFolders.map((folder) => (
+                  <FolderNode
+                    key={folder.id}
+                    folderId={folder.id}
+                    label={folder.folderName}
+                    level={0}
+                    onFileSelect={handleFileSelect}
+                    viewMode={viewMode}
+                    fileFilter={fileFilter}
+                    fileSort={fileSort}
+                    processedFileIds={processedFileIds}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
           </div>
 
           {isProcessing && (

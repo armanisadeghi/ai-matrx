@@ -27,7 +27,7 @@ import {
   Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
@@ -93,9 +93,7 @@ export function CaptureReview({
 
   const canTranscribe = kind !== "photo" && savedFileId !== null;
   const current =
-    transcription && transcription.fileId === savedFileId
-      ? transcription
-      : null;
+    transcription && transcription.fileId === savedFileId ? transcription : null;
   const transcribing = current?.status === "loading";
   const transcript = current?.status === "done" ? current.text : null;
   const transcriptError = current?.status === "error" ? current.error : null;
@@ -128,9 +126,7 @@ export function CaptureReview({
       if (controller.signal.aborted) return;
       console.error("[CaptureReview] transcription failed", err);
       const message =
-        err instanceof Error
-          ? err.message
-          : "Transcription failed — try again.";
+        err instanceof Error ? err.message : "Transcription failed — try again.";
       setTranscription({ fileId, status: "error", text: "", error: message });
       toast.error(message);
     } finally {
@@ -254,12 +250,7 @@ export function CaptureReview({
           </Button>
         )}
         {!savedFileId && (
-          <Button
-            size="sm"
-            className="ml-auto h-9"
-            onClick={onSave}
-            disabled={saving}
-          >
+          <Button size="sm" className="ml-auto h-9" onClick={onSave} disabled={saving}>
             {saving ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (
@@ -275,9 +266,7 @@ export function CaptureReview({
         <div className="mt-2 shrink-0 rounded-lg border border-border bg-card p-3">
           <div className="mb-2 flex items-center gap-2">
             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-foreground">
-              Transcript
-            </span>
+            <span className="text-xs font-medium text-foreground">Transcript</span>
             {transcript && (
               <ContentActionBar
                 content={transcript}

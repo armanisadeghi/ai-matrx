@@ -18,10 +18,10 @@
 import { useEffect, useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
+  CloudFolders,
   selectAllFoldersArray,
   selectVisibleUploads,
-} from "@/features/files/redux/selectors";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+} from "@/features/files";
 import {
   feedUploadState,
   type CaptureUploadFeedEntry,

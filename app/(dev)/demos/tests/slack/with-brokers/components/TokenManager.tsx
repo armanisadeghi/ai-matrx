@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
-import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import { brokerActions, brokerSelectors } from '@/lib/redux/brokerSlice';
 import { SLACK_BROKER_IDS } from './BrokerSlackClient';
 
 export function TokenManager() {

@@ -8,7 +8,7 @@
 // mounted with native controls so iOS plays on the user's tap (no off-gesture
 // .play()). Mode-agnostic — used by any study mode's session views.
 
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useFileSrc } from "@/features/files";
 
 export function SessionAudio({
   fileId,

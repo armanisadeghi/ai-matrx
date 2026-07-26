@@ -15184,10 +15184,7 @@ export interface paths {
         };
         /**
          * Get Action Catalog
-         * @description The full action catalog — COMPUTED live from platform.entity_types + the
-         *     envelope shape registry (nouns, verb states, Plane-2 functions, per-noun
-         *     identity fields and write schemas). Registered means listed; nothing is
-         *     hand-authored.
+         * @description The full action catalog (every noun × every verb, with capability states).
          */
         get: operations["get_action_catalog_actions_catalog_get"];
         put?: never;
@@ -15927,8 +15924,8 @@ export interface components {
         };
         /**
          * ActionCatalog
-         * @description The whole grid: the verb axis + every noun row + the Plane-2 functions.
-         *     This is what the API returns and what the admin UI renders.
+         * @description The whole grid: the verb axis + every noun row. This is what the API
+         *     returns and what the admin UI renders.
          */
         ActionCatalog: {
             /** Matrx Version */
@@ -15937,12 +15934,6 @@ export interface components {
             verbs: string[];
             /** Nouns */
             nouns: components["schemas"]["NounActions"][];
-            /** Functions */
-            functions?: components["schemas"]["FunctionEntry"][];
-            /** Aliases */
-            aliases?: {
-                [key: string]: string;
-            };
         };
         /**
          * ActionExecuteRequest
@@ -25400,30 +25391,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * FunctionEntry
-         * @description One Plane-2 function (or a deprecated legacy named directive).
-         */
-        FunctionEntry: {
-            /** Name */
-            name: string;
-            /** Kind */
-            kind: string;
-            /**
-             * Doc
-             * @default
-             */
-            doc?: string;
-            /** Item Schema */
-            item_schema?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Deprecated
-             * @default false
-             */
-            deprecated?: boolean;
-        };
         /** GeneratePlanBody */
         GeneratePlanBody: {
             /**
@@ -28977,19 +28944,6 @@ export interface components {
              * @enum {string}
              */
             delete: "yes" | "planned" | "no";
-            /**
-             * Label
-             * @default
-             */
-            label?: string;
-            /** Title Column */
-            title_column?: string | null;
-            /** Identity Fields */
-            identity_fields?: string[];
-            /** Schemas */
-            schemas?: {
-                [key: string]: unknown;
-            } | null;
         };
         /**
          * OAuthTokenPersistRequest

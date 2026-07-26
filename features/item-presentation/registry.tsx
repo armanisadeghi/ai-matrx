@@ -497,7 +497,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ),
   },
   // Legacy read-only alias: pre-rename payloads with type "picklist" still open.
-  // New payloads use "structured_list". See common-docs/projects/structured-lists-rename.
+  // New payloads use "structured_list". See common-docs/structured-lists-rename.
   picklist: {
     type: "picklist",
     label: "Structured List",

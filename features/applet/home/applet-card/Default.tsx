@@ -1,23 +1,20 @@
 // AppletCard.tsx
-"use client";
-import React from "react";
-import {
-  getAppIconWithBg,
-  getAppIcon,
-  COLOR_VARIANTS,
-} from "@/features/applet/styles/StyledComponents";
-import { AppletCardProps } from "@/features/applet/home/types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+'use client';
+import React from 'react';
+import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
+import { AppletCardProps } from '@/features/applet/home/types';
+import { InlineMediaRef } from '@/features/files';
 
 const AppletCard: React.FC<AppletCardProps> = ({
   applet,
   primaryColor,
   accentColor,
   onClick,
-  isMobile,
+  isMobile
 }) => {
+
   return (
-    <div
+    <div 
       className="group relative rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 cursor-pointer border-border"
       onClick={onClick}
     >
@@ -35,18 +32,14 @@ const AppletCard: React.FC<AppletCardProps> = ({
             className="absolute inset-0"
           />
         ) : (
-          <div
-            className={`w-full h-full flex items-center justify-center bg-${primaryColor}-500 dark:bg-${primaryColor}-600`}
-          >
-            <div className="opacity-10 text-5xl">
-              {applet.name?.charAt(0) || "?"}
-            </div>
+          <div className={`w-full h-full flex items-center justify-center bg-${primaryColor}-500 dark:bg-${primaryColor}-600`}>
+            <div className="opacity-10 text-5xl">{applet.name?.charAt(0) || '?'}</div>
           </div>
         )}
-
+        
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-
+        
         {/* Applet icon and name on image */}
         <div className="absolute bottom-0 left-0 p-4 w-full flex items-center gap-3">
           {applet.appletIcon && (
@@ -55,7 +48,7 @@ const AppletCard: React.FC<AppletCardProps> = ({
                 icon: applet.appletIcon,
                 size: 24,
                 color: accentColor,
-                className: "text-gray-100",
+                className: 'text-gray-100'
               })}
             </div>
           )}
@@ -64,7 +57,7 @@ const AppletCard: React.FC<AppletCardProps> = ({
           </h3>
         </div>
       </div>
-
+      
       {/* Card content */}
       <div className="p-4 bg-textured">
         <div className="h-[3.5rem] mb-4">
@@ -76,7 +69,7 @@ const AppletCard: React.FC<AppletCardProps> = ({
             <div className="h-full"></div>
           )}
         </div>
-
+        
         <div className="flex items-center justify-between">
           {/* Optional creator badge */}
           {applet.creator && (
@@ -84,16 +77,14 @@ const AppletCard: React.FC<AppletCardProps> = ({
               By {applet.creator}
             </span>
           )}
-
+          
           {/* Access button with applet accent color */}
-          <div
-            className={`px-3 py-1 text-sm rounded-full border bg-${accentColor}-500 dark:bg-${accentColor}-600 font-medium transition-colors`}
-          >
+          <div className={`px-3 py-1 text-sm rounded-full border bg-${accentColor}-500 dark:bg-${accentColor}-600 font-medium transition-colors`}>
             Open
           </div>
         </div>
       </div>
-
+      
       {/* Hover overlay effect */}
       <div className="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
     </div>

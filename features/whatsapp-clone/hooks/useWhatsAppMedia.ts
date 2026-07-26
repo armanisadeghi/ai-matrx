@@ -8,7 +8,7 @@ import {
   selectTreeStatus,
 } from "@/features/files/redux/selectors";
 import { loadUserFileTree } from "@/features/files/redux/thunks";
-import type { CloudFileRecord } from "@/features/files/types";
+import type { CloudFileRecord } from "@/features/files";
 import { getMockMedia } from "../mock-data/media";
 import { getMockLinks } from "../mock-data/links";
 import { getMockDocs } from "../mock-data/docs";

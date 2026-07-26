@@ -30,8 +30,8 @@ import { ReferenceCopyButton } from "@/features/matrx-envelope/components/Refere
 import { useToastManager } from "@/hooks/useToastManager";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-import type { FileSource } from "@/features/files/handler/types";
+import { useFileSrc } from "@/features/files";
+import type { FileSource } from "@/features/files";
 import { Slider } from "@/components/ui/slider";
 import {
   DropdownMenu,

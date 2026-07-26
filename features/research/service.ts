@@ -57,7 +57,7 @@ const RESEARCH_TAG = "research_tag";
 const RESEARCH_KEYWORD = "research_keyword";
 // Topic ↔ project is ALSO a canonical association edge (research-project
 // decoupling, 2026-07-21): `research_topic → project`, optional, never a
-// physical FK/column. See common-docs/projects/research-project-decoupling/FEATURE.md.
+// physical FK/column. See common-docs/research-project-decoupling/FEATURE.md.
 const RESEARCH_TOPIC = "research_topic";
 const PROJECT = "project";
 

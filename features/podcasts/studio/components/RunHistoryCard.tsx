@@ -18,7 +18,7 @@ import {
   PauseCircle,
   XCircle,
 } from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import {
   livenessLabel,
   sourceLabel,
@@ -93,10 +93,7 @@ export function RunHistoryCard({ run }: { run: RunSummary }) {
         <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground group-hover:text-primary">
           {run.title || "Untitled episode"}
         </p>
-        <p
-          className="line-clamp-1 text-xs text-muted-foreground"
-          title={sourceLabel(run.source)}
-        >
+        <p className="line-clamp-1 text-xs text-muted-foreground" title={sourceLabel(run.source)}>
           {sourceLabel(run.source)}
         </p>
         {prog && (

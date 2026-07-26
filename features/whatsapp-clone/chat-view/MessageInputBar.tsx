@@ -19,7 +19,7 @@ import {
   audioExtensionForType,
   normalizeAudioContentType,
 } from "@/features/audio/utils/audio-mime";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { MessageInputAttachMenu } from "./MessageInputAttachMenu";

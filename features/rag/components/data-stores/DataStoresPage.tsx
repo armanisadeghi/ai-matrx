@@ -62,7 +62,7 @@ import {
   SOURCE_KINDS,
 } from "@/features/rag/types/data-stores-ext";
 import type { DataStoreWithMemberCount } from "@/features/rag/types/data-stores";
-import { fileHandler } from "@/features/files/handler/handler";
+import { fileHandler } from "@/features/files";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";

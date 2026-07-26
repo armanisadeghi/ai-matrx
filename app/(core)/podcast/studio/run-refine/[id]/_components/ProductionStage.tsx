@@ -18,15 +18,8 @@
 // useStudioRun owns. Media is rendered only via <InlineMediaRef>.
 
 import { useEffect, useState } from "react";
-import {
-  AudioLines,
-  ImageIcon,
-  Clapperboard,
-  FileText,
-  CheckCircle2,
-  Palette,
-} from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { AudioLines, ImageIcon, Clapperboard, FileText, CheckCircle2, Palette } from "lucide-react";
+import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "@/features/podcasts/generator/components/ElapsedTimer";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
@@ -73,9 +66,7 @@ export function ProductionStage({
                   isActive ? "z-10 opacity-100" : "z-0 opacity-0",
                 )}
               >
-                <div
-                  className={cn("h-full w-full", isActive && "pcr-kenburns")}
-                >
+                <div className={cn("h-full w-full", isActive && "pcr-kenburns")}>
                   <InlineMediaRef
                     ref={podcastMediaRef(slot.url)}
                     size="fill"
@@ -101,8 +92,7 @@ export function ProductionStage({
             <>
               <span className="absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2 py-1 text-[11px] font-medium text-white backdrop-blur">
                 <ImageIcon className="h-3.5 w-3.5" />
-                {readyImages.length} cover{readyImages.length > 1 ? "s" : ""}{" "}
-                ready
+                {readyImages.length} cover{readyImages.length > 1 ? "s" : ""} ready
               </span>
               {readyImages.length > 1 && (
                 <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
@@ -137,9 +127,7 @@ export function ProductionStage({
               <span className="text-[11px] tabular-nums text-muted-foreground">
                 {revealed} milestone{revealed > 1 ? "s" : ""} so far
                 {queued > 0 && (
-                  <span className="ml-1 text-primary/70">
-                    · {queued} queued
-                  </span>
+                  <span className="ml-1 text-primary/70">· {queued} queued</span>
                 )}
               </span>
             )}

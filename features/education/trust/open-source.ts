@@ -9,7 +9,7 @@
 // Uses the ONE canonical file-open primitive (`openFilePreview`) — the same
 // draggable, resizable preview window every other surface opens files with.
 
-import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
+import { openFilePreview } from "@/features/files";
 import type { SourceCitation } from "./types";
 
 // Re-export the pure predicate (defined in types.ts to stay free of the heavy

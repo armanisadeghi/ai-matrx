@@ -25,7 +25,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 import { orgHref } from "@/features/scope-system/utils/scopeRoutes";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {

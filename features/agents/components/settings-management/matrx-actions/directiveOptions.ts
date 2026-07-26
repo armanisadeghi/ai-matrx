@@ -1,12 +1,9 @@
 /**
  * Directive options for the Matrx Actions tab's "selected actions" picker.
  *
- * FULLY DERIVED from the live action catalog (`useActionCatalog`) — the server's
- * registries are the single source of truth. The Plane-2 functions section
- * supplies the named procedures (deprecated legacy names are labeled but still
- * selectable — stored agents may carry them); every noun whose write verb is
- * wired (`state === "yes"`) becomes a `verb:noun` directive type. A new server
- * registration appears here with ZERO frontend edits.
+ * Combines the canonical named built-in directives with the live action catalog
+ * (`useActionCatalog`) — every noun whose write verb is wired (`state === "yes"`)
+ * becomes a `verb:noun` directive type the agent can be allowed to auto-apply.
  */
 
 import type { ActionCatalog } from "@/features/action-catalog/types";
@@ -16,40 +13,34 @@ export interface DirectiveOption {
   type: string;
   /** Human label for the row. */
   label: string;
-  /** Grouping bucket (family / "Functions"). */
+  /** Grouping bucket (family / "Built-in"). */
   family: string;
 }
 
-/** Verbs that produce a side effect — everything except the read verbs. */
-function writeVerbs(catalog: ActionCatalog): string[] {
-  return (catalog.verbs ?? []).filter((v) => v !== "reference" && v !== "view");
-}
+/** Named built-in directives — always available regardless of catalog state. */
+const BUILTIN_DIRECTIVES: DirectiveOption[] = [
+  { type: "create_project_with_tasks", label: "Create project with tasks", family: "Built-in" },
+  { type: "create_task", label: "Create task", family: "Built-in" },
+  { type: "db_create", label: "Create record (db_create)", family: "Built-in" },
+  { type: "db_update", label: "Update record (db_update)", family: "Built-in" },
+  { type: "plan_tree", label: "Apply content plan tree", family: "Built-in" },
+  { type: "plan_node_patch", label: "Patch content plan node", family: "Built-in" },
+];
 
-function functionLabel(name: string, deprecated: boolean | undefined): string {
-  const pretty = name.replace(/_/g, " ");
-  return deprecated ? `${pretty} (legacy)` : pretty;
-}
+const WRITE_VERBS = ["create", "update", "delete"] as const;
 
 /**
- * Build the full option list: the server's registered functions first, then
- * every wired `verb:noun` write action from the catalog, grouped by family.
+ * Build the full option list: built-ins first, then every wired `verb:noun`
+ * write action from the catalog, grouped by family.
  */
 export function buildDirectiveOptions(
   catalog: ActionCatalog | null,
 ): DirectiveOption[] {
-  if (!catalog) return [];
-  const options: DirectiveOption[] = [];
-  for (const fn of catalog.functions ?? []) {
-    options.push({
-      type: fn.name,
-      label: functionLabel(fn.name, fn.deprecated),
-      family: fn.deprecated ? "Legacy directives" : "Functions",
-    });
-  }
-  const verbs = writeVerbs(catalog);
+  const options: DirectiveOption[] = [...BUILTIN_DIRECTIVES];
+  if (!catalog) return options;
   for (const noun of catalog.nouns) {
-    for (const verb of verbs) {
-      if ((noun as Record<string, unknown>)[verb] === "yes") {
+    for (const verb of WRITE_VERBS) {
+      if (noun[verb] === "yes") {
         options.push({
           type: `${verb}:${noun.noun}`,
           label: `${verb} ${noun.noun}`,

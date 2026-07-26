@@ -172,56 +172,7 @@ export function ActionCatalogGrid({ catalog }: { catalog: ActionCatalog }) {
             )}
           </tbody>
         </table>
-
-        <FunctionsSection catalog={catalog} query={query} />
       </div>
-    </div>
-  );
-}
-
-/**
- * Plane-2 functions (registered custom procedures) + the deprecated legacy
- * named directives — the half of the system the noun × verb grid can't
- * represent. Fully server-derived (`catalog.functions`).
- */
-function FunctionsSection({
-  catalog,
-  query,
-}: {
-  catalog: ActionCatalog;
-  query: string;
-}) {
-  const functions = catalog.functions ?? [];
-  const q = query.trim().toLowerCase();
-  const visible = q
-    ? functions.filter((f) => `${f.name} ${f.doc ?? ""}`.toLowerCase().includes(q))
-    : functions;
-  if (visible.length === 0) return null;
-  return (
-    <div className="border-t border-border">
-      <div className="bg-muted/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Functions (Plane 2) &amp; legacy directives
-      </div>
-      <table className="w-full border-collapse text-sm">
-        <tbody>
-          {visible.map((f) => (
-            <tr
-              key={`${f.kind}:${f.name}`}
-              className="border-b border-border/60 transition-colors hover:bg-accent/40"
-            >
-              <td className="w-64 px-3 py-1 font-mono text-xs font-medium text-foreground">
-                {f.name}
-                {f.deprecated && (
-                  <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-600 dark:text-amber-400">
-                    legacy
-                  </span>
-                )}
-              </td>
-              <td className="px-3 py-1 text-xs text-muted-foreground">{f.doc}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

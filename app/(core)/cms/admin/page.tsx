@@ -16,7 +16,7 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
   docs: [
     { label: "cms FEATURE.md", href: "/features/cms/FEATURE.md" },
     { label: "html-pages README.md", href: "/features/html-pages/README.md" },
-    // Cross-repo system of record lives at common-docs/systems/cms-system/FEATURE.md
+    // Cross-repo system of record lives at common-docs/cms-system/FEATURE.md
     // (its own git repo per F5 — no public URL yet, no in-repo path to link).
   ],
 

@@ -57,7 +57,7 @@ import {
   stopContinuousCapture,
   hardStopCapture,
 } from "../audio/continuousCapture";
-import { fileHandler } from "@/features/files/handler/handler";
+import { fileHandler } from "@/features/files";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import {
   audioExtensionForType,

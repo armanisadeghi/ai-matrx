@@ -2,12 +2,12 @@
 status: active
 updated: 2026-07-23
 repos: [matrx-frontend, aidream]
-vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md, features/content-ir/docs/SHAPE_SYSTEM.md]
+vision: [/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md, features/content-ir/docs/SHAPE_SYSTEM.md]
 ---
 
 # Kind authoring, the admin builder, and component interactivity — work order
 
-Scope: **how a kind gets built (esp. by an ADMIN agent) and how its component comes alive and DOES things.** The broader platform rollout (enforcement flips, tool_ui subsumption, workflows, bulk-bind) is a separate handoff — `docs/handoffs/content-ir-integration-map.md`. Read that one's Vision section too; it is the ground truth for the whole system. System-of-record (evidence/counts): `common-docs/systems/content-ir-system/FEATURE.md`.
+Scope: **how a kind gets built (esp. by an ADMIN agent) and how its component comes alive and DOES things.** The broader platform rollout (enforcement flips, tool_ui subsumption, workflows, bulk-bind) is a separate handoff — `docs/handoffs/content-ir-integration-map.md`. Read that one's Vision section too; it is the ground truth for the whole system. System-of-record (evidence/counts): `common-docs/content-ir-system/FEATURE.md`.
 
 ## Vision — Arman's words (verbatim; never paraphrase into agent-speak)
 

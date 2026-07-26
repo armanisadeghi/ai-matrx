@@ -46,9 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { fileHandler } from "@/features/files/handler/handler";
-import { folderForPodcast } from "@/features/files/utils/folder-conventions";
+import { useFileUpload, fileHandler, folderForPodcast } from "@/features/files";
 import {
   AssetUploader,
   type AssetUrls,

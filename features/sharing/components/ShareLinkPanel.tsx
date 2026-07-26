@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link2, Copy, Check, Trash2, Loader2, Plus, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import type { ResourceType } from "@/utils/permissions/types";
+import type { ResourceType } from "@/utils/permissions";
 import {
   createShareLink,
   listShareLinks,
@@ -63,10 +63,7 @@ export function ShareLinkPanel({
         await navigator.clipboard.writeText(shareLinkUrl(token));
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
-        toast({
-          title: "Link copied",
-          description: "Anyone with it can view — no sign-in needed.",
-        });
+        toast({ title: "Link copied", description: "Anyone with it can view — no sign-in needed." });
       } catch {
         toast({ title: "Couldn't copy", variant: "destructive" });
       }
@@ -96,16 +93,9 @@ export function ShareLinkPanel({
     setRevokeTarget(null);
     if (result.success) {
       await refresh();
-      toast({
-        title: "Link turned off",
-        description: "It can no longer be opened.",
-      });
+      toast({ title: "Link turned off", description: "It can no longer be opened." });
     } else {
-      toast({
-        title: "Couldn't revoke",
-        description: result.error,
-        variant: "destructive",
-      });
+      toast({ title: "Couldn't revoke", description: result.error, variant: "destructive" });
     }
   }, [revokeTarget, refresh, toast]);
 
@@ -123,12 +113,7 @@ export function ShareLinkPanel({
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          onClick={handleCreate}
-          disabled={creating}
-          className="flex-shrink-0"
-        >
+        <Button size="sm" onClick={handleCreate} disabled={creating} className="flex-shrink-0">
           {creating ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (

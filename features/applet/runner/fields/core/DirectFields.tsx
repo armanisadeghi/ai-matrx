@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import FieldsWithLabels from "@/features/applet/runner/fields/core/FieldsWithlabels";
 import { FieldDefinition } from "@/types/customAppTypes";
 import { useFieldsWithBrokers } from "@/lib/redux/brokerSlice/hooks/useTempBroker";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerSelectors } from "@/lib/redux/brokerSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 interface DirectFieldsProps {

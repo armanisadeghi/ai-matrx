@@ -102,7 +102,7 @@ const [ownedResult, sharedResult] = await Promise.all([
 #### Pattern B: Client-side hook (simpler, fewer items)
 
 ```tsx
-import { useSharedWithMe } from '@/utils/permissions/hooks';
+import { useSharedWithMe } from '@/utils/permissions';
 
 const { permissions, loading } = useSharedWithMe('canvas_items');
 // permissions[].resourceId gives you the IDs to fetch
@@ -173,7 +173,7 @@ $$;
 #### Option B: Client-side hooks
 
 ```tsx
-import { useIsOwner, useCanEdit, useCanAdmin } from '@/utils/permissions/hooks';
+import { useIsOwner, useCanEdit, useCanAdmin } from '@/utils/permissions';
 
 const { isOwner, loading: ownerLoading } = useIsOwner('canvas_items', canvasId);
 const { canEdit, loading: editLoading } = useCanEdit('canvas_items', canvasId);

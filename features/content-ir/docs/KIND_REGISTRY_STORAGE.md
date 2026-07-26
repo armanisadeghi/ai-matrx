@@ -1,6 +1,6 @@
 # Kind Registry — Storage Design (v5 — MIGRATED + CUT OVER)
 
-> **Historical storage design/build record (2026-07-05), not current status.** Counts, remaining work, and some transitional statements below describe the migration wave when only 26 kinds existed. Current live truth and gap analysis: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md`.
+> **Historical storage design/build record (2026-07-05), not current status.** Counts, remaining work, and some transitional statements below describe the migration wave when only 26 kinds existed. Current live truth and gap analysis: `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`.
 
 > **v5 status:** all 26 kinds + 22 edges migrated into `content_ir` (`visibility=public`, RLS authed-read verified = 26; `history.row_versions` captured all 26). `kindRegistry` warm/cold now read `content_ir` (compiled `system-kinds.ts` = bootstrap floor; `flexible_data` = rollback source, untouched). Round-trip parity 25/26 (study_pack_set's pre-existing dangling ref). Driver: `scripts/migrate-content-ir-kinds.ts` (dry-run/apply/verify). PostgREST: `content_ir` added to `pgrst.db_schemas`. Remaining below are v1 open items.
 

@@ -15,8 +15,7 @@
 // data/agents.ts); the tolerant coercer absorbs prompt-driven key drift.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { fileHandler } from "@/features/files/handler/handler";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { fileHandler, CloudFolders } from "@/features/files";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";

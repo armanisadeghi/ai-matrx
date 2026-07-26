@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Mic, Settings2 } from "lucide-react";
 import type { PcShow } from "@/features/podcasts/types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@/features/files";
 
 interface PodcastGridProps {
   shows: PcShow[];
@@ -61,7 +61,7 @@ export function PodcastGrid({
                 {/* Consumer surface: a dead URL degrades to the same quiet
                     mic tile as "no artwork" — never the debug error panel. */}
                 <InlineMediaRef
-                  ref={show.thumbnail_url ?? show.image_url ?? null}
+                  ref={(show.thumbnail_url ?? show.image_url) ?? null}
                   size="fill"
                   fit="cover"
                   rounded="none"

@@ -16,8 +16,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { fileHandler } from "@/features/files/handler/handler";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { fileHandler, useFileUpload } from "@/features/files";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { usePdfClient } from "@/features/pdf/api/client";

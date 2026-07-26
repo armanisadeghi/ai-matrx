@@ -270,24 +270,6 @@ export function formatScore100(score: number | null | undefined): string {
   return String(Math.round(score));
 }
 
-/**
- * Predicted likelihood (0–100) that FETCHING this URL returns usable article
- * text — page DELIVERY, not quality. null = not assessed (never "0").
- */
-export const formatScrapeWorthiness = formatScore100;
-
-/**
- * Confidence (0–100) this source is about the topic's actual subject rather
- * than a namesake. null = not assessed.
- */
-export const formatEntityMatchConfidence = formatScore100;
-
-/**
- * Topical usefulness (0–100) judged from the search snippet alone — available
- * for nearly every source. null = not assessed.
- */
-export const formatSnippetRelevance = formatScore100;
-
 const CELL = "text-[11px] tabular-nums whitespace-nowrap text-muted-foreground";
 
 export function ScoreCell({

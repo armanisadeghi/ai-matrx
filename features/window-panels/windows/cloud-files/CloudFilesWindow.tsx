@@ -21,7 +21,7 @@
 
 import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { WindowPanelShell, type CloudFilesWindowTab } from "@/features/files/components/surfaces/WindowPanelShell";
+import { WindowPanelShell, type CloudFilesWindowTab } from "@/features/files";
 
 export interface CloudFilesWindowProps {
   isOpen: boolean;

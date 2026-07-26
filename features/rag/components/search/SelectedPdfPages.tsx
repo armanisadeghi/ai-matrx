@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
-import { selectPdfPages, type PdfPageSelectionResult } from "@/features/files/api/pdf-pages";
+import { selectPdfPages, type PdfPageSelectionResult } from "@/features/files";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

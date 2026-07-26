@@ -179,24 +179,6 @@ silently drops items the server would have happily applied.
 
 ## Change Log
 
-- 2026-07-26 — Claude: **The FE derives nouns from the server catalog — zero edits for a
-  new action.** `catalog-nouns.generated.ts` (from the mirrored
-  `matrx_actions_catalog.generated.json`, via `pnpm gen:action-nouns`, auto-run by
-  `check-protocol-sync --fix`) feeds a catalog-derived generic reference resolver:
-  `getReferenceResolver` = bespoke `RESOLVERS` overlay → derived
-  (schema.table + title_column + identity_fields) → graceful chip. Aliases are the
-  server-published map (hand legacy map deleted). `kind:"function"` (Plane 2) added to
-  `MatrxKind`; plan_tree/plan_node_patch/context_groom renderers dual-registered under
-  it; `ApplyDirectiveButton` confirms both executing kinds — so an UNKNOWN
-  directive/function type still renders (`EnvelopeFallbackCard`) with a working Apply.
-  Orphaned `output-schema/applyDirectives.ts` deleted (zero importers).
-- 2026-07-26 — Claude: **`plan_tree` text `site` resolves on the client.**
-  Card polls/deep-links via domain→`web.site` lookup (`resolvePlanTreeSiteId`);
-  Content Plan href uses `marketingRoutes.contentPlan()` + `?site=`.
-- 2026-07-26 — Claude: **Apply/confirm failures speak gently.** `ApplyDirectiveButton`
-  and `ProposedDirectivesZone` show the server's `user_message` (via
-  `BackendApiError`), never a Pydantic dump. Clean red error text — not a
-  traceback wall.
 - 2026-07-25 — Claude: **References work in prose, and are attached without copy-pasting JSON.**
   A ```matrx fence pasted into a direct message rendered as raw code — the messaging surface
   printed `content` as plain text and never ran fence detection. New shared primitives:

@@ -11,7 +11,7 @@
 // surface inherits the same hardened path.
 
 import type { AppDispatch } from "@/lib/redux/store";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import { verdictResult } from "@/features/education/trust/types";
 import { studyService } from "@/features/education/study/service/studyService";
 import { getFastFireAgentConfig } from "../config";

@@ -1,9 +1,4 @@
-// `import type`, NOT a value import. TaskItemType is `export type` (TaskChecklist.tsx:50)
-// and is used only in type positions here. As a value import this pulled the whole
-// TaskChecklist component subtree — and, because TaskChecklist imports
-// parseMarkdownChecklist back from this file, formed a cycle that dragged ~465 modules
-// into the 131 routes that reach this parser via the content-IR / markdown pipeline.
-import type { TaskItemType } from "./TaskChecklist";
+import { TaskItemType } from "./TaskChecklist";
 
 // Parse markdown checklist format into structured data
 export const parseMarkdownChecklist = (markdownText: string): TaskItemType[] => {

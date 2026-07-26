@@ -19,7 +19,7 @@
 import { useCallback } from "react";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import { useAudioTranscription } from "@/features/audio/hooks/useAudioTranscription";
 import {
   WEB_CONTENT_EXTRACTOR_AGENT_ID,

@@ -128,6 +128,11 @@ MONITOR=false
 NO_MIGRATE=false
 NO_GATES=false
 
+# TEMP(oom-recovery 2026-07-26): skip migrations / protocol sync / attribution /
+# advisory gates so we can bisect the OOM with bump+push only. DELETE THIS BLOCK
+# (and the TEMP early-returns below) when recovery is finished.
+TEMP_SKIP_RELEASE_CHECKS=true
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --patch)   BUMP_TYPE="patch"; shift ;;
@@ -146,6 +151,12 @@ while [[ $# -gt 0 ]]; do
         *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --dry-run, --monitor, --no-migrate, or --no-gates." ;;
     esac
 done
+
+if $TEMP_SKIP_RELEASE_CHECKS; then
+    NO_MIGRATE=true
+    NO_GATES=true
+    warn "TEMP_SKIP_RELEASE_CHECKS=true — migrations/protocol/attribution/gates skipped; bump+push only."
+fi
 
 # ── Pre-flight checks ────────────────────────────────────────────────────────
 [[ -f "$VERSION_FILE" ]] || fail "$VERSION_FILE not found."
@@ -320,28 +331,37 @@ sync_protocol_mirror() {
     ok "Protocol mirror re-synced and committed."
 }
 
-sync_protocol_mirror
+if $TEMP_SKIP_RELEASE_CHECKS; then
+    warn "Skipping protocol mirror sync (TEMP_SKIP_RELEASE_CHECKS)."
+else
+    sync_protocol_mirror
+fi
 
 # A source_app/source_feature typo is persisted permanently and corrupts every
 # attribution view downstream. ADVISORY ONLY — no check ever blocks a release;
 # only git (and a failed migration apply above) can stop the ship.
-info "Validating CX source attribution (advisory, never blocking)..."
-if ! pnpm check:source-attribution; then
-    echo "" >&2
-    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}" >&2
-    echo -e "${RED}║  SOURCE-ATTRIBUTION VIOLATIONS — release continues anyway   ║${NC}" >&2
-    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}" >&2
-    echo -e "${RED}  Unregistered source_app/source_feature values are being written${NC}" >&2
-    echo -e "${RED}  to the DB permanently. Fix NOW (it will nag on every release):${NC}" >&2
-    echo -e "${YELLOW}    1. See the file:line list above for each violation.${NC}" >&2
-    echo -e "${YELLOW}    2. Register the value in the attribution registry, or correct${NC}" >&2
-    echo -e "${YELLOW}       the call to use an already-registered source_feature.${NC}" >&2
-    echo -e "${YELLOW}    3. Re-run: pnpm check:source-attribution${NC}" >&2
-    echo "" >&2
-    SOURCE_ATTRIBUTION_FAILED=true
+SOURCE_ATTRIBUTION_FAILED=false
+if $TEMP_SKIP_RELEASE_CHECKS; then
+    warn "Skipping CX source attribution check (TEMP_SKIP_RELEASE_CHECKS)."
 else
-    ok "CX source attribution is registered."
-    SOURCE_ATTRIBUTION_FAILED=false
+    info "Validating CX source attribution (advisory, never blocking)..."
+    if ! pnpm check:source-attribution; then
+        echo "" >&2
+        echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}" >&2
+        echo -e "${RED}║  SOURCE-ATTRIBUTION VIOLATIONS — release continues anyway   ║${NC}" >&2
+        echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}" >&2
+        echo -e "${RED}  Unregistered source_app/source_feature values are being written${NC}" >&2
+        echo -e "${RED}  to the DB permanently. Fix NOW (it will nag on every release):${NC}" >&2
+        echo -e "${YELLOW}    1. See the file:line list above for each violation.${NC}" >&2
+        echo -e "${YELLOW}    2. Register the value in the attribution registry, or correct${NC}" >&2
+        echo -e "${YELLOW}       the call to use an already-registered source_feature.${NC}" >&2
+        echo -e "${YELLOW}    3. Re-run: pnpm check:source-attribution${NC}" >&2
+        echo "" >&2
+        SOURCE_ATTRIBUTION_FAILED=true
+    else
+        ok "CX source attribution is registered."
+        SOURCE_ATTRIBUTION_FAILED=false
+    fi
 fi
 
 # ── Read current version ─────────────────────────────────────────────────────

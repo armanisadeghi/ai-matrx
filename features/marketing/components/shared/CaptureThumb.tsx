@@ -10,8 +10,7 @@
  */
 
 import type { ReactNode } from "react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { fileIdToMediaRef } from "@/features/files/redux/converters";
+import { InlineMediaRef, fileIdToMediaRef } from "@/features/files";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 
 export function CaptureThumb({
