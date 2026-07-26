@@ -12,7 +12,7 @@
 export const MATRX_VERSION = 1 as const;
 
 export type MatrxKind =
-  "output_directive" | "reference" | "secret" | "validation";
+  "output_directive" | "function" | "reference" | "secret" | "validation";
 
 /** The universal outer shell. Items are unknown until routed by `(kind, type)`. */
 export interface MatrxEnvelope<Item = Record<string, unknown>> {

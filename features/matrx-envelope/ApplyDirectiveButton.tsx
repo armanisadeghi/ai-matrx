@@ -48,7 +48,8 @@ export function ApplyDirectiveButton({
   const [state, setState] = useState<ApplyState>({ status: "idle" });
 
   // Only side-effect envelopes are applicable; a reference/secret never is.
-  if (envelope.kind !== "output_directive") return null;
+  // Both executing kinds confirm through the same endpoint (Plane 1 + Plane 2).
+  if (envelope.kind !== "output_directive" && envelope.kind !== "function") return null;
 
   const items = Array.isArray(envelope.items) ? envelope.items : [];
 
@@ -57,7 +58,7 @@ export function ApplyDirectiveButton({
     try {
       const result = await confirmDirective(baseUrl, {
         matrx_version: envelope.matrx_version,
-        kind: "output_directive",
+        kind: envelope.kind,
         type: envelope.type,
         items: items as Record<string, unknown>[],
       });

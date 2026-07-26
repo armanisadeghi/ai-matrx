@@ -111,8 +111,8 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
   const state: ActionState | null = noun ? cellState(noun, verb) : null;
   const isReference = isReferenceVerb(verb);
   const fieldSpecs = useMemo(
-    () => (isReference && nounName ? refFieldsForNoun(nounName) : []),
-    [isReference, nounName],
+    () => (isReference && nounName ? refFieldsForNoun(nounName, noun) : []),
+    [isReference, nounName, noun],
   );
 
   // The write payload, parsed. A reference has no payload (its ids drive it).
@@ -158,14 +158,10 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
   const setField = (key: string, value: string) =>
     setFields((prev) => ({ ...prev, [key]: value }));
 
-  // Only wired create/update on a "yes" noun can execute (delete is soft → planned).
+  // A write verb executes exactly when the catalog says the cell is wired —
+  // the server's registration is the only authority (no verb allowlist here).
   const canExecute =
-    !isReference &&
-    (verb === "create" || verb === "update") &&
-    state === "yes" &&
-    payloadOk &&
-    !!baseUrl &&
-    !executing;
+    !isReference && state === "yes" && payloadOk && !!baseUrl && !executing;
 
   const handleExecute = async () => {
     if (!canExecute || !nounName) return;
@@ -418,9 +414,9 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
               )}
               Execute
             </Button>
-            {verb === "delete" && (
+            {verb === "delete" && state === "yes" && (
               <span className="text-xs text-muted-foreground">
-                delete is soft-delete — not yet wired (planned).
+                delete is a soft delete (the row is flagged, never destroyed).
               </span>
             )}
           </div>
@@ -430,7 +426,7 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
               Not a writable row — this noun has no create/update/delete path.
             </p>
           )}
-          {state === "planned" && verb !== "delete" && (
+          {state === "planned" && (
             <p className="text-xs text-muted-foreground">
               This write is <span className="font-medium">planned</span> — only
               wired (&quot;Yes&quot;) nouns execute today.
