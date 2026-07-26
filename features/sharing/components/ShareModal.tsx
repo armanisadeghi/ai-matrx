@@ -18,18 +18,19 @@ import {
   Loader2,
   CheckCircle,
 } from "lucide-react";
-import { useSharing, useIsOwner, getShareableResource } from "@/utils/permissions";
-import type { ResourceType } from "@/utils/permissions";
+import { useSharing, useIsOwner } from "@/utils/permissions/hooks";
+import {
+  getShareableResource,
+  getResourceTypeLabel,
+  getResourceSharePath,
+} from "@/utils/permissions/registry";
+import type { ResourceType } from "@/utils/permissions/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Lock } from "lucide-react";
 import { PermissionsList } from "./PermissionsList";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "./tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "./tabs/PublicAccessTab";
-import {
-  getResourceTypeLabel,
-  getResourceSharePath,
-} from "@/utils/permissions";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ShareModalProps {
@@ -144,7 +145,9 @@ export function ShareModal({
 
   // A resource type missing from the registry can never share — say so loudly
   // rather than rendering a dialog whose every control silently no-ops.
-  const registryEntry = resourceType ? getShareableResource(resourceType) : undefined;
+  const registryEntry = resourceType
+    ? getShareableResource(resourceType)
+    : undefined;
   const configError = !resourceId
     ? "No resource id was supplied to the share dialog."
     : !registryEntry
@@ -162,7 +165,12 @@ export function ShareModal({
     revokeAccess,
     updateLevel,
     refresh,
-  } = useSharing(resourceType, resourceId, isOpen && !configError, resourceName);
+  } = useSharing(
+    resourceType,
+    resourceId,
+    isOpen && !configError,
+    resourceName,
+  );
 
   // Filter permissions by type for each tab
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
@@ -191,8 +199,8 @@ export function ShareModal({
       <div>
         <p className="text-sm font-medium">Only the owner can change sharing</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          This {resourceLabel.toLowerCase()} was shared with you. Ask its owner to
-          invite others or change access levels.
+          This {resourceLabel.toLowerCase()} was shared with you. Ask its owner
+          to invite others or change access levels.
         </p>
       </div>
     </div>
@@ -235,7 +243,9 @@ export function ShareModal({
           <div className="flex-1 flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
             <AlertTriangle className="h-8 w-8 text-destructive" />
             <p className="text-sm font-medium">Sharing is unavailable</p>
-            <p className="text-xs text-muted-foreground max-w-sm">{configError}</p>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              {configError}
+            </p>
           </div>
         )}
 
@@ -249,110 +259,110 @@ export function ShareModal({
         )}
 
         {!configError && !resolvingOwner && (
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as typeof activeTab)}
-          className="flex-1 flex flex-col min-h-0"
-        >
-          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
-            <TabsTrigger value="users" className="gap-2">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Users</span>
-              {userPermissions.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
-                  {userPermissions.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="organizations" className="gap-2">
-              <Building2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Organizations</span>
-              {orgPermissions.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
-                  {orgPermissions.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="public" className="gap-2">
-              <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline">Public</span>
-              {publicPermission && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-green-500/10 rounded-full">
-                  •
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+            className="flex-1 flex flex-col min-h-0"
+          >
+            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+              <TabsTrigger value="users" className="gap-2">
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Users</span>
+                {userPermissions.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
+                    {userPermissions.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="organizations" className="gap-2">
+                <Building2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Organizations</span>
+                {orgPermissions.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
+                    {orgPermissions.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="public" className="gap-2">
+                <Globe className="w-4 h-4" />
+                <span className="hidden sm:inline">Public</span>
+                {publicPermission && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-green-500/10 rounded-full">
+                    •
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="flex-1 mt-3 min-h-0 overflow-y-auto">
-            <TabsContent value="users" className="mt-0 space-y-3">
-              {/* Current user permissions */}
-              <div>
-                <h3 className="text-sm font-medium mb-2">Current Access</h3>
-                <PermissionsList
-                  permissions={userPermissions}
+            <div className="flex-1 mt-3 min-h-0 overflow-y-auto">
+              <TabsContent value="users" className="mt-0 space-y-3">
+                {/* Current user permissions */}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Current Access</h3>
+                  <PermissionsList
+                    permissions={userPermissions}
+                    isOwner={isOwner}
+                    onUpdateLevel={updateLevel}
+                    onRevoke={revokeAccess}
+                    loading={loading}
+                  />
+                </div>
+
+                {/* Add user form */}
+                {isOwner ? (
+                  <ShareWithUserTab
+                    onShare={shareWithUser}
+                    onSuccess={refresh}
+                    resourceType={resourceType}
+                    resourceId={resourceId}
+                  />
+                ) : (
+                  manageBlockedNotice
+                )}
+              </TabsContent>
+
+              <TabsContent value="organizations" className="mt-0 space-y-3">
+                {/* Current org permissions */}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Current Access</h3>
+                  <PermissionsList
+                    permissions={orgPermissions}
+                    isOwner={isOwner}
+                    onUpdateLevel={updateLevel}
+                    onRevoke={revokeAccess}
+                    loading={loading}
+                  />
+                </div>
+
+                {/* Add org form */}
+                {isOwner ? (
+                  <ShareWithOrgTab
+                    onShare={shareWithOrg}
+                    onSuccess={refresh}
+                    resourceType={resourceType}
+                    sharedOrgIds={orgPermissions
+                      .map((p) => p.grantedToOrganizationId)
+                      .filter((id): id is string => !!id)}
+                  />
+                ) : (
+                  manageBlockedNotice
+                )}
+              </TabsContent>
+
+              <TabsContent value="public" className="mt-0">
+                <PublicAccessTab
+                  isPublic={resourceIsPublic}
+                  publicPermission={publicPermission}
                   isOwner={isOwner}
-                  onUpdateLevel={updateLevel}
-                  onRevoke={revokeAccess}
-                  loading={loading}
-                />
-              </div>
-
-              {/* Add user form */}
-              {isOwner ? (
-                <ShareWithUserTab
-                  onShare={shareWithUser}
-                  onSuccess={refresh}
+                  onMakePublic={makePublic}
+                  onRevokePublic={() => revokeAccess({ isPublic: true })}
                   resourceType={resourceType}
                   resourceId={resourceId}
+                  resourceName={resourceName}
                 />
-              ) : (
-                manageBlockedNotice
-              )}
-            </TabsContent>
-
-            <TabsContent value="organizations" className="mt-0 space-y-3">
-              {/* Current org permissions */}
-              <div>
-                <h3 className="text-sm font-medium mb-2">Current Access</h3>
-                <PermissionsList
-                  permissions={orgPermissions}
-                  isOwner={isOwner}
-                  onUpdateLevel={updateLevel}
-                  onRevoke={revokeAccess}
-                  loading={loading}
-                />
-              </div>
-
-              {/* Add org form */}
-              {isOwner ? (
-                <ShareWithOrgTab
-                  onShare={shareWithOrg}
-                  onSuccess={refresh}
-                  resourceType={resourceType}
-                  sharedOrgIds={orgPermissions
-                    .map((p) => p.grantedToOrganizationId)
-                    .filter((id): id is string => !!id)}
-                />
-              ) : (
-                manageBlockedNotice
-              )}
-            </TabsContent>
-
-            <TabsContent value="public" className="mt-0">
-              <PublicAccessTab
-                isPublic={resourceIsPublic}
-                publicPermission={publicPermission}
-                isOwner={isOwner}
-                onMakePublic={makePublic}
-                onRevokePublic={() => revokeAccess({ isPublic: true })}
-                resourceType={resourceType}
-                resourceId={resourceId}
-                resourceName={resourceName}
-              />
-            </TabsContent>
-          </div>
-        </Tabs>
+              </TabsContent>
+            </div>
+          </Tabs>
         )}
 
         {error && (

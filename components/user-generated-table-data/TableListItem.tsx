@@ -1,8 +1,16 @@
-'use client'
+"use client";
 
-import Link from 'next/link';
-import { TableIcon, Edit2, Trash2, Eye, MoreVertical, Loader2, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import Link from "next/link";
+import {
+  TableIcon,
+  Edit2,
+  Trash2,
+  Eye,
+  MoreVertical,
+  Loader2,
+  Calendar,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +18,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ShareButton } from '@/features/sharing';
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 
 interface TableListItemProps {
   id: string;
@@ -43,15 +51,15 @@ export function TableListItem({
   onEdit,
   onDelete,
   isNavigating,
-  isAnyNavigating
+  isAnyNavigating,
 }: TableListItemProps) {
   const isDisabled = isNavigating || isAnyNavigating;
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM d');
+      return format(new Date(dateString), "MMM d");
     } catch {
-      return '';
+      return "";
     }
   };
 
@@ -82,11 +90,11 @@ export function TableListItem({
       href={`/data/${id}`}
       className={cn(
         "flex items-center gap-3 px-3 py-2.5 border rounded-lg transition-all relative",
-        isOwned 
-          ? "border-border bg-card hover:bg-accent/50 hover:border-primary/30" 
+        isOwned
+          ? "border-border bg-card hover:bg-accent/50 hover:border-primary/30"
           : "border-purple-200 dark:border-purple-800 bg-card hover:bg-purple-50/50 dark:hover:bg-purple-900/20 border-l-4 border-l-purple-400 dark:border-l-purple-600",
         !isDisabled && "cursor-pointer hover:shadow-sm",
-        isDisabled && "opacity-50 cursor-not-allowed"
+        isDisabled && "opacity-50 cursor-not-allowed",
       )}
       onClick={handleClick}
     >
@@ -99,14 +107,22 @@ export function TableListItem({
 
       {/* Icon */}
       <div className="flex-shrink-0">
-        <div className={cn(
-          "w-8 h-8 rounded-md flex items-center justify-center",
-          isOwned ? "bg-blue-100 dark:bg-blue-900/30" : "bg-purple-100 dark:bg-purple-900/30"
-        )}>
-          <TableIcon className={cn(
-            "w-4 h-4",
-            isOwned ? "text-blue-600 dark:text-blue-400" : "text-purple-600 dark:text-purple-400"
-          )} />
+        <div
+          className={cn(
+            "w-8 h-8 rounded-md flex items-center justify-center",
+            isOwned
+              ? "bg-blue-100 dark:bg-blue-900/30"
+              : "bg-purple-100 dark:bg-purple-900/30",
+          )}
+        >
+          <TableIcon
+            className={cn(
+              "w-4 h-4",
+              isOwned
+                ? "text-blue-600 dark:text-blue-400"
+                : "text-purple-600 dark:text-purple-400",
+            )}
+          />
         </div>
       </div>
 
@@ -145,7 +161,10 @@ export function TableListItem({
       </div>
 
       {/* Actions */}
-      <div className="flex-shrink-0 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="flex-shrink-0 flex items-center gap-1"
+        onClick={(e) => e.stopPropagation()}
+      >
         {isOwned && (
           <ShareButton
             resourceType="dataset"
@@ -160,9 +179,9 @@ export function TableListItem({
         {isOwned ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-7 w-7 p-0"
                 disabled={isDisabled}
               >
@@ -170,10 +189,16 @@ export function TableListItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={(e) => {
-                if (e.metaKey || e.ctrlKey) { window.open(`/data/${id}`, '_blank'); return; }
-                onNavigate(id);
-              }} disabled={isDisabled}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey) {
+                    window.open(`/data/${id}`, "_blank");
+                    return;
+                  }
+                  onNavigate(id);
+                }}
+                disabled={isDisabled}
+              >
                 <Eye className="mr-2 h-4 w-4" />
                 View
               </DropdownMenuItem>
@@ -182,8 +207,8 @@ export function TableListItem({
                 Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={handleDelete} 
+              <DropdownMenuItem
+                onClick={handleDelete}
                 disabled={isDisabled}
                 className="text-destructive focus:text-destructive"
               >
@@ -193,9 +218,9 @@ export function TableListItem({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-7 w-7 p-0"
             disabled={isDisabled}
             title="View only"

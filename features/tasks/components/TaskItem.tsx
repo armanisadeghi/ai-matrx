@@ -26,7 +26,7 @@ import {
 import TaskDetails from "./TaskDetails";
 import EditableTaskTitle from "./EditableTaskTitle";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
-import { ShareButton } from "@/features/sharing";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Task, TaskWithProject } from "@/features/tasks/types";

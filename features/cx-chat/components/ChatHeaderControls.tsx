@@ -32,7 +32,10 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ContextGaugeWidget } from "./ContextGaugeWidget";
 
 const ShareModal = dynamic(
-  () => import("@/features/sharing").then((m) => ({ default: m.ShareModal })),
+  () =>
+    import("@/features/sharing/components/ShareModal").then((m) => ({
+      default: m.ShareModal,
+    })),
   { ssr: false },
 );
 

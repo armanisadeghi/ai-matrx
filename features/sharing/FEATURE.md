@@ -56,10 +56,10 @@ One RLS-backed permissions system that makes any resource type shareable with us
 - `POST /api/sharing/notify` — server-side sharing notification (used by `shareWithUser()` fire-and-forget)
 - `POST /api/sharing/email-link` — email the share URL to the current user
 
-**Public barrels**
+**Import paths (no barrel)**
 
-- `features/sharing/index.ts` re-exports both the components and everything in `@/utils/permissions`
-- Consumers should import from `@/features/sharing` or `@/utils/permissions` — never from internal paths
+- UI: `@/features/sharing/components/<Component>` (e.g. `ShareButton`, `ShareModal`, `PermissionsList`)
+- Permissions service/hooks/types: `@/utils/permissions/<module>` (e.g. `service`, `hooks`, `access`, `types`)
 
 ---
 
@@ -279,6 +279,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   - **`get_share_capabilities(type)`** (authenticated) drives the owner UI: the "Anyone with the link" panel shows only when `is_link_shareable`, and the Public toggle shows only when `supports_public` (has a visibility/public column) — so a type that genuinely can't be public shows a clean "not available" note instead of erroring on click (fixes the make_public 42703 wart for the ~12 no-visibility internal types).
   - **Admin control panel** (now at `/administration/database/relationships/sharing` — the standalone `/administration/sharing` page was absorbed into the Relationships hub 2026-07-13 and redirects) via `admin_list_share_policies()` / `admin_set_share_policy(type, is_link_shareable, columns[])` — see [protected-resources]: the registry governs anon exposure, so writes are `is_super_admin()`-gated and only persist columns that physically exist. Lists every type with its status + a column-picker allowlist editor.
   - Public renderer (`/s/[token]`) extended: markdown (note/content_template), code, flashcard, and a content-aware generic that renders `content` for any allowlisted type.
+- `2026-07-26` — Removed `features/sharing/index.ts` barrel; all consumers import directly from `@/features/sharing/components/*` or `@/utils/permissions/*`.
 - `2026-07-07` — **No-login share links + DM-on-share + full registry reconciliation.** Three connected additions:
   1. **Canonical no-login link sharing** (`migrations/share_links_canonical_system.sql`). New `platform.share_links` (token, resource_type, resource_id, permission_level, expires_at, max_uses, use_count, is_active, created_by). The token IS the authorization: anon-callable `resolve_share_token(p_token)` (SECURITY DEFINER, granted to `anon`) validates the token, resolves the registry row, and returns the resource JSON — deliberately bypassing `iam.has_access` (which refuses anon). It does NOT touch the resource's `visibility` (that would leak to logged-in org members via `has_access`); it strips `embedding`/`search_tsv`/`search_vector`. Owner RPCs: `create_share_link` / `list_share_links` / `revoke_share_link`. RLS: owner-only direct table access; anon reaches it ONLY through the RPC. FE: `utils/permissions/shareLinks.ts` + `ShareLinkPanel` (in the Public tab) + public route `app/(public)/s/[token]/` (server resolve → `SharedResourceView` dispatcher: note renderer via `BasicMarkdownContent`, generic `EntityCard`-style fallback for any type, + a "Create your own" acquisition CTA). Verified live: anon resolves a note token and reads content, embedding stripped.
   2. **In-app DM on share.** `shareWithUser` now also fires a fire-and-forget DM (lazy `sendDirectActionMessage`) carrying a `resource_shared` `action_data` kind → `ResourceSharedCard` (message-action registry) renders a clickable `EntityCard` ("X shared a Note with you", opens the resource). Replaces the deleted note "accept a shared link" flow (grants are immediate via RLS; the DM is the notification). `ShareWithUserOptions.resourceName` threads the title through `useSharing`.

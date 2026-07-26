@@ -32,7 +32,7 @@ import IconButton from "@/components/official/IconButton";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { AgentAppCardModel } from "@/features/agent-apps/redux/agent-app-consumers/selectors";
-import { ShareButton } from "@/features/sharing";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 

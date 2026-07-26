@@ -27,7 +27,7 @@ get_resource_permissions()
 Drop a `ShareButton` or `ShareModal` anywhere the resource owner can manage sharing.
 
 ```tsx
-import { ShareButton } from '@/features/sharing';
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 
 <ShareButton
   resourceType="canvas_items"   // Must match a ResourceType
@@ -42,7 +42,7 @@ This renders a button showing sharing status (Private/Shared/Public) that opens 
 For more control, use `ShareModal` directly:
 
 ```tsx
-import { ShareModal } from '@/features/sharing';
+import { ShareModal } from "@/features/sharing/components/ShareModal";
 
 <ShareModal
   isOpen={isOpen}

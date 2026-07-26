@@ -35,7 +35,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ShareModal } from "@/features/sharing";
+import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@/utils/search-scoring";
 // ── Legacy cx-conversation slice stubs ────────────────────────────────────────
