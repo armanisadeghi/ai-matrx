@@ -28,16 +28,16 @@ import { configure } from "@matrx/agents/config";
 import { supabase } from "./my-supabase-client";
 
 configure({
-  supabase,                 // SupabaseLike — see adapters/supabase.ts
-  fetch: globalThis.fetch,  // FetchLike
+  supabase,                 // SupabaseLike — see @matrx/agents/adapters/supabase
+  fetch: globalThis.fetch,  // FetchLike — see @matrx/agents/adapters/fetch
   apiBaseUrl: "https://api.matrx.example",
   callbackManager: myCallbackManager, // CallbackManagerLike
   logger: console,          // LoggerLike (optional)
 });
 
-// Then consume slices, thunks, selectors as normal.
-import { launchConversation } from "@matrx/agents";
-import type { ConversationInvocation } from "@matrx/agents/types";
+// Then consume slices, thunks, selectors from their direct subpaths.
+import { launchConversation } from "@matrx/agents/redux/thunks";
+import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
 
 store.dispatch(launchConversation(invocation));
 ```
@@ -58,9 +58,9 @@ across surfaces while letting each consumer wire its own environment.
 ## Migration status (in-repo)
 
 This package is in the **scaffold** phase. The app still imports from
-`@/features/agents/redux/...`; the package re-exports those paths so the
-namespace `@matrx/agents` resolves. Physical file extraction happens in
-subsequent waves documented in `MIGRATION.md`.
+`@/features/agents/redux/...`; the package re-exports those paths from
+direct modules under `src/redux/*` and `src/config/registry.ts`. Physical
+file extraction happens in subsequent waves documented in `MIGRATION.md`.
 
 ## Key docs
 

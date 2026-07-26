@@ -7,11 +7,11 @@ The package is **Phase 9.0–9.3** complete:
 - ✅ Workspace bootstrap (`pnpm-workspace.yaml`, `packages/matrx-agents/`)
 - ✅ Adapter interface surface (`SupabaseLike`, `FetchLike`, `CallbackManagerLike`, `LoggerLike`, `AuthLike`)
 - ✅ `configure()` + runtime registry with strict accessor errors when unconfigured
-- ✅ Public barrels — types, slices, thunks, selectors, reducer-map builder
+- ✅ Public module surface — `redux/*`, `config/registry`, adapter interfaces, reducer-map builder (no barrel `index.ts` files)
 
 ## What isn't done yet
 
-**Phase 9.4 — file extraction.** Today every barrel re-exports from
+**Phase 9.4 — file extraction.** Today each module re-exports from
 `@/features/agents/redux/...` inside the host app. The package itself
 doesn't own any implementation files yet — it's a façade. The extraction
 to the package's `src/` tree is a mechanical but large move:
@@ -32,8 +32,8 @@ to the package's `src/` tree is a mechanical but large move:
      `getCallbackManager().trigger(...)`
    - `fetch(...)` → `getFetch()(...)`
 4. Keep the public symbol names identical. The host app's imports continue
-   working because the barrel stays the same — only the internal plumbing
-   flips.
+   working because the direct module paths stay the same — only the internal
+   plumbing flips.
 
 **Phase 9.5 — host app bootstrap.**
 
@@ -48,11 +48,11 @@ Moving 40+ files in a single pass is risky — one bad import and the whole
 app breaks. The façade-first approach gives us:
 
 - **A public surface we can test NOW.** Consumers can `import from
-  "@matrx/agents"` today; the path aliases work.
+  "@matrx/agents/redux/thunks"` (and sibling subpaths) today; the path aliases work.
 - **A contract freeze point.** Adapter interfaces + `configure()` are
   settled; no more API bikeshedding during the physical move.
 - **A measurable migration.** Every file moved in Phase 9.4 is one
-  re-export swap in the barrels — linear progress, no integration risk
+  re-export swap in the module files — linear progress, no integration risk
   spikes.
 
 ## Adapter wire-up checklist (for the host app)

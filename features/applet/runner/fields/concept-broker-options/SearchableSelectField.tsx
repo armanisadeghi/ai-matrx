@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { brokerSelectors, brokerActions, BrokerIdentifier } from "@/lib/redux/brokerSlice"; // Update to the new brokerSlice path
+import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import type { BrokerIdentifier } from "@/lib/redux/brokerSlice/types";
 import { ensureValidWidthClass } from "@/features/applet/constants/field-constants";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";

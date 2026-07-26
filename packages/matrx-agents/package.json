@@ -3,13 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "description": "Unified Redux state + thunks + selectors for the AI Matrx agent system. Framework-agnostic; consumers plug in their own Supabase client, fetch impl, and callback manager via configure().",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./adapters": "./src/adapters/index.ts",
-    "./config": "./src/config/index.ts",
-    "./types": "./src/types/index.ts"
+    "./config": "./src/config/registry.ts",
+    "./build-reducer-map": "./src/build-reducer-map.ts",
+    "./redux/slices": "./src/redux/slices.ts",
+    "./redux/thunks": "./src/redux/thunks.ts",
+    "./redux/selectors": "./src/redux/selectors.ts",
+    "./redux/hooks": "./src/redux/hooks.ts",
+    "./adapters/auth": "./src/adapters/auth.ts",
+    "./adapters/callback-manager": "./src/adapters/callback-manager.ts",
+    "./adapters/fetch": "./src/adapters/fetch.ts",
+    "./adapters/logger": "./src/adapters/logger.ts",
+    "./adapters/supabase": "./src/adapters/supabase.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"

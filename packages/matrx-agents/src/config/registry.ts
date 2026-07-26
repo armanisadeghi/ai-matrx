@@ -13,13 +13,11 @@
  * deeper in the stack.
  */
 
-import type {
-  AuthLike,
-  CallbackManagerLike,
-  FetchLike,
-  LoggerLike,
-  SupabaseLike,
-} from "../adapters";
+import type { AuthLike, Credentials } from "../adapters/auth";
+import type { CallbackManagerLike } from "../adapters/callback-manager";
+import type { FetchLike } from "../adapters/fetch";
+import type { LoggerLike } from "../adapters/logger";
+import type { SupabaseLike } from "../adapters/supabase";
 
 // =============================================================================
 // Registry state

@@ -7,7 +7,7 @@
  * the Next.js fetch, the base URL derived from apiConfig, the existing
  * callbackManager, and auth credentials derived from userSlice. The package
  * itself knows none of this — it reads everything through adapter
- * interfaces (`@matrx/agents/adapters`).
+ * interfaces (`@matrx/agents/adapters/*`).
  *
  * Keeping this file OUTSIDE the package means the package has zero
  * Next.js-specific imports; RN / Vite / HTML-JS hosts each provide their

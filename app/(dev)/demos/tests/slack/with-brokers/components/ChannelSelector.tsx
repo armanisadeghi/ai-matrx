@@ -1,7 +1,8 @@
 'use client';
 
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { brokerSelectors, brokerActions } from '@/lib/redux/brokerSlice';
+import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { SLACK_BROKER_IDS } from './BrokerSlackClient';
 import { SlackChannel } from "@/app/(dev)/demos/tests/slack/slackClientUtils";
 import { Hash, RefreshCw, Loader2 } from 'lucide-react';

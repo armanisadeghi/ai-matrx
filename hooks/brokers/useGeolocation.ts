@@ -2,8 +2,7 @@
 
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { brokerActions } from "@/lib/redux/brokerSlice";
-
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 /**
  * Hook to lazily request user's geolocation when needed.
  * This avoids triggering the browser permission popup on app load.

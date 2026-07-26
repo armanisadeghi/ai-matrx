@@ -2,9 +2,7 @@
 
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { brokerActions } from "@/lib/redux/brokerSlice";
-
-// Add TypeScript declarations for experimental browser APIs
+import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 interface NetworkInformation extends EventTarget {
     readonly effectiveType: string;
     readonly downlink: number;
