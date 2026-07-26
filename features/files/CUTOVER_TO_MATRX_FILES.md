@@ -40,4 +40,4 @@ until parity lands.
   to still appear.
 
 Contract + full picture: `aidream/docs/handoffs/matrx-files-cutover.md` and
-`/Users/armanisadeghi/code/common-docs/matrx-files-service/FEATURE.md`.
+`/Users/armanisadeghi/code/common-docs/systems/matrx-files-service/FEATURE.md`.

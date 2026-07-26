@@ -24,6 +24,9 @@ export type DirectiveConfirmReceipt =
   | components["schemas"]["DirectiveItemApplied"]
   | components["schemas"]["DirectiveItemFailed"];
 
+/** One Plane-2 function (or deprecated legacy named directive). */
+export type FunctionEntry = components["schemas"]["FunctionEntry"];
+
 /** A cell's wiring state — derived from NounActions verb columns. */
 export type ActionState = NounActions["reference"];
 
@@ -32,6 +35,14 @@ export type ActionVerb = keyof Pick<
   NounActions,
   "reference" | "view" | "create" | "update" | "delete"
 >;
+
+/** The read verbs — everything else is a write producing `verb:noun`. The
+ * runtime axis is `catalog.verbs`; this only names the two pure reads. */
+export const READ_VERBS: readonly ActionVerb[] = ["reference", "view"] as const;
+
+export function isWriteVerb(verb: string): boolean {
+  return !READ_VERBS.includes(verb as ActionVerb);
+}
 
 /** Runtime guard — the response is non-sensitive but still untrusted JSON. */
 export function isActionCatalog(value: unknown): value is ActionCatalog {

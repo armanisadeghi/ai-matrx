@@ -1,6 +1,6 @@
 # The Shape System — Core
 
-> **Vision source, not current status.** The durable vision here informed the implemented system, but its early table names and open decisions are historical. Current code/DB truth, reconciled vision, and gaps: `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`.
+> **Vision source, not current status.** The durable vision here informed the implemented system, but its early table names and open decisions are historical. Current code/DB truth, reconciled vision, and gaps: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md`.
 
 > The team, assembled by position first, players later. This captures *what roles exist and how they relate* — not which implementation "wins." Where a canonical decision is settled, it's marked **[settled]**; where it's yours to guide, it's marked **[open]**.
 

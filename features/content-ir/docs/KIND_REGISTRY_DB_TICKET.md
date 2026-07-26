@@ -1,6 +1,6 @@
 # DB Ticket — Provision `content_ir` kind registry (Wave 1: schema + wiring only)
 
-> **Completed historical ticket. Do not execute this build order.** It predates the final singular table names and later Shape/workflow waves. Current live truth: `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`.
+> **Completed historical ticket. Do not execute this build order.** It predates the final singular table names and later Shape/workflow waves. Current live truth: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md`.
 
 **Owner:** DB agent · **Spec (authoritative):** [`KIND_REGISTRY_STORAGE.md`](./KIND_REGISTRY_STORAGE.md) (v3, LOCKED) · **Project:** `txzxabzwovsujtloxrus` (Matrx Main)
 

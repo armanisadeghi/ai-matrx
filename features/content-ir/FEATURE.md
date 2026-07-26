@@ -1,6 +1,6 @@
 # content-ir — the canonical structured-content system
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md` — read it before using this frontend implementation document as a platform-wide status source.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md` — read it before using this frontend implementation document as a platform-wide status source.
 
 **Status:** Phases 0–5 live, ALWAYS ON — no env flag (repo rule: features are never guarded behind environment variables). One library parses every JSON region — live agent streams, DB reloads, any source — into one IR that all layers pass through without reprocessing.
 
@@ -8,7 +8,7 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-s
 
 **Read this BEFORE touching:** stream/DB block parsing (`stream-block-accumulator.ts`, `content-splitter-v2.ts`), anything reading or writing `__kind`, kind schemas in `flexible_data`, or `metadata.__ir` on render blocks.
 
-> 🔁 **This kernel is TWINNED into aidream.** `core/` (incl. `envelope-read.ts`), `session/`, `registry/{kind-registry.types,kind-storage-transform,kind-dual-gate}.ts`, `convert/{openai-schema-converter,kind-to-json-schema}.ts`, the pure `__tests__/` suites (incl. `python-kind-roundtrip` + its fixture), and `utils/text/text-case-converter.ts` are verbatim-copied to `aidream/apps/shared/content-ir-core/` (hash-pinned by its `TWIN_MANIFEST.json`; this repo stays the ONLY authoring point). **After editing any of these files, run from the aidream repo root:** `python scripts/sync_content_ir_core.py` — or aidream's release guard (`scripts/check_content_ir_twin.py`) will scream. Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-twin/FEATURE.md` — read it before touching this feature in ANY repo. The kernel's planned expansion into the platform-wide unified content pipeline (stream/DB/markdown/server-blocks → ONE parser + ONE walker, portable to extension/RN/vanilla): `/Users/armanisadeghi/code/common-docs/projects/unified-content-pipeline/FEATURE.md`.
+> 🔁 **This kernel is TWINNED into aidream.** `core/` (incl. `envelope-read.ts`), `session/`, `registry/{kind-registry.types,kind-storage-transform,kind-dual-gate}.ts`, `convert/{openai-schema-converter,kind-to-json-schema}.ts`, the pure `__tests__/` suites (incl. `python-kind-roundtrip` + its fixture), and `utils/text/text-case-converter.ts` are verbatim-copied to `aidream/apps/shared/content-ir-core/` (hash-pinned by its `TWIN_MANIFEST.json`; this repo stays the ONLY authoring point). **After editing any of these files, run from the aidream repo root:** `python scripts/sync_content_ir_core.py` — or aidream's release guard (`scripts/check_content_ir_twin.py`) will scream. Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/content-ir-twin/FEATURE.md` — read it before touching this feature in ANY repo. The kernel's planned expansion into the platform-wide unified content pipeline (stream/DB/markdown/server-blocks → ONE parser + ONE walker, portable to extension/RN/vanilla): `/Users/armanisadeghi/code/common-docs/projects/unified-content-pipeline/FEATURE.md`.
 
 ## The model (compiler frame)
 
@@ -54,7 +54,7 @@ The user-facing Shape System surface (route family `app/(core)/shapes/`, all URL
 
 ## Roadmap (strangler-fig — see plan `~/.claude/plans/your-task-is-to-rippling-wind.md`)
 
-**Full cross-repository status, gap analysis, and remaining-work decomposition:** `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`. The old local `docs/UNIFICATION_STATUS.md` is retained only as a supersession pointer.
+**Full cross-repository status, gap analysis, and remaining-work decomposition:** `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md`. The old local `docs/UNIFICATION_STATUS.md` is retained only as a supersession pointer.
 
 Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator shadow · 3 splitter parity · 4 flashcards render flip · **Track 2 A/B artifacts generalization** (any-surface `(source_system, source_id)` identity + structured kind persistence — see `features/artifacts/FEATURE.md` Materialization) · **the 8 `JSON_BLOCK_PATTERNS` successor kinds registered** (quiz_set, presentation_deck, decision_tree, comparison_set, diagram_spec, math_problem, item_presentation, schema_proposal — `kinds/*.ts` bridges + flexible_data rows; legacy root-key detection stays for OLD payloads only) · **5 persistence spine** (part-level `IrEnvelopeCache` + inbound `engine:"py-block-detector"` envelopes — `docs/PYTHON_ENVELOPE_CONTRACT.md`). Next: XML fold-in via `discriminator.ts` (Phase 6) → delete the mirrored brace/fence state machines, parser becomes end oracle (Phase 7). Agent `__kind` injection (C2) tracked in the same plan.
 
