@@ -145,6 +145,10 @@ const nextConfig = {
         // which degrades lib/diagnostics. A build that OOMs ships nothing.
         turbopackSourceMaps: false,
         serverSourceMaps: false,
+        // A2 — stop extracting source maps FROM input files (node_modules .js.map).
+        // Defaults to true. With A1 emitting no output maps, consuming input maps
+        // is pure waste. Cannot add modules/chunks; worst case: zero effect.
+        turbopackInputSourceMaps: false,
     },
     // Turbopack configuration (Next.js 16 default bundler)
     turbopack: {
