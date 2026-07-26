@@ -76,7 +76,10 @@ function pruneDistdirIncludes(file: string): void {
   const path = join(ROOT, file);
   if (!existsSync(path)) return;
   const raw = readFileSync(path, "utf8");
-  const cfg = JSON.parse(raw.replace(/^\s*\/\/.*$/gm, "")) as Record<string, unknown>;
+  const cfg = JSON.parse(raw.replace(/^\s*\/\/.*$/gm, "")) as Record<
+    string,
+    unknown
+  >;
   const include = cfg.include as string[] | undefined;
   if (!Array.isArray(include)) return;
 
@@ -125,9 +128,15 @@ if (problems.length > 0) {
   console.error(
     `\n${RED}┌───────────────────────────────────────────────────────────────┐`,
   );
-  console.error(`│ BUILD-ARTIFACT HYGIENE BROKEN — tsc/eslint may be checking     │`);
-  console.error(`│ NOTHING while reporting success.                              │`);
-  console.error(`└───────────────────────────────────────────────────────────────┘${RESET}`);
+  console.error(
+    `│ BUILD-ARTIFACT HYGIENE BROKEN — tsc/eslint may be checking     │`,
+  );
+  console.error(
+    `│ NOTHING while reporting success.                              │`,
+  );
+  console.error(
+    `└───────────────────────────────────────────────────────────────┘${RESET}`,
+  );
   for (const p of problems) console.error(`  ${RED}✗${RESET} ${p}`);
   console.error(
     `\n  Fix: restore the ".next*/**" guard. See scripts/check-tsconfig-hygiene.ts.\n`,
@@ -135,7 +144,9 @@ if (problems.length > 0) {
   process.exit(STRICT ? 1 : 0);
 }
 
-console.log(`${GREEN}✓${RESET} tsconfig + eslint keep .next* build output out of the type/lint graph.`);
+console.log(
+  `${GREEN}✓${RESET} tsconfig + eslint keep .next* build output out of the type/lint graph.`,
+);
 if (stale.length > 0) {
   console.log(
     `${YELLOW}note${RESET} stale alternate build dirs present: ${stale.join(", ")} — ` +

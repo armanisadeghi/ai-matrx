@@ -84,6 +84,12 @@ function pathnameIsUnderAdminHosts(pathname: string): boolean {
   );
 }
 
+// ─── Build A/B kill switch ────────────────────────────────────────────────────
+// When true, every route metadata helper skips SVG / data-URI favicon generation
+// and returns titles/OG/Twitter only. Use to isolate whether per-route favicons
+// are inflating the Next build. Flip back to false to restore normal badges.
+const DISABLE_DYNAMIC_FAVICONS = true;
+
 // ─── Active favicon style ─────────────────────────────────────────────────────
 // The badge design generateSVGFavicon renders for EVERY route. Flip this one
 // value to instantly restore the previous look — nothing else changes.
@@ -159,7 +165,10 @@ function generateSVGFaviconArchivo(config: FaviconConfig): string {
     // Fit the ink width to the box, then allow only a bounded vertical grow so
     // letters get taller (less short/wide) without heavy distortion.
     scaleX = FAV_INNER / inkW;
-    scaleY = Math.min((FAV_MULTI_VFILL * FAV_INNER) / inkH, scaleX / FAV_MIN_ASPECT);
+    scaleY = Math.min(
+      (FAV_MULTI_VFILL * FAV_INNER) / inkH,
+      scaleX / FAV_MIN_ASPECT,
+    );
   } else {
     // Single letter: uniform, moderate, undistorted; never overflow the width.
     scaleX = scaleY = Math.min(
@@ -292,6 +301,11 @@ export function generateFaviconMetadata(
   additionalMetadata?: Partial<Metadata>,
   letterOverride?: string,
 ): Metadata {
+  // TEMP build A/B: skip all per-route SVG favicon work.
+  if (DISABLE_DYNAMIC_FAVICONS) {
+    return additionalMetadata ?? {};
+  }
+
   let config = getFaviconConfigByPath(pathname);
 
   // Apply the letter override — keeps the resolved color but replaces the letter.
@@ -318,7 +332,10 @@ export function generateFaviconMetadata(
     };
 
     // Merge icons properly - prioritize our favicon icon
-    if (additionalMetadata.icons && isMetadataIconsMap(additionalMetadata.icons)) {
+    if (
+      additionalMetadata.icons &&
+      isMetadataIconsMap(additionalMetadata.icons)
+    ) {
       result.icons = {
         ...additionalMetadata.icons,
         ...faviconIcons,
@@ -346,6 +363,11 @@ export function createCustomFaviconMetadata(
   config: FaviconConfig,
   additionalMetadata?: Partial<Metadata>,
 ): Metadata {
+  // TEMP build A/B: skip all per-route SVG favicon work.
+  if (DISABLE_DYNAMIC_FAVICONS) {
+    return additionalMetadata ?? {};
+  }
+
   const svg = generateSVGFavicon(config);
   const dataURI = svgToDataURI(svg);
 
@@ -359,7 +381,10 @@ export function createCustomFaviconMetadata(
     };
 
     // Merge icons properly - prioritize our favicon icon
-    if (additionalMetadata.icons && isMetadataIconsMap(additionalMetadata.icons)) {
+    if (
+      additionalMetadata.icons &&
+      isMetadataIconsMap(additionalMetadata.icons)
+    ) {
       result.icons = {
         ...additionalMetadata.icons,
         ...faviconIcons,

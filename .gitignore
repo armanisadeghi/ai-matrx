@@ -26,9 +26,7 @@ packages/*/tsconfig.tsbuildinfo
 # testing
 /coverage
 
-# next.js
-/.next/
-/.next-preview/
+# next.js — every distDir variant (.next, .next-preview, .next-agent-*, …)
 .next*/
 /out/
 
