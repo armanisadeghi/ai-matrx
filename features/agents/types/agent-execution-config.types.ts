@@ -166,6 +166,15 @@ export interface AgentExecutionRuntime {
    */
   variables?: Record<string, unknown>;
   /**
+   * Per-invocation entries for the request's deferred `context` dict — the
+   * lazy tier: the model sees a descriptor and pulls a value through its
+   * context tool only if it wants to (unlike `variables`, which are always
+   * injected). Values may be plain data or `resource_ref` envelopes
+   * (`features/agents/agent-context/resource-reference.ts`). Dispatched into
+   * the instance-context slice on launch; never persisted on a shortcut.
+   */
+  context?: Record<string, unknown>;
+  /**
    * The `ui_surface.name` of the surface that initiated the launch. Used by
    * the launch thunk to look up an agent↔surface binding edges binding row and
    * apply its `value_mappings` JSONB via `resolveValueMappings` before

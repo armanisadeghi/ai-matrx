@@ -23,6 +23,7 @@
  */
 
 import { estimateTokens, charsForTokenBudget } from "@/lib/tokens/estimate";
+import { createResourceReference } from "@/features/agents/agent-context/resource-reference";
 import {
   CATALOG,
   deriveAll,
@@ -69,6 +70,24 @@ function variableFor(bundle: ContextBundle, kind: ResourceKey): string {
 }
 
 /**
+ * How a kind travels: `"context"` only when the binding asks for it AND the
+ * kind is a real row the server can load (`resourceType`). A derived kind, or
+ * one with no entity token, silently falls back to direct — the text still
+ * reaches the agent, which beats honouring the letter of the binding by
+ * sending nothing.
+ */
+export function deliveryFor(
+  bundle: ContextBundle,
+  kind: ResourceKey,
+): "direct" | "context" {
+  const binding = bundle.bindings.find((b) => b.kinds.includes(kind));
+  if (binding?.delivery !== "context") return "direct";
+  const def = kindDef(kind);
+  if (!def || isDerived(def) || !def.resourceType) return "direct";
+  return "context";
+}
+
+/**
  * Variables whose binding says "first kind that produces anything wins".
  * Returns variable → the kinds it covers, in the binding's declared order.
  */
@@ -83,6 +102,8 @@ function firstOnlyVariables(bundle: ContextBundle): Map<string, ResourceKey[]> {
 interface PlannedKind {
   kind: ResourceKey;
   variable: string;
+  /** `"context"` kinds skip body fetch, rendering AND the token budget. */
+  delivery: "direct" | "context";
   items: ResourceItem[];
   dropped: Partial<Record<DropReason, number>>;
   /** The selector's limits — carries `maxCharsPerItem` to the render step. */
@@ -116,12 +137,14 @@ export function planResolution(
     const def = kindDef(selector.kind);
     if (!def) continue;
     const variable = variableFor(bundle, selector.kind);
+    const delivery = deliveryFor(bundle, selector.kind);
 
     if (isDerived(def)) {
       // Derived kinds are a single computed block; selection does not apply.
       planned.push({
         kind: selector.kind,
         variable,
+        delivery,
         items: [],
         dropped: {},
         limit: selector.limit,
@@ -137,6 +160,7 @@ export function planResolution(
     planned.push({
       kind: selector.kind,
       variable,
+      delivery,
       items: result.items,
       dropped,
       limit: selector.limit,
@@ -153,6 +177,9 @@ export function planResolution(
   let running = 0;
   let overBudget = false;
   for (const entry of planned) {
+    // Context-delivered kinds inject a pointer, not text — they cost the
+    // budget nothing and must never evict a direct kind's items.
+    if (entry.delivery === "context") continue;
     if (entry.items.length === 0) continue;
     const kept: ResourceItem[] = [];
     for (const item of entry.items) {
@@ -178,6 +205,7 @@ async function fetchAll(
   await Promise.all(
     planned.map(async (entry) => {
       const def = kindDef(entry.kind);
+      if (entry.delivery === "context") return;
       if (!def || !def.fetchBodies || entry.items.length === 0) return;
       const bodies = await def.fetchBodies(entry.items.map((i) => i.id));
       out.set(entry.kind, bodies);
@@ -213,6 +241,8 @@ export async function resolveBundle(
   const emptyKinds: ResourceKey[] = [];
   /** variable → blocks, in bundle order. */
   const blocksByVariable = new Map<string, string[]>();
+  /** Per-turn `context` payload for `delivery: "context"` bindings. */
+  const contextRefs: Record<string, unknown> = {};
 
   const budgetTokens = bundle.budget?.maxTokens ?? null;
   const budgetChars = budgetTokens !== null ? charsForTokenBudget(budgetTokens) : null;
@@ -240,6 +270,38 @@ export async function resolveBundle(
   for (const entry of sequence) {
     const def = kindDef(entry.kind);
     if (!def) continue;
+
+    // Context delivery: one resource_ref per item, no bodies, no budget, no
+    // "first" machinery — a pointer cannot "fill" a variable, so it neither
+    // satisfies nor is superseded by one.
+    if (entry.delivery === "context" && def.resourceType) {
+      let n = 0;
+      for (const item of entry.items) {
+        n += 1;
+        const key =
+          entry.items.length === 1 ? entry.variable : `${entry.variable}_${n}`;
+        contextRefs[key] = createResourceReference(def.resourceType, item.id);
+      }
+      if (entry.items.length === 0) emptyKinds.push(entry.kind);
+      perKind.push({
+        kind: entry.kind,
+        variable: entry.variable,
+        delivery: "context",
+        selected: entry.items.length,
+        included: entry.items.length,
+        chars: 0,
+        tokens: 0,
+        trimmed: 0,
+        dropped: entry.dropped,
+      });
+      if (entry.items.length > 0) {
+        notes.push(
+          `${def.label}: ${entry.items.length} item(s) attached as lazy context — the agent reads them only if it chooses to.`,
+        );
+      }
+      continue;
+    }
+
     if (firstOnly.has(entry.variable) && satisfied.has(entry.variable)) {
       addDrop(
         entry.dropped,
@@ -394,7 +456,7 @@ export async function resolveBundle(
     emptyKinds,
   };
 
-  return { variables, report };
+  return { variables, contextRefs, report };
 }
 
 function dropLabel(reason: DropReason): string {
@@ -427,6 +489,8 @@ export interface PreviewKind {
   items: number;
   chars: number;
   tokens: number;
+  /** `"context"` = attached as lazy refs; costs ~0 injected tokens. */
+  delivery: "direct" | "context";
   /**
    * Items the BUDGET will drop, known before anything runs.
    *
@@ -458,11 +522,15 @@ export function previewBundle(
     const chars = derivedKind
       ? (manifest.rollups.get(entry.kind)?.chars ?? 0)
       : charsOf(entry.items, entry.limit);
+    // Context-delivered kinds show their true size but cost ~0 injected
+    // tokens — a pointer goes in the request, not the text.
+    const asContext = entry.delivery === "context";
     return {
       kind: entry.kind,
       items: derivedKind ? (chars > 0 ? 1 : 0) : entry.items.length,
       chars,
-      tokens: estimateTokens(chars, def?.shape ?? "prose"),
+      tokens: asContext ? 0 : estimateTokens(chars, def?.shape ?? "prose"),
+      delivery: entry.delivery,
       droppedByBudget: entry.dropped.over_budget ?? 0,
     };
   });

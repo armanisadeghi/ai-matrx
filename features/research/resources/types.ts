@@ -256,6 +256,21 @@ export interface BundleBinding {
    * variable, which is exactly what the pre-bundle code was careful not to do.
    */
   strategy?: "concat" | "first";
+  /**
+   * How this binding's resources reach the agent.
+   *
+   * `"direct"` (default) renders the text and injects it into the variable —
+   * the agent always reads it. `"context"` sends each selected item as a
+   * `resource_ref` in the request's per-turn `context` dict instead: the server
+   * builds a small descriptor (label, size, table of contents) and the agent
+   * pulls the body through its `context` tool ONLY if it decides to. Costs
+   * near-zero injected tokens; the trade is that the agent may never look.
+   *
+   * Only kinds whose catalog entry declares a `resourceType` can travel this
+   * way (a real row the server can load under RLS). Derived kinds — computed
+   * text with no row — always deliver direct, whatever the binding says.
+   */
+  delivery?: "direct" | "context";
 }
 
 export interface BundleBudget {
@@ -313,6 +328,12 @@ export type DropReason =
 export interface KindResolution {
   kind: ResourceKey;
   variable: string;
+  /**
+   * `"context"` when the binding delivered this kind as lazy resource_refs:
+   * `included` then counts refs, and `chars`/`tokens` are 0 because nothing was
+   * injected — the whole point of the path.
+   */
+  delivery?: "direct" | "context";
   selected: number;
   included: number;
   chars: number;
@@ -352,6 +373,13 @@ export interface ResolutionReport {
 export interface ResolvedBundle {
   /** Agent variable name → assembled text. Ready for `useRunAgent`. */
   variables: Record<string, string>;
+  /**
+   * Per-turn context entries for bindings with `delivery: "context"` — one
+   * `resource_ref` envelope per selected item, keyed `variable` (single item)
+   * or `variable_N` (the server takes exactly one ref per key). Passed through
+   * `runtime.context` on launch; empty object when nothing travels lazily.
+   */
+  contextRefs: Record<string, unknown>;
   report: ResolutionReport;
 }
 

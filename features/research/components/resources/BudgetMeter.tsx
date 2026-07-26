@@ -191,6 +191,14 @@ export function BudgetMeter({
                 <span className="flex-1 min-w-0 truncate text-muted-foreground">
                   {def?.label ?? k.kind}
                 </span>
+                {k.delivery === "context" && (
+                  <Badge
+                    variant="outline"
+                    className="h-4 shrink-0 px-1 text-[9px] text-muted-foreground"
+                  >
+                    on demand
+                  </Badge>
+                )}
                 {k.droppedByBudget > 0 && (
                   <Badge
                     variant="outline"

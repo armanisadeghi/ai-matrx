@@ -111,9 +111,12 @@ const FILTER_CHIPS: Array<{
 interface ResourcePickerProps {
   manifest: ResourceManifest;
   selection: SelectionMap;
+  /** Per-kind delivery; absent = "direct". Omit both to hide the toggle. */
+  deliveries?: Partial<Record<ResourceKey, "direct" | "context">>;
   onToggleKind: (kind: ResourceKey, on: boolean) => void;
   onToggleItem: (kind: ResourceKey, itemId: string, on: boolean) => void;
   onPatchKind: (kind: ResourceKey, patch: Partial<KindSelection>) => void;
+  onSetDelivery?: (kind: ResourceKey, delivery: "direct" | "context") => void;
   /** Compact mode drops the per-item drill-down (used inside Outputs Studio). */
   compact?: boolean;
 }
@@ -121,9 +124,11 @@ interface ResourcePickerProps {
 export function ResourcePicker({
   manifest,
   selection,
+  deliveries,
   onToggleKind,
   onToggleItem,
   onPatchKind,
+  onSetDelivery,
   compact = false,
 }: ResourcePickerProps) {
   const [expanded, setExpanded] = useState<Set<ResourceKey>>(new Set());
@@ -288,6 +293,41 @@ export function ResourcePicker({
                     {/* Per-kind controls: only for a selected, non-derived kind. */}
                     {sel && !derived && (
                       <div className="flex flex-wrap items-center gap-1.5 pl-7 pt-1.5">
+                        {onSetDelivery && def.resourceType && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex h-5 items-center overflow-hidden rounded-full border border-border/60 text-[10px]">
+                                {(["direct", "context"] as const).map((mode) => {
+                                  const active =
+                                    (deliveries?.[def.key] ?? "direct") === mode;
+                                  return (
+                                    <button
+                                      key={mode}
+                                      type="button"
+                                      onClick={() => onSetDelivery(def.key, mode)}
+                                      className={cn(
+                                        "h-full px-2 transition-colors",
+                                        active
+                                          ? "bg-primary/15 text-foreground"
+                                          : "text-muted-foreground hover:text-foreground",
+                                      )}
+                                    >
+                                      {mode === "direct" ? "Inject" : "On demand"}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs text-xs">
+                              Inject puts the text straight into the agent&apos;s
+                              variables — always read, always counted against the
+                              budget. On demand attaches each item as a reference
+                              the agent can open through its context tool only if
+                              it decides to — near-zero tokens up front, but the
+                              agent may choose not to look.
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                         {sel.mode === "explicit" ? (
                           <Badge variant="secondary" className="h-4 px-1.5 text-[9px]">
                             {sel.ids.length} hand-picked

@@ -93,6 +93,8 @@ export function selectionToBundle(
     maxTokens?: number | null;
     /** Variable overrides keyed by kind; falls back to the catalog default. */
     variables?: Partial<Record<ResourceKey, string>>;
+    /** Delivery overrides keyed by kind; "direct" when absent. */
+    deliveries?: Partial<Record<ResourceKey, "direct" | "context">>;
   },
 ): ContextBundle {
   // Catalog order, not insertion order: the budget walk drops from the END, so
@@ -110,11 +112,19 @@ export function selectionToBundle(
     );
   }
 
-  const byVariable = new Map<string, ResourceKey[]>();
+  // Bindings group by variable AND delivery: one variable can legitimately
+  // take some kinds as injected text and others as lazy context refs, and
+  // those are two distinct bindings on the wire.
+  const byVariable = new Map<
+    string,
+    { variable: string; delivery: "direct" | "context"; kinds: ResourceKey[] }
+  >();
   for (const [kind, variable] of variableByKind) {
-    const list = byVariable.get(variable) ?? [];
-    list.push(kind);
-    byVariable.set(variable, list);
+    const delivery = opts.deliveries?.[kind] ?? "direct";
+    const groupKey = `${variable}\u0000${delivery}`;
+    const group = byVariable.get(groupKey) ?? { variable, delivery, kinds: [] };
+    group.kinds.push(kind);
+    byVariable.set(groupKey, group);
   }
 
   const now = new Date().toISOString();
@@ -126,9 +136,10 @@ export function selectionToBundle(
     description: null,
     slug: null,
     selectors,
-    bindings: Array.from(byVariable, ([variable, kinds]) => ({
+    bindings: Array.from(byVariable.values(), ({ variable, delivery, kinds }) => ({
       variable,
       kinds,
+      ...(delivery === "context" ? { delivery } : {}),
     })),
     budget: opts.maxTokens ? { maxTokens: opts.maxTokens } : null,
     agentId: null,
@@ -170,6 +181,18 @@ export function bundleVariables(
   return out;
 }
 
+/** Delivery overrides carried by a saved bundle's bindings. */
+export function bundleDeliveries(
+  bundle: ContextBundle,
+): Partial<Record<ResourceKey, "direct" | "context">> {
+  const out: Partial<Record<ResourceKey, "direct" | "context">> = {};
+  for (const binding of bundle.bindings) {
+    if (binding.delivery !== "context") continue;
+    for (const kind of binding.kinds) out[kind] = "context";
+  }
+  return out;
+}
+
 export interface UseContextBuilder {
   manifest: ResourceManifest | null;
   loading: boolean;
@@ -188,6 +211,14 @@ export interface UseContextBuilder {
 
   variables: Partial<Record<ResourceKey, string>>;
   setVariable: (kind: ResourceKey, variable: string) => void;
+
+  /** Per-kind delivery. Absent = "direct" (inject the text). */
+  deliveries: Partial<Record<ResourceKey, "direct" | "context">>;
+  setDelivery: (kind: ResourceKey, delivery: "direct" | "context") => void;
+  /** Replace all delivery overrides (loading a bundle). */
+  setDeliveries: (
+    next: Partial<Record<ResourceKey, "direct" | "context">>,
+  ) => void;
 
   budgetTokens: number | null;
   setBudgetTokens: (tokens: number | null) => void;
@@ -209,6 +240,9 @@ export function useContextBuilder(topicId: string): UseContextBuilder {
   const [selection, setSelectionState] = useState<SelectionMap>(new Map());
   const [variables, setVariables] = useState<
     Partial<Record<ResourceKey, string>>
+  >({});
+  const [deliveries, setDeliveriesState] = useState<
+    Partial<Record<ResourceKey, "direct" | "context">>
   >({});
   // The default ceiling is deliberately named and surfaced in the meter — an
   // unexplained cap that silently drops resources is the exact complaint this
@@ -335,14 +369,29 @@ export function useContextBuilder(topicId: string): UseContextBuilder {
     setVariables((prev) => ({ ...prev, [kind]: variable }));
   }, []);
 
+  const setDelivery = useCallback(
+    (kind: ResourceKey, delivery: "direct" | "context") => {
+      setDeliveriesState((prev) => ({ ...prev, [kind]: delivery }));
+    },
+    [],
+  );
+
+  const setDeliveries = useCallback(
+    (next: Partial<Record<ResourceKey, "direct" | "context">>) => {
+      setDeliveriesState({ ...next });
+    },
+    [],
+  );
+
   const draft = useMemo(
     () =>
       selectionToBundle(selection, {
         topicId,
         maxTokens: budgetTokens,
         variables,
+        deliveries,
       }),
-    [selection, topicId, budgetTokens, variables],
+    [selection, topicId, budgetTokens, variables, deliveries],
   );
 
   const preview = useMemo(
@@ -363,6 +412,9 @@ export function useContextBuilder(topicId: string): UseContextBuilder {
     clear,
     variables,
     setVariable,
+    deliveries,
+    setDelivery,
+    setDeliveries,
     budgetTokens,
     setBudgetTokens,
     draft,

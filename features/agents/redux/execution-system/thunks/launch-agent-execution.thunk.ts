@@ -320,6 +320,7 @@ export const launchAgentExecution = createAsyncThunk<
   const originalText = runtime?.originalText;
   const widgetHandleId = runtime?.widgetHandleId;
   const variables = runtime?.variables;
+  const runtimeContext = runtime?.context;
 
   const displayModeOverride = config?.displayMode;
   const autoRun = config?.autoRun;
@@ -582,6 +583,19 @@ export const launchAgentExecution = createAsyncThunk<
     if (variables && Object.keys(variables).length > 0) {
       dispatch(setUserVariableValues({ conversationId, values: variables }));
     }
+    if (runtimeContext && Object.keys(runtimeContext).length > 0) {
+      // Deferred tier: these land in the request's `context` dict, not the
+      // prompt — the model pulls them through its context tool on demand.
+      dispatch(
+        setContextEntries({
+          conversationId,
+          entries: Object.entries(runtimeContext).map(([key, value]) => ({
+            key,
+            value,
+          })),
+        }),
+      );
+    }
 
     const shortcutLlmOverrides = config?.llmOverrides;
     if (shortcutLlmOverrides && Object.keys(shortcutLlmOverrides).length > 0) {
@@ -732,6 +746,19 @@ export const launchAgentExecution = createAsyncThunk<
     if (variables && Object.keys(variables).length > 0) {
       dispatch(setUserVariableValues({ conversationId, values: variables }));
     }
+    if (runtimeContext && Object.keys(runtimeContext).length > 0) {
+      // Deferred tier: these land in the request's `context` dict, not the
+      // prompt — the model pulls them through its context tool on demand.
+      dispatch(
+        setContextEntries({
+          conversationId,
+          entries: Object.entries(runtimeContext).map(([key, value]) => ({
+            key,
+            value,
+          })),
+        }),
+      );
+    }
 
     const llmOverrides = config?.llmOverrides;
     if (llmOverrides && Object.keys(llmOverrides).length > 0) {
@@ -762,6 +789,19 @@ export const launchAgentExecution = createAsyncThunk<
 
     if (variables && Object.keys(variables).length > 0) {
       dispatch(setUserVariableValues({ conversationId, values: variables }));
+    }
+    if (runtimeContext && Object.keys(runtimeContext).length > 0) {
+      // Deferred tier: these land in the request's `context` dict, not the
+      // prompt — the model pulls them through its context tool on demand.
+      dispatch(
+        setContextEntries({
+          conversationId,
+          entries: Object.entries(runtimeContext).map(([key, value]) => ({
+            key,
+            value,
+          })),
+        }),
+      );
     }
 
     if (displayModeOverride) {

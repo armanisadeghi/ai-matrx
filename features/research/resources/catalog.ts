@@ -40,12 +40,10 @@ import {
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { estimateTokens } from "@/lib/tokens/estimate";
-// NOT imported from `../utils/condensedAuthorityExport`, which owns the same
-// parsing for the authority export: that module does not compile on main (it
-// calls an undefined `stringArrayFromJson` — see FOUND_DEFECTS D104), so
-// importing it would put a type error on this path. Consolidate onto ONE
-// normalizer the moment that file is fixed; this duplication is a defect with a
-// pointer, not a decision.
+import {
+  applySnippetLengthLimit,
+  normalizeSearchSnippets,
+} from "../utils/condensedAuthorityExport";
 import type {
   ResourceBody,
   ResourceGranularity,
@@ -72,45 +70,6 @@ const FETCH_CHUNK = 150;
  * intact, short enough that one verbose result cannot dominate the budget.
  */
 const CONDENSED_SNIPPET_MAX_CHARS = 500;
-
-/**
- * Snippets as the provider gave them: sometimes plain strings, sometimes
- * `{text}` / `{snippet}` objects, sometimes on the column and sometimes only
- * inside the raw payload. All four shapes exist in live rows.
- */
-function readSnippets(raw: unknown): string[] {
-  if (raw == null) return [];
-  if (typeof raw === "string") {
-    const t = raw.trim();
-    return t ? [t] : [];
-  }
-  if (!Array.isArray(raw)) return [];
-  const out: string[] = [];
-  for (const item of raw) {
-    if (typeof item === "string") {
-      const t = item.trim();
-      if (t) out.push(t);
-      continue;
-    }
-    if (item && typeof item === "object") {
-      const rec = item as Record<string, unknown>;
-      const text = rec.text ?? rec.snippet;
-      if (typeof text === "string") {
-        const t = text.trim();
-        if (t) out.push(t);
-      }
-    }
-  }
-  return out;
-}
-
-/** Cap each snippet so one verbose result cannot dominate the budget. */
-function capSnippets(snippets: string[], maxChars: number): string[] {
-  if (maxChars <= 0) return snippets;
-  return snippets.map((s) =>
-    s.length <= maxChars ? s : `${s.slice(0, maxChars)}…`,
-  );
-}
 
 /**
  * Kinds a fresh selection starts with.
@@ -143,6 +102,13 @@ export interface ResourceKindDef {
   shape: "prose" | "structured";
   /** Agent variable this kind lands in by default. */
   defaultVariable: string;
+  /**
+   * `platform.entity_types.token` of the row an item of this kind IS — what a
+   * `resource_ref` points at when a binding says `delivery: "context"`. The
+   * server loads that row under RLS and offers it to the agent lazily. Derived
+   * kinds have no row and therefore no token: they can only deliver direct.
+   */
+  resourceType?: string;
   /** Derived kinds compute their text from the manifest; they have no rows. */
   derive?: (manifest: ResourceManifest, ctx: RenderContext) => string;
   /** DB kinds fetch bodies for exactly the selected ids. */
@@ -388,6 +354,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: false,
     shape: "prose",
     defaultVariable: "search_results",
+    resourceType: "research_source",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{
         id: string;
@@ -411,11 +378,11 @@ export const CATALOG: ResourceKindDef[] = [
           r.raw_search_result && typeof r.raw_search_result === "object"
             ? (r.raw_search_result as Record<string, unknown>)
             : null;
-        let snippets = readSnippets(r.extra_snippets);
+        let snippets = normalizeSearchSnippets(r.extra_snippets);
         if (snippets.length === 0 && raw) {
-          snippets = readSnippets(raw.extra_snippets);
+          snippets = normalizeSearchSnippets(raw.extra_snippets);
         }
-        snippets = capSnippets(snippets, CONDENSED_SNIPPET_MAX_CHARS);
+        snippets = applySnippetLengthLimit(snippets, CONDENSED_SNIPPET_MAX_CHARS);
 
         const age =
           r.page_age?.trim() ||
@@ -450,6 +417,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: true,
     shape: "structured",
     defaultVariable: "search_payloads",
+    resourceType: "research_source",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{ id: string; raw_search_result: unknown }>(
         "rs_source",
@@ -477,6 +445,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: true,
     shape: "structured",
     defaultVariable: "keyword_serps",
+    resourceType: "research_keyword",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{
         id: string;
@@ -514,6 +483,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: true,
     shape: "prose",
     defaultVariable: "scraped_pages",
+    resourceType: "research_content",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{ id: string; content: string | null }>(
         "rs_content",
@@ -538,6 +508,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: false,
     shape: "prose",
     defaultVariable: "page_analyses",
+    resourceType: "research_analysis",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{
         id: string;
@@ -573,6 +544,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: false,
     shape: "structured",
     defaultVariable: "page_scoring",
+    resourceType: "research_source",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{ id: string; page_analysis: unknown }>(
         "rs_source",
@@ -609,6 +581,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: true,
     shape: "structured",
     defaultVariable: "page_links",
+    resourceType: "research_content",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{ id: string; extracted_links: unknown }>(
         "rs_content",
@@ -644,6 +617,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: true,
     shape: "structured",
     defaultVariable: "page_images",
+    resourceType: "research_content",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{ id: string; extracted_images: unknown }>(
         "rs_content",
@@ -681,6 +655,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: false,
     shape: "prose",
     defaultVariable: "keyword_syntheses",
+    resourceType: "research_synthesis",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{
         id: string;
@@ -717,6 +692,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: false,
     shape: "prose",
     defaultVariable: "tag_consolidations",
+    resourceType: "research_synthesis",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{
         id: string;
@@ -746,6 +722,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: false,
     shape: "prose",
     defaultVariable: "research_report",
+    resourceType: "research_synthesis",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{
         id: string;
@@ -775,6 +752,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: false,
     shape: "prose",
     defaultVariable: "research_report",
+    resourceType: "research_document",
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{
         id: string;
@@ -849,6 +827,7 @@ export const CATALOG: ResourceKindDef[] = [
     heavy: false,
     shape: "structured",
     defaultVariable: "media_inventory",
+    resourceType: "research_media",
     // No body fetch: url, alt text and caption already ride on the manifest
     // item, so selecting media costs zero extra reads.
     render: (item, _body, ctx) => {

@@ -45,6 +45,7 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
+  bundleDeliveries,
   bundleToSelection,
   bundleVariables,
   selectionToBundle,
@@ -138,15 +139,19 @@ export default function ContextBuilder() {
       topicId,
       maxTokens: loaded.budget?.maxTokens ?? null,
       variables: bundleVariables(loaded),
+      deliveries: bundleDeliveries(loaded),
     });
+    // Bindings are compared too: switching a kind between inject and lazy
+    // context changes only the binding, and that IS an unsaved edit.
     return (
-      JSON.stringify(builder.draft.selectors) !==
-      JSON.stringify(normalized.selectors)
+      JSON.stringify([builder.draft.selectors, builder.draft.bindings]) !==
+      JSON.stringify([normalized.selectors, normalized.bindings])
     );
-  }, [loaded, builder.draft.selectors, selectionCount, topicId]);
+  }, [loaded, builder.draft.selectors, builder.draft.bindings, selectionCount, topicId]);
 
   const applyBundle = (bundle: ContextBundle) => {
     builder.setSelection(bundleToSelection(bundle));
+    builder.setDeliveries(bundleDeliveries(bundle));
     for (const [kind, variable] of Object.entries(bundleVariables(bundle))) {
       if (variable) {
         builder.setVariable(kind as Parameters<typeof builder.setVariable>[0], variable);
@@ -289,6 +294,7 @@ export default function ContextBuilder() {
                 className="h-7 gap-1 text-xs text-muted-foreground"
                 onClick={() => {
                   builder.clear();
+                  builder.setDeliveries({});
                   setLoaded(null);
                 }}
               >
@@ -312,9 +318,11 @@ export default function ContextBuilder() {
           <ResourcePicker
             manifest={manifest}
             selection={builder.selection}
+            deliveries={builder.deliveries}
             onToggleKind={builder.toggleKind}
             onToggleItem={builder.toggleItem}
             onPatchKind={builder.patchKind}
+            onSetDelivery={builder.setDelivery}
           />
 
           <div className="space-y-3 lg:sticky lg:top-2 lg:self-start">
@@ -451,6 +459,11 @@ function AgentRunner({
         },
         runtime: {
           variables: resolved.variables,
+          // Lazy tier: resource_refs the agent pulls through its context tool
+          // only if it wants them — the "context" delivery path.
+          ...(Object.keys(resolved.contextRefs).length > 0
+            ? { context: resolved.contextRefs }
+            : {}),
           userInput: instruction.trim() || DEFAULT_INSTRUCTION,
           surfaceName: RESEARCH_SURFACE_NAME,
         },
