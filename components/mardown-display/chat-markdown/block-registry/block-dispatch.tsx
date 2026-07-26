@@ -247,10 +247,19 @@ export function isBlockLoading(block: {
  *    compiled-bridge flip for the registered `video_prompt_options` kind
  *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
  *    upstream. Shape-classified by construction.
+ *  - `keyword_research` / `keyword_classification_batch` — produced ONLY by
+ *    `applyIrKindRoute`'s compiled-bridge flips for the registered
+ *    `keyword_relationship_research` / `keyword_classification_batch_v1`
+ *    kinds (`__kind` JSON arrival only — no tag/fence surface); never
+ *    emitted upstream. Shape-classified by construction. STREAMING bridges:
+ *    serverData exists (and grows) mid-stream, so the components render
+ *    item-by-item live.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
   | "video_prompt_options"
+  | "keyword_research"
+  | "keyword_classification_batch"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -324,6 +333,8 @@ export type ShapeBlockType =
   | "structured_info"
   | "item_presentation"
   | "video_prompt_options"
+  | "keyword_research"
+  | "keyword_classification_batch"
   | "chart"
   | "map"
   | "stats"
@@ -1258,6 +1269,55 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.VideoPromptOptionsBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (keyword_relationship_research → keyword_research): the
+  // bridge is STREAMING — serverData exists (and grows) mid-stream, so the
+  // component renders each keyword chip live. Loader only before the first
+  // parsed field; a complete block with no serverData stays readable JSON.
+  keyword_research: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.KeywordResearchBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (keyword_classification_batch_v1 →
+  // keyword_classification_batch): STREAMING bridge, same contract as
+  // keyword_research above — classification cards render one by one.
+  keyword_classification_batch: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.KeywordClassificationBatchBlock
           key={index}
           serverData={block.serverData}
         />

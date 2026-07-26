@@ -4,7 +4,7 @@
 **Tier:** 1 (sub-feature of `features/agents/`)
 **Last updated:** `2026-04-22`
 
-> **Platform versioning source of truth:** `common-docs/systems/versioning/` (`/Volumes/Samsung2TB/code/matrx-common-docs/systems/versioning/`). This doc is the repo-specific AGENT implementation on top of that standard; if they conflict, the common-docs set wins.
+> **Platform versioning source of truth:** `common-docs/systems/versioning/` (`/Users/armanisadeghi/code/common-docs/systems/versioning/`). This doc is the repo-specific AGENT implementation on top of that standard; if they conflict, the common-docs set wins.
 >
 > Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This is the load-bearing contract that lets Shortcuts and Agent Apps stay stable while agents evolve.
 

@@ -556,6 +556,14 @@ const SerpAnalyzerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/SerpAnalyzerWindow"),
   { ssr: false },
 );
+const KeywordResearchWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/seo/KeywordResearchWindow"),
+  { ssr: false },
+);
+const KeywordWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/seo/KeywordWindow"),
+  { ssr: false },
+);
 const SocialCardWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/SocialCardWindow"),
   { ssr: false },
@@ -1164,6 +1172,12 @@ export default function OverlayController() {
     serpAnalyzerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "serpAnalyzerWindow"),
     ),
+    keywordResearchWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "keywordResearchWindow"),
+    ),
+    keywordWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "keywordWindow"),
+    ),
     socialCardAnalyzerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "socialCardAnalyzerWindow"),
     ),
@@ -1500,6 +1514,12 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     serpAnalyzerWindow: useAppSelector((s) =>
       selectOverlayData(s, "serpAnalyzerWindow"),
+    ) as Record<string, unknown> | null,
+    keywordResearchWindow: useAppSelector((s) =>
+      selectOverlayData(s, "keywordResearchWindow"),
+    ) as Record<string, unknown> | null,
+    keywordWindow: useAppSelector((s) =>
+      selectOverlayData(s, "keywordWindow"),
     ) as Record<string, unknown> | null,
     socialCardAnalyzerWindow: useAppSelector((s) =>
       selectOverlayData(s, "socialCardAnalyzerWindow"),
@@ -3855,6 +3875,53 @@ export default function OverlayController() {
                 ? data.initialText
                 : undefined
             }
+          />
+        );
+      })()}
+
+      {/* keywordResearchWindow */}
+      {(() => {
+        const isOpen = isOpenById.keywordResearchWindow;
+        const data = dataById.keywordResearchWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <KeywordResearchWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "keywordResearchWindow" }))
+            }
+            initialKeyword={
+              typeof data?.primaryKeyword === "string"
+                ? data.primaryKeyword
+                : undefined
+            }
+            autoRun={data?.autoRun === true}
+          />
+        );
+      })()}
+
+      {/* keywordWindow */}
+      {(() => {
+        const isOpen = isOpenById.keywordWindow;
+        const data = dataById.keywordWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | undefined =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : undefined;
+        return (
+          <KeywordWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "keywordWindow" }))
+            }
+            initialPhrase={str("phrase")}
+            initialSiteId={str("siteId")}
+            initialPageId={str("pageId")}
+            initialBrandId={str("brandId")}
+            initialTab={str("activeTab")}
           />
         );
       })()}

@@ -314,7 +314,19 @@ export async function getSiteOverview(
 ): Promise<SiteOverviewMetrics> {
   const db = await authenticatedWebDb(supabase);
   const abortSignal = signal ?? new AbortController().signal;
-  const [score, pages, findings, snapshots, latestCrawl] = await Promise.all([
+  const [
+    score,
+    pages,
+    findings,
+    snapshots,
+    latestCrawl,
+    targetKeywordPages,
+    pagesInGsc,
+    blockedPages,
+    serpIssues,
+    sitemaps,
+    crawlSessions,
+  ] = await Promise.all([
     db
       .from("v_site_score")
       .select("site_id, site_score, scored_pages")
@@ -352,6 +364,43 @@ export async function getSiteOverview(
       .limit(1)
       .abortSignal(abortSignal)
       .maybeSingle(),
+    db
+      .from("page")
+      .select("id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .not("target_keyword", "is", null)
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("in_gsc", true)
+      .abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("indexability_verdict", "blocked")
+      .abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("serp_ok", false)
+      .abortSignal(abortSignal),
+    db
+      .from("sitemap")
+      .select("id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
+    db
+      .from("crawl_session")
+      .select("id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .abortSignal(abortSignal),
   ]);
 
   if (score.error) throw score.error;
@@ -359,6 +408,12 @@ export async function getSiteOverview(
   if (findings.error) throw findings.error;
   if (snapshots.error) throw snapshots.error;
   if (latestCrawl.error) throw latestCrawl.error;
+  if (targetKeywordPages.error) throw targetKeywordPages.error;
+  if (pagesInGsc.error) throw pagesInGsc.error;
+  if (blockedPages.error) throw blockedPages.error;
+  if (serpIssues.error) throw serpIssues.error;
+  if (sitemaps.error) throw sitemaps.error;
+  if (crawlSessions.error) throw crawlSessions.error;
 
   return {
     siteScore: score.data?.site_score ?? null,
@@ -367,6 +422,12 @@ export async function getSiteOverview(
     openFindings: findings.count ?? 0,
     snapshots: snapshots.count ?? 0,
     latestCrawl: latestCrawl.data,
+    targetKeywordPages: targetKeywordPages.count ?? 0,
+    pagesInGsc: pagesInGsc.count ?? 0,
+    blockedPages: blockedPages.count ?? 0,
+    serpIssues: serpIssues.count ?? 0,
+    sitemaps: sitemaps.count ?? 0,
+    crawlSessions: crawlSessions.count ?? 0,
   };
 }
 

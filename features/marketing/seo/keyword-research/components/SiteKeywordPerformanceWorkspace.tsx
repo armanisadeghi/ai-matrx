@@ -15,6 +15,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
 import { syncBingSearchPerformance } from "@/features/marketing/bing/service";
 import { extractErrorMessage } from "@/utils/errors";
+import { KeywordCompetitionBadge } from "./KeywordMetrics";
 
 import type { SiteKeywordPerformanceRow } from "../types";
 import { useSiteKeywordPerformance } from "../useSiteKeywordPerformance";
@@ -176,12 +177,11 @@ export function SiteKeywordPerformanceWorkspace() {
         { value: "MEDIUM", label: "Medium" },
         { value: "HIGH", label: "High" },
       ],
-      cell: (row) =>
-        row.competition ? (
-          <Badge variant="secondary">{row.competition.toLowerCase()}</Badge>
-        ) : (
-          "—"
-        ),
+      cell: (row) => (
+        // Canonical badge — the ONE competition visual (KeywordMetrics),
+        // shared with the workbench, window panel, and seo tool renderer.
+        <KeywordCompetitionBadge competition={row.competition} />
+      ),
     },
     {
       id: "top_page_path",

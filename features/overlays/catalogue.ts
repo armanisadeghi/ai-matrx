@@ -455,6 +455,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  keywordWindow: {
+    label: "Keyword Intelligence",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   kgSuggestionsDrawer: {
     label: "Knowledge Graph Suggestions",
     instanceMode: "singleton",
@@ -642,6 +647,11 @@ export const OVERLAY_CATALOGUE = {
   },
   scraperWindow: {
     label: "Scraper Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  keywordResearchWindow: {
+    label: "Keyword Research",
     instanceMode: "singleton",
     isWindow: true,
   },

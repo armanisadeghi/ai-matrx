@@ -122,6 +122,14 @@ import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { syncPagespeed } from "@/features/marketing/pagespeed/data";
 import { syncSiteAnalytics } from "@/features/marketing/analytics/data";
+import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
+import { KeywordUsageChips } from "@/features/marketing/seo/keyword/KeywordUsageChips";
+import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
+import {
+  usePageTopQueries,
+  useResolvedKeyword,
+} from "@/features/marketing/seo/keyword/hooks";
+import type { KeywordSuggestion } from "@/features/marketing/seo/keyword/types";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -130,15 +138,41 @@ const G = surfaceGroupLabels(marketingPageManifest);
 
 function IntentForm({
   page,
+  brandId,
   observedTitle,
   observedDescription,
+  observedH1,
+  analyzerKeywords,
 }: {
   page: MarketingPage;
+  brandId: string | null;
   observedTitle: string | null;
   observedDescription: string | null;
+  observedH1: string | null;
+  /** Keyword candidates the Page Analyzer inferred for this page. */
+  analyzerKeywords: KeywordSuggestion[];
 }) {
   const mutation = useUpdatePageIntent();
   const [keyword, setKeyword] = useState(page.target_keyword ?? "");
+  // The keyword never travels bare: resolve the SAVED target keyword against
+  // the universal keyword plane so its condensed market data rides along in
+  // every copy/agent payload built from this card.
+  const resolvedTarget = useResolvedKeyword(page.target_keyword);
+  // Real Search Console queries already reaching this page — first-class
+  // suggestions for what the target keyword should be.
+  const topQueries = usePageTopQueries(page.id);
+  const keywordSuggestions: KeywordSuggestion[] = [
+    ...(topQueries.data ?? []).map(
+      (row): KeywordSuggestion => ({
+        phrase: row.query,
+        source: "gsc",
+        detail: `${row.impressions.toLocaleString()} impr${
+          row.position === null ? "" : ` · pos ${row.position.toFixed(1)}`
+        }`,
+      }),
+    ),
+    ...analyzerKeywords,
+  ];
   const [title, setTitle] = useState(page.meta_title_desired ?? "");
   const [description, setDescription] = useState(
     page.meta_description_desired ?? "",
@@ -179,15 +213,26 @@ function IntentForm({
     toast.success("Current metadata copied into page intent");
   };
 
+  // Condensed keyword dossier for AI/agent consumers — attached whenever the
+  // page has a target keyword the library knows about.
+  const targetBrief = page.target_keyword
+    ? buildKeywordBrief({
+        phrase: page.target_keyword,
+        keyword: resolvedTarget.data?.keyword ?? null,
+        market: resolvedTarget.data?.market ?? null,
+      })
+    : null;
+
   const copy = webCopy({
     kind: "web-page-intent",
     label: G.page_intent,
     description:
-      "The user-owned editorial intent for this page (target keyword + desired metadata).",
+      "The user-owned editorial intent for this page (target keyword + its market data + desired metadata).",
     surface: `Page intent — ${page.url}`,
     data: {
       url: page.url,
       target_keyword: page.target_keyword,
+      target_keyword_data: targetBrief?.data ?? null,
       meta_title_desired: page.meta_title_desired,
       meta_description_desired: page.meta_description_desired,
       seo_metrics_desired: page.seo_metrics_desired,
@@ -195,6 +240,7 @@ function IntentForm({
     lines: [
       ["URL", page.url],
       [L.target_keyword, page.target_keyword ?? "not set"],
+      ...(targetBrief?.lines.slice(1) ?? []),
       ["Desired title", page.meta_title_desired ?? "not set"],
       ["Desired description", page.meta_description_desired ?? "not set"],
     ],
@@ -225,11 +271,21 @@ function IntentForm({
           <Label htmlFor="target-keyword" className="text-xs">
             {L.target_keyword}
           </Label>
-          <Input
+          <KeywordInput
             id="target-keyword"
             value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Primary search intent"
+            onChange={setKeyword}
+            scope={{ siteId: page.site_id, pageId: page.id, brandId }}
+            suggestions={keywordSuggestions}
+          />
+          <KeywordUsageChips
+            phrase={keyword}
+            fields={[
+              { label: "Title", text: observedTitle },
+              { label: "Description", text: observedDescription },
+              { label: "H1", text: observedH1 },
+              { label: "URL", text: page.path },
+            ]}
           />
         </div>
         <div className="space-y-1.5" data-surface-value="desired_title">
@@ -1556,6 +1612,32 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const head = parseSnapshotHeadTags(snapshot ? snapshot.head_tags : null);
   const extracted = parseSnapshotExtracted(snapshot?.extracted ?? null);
   const headings = parseSnapshotHeadings(snapshot?.headings ?? null);
+  // Page Analyzer keywords become first-class target-keyword suggestions —
+  // the analyzer's picture of the page feeds the intent form directly.
+  const analyzerArtifact = analyzer.state.result?.artifact ?? null;
+  const analyzerKeywordSuggestions: KeywordSuggestion[] = analyzerArtifact
+    ? [
+        {
+          phrase: analyzerArtifact.inferred_primary_keyword.phrase,
+          source: "analyzer" as const,
+          detail: "inferred primary",
+        },
+        ...analyzerArtifact.supported_keywords.map(
+          (k): KeywordSuggestion => ({
+            phrase: k.phrase,
+            source: "analyzer",
+            detail: "supporting",
+          }),
+        ),
+        ...analyzerArtifact.discovered_keywords.map(
+          (k): KeywordSuggestion => ({
+            phrase: k.phrase,
+            source: "analyzer",
+            detail: "discovered",
+          }),
+        ),
+      ]
+    : [];
   const searchPerformance = data.searchPerformance;
   const searchCtr = searchPerformance.gsc_impressions_28d
     ? (searchPerformance.gsc_clicks_28d ?? 0) /
@@ -1786,8 +1868,13 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           <IntentForm
             key={`${page.id}:${page.updated_at}`}
             page={page}
+            brandId={brandId}
             observedTitle={head.title}
             observedDescription={head.metaDescription}
+            observedH1={
+              headings.all.find((heading) => heading.level === 1)?.text ?? null
+            }
+            analyzerKeywords={analyzerKeywordSuggestions}
           />
         </div>
 

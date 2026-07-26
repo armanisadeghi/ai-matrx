@@ -153,6 +153,7 @@ export function MetricCell({
   icon,
   variant = "strip",
   anchor,
+  href,
 }: {
   label: string;
   value: string | number;
@@ -162,17 +163,19 @@ export function MetricCell({
   variant?: "strip" | "card";
   /** Surface value name — rendered as `data-surface-value` (locate-on-page). */
   anchor?: string;
+  /** Turns the whole cell into a navigation card — the KPI IS the link. */
+  href?: string;
 }) {
-  return (
-    <div
-      data-surface-value={anchor}
-      className={cn(
-        "min-w-0",
-        variant === "strip"
-          ? "border-r border-border/70 px-3 py-2 last:border-r-0"
-          : "rounded-xl border border-border/70 bg-gradient-to-br from-card to-muted/40 p-3 shadow-sm",
-      )}
-    >
+  const className = cn(
+    "min-w-0",
+    variant === "strip"
+      ? "border-r border-border/70 px-3 py-2 last:border-r-0"
+      : "rounded-xl border border-border/70 bg-gradient-to-br from-card to-muted/40 p-3 shadow-sm",
+    href &&
+      "group block transition-colors hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+  );
+  const body = (
+    <>
       <div className="flex items-center gap-2">
         {icon ? (
           <span
@@ -191,6 +194,9 @@ export function MetricCell({
         <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
         </p>
+        {href ? (
+          <ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+        ) : null}
       </div>
       <p
         className={cn(
@@ -215,6 +221,18 @@ export function MetricCell({
           {detail}
         </p>
       ) : null}
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} data-surface-value={anchor} className={className}>
+        {body}
+      </Link>
+    );
+  }
+  return (
+    <div data-surface-value={anchor} className={className}>
+      {body}
     </div>
   );
 }

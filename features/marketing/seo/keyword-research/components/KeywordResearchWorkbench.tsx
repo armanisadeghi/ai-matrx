@@ -18,11 +18,11 @@ import {
   RefreshCw,
   Search,
   X,
-  SearchCheck,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { useKeywordResearch } from "../useKeywordResearch";
+import KeywordResearchLauncher from "./KeywordResearchLauncher";
 import { normalizeMonthlySearches } from "../types";
 import type {
   KeywordEdgeView,
@@ -32,6 +32,7 @@ import type {
 } from "../types";
 import {
   KeywordCompetitionBadge,
+  KeywordIntentChip,
   KeywordTrendSparkline,
   formatCpc,
   formatSearchVolume,
@@ -219,7 +220,6 @@ export default function KeywordResearchWorkbench() {
     refreshVolume,
     loadEdges,
   } = useKeywordResearch();
-  const [primaryInput, setPrimaryInput] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -231,11 +231,6 @@ export default function KeywordResearchWorkbench() {
         (a, b) => (usMarket(b)?.search_volume ?? -1) - (usMarket(a)?.search_volume ?? -1),
       );
   }, [keywords, clusterPhrases]);
-
-  const handleRun = useCallback(() => {
-    if (!primaryInput.trim() || run.status === "running") return;
-    void runResearch(primaryInput);
-  }, [primaryInput, run.status, runResearch]);
 
   const handleRefreshAll = useCallback(async () => {
     const phrases = sorted.map((row) => row.phrase);
@@ -256,67 +251,10 @@ export default function KeywordResearchWorkbench() {
       className="flex h-full flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      {/* Research launcher */}
+      {/* Research launcher — the canonical shared component (also hosted by
+          KeywordResearchWindow, opened from anywhere). */}
       <div className="border-b border-border px-4 py-3">
-        <div className="flex max-w-2xl items-center gap-2">
-          <div className="relative flex-1">
-            <SearchCheck className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={primaryInput}
-              onChange={(event) => setPrimaryInput(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && handleRun()}
-              placeholder="Research a primary keyword (e.g. botox cost)"
-              className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              style={{ fontSize: "16px" }}
-              disabled={run.status === "running"}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleRun}
-            disabled={run.status === "running" || !primaryInput.trim()}
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {run.status === "running" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <SearchCheck className="h-4 w-4" />
-            )}
-            Research
-          </button>
-        </div>
-        {run.status === "running" && (
-          <div className="mt-2 space-y-2">
-            <p className="text-xs text-muted-foreground">
-              {run.stage ?? `Running research for “${run.primaryKeyword}”`}
-            </p>
-            {run.streamingOutput && (
-              <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-2 text-[11px] text-muted-foreground">
-                {run.streamingOutput}
-              </pre>
-            )}
-          </div>
-        )}
-        {run.status === "error" && (
-          <p className="mt-2 text-xs text-destructive">{run.error}</p>
-        )}
-        {run.status === "done" && run.result && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">“{run.result.primary_keyword}”</span>
-            <span>{run.result.ingest.keywords_created ?? 0} new keywords</span>
-            <span>{run.result.ingest.keywords_already_existed ?? 0} known</span>
-            <span>{run.result.ingest.edges_written ?? 0} relationships</span>
-            {(run.result.ingest.edges_skipped_rejected ?? 0) > 0 && (
-              <span>{run.result.ingest.edges_skipped_rejected} rejected honored</span>
-            )}
-            {run.result.volume && (
-              <span>
-                volume fetched for {run.result.volume.fetched_phrases ?? 0} (
-                {run.result.volume.skipped_fresh ?? 0} already fresh)
-              </span>
-            )}
-          </div>
-        )}
+        <KeywordResearchLauncher run={run} runResearch={runResearch} />
       </div>
 
       {/* Explorer toolbar */}
@@ -462,8 +400,8 @@ function FragmentRow({
         <td className="px-2 py-1.5">
           <TrajectoryBadge value={market?.demand_trajectory ?? null} />
         </td>
-        <td className="px-2 py-1.5 text-xs text-muted-foreground">
-          {row.intent_class ? row.intent_class.replace(/_/g, " ") : "unclassified"}
+        <td className="px-2 py-1.5">
+          <KeywordIntentChip intentClass={row.intent_class} />
         </td>
       </tr>
       {expanded && (

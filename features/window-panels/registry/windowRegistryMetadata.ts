@@ -1194,6 +1194,45 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "serp_analyzer" },
   },
 
+  // ── Keyword Research (live agent research runner) ─────────────────────────
+  // The canonical keyword research launcher (features/marketing/seo/
+  // keyword-research) in a floating window: input → live key-by-key
+  // kind-component stream (relationship buckets + intent classification) →
+  // compact cluster explorer. Open with `useOpenKeywordResearchWindow({
+  // primaryKeyword, autoRun })`. In-flight runs survive close/reopen via the
+  // hook's durable-run sessionStorage rejoin.
+  {
+    slug: "keyword-research-window",
+    overlayId: "keywordResearchWindow",
+    kind: "window",
+    label: "Keyword Research",
+    defaultData: { primaryKeyword: "", autoRun: false },
+    mobilePresentation: "fullscreen",
+    urlSync: { key: "keyword_research" },
+  },
+
+  // ── Keyword Intelligence ──────────────────────────────────────────────────
+  // The canonical keyword dossier (features/marketing/seo/keyword/
+  // KeywordIntelPanel) in a floating window: market metrics + classification,
+  // relationships, site performance, rank tracking, the stored Google SERP,
+  // and live research. Open with `useOpenKeywordWindow({ phrase, siteId,
+  // pageId, brandId, tab })`.
+  {
+    slug: "keyword-window",
+    overlayId: "keywordWindow",
+    kind: "window",
+    label: "Keyword Intelligence",
+    defaultData: {
+      phrase: "",
+      siteId: "",
+      pageId: "",
+      brandId: "",
+      activeTab: "overview",
+    },
+    mobilePresentation: "fullscreen",
+    urlSync: { key: "keyword" },
+  },
+
   // ── Social Cards (OG/Twitter share analyzer) ──────────────────────────────
   // The canonical SocialCardAnalyzer (features/marketing/seo/social) in a floating
   // window: editable share tags, deterministic checks (features/marketing/seo/audit),

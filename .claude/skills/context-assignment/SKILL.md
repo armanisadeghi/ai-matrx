@@ -119,5 +119,5 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
   prompt host (`features/files/components/surfaces/PageShell.tsx`), note
   adapter (`NoteContextSection.tsx`), header button (`ChatRunHeader.tsx`),
   run-controls tab (`RunControlsMenu.tsx` Context tab → `ActiveContextPanel`).
-- Current state + open items: `docs/ctx/CONTEXT_ROLLOUT_HANDOFF.md`.
-- Architecture bible: `docs/ctx/ctx-association-architecture.md`.
+- Current state: `features/scopes/FEATURE.md` (the live SOR for scope/context on the FE).
+- Historical architecture plan (superseded, shipped as `platform.associations`): `docs/archive/2026/ctx/ctx-association-architecture.md`.

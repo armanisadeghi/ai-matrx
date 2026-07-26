@@ -19,10 +19,28 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { listKeywordsWithMarket } from "@/features/marketing/seo/keyword-research/data/queries";
+import {
+  KeywordCompetitionBadge,
+  KeywordIntentChip,
+  formatSearchVolume,
+} from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
+import type {
+  KeywordMarketRow,
+  KeywordWithMarket,
+} from "@/features/marketing/seo/keyword-research/types";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { useKeywordLabels, useSiteKeywordValues } from "../data/hooks";
+
+/** US market first (location 2840), else the first fetched market row. */
+function pickerMarket(row: KeywordWithMarket): KeywordMarketRow | null {
+  return (
+    row.keyword_market.find((market) => market.location_code === 2840) ??
+    row.keyword_market[0] ??
+    null
+  );
+}
 
 export function KeywordPicker({
   siteId,
@@ -122,7 +140,28 @@ export function KeywordPicker({
                     ) : (
                       <span className="w-3.5 shrink-0" />
                     )}
-                    <span className="min-w-0 flex-1 truncate">{keyword.phrase}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="min-w-0 truncate">{keyword.phrase}</span>
+                        <KeywordIntentChip
+                          intentClass={keyword.intent_class}
+                          hideUnclassified
+                          className="shrink-0"
+                        />
+                      </span>
+                      <span className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        <span className="tabular-nums">
+                          {formatSearchVolume(
+                            pickerMarket(keyword)?.search_volume,
+                          )}
+                          /mo
+                        </span>
+                        <KeywordCompetitionBadge
+                          competition={pickerMarket(keyword)?.competition}
+                          className="text-[10px]"
+                        />
+                      </span>
+                    </span>
                     {siteValue ? (
                       <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
                         {siteValue.workflow_status ? (

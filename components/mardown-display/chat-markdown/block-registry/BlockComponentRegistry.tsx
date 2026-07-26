@@ -50,6 +50,12 @@ const FlashcardsBlock = lazy(
 const VideoPromptOptionsBlock = lazy(
   () => import("../../blocks/video-prompt-options/VideoPromptOptionsBlock"),
 );
+const KeywordResearchBlock = lazy(
+  () => import("../../blocks/keyword-research/KeywordResearchBlock"),
+);
+const KeywordClassificationBatchBlock = lazy(
+  () => import("../../blocks/keyword-research/KeywordClassificationBatchBlock"),
+);
 const MultipleChoiceQuiz = lazy(
   () => import("../../blocks/quiz/MultipleChoiceQuiz"),
 );
@@ -340,6 +346,20 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <VideoPromptOptionsBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  KeywordResearchBlock: (
+    props: React.ComponentProps<typeof KeywordResearchBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <KeywordResearchBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  KeywordClassificationBatchBlock: (
+    props: React.ComponentProps<typeof KeywordClassificationBatchBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <KeywordClassificationBatchBlock {...props} />
     </LazyBlockWrapper>
   ),
   MultipleChoiceQuiz: (props: React.ComponentProps<typeof MultipleChoiceQuiz>) => (

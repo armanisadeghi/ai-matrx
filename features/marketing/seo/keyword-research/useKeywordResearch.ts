@@ -27,7 +27,18 @@ export interface ResearchRunState {
   status: "idle" | "running" | "done" | "error";
   primaryKeyword?: string;
   stage?: string;
-  streamingOutput?: string;
+  /** Raw agent tokens from the relationship-research phase. Fed to the live
+   * content-ir parse session (LiveResearchFeed) — never rendered as text. */
+  researchOutput?: string;
+  /** True once the research agent finished — ends its parse region. */
+  researchDone?: boolean;
+  /** Raw agent tokens from the classification phase (may carry several
+   * sequential batch payloads). Fed to live parse sessions, never shown raw. */
+  classificationOutput?: string;
+  /** True once classification persisted — ends its parse regions. */
+  classificationDone?: boolean;
+  /** Stable per-launch key namespacing the live parse-session identities. */
+  streamKey?: string;
   result?: KeywordResearchResponse;
   error?: string;
   /** Durable seo.collection_run id — persisted by the server BEFORE the AI
@@ -166,19 +177,48 @@ export function useKeywordResearch() {
     async (phrase: string, request: ResearchStreamRequest) => {
       const completedResults: KeywordResearchResponse[] = [];
       let serverBusy = false;
+      // Chunk tokens arrive from TWO sequential agent calls on one stream:
+      // relationship research first, then intent classification. Bucketing by
+      // phase gives each payload its own live parse region.
+      let chunkPhase: "research" | "classification" = "research";
       const onStreamEvent = (event: TypedStreamEvent) => {
         {
             if (event.event === "chunk") {
-              setRun((current) => ({
-                ...current,
-                streamingOutput: `${current.streamingOutput ?? ""}${event.data.text}`,
-              }));
+              const phase = chunkPhase;
+              setRun((current) =>
+                phase === "research"
+                  ? {
+                      ...current,
+                      researchOutput: `${current.researchOutput ?? ""}${event.data.text}`,
+                    }
+                  : {
+                      ...current,
+                      classificationOutput: `${current.classificationOutput ?? ""}${event.data.text}`,
+                    },
+              );
               return;
             }
             const data = streamData(event);
             if (!data) return;
             const kind = typeof data.kind === "string" ? data.kind : null;
             if (!kind) return;
+            if (kind === "seo.research_agent_completed") {
+              chunkPhase = "classification";
+              setRun((current) => ({ ...current, researchDone: true }));
+            }
+            if (kind === "seo.classification_started") {
+              chunkPhase = "classification";
+            }
+            if (
+              kind === "seo.classification_completed" ||
+              kind === "seo.research_completed"
+            ) {
+              setRun((current) => ({
+                ...current,
+                researchDone: true,
+                classificationDone: true,
+              }));
+            }
             // Durable job identity — persisted server-side BEFORE the AI call.
             if (kind === "seo.command_run" && typeof data.run_id === "string") {
               const runId = data.run_id;
@@ -255,6 +295,13 @@ export function useKeywordResearch() {
               onStreamEvent,
             }),
       );
+      // The stream is over either way — end the live parse regions so partial
+      // payloads finalize instead of pulsing forever.
+      setRun((current) => ({
+        ...current,
+        researchDone: true,
+        classificationDone: true,
+      }));
       if (result.error) {
         storeActiveRun(null);
         setRun((current) => ({
@@ -299,7 +346,9 @@ export function useKeywordResearch() {
         status: "running",
         primaryKeyword: phrase,
         stage: "Connecting",
-        streamingOutput: "",
+        researchOutput: "",
+        classificationOutput: "",
+        streamKey: crypto.randomUUID(),
       });
       await consumeResearchStream(phrase, {
         path: "/seo/keywords/research",
@@ -315,7 +364,9 @@ export function useKeywordResearch() {
         status: "running",
         primaryKeyword,
         stage: "Rejoining previous run",
-        streamingOutput: "",
+        researchOutput: "",
+        classificationOutput: "",
+        streamKey: crypto.randomUUID(),
         runId,
       });
       await consumeResearchStream(primaryKeyword, {
@@ -334,7 +385,13 @@ export function useKeywordResearch() {
     if (attemptedRejoinRef.current) return;
     attemptedRejoinRef.current = true;
     const stored = readStoredActiveRun();
-    if (stored) void rejoinResearch(stored.runId, stored.primaryKeyword);
+    // Deferred so the rejoin's synchronous setRun never fires inside the
+    // effect body (react-hooks/set-state-in-effect).
+    if (stored) {
+      void Promise.resolve().then(() =>
+        rejoinResearch(stored.runId, stored.primaryKeyword),
+      );
+    }
   }, [rejoinResearch]);
 
   const refreshVolume = useCallback(

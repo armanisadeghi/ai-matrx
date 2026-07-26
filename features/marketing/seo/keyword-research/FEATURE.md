@@ -1,9 +1,9 @@
 # SEO Keyword Research — user-facing workbench over the seo keyword plane
 
-Status: **live (2026-07-22).** Route: `app/(core)/seo/keyword-research/page.tsx` →
+Status: **live (2026-07-22).** Route: `app/(core)/marketing/keyword-research/page.tsx` →
 `KeywordResearchWorkbench`. Linked from the public `/seo` suite ("Keyword Research &
 Relationships" card). Cross-repo contract of record:
-`/Users/armanisadeghi/code/common-docs/to-be-organized-NEW/seo-module/seo-keyword-agent-guide.md`.
+`/Users/armanisadeghi/code/common-docs/systems/seo-keywords/seo-keyword-agent-guide.md`.
 
 The site-scoped read surface is
 `/marketing/brands/[brandId]/sites/[siteId]/keywords` →
@@ -28,10 +28,19 @@ market enrichment remain explicit compute operations.
     (30-day policy; `force_refresh` bypasses), also streamed through exact provider
     response, normalization, persistence, and completion events.
   - Both commands use `callApi({stream: true})`; long JSON timeouts are forbidden.
-    The workbench renders both live pipeline stages and the agent's token stream as it
-    arrives. A client disconnect stops only delivery—the backend's detached stream task
-    continues and persists. Backend contract: `aidream/services/seo/FEATURE.md` § Keyword
-    pipeline.
+    The workbench renders live pipeline stages, and the agent token stream renders as
+    REAL kind components, never raw JSON: `useKeywordResearch` buckets chunk text by
+    phase (`researchOutput` until `seo.research_agent_completed`, then
+    `classificationOutput`), and `components/LiveResearchFeed.tsx` feeds each buffer
+    into `useLiveJsonRegion` (content-ir) → the `keyword_relationship_research` /
+    `keyword_classification_batch_v1` streaming bridges →
+    `KeywordResearchBlock` / `KeywordClassificationBatchBlock`
+    (`components/mardown-display/blocks/keyword-research/`, shared with chat).
+    **The server's chunk relay may stop before the payload's closing bytes** — the
+    phase event is the completion truth; `LiveResearchFeed` finalizes (kills pulses)
+    on phase done, never on JSON-close alone. A client disconnect stops only
+    delivery—the backend's detached stream task continues and persists. Backend
+    contract: `aidream/services/seo/FEATURE.md` § Keyword pipeline.
   - **Durable run identity + reconnect (2026-07-23, WS-1).** Every research/volume
     command persists a `seo.collection_run` row server-side BEFORE the first AI call and
     streams it first as `seo.command_run {run_id}`. The hook stores
@@ -44,6 +53,11 @@ market enrichment remain explicit compute operations.
     kept so a later rejoin still works. Re-running the same command the same day reuses
     the completed run (`seo.research_completed {reused_completed_run: true}`) — zero
     duplicate paid calls.
+
+**The canonical per-keyword UI primitive lives in `features/marketing/seo/keyword/`**
+(`KeywordInput`, the Keyword Intelligence window, `buildKeywordBrief`) — it consumes
+this feature's reads, stream hook, and `KeywordMetrics` atoms. Read its FEATURE.md
+before adding any keyword field or per-keyword display anywhere.
 
 ## Files
 
@@ -67,7 +81,21 @@ market enrichment remain explicit compute operations.
   Supabase reads of `seo.v_site_keyword_performance` with server-side search,
   filtering, sorting, and pagination for one site.
 - `useKeywordResearch.ts` — page state + the two `callApi` actions; debounced search,
-  abort-safe reloads.
+  abort-safe reloads; phase-bucketed stream buffers + `streamKey` for the live feed.
+- `components/LiveResearchFeed.tsx` — live kind-component rendering of the agent
+  streams (see the two-lane rule above); the canonical non-chat consumer of
+  `useLiveJsonRegion`.
+- `components/KeywordResearchLauncher.tsx` — **THE canonical research runner**
+  (input → live feed → summary), presentational over a caller-owned
+  `useKeywordResearch()` instance. Consumed by the workbench AND
+  `features/window-panels/windows/seo/KeywordResearchWindow.tsx` (open from
+  anywhere: `useOpenKeywordResearchWindow({ primaryKeyword, autoRun })` in
+  `features/overlays/openers/keywordResearchWindow.tsx`; `?panels=keyword_research`).
+  `autoRun` only on an explicit user gesture — a run is a paid pipeline.
+- `components/KeywordMetrics.tsx` — the shared presentation primitives. Now also
+  `KeywordIntentChip` (THE one way `intent_class` renders anywhere) and
+  `KeywordConfidenceMeter`. **No surface hand-rolls an intent string, competition
+  badge, or volume/CPC format — consume these.**
 - `components/KeywordResearchWorkbench.tsx` — research launcher, run-summary strip,
   explorer table (volume / trend sparkline / competition / CPC / trajectory / intent),
   expandable detail (monthly bars + relationship chips; rejected edges render
@@ -81,13 +109,32 @@ market enrichment remain explicit compute operations.
 - `(core)` shell rules: `<PageHeader>` center-only title; body `h-full overflow-hidden`
   with `paddingTop: var(--shell-header-h)`; no in-body title bar.
 - `intent_class` etc. render from the 13 real columns — never parsed out of JSONB.
-  Null classification shows "unclassified" (the classifier pipeline is a later phase).
+  Null classification shows "unclassified".
 - Edge REJECTION (when built here) must call `seo.fn_reject_keyword_edge` via the
   backend — never delete a `keyword_edge` row.
 - No barrel files; import from source.
 
 ## Change Log
 
+- 2026-07-26 — **Canonicalization round 2: window panel + shared primitives everywhere.**
+  Extracted `KeywordResearchLauncher` from the workbench (shared runner UI); new
+  `KeywordResearchWindow` (overlayId `keywordResearchWindow`, tools-grid tile,
+  `?panels=keyword_research`, opener `useOpenKeywordResearchWindow`) hosts it with a
+  compact cluster explorer. `KeywordIntentChip` + `KeywordConfidenceMeter` added to
+  `KeywordMetrics.tsx` and consumed by the chat classification block, the workbench
+  intent column, the window, and content-plan's `KeywordPicker` (which now also shows
+  volume + competition it always had in hand); `SiteKeywordPerformanceWorkspace`
+  dropped its private competition badge. Also registered hydrators for the
+  pre-existing `serp_analyzer` / `social_cards` urlSync drift.
+- 2026-07-26 — **Live streams render as real components, key by key — raw JSON killed.**
+  The workbench's `<pre>` of raw agent tokens is gone: chunk text is phase-bucketed in
+  `useKeywordResearch` and rendered through `LiveResearchFeed` → content-ir
+  `useLiveJsonRegion` → the new `keyword_relationship_research` /
+  `keyword_classification_batch_v1` system kinds' streaming bridges → the shared
+  `KeywordResearchBlock` / `KeywordClassificationBatchBlock` components. Keywords and
+  classification cards pop in individually while streaming; phase-done finalizes
+  (the chunk relay can truncate before the JSON closes). Feed persists after
+  completion. Kinds registered in `features/content-ir/kinds/keyword-research.ts`.
 - 2026-07-25 — Extracted the private sparkline / competition badge / volume+CPC
   formatters out of `KeywordResearchWorkbench` into `components/KeywordMetrics.tsx`
   (generalized from `KeywordMarketRow` to primitives) so the workbench and the

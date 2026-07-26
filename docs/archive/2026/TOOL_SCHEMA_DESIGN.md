@@ -1,3 +1,5 @@
+> ARCHIVED 2026-07-26 — pre-DDL design note for the `tool_*` schema; the schema shipped. Live truth: the DB + features/tools FEATURE.md.
+
 # AI Matrx Tool System — Schema Design
 
 **Prefix:** `tool_`
