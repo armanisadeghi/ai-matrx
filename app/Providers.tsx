@@ -41,6 +41,7 @@ import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryW
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
 import DeferredSingletons from "./DeferredSingletons";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
+import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
 // WindowPersistenceManager provides the React context that WindowPanel
 // reads via `useWindowPersistence()` — without this mounted, every
 // `saveWindow`/`closeWindow` call resolves to the no-op default and
@@ -133,6 +134,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 <RecoveryNudge />
                                 <DeferredSingletons />
                                 <ServerToggleQueryReset />
+                                <LoopbackApiAccessSync />
                                 <ExtensionBridgeSubscriber />
                                 <GlobalTaskShortcut />
                                 <CreateTaskFromSourceDialog />

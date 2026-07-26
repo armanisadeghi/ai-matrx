@@ -15,13 +15,31 @@ export type ApiService = (typeof API_SERVICES)[number];
 export type ServiceEnvironment = "production" | "localhost";
 
 /**
- * Loopback API targets are a local-development capability. A production
- * browser bundle must never call the visitor's own machine.
+ * Loopback API targets are always available in a development bundle, and in a
+ * production bundle ONLY while an admin is signed in.
+ *
+ * Two failure modes this balances:
+ *   - A deployed site must never route an ordinary visitor's API traffic to
+ *     their own `localhost` (the persisted selection is browser-wide, not
+ *     account-scoped, so it would otherwise survive logout into a non-admin
+ *     session).
+ *   - An admin pointing the deployed frontend at their local Python server is
+ *     a first-class workflow. Blocking it is a defect, not "security".
+ *
+ * The unlock is a module-level mirror of Redux admin state so non-React
+ * callers (`configuredServiceUrl`, slice reducers) can read it synchronously.
+ * `providers/LoopbackApiAccessSync.tsx` is the ONLY writer.
  */
+let loopbackAdminUnlock = false;
+
+export function setLoopbackApiTargetsAdminUnlock(unlocked: boolean): void {
+  loopbackAdminUnlock = unlocked;
+}
+
 export function allowsLoopbackApiTargets(
   nodeEnv: string | undefined = process.env.NODE_ENV,
 ): boolean {
-  return nodeEnv !== "production";
+  return nodeEnv !== "production" || loopbackAdminUnlock;
 }
 
 export function isLoopbackApiUrl(value: string | null | undefined): boolean {

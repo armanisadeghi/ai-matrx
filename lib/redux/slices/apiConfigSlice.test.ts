@@ -5,12 +5,14 @@ import reducer, {
   selectResolvedServiceBaseUrl,
   setActiveServer,
   setCustomUrl,
+  setLoopbackAccess,
   setServiceOverride,
 } from "@/lib/redux/slices/apiConfigSlice";
 import {
   allowsLoopbackApiTargets,
   configuredServiceUrl,
   isLoopbackApiUrl,
+  setLoopbackApiTargetsAdminUnlock,
 } from "@/lib/api/service-routing";
 
 function rootState(apiConfig: ReturnType<typeof reducer>) {
@@ -19,10 +21,11 @@ function rootState(apiConfig: ReturnType<typeof reducer>) {
 
 describe("multi-service API environment selection", () => {
   afterEach(() => {
+    setLoopbackApiTargetsAdminUnlock(false);
     jest.restoreAllMocks();
   });
 
-  it("allows loopback targets only outside production bundles", () => {
+  it("allows loopback targets outside production bundles", () => {
     expect(allowsLoopbackApiTargets("development")).toBe(true);
     expect(allowsLoopbackApiTargets("test")).toBe(true);
     expect(allowsLoopbackApiTargets("production")).toBe(false);
@@ -31,7 +34,56 @@ describe("multi-service API environment selection", () => {
     expect(isLoopbackApiUrl("https://server.app.matrxserver.com")).toBe(false);
   });
 
-  it("rejects every loopback selection path in a production bundle", () => {
+  it("allows loopback targets in a production bundle once an admin unlocks", () => {
+    expect(allowsLoopbackApiTargets("production")).toBe(false);
+    setLoopbackApiTargetsAdminUnlock(true);
+    expect(allowsLoopbackApiTargets("production")).toBe(true);
+    expect(configuredServiceUrl("aidream", "localhost")).toBe(
+      "http://localhost:8000",
+    );
+  });
+
+  it("restores a persisted localhost choice when an admin unlocks, and drops it again on lock", () => {
+    jest.replaceProperty(process.env, "NODE_ENV", "production");
+    window.localStorage.setItem(
+      "matrx.apiConfig.v1",
+      JSON.stringify({
+        activeServer: "localhost",
+        customUrl: null,
+        serviceOverrides: { scraper: "localhost" },
+        apiVersion: null,
+        pathOverrides: {},
+        aiApiVersionOverride: null,
+      }),
+    );
+
+    // Boot with admin status unknown: sanitized in memory.
+    let state = reducer(undefined, { type: "test/init" });
+    state = reducer(state, setLoopbackAccess());
+    expect(state.activeServer).toBe("production");
+    expect(state.loopbackUnlocked).toBe(false);
+
+    // Admin signs in: the stored choice comes back.
+    setLoopbackApiTargetsAdminUnlock(true);
+    state = reducer(state, setLoopbackAccess());
+    expect(state.activeServer).toBe("localhost");
+    expect(state.serviceOverrides.scraper).toBe("localhost");
+    expect(state.loopbackUnlocked).toBe(true);
+
+    // Sign-out re-locks in memory WITHOUT erasing the stored choice.
+    setLoopbackApiTargetsAdminUnlock(false);
+    state = reducer(state, setLoopbackAccess());
+    expect(state.activeServer).toBe("production");
+    expect(state.serviceOverrides.scraper).toBeUndefined();
+    expect(
+      JSON.parse(window.localStorage.getItem("matrx.apiConfig.v1") ?? "{}")
+        .activeServer,
+    ).toBe("localhost");
+
+    window.localStorage.removeItem("matrx.apiConfig.v1");
+  });
+
+  it("rejects every loopback selection path in a production bundle with no admin", () => {
     jest.replaceProperty(process.env, "NODE_ENV", "production");
     let state = reducer(undefined, { type: "test/init" });
 

@@ -9,9 +9,9 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
 import {
   selectActiveServer,
+  selectLoopbackTargetsAllowed,
   switchServer,
 } from "@/lib/redux/slices/apiConfigSlice";
-import { allowsLoopbackApiTargets } from "@/lib/api/service-routing";
 import {
   selectIsBlockMode,
   selectIsSnapshot,
@@ -28,7 +28,7 @@ export default function ChatMobileAdminToggles() {
   const isUsingLocalhost = activeServer === "localhost";
   const blockMode = useAppSelector(selectIsBlockMode);
   const snapshot = useAppSelector(selectIsSnapshot);
-  const loopbackAllowed = allowsLoopbackApiTargets();
+  const loopbackAllowed = useAppSelector(selectLoopbackTargetsAllowed);
 
   if (!isAdmin) return null;
 

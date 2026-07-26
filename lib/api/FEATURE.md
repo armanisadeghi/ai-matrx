@@ -24,12 +24,22 @@ Production and Localhost and clears old exceptions. The adjacent detail menu can
 service to Production or Localhost while the remaining services follow the global choice;
 both the global choice and pins persist in `matrx.apiConfig.v1`.
 
-- Loopback targets are development-bundle only. Production bundles discard persisted
-  `localhost` selections and pins, reject new ones in the central Redux primitive, and do
-  not render the shell environment toggle. A deployed site must never send browser API
-  traffic to the visitor's own `localhost`. The persisted setting is browser-wide, not
-  account-scoped, so an admin selection must never leak through logout into a non-admin
-  session.
+- Loopback targets are gated on ADMIN PRESENCE, not on `NODE_ENV`. A development bundle
+  always allows them; a deployed bundle allows them only while an admin is signed in.
+  Pointing the deployed frontend at a local Python server is a first-class admin
+  workflow — blocking it is a defect, not security. With no admin session, a deployed
+  bundle sanitizes persisted `localhost` selections and pins IN MEMORY, rejects new ones
+  in the central Redux primitive, and hides the shell environment toggle, so an ordinary
+  visitor's API traffic never reaches their own machine.
+- Sanitizing never writes back to storage. The persisted setting is browser-wide, not
+  account-scoped: an anonymous visit in the same browser must not erase the admin's saved
+  choice, and the admin's choice must not leak into that visitor's session.
+- `providers/LoopbackApiAccessSync.tsx` is the ONE writer of the unlock — it sets the
+  module-level mirror in `service-routing.ts` (read synchronously by non-React callers)
+  and dispatches `setLoopbackAccess`, which re-reads the persisted config on unlock.
+  React code reads `selectLoopbackTargetsAllowed`, NEVER `allowsLoopbackApiTargets()`
+  during render: the module flag is not reactive, so a bare call renders stale for the
+  whole session when admin status hydrates after first paint.
 - `lib/api/service-routing.ts` is the one service/origin map and exact file-route ownership map.
 - `apiConfigSlice.ts` resolves the global environment plus per-service exceptions.
 - React code reads `selectApiServiceTargets` / `selectResolvedServiceBaseUrl`; imperative
@@ -176,6 +186,10 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-07-25 — Regated loopback targets on admin presence instead of `NODE_ENV`. The
+  2026-07-24 change also removed the toggle for admins on the deployed site, killing the
+  deployed-frontend → local-server workflow; admins get it back, ordinary visitors stay
+  locked out.
 - 2026-07-24 — Prevented production bundles from restoring or selecting loopback API
   targets, eliminating deployed agent runs that failed against `http://localhost:8000`.
 - 2026-07-22 — Added canonical global and per-service Production/Localhost routing for

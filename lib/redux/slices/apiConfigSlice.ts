@@ -154,14 +154,24 @@ interface ApiConfigState {
    * path prefix. Read the EFFECTIVE version via `selectAiApiVersion`.
    */
   aiApiVersionOverride: AiApiVersion | null;
+
+  /**
+   * Whether this browser may target loopback API origins right now. Always true
+   * in a development bundle; in a production bundle it tracks admin sign-in
+   * (see lib/api/service-routing.ts). Kept in state — not just read from the
+   * module flag — so the UI re-renders the moment admin status hydrates.
+   */
+  loopbackUnlocked: boolean;
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────────
-// The active server is a local-development choice that must SURVIVE reloads in
-// development — losing "localhost" on every refresh is a real footgun there.
-// Production bundles sanitize loopback state because this storage is
-// browser-wide (not user/account-scoped). SSR-safe: no-op on the server,
-// lazy-read on the client.
+// The active server is an admin/dev choice that must SURVIVE reloads — losing
+// "localhost" on every refresh and silently snapping back to production is a
+// real footgun. Because this storage is browser-wide (not account-scoped), a
+// production bundle sanitizes loopback state IN MEMORY until an admin signs in
+// and `setLoopbackAccess(true)` re-reads it. Sanitizing never writes back, so
+// the admin's stored choice survives an anonymous visit in the same browser.
+// SSR-safe: no-op on the server, lazy-read on the client.
 const PERSIST_KEY = "matrx.apiConfig.v1";
 
 interface PersistedApiConfig {
@@ -268,6 +278,7 @@ const initialState: ApiConfigState = {
   apiVersion: _persisted.apiVersion,
   pathOverrides: _persisted.pathOverrides,
   aiApiVersionOverride: _persisted.aiApiVersionOverride,
+  loopbackUnlocked: allowsLoopbackApiTargets(),
 };
 
 // ============================================================================
@@ -291,7 +302,7 @@ export const switchServer = createAsyncThunk(
       env === "localhost" && !allowsLoopbackApiTargets() ? "production" : env;
     if (targetEnv !== env) {
       console.error(
-        "[apiConfig] Blocked a localhost API target in a production browser bundle; using production.",
+        "[apiConfig] Blocked a localhost API target — this deployed bundle has no admin session; using production.",
       );
     }
     dispatch(setActiveServer(targetEnv));
@@ -434,6 +445,44 @@ const apiConfigSlice = createSlice({
         state.customUrl = null;
       }
       persistServer(state);
+    },
+
+    /**
+     * Re-evaluate loopback access after admin status changes.
+     *
+     * Unlocking re-reads the persisted config, which boot-time sanitization
+     * stripped while admin status was still unknown — this is what restores an
+     * admin's saved "localhost" on a deployed site. Locking drops loopback
+     * selections from memory only; it must NEVER persist, or an anonymous
+     * visit in the same browser would erase the admin's stored choice.
+     *
+     * Call `setLoopbackApiTargetsAdminUnlock()` BEFORE dispatching this —
+     * `providers/LoopbackApiAccessSync.tsx` owns both.
+     */
+    setLoopbackAccess: (state) => {
+      const unlocked = allowsLoopbackApiTargets();
+      state.loopbackUnlocked = unlocked;
+
+      if (unlocked) {
+        const persisted = loadPersistedServer();
+        state.activeServer = persisted.activeServer;
+        state.customUrl = persisted.customUrl;
+        state.serviceOverrides = persisted.serviceOverrides;
+        return;
+      }
+
+      if (
+        state.activeServer === "localhost" ||
+        (state.activeServer === "custom" && isLoopbackApiUrl(state.customUrl))
+      ) {
+        state.activeServer = "production";
+        state.customUrl = null;
+      }
+      for (const service of API_SERVICES) {
+        if (state.serviceOverrides[service] === "localhost") {
+          delete state.serviceOverrides[service];
+        }
+      }
     },
 
     setCustomUrl: (state, action: PayloadAction<string>) => {
@@ -579,6 +628,7 @@ const apiConfigSlice = createSlice({
 
 export const {
   setActiveServer,
+  setLoopbackAccess,
   setCustomUrl,
   setServiceOverride,
   clearServiceOverrides,
@@ -605,6 +655,16 @@ type StateWithApiConfig = { apiConfig: ApiConfigState };
 export const selectActiveServer = (
   state: StateWithApiConfig,
 ): ServerEnvironment => state.apiConfig.activeServer;
+
+/**
+ * Whether loopback (localhost) API targets may be selected right now. React
+ * code MUST read this rather than calling `allowsLoopbackApiTargets()` during
+ * render — the module flag is not reactive, so a bare call renders stale for
+ * the whole session when admin status hydrates after first paint.
+ */
+export const selectLoopbackTargetsAllowed = (
+  state: StateWithApiConfig,
+): boolean => state.apiConfig.loopbackUnlocked;
 
 /** The custom URL (only meaningful when activeServer === 'custom') */
 export const selectCustomUrl = (state: StateWithApiConfig): string | null =>

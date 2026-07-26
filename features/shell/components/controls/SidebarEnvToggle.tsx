@@ -9,12 +9,12 @@ import {
   selectActiveServer,
   selectActiveServerHealth,
   selectApiServiceTargets,
+  selectLoopbackTargetsAllowed,
   setServiceOverride,
   switchServer,
 } from "@/lib/redux/slices/apiConfigSlice";
 import {
   API_SERVICE_LABELS,
-  allowsLoopbackApiTargets,
   type ApiService,
   type ServiceEnvironment,
 } from "@/lib/api/service-routing";
@@ -38,7 +38,7 @@ const UNHEALTHY_CHECK_INTERVAL_MS = 15_000;
 export default function SidebarEnvToggle() {
   const dispatch = useAppDispatch();
   const isAdmin = useAppSelector(selectIsAdmin);
-  const loopbackAllowed = allowsLoopbackApiTargets();
+  const loopbackAllowed = useAppSelector(selectLoopbackTargetsAllowed);
   const activeServer = useAppSelector(selectActiveServer);
   const activeHealth = useAppSelector(selectActiveServerHealth);
   const serviceTargets = useAppSelector(selectApiServiceTargets);
