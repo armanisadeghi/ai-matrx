@@ -1,8 +1,9 @@
 # Pending APPLY from archive/oom-batch-v0.4.66
-# Filter: still at A1 only. Match-park=done. Ahead/diverged=excluded.
-# After pull main@e7354a8f7 (v0.4.78)
-# Universe: 387 | done: 244 | ahead: 111 | STILL TO APPLY: 32
-# Ready to ship (unstaged for review): youtube YouTubeDiscoveryDemo.tsx
+# Filter: still at A1 only.
+# done: 249 | ahead: 111 | STILL TO APPLY: 29
+# Applied unstaged: research service + usePipelineProgress + serviceTopics test
+# Skipped ahead: research sourceScoreDisplay.test.ts
+# Podcasts: formatting-only vs park — do not re-apply
 
 ## SKIP — fake-dynamic / audit scripts (2)
 A	scripts/audit-index-files.mjs
@@ -10,11 +11,6 @@ A	scripts/check-fake-dynamic-imports.mjs
 
 ## BATCH — action-catalog (1)
 M	features/action-catalog/service.ts
-
-## BATCH — research (3)
-M	features/research/__tests__/serviceTopics.test.ts
-M	features/research/hooks/usePipelineProgress.ts
-M	features/research/service.ts
 
 ## BATCH — admin applications (9)
 M	app/(admin)/administration/applications/catalogs/page.tsx
@@ -49,69 +45,6 @@ M	features/item-presentation/types.ts
 M	features/shell/navigation/navActions.ts
 M	lib/api/broker/types.ts
 M	lib/list-scope/types.ts
-R	packages/matrx-agents/src/public.ts
-R	packages/matrx-agents/src/types/agents-types.ts
-
-## EXCLUDED — ahead/diverged (111)
-# M	app/(admin)/administration/users/feedback/components/FeedbackTable.tsx
-# M	app/(core)/podcast/PodcastGrid.tsx
-# M	app/(core)/podcast/studio/run-c/_components/StreamingResults.tsx
-# M	app/(core)/podcast/studio/run-refine/[id]/_components/ProductionStage.tsx
-# M	app/(core)/podcast/studio/run-reimagine/[id]/_components/StageCanvas.tsx
-# M	app/(dev)/demos/tests/oauth/components/SlackManager.tsx
-# M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx
-# M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerSlackClient.tsx
-# M	app/(dev)/demos/tests/slack/with-brokers/components/SlackAuthentication.tsx
-# M	app/(dev)/demos/tests/slack/with-brokers/components/TokenManager.tsx
-# M	app/(transitional)/apps/custom/[slug]/CustomAppSlugLayoutClient.tsx
-# M	app/api/agent-apps/generate-favicon/route.ts
-# M	components/applet/apps/AppletCard.tsx
-# M	components/image/cloud/CloudFilesBrowserTable.tsx
-# M	components/image/cloud/CloudImagesTab.tsx
-# M	components/image/cloud/CloudUploadTab.tsx
-# M	components/image/cloud/__tests__/cloudFilesBrowserUtils.test.ts
-# M	components/image/cloud/cloudFilesBrowserUtils.ts
-# M	components/mardown-display/blocks/presentations/SlideView.tsx
-# M	components/mermaid/export.ts
-# M	components/official/ImageAssetUploader.tsx
-# M	components/official/ImageCropUploader.tsx
-# M	components/ui/file-upload/FileUploadWithStorage.tsx
-# M	features/action-catalog/buildEnvelope.ts
-# M	features/agent-apps/route/AgentAppOverviewContent.tsx
-# M	features/agents/components/inputs/input-components/MediaVariableInput.tsx
-# M	features/agents/components/inputs/resources/usePasteImageResource.ts
-# M	features/applet/builder/modules/smart-parts/applets/SmartAppletList.tsx
-# M	features/applet/builder/modules/smart-parts/apps/SmartAppList.tsx
-# M	features/applet/builder/previews/AppPreviewCard.tsx
-# M	features/applet/builder/previews/AppletPreviewCard.tsx
-# M	features/applet/contepts/BrokerDebugger.tsx
-# M	features/applet/home/app-display/Banner.tsx
-# M	features/applet/home/app-display/Default.tsx
-# M	features/applet/home/app-display/Minimal.tsx
-# M	features/applet/home/app-display/Modern.tsx
-# M	features/applet/home/app-display/ModernGlass.tsx
-# M	features/applet/home/app-display/QuarterThreeQuarters.tsx
-# M	features/applet/home/app-display/SavedDefault.tsx
-# M	features/applet/home/app-display/SideBySide.tsx
-# M	features/applet/home/applet-card/Default.tsx
-# M	features/applet/home/applet-card/Enhanced.tsx
-# M	features/applet/home/applet-card/Modern.tsx
-# M	features/applet/home/main-layout/Grid.tsx
-# M	features/applet/home/main-layout/Sidebar.tsx
-# M	features/applet/hooks/useAppletRecipe.ts
-# M	features/applet/runner/fields/concept-broker-options/DragEditModifyTableField.tsx
-# M	features/applet/runner/fields/concept-broker-options/SearchableSelectField.tsx
-# M	features/applet/runner/header/CustomAppHeader.tsx
-# M	features/canvas/artifact-types/renderers/ImageArtifact.tsx
-# M	features/canvas/social/CanvasShareSheet.tsx
-# M	features/code/editor/BinaryFileViewer.tsx
-# M	features/code/views/explorer/CloudFilesExplorer.tsx
-# M	features/cx-chat/components/user-input/ConversationInput.tsx
-# M	features/file-analysis/components/AnnotatablePdfCanvas.tsx
-# M	features/file-analysis/studio/StudioShell.tsx
-# M	features/file-analysis/studio/panels/AnnotationsPanel.tsx
-# M	features/files/FEATURE.md
-# M	features/files/components/surfaces/single-file/PdfEditTab.tsx
-# M	features/files/types.ts
-# ... +51 more
+A	packages/matrx-agents/src/public.ts
+A	packages/matrx-agents/src/types/agents-types.ts
 
