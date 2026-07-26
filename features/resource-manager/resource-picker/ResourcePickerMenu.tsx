@@ -25,6 +25,7 @@ import {
   getVisibleResourcePickerCategories,
   type ResourcePickerViewId,
 } from "./resource-picker-menu-items";
+import { useRunControlCounts } from "./useRunControlCounts";
 
 interface ResourcePickerMenuProps {
   onResourceSelected(
@@ -58,6 +59,8 @@ export function ResourcePickerMenu({
 }: ResourcePickerMenuProps) {
   const [activeView, setActiveView] = useState<ResourcePickerViewId>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
+  // Run-state counts for the "This run" rows only — see useRunControlCounts.
+  const counts = useRunControlCounts(conversationId);
 
   // Helper to switch views and carry over the URL
   const switchToView = (view: ResourcePickerViewId, url: string) => {
@@ -315,6 +318,7 @@ export function ResourcePickerMenu({
           </div>
           {category.items.map((resource) => {
             const Icon = resource.icon;
+            const count = counts[resource.id];
             return (
               <Button
                 key={resource.id}
@@ -332,6 +336,14 @@ export function ResourcePickerMenu({
                 <span className="font-normal text-foreground">
                   {resource.label}
                 </span>
+                {count !== undefined && (
+                  <span
+                    className="ml-1.5 shrink-0 rounded bg-muted px-1 text-[10px] leading-4 tabular-nums text-muted-foreground"
+                    title={`${count} active for this run`}
+                  >
+                    {count}
+                  </span>
+                )}
                 <ChevronRight className="ml-1.5 h-3 w-3 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-muted-foreground" />
               </Button>
             );
