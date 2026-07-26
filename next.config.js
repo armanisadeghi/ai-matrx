@@ -117,9 +117,8 @@ const nextConfig = {
     // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
     reactCompiler: true,
     experimental: {
-        // EXPERIMENT 2: cap Turbopack's task-cache memory (bytes; 45 GiB on a 60 GB machine)
-        // so turbo-tasks GC kicks in before the container OOMs.
-        turbopackMemoryLimit: 48318382080,
+        // EXPERIMENT 3: cap build workers (default = cores-1 = 29 on Vercel Turbo).
+        cpus: 8,
         serverActions: {
             bodySizeLimit: "10mb",
         },

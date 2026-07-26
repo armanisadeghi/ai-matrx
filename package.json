@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
-    "build": "ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:pdfjs-worker && next build",
+    "build": "ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:pdfjs-worker && TOKIO_WORKER_THREADS=14 next build",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
     "build:pdfjs-worker": "tsx scripts/copy-pdfjs-worker.ts",
     "postinstall": "tsx scripts/copy-pdfjs-worker.ts",
