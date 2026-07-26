@@ -23,7 +23,11 @@ import "katex/dist/katex.min.css";
 import { cn } from "@/styles/themes/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PencilIcon } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  guardMarkdownDelimiters,
+  reportDelimiterViolations,
+} from "@/lib/markdown/delimiter-guard";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 
@@ -451,7 +455,23 @@ export const ConfigurableMarkdownContent: React.FC<
     return processed;
   };
 
-  const processedContent = preprocessContent(content);
+  // Last preprocessing step: stop a stray `$$` (KaTeX would dump the swallowed
+  // prose as red `.katex-error` text) or an unclosed `[` (one giant link) from
+  // eating a section. See lib/markdown/delimiter-guard.ts.
+  const { text: processedContent, violations: delimiterViolations } =
+    guardMarkdownDelimiters(preprocessContent(content));
+
+  const delimiterViolationSignature = delimiterViolations
+    .map((v) => `${v.reason}@${v.index}`)
+    .join("|");
+  useEffect(() => {
+    if (isStreamActive || !delimiterViolationSignature) return;
+    reportDelimiterViolations(delimiterViolations, {
+      renderPath: "ConfigurableMarkdownContent",
+      messageId,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- signature is the stable identity of `delimiterViolations`
+  }, [delimiterViolationSignature, isStreamActive, messageId]);
 
   const handleEdit = () => onEditRequest?.();
 

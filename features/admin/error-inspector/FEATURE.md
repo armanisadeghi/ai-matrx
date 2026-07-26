@@ -38,6 +38,13 @@ the safety net, not the main event.
   failures read back from `web.site.initialization.errors`
   (`relation: initialize:<step>`). Source `marketing-crawler`, red.
 
+- **Markdown delimiter guard** — `lib/markdown/delimiter-guard.ts`,
+  `reportDelimiterViolations()`, called from the markdown renderers
+  (`BasicMarkdownContent`, `ConfigurableMarkdownContent`,
+  `MarkdownWithPlugins`). Source `markdown-delimiters`, red. Fires when a stray
+  `$$` or an unclosed `[` would have swallowed a section of an answer — the
+  guard neutralizes the delimiter so the message still renders, and the capture
+  is how the producer emitting broken content gets found.
 - **Agent stream (the central artery)** — `lib/diagnostics/captureStreamError.ts`.
   `captureStreamEvent` is wired at the ONE chokepoint every stream consumer pulls
   events through: `parseNdjsonStream` (`lib/api/stream-parser.ts`). It captures
@@ -207,6 +214,12 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-26 — **New source `markdown-delimiters`.** A single stray `$$` in a
+  model answer made remark-math swallow ~400 chars of prose into a math node;
+  KaTeX then rendered it via its built-in `.katex-error` fallback — a huge block
+  of bright red unrendered markdown mid-answer, with no capture anywhere. Added
+  `lib/markdown/delimiter-guard.ts` (escapes runaway `$$` and `[` openers) and
+  wired its loud recovery into this sink.
 - 2026-07-24 — **Buffered upload failures now preserve the backend rejection.** `python-client.uploadWithProgress` previously rejected XHR upload failures directly, bypassing the `capturePythonClientError` chokepoint used by fetch requests. Progress-enabled file uploads could therefore leave only the caller's generic toast in the Error Inspector. Every XHR HTTP/network/abort/timeout/malformed-response rejection now enters the same structured capture path with endpoint, status, backend detail, user message, and request id intact.
 - 2026-07-21 — **Caught-fetch blind spot closed.** `useBackendApi` previously
   issued raw `fetch` calls and returned failures to feature-level `catch` blocks,

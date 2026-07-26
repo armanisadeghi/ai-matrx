@@ -105,7 +105,15 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 6. **`"use client"` is mandatory.** The engine is `dynamic({ ssr: false })`. Marking RichDocument client-only is what makes the dynamic import legal in App Router pages. Server components must render a client child that mounts RichDocument.
 7. **React Compiler is on.** No manual `useMemo` / `useCallback` / `React.memo`. The compiler memoizes based on input deps. Refs are deliberately not memoized — they're mutable by design.
 8. **`renderer` is explicit.** No `"auto"`. The two renderers (basic, configurable) have subtly different preprocessing (backtick-escaped angle brackets, code-fence parsing). Silent engine swaps diverge rendering. Default is `"basic"`; consumers opt into the others.
-9. **Raw-source `instanceKey` includes a content hash.** Two raw RichDocuments on the same page (e.g. multiple PromptToasts) need distinct overlay `instanceId`s. The hash is FNV-1a, 8 hex chars — collision-tolerable, deterministic, fast.
+9. **Delimiter guard runs last, before the pipeline.** Both renderers pass their
+   preprocessed text through `guardMarkdownDelimiters`
+   (`lib/markdown/delimiter-guard.ts`). It exists because one stray `$$` or
+   unclosed `[` from a model swallows an entire section: `$$` turns it into a
+   math node that KaTeX dumps as bright-red `.katex-error` text, `[` turns it
+   into one giant link. Never call remark-math / react-markdown on model output
+   without it, and never "fix" a firing by silencing the capture — the producer
+   emitting the broken delimiter is the bug.
+10. **Raw-source `instanceKey` includes a content hash.** Two raw RichDocuments on the same page (e.g. multiple PromptToasts) need distinct overlay `instanceId`s. The hash is FNV-1a, 8 hex chars — collision-tolerable, deterministic, fast.
 
 ---
 
@@ -162,6 +170,7 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 Newest first.
 
+- `2026-07-26` — claude: **Runaway-delimiter guard (the "big red text" bug).** A single stray `$$` in an answer made remark-math swallow ~400 chars of prose into a math node; `rehype-katex` then rendered it through its built-in error fallback (`<span class="katex-error" style="color:#cc0000">`), which our display-math `font-size: 1.5em` rule blew up into a wall of red unrendered markdown. New shared primitive `lib/markdown/delimiter-guard.ts` neutralizes runaway `$$` and `[` openers (zero-width-space split / character reference) while leaving genuine math and links untouched, and reports every firing to the Error Inspector (`markdown-delimiters`). Wired into `BasicMarkdownContent`, `ConfigurableMarkdownContent`, `MarkdownWithPlugins`, and the file-preview markdown renderer.
 - `2026-07-14` — codex: **Removed the orphaned `/notes` remote publisher (D47).** The Notes page had intentionally removed its header `RichDocumentActionSurface` but still passed `note-detail-*` into `NoteContentEditor`, forcing preview/split actions into `remote` mode with no consumer. `NotesView` now omits the remote ID, restoring the canonical inline `bar` in preview and `icon-only` menu in MatrxSplit. Remote-surface documentation now uses the live headless working-document integration and explicitly requires a mounted matching consumer.
 - `2026-07-08` — claude: **HTML-preview save-back works on every editable source (D33).** The `html-preview` action (`actions/handlers/export.ts`) now registers a `createFullScreenEditorCallbackGroup` whose `onSave` routes through `ctx.sourceAdapter.edit` and passes only the `callbackGroupId` string through Redux — the `htmlPreview` overlay is callback-aware (see `features/overlays/FEATURE.md`). Saving from an HTML preview opened on a note (or any source whose adapter implements `edit`) persists; chat keeps its `editMessage` self-handle when no group is passed; read-only sources get no Save button; failures toast + console.error, never silent. The generic `ContentActionBar` html-preview item honors its `onSave` prop the same way.
 - `2026-06-23` — claude: **Working document gets the full toolkit.** New `working-document` `ContentSource` (`{ conversationId, kind, documentId? }`) + adapter (`actions/sources/working-document.ts`, edits via `persistWorkingDocumentContentThunk`) + `save-to-task` entity link (`cx_working_document` → `cx_conversation` parent). Extracted `RichDocument`'s provider/bridge registration into `runtime/useActionSurfaceProvider.ts`; added headless `RichDocumentActionProvider` (renders the toolkit with no engine). `NoteEditorCore` gained `actionsSource` (override the derived source) + `previewActionsVariant` (suppress the in-body bar when the host carries its own). The working-document panel/window/Smart-Input-tab now expose copy / read-aloud / save-to-notes-or-task / HTML page / email / print / edit — parity with an assistant response and a note — in every editor mode, plus the right-click menu.

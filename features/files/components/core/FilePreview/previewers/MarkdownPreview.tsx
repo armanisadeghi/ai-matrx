@@ -22,6 +22,7 @@ import rehypeKatex from "rehype-katex";
 import rehypePrism from "rehype-prism-plus";
 import "katex/dist/katex.min.css";
 import { cn } from "@/lib/utils";
+import { guardMarkdownDelimiters } from "@/lib/markdown/delimiter-guard";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 
 export interface MarkdownPreviewProps {
@@ -149,7 +150,9 @@ export function MarkdownPreview({
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex, rehypePrism]}
           >
-            {content}
+            {/* Guard a stray `$$` / unclosed `[` from swallowing a section
+                (lib/markdown/delimiter-guard.ts). */}
+            {guardMarkdownDelimiters(content).text}
           </ReactMarkdown>
         </article>
       </div>

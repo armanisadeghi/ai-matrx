@@ -116,7 +116,16 @@ export type CapturedErrorSource =
    * content path degraded — streaming keeps working via fallbacks, but the
    * cause must be found.
    */
-  | "content-ir";
+  | "content-ir"
+  /**
+   * A runaway markdown delimiter reached a renderer: a stray/unpaired `$$`
+   * that would have made remark-math swallow prose into a math node (KaTeX
+   * then dumps it as red `.katex-error` text), or an unclosed `[` that would
+   * have turned a whole section into one link label. The guard escaped it and
+   * the message still renders — but the producer emitting broken delimiters is
+   * a real defect to find. See `lib/markdown/delimiter-guard.ts`.
+   */
+  | "markdown-delimiters";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =
