@@ -80,7 +80,7 @@ export function AttributesEditor({
   return (
     <section>
       <div className="mb-1 flex items-center justify-between">
-        <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
           Vertical attributes
         </h4>
         <button
@@ -162,7 +162,7 @@ export function AttributesEditor({
                       setField(key, checked === true)
                     }
                   />
-                  <Label htmlFor={`attr-${key}`} className="text-xs capitalize">
+                  <Label htmlFor={`attr-${key}`} className="text-xs font-medium capitalize">
                     {label}
                   </Label>
                 </div>
@@ -174,7 +174,7 @@ export function AttributesEditor({
                 : [];
               return (
                 <div key={key}>
-                  <Label className="text-xs capitalize">{label} (comma-separated)</Label>
+                  <Label className="mb-1 block text-xs font-medium capitalize">{label} (comma-separated)</Label>
                   <Input
                     value={items.join(", ")}
                     onChange={(event) =>
@@ -193,7 +193,7 @@ export function AttributesEditor({
             }
             return (
               <div key={key}>
-                <Label className="text-xs capitalize">{label}</Label>
+                <Label className="mb-1 block text-xs font-medium capitalize">{label}</Label>
                 <Input
                   value={String(attributes[key] ?? "")}
                   onChange={(event) => setField(key, event.target.value)}

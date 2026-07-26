@@ -2,16 +2,25 @@
 
 /**
  * The pillar map — the same plan tree as a spatial graph (React Flow).
- * Pillars orbit the site root, clusters orbit their pillar, articles orbit
- * their cluster. EVERY visual element is actionable (vision constraint —
- * no pretty-but-useless graphs):
- *   · click a node  → opens it in the node panel (drawer on the right);
+ * EVERY visual element is actionable (vision constraint — no pretty-but-
+ * useless graphs):
+ *   · click a node        → opens it in the node panel (right drawer);
  *   · drag a node ONTO another → real reparent (one parent_id write, DB
  *     recomputes the subtree);
- *   · box-select several → bulk status change (real writes);
- *   · color = live plan_status category, size = priority.
- * Layout is pure and deterministic from the tree; positions are never
- * persisted (the tree is the truth, the map is a projection).
+ *   · box-select several  → bulk status change (real writes);
+ *   · double-click a pillar/cluster → collapse/expand its subtree into a
+ *     count-badged super-node (scale technique for 400+ node plans).
+ * Three user-switchable auto-layouts (persisted in localStorage): radial
+ * orbit, tidy tree, pillar columns — all pure functions in
+ * pillar-map/layouts.ts. Dimension encoding lives on the node
+ * (pillar-map/PlanMapNode.tsx) and is explained by the toggleable legend
+ * (pillar-map/MapLegend.tsx): color = status, shape = node_type,
+ * size = priority, dashed outline = needs_reviewer, corner dot = primary
+ * keyword. Filters cover status / type / pillar / keyword coverage /
+ * reviewer / technical depth; filtered-out ancestors stay visible but dimmed
+ * so the tree never shatters. Semantic zoom hides article/cluster labels at
+ * far zoom bands. Positions are never persisted (the tree is the truth, the
+ * map is a projection).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // eslint-disable-next-line no-restricted-syntax -- this file IS the map Impl; it loads only through the next/dynamic({ssr:false}) wrapper in ContentPlanWorkbench.tsx
@@ -19,7 +28,10 @@ import {
   applyNodeChanges,
   Background,
   Controls,
+  MiniMap,
+  Panel,
   ReactFlow,
+  useStore,
   type Edge,
   type Node,
   type NodeChange,
@@ -40,100 +52,80 @@ import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { cn } from "@/lib/utils";
 
-import { planStatusColor, PRIORITY_SIZES } from "../constants";
-import type { PlanNodeRow, PlanNodeTreeItem } from "../types";
-import { buildPlanTree } from "../types";
+import {
+  NODE_TYPE_LABELS,
+  PILLAR_MAP_LAYOUTS,
+  PILLAR_MAP_STORAGE_KEY,
+  type PillarMapLayoutId,
+} from "../constants";
+import type { PlanNodeRow } from "../types";
+import { buildPlanTree, PLAN_NODE_TYPES, TECHNICAL_DEPTHS } from "../types";
+import {
+  collapseVisible,
+  filterWithAncestors,
+  groupedLayout,
+  middleTruncate,
+  radialLayout,
+  tidyTreeLayout,
+  type XY,
+} from "./pillar-map/layouts";
+import { MapLegend } from "./pillar-map/MapLegend";
+import { PlanMapNodeView, type PlanMapNodeData } from "./pillar-map/PlanMapNode";
 
-interface MapNodeData extends Record<string, unknown> {
-  label: string;
-  route: string | null;
-  nodeType: string;
-  statusSlug: string | undefined;
-  priority: number | null;
+type MapNode = Node<PlanMapNodeData>;
+type ZoomBand = "far" | "mid" | "near";
+
+const LAYOUT_FN: Record<
+  PillarMapLayoutId,
+  (items: ReturnType<typeof buildPlanTree>) => Map<string, XY>
+> = {
+  radial: radialLayout,
+  tree: tidyTreeLayout,
+  grouped: groupedLayout,
+};
+
+const EDGE_STYLE = {
+  stroke: "hsl(var(--muted-foreground) / 0.5)",
+  strokeWidth: 1,
+} as const;
+
+const nodeTypes = { plan: PlanMapNodeView };
+
+interface PersistedMapPrefs {
+  layout?: PillarMapLayoutId;
+  legend?: boolean;
 }
 
-type MapNode = Node<MapNodeData>;
-
-/** Deterministic radial layout: root(s) centered, children fan out. */
-function layoutTree(items: PlanNodeTreeItem[]): Map<string, { x: number; y: number }> {
-  const positions = new Map<string, { x: number; y: number }>();
-  const RING = [0, 420, 780, 1050, 1250];
-
-  const countLeaves = (item: PlanNodeTreeItem): number =>
-    item.children.length === 0
-      ? 1
-      : item.children.reduce((sum, child) => sum + countLeaves(child), 0);
-
-  const place = (
-    item: PlanNodeTreeItem,
-    depth: number,
-    angleFrom: number,
-    angleTo: number,
-  ) => {
-    const angle = (angleFrom + angleTo) / 2;
-    const radius = RING[Math.min(depth, RING.length - 1)];
-    positions.set(item.node.id, {
-      x: Math.cos(angle) * radius,
-      y: Math.sin(angle) * radius,
-    });
-    const total = countLeaves(item);
-    let cursor = angleFrom;
-    for (const child of item.children) {
-      const share = (countLeaves(child) / total) * (angleTo - angleFrom);
-      place(child, depth + 1, cursor, cursor + share);
-      cursor += share;
-    }
-  };
-
-  const totalLeaves = items.reduce((sum, item) => sum + countLeaves(item), 0) || 1;
-  let cursor = -Math.PI / 2;
-  for (const item of items) {
-    const share = (countLeaves(item) / totalLeaves) * Math.PI * 2;
-    // A single root sits at the exact center; multiple roots share ring 1.
-    if (items.length === 1) {
-      positions.set(item.node.id, { x: 0, y: 0 });
-      const total = countLeaves(item);
-      let childCursor = -Math.PI / 2;
-      for (const child of item.children) {
-        const childShare = (countLeaves(child) / total) * Math.PI * 2;
-        place(child, 1, childCursor, childCursor + childShare);
-        childCursor += childShare;
-      }
-    } else {
-      place(item, 1, cursor, cursor + share);
-    }
-    cursor += share;
+function readPrefs(): PersistedMapPrefs {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PILLAR_MAP_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return {};
+    const candidate = parsed as PersistedMapPrefs;
+    return {
+      layout: PILLAR_MAP_LAYOUTS.some((entry) => entry.id === candidate.layout)
+        ? candidate.layout
+        : undefined,
+      legend: typeof candidate.legend === "boolean" ? candidate.legend : undefined,
+    };
+  } catch {
+    return {};
   }
-  return positions;
 }
 
-function MapNodeView({ data, selected }: { data: MapNodeData; selected?: boolean }) {
-  const size =
-    data.priority != null ? (PRIORITY_SIZES[data.priority] ?? 34) : 34;
-  return (
-    <div
-      className={cn(
-        "flex flex-col items-center gap-0.5",
-        selected && "outline outline-2 outline-primary rounded-md p-0.5",
-      )}
-      title={data.route ?? data.label}
-    >
-      <div
-        className={cn(
-          "rounded-full border-2 border-background shadow",
-          planStatusColor(data.statusSlug),
-          data.nodeType === "pillar" && "ring-2 ring-foreground/30",
-        )}
-        style={{ width: size, height: size }}
-      />
-      <span className="max-w-32 truncate text-[10px] font-medium text-foreground">
-        {data.label}
-      </span>
-    </div>
-  );
+/** Reports the quantized zoom band upward — parent re-renders only on band change. */
+function ZoomBandWatcher({ onBand }: { onBand: (band: ZoomBand) => void }) {
+  const band = useStore((state): ZoomBand => {
+    const zoom = state.transform[2];
+    return zoom < 0.35 ? "far" : zoom < 0.8 ? "mid" : "near";
+  });
+  useEffect(() => {
+    onBand(band);
+  }, [band, onBand]);
+  return null;
 }
-
-const nodeTypes = { plan: MapNodeView };
 
 export function PillarMap({
   nodes,
@@ -148,10 +140,32 @@ export function PillarMap({
   onReparent: (id: string, parentId: string) => void;
   onBulkStatus: (ids: string[], statusId: string) => void;
 }) {
+  const [prefs] = useState(readPrefs);
+  const [layoutId, setLayoutId] = useState<PillarMapLayoutId>(
+    prefs.layout ?? "radial",
+  );
+  const [showLegend, setShowLegend] = useState(prefs.legend ?? true);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        PILLAR_MAP_STORAGE_KEY,
+        JSON.stringify({ layout: layoutId, legend: showLegend }),
+      );
+    } catch {
+      // Storage unavailable (private mode) — prefs just don't persist.
+    }
+  }, [layoutId, showLegend]);
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [pillarFilter, setPillarFilter] = useState<string>("all");
+  const [keywordFilter, setKeywordFilter] = useState<string>("all");
+  const [reviewerFilter, setReviewerFilter] = useState<string>("all");
+  const [depthFilter, setDepthFilter] = useState<string>("all");
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkStatusId, setBulkStatusId] = useState<string>("");
+  const [zoomBand, setZoomBand] = useState<ZoomBand>("mid");
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
   });
@@ -164,24 +178,58 @@ export function PillarMap({
     [nodes],
   );
 
-  const visible = useMemo(
+  const legendStatuses = useMemo(
     () =>
-      nodes.filter((node) => {
+      statusCategories.categories.map((category) => ({
+        slug: category.slug ?? category.id,
+        label: category.name,
+      })),
+    [statusCategories.categories],
+  );
+
+  // Filter (keeping ancestors, dimmed) then collapse — both pure.
+  const { rows: filteredRows, dimmed } = useMemo(
+    () =>
+      filterWithAncestors(nodes, (node) => {
         if (
           statusFilter !== "all" &&
           statusSlugById.get(node.status_id ?? "") !== statusFilter
         ) {
           return false;
         }
+        if (typeFilter !== "all" && node.node_type !== typeFilter) return false;
         if (pillarFilter !== "all" && node.pillar_label !== pillarFilter) {
+          return false;
+        }
+        if (keywordFilter === "has" && !node.primary_keyword_id) return false;
+        if (keywordFilter === "missing" && node.primary_keyword_id) return false;
+        if (reviewerFilter === "only" && !node.needs_reviewer) return false;
+        if (depthFilter !== "all" && node.technical_depth !== depthFilter) {
           return false;
         }
         return true;
       }),
-    [nodes, statusFilter, pillarFilter, statusSlugById],
+    [
+      nodes,
+      statusFilter,
+      typeFilter,
+      pillarFilter,
+      keywordFilter,
+      reviewerFilter,
+      depthFilter,
+      statusSlugById,
+    ],
   );
 
-  const layout = useMemo(() => layoutTree(buildPlanTree(visible)), [visible]);
+  const { rows: visible, hiddenCounts } = useMemo(
+    () => collapseVisible(filteredRows, collapsed),
+    [filteredRows, collapsed],
+  );
+
+  const layout = useMemo(
+    () => LAYOUT_FN[layoutId](buildPlanTree(visible)),
+    [visible, layoutId],
+  );
 
   const layoutNodes = useMemo<MapNode[]>(
     () =>
@@ -191,13 +239,18 @@ export function PillarMap({
         position: layout.get(node.id) ?? { x: 0, y: 0 },
         data: {
           label: node.label,
+          canvasLabel: middleTruncate(node.label),
           route: node.route,
           nodeType: node.node_type,
           statusSlug: statusSlugById.get(node.status_id ?? ""),
           priority: node.priority,
+          needsReviewer: node.needs_reviewer === true,
+          hasKeyword: node.primary_keyword_id != null,
+          collapsedCount: hiddenCounts.get(node.id) ?? 0,
+          dimmed: dimmed.has(node.id),
         },
       })),
-    [visible, layout, statusSlugById],
+    [visible, layout, statusSlugById, hiddenCounts, dimmed],
   );
 
   // Controlled React Flow: drag movement + selection flags only persist if
@@ -214,12 +267,9 @@ export function PillarMap({
     setPrevLayoutNodes(layoutNodes);
     setFlowNodes(layoutNodes);
   }
-  const handleNodesChange = useCallback(
-    (changes: NodeChange<MapNode>[]) => {
-      setFlowNodes((current) => applyNodeChanges(changes, current));
-    },
-    [],
-  );
+  const handleNodesChange = useCallback((changes: NodeChange<MapNode>[]) => {
+    setFlowNodes((current) => applyNodeChanges(changes, current));
+  }, []);
 
   const flowEdges = useMemo<Edge[]>(() => {
     const ids = new Set(visible.map((node) => node.id));
@@ -229,9 +279,10 @@ export function PillarMap({
         id: `${node.parent_id}-${node.id}`,
         source: node.parent_id as string,
         target: node.id,
-        type: "straight",
+        type: layoutId === "tree" ? "default" : "straight",
+        style: EDGE_STYLE,
       }));
-  }, [visible]);
+  }, [visible, layoutId]);
 
   const byId = useMemo(() => {
     const map = new Map<string, PlanNodeRow>();
@@ -239,10 +290,44 @@ export function PillarMap({
     return map;
   }, [nodes]);
 
+  const hasChildren = useMemo(() => {
+    const parents = new Set<string>();
+    for (const node of nodes) if (node.parent_id) parents.add(node.parent_id);
+    return parents;
+  }, [nodes]);
+
   const handleNodeClick = useCallback<NodeMouseHandler>(
     (_event, node) => onSelect(node.id),
     [onSelect],
   );
+
+  const handleNodeDoubleClick = useCallback<NodeMouseHandler>(
+    (_event, node) => {
+      const row = byId.get(node.id);
+      if (!row) return;
+      if (row.node_type !== "pillar" && row.node_type !== "cluster") return;
+      if (!hasChildren.has(row.id)) return;
+      setCollapsed((current) => {
+        const next = new Set(current);
+        if (next.has(row.id)) next.delete(row.id);
+        else next.add(row.id);
+        return next;
+      });
+    },
+    [byId, hasChildren],
+  );
+
+  const collapseAllPillars = useCallback(() => {
+    setCollapsed(
+      new Set(
+        nodes
+          .filter(
+            (node) => node.node_type === "pillar" && hasChildren.has(node.id),
+          )
+          .map((node) => node.id),
+      ),
+    );
+  }, [nodes, hasChildren]);
 
   const handleNodeDragStop = useCallback(
     (_event: unknown, dragged: Node) => {
@@ -283,9 +368,24 @@ export function PillarMap({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-1.5">
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-3 py-1.5">
+        <Select
+          value={layoutId}
+          onValueChange={(value) => setLayoutId(value as PillarMapLayoutId)}
+        >
+          <SelectTrigger className="h-7 w-32 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PILLAR_MAP_LAYOUTS.map((entry) => (
+              <SelectItem key={entry.id} value={entry.id}>
+                {entry.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-7 w-40 text-xs">
+          <SelectTrigger className="h-7 w-32 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -297,8 +397,21 @@ export function PillarMap({
             ))}
           </SelectContent>
         </Select>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="h-7 w-28 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {PLAN_NODE_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {NODE_TYPE_LABELS[type]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={pillarFilter} onValueChange={setPillarFilter}>
-          <SelectTrigger className="h-7 w-44 text-xs">
+          <SelectTrigger className="h-7 w-36 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -310,6 +423,54 @@ export function PillarMap({
             ))}
           </SelectContent>
         </Select>
+        <Select value={keywordFilter} onValueChange={setKeywordFilter}>
+          <SelectTrigger className="h-7 w-36 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Keyword: any</SelectItem>
+            <SelectItem value="has">Has keyword</SelectItem>
+            <SelectItem value="missing">Missing keyword</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={reviewerFilter} onValueChange={setReviewerFilter}>
+          <SelectTrigger className="h-7 w-36 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Reviewer: any</SelectItem>
+            <SelectItem value="only">Needs reviewer</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={depthFilter} onValueChange={setDepthFilter}>
+          <SelectTrigger className="h-7 w-28 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any depth</SelectItem>
+            {TECHNICAL_DEPTHS.map((depth) => (
+              <SelectItem key={depth} value={depth}>
+                {depth[0].toUpperCase() + depth.slice(1)} depth
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={collapsed.size > 0 ? () => setCollapsed(new Set()) : collapseAllPillars}
+        >
+          {collapsed.size > 0 ? "Expand all" : "Collapse pillars"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("h-7 text-xs", showLegend && "bg-accent")}
+          onClick={() => setShowLegend((current) => !current)}
+        >
+          Legend
+        </Button>
         {selectedIds.length > 1 ? (
           <div className="ml-auto flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">
@@ -338,17 +499,20 @@ export function PillarMap({
           </div>
         ) : (
           <span className="ml-auto text-[11px] text-muted-foreground">
-            Drag onto a node to reparent · click to edit · shift-drag to multi-select
+            Drag onto a node to reparent · click to edit · double-click a pillar
+            to collapse · shift-drag to multi-select
           </span>
         )}
       </div>
-      <div className="min-h-0 flex-1">
+      <div className="group min-h-0 flex-1" data-zoom-band={zoomBand}>
         <ReactFlow
+          key={layoutId}
           nodes={flowNodes}
           edges={flowEdges}
           nodeTypes={nodeTypes}
           onNodesChange={handleNodesChange}
           onNodeClick={handleNodeClick}
+          onNodeDoubleClick={handleNodeDoubleClick}
           onNodeDragStop={handleNodeDragStop}
           onSelectionChange={handleSelectionChange}
           onlyRenderVisibleElements
@@ -359,8 +523,20 @@ export function PillarMap({
           panOnScroll
           proOptions={{ hideAttribution: true }}
         >
+          <ZoomBandWatcher onBand={setZoomBand} />
           <Background gap={24} />
           <Controls showInteractive={false} />
+          <MiniMap
+            pannable
+            zoomable
+            className="!bg-card"
+            maskColor="hsl(var(--muted) / 0.6)"
+          />
+          {showLegend ? (
+            <Panel position="top-left" className="!m-2">
+              <MapLegend statuses={legendStatuses} />
+            </Panel>
+          ) : null}
         </ReactFlow>
       </div>
     </div>

@@ -14,8 +14,12 @@
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
+import { Panel, type Layout } from "react-resizable-panels";
 
+import { ClientGroup } from "@/app/(dev)/demos/resizables/_lib/ClientGroup";
+import { Handle } from "@/app/(dev)/demos/resizables/_lib/Handle";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
@@ -50,12 +54,22 @@ const PillarMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <p className="p-6 text-sm text-muted-foreground">Loading pillar map…</p>
+      <div className="flex h-full flex-col gap-3 p-6">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="min-h-0 flex-1" />
+      </div>
     ),
   },
 );
 
-export function ContentPlanWorkbench() {
+export function ContentPlanWorkbench({
+  defaultLayout,
+  layoutCookieName,
+}: {
+  /** Cookie-read initial sizes for the tree|panel split (SSR-correct). */
+  defaultLayout?: Layout;
+  layoutCookieName: string;
+}) {
   const { siteId, view } = usePlanWorkspaceParams();
   const { sites, orgSites } = useContentPlanSites();
   const isMobile = useIsMobile();
@@ -203,9 +217,17 @@ export function ContentPlanWorkbench() {
 
         <div className="min-h-0 flex-1">
           {!siteId ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              Pick a site in the header to start planning its content.
-            </p>
+            <div className="flex h-full items-center justify-center p-6">
+              <div className="max-w-sm text-center">
+                <p className="text-sm font-medium text-foreground">
+                  Pick a site to start planning
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Use the site picker in the header — the plan, entities, and
+                  map all follow it.
+                </p>
+              </div>
+            </div>
           ) : nodes.isError ? (
             <p className="p-6 text-sm text-destructive">
               Could not load the plan: {extractErrorMessage(nodes.error)}
@@ -223,26 +245,40 @@ export function ContentPlanWorkbench() {
               onReparent={(id, parentId) => handleReparent(id, parentId)}
               onBulkStatus={handleBulkStatus}
             />
+          ) : nodes.isLoading ? (
+            <TreeViewSkeleton />
+          ) : isMobile ? (
+            <PlanTree
+              nodes={nodeRows}
+              selectedId={selectedNodeId}
+              statusSlugById={statusSlugById}
+              onSelect={setSelectedNodeId}
+              onReparent={handleReparent}
+              onAddChild={openNewNode}
+            />
           ) : (
-            <div className="flex h-full">
-              <div
-                className={
-                  isMobile
-                    ? "w-full"
-                    : "w-[380px] shrink-0 border-r border-border"
-                }
-              >
-                <PlanTree
-                  nodes={nodeRows}
-                  selectedId={selectedNodeId}
-                  statusSlugById={statusSlugById}
-                  onSelect={setSelectedNodeId}
-                  onReparent={handleReparent}
-                  onAddChild={openNewNode}
-                />
-              </div>
-              {!isMobile ? (
-                <div className="min-w-0 flex-1">
+            <ClientGroup
+              id="content-plan"
+              cookieName={layoutCookieName}
+              orientation="horizontal"
+              defaultLayout={defaultLayout}
+              className="h-full w-full"
+            >
+              <Panel id="tree" defaultSize="32%" minSize="8%">
+                <div className="h-full overflow-hidden">
+                  <PlanTree
+                    nodes={nodeRows}
+                    selectedId={selectedNodeId}
+                    statusSlugById={statusSlugById}
+                    onSelect={setSelectedNodeId}
+                    onReparent={handleReparent}
+                    onAddChild={openNewNode}
+                  />
+                </div>
+              </Panel>
+              <Handle />
+              <Panel id="detail" minSize="25%">
+                <div className="h-full overflow-hidden">
                   {selectedNode ? (
                     <NodePanel
                       key={selectedNode.id}
@@ -253,17 +289,24 @@ export function ContentPlanWorkbench() {
                       onDeleted={() => setSelectedNodeId(null)}
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <p className="max-w-sm text-center text-sm text-muted-foreground">
-                        {nodeRows.length === 0
-                          ? "No plan yet. Add a root node on the left — agents can fill in the bulk, you correct and approve."
-                          : "Select a node to edit its brief, keyword, topics, and people."}
-                      </p>
+                    <div className="flex h-full items-center justify-center p-6">
+                      <div className="max-w-sm text-center">
+                        <p className="text-sm font-medium text-foreground">
+                          {nodeRows.length === 0
+                            ? "No plan yet"
+                            : "Nothing selected"}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {nodeRows.length === 0
+                            ? "Add a root node on the left — agents can fill in the bulk, you correct and approve."
+                            : "Select a node to edit its brief, keyword, topics, and people."}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
-              ) : null}
-            </div>
+              </Panel>
+            </ClientGroup>
           )}
         </div>
 
@@ -308,5 +351,26 @@ export function ContentPlanWorkbench() {
         ) : null}
       </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+/** First-load skeleton for the tree view — mirrors the two-pane footprint. */
+function TreeViewSkeleton() {
+  return (
+    <div className="flex h-full">
+      <div className="w-1/3 space-y-2.5 border-r border-border p-3">
+        {Array.from({ length: 8 }, (_, index) => (
+          <div key={index} className="space-y-1.5">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        ))}
+      </div>
+      <div className="flex-1 space-y-3 p-6">
+        <Skeleton className="h-5 w-56" />
+        <Skeleton className="h-4 w-72" />
+        <Skeleton className="mt-4 h-40 w-full max-w-2xl" />
+      </div>
+    </div>
   );
 }

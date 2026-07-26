@@ -21,7 +21,6 @@ import {
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
 
 import { planKeys } from "../data/hooks";
 import {
@@ -39,18 +38,26 @@ const VIEW_ITEMS: { view: PlanView; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-/** Sites for the picker: active org's first, all visible as fallback. */
+/**
+ * Sites for the picker. RLS already scopes to everything the caller can
+ * administer (`listSiteOptions` is a deliberate org-browse surface). Active
+ * org sites sort first; the full list stays available so a plan applied to
+ * another of the user's orgs (e.g. Titanium while the shell is on AI Matrx)
+ * is still reachable from the dropdown.
+ */
 export function useContentPlanSites() {
   const orgId = useAppSelector(selectEffectiveOrganizationId);
   const sites = useSiteOptions();
-  const scopedSites = useMemo(() => {
-    const all = sites.data ?? [];
-    return orgId ? all.filter((site) => site.organization_id === orgId) : all;
-  }, [sites.data, orgId]);
-  const orgSites = useMemo(
-    () => (scopedSites.length > 0 ? scopedSites : (sites.data ?? [])),
-    [scopedSites, sites.data],
+  const all = sites.data ?? [];
+  const scopedSites = useMemo(
+    () => (orgId ? all.filter((site) => site.organization_id === orgId) : all),
+    [all, orgId],
   );
+  const orgSites = useMemo(() => {
+    if (!orgId || scopedSites.length === 0) return all;
+    const inOrgIds = new Set(scopedSites.map((site) => site.id));
+    return [...scopedSites, ...all.filter((site) => !inOrgIds.has(site.id))];
+  }, [all, orgId, scopedSites]);
   return { sites, orgSites, scopedSites };
 }
 
@@ -59,23 +66,31 @@ export function ContentPlanHeader() {
   const { sites, orgSites, scopedSites } = useContentPlanSites();
   const queryClient = useQueryClient();
 
-  // Default only to a site of the ACTIVE org — never silently drop another
-  // org's site into the URL. Orgs without sites get the full labeled list
-  // in the picker, but the user chooses explicitly.
+  // Prefer auto-selecting a site of the ACTIVE org. If the URL already names
+  // a site outside that org, leave it — the picker still lists it.
   useEffect(() => {
     if (!siteId && scopedSites.length > 0) setSiteId(scopedSites[0].id);
   }, [siteId, scopedSites, setSiteId]);
 
+  // Keep a ?site= target in the list even if options are still loading /
+  // briefly empty so the Select doesn't blank out.
+  const pickerSites = useMemo(() => {
+    if (!siteId) return orgSites;
+    if (orgSites.some((site) => site.id === siteId)) return orgSites;
+    const orphan = (sites.data ?? []).find((site) => site.id === siteId);
+    return orphan ? [orphan, ...orgSites] : orgSites;
+  }, [orgSites, siteId, sites.data]);
+
   return (
     <div className="flex w-full min-w-0 items-center gap-1.5">
       <Select value={siteId ?? ""} onValueChange={setSiteId}>
-        <SelectTrigger className="h-7 w-40 truncate border-none bg-transparent text-sm font-medium shadow-none sm:w-56">
+        <SelectTrigger className="h-7 w-48 truncate border-none bg-transparent text-sm font-medium shadow-none sm:w-64">
           <SelectValue
             placeholder={sites.isLoading ? "Loading sites…" : "Pick a site"}
           />
         </SelectTrigger>
         <SelectContent>
-          {orgSites.map((site) => (
+          {pickerSites.map((site) => (
             <SelectItem key={site.id} value={site.id}>
               {site.domain ?? site.name}
               {!site.brand_id ? " — no brand" : ""}

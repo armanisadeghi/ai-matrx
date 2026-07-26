@@ -78,11 +78,18 @@ plan CRUD through it.
    workflow/role/priority; the plan reads keyword value, never re-decides
    it), topics / secondary keywords / entity attachments
    (`NodeAssociations.tsx`).
-3. **Pillar map** (`PillarMap.tsx`, React Flow, code-split behind the view
-   switch with `ssr:false`): deterministic radial projection of the same
-   tree. Click = open node panel (right sheet); drag a node onto another =
-   real reparent; box-select (shift-drag) = bulk status change; filters by
-   status/pillar. Positions are a projection, never persisted.
+3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
+   behind the view switch with `ssr:false`): three user-switchable pure
+   layouts (radial orbit / tidy tree / pillar columns — `pillar-map/layouts.ts`,
+   unit-tested; choice persists in localStorage). Every dimension encoded
+   (legend toggle): color = status, shape = node_type, size = priority,
+   dashed outline = needs_reviewer, corner dot = primary keyword. Scale:
+   double-click a pillar/cluster collapses its subtree into a count-badged
+   super-node; semantic zoom hides article/cluster labels far out; filters
+   (status/type/pillar/keyword coverage/reviewer/technical depth) keep
+   ancestors visible but dimmed. Click = open node panel; drag a node onto
+   another = real reparent; box-select (shift-drag) = bulk status change.
+   Positions are a projection, never persisted.
 4. **Entities** (`EntityManager.tsx`): `plan.entity` CRUD per site.
 5. **Agent writes** land directly in the DB (chat tools today, aidream
    generator later) and appear on refetch — the header Refresh invalidates
@@ -130,6 +137,30 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-26 — Claude: **usability overhaul of the workspace UI** (no behavior
+  changes). Tree|panel split is now a cookie-persisted resizable
+  `react-resizable-panels` group (`panels:content-plan`, read server-side in
+  `page.tsx`; same `ClientGroup`/`Handle` pattern as `/tasks`) — the fixed
+  380px sidebar is gone. Tree rows are two-line (full label, full route in
+  mono below — page names/routes never truncate) with a high-contrast
+  selected state (primary wash + 2px left rail + heavier weight) distinct
+  from hover. Node panel restructured into labeled sections (Page /
+  Placement / Targeting / Brief + attribute/association sections) with one
+  field-label and section-header grammar; primary content is
+  `text-foreground` everywhere, `text-muted-foreground` reserved for
+  genuinely secondary metadata. Entities view redesigned (centered card
+  list, readable names, type badges, real empty state + skeleton loading);
+  entity dialog and NewNodeDialog labels tidied; node types humanized via
+  `NODE_TYPE_LABELS`. Skeletons replace bare "Loading…" text. PillarMap
+  untouched.
+- 2026-07-26 — Claude: pillar map redesigned for 400+ nodes — 3 switchable
+  pure layouts (`pillar-map/layouts.ts` + tests), full dimension encoding
+  (shape/color/size/outline/badge) with legend, collapse/expand super-nodes,
+  semantic-zoom labels, ancestor-dimming filters; props interface unchanged.
+- 2026-07-26 — Claude: **Site picker lists every RLS-visible site** (active org
+  first). Filtering to active-org-only hid sites like `prpinjectionmd.com`
+  (Titanium) when the shell org was something else — plans applied fine, the
+  dropdown just couldn't reach them. `?site=` orphans stay in the list.
 - 2026-07-25 — Claude: **agent-write path live end-to-end** — plan_tree /
   plan_node_patch envelopes (applied server-side by aidream; receipts render
   via `features/matrx-envelope/directives/planTree/`, resolving through THIS

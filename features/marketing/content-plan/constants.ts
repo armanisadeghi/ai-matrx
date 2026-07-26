@@ -38,3 +38,15 @@ export const NODE_TYPE_LABELS: Record<PlanNodeType, string> = {
 
 /** Pillar-map node sizing by priority (1 = highest). */
 export const PRIORITY_SIZES: Record<number, number> = { 1: 44, 2: 36, 3: 30 };
+
+/** Pillar-map auto-layouts (user-switchable; persisted in localStorage). */
+export type PillarMapLayoutId = "radial" | "tree" | "grouped";
+export const PILLAR_MAP_LAYOUTS: readonly {
+  id: PillarMapLayoutId;
+  label: string;
+}[] = [
+  { id: "radial", label: "Radial orbit" },
+  { id: "tree", label: "Tidy tree" },
+  { id: "grouped", label: "Pillar columns" },
+];
+export const PILLAR_MAP_STORAGE_KEY = "content-plan.pillar-map.v1";
