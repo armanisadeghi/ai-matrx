@@ -3,7 +3,7 @@
 Status: **live (2026-07-22).** Route: `app/(core)/marketing/keyword-research/page.tsx` →
 `KeywordResearchWorkbench`. Linked from the public `/seo` suite ("Keyword Research &
 Relationships" card). Cross-repo contract of record:
-`/Users/armanisadeghi/code/common-docs/to-be-organized-NEW/seo-module/seo-keyword-agent-guide.md`.
+`/Users/armanisadeghi/code/common-docs/systems/seo-keywords/seo-keyword-agent-guide.md`.
 
 The site-scoped read surface is
 `/marketing/brands/[brandId]/sites/[siteId]/keywords` →
