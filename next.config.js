@@ -117,8 +117,9 @@ const nextConfig = {
     // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
     reactCompiler: true,
     experimental: {
-        // EXPERIMENT 1: Turbopack persistent build cache (default false in 16.2).
-        turbopackFileSystemCacheForBuild: true,
+        // EXPERIMENT 2: cap Turbopack's task-cache memory (bytes; 45 GiB on a 60 GB machine)
+        // so turbo-tasks GC kicks in before the container OOMs.
+        turbopackMemoryLimit: 48318382080,
         serverActions: {
             bodySizeLimit: "10mb",
         },
