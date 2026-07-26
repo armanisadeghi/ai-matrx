@@ -120,9 +120,9 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 | Group | Purpose | URL | Build |
 |---|---|---|---|
 | `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | always |
-| `(admin)` | **Production admin.** Super-admin gated at layout level. | `/administration/*` | always |
+| `(admin)` | **Production admin.** Super-admin gated at layout level. | `/administration/*` | `full` / `core` (not `user` / `slim`) |
 | `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | always |
-| `(dev)` | **Internal demos / tests / experiments.** Auth-required. | `/demos/*` | `full` only |
+| `(dev)` | **Internal demos / tests / experiments.** Auth-required. | `/demos/*` | `full` / `user` |
 | `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
 | `(popup)` | OAuth popup chrome. | `/popup-window/*` | always |
@@ -131,7 +131,7 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 
 **Shell:** `(core)` and `(admin)` both render `AppShell` (`features/shell/components/AppShell.tsx`): sidebar + transparent header + `#shell-header-center`. **`(core)` routes:** route chrome via `<PageHeader>`, body `h-full overflow-hidden` — see [`features/shell/components/header/variants/USAGE.md`](./features/shell/components/header/variants/USAGE.md); **fixing or building any `(core)` route header/body → invoke the `core-route-headers` skill** (classification, exemplars, mobile bottom-sheet rules, browser verification). **Admin exception:** content sits below the header (not behind it) via scoped `styles/shell.css` rules — admin pages may use `h-[calc(100dvh-2.5rem)]`. `(transitional)` still uses `ResponsiveLayout`.
 
-**Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full`** (matches production / `aimatrx.com`). In `core`, `(dev)` leaves and the `/demos/*` redirects are invisible (clean 404, not 307→404); in `full` both compile. Slim build: `MATRX_PROFILE=core pnpm build` / `pnpm dev`.
+**Build gate:** `next.config.js` — `FORCE_MATRX_PROFILE` (code, wins over env) or env `MATRX_PROFILE=full|core|user|slim` — default **`full`**. Matrix: **`(dev)`** in `full`/`user`; **`(admin)`** in `full`/`core`. **`user`** = full minus `(admin)`; **`slim`** = core minus `(admin)` (parks `app/(admin)`). `/demos/*` redirects only when `(dev)` is compiled. Code flip: `FORCE_MATRX_PROFILE` in `next.config.js` (`null` = env/default).
 
 **Demos:** the `/demos` index (`app/(dev)/demos/page.dev.tsx`) auto-discovers demos under `(dev)/demos/`. Every new demo goes to `(dev)/demos/<name>/page.dev.tsx`. `(dev)` route leaves are named `page.dev.tsx` / `layout.dev.tsx` / `loading.dev.tsx` / `route.dev.ts`; helpers (`components/`, `hooks/`, `utils/`) keep plain `.tsx`/`.ts` — helpers imported by prod code still compile into core ("fake demos" tech debt; relocate to `components/` over time).
 

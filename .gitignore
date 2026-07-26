@@ -30,6 +30,10 @@ packages/*/tsconfig.tsbuildinfo
 .next*/
 /out/
 
+# MATRX_PROFILE=user|slim parks app/(admin) here at config load (private folder).
+# Source of truth is always app/(admin) — never commit the parked rename.
+app/_admin_build_excluded/
+
 # production
 /build
 

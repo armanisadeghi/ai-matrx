@@ -1,5 +1,7 @@
 // next.config.js
 
+const fs = require("fs");
+const path = require("path");
 const { getHeaders } = require("./utils/next-config/headers");
 const { adminLegacyRouteRedirects } = require("./utils/next-config/adminRouteRedirects");
 // const { remotePatterns } = require("./utils/next-config/imageConfig");
@@ -14,33 +16,82 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 
 // MATRX_PROFILE controls which routes are compiled into the build:
 //   full (default everywhere — matches production / aimatrx.com) —
-//                    main app PLUS app/(dev)/ routes (`*.dev.tsx` in
-//                    pageExtensions). `pnpm build` and `pnpm dev` both
-//                    default here so local builds match the real server.
-//   core — main app only: (core), (admin), (transitional), (public),
-//                    (auth-pages), (popup). Internal (dev) surfaces are
-//                    NOT compiled. Opt in explicitly:
-//                    `MATRX_PROFILE=core pnpm build` / `pnpm dev`.
-// Helper .tsx files under (dev) (e.g. (dev)/demos/tests/matrx-table/components/
-// MatrxTable.tsx) keep plain .tsx because production code imports them directly;
-// pageExtensions only filters routes, not arbitrary components.
-const rawProfile = (process.env.MATRX_PROFILE || "").trim().toLowerCase();
-if (rawProfile && rawProfile !== "full" && rawProfile !== "core") {
-    console.warn(
-        `[matrx] Unknown MATRX_PROFILE="${process.env.MATRX_PROFILE}". ` +
-            `Valid values: "full" | "core". Falling back to "full".`,
+//                    main app + (admin) + (dev) `*.dev.tsx`.
+//   core — main app + (admin); NO (dev).
+//   user — full WITHOUT (admin): main app + (dev); parks (admin).
+//   slim — core WITHOUT (admin): main app only; parks (admin).
+// Admin park: Next has no route-group exclude, so `user`/`slim` rename
+// app/(admin) → app/_admin_build_excluded (private `_` folder) for the
+// process lifetime. Git source of truth is ALWAYS app/(admin); parked
+// name is gitignored.
+//
+// Two ways to set the profile:
+//   1. Code override below (wins over env) — flip for a ship without
+//      touching Vercel env. Set null to defer to env / default.
+//   2. Env: MATRX_PROFILE=user|slim|core|full pnpm build
+// Helper .tsx files under (dev) keep plain .tsx (prod imports); pageExtensions
+// only filters route leaves, not arbitrary components.
+const VALID_PROFILES = new Set(["full", "core", "user", "slim"]);
+/** @type {null | "full" | "core" | "user" | "slim"} — null = use env / default */
+const FORCE_MATRX_PROFILE = "user";
+if (FORCE_MATRX_PROFILE && !VALID_PROFILES.has(FORCE_MATRX_PROFILE)) {
+    throw new Error(
+        `[matrx] Invalid FORCE_MATRX_PROFILE="${FORCE_MATRX_PROFILE}". ` +
+            `Valid: "full" | "core" | "user" | "slim" | null.`,
     );
 }
-const MATRX_PROFILE =
-    rawProfile === "full" || rawProfile === "core" ? rawProfile : "full";
-console.log(`[matrx] MATRX_PROFILE=${MATRX_PROFILE} (NODE_ENV=${process.env.NODE_ENV || "undefined"})`);
-// In full mode `tsx` is listed FIRST so any plain page.tsx wins over a
-// page.dev.tsx in the same directory — a guard for stray duplicates from
+const rawProfile = (process.env.MATRX_PROFILE || "").trim().toLowerCase();
+if (rawProfile && !VALID_PROFILES.has(rawProfile)) {
+    console.warn(
+        `[matrx] Unknown MATRX_PROFILE="${process.env.MATRX_PROFILE}". ` +
+            `Valid values: "full" | "core" | "user" | "slim". Falling back to "full".`,
+    );
+}
+const MATRX_PROFILE = FORCE_MATRX_PROFILE
+    ? FORCE_MATRX_PROFILE
+    : VALID_PROFILES.has(rawProfile)
+      ? rawProfile
+      : "full";
+const INCLUDE_DEV = MATRX_PROFILE === "full" || MATRX_PROFILE === "user";
+const EXCLUDE_ADMIN = MATRX_PROFILE === "user" || MATRX_PROFILE === "slim";
+
+const ADMIN_LIVE = path.join(__dirname, "app", "(admin)");
+const ADMIN_PARKED = path.join(__dirname, "app", "_admin_build_excluded");
+if (EXCLUDE_ADMIN) {
+    if (fs.existsSync(ADMIN_LIVE)) {
+        fs.renameSync(ADMIN_LIVE, ADMIN_PARKED);
+        console.log(
+            `[matrx] MATRX_PROFILE=${MATRX_PROFILE}: parked app/(admin) → app/_admin_build_excluded`,
+        );
+    } else if (fs.existsSync(ADMIN_PARKED)) {
+        console.log(
+            `[matrx] MATRX_PROFILE=${MATRX_PROFILE}: app/(admin) already parked`,
+        );
+    } else {
+        console.warn(
+            `[matrx] MATRX_PROFILE=${MATRX_PROFILE}: neither app/(admin) nor parked folder found`,
+        );
+    }
+} else if (fs.existsSync(ADMIN_PARKED) && !fs.existsSync(ADMIN_LIVE)) {
+    fs.renameSync(ADMIN_PARKED, ADMIN_LIVE);
+    console.log(
+        `[matrx] MATRX_PROFILE=${MATRX_PROFILE}: restored app/(admin) from park`,
+    );
+}
+
+console.log(
+    `[matrx] MATRX_PROFILE=${MATRX_PROFILE}` +
+        (FORCE_MATRX_PROFILE
+            ? ` (FORCE_MATRX_PROFILE=${FORCE_MATRX_PROFILE})`
+            : "") +
+        ` (NODE_ENV=${process.env.NODE_ENV || "undefined"})`,
+);
+// When (dev) is included, `tsx` is listed FIRST so any plain page.tsx wins over
+// a page.dev.tsx in the same directory — guard for stray duplicates from
 // partial renames. No directory currently has both; this is defensive.
-const pageExtensions =
-    MATRX_PROFILE === "full"
-        ? ["tsx", "ts", "jsx", "js", "dev.tsx", "dev.ts"]
-        : ["tsx", "ts", "jsx", "js"];
+const pageExtensions = INCLUDE_DEV
+    ? ["tsx", "ts", "jsx", "js", "dev.tsx", "dev.ts"]
+    : ["tsx", "ts", "jsx", "js"];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -305,10 +356,9 @@ const nextConfig = {
             // above so the more-specific /tests/advanced-data-table → /legacy/...
             // moves win before the catch-all /tests/:path* lands here.
             //
-            // GATED on MATRX_PROFILE=full: the destinations are (dev) routes,
-            // which only exist in the full build. In the core build (production
-            // main app) these redirects would 307 → 404; better to 404 directly.
-            ...(MATRX_PROFILE === "full" ? [
+            // GATED on INCLUDE_DEV (full / user): destinations are (dev) routes.
+            // Without (dev) compiled (core / slim), these would 307 → 404.
+            ...(INCLUDE_DEV ? [
                 { source: '/tests/:path*', destination: '/demos/tests/:path*', permanent: false },
                 { source: '/tests', destination: '/demos/tests', permanent: false },
                 { source: '/settings-hooks-demo', destination: '/demos/settings-hooks', permanent: false },
