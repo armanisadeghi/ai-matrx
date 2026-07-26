@@ -1,6 +1,6 @@
 # Agents Browse — the canonical feature-entry list
 
-**Status:** live at `/agents/browse`, iteration 1. Proving ground for the list shell every feature will adopt.
+**Status:** live at `/agents/browse`, iteration 2. Proving ground for the list shell every feature will adopt.
 **Owner surface:** `app/(core)/agents/browse/page.tsx` → `features/agents/browse/`
 
 `/agents/all` is untouched and still the production gallery. This is a **new route beside it**, deliberately, so the shape can be iterated on without breaking a page 372 agents live in. When the shape settles, this becomes the reusable shell and `/agents/all` is retired into it.
@@ -29,17 +29,65 @@ This page takes the best half of each and fixes what **neither** did:
 
 ## The three fixes, concretely
 
+### 0. Full server-side filtering + sorting (round 2)
+
+Every narrowing control maps to an `agx_list_scoped` parameter, so a filter
+applies to all 2,000 rows — never to the 25 on screen. Filters & Sort lives in
+the popover shape `/agents/all` established, rebuilt on the now-shared
+primitives in `components/official/filter-panel/parts.tsx`.
+
+**Facets are computed server-side** (`agx_list_facets`). This is not a nicety:
+one account has **34 categories and 773 distinct tags**. Deriving "which
+categories exist" from loaded rows means loading every row, which is the exact
+pattern this page replaced. Options come back WITH counts, ordered by count,
+capped with a "show N more", and searchable across the full set.
+
+**Favorites first, then most recently changed, is the default sort** — pinned
+above every other ordering via `p_favorites_first`, toggleable in the panel.
+What you starred is what you reach for; burying it under 400 rows sorted A–Z is
+how a favorites feature stops being used.
+
+**The filter badge counts only filters the user applied.** `/agents/all`'s badge
+read "1" on an untouched page because it counted the sort and the active tab —
+a permanent lie that trains people to ignore the number.
+
+Facets deliberately ignore the category/tag selection itself: a facet list that
+drops the option you just deselected traps the user inside their own filter.
+
 ### 1. Style persists, query does not
 
 `useListViewPrefs("agents-browse")` (`lib/list-views/`) stores **view, density, sort, direction, page size, hidden columns** in the synced `userPreferences.listViews` module.
 
 Search text, column filters, page number, and the active scope tab are **deliberately not stored**. Restoring a stale search that renders an empty list is a bug wearing a feature's clothes.
 
+`version` on the stored blob is a real backfill: when `BROWSE_COLUMNS` gains or
+loses a column the surface bumps `SURFACE_DEFAULTS.version`, and older stored
+prefs are re-seeded from the defaults (view/density/sort survive; column
+selection resets). Without it, every user with ANY stored blob keeps
+`hiddenColumns: []` forever, so each newly added column arrives switched ON.
+
 > **Known wart:** preferences hydrate after first paint, so a cards-preferring user sees the table for a beat before it flips. Same class as the old transcripts "first paint is always grid". Fixing it properly means an SSR-readable preference, not a `localStorage` shortcut.
 
-### 2. One menu, every action
+### 2. One menu, every action — and it reads like Chrome's
 
-`agentActionRegistry.tsx` builds ONE `ItemMenuConfig` consumed identically by the table row menu, the card kebab, the compact-row kebab, and right-click. `/agents/all` had **three** divergent hard-coded lists — cards had 10 icons, rows had 9 (with a different icon for the same action), and the modal that both opened had 7. This makes that drift structurally impossible.
+`agentActionRegistry.tsx` builds ONE `ItemMenuConfig` consumed identically by
+the table row menu, card kebab, compact-row kebab, and right-click.
+`/agents/all` had **three** divergent hard-coded lists.
+
+Menu style rules, set against Chrome's app menu as the benchmark:
+
+- **No header.** The row the menu belongs to is two inches away and already
+  says the name; a title + description block is pure wasted height.
+- **No explanatory second lines.** A menu is a list of verbs. "Edit details"
+  does not need "Name, description, category, tags" — the user finds out by
+  clicking. Every second line halves how many actions fit on screen.
+- **Qualifiers are trailing badges, not lines.** "Coming soon" is a `SOON` chip
+  at the end of the row (`ItemMenuEntry.badge`), costing zero height.
+- **Length is not a problem; a hidden tail is.** The menu is ~23 entries and
+  that is fine. It is bounded by Radix's own available height and, when it
+  overflows, the bottom edge FADES (`useScrollFade`) so the eye knows to
+  scroll. A hard clip reads as "finished" and the user never scrolls — that bug
+  put Delete off-screen and unreachable.
 
 Actions the surface exposes outside the menu (the card's star, the row's inline rename) call `toggleFavorite` / `renameTo` from `useAgentRowActions` — the same code the menu entries call, never a parallel path.
 
@@ -76,7 +124,10 @@ Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" eve
 | `useAgentRowActions.tsx` | Binds the registry to behaviour; owns the modals as page-level singletons (not one `ShareModal` per row, which is what `/agents/all` mounts) |
 | `agentActionRegistry.tsx` | THE action list |
 | `components/AgentBrowsePage.tsx` | Assembly |
+| `columns.tsx` | EVERY column the row can show, with `defaultHidden` / `locked` / `scopedToShared` flags |
 | `components/AgentBrowseTable.tsx` | Default view — `MatrxDataTable` in **controlled** mode |
+| `components/BrowseFilterPanel.tsx` | Filters & Sort popover over server facets |
+| `components/ColumnPicker.tsx` | Column visibility, persisted |
 | `components/AgentBrowseCards.tsx` / `AgentBrowseRows.tsx` | Card + dense views |
 | `components/BrowseScopeTabs.tsx` | The four scopes + org dropdown |
 | `components/BrowseToolbar.tsx` | Search, filters, view switcher, density |
@@ -90,15 +141,34 @@ Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" eve
 - **Coming Soon entries are registered**, never bare strings — see `lib/coming-soon/`.
 - Static top chrome clears the glass header with `pt-[calc(var(--shell-header-h)+…)]`; only the list body scrolls behind it.
 
+## The table is deliberately un-opinionated
+
+`columns.tsx` declares every column; the surface ships a sensible default set
+and the user turns on any of the rest (Created, Version, Visibility, Favorite,
+Agent ID today). Adding a column is a row in that file, never a redesign.
+
+Only the four keys `agx_list_scoped` can `ORDER BY` are clickable-to-sort. A
+header that sorts one page and calls it "sorted by Name" is worse than a header
+that does not sort at all — that is the live defect in `/transcripts`' table.
+
+Default page size is **25**, and pagination is a real server `LIMIT/OFFSET`. A
+list surface that ships a 100-row default page is fine at 30 records and
+hostile at 2,000.
+
 ## Open iteration items
 
-- Column visibility picker (`hiddenColumns` is plumbed through and persisted; no UI yet).
-- Only `category` filters server-side. Extending `agx_list_scoped` with more filter params is the way to light up more column filters honestly.
 - Pre-hydration view flash (above).
 - Mobile toolbar wraps to three rows; wants a bottom-sheet collapse.
 - Multi-select + bulk actions — `MatrxDataTable` has single-row selection only.
+- Column ORDER and width are not user-controlled yet (visibility is).
 - Generalising this into the reusable shell, then retiring `/agents/all` into it.
 
 ## Change log
 
+- **2026-07-26 (round 2)** — Full server-side filtering + sorting restored and
+  extended: `agx_list_scoped` v2 (categories, tags, tri-state favorites,
+  favorites-first) + `agx_list_facets`. Filter/sort popover rebuilt on shared
+  primitives. Column registry + picker. Page size 25. Menu cleaned to Chrome
+  standards (no header, no second lines, `SOON` badges). `useScrollFade`
+  primitive + fade on menu and filter panel. Prefs shape `version` + backfill.
 - **2026-07-25** — Built. `agx_list_scoped` + `agx_list_scope_counts` applied and verified live; `lib/list-views/` and `lib/coming-soon/` primitives extracted; `ItemMenu` dropdown taught to scroll (a 20+ entry menu had its tail off-screen and unreachable); `ConfirmDialog` taught `cancelLabel: null`.

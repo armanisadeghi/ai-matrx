@@ -372,6 +372,16 @@ export interface SiteWorkbenchPreferences {
  * Written through `useListViewPrefs(surfaceKey)` — see lib/list-views/.
  */
 export interface ListViewPrefs {
+  /**
+   * Shape version of the surface's declared defaults. When a surface adds or
+   * removes columns it bumps its version, and any stored blob from an older
+   * version is re-seeded from the new defaults instead of silently winning.
+   *
+   * Without this, a user who has ANY stored blob keeps `hiddenColumns: []`
+   * forever, so every column a later release adds arrives switched ON — the
+   * shape-change-without-backfill failure this codebase has hit before.
+   */
+  version: number;
   /** "table" is the canonical default for every list surface. */
   view: "table" | "cards" | "rows";
   density: "compact" | "comfortable";

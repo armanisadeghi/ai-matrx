@@ -48,7 +48,10 @@ const SURFACE_KEY = "agents-browse";
 // What THIS surface wants absent a stored user preference. Columns that are
 // declared-but-off ship as the starting `hiddenColumns` — present in the
 // picker from day one, never a code change away.
-const SURFACE_DEFAULTS = { hiddenColumns: DEFAULT_HIDDEN_COLUMNS };
+// Bump `version` whenever BROWSE_COLUMNS gains or loses a column, so existing
+// users get the new default column set instead of silently keeping every new
+// column switched on.
+const SURFACE_DEFAULTS = { version: 2, hiddenColumns: DEFAULT_HIDDEN_COLUMNS };
 
 export function AgentBrowsePage() {
   const { prefs, setPrefs, reset } = useListViewPrefs(
