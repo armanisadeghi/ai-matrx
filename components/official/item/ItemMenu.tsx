@@ -15,6 +15,7 @@
  */
 
 import { Fragment, useState, type ReactNode } from "react";
+import { useScrollFade } from "@/components/official/scroll-fade/useScrollFade";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -138,6 +139,11 @@ function EntryInner({
           <span className="truncate text-xs text-muted-foreground">{secondLine}</span>
         )}
       </span>
+      {entry.badge && (
+        <span className="ml-2 shrink-0 rounded border border-border px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {entry.badge}
+        </span>
+      )}
       {showShortcut && shortcutText && <Shortcut>{shortcutText}</Shortcut>}
     </>
   );
@@ -296,6 +302,9 @@ export function ItemMenu({
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [resolved, setResolved] = useState<ItemMenuConfig | null>(null);
+  // Fades the overflowing edge so a long menu never looks like it ends at the
+  // clip. Measured, so a short menu gets no fade at all.
+  const scrollFade = useScrollFade();
 
   const handleOpenChange = (next: boolean) => {
     if (next) setResolved(resolveItemMenuConfig(config));
@@ -345,8 +354,17 @@ export function ItemMenu({
           // Bound to Radix's OWN available-height var, not a vh fraction: a
           // plain `max-h-[70vh]` still overhangs, because 70vh is measured
           // against the viewport while the panel starts partway down it.
+          //
+          // No arbitrary height cap: a menu is allowed to be long (Chrome's own
+          // app menu is ~20 entries). It uses the space it has, and the fade
+          // tells the eye when there is more.
           collisionPadding={12}
-          className="max-h-[min(var(--radix-dropdown-menu-content-available-height),32rem)] overflow-y-auto"
+          ref={scrollFade.ref}
+          {...scrollFade.fadeProps}
+          className={cn(
+            "max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto",
+            scrollFade.fadeProps.className,
+          )}
           style={{ minWidth: contentMinWidth }}
           onCloseAutoFocus={onCloseAutoFocus}
           onKeyDown={makeShortcutHandler(resolved, () => handleOpenChange(false))}

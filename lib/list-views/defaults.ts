@@ -15,7 +15,10 @@ export const LIST_VIEW_DEFAULTS: ListViewPrefs = {
   density: "comfortable",
   sort: "updated",
   direction: "desc",
-  pageSize: 50,
+  favoritesFirst: true,
+  // 25, not 50+: the first page must be cheap. A list surface that ships a
+  // 100-row default page is fine at 30 records and hostile at 2,000.
+  pageSize: 25,
   hiddenColumns: [],
 };
 

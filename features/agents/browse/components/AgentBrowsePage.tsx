@@ -24,6 +24,7 @@ import { AgentBrowseTable } from "./AgentBrowseTable";
 import { AgentBrowseCards } from "./AgentBrowseCards";
 import { AgentBrowseRows } from "./AgentBrowseRows";
 import { AddToSetDialog } from "./AddToSetDialog";
+import { DEFAULT_HIDDEN_COLUMNS } from "../columns";
 
 // Heavy, conditional, and only ever needed after a user action — the two rules
 // that make a dynamic import worth its cost.
@@ -44,13 +45,21 @@ const ShareModal = dynamic(
 
 const SURFACE_KEY = "agents-browse";
 
+// What THIS surface wants absent a stored user preference. Columns that are
+// declared-but-off ship as the starting `hiddenColumns` — present in the
+// picker from day one, never a code change away.
+const SURFACE_DEFAULTS = { hiddenColumns: DEFAULT_HIDDEN_COLUMNS };
+
 export function AgentBrowsePage() {
-  const { prefs, setPrefs, setView, setDensity, reset } =
-    useListViewPrefs(SURFACE_KEY);
+  const { prefs, setPrefs, reset } = useListViewPrefs(
+    SURFACE_KEY,
+    SURFACE_DEFAULTS,
+  );
 
   const browse = useAgentBrowse({
     sort: prefs.sort,
     direction: prefs.direction,
+    favoritesFirst: prefs.favoritesFirst,
     pageSize: prefs.pageSize,
   });
 
@@ -60,11 +69,9 @@ export function AgentBrowsePage() {
     refresh: browse.refresh,
   });
 
-  // Owner + org columns only carry information outside "Mine", where every row
-  // has the same owner. Showing them there is pure noise.
-  const showOwnerColumn = browse.query.scope.kind !== "mine";
-  const showOrgColumn =
-    browse.query.scope.kind === "orgs" && !browse.query.scope.organizationId;
+  // Owner / org / access columns only carry information outside "Mine", where
+  // every row has the same owner. Offering them there is pure noise.
+  const showSharedColumns = browse.query.scope.kind !== "mine";
 
   const newAgentButton = (
     <Button asChild size="sm">
@@ -103,13 +110,14 @@ export function AgentBrowsePage() {
 
         <BrowseToolbar
           query={browse.query}
+          facets={browse.facets}
           isFetching={browse.isFetching}
-          view={prefs.view}
-          density={prefs.density}
+          prefs={prefs}
+          showSharedColumns={showSharedColumns}
           onSearch={browse.setSearch}
           onPatchQuery={browse.patchQuery}
-          onViewChange={setView}
-          onDensityChange={setDensity}
+          onPatchPrefs={setPrefs}
+          onResetFilters={browse.resetFilters}
           onResetView={reset}
         />
 
@@ -136,8 +144,7 @@ export function AgentBrowsePage() {
             isLoading={browse.isLoading}
             isFetching={browse.isFetching}
             density={prefs.density}
-            showOrgColumn={showOrgColumn}
-            showOwnerColumn={showOwnerColumn}
+            showSharedColumns={showSharedColumns}
             hiddenColumns={prefs.hiddenColumns}
             menuFor={actions.menuFor}
             emptyAction={newAgentButton}
@@ -160,7 +167,7 @@ export function AgentBrowsePage() {
           <AgentBrowseCards
             rows={browse.rows}
             density={prefs.density}
-            showOwner={showOwnerColumn}
+            showOwner={showSharedColumns}
             menuFor={actions.menuFor}
             onToggleFavorite={actions.toggleFavorite}
           />

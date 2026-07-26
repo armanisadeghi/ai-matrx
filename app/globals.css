@@ -2071,3 +2071,30 @@
 .matrx-univer-shell [class*="univer-ribbon"][class*="row"] {
   justify-content: flex-start !important;
 }
+
+/* ────────────────────────────────────────────────────────────────────────
+   Scroll fade — the "there is more below" cue.
+   Driven by components/official/scroll-fade/useScrollFade.ts, which sets the
+   data attributes ONLY on edges that actually overflow. A hard-clipped last
+   row reads as "finished" and the user never scrolls; a permanent fade makes
+   a non-scrolling list's last item look broken. Hence: measured, not assumed.
+
+   mask-image is used (not an overlay element) so the fade works over any
+   background — popovers, drawers, cards — with no extra DOM and no
+   pointer-event interception.
+   ──────────────────────────────────────────────────────────────────────── */
+.matrx-scroll-fade[data-fade-bottom] {
+  mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
+}
+.matrx-scroll-fade[data-fade-top] {
+  mask-image: linear-gradient(to top, black calc(100% - 2rem), transparent 100%);
+}
+.matrx-scroll-fade[data-fade-top][data-fade-bottom] {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 2rem,
+    black calc(100% - 2rem),
+    transparent 100%
+  );
+}

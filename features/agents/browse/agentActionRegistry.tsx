@@ -74,7 +74,13 @@ function agentHref(id: string, sub: string): string {
   return `/agents/${id}${sub}`;
 }
 
-/** A registered, user-visible promise. Never a bare "coming soon" string. */
+/**
+ * A registered, user-visible promise. Never a bare "coming soon" string.
+ *
+ * Rendered as a trailing BADGE, not a second line: a second line doubles the
+ * row height and halves how many actions fit on screen, for two words of
+ * qualification that belong at the end of the row.
+ */
 function comingSoon(
   id: string,
   label: string,
@@ -84,7 +90,7 @@ function comingSoon(
     id,
     label,
     icon,
-    description: "Coming soon",
+    badge: "Soon",
     onSelect: () => {
       void announceComingSoon(id);
     },
@@ -99,8 +105,9 @@ export function buildAgentMenu(ctx: AgentMenuContext): ItemMenuConfig {
   const readOnly = !agent.is_owner;
   const readOnlyReason = "You don't own this agent";
 
+  // No header. Chrome's app menu has no title, and neither should this: the row
+  // the menu belongs to is two inches away and already says the name.
   return {
-    header: { title: agent.name, description: agent.category ?? undefined },
     sections: [
       {
         id: "open",
@@ -115,13 +122,7 @@ export function buildAgentMenu(ctx: AgentMenuContext): ItemMenuConfig {
             disabledReason: readOnlyReason,
           },
           { id: "view", label: "View", icon: Eye, onSelect: ctx.onView },
-          {
-            id: "peek",
-            label: "Quick look",
-            icon: Lightbulb,
-            description: "Preview the prompt, tools, and model",
-            onSelect: ctx.onPeek,
-          },
+          { id: "peek", label: "Quick look", icon: Lightbulb, onSelect: ctx.onPeek },
           {
             kind: "link",
             id: "open-new-tab",
@@ -149,7 +150,6 @@ export function buildAgentMenu(ctx: AgentMenuContext): ItemMenuConfig {
             id: "details",
             label: "Edit details",
             icon: FileText,
-            description: "Name, description, category, tags",
             onSelect: ctx.onEditDetails,
             disabled: readOnly,
             disabledReason: readOnlyReason,
@@ -221,7 +221,6 @@ export function buildAgentMenu(ctx: AgentMenuContext): ItemMenuConfig {
             id: "copy-for-agent",
             label: "Copy for AI",
             icon: ClipboardCopy,
-            description: "A reference an agent can resolve",
             onSelect: ctx.onCopyForAgent,
           },
           comingSoon("agents.export", "Export agent", Download),

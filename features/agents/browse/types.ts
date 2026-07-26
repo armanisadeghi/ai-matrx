@@ -30,15 +30,26 @@ export const DEFAULT_BROWSE_SCOPE: BrowseScope = {
   organizationId: null,
 };
 
-/** Query half of list state — never persisted, always starts clean. */
+export type FavoritesFilter = "all" | "only" | "exclude";
+export type ArchivedFilter = "active" | "archived" | "all";
+
+/**
+ * Query half of list state — never persisted, always starts clean.
+ * EVERY field here is honored server-side by agx_list_scoped. A filter the
+ * server cannot serve does not belong in this shape; it would only ever filter
+ * the current page, which is a lie at any scale that matters.
+ */
 export interface BrowseQuery {
   scope: BrowseScope;
   search: string;
   /** Reach into prompt content. Opt-in — it is a full jsonb scan server-side. */
   deep: boolean;
-  favoritesOnly: boolean;
-  archived: "active" | "archived" | "all";
-  category: string | null;
+  favorites: FavoritesFilter;
+  archived: ArchivedFilter;
+  /** OR-set. `__none__` = uncategorized. Empty = no category filter. */
+  categories: string[];
+  /** OR-set. `__none__` = untagged. Empty = no tag filter. */
+  tags: string[];
   page: number;
 }
 
@@ -46,10 +57,36 @@ export const DEFAULT_BROWSE_QUERY: BrowseQuery = {
   scope: DEFAULT_BROWSE_SCOPE,
   search: "",
   deep: false,
-  favoritesOnly: false,
+  favorites: "all",
   archived: "active",
-  category: null,
+  categories: [],
+  tags: [],
   page: 1,
+};
+
+/** How many query fields are narrowing the list right now (badge on Filters). */
+export function countActiveFilters(query: BrowseQuery): number {
+  return (
+    (query.favorites !== "all" ? 1 : 0) +
+    (query.archived !== "active" ? 1 : 0) +
+    (query.categories.length > 0 ? 1 : 0) +
+    (query.tags.length > 0 ? 1 : 0)
+  );
+}
+
+/** Server-computed filter options for the current scope + search. */
+export interface BrowseFacets {
+  categories: { value: string; count: number }[];
+  tags: { value: string; count: number }[];
+  favoriteCount: number;
+  archivedCount: number;
+}
+
+export const EMPTY_FACETS: BrowseFacets = {
+  categories: [],
+  tags: [],
+  favoriteCount: 0,
+  archivedCount: 0,
 };
 
 /** True totals from agx_list_scope_counts, per tab + per org chip. */

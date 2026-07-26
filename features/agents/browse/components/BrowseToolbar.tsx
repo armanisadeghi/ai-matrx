@@ -2,18 +2,18 @@
 
 // features/agents/browse/components/BrowseToolbar.tsx
 //
-// One row: search, the filters that actually change the server query, the view
-// switcher, and density. Deliberately flat — /agents/all buried sort + show +
-// favorites + archived + categories + tags behind a popover whose badge read
-// "1" before the user touched anything.
+// One row: search, Filters & Sort, columns, view, density.
+//
+// Search is the only always-visible query control. Everything that narrows or
+// orders lives behind the Filters & Sort popover — the shape /agents/all
+// established and users already know — because a toolbar that exposes ten
+// controls at rest is a toolbar nobody reads.
 
 import {
   Search,
   X,
   Loader2,
   FileSearch,
-  Star,
-  Archive,
   Table2,
   LayoutGrid,
   List,
@@ -28,21 +28,24 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import type { BrowseQuery } from "../types";
+import { BrowseFilterPanel } from "./BrowseFilterPanel";
+import { ColumnPicker } from "./ColumnPicker";
+import type { BrowseFacets, BrowseQuery } from "../types";
 
 interface Props {
   query: BrowseQuery;
+  facets: BrowseFacets;
   isFetching: boolean;
-  view: ListViewPrefs["view"];
-  density: ListViewPrefs["density"];
+  prefs: ListViewPrefs;
+  showSharedColumns: boolean;
   onSearch: (value: string) => void;
   onPatchQuery: (patch: Partial<BrowseQuery>) => void;
-  onViewChange: (view: ListViewPrefs["view"]) => void;
-  onDensityChange: (density: ListViewPrefs["density"]) => void;
+  onPatchPrefs: (patch: Partial<ListViewPrefs>) => void;
+  onResetFilters: () => void;
   onResetView: () => void;
 }
 
-function ToggleButton({
+function IconToggle({
   active,
   label,
   onClick,
@@ -78,18 +81,19 @@ function ToggleButton({
 
 export function BrowseToolbar({
   query,
+  facets,
   isFetching,
-  view,
-  density,
+  prefs,
+  showSharedColumns,
   onSearch,
   onPatchQuery,
-  onViewChange,
-  onDensityChange,
+  onPatchPrefs,
+  onResetFilters,
   onResetView,
 }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="flex h-9 min-w-64 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5">
+      <div className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5">
         {isFetching ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
         ) : (
@@ -105,13 +109,13 @@ export function BrowseToolbar({
         />
         {query.search && (
           <>
-            <ToggleButton
+            <IconToggle
               active={query.deep}
               label="Also search inside prompts"
               onClick={() => onPatchQuery({ deep: !query.deep })}
             >
               <FileSearch className="h-3.5 w-3.5" />
-            </ToggleButton>
+            </IconToggle>
             <button
               type="button"
               aria-label="Clear search"
@@ -124,85 +128,73 @@ export function BrowseToolbar({
         )}
       </div>
 
+      <BrowseFilterPanel
+        query={query}
+        facets={facets}
+        sort={prefs.sort}
+        direction={prefs.direction}
+        favoritesFirst={prefs.favoritesFirst}
+        onPatchQuery={onPatchQuery}
+        onSortChange={(sort, direction) => onPatchPrefs({ sort, direction })}
+        onFavoritesFirstChange={(favoritesFirst) =>
+          onPatchPrefs({ favoritesFirst })
+        }
+        onResetFilters={onResetFilters}
+      />
+
+      {prefs.view === "table" && (
+        <ColumnPicker
+          hiddenColumns={prefs.hiddenColumns}
+          showSharedColumns={showSharedColumns}
+          onChange={(hiddenColumns) => onPatchPrefs({ hiddenColumns })}
+        />
+      )}
+
       <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-        <ToggleButton
-          active={query.favoritesOnly}
-          label="Favorites only"
-          onClick={() => onPatchQuery({ favoritesOnly: !query.favoritesOnly })}
+        <IconToggle
+          active={prefs.view === "table"}
+          label="Table"
+          onClick={() => onPatchPrefs({ view: "table" })}
         >
-          <Star
-            className={cn("h-3.5 w-3.5", query.favoritesOnly && "fill-current")}
-          />
-        </ToggleButton>
-        <ToggleButton
-          active={query.archived !== "active"}
+          <Table2 className="h-3.5 w-3.5" />
+        </IconToggle>
+        <IconToggle
+          active={prefs.view === "cards"}
+          label="Cards"
+          onClick={() => onPatchPrefs({ view: "cards" })}
+        >
+          <LayoutGrid className="h-3.5 w-3.5" />
+        </IconToggle>
+        <IconToggle
+          active={prefs.view === "rows"}
+          label="Compact list"
+          onClick={() => onPatchPrefs({ view: "rows" })}
+        >
+          <List className="h-3.5 w-3.5" />
+        </IconToggle>
+      </div>
+
+      <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+        <IconToggle
+          active={prefs.density === "compact"}
           label={
-            query.archived === "active"
-              ? "Show archived"
-              : query.archived === "all"
-                ? "Showing all — click for archived only"
-                : "Showing archived only — click to hide archived"
+            prefs.density === "compact" ? "Comfortable rows" : "Compact rows"
           }
           onClick={() =>
-            onPatchQuery({
-              archived:
-                query.archived === "active"
-                  ? "all"
-                  : query.archived === "all"
-                    ? "archived"
-                    : "active",
+            onPatchPrefs({
+              density: prefs.density === "compact" ? "comfortable" : "compact",
             })
           }
         >
-          <Archive className="h-3.5 w-3.5" />
-        </ToggleButton>
-      </div>
-
-      <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-        <ToggleButton
-          active={view === "table"}
-          label="Table"
-          onClick={() => onViewChange("table")}
-        >
-          <Table2 className="h-3.5 w-3.5" />
-        </ToggleButton>
-        <ToggleButton
-          active={view === "cards"}
-          label="Cards"
-          onClick={() => onViewChange("cards")}
-        >
-          <LayoutGrid className="h-3.5 w-3.5" />
-        </ToggleButton>
-        <ToggleButton
-          active={view === "rows"}
-          label="Compact list"
-          onClick={() => onViewChange("rows")}
-        >
-          <List className="h-3.5 w-3.5" />
-        </ToggleButton>
-      </div>
-
-      <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-        <ToggleButton
-          active={density === "compact"}
-          label={density === "compact" ? "Comfortable rows" : "Compact rows"}
-          onClick={() =>
-            onDensityChange(density === "compact" ? "comfortable" : "compact")
-          }
-        >
-          {density === "compact" ? (
+          {prefs.density === "compact" ? (
             <Rows2 className="h-3.5 w-3.5" />
           ) : (
             <Rows3 className="h-3.5 w-3.5" />
           )}
-        </ToggleButton>
-        <ToggleButton
-          active={false}
-          label="Reset view to defaults"
-          onClick={onResetView}
-        >
+        </IconToggle>
+        <IconToggle active={false} label="Reset view to defaults" onClick={onResetView}>
           <RotateCcw className="h-3.5 w-3.5" />
-        </ToggleButton>
+        </IconToggle>
       </div>
     </div>
   );

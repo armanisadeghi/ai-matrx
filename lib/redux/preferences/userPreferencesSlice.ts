@@ -377,6 +377,12 @@ export interface ListViewPrefs {
   density: "compact" | "comfortable";
   sort: "updated" | "created" | "name" | "category";
   direction: "asc" | "desc";
+  /**
+   * Pin favorites above every other row, in EVERY sort. On by default: what
+   * you starred is what you reach for, and burying it under 400 rows sorted
+   * A-Z is how a favorites feature stops being used.
+   */
+  favoritesFirst: boolean;
   pageSize: number;
   /** Column ids the user switched OFF. Absent id = visible. */
   hiddenColumns: string[];

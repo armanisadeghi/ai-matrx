@@ -3,25 +3,23 @@
 // features/agents/browse/components/AgentBrowseTable.tsx
 //
 // The default view. Built on the canonical MatrxDataTable (sticky header,
-// zebra, side panel, row window, copy-for-AI) in CONTROLLED mode: the table
-// owns none of the querying, so sort and pagination are real server operations
-// over the whole result set — not a re-sort of whatever page happened to load.
+// zebra) in CONTROLLED mode: the table owns none of the querying, so sort and
+// pagination are real server operations over the WHOLE result set — not a
+// re-sort of whatever page happened to load. That distinction is the entire
+// bug in /transcripts' bespoke table.
 //
-// That distinction is the entire bug in /transcripts' bespoke table: it sorts
-// and filters only the rows already paged in, so "sort by Name" shows page 1 of
-// each section rather than the true A→Z.
-//
-// A column whose filter cannot be served by agx_list_scoped is declared
-// `filter: false` rather than rendering a control that quietly does nothing.
+// Columns come from ../columns.tsx and are user-selectable. Filtering lives in
+// the page toolbar (server-backed), so no column renders its own filter
+// control — a per-column filter here could only ever filter the current page.
 
-import Link from "next/link";
-import { Star, Archive, MoreHorizontal, Building2 } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
+import { BROWSE_COLUMNS, relativeTime } from "../columns";
 import type { AgentBrowseRow } from "../types";
 
 interface Props {
@@ -34,33 +32,19 @@ interface Props {
   isLoading: boolean;
   isFetching: boolean;
   density: "compact" | "comfortable";
-  showOrgColumn: boolean;
-  showOwnerColumn: boolean;
+  showSharedColumns: boolean;
   hiddenColumns: string[];
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
   onQueryChange: (next: {
     page: number;
     pageSize: number;
-    sort: "updated" | "created" | "name" | "category";
+    sort: Props["sort"];
     direction: "asc" | "desc";
   }) => void;
   emptyAction?: React.ReactNode;
 }
 
-const SORTABLE_IDS = new Set(["updated", "created", "name", "category"]);
-
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  const diff = Date.now() - then;
-  const mins = Math.round(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 31) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
+const SERVER_SORTABLE = new Set(["updated", "created", "name", "category"]);
 
 export function AgentBrowseTable({
   rows,
@@ -72,177 +56,25 @@ export function AgentBrowseTable({
   isLoading,
   isFetching,
   density,
-  showOrgColumn,
-  showOwnerColumn,
+  showSharedColumns,
   hiddenColumns,
   menuFor,
   onQueryChange,
   emptyAction,
 }: Props) {
-  const dense = density === "compact";
-
-  const columns: MatrxColumnDef<AgentBrowseRow>[] = [
-    {
-      id: "name",
-      accessorKey: "name",
-      header: "Name",
-      filter: false,
-      cell: (row) => (
-        <div className="flex items-center gap-2 min-w-0">
-          {row.is_favorite && (
-            <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500" />
-          )}
-          <Link
-            href={`/agents/${row.id}/run`}
-            className="truncate font-medium hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {row.name}
-          </Link>
-          {row.is_archived && (
-            <Badge variant="outline" className="shrink-0 text-[10px] py-0">
-              <Archive className="h-2.5 w-2.5 mr-1" />
-              Archived
-            </Badge>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: "description",
-      accessorKey: "description",
-      header: "Description",
-      sortable: false,
-      filter: false,
-      hidden: hiddenColumns.includes("description"),
-      cell: (row) => (
-        <span className="text-muted-foreground line-clamp-1">
-          {row.description || "—"}
-        </span>
-      ),
-    },
-    {
-      id: "category",
-      accessorKey: "category",
-      header: "Category",
-      // The one filter agx_list_scoped serves natively.
-      filter: "select",
-      width: 150,
-      hidden: hiddenColumns.includes("category"),
-      cell: (row) =>
-        row.category ? (
-          <Badge variant="secondary" className="text-[10px] py-0 font-normal">
-            {row.category}
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    {
-      id: "tags",
-      header: "Tags",
-      sortable: false,
-      filter: false,
-      width: 180,
-      hidden: hiddenColumns.includes("tags"),
-      cell: (row) =>
-        row.tags?.length ? (
-          // nowrap + truncate: wrapping tags made one row three times the
-          // height of its neighbours and broke the scan line down the table.
-          <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
-            {row.tags.slice(0, 2).map((tag) => (
-              <Badge
-                key={tag}
-                variant="outline"
-                className="max-w-[80px] shrink-0 truncate text-[10px] py-0 font-normal"
-                title={tag}
-              >
-                {tag}
-              </Badge>
-            ))}
-            {row.tags.length > 2 && (
-              <span
-                className="shrink-0 text-[10px] text-muted-foreground"
-                title={row.tags.join(", ")}
-              >
-                +{row.tags.length - 2}
-              </span>
-            )}
-          </div>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    // Org + owner only appear where they carry information: inside "Mine"
-    // every row has the same owner and (almost always) the same org.
-    ...(showOrgColumn
-      ? ([
-          {
-            id: "organization_name",
-            accessorKey: "organization_name" as const,
-            header: "Organization",
-            sortable: false,
-            filter: false,
-            width: 170,
-            cell: (row: AgentBrowseRow) =>
-              row.organization_name ? (
-                <span className="flex items-center gap-1.5 truncate text-muted-foreground">
-                  <Building2 className="h-3 w-3 shrink-0" />
-                  {row.organization_name}
-                </span>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              ),
-          },
-        ] satisfies MatrxColumnDef<AgentBrowseRow>[])
-      : []),
-    ...(showOwnerColumn
-      ? ([
-          {
-            id: "owner_email",
-            accessorKey: "owner_email" as const,
-            header: "Owner",
-            sortable: false,
-            filter: false,
-            width: 190,
-            cell: (row: AgentBrowseRow) => (
-              <span className="truncate text-muted-foreground">
-                {row.owner_email ?? "—"}
-              </span>
-            ),
-          },
-          {
-            id: "access_level",
-            accessorKey: "access_level" as const,
-            header: "Access",
-            sortable: false,
-            filter: false,
-            width: 100,
-            cell: (row: AgentBrowseRow) => (
-              <Badge variant="outline" className="text-[10px] py-0 capitalize">
-                {row.access_level}
-              </Badge>
-            ),
-          },
-        ] satisfies MatrxColumnDef<AgentBrowseRow>[])
-      : []),
-    {
-      id: "updated",
-      accessorKey: "updated_at",
-      header: "Updated",
-      filter: false,
-      width: 120,
-      align: "right",
-      cell: (row) => (
-        <span
-          className="text-muted-foreground tabular-nums"
-          title={new Date(row.updated_at).toLocaleString()}
-        >
-          {relativeTime(row.updated_at)}
-        </span>
-      ),
-    },
-  ];
+  const columns: MatrxColumnDef<AgentBrowseRow>[] = BROWSE_COLUMNS.filter(
+    (spec) =>
+      (showSharedColumns || !spec.scopedToShared) &&
+      !hiddenColumns.includes(spec.id),
+  ).map((spec) => ({
+    ...spec.column,
+    // Only the four keys the RPC can order by are clickable-to-sort. A header
+    // that sorts one page and calls it "sorted by Name" is worse than a header
+    // that does not sort at all.
+    sortable: SERVER_SORTABLE.has(spec.id)
+      ? spec.column.sortable !== false
+      : false,
+  }));
 
   return (
     <MatrxDataTable<AgentBrowseRow>
@@ -252,7 +84,8 @@ export function AgentBrowseTable({
       isLoading={isLoading}
       isFetching={isFetching}
       zebra
-      className={cn(dense && "[&_td]:py-1 [&_th]:py-1 text-xs")}
+      pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
+      className={cn(density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1")}
       query={{
         mode: "controlled",
         totalItems: total,
@@ -266,7 +99,7 @@ export function AgentBrowseTable({
         },
         onStateChange: (next) => {
           const nextSortId =
-            next.sort && SORTABLE_IDS.has(next.sort.id) ? next.sort.id : sort;
+            next.sort && SERVER_SORTABLE.has(next.sort.id) ? next.sort.id : sort;
           onQueryChange({
             page: next.page,
             pageSize: next.pageSize,
@@ -278,6 +111,8 @@ export function AgentBrowseTable({
       // The page owns search and every filter; a second search box inside the
       // table would be two affordances fighting over one query.
       toolbar={{ search: false }}
+      detail={{ enabled: false }}
+      window={{ enabled: false }}
       rowActions={(row) => (
         <ItemMenu config={menuFor(row)} align="end">
           <button
@@ -290,8 +125,6 @@ export function AgentBrowseTable({
           </button>
         </ItemMenu>
       )}
-      detail={{ enabled: false }}
-      window={{ enabled: false }}
       copy={{
         label: "Agent",
         listLabel: "Agents",
@@ -307,8 +140,7 @@ export function AgentBrowseTable({
       }}
       emptyState={{
         title: "No agents here",
-        description:
-          "Nothing matches this scope and filter combination.",
+        description: "Nothing matches this scope and filter combination.",
         action: emptyAction,
       }}
     />

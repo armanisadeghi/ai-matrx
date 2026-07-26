@@ -24,8 +24,22 @@ interface ItemMenuEntryBase {
    * Destructive entries use `tone: "destructive"`, never an iconClassName.
    */
   iconClassName?: string;
-  /** Muted second line under the label (desktop + drawer). Keep it short. */
+  /**
+   * Muted second line under the label (desktop + drawer).
+   *
+   * USE SPARINGLY. A menu is a list of verbs, not documentation — "Edit
+   * details" does not need "Name, description, category, tags" under it; the
+   * user finds that out by clicking. Every second line doubles a row's height
+   * and halves how many actions fit on screen. Reserve it for cases where the
+   * label alone is genuinely ambiguous.
+   */
   description?: string;
+  /**
+   * Short trailing chip, right-aligned on the same line ("Coming soon", "Beta",
+   * "Pro"). This is the RIGHT way to qualify an entry — it costs no height,
+   * unlike `description`. One or two words; it is a tag, not a sentence.
+   */
+  badge?: string;
   /** Omit the entry entirely. Builders compute this at config-build time. */
   hidden?: boolean;
   disabled?: boolean;

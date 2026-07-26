@@ -14,12 +14,15 @@ import { toast } from "sonner";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
   fetchAgentBrowsePage,
+  fetchBrowseFacets,
   fetchBrowseScopeCounts,
 } from "./service";
 import {
   DEFAULT_BROWSE_QUERY,
+  EMPTY_FACETS,
   EMPTY_SCOPE_COUNTS,
   type AgentBrowseRow,
+  type BrowseFacets,
   type BrowseQuery,
   type BrowseScope,
   type BrowseScopeCounts,
@@ -32,6 +35,7 @@ export interface UseAgentBrowseResult {
   rows: AgentBrowseRow[];
   total: number;
   counts: BrowseScopeCounts;
+  facets: BrowseFacets;
   isLoading: boolean;
   isFetching: boolean;
   error: string | null;
@@ -41,6 +45,9 @@ export interface UseAgentBrowseResult {
   setDeep: (deep: boolean) => void;
   patchQuery: (patch: Partial<BrowseQuery>) => void;
   setPage: (page: number) => void;
+  /** Clear the narrowing filters. Leaves scope + search alone — those are
+   *  where the user is, not how they narrowed it. */
+  resetFilters: () => void;
   refresh: () => void;
   /** Drop a row locally after a confirmed delete — no full refetch flash. */
   removeRow: (id: string) => void;
@@ -49,13 +56,17 @@ export interface UseAgentBrowseResult {
 }
 
 export function useAgentBrowse(
-  view: Pick<ListViewPrefs, "sort" | "direction" | "pageSize">,
+  view: Pick<
+    ListViewPrefs,
+    "sort" | "direction" | "pageSize" | "favoritesFirst"
+  >,
 ): UseAgentBrowseResult {
   const [query, setQuery] = useState<BrowseQuery>(DEFAULT_BROWSE_QUERY);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [rows, setRows] = useState<AgentBrowseRow[]>([]);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<BrowseScopeCounts>(EMPTY_SCOPE_COUNTS);
+  const [facets, setFacets] = useState<BrowseFacets>(EMPTY_FACETS);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +89,7 @@ export function useAgentBrowse(
     q: effectiveQuery,
     sort: view.sort,
     dir: view.direction,
+    favFirst: view.favoritesFirst,
     size: view.pageSize,
     refreshToken,
   });
@@ -92,6 +104,7 @@ export function useAgentBrowse(
         const page = await fetchAgentBrowsePage(effectiveQuery, {
           sort: view.sort,
           direction: view.direction,
+          favoritesFirst: view.favoritesFirst,
           pageSize: view.pageSize,
         });
         if (gen !== generation.current) return; // a newer query won
@@ -122,9 +135,10 @@ export function useAgentBrowse(
   const countsKey = JSON.stringify({
     search: debouncedSearch,
     deep: query.deep,
-    fav: query.favoritesOnly,
+    fav: query.favorites,
     archived: query.archived,
-    category: query.category,
+    categories: query.categories,
+    tags: query.tags,
     refreshToken,
   });
 
@@ -145,6 +159,33 @@ export function useAgentBrowse(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- countsKey is the serialized dep set
   }, [countsKey]);
+
+  // Facets depend on scope + search + archived only. They deliberately ignore
+  // the category/tag selection: a facet list that drops the option you just
+  // deselected traps the user inside their own filter.
+  const facetsKey = JSON.stringify({
+    scope: query.scope,
+    search: debouncedSearch,
+    deep: query.deep,
+    archived: query.archived,
+    refreshToken,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const next = await fetchBrowseFacets(effectiveQuery);
+        if (!cancelled) setFacets(next);
+      } catch (err) {
+        console.error("[agents/browse] facets failed", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- facetsKey is the serialized dep set
+  }, [facetsKey]);
 
   const patchQuery = useCallback((patch: Partial<BrowseQuery>) => {
     setQuery((prev) => ({
@@ -172,6 +213,18 @@ export function useAgentBrowse(
     (page: number) => setQuery((prev) => ({ ...prev, page })),
     [],
   );
+  const resetFilters = useCallback(
+    () =>
+      setQuery((prev) => ({
+        ...prev,
+        favorites: DEFAULT_BROWSE_QUERY.favorites,
+        archived: DEFAULT_BROWSE_QUERY.archived,
+        categories: [],
+        tags: [],
+        page: 1,
+      })),
+    [],
+  );
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
 
   const removeRow = useCallback((id: string) => {
@@ -190,6 +243,7 @@ export function useAgentBrowse(
     rows,
     total,
     counts,
+    facets,
     isLoading,
     isFetching,
     error,
@@ -198,6 +252,7 @@ export function useAgentBrowse(
     setDeep,
     patchQuery,
     setPage,
+    resetFilters,
     refresh,
     removeRow,
     patchRow,
