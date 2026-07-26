@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { animate } from "motion/react";
+import { authorityTier, type AuthorityTier } from "../../constants";
 
 // ============================================================================
 // Authority tier resolution — kept STRUCTURED, never concatenated.
@@ -10,21 +11,12 @@ import { animate } from "motion/react";
 //   so visuals (glow, bar color, sort bucket) agree with AuthorityTierBadge.
 // ============================================================================
 
-export type AuthorityTier = "high" | "medium" | "low";
+export type { AuthorityTier };
 
-/** Mirrors AuthorityTierBadge.normalizeTier so every results visual agrees
- *  on the same bucket boundaries (≥75 high, ≥45 medium, else low). */
-export function resolveTier(
-  tier: string | null,
-  score: number | null,
-): AuthorityTier | null {
-  const t = (tier ?? "").toLowerCase();
-  if (t === "high" || t === "medium" || t === "low") return t;
-  if (score == null) return null;
-  if (score >= 75) return "high";
-  if (score >= 45) return "medium";
-  return "low";
-}
+/** Alias for the shared `authorityTier` bucket resolver (`../../constants`) so
+ *  every results visual agrees on the same boundaries (≥75 high, ≥45 medium,
+ *  else low). */
+export const resolveTier = authorityTier;
 
 export interface TierVisual {
   /** Solid hex for the score bar fill / glow color. */

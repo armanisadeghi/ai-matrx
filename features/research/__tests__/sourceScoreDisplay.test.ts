@@ -43,20 +43,20 @@ function source(overrides: Partial<ResearchSource> = {}): ResearchSource {
 }
 
 describe("preReadDisplayScore", () => {
-  it("prefers breakdown display over raw float", () => {
+  it("prefers breakdown display over raw score", () => {
     expect(
       preReadDisplayScore(
         source({
-          pre_read_score: 1.31874,
-          pre_read_breakdown: { pre_read_score_display: 132 },
+          pre_read_score: 71.5,
+          pre_read_breakdown: { pre_read_score_display: 72 },
         }),
       ),
-    ).toBe(132);
+    ).toBe(72);
   });
 
-  it("derives ×100 display from raw pre_read_score", () => {
-    expect(formatPreReadDisplay(source({ pre_read_score: 1.31874 }))).toBe(
-      "132",
+  it("rounds the raw pre_read_score directly (already normalized 0–100)", () => {
+    expect(formatPreReadDisplay(source({ pre_read_score: 71.6 }))).toBe(
+      "72",
     );
   });
 });
@@ -65,7 +65,7 @@ describe("sourceScoreValues", () => {
   it("maps all axes for a fully scored source", () => {
     const values = sourceScoreValues(
       source({
-        pre_read_score: 0.72,
+        pre_read_score: 72,
         authority_score: 80,
         post_read_score: 79.5,
         final_source_score: 87,

@@ -25,6 +25,7 @@ import {
 } from "../../service";
 import type { CurationRow, CurationAnalysisState } from "../../service";
 import { sourceTypeFromDb } from "../../types";
+import { authorityTier } from "../../constants";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import {
@@ -158,13 +159,7 @@ function fmtInt(n: number | null | undefined): string {
 /** Tier order for sorting (high → low when descending). */
 const TIER_ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
 function tierFromRow(r: CurationRow): string | null {
-  const t = (r.source.authority_tier ?? "").toLowerCase();
-  if (t === "high" || t === "medium" || t === "low") return t;
-  const score = r.source.authority_score;
-  if (score == null) return null;
-  if (score >= 75) return "high";
-  if (score >= 45) return "medium";
-  return "low";
+  return authorityTier(r.source.authority_tier, r.source.authority_score);
 }
 
 function rankInKeyword(row: CurationRow, keywordId: string): number | null {

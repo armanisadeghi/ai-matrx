@@ -100,6 +100,7 @@ import {
   SOURCE_TYPE_CONFIG,
   ORIGIN_CONFIG,
   NEEDS_SCRAPE_STATUSES,
+  authorityTier,
 } from "../../constants";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
@@ -161,12 +162,7 @@ function isLocalSortKey(key: string | undefined): key is LocalSortKey {
 const TIER_ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
 function tierFromSource(source: ResearchSource): string | null {
-  const t = (source.authority_tier ?? "").toLowerCase();
-  if (t === "high" || t === "medium" || t === "low") return t;
-  if (source.authority_score == null) return null;
-  if (source.authority_score >= 75) return "high";
-  if (source.authority_score >= 45) return "medium";
-  return "low";
+  return authorityTier(source.authority_tier, source.authority_score);
 }
 
 /**

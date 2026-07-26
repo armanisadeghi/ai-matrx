@@ -6,8 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-type Tier = "high" | "medium" | "low";
+import { authorityTier, type AuthorityTier as Tier } from "../../constants";
 
 /** Restrained, professional treatment — the SCORE is the hero (clean tabular
  *  number in foreground), the tier is a quiet uppercase qualifier with at most a
@@ -22,15 +21,6 @@ const TIER_CONFIG: Record<
   medium: { label: "Medium", dotClass: "bg-muted-foreground/60" },
   low: { label: "Low", dotClass: "bg-muted-foreground/35" },
 };
-
-function normalizeTier(tier: string | null, score: number | null): Tier | null {
-  const t = (tier ?? "").toLowerCase();
-  if (t === "high" || t === "medium" || t === "low") return t;
-  if (score == null) return null;
-  if (score >= 75) return "high";
-  if (score >= 45) return "medium";
-  return "low";
-}
 
 interface AuthorityTierBadgeProps {
   score: number | null;
@@ -57,7 +47,7 @@ export function AuthorityTierBadge({
   scoreHidden,
   className,
 }: AuthorityTierBadgeProps) {
-  const t = normalizeTier(tier, score);
+  const t = authorityTier(tier, score);
 
   if (t == null || score == null) {
     if (!showUnranked) return null;

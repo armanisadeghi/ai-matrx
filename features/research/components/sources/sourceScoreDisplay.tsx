@@ -34,9 +34,9 @@ function preReadDisplayFromBreakdown(breakdown: Json | null): number | null {
 }
 
 /**
- * Pre-read priority on the ×100 display scale (matches backend
- * `PreReadScoreBreakdown.pre_read_score_display`). NOT the raw float in
- * `pre_read_score` (often ~0.5–1.5) — sorting uses the ×100 display value.
+ * Pre-read priority on the normalized 0–100 display scale (matches backend
+ * `PreReadScoreBreakdown.pre_read_score_display`). `pre_read_score` is itself
+ * already a normalized 0–100 value — just rounded for display.
  */
 export function preReadDisplayScore(source: ResearchSource): number | null {
   const fromBreakdown = preReadDisplayFromBreakdown(source.pre_read_breakdown);
@@ -47,7 +47,7 @@ export function preReadDisplayScore(source: ResearchSource): number | null {
   ) {
     return null;
   }
-  return Math.round(source.pre_read_score * 100);
+  return Math.round(source.pre_read_score);
 }
 
 export function formatPreReadDisplay(source: ResearchSource): string {
@@ -175,7 +175,7 @@ export function priorityScoreTone(
   };
 }
 
-/** Collect ×100 priority display values for topic-relative coloring. */
+/** Collect 0–100 priority display values for topic-relative coloring. */
 export function collectPriorityDisplayScores(
   sources: readonly ResearchSource[],
 ): number[] {

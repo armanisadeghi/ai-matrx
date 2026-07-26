@@ -17,7 +17,11 @@ import {
 } from "./sourceScoreDisplay";
 import { sourceTypeFromDb, type ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
-import { SCRAPE_STATUS_CONFIG, SOURCE_TYPE_CONFIG } from "../../constants";
+import {
+  SCRAPE_STATUS_CONFIG,
+  SOURCE_TYPE_CONFIG,
+  authorityTier,
+} from "../../constants";
 
 /**
  * Shared tabular view of sources for the casual browsing surfaces (keyword
@@ -56,12 +60,7 @@ type SortDir = "asc" | "desc";
 /** Tier rank so Authority sorts high → medium → low (and unranked last). */
 const TIER_ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
 function tierFromSource(s: ResearchSource): string | null {
-  const t = (s.authority_tier ?? "").toLowerCase();
-  if (t === "high" || t === "medium" || t === "low") return t;
-  if (s.authority_score == null) return null;
-  if (s.authority_score >= 75) return "high";
-  if (s.authority_score >= 45) return "medium";
-  return "low";
+  return authorityTier(s.authority_tier, s.authority_score);
 }
 
 /**

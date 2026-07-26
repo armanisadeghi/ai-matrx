@@ -147,13 +147,13 @@ describe("sortRowsForExport", () => {
         id: "b",
         url: "https://example.com/b",
         authority_score: 80,
-        pre_read_score: 0.5,
+        pre_read_score: 50,
       }),
       row({
         id: "a",
         url: "https://example.com/a",
         authority_score: 60,
-        pre_read_score: 1.2,
+        pre_read_score: 72,
       }),
     ]);
 
@@ -164,12 +164,12 @@ describe("sortRowsForExport", () => {
     const sorted = sortRowsForExport([
       row({
         id: "high-quality",
-        pre_read_score: 0.2,
+        pre_read_score: 20,
         final_source_score: 99,
       }),
       row({
         id: "high-priority",
-        pre_read_score: 1.5,
+        pre_read_score: 95,
         final_source_score: 10,
       }),
     ]);

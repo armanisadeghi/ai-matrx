@@ -106,6 +106,26 @@ export const NEEDS_SCRAPE_STATUSES: ReadonlySet<string> = new Set([
   "thin",
 ]);
 
+// ============================================================================
+// AUTHORITY TIER — one bucket boundary, shared by every badge/table/viz that
+// buckets `authority_score` into high/medium/low (≥75 high, ≥45 medium, else
+// low). Prefers an explicit `authority_tier` string when present.
+// ============================================================================
+
+export type AuthorityTier = "high" | "medium" | "low";
+
+export function authorityTier(
+  tier: string | null,
+  score: number | null,
+): AuthorityTier | null {
+  const t = (tier ?? "").toLowerCase();
+  if (t === "high" || t === "medium" || t === "low") return t;
+  if (score == null) return null;
+  if (score >= 75) return "high";
+  if (score >= 45) return "medium";
+  return "low";
+}
+
 export const SOURCE_TYPE_CONFIG: Record<
   SourceType,
   { label: string; icon: string }
