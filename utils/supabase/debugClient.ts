@@ -8,6 +8,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
 import { requireEnv } from "@/utils/supabase/env";
+import { browserAuthCookieOptions } from "@/utils/supabase/authCookie";
 
 export const createClient = () =>
   createBrowserClient<Database>(
@@ -16,6 +17,8 @@ export const createClient = () =>
       "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     ),
+    // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
+    { cookieOptions: browserAuthCookieOptions() },
   );
 
 function logParams(label: string, params: unknown) {
@@ -38,6 +41,8 @@ export const createDebugClient = () => {
       "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     ),
+    // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
+    { cookieOptions: browserAuthCookieOptions() },
   );
 
   // MATRX-EXCEPTION: dev-only logging proxy wraps every method of the

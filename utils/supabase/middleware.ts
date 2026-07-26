@@ -10,8 +10,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { requireEnv } from "@/utils/supabase/env";
+import { authCookieOptions } from "@/utils/supabase/authCookie";
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(
+  request: NextRequest,
+  // Satellite hosts (manage./demos.aimatrx.com) don't compile /dashboard —
+  // proxy.ts passes their surface landing so authed login/dashboard redirects
+  // stay on-host instead of dead-ending.
+  { landing = "/dashboard" }: { landing?: string } = {},
+) {
   const pathname = request.nextUrl.pathname;
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
@@ -51,6 +58,8 @@ export async function updateSession(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     ),
     {
+      // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
+      cookieOptions: authCookieOptions(request.headers.get("host")),
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -90,7 +99,7 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/sign-up")
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = landing;
     return NextResponse.redirect(url);
   }
 

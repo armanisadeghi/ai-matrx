@@ -48,6 +48,86 @@ const MAIN_HOST = (() => {
   }
 })();
 
+// ---------------------------------------------------------------------------
+// Deployment split (2026-07) — manage.aimatrx.com / demos.aimatrx.com
+// ---------------------------------------------------------------------------
+// One repo, three Vercel projects; the union is the full app:
+//   aimatrx.com        MATRX_PROFILE=slim  — main app, no (admin), no (dev)
+//   manage.aimatrx.com MATRX_PROFILE=admin — ONLY (admin) + auth + api
+//   demos.aimatrx.com  MATRX_PROFILE=demos — ONLY (dev) routes + auth + api
+//
+// Two gates below:
+//   1. MAIN host: when this build does NOT compile (admin) / (dev), requests
+//      for /administration/* / /demos/* redirect to the sibling origin that
+//      does. Gated on the BUILD-TIME profile (NEXT_PUBLIC_MATRX_PROFILE,
+//      inlined by next.config.js), so a full/core build never bounces traffic
+//      it can serve itself.
+//   2. SATELLITE hosts: anything outside their surface (+ auth pages, which
+//      every profile compiles so login works on every host) redirects to the
+//      main origin. Auth carries across hosts via the domain-wide cookie
+//      (utils/supabase/authCookie.ts).
+const ADMIN_ORIGIN = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.trim() || "https://manage.aimatrx.com";
+const DEMOS_ORIGIN = process.env.NEXT_PUBLIC_DEMOS_ORIGIN?.trim() || "https://demos.aimatrx.com";
+const ADMIN_HOST = (() => {
+  try {
+    return new URL(ADMIN_ORIGIN).host;
+  } catch {
+    return null;
+  }
+})();
+const DEMOS_HOST = (() => {
+  try {
+    return new URL(DEMOS_ORIGIN).host;
+  } catch {
+    return null;
+  }
+})();
+
+const BUILD_PROFILE = process.env.NEXT_PUBLIC_MATRX_PROFILE || "full";
+const BUILD_HAS_ADMIN = ["full", "core", "admin"].includes(BUILD_PROFILE);
+const BUILD_HAS_DEMOS = ["full", "user", "demos"].includes(BUILD_PROFILE);
+
+// Paths every profile compiles — allowed on the satellite hosts so login and
+// error surfaces work in place. (/api, /auth, /_next are outside the matcher;
+// listed defensively, mirroring the edu gate.)
+const SHARED_ALLOWED_EXACT = new Set([
+  "/login",
+  "/sign-up",
+  "/forgot-password",
+  "/error",
+  "/reset-password",
+  "/sitemap.xml",
+  "/robots.txt",
+  "/manifest.webmanifest",
+  "/favicon.ico",
+]);
+const SHARED_ALLOWED_PREFIXES = ["/auth", "/api", "/_next"];
+
+/**
+ * Satellite-host gate: serve the host's own surface + shared auth paths,
+ * send "/" to the surface's landing, and bounce everything else to the main
+ * origin. Returns null when the request should proceed normally.
+ */
+function satelliteGate(
+  request: NextRequest,
+  surfacePrefix: string,
+  landing: string,
+): NextResponse | null {
+  const { pathname, search } = request.nextUrl;
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL(landing, request.nextUrl.origin));
+  }
+  if (
+    pathname === surfacePrefix ||
+    pathname.startsWith(`${surfacePrefix}/`) ||
+    SHARED_ALLOWED_EXACT.has(pathname) ||
+    SHARED_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
+  ) {
+    return null;
+  }
+  return NextResponse.redirect(new URL(pathname + search, `https://${MAIN_HOST}`));
+}
+
 // Path prefixes that render as-is on the edu host (the school-safe surface).
 // Everything else — the admin/builder app — redirects to the main host
 // instead of ever rendering on a school-safe origin.
@@ -81,6 +161,40 @@ function isEduAllowedPath(pathname: string): boolean {
 }
 
 export async function proxy(request: NextRequest) {
+  const requestHost = request.headers.get("host");
+
+  // Satellite hosts serve ONLY their surface; everything else bounces to the
+  // main origin. Never gate if a satellite host resolves to the main host
+  // (misconfigured env) — that would lock the primary app behind redirects.
+  if (ADMIN_HOST && ADMIN_HOST !== MAIN_HOST && requestHost === ADMIN_HOST) {
+    const gated = satelliteGate(request, "/administration", "/administration");
+    if (gated) return gated;
+    return await updateSession(request, { landing: "/administration" });
+  }
+  if (DEMOS_HOST && DEMOS_HOST !== MAIN_HOST && requestHost === DEMOS_HOST) {
+    const gated = satelliteGate(request, "/demos", "/demos");
+    if (gated) return gated;
+    return await updateSession(request, { landing: "/demos" });
+  }
+
+  // Main (and any other) host: hand off surfaces this build does not compile
+  // to the sibling deployment that does.
+  if (requestHost !== ADMIN_HOST && requestHost !== DEMOS_HOST) {
+    const { pathname, search } = request.nextUrl;
+    if (
+      !BUILD_HAS_ADMIN &&
+      (pathname === "/administration" || pathname.startsWith("/administration/"))
+    ) {
+      return NextResponse.redirect(new URL(pathname + search, ADMIN_ORIGIN));
+    }
+    if (
+      !BUILD_HAS_DEMOS &&
+      (pathname === "/demos" || pathname.startsWith("/demos/"))
+    ) {
+      return NextResponse.redirect(new URL(pathname + search, DEMOS_ORIGIN));
+    }
+  }
+
   // Never gate if EDU_HOST resolves to the main host itself (misconfigured
   // env) — that would lock the primary production app behind this redirect.
   if (EDU_HOST && EDU_HOST !== MAIN_HOST) {

@@ -7,12 +7,14 @@
 // Docs: https://supabase.com/docs/guides/getting-started/api-keys
 
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { Database } from "@/types/database.types";
 import { requireEnv } from "@/utils/supabase/env";
+import { authCookieOptions } from "@/utils/supabase/authCookie";
 
 export async function createClient() {
   const cookieStore = await cookies();
+  const host = (await headers()).get("host");
 
   return createServerClient<Database>(
     requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
@@ -21,6 +23,8 @@ export async function createClient() {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     ),
     {
+      // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
+      cookieOptions: authCookieOptions(host),
       cookies: {
         getAll() {
           return cookieStore.getAll();

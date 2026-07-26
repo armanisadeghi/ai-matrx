@@ -7,6 +7,7 @@
 // with a clear error.
 
 import { createServerClient } from "@supabase/ssr";
+import { authCookieOptions } from "@/utils/supabase/authCookie";
 import { NextResponse, type NextRequest } from "next/server";
 import { exchangeCodeForTokens, fetchUserInfo } from "@/lib/auth/aimatrx-oauth";
 import { createAdminClient } from "@/utils/supabase/adminClient";
@@ -136,6 +137,8 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
       {
+        // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
+        cookieOptions: authCookieOptions(request.headers.get("host")),
         cookies: {
           getAll() {
             return request.cookies.getAll();

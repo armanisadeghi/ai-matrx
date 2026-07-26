@@ -11,6 +11,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
 import { wrapClientForCapture } from "@/lib/diagnostics/supabaseErrorCapture";
 import { requireEnv } from "@/utils/supabase/env";
+import { browserAuthCookieOptions } from "@/utils/supabase/authCookie";
 
 export function createClient() {
   // Wrapped for global error capture: every .from()/.rpc()/.schema() error is
@@ -24,6 +25,8 @@ export function createClient() {
         "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
       ),
+      // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
+      { cookieOptions: browserAuthCookieOptions() },
     ),
   );
 }
