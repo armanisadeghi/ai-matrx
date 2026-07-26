@@ -200,24 +200,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fire-and-forget favicon generation — matches the legacy prompt-apps
-    // behavior. We deliberately don't await it or propagate failures.
-    try {
-      const origin = request.nextUrl.origin;
-      void fetch(`${origin}/api/agent-apps/generate-favicon`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Forward the session cookies so the favicon endpoint (if it auth-
-          // checks) sees the same user.
-          cookie: request.headers.get("cookie") ?? "",
-        },
-        body: JSON.stringify({ appId: data.id, name: data.name }),
-      }).catch(() => undefined);
-    } catch {
-      // non-fatal
-    }
-
+    // No favicon generation step: the app badge is computed at render time as a
+    // data: URI from the app name (features/agent-apps/utils/favicon-metadata).
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error("POST /api/agent-apps unexpected:", error);

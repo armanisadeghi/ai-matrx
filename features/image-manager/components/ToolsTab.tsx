@@ -222,7 +222,7 @@ export function ToolsTab() {
       icon: Smile,
       iconColor: "text-pink-500",
       description:
-        "Every agent app and prompt app gets a procedurally-generated, colored, letter-based favicon via /api/agent-apps/generate-favicon. Runs at app-create time — this card is the entry point for that flow's docs.",
+        "Every agent app and prompt app gets a procedurally-generated, colored, letter-based favicon, computed at render time as an inline data: URI from the app name. No file is stored and no server call is made.",
       action: {
         kind: "openLink",
         label: "Read docs",

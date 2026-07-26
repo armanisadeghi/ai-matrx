@@ -58,7 +58,7 @@ export async function generateMetadata({
       agentAppMeta.tagline ||
       agentAppMeta.description ||
       `Try ${agentAppMeta.name} — An AI-powered app`,
-    icons: getAgentAppIconsMetadata(agentAppMeta.favicon_url),
+    icons: getAgentAppIconsMetadata(agentAppMeta.favicon_url, agentAppMeta.name),
     openGraph: {
       title: agentAppMeta.name,
       description:
