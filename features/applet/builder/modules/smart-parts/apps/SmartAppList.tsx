@@ -14,7 +14,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchAppsThunk, deleteAppThunk } from "@/lib/redux/app-builder/thunks/appBuilderThunks";
 import { selectAllApps, selectAppLoading, selectAppError, selectAppsByIds } from "@/lib/redux/app-builder/selectors/appSelectors";
 import { IconPicker } from "@/components/ui/IconPicker";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { COLOR_VARIANTS } from "@/features/applet/styles/StyledComponents";
 import { CustomAppConfig } from "@/types/customAppTypes";
 import { getAppColorClasses } from "@/features/applet/styles/styles";

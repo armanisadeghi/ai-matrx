@@ -25,7 +25,7 @@ import {
   type RagAiCopySection,
   type RagAiSectionKey,
 } from "@/features/rag/components/search/ragAiCopy";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { SelectedPdfPages } from "@/features/rag/components/search/SelectedPdfPages";
 import {
   fetchDerivativeChunks,

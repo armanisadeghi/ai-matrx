@@ -14,7 +14,7 @@
 // now to avoid churn on the just-stabilized drill; it can adopt this later.)
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { fileHandler } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";

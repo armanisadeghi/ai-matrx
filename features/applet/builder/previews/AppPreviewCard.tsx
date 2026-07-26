@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { getIconComponent } from '@/components/official/icons/IconResolver';
-import { InlineMediaRef } from '@/features/files';
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { 
   selectAppName,

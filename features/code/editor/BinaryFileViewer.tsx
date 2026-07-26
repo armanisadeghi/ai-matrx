@@ -40,12 +40,7 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { AlertCircle, Download as DownloadIcon, Loader2 } from "lucide-react";
-import {
-  getFilePreviewProfile,
-  sniffTextBytes,
-  type PreviewKind,
-  type TextSniffResult,
-} from "@/features/files";
+import { getFilePreviewProfile, sniffTextBytes, type PreviewKind, type TextSniffResult } from "@/features/files/utils/file-types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useCodeWorkspace } from "../CodeWorkspaceProvider";
 import { convertTabToEditor } from "../redux/tabsSlice";

@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { Twitter, Facebook, Linkedin } from "@/components/icons/brand-icons";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { CanvasType, CanvasVisibility } from "@/types/canvas-social";

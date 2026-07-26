@@ -38,7 +38,8 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useFileNode, InlineMediaRef } from "@/features/files";
+import { useFileNode } from "@/features/files/hooks/useFileNode";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { usePdfSurfaceLinks } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";

@@ -22,11 +22,11 @@ import { PdfRegionContextMenu } from "@/features/file-analysis/components/Region
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
-import { useFile } from "@/features/files";
+import { useFile } from "@/features/files/handler/hooks/useFile";
 import { ThumbnailStrip } from "./ThumbnailStrip";
 import { InspectorRail, type StudioInspectorTab } from "./InspectorRail";
-import type { PdfRegion } from "@/features/files";
-import type { AnnotationLayerMode } from "@/features/files";
+import type { PdfRegion } from "@/features/files/components/core/PdfAnnotationLayer";
+import type { AnnotationLayerMode } from "@/features/files/components/core/PdfAnnotationLayer";
 
 interface StudioShellProps {
   fileId: string;

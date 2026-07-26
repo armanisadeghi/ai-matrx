@@ -12,12 +12,9 @@
  * throws loudly here rather than persisting a contract violation.
  */
 
-import {
-  fileHandler,
-  CloudFolders,
-  resolveDefaultVisibility,
-  type NormalizedFile,
-} from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
+import { CloudFolders, resolveDefaultVisibility } from "@/features/files/utils/folder-conventions";
+import type { NormalizedFile } from "@/features/files/handler/types";
 import {
   isCaptureMetadata,
   type CaptureMetadata,

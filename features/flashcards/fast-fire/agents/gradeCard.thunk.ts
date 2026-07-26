@@ -21,7 +21,8 @@
 // though they resolve out of order, long after the drill advanced past them.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { fileHandler, CloudFolders } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";

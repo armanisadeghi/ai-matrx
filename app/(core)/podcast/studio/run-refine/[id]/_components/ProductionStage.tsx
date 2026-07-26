@@ -19,7 +19,7 @@
 
 import { useEffect, useState } from "react";
 import { AudioLines, ImageIcon, Clapperboard, FileText, CheckCircle2, Palette } from "lucide-react";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "@/features/podcasts/generator/components/ElapsedTimer";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";

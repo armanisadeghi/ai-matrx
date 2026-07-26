@@ -42,12 +42,10 @@ import {
   type EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  getFilePreviewProfile,
-  useCloudTree,
-  useFileMutation,
-  useInfiniteWindow,
-} from "@/features/files";
+import { getFilePreviewProfile } from "@/features/files/utils/file-types";
+import { useCloudTree } from "@/features/files/hooks/useCloudTree";
+import { useFileMutation } from "@/features/files/hooks/useFileMutation";
+import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { filesDb, FILES_TABLE_COLUMNS } from "@/features/files/filesDb";
@@ -66,7 +64,7 @@ import {
 } from "@/features/files/redux/selectors";
 import { loadFolderContents } from "@/features/files/redux/thunks";
 import { isExcludedFromRecents } from "@/features/files/utils/folder-conventions";
-import type { CloudFileRecord, CloudFolderRecord } from "@/features/files";
+import type { CloudFileRecord, CloudFolderRecord } from "@/features/files/types";
 import { supabase } from "@/utils/supabase/client";
 import {
   cldSourceFileIdsFromStudioDocs,

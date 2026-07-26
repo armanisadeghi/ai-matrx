@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import type { ArtifactRendererProps } from "../artifact-renderers";
 
 /**

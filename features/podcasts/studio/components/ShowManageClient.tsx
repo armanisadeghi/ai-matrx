@@ -50,7 +50,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { AssetUploader, type AssetUrls } from "@/features/podcasts/components/admin/AssetUploader";

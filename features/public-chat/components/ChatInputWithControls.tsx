@@ -27,8 +27,8 @@ import {
 import { Youtube } from "@/components/icons/brand-icons";
 
 import { VoiceMicButton } from "./VoiceMicButton";
-import { useFileUpload } from "@/features/files";
-import type { NormalizedFile } from "@/features/files";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import type { NormalizedFile } from "@/features/files/handler/types";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import {
   Popover,
@@ -40,7 +40,7 @@ import {
   TapTargetButtonSolid,
 } from "@/components/icons/TapTargetButton";
 import { PublicResourcePickerMenu } from "./resource-picker/PublicResourcePickerMenu";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 import type { PublicResource, PublicResourceType } from "../types/content";
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";

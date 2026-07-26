@@ -8,7 +8,7 @@ import {
   Library,
   Zap,
 } from "lucide-react";
-import { CloudFolders } from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 /**
  * /images/library

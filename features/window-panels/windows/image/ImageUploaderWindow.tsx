@@ -20,7 +20,7 @@ import {
     type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
 import { emitImageUploaderEvent } from "./callbacks";
-import type { AssetPreset } from "@/features/files";
+import type { AssetPreset } from "@/features/files/types";
 
 export interface ImageUploaderWindowProps {
     isOpen: boolean;

@@ -29,8 +29,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { openFolderPicker } from "@/features/files";
-import { useFileUpload, useFolderNode } from "@/features/files";
+import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFolderNode } from "@/features/files/hooks/useFolderNode";
 import { extractErrorMessage } from "@/utils/errors";
 import { cropFileToFile } from "../utils/crop-file";
 import {

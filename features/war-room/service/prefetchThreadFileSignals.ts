@@ -19,7 +19,7 @@
  */
 
 import type { AppDispatch } from "@/lib/redux/store";
-import { prefetchRagStatusesForFiles } from "@/features/files";
+import { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
 import { fetchFileRagStatus } from "@/features/rag/api/rag-jobs";
 import {
   hasThreadFileRagProbe,

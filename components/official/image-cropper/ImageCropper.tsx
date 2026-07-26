@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/lib/toast";
-import { useFileUpload } from '@/features/files';
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 
 // Default aspect ratio options
 const DEFAULT_ASPECT_RATIOS = [

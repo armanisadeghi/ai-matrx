@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useFileSrc } from "@/features/files";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { playCard, stopPlayback } from "../redux/fastFireSlice";
 

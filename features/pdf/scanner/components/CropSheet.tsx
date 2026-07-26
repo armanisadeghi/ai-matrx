@@ -38,7 +38,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { useFileSrc } from "@/features/files";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 
 import { detectDocument } from "../api";
 import { ENHANCE_LABELS, applyEnhance } from "../enhance";

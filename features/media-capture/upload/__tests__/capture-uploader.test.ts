@@ -11,7 +11,7 @@ jest.mock("@/features/files", () => ({
   fileHandler: { upload: jest.fn() },
 }));
 
-import { fileHandler } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
 import { captureFolderFor, uploadCapture } from "../capture-uploader";
 import {
   buildPhotoCaptureMetadata,

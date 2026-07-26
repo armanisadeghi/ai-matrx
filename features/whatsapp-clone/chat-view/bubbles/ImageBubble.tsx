@@ -4,7 +4,7 @@ import { cn } from "@/styles/themes/utils";
 import { formatBubbleTime } from "../../shared/relative-time";
 import { MessageStatusTicks } from "../MessageStatusTicks";
 import type { WAMessage } from "../../types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface ImageBubbleProps {
   message: WAMessage;

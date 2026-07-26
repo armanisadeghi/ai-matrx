@@ -50,7 +50,7 @@ import type {
   WarRoomAssignment,
   WarRoomThread,
 } from "@/features/war-room/types";
-import { selectFileById, selectRagStatusForFile } from "@/features/files";
+import { selectFileById, selectRagStatusForFile } from "@/features/files/redux/selectors";
 import { getThreadFileRagIndexed } from "@/features/war-room/service/threadFileRagCache";
 import { getCachedEntityTitle } from "@/features/scopes/service/entityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";

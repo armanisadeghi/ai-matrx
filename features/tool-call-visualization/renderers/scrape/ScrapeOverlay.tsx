@@ -21,7 +21,7 @@ import {
     BookOpenText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import type { ToolRendererProps } from "../../types";
 import { getFaviconUrl } from "../search/parseSearch";

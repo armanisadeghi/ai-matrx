@@ -29,7 +29,7 @@ import {
 import { ShowForm } from "./PodcastForm";
 import { podcastService } from "../../service";
 import type { PcShow, PcEpisodeWithShow } from "../../types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);

@@ -16,7 +16,7 @@
  * in the calling card/row — no eslint-disable required.
  */
 
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 export interface CaptureThumbProps {
   fileId: string;

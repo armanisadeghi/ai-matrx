@@ -9,7 +9,8 @@
  * flowchart.htmlLabels=false (no <foreignObject> → no canvas taint).
  */
 
-import { fileHandler, type NormalizedFile } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
+import type { NormalizedFile } from "@/features/files/handler/types";
 
 function svgBlob(svg: string): Blob {
   return new Blob([svg], { type: "image/svg+xml;charset=utf-8" });

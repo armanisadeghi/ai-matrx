@@ -32,7 +32,7 @@ import {
 } from "@/features/canvas/social/preset-covers";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
 import { OPEN_PUBLIC_SEARCH_FILTERS_EVENT } from "@/features/image-manager/mobileEvents";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 type ThemeFilter = "all" | PresetCover["theme"];
 

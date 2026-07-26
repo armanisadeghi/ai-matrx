@@ -38,7 +38,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useUnsplashSearch } from "@/hooks/images/useUnsplashSearch";
 import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
 import { toast } from "@/lib/toast";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

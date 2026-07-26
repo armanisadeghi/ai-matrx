@@ -36,7 +36,7 @@ import {
   getImageViewerTransformStyle,
   initialImageViewerTransform,
 } from "./imageViewerTransforms";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

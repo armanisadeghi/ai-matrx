@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
-import { FileIcon } from "@/features/files";
+import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import type { ToolAccent } from "@/features/tool-call-visualization/types";
 import { ToolGlyph } from "@/features/tool-call-visualization/renderers/_shared-entity/ToolGlyph";
 import { PartPeekPopover } from "@/features/tool-call-visualization/renderers/_shared-entity/PartPeekPopover";

@@ -49,7 +49,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { fileHandler } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
 import {
   adjust,

@@ -18,7 +18,7 @@ import {
   PauseCircle,
   XCircle,
 } from "lucide-react";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import {
   livenessLabel,
   sourceLabel,

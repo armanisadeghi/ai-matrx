@@ -32,13 +32,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import {
-  CloudFolders,
-  FileRightClickMenu,
-  useCloudTree,
-  useFolderContents,
-  type CloudFile,
-} from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
+import { useCloudTree } from "@/features/files/hooks/useCloudTree";
+import { useFolderContents } from "@/features/files/hooks/useFolderContents";
+import type { CloudFile } from "@/features/files/types";
 import { CaptureRecoverySection } from "@/features/media-capture/components/CaptureRecoverySection";
 import { CaptureTransportStrip } from "@/features/media-capture/components/CaptureTransportStrip";
 import { CaptureItemActions } from "@/features/media-capture/components/CaptureItemActions";

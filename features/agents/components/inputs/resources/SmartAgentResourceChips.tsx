@@ -59,7 +59,7 @@ import { useContextItemDrawer } from "@/features/agents/components/context-items
 import { normalizeResource } from "@/features/agents/components/context-items/normalize";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { DataRef } from "@/features/agents/types/message-types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
 import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
 

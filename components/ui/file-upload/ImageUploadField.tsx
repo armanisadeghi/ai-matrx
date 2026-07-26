@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Image, Upload, X } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { useFileUpload } from "@/features/files";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 
 interface ImageUploadFieldProps {
   value?: string;

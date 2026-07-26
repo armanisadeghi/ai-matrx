@@ -5,7 +5,7 @@ import { MainLayoutProps } from '@/features/applet/home/types';
 import { LoadingSpinner } from '@/components/ui/spinner';
 import AppDisplay from '@/features/applet/home/app-display/Default';
 import ModernAppletCard from '@/features/applet/home/applet-card/Modern';
-import { InlineMediaRef } from '@/features/files';
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 
 const GridMainLayout: React.FC<MainLayoutProps> = ({
