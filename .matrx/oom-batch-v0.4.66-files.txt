@@ -1,50 +1,40 @@
 # Pending APPLY from archive/oom-batch-v0.4.66
-# Filter: still at A1 only.
-# done: 249 | ahead: 111 | STILL TO APPLY: 29
-# Applied unstaged: research service + usePipelineProgress + serviceTopics test
-# Skipped ahead: research sourceScoreDisplay.test.ts
-# Podcasts: formatting-only vs park — do not re-apply
+# Filter: still at A1 only. Match-park=done. Ahead=excluded.
+# done(match park): 262 | ahead: 111 | STILL TO APPLY: 13
+#
+# WILL NOT DO (and related):
+#   - components/official/ProTextarea.tsx — next/dynamic lazy; keep eager
+#   - features/shell/navigation/navActions.ts — must NOT be dynamic import
+#   - scripts/check-fake-dynamic-imports.mjs — related to that campaign
+#
+# Just applied (unstaged): comment-only type/doc paths + inert audit-index script
+#   + matrx-agents public/types scaffold + transcript actionTypes leaf
+#   + check-access-guards comment path (release-gate script, behavior unchanged)
+# Kept research comment trio if still dirty.
 
-## SKIP — fake-dynamic / audit scripts (2)
-A	scripts/audit-index-files.mjs
-A	scripts/check-fake-dynamic-imports.mjs
+## WILL NOT DO (3)
+X	components/official/ProTextarea.tsx	# next/dynamic lazy — do not apply
+X	features/shell/navigation/navActions.ts	# dynamic import conversion — keep static
+X	scripts/check-fake-dynamic-imports.mjs	# related to nav/dynamic opt campaign — skip with navActions
 
 ## BATCH — action-catalog (1)
 M	features/action-catalog/service.ts
 
-## BATCH — admin applications (9)
+## BATCH — admin applications (5)
 M	app/(admin)/administration/applications/catalogs/page.tsx
 M	app/(admin)/administration/applications/configuration/page.tsx
 M	features/admin/applications/catalogs/components/CatalogsClient.tsx
 M	features/admin/applications/catalogs/resolver.ts
-M	features/admin/applications/catalogs/schemas.ts
-M	features/admin/applications/catalogs/types.ts
 M	features/admin/applications/config/components/AppConfigClient.tsx
-M	features/admin/applications/config/schema.ts
-M	features/admin/applications/config/types.ts
 
-## BATCH — media-capture (1)
-M	features/media-capture/core/capture-types.ts
-
-## BATCH — transcript-studio (3)
-A	features/transcript-studio/redux/actionTypes.ts
+## BATCH — transcript-studio (2)
 M	features/transcript-studio/redux/realtimeMiddleware.ts
 M	features/transcript-studio/redux/thunks.ts
 
-## BATCH — scripts / package.json (1)
-M	scripts/check-access-guards.ts
-
-## BATCH — other (12)
+## BATCH — other (5)
 M	app/(core)/cms/admin/page.tsx
 M	components/mardown-display/blocks/tasks/tasklist-parser.tsx
-M	components/official/ProTextarea.tsx
 M	features/agents/components/settings-management/validation/__tests__/constraint-eval-fixture.test.ts
 M	features/files/upload/tusUpload.ts
 M	features/item-presentation/registry.tsx
-M	features/item-presentation/types.ts
-M	features/shell/navigation/navActions.ts
-M	lib/api/broker/types.ts
-M	lib/list-scope/types.ts
-A	packages/matrx-agents/src/public.ts
-A	packages/matrx-agents/src/types/agents-types.ts
 

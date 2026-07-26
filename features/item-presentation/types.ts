@@ -34,7 +34,7 @@ export type KnownItemType =
   | "table"
   | "structured_list"
   // "picklist" retained read-only for pre-rename historical payloads; new
-  // payloads use "structured_list". See common-docs/structured-lists-rename.
+  // payloads use "structured_list". See common-docs/projects/structured-lists-rename.
   | "picklist"
   | "workbook"
   | "document"
