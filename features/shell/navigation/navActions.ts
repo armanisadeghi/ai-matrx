@@ -27,13 +27,20 @@ import { useOpenStructuredListManagerV2Window } from "@/features/overlays/opener
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-// The four create-* action creators below are loaded with `await import()` INSIDE
-// their handlers, never statically. This file is reached from AppShell -> Sidebar ->
-// NavFlyoutGroup, so it is in the graph of all 628 (core)+(admin) routes; as static
-// imports these four pulled the war-room/notes/data-tables thunk trees — and through
-// war-room, the agent execution system, canvas materialization and the markdown
-// content-IR pipeline — into every one of them. They only ever run on a user click,
-// so the cost belongs on the click, not on every route's compile.
+// These four are STATIC imports on purpose. Do not "optimize" them into
+// `await import()` — that was tried (commit 899342703) and it made things worse.
+//
+// A dynamic import does not remove a module from the build; it creates a chunk
+// boundary. The module is still compiled. It only pays off when the module is
+// reachable ONLY through a human action. These four are not: war-room/redux/thunks
+// has 37 other static importers, notes/redux/thunks 13, document-service 6,
+// workbook-service 5. So splitting them here bought four extra chunk boundaries and
+// the extra chunk-graph assembly memory that comes with them, while removing nothing
+// from the build — on a builder that is already OOM-killing during compile.
+import { createWarRoomSession } from "@/features/war-room/redux/thunks";
+import { createNewNote } from "@/features/notes/redux/thunks";
+import { createDocument } from "@/features/data-tables/document-service";
+import { createWorkbook } from "@/features/data-tables/workbook-service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import type { ShellNavActionId } from "../constants/nav-data";
 
@@ -58,9 +65,6 @@ export function useNavActions(): ShellNavActionHandlers {
       // Creates the session server-side, then navigates into it. The thunk
       // raises its own error toast on failure (returns null).
       void (async () => {
-        const { createWarRoomSession } = await import(
-          "@/features/war-room/redux/thunks"
-        );
         const session = await dispatch(createWarRoomSession());
         if (session) router.push(`/war-room/${session.id}`);
       })();
@@ -70,7 +74,6 @@ export function useNavActions(): ShellNavActionHandlers {
       // in-page "New Note" button behavior (create-then-open).
       void (async () => {
         try {
-          const { createNewNote } = await import("@/features/notes/redux/thunks");
           const note = await dispatch(createNewNote({})).unwrap();
           if (note?.id) router.push(`/notes/${note.id}`);
         } catch {
@@ -82,9 +85,6 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /documents page "New" button: create a blank cloud doc,
       // then open it.
       void (async () => {
-        const { createDocument } = await import(
-          "@/features/data-tables/document-service"
-        );
         const res = await createDocument({ name: "Untitled document" });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the document");
@@ -97,9 +97,6 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /workbooks page "New" button: create a blank workbook,
       // then open it.
       void (async () => {
-        const { createWorkbook } = await import(
-          "@/features/data-tables/workbook-service"
-        );
         const res = await createWorkbook({ name: "Untitled workbook" });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the workbook");

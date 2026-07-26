@@ -141,7 +141,8 @@
     "dev:reap:dry": "bash scripts/dev-cleanup.sh reap --dry-run",
     "dev:stop": "bash scripts/dev-cleanup.sh ports",
     "dev:nuke": "bash scripts/dev-cleanup.sh all",
-    "fix:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts --fix"
+    "fix:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts --fix",
+    "check:fake-dynamic": "node scripts/check-fake-dynamic-imports.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
