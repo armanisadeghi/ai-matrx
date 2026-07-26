@@ -127,7 +127,11 @@ export function ToolResultCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               {menuItems?.map((item) => (
-                <DropdownMenuItem key={item.label} onClick={item.onClick}>
+                <DropdownMenuItem
+                  key={item.label}
+                  onClick={item.onClick}
+                  className="gap-2"
+                >
                   <item.icon className="size-4" />
                   {item.label}
                 </DropdownMenuItem>
@@ -136,13 +140,13 @@ export function ToolResultCard({
                 <DropdownMenuSeparator />
               )}
               {onOpenWindowPanel && (
-                <DropdownMenuItem onClick={onOpenWindowPanel}>
+                <DropdownMenuItem onClick={onOpenWindowPanel} className="gap-2">
                   <PanelRightOpen className="size-4" />
                   Window Panel
                 </DropdownMenuItem>
               )}
               {onOpenOverlay && (
-                <DropdownMenuItem onClick={onOpenOverlay}>
+                <DropdownMenuItem onClick={onOpenOverlay} className="gap-2">
                   <Wrench className="size-4" />
                   Tool Admin
                 </DropdownMenuItem>
