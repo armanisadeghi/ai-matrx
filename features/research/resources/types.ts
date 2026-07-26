@@ -2,7 +2,7 @@
  * RESEARCH RESOURCE SYSTEM — the contract.
  *
  * A research topic accumulates a lot more than its final report: search
- * results, raw provider payloads, scraped page bodies, per-page AI write-ups,
+ * results, raw provider payloads, the page bodies we read, per-page AI write-ups,
  * page scoring, keyword syntheses, tag consolidations, topic reports,
  * documents, media. Until now exactly one of those (the report) could reach an
  * agent, because every output hard-coded a single markdown blob as its input.
