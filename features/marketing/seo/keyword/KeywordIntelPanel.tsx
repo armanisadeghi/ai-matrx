@@ -539,7 +539,12 @@ function RelationshipsTab({
                 </button>
                 {edge.confidence !== null ? (
                   <span className="shrink-0 tabular-nums text-[10px] text-muted-foreground">
-                    {(edge.confidence * 100).toFixed(0)}%
+                    {/* Stored as 0–100 (fraction-form rows normalized too). */}
+                    {(edge.confidence <= 1
+                      ? edge.confidence * 100
+                      : edge.confidence
+                    ).toFixed(0)}
+                    %
                   </span>
                 ) : null}
                 <span className="shrink-0 text-[10px] text-muted-foreground">
