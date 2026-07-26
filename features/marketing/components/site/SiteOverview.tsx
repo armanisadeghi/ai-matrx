@@ -775,13 +775,15 @@ function AttentionCard({
     0,
     metrics.canonicalPages - metrics.targetKeywordPages,
   );
+  const plural = (count: number, singular: string, pluralForm: string) =>
+    count === 1 ? singular : pluralForm;
   const items: AttentionItem[] = [
     ...(pendingDiscovered
       ? [
           {
             key: "discovery",
             count: pendingDiscovered,
-            label: "discovery candidates awaiting review",
+            label: `discovery ${plural(pendingDiscovered, "candidate awaits", "candidates await")} review`,
             href: `${sitePath}/discovery`,
             icon: <Camera className="h-3.5 w-3.5" />,
           },
@@ -792,7 +794,7 @@ function AttentionCard({
           {
             key: "findings",
             count: metrics.openFindings,
-            label: "open findings need triage",
+            label: `open ${plural(metrics.openFindings, "finding needs", "findings need")} triage`,
             href: `${sitePath}/findings`,
             icon: <CircleAlert className="h-3.5 w-3.5" />,
           },
@@ -803,7 +805,7 @@ function AttentionCard({
           {
             key: "blocked",
             count: metrics.blockedPages,
-            label: "pages blocked from indexing",
+            label: `${plural(metrics.blockedPages, "page", "pages")} blocked from indexing`,
             href: `${sitePath}/audit`,
             icon: <TriangleAlert className="h-3.5 w-3.5" />,
           },
@@ -814,7 +816,7 @@ function AttentionCard({
           {
             key: "serp",
             count: metrics.serpIssues,
-            label: "pages failing SERP metadata checks",
+            label: `${plural(metrics.serpIssues, "page", "pages")} failing SERP metadata checks`,
             href: `${sitePath}/audit`,
             icon: <Search className="h-3.5 w-3.5" />,
           },
@@ -825,7 +827,7 @@ function AttentionCard({
           {
             key: "keywords",
             count: pagesWithoutKeyword,
-            label: "pages missing a target keyword",
+            label: `${plural(pagesWithoutKeyword, "page", "pages")} missing a target keyword`,
             href: `${sitePath}/pages`,
             icon: <KeyRound className="h-3.5 w-3.5" />,
           },
