@@ -1,5 +1,5 @@
 {
-  "generated_for": "850-kinds+9d38738444d0",
+  "generated_for": "859-kinds+6ec1ad305462",
   "columns": [
     "definition",
     "example",
@@ -3805,6 +3805,20 @@
       }
     },
     {
+      "kind": "gsc_opportunities",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "http_response",
       "is_active": false,
       "family": "workflow_io",
@@ -3816,6 +3830,20 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "image_metadata",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
       }
     },
     {
@@ -3858,6 +3886,20 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "keyword_relationship_research",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
       }
     },
     {
@@ -4351,6 +4393,20 @@
       }
     },
     {
+      "kind": "reviewer_result_card",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "schema_proposal",
       "is_active": true,
       "family": null,
@@ -4416,6 +4472,34 @@
         "gate_structural": "ok",
         "component": "missing",
         "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "seo_meta_options",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "seo_meta_tags",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
       }
@@ -9545,6 +9629,34 @@
       }
     },
     {
+      "kind": "topic_idea",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "topic_ideas",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "transcript",
       "is_active": true,
       "family": null,
@@ -9682,6 +9794,20 @@
         "skill": "ok",
         "content_block": "ok",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "visual_qc_result",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -11991,8 +12117,20 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "gsc_opportunities",
+      "message": "kind \"gsc_opportunities\" has no content block referencing \"__kind\": \"gsc_opportunities\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "map",
       "message": "kind \"map\" has no content block referencing \"__kind\": \"map\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "reviewer_result_card",
+      "message": "kind \"reviewer_result_card\" has no content block referencing \"__kind\": \"reviewer_result_card\""
     },
     {
       "severity": "yellow",
@@ -12003,8 +12141,38 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "seo_meta_options",
+      "message": "kind \"seo_meta_options\" has no content block referencing \"__kind\": \"seo_meta_options\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "seo_meta_tags",
+      "message": "kind \"seo_meta_tags\" has no content block referencing \"__kind\": \"seo_meta_tags\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "stats",
       "message": "kind \"stats\" has no content block referencing \"__kind\": \"stats\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "topic_idea",
+      "message": "kind \"topic_idea\" has no content block referencing \"__kind\": \"topic_idea\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "topic_ideas",
+      "message": "kind \"topic_ideas\" has no content block referencing \"__kind\": \"topic_ideas\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "visual_qc_result",
+      "message": "kind \"visual_qc_result\" has no content block referencing \"__kind\": \"visual_qc_result\""
     },
     {
       "severity": "yellow",
@@ -13557,6 +13725,30 @@
     {
       "severity": "yellow",
       "code": "stale-example",
+      "kind": "gsc_opportunities",
+      "message": "kind \"gsc_opportunities\" example is older than the kind definition (example 2026-07-25T14:27:46.911587+00:00 < kind 2026-07-25T16:19:57.307484+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "image_metadata",
+      "message": "kind \"image_metadata\" example is older than the kind definition (example 2026-07-23T07:06:25.064614+00:00 < kind 2026-07-25T16:19:57.307484+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "reviewer_result_card",
+      "message": "kind \"reviewer_result_card\" example is older than the kind definition (example 2026-07-24T10:35:08.097639+00:00 < kind 2026-07-25T16:19:57.307484+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "seo_meta_tags",
+      "message": "kind \"seo_meta_tags\" example is older than the kind definition (example 2026-07-25T12:46:17.132804+00:00 < kind 2026-07-25T16:19:57.307484+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
       "kind": "tool_io_bundle_list_desktop_files_6b8436a8_fbbf_46d4_bb83_85eab389939f_54770017_input",
       "message": "kind \"tool_io_bundle_list_desktop_files_6b8436a8_fbbf_46d4_bb83_85eab389939f_54770017_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
     },
@@ -13607,6 +13799,12 @@
       "code": "stale-example",
       "kind": "tool_io_bundle_list_desktop_windows_a5d87063_9aa7_4fcb_a842_1fafeb42ef94_65481f4b_input",
       "message": "kind \"tool_io_bundle_list_desktop_windows_a5d87063_9aa7_4fcb_a842_1fafeb42ef94_65481f4b_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "visual_qc_result",
+      "message": "kind \"visual_qc_result\" example is older than the kind definition (example 2026-07-24T08:43:31.424548+00:00 < kind 2026-07-25T16:19:57.307484+00:00) — revalidate/recapture"
     },
     {
       "severity": "yellow",

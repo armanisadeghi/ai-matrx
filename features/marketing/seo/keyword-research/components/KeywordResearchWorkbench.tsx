@@ -23,6 +23,7 @@ import {
 import { toast } from "@/lib/toast";
 
 import { useKeywordResearch } from "../useKeywordResearch";
+import LiveResearchFeed from "./LiveResearchFeed";
 import { normalizeMonthlySearches } from "../types";
 import type {
   KeywordEdgeView,
@@ -286,17 +287,27 @@ export default function KeywordResearchWorkbench() {
           </button>
         </div>
         {run.status === "running" && (
-          <div className="mt-2 space-y-2">
-            <p className="text-xs text-muted-foreground">
-              {run.stage ?? `Running research for “${run.primaryKeyword}”`}
-            </p>
-            {run.streamingOutput && (
-              <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-2 text-[11px] text-muted-foreground">
-                {run.streamingOutput}
-              </pre>
-            )}
-          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {run.stage ?? `Running research for “${run.primaryKeyword}”`}
+          </p>
         )}
+        {/* Live feed: the agent's structured output rendered as real
+            components key-by-key while streaming — never raw JSON. Stays
+            visible after completion so the run's map remains inspectable. */}
+        {(run.status === "running" || run.status === "done") &&
+          run.streamKey && (
+            <div className="mt-2 max-h-[26rem] overflow-y-auto rounded-md border border-border bg-muted/20 px-3 py-1">
+              <LiveResearchFeed
+                streamKey={run.streamKey}
+                researchText={run.researchOutput ?? ""}
+                researchDone={run.researchDone ?? run.status === "done"}
+                classificationText={run.classificationOutput ?? ""}
+                classificationDone={
+                  run.classificationDone ?? run.status === "done"
+                }
+              />
+            </div>
+          )}
         {run.status === "error" && (
           <p className="mt-2 text-xs text-destructive">{run.error}</p>
         )}

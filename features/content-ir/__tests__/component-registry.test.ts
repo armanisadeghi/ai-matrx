@@ -109,6 +109,8 @@ describe("compiled bootstrap (system-components)", () => {
       research_report: "research",
       questionnaire: "questionnaire",
       video_prompt_options: "video_prompt_options",
+      keyword_relationship_research: "keyword_research",
+      keyword_classification_batch_v1: "keyword_classification_batch",
     });
   });
 });
