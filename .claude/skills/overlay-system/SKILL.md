@@ -5,7 +5,7 @@ description: Use whenever a task touches the overlay rendering system at matrx-f
 
 # Overlay System
 
-This skill is the canonical how-to for the overlay rendering layer at matrx-frontend. For deep reference, see [`features/overlays/FEATURE.md`](../../../features/overlays/FEATURE.md). For history of the bug class this system was designed to eliminate, see [`docs/OVERLAY_WINDOW_OVERHAUL.md`](../../../docs/OVERLAY_WINDOW_OVERHAUL.md). For known gaps and future work, see [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../../docs/OVERLAY_WINDOW_ROADMAP.md).
+This skill is the canonical how-to for the overlay rendering layer at matrx-frontend. For deep reference, see [`features/overlays/FEATURE.md`](../../../features/overlays/FEATURE.md). For history of the bug class this system was designed to eliminate, see [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](../../../docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md). For known gaps and future work, see [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../../docs/OVERLAY_WINDOW_ROADMAP.md).
 
 ---
 
@@ -189,6 +189,6 @@ These came from the overhaul conversation and are encoded in the design:
 
 - Read [`features/overlays/FEATURE.md`](../../../features/overlays/FEATURE.md) first.
 - Look at how an existing overlay does it. Most patterns are present in 2+ overlays already.
-- Read [`docs/OVERLAY_WINDOW_OVERHAUL.md`](../../../docs/OVERLAY_WINDOW_OVERHAUL.md) for the WHY of the architecture.
+- Read [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](../../../docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md) for the WHY of the architecture.
 - Read [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../../docs/OVERLAY_WINDOW_ROADMAP.md) for known gaps — your problem may already be triaged.
 - If you must change rendering, prefer hand-editing `OverlayController.tsx` over re-running the codegen. The codegen is a one-shot seeder; re-running it loses the hand-tightened type casts.

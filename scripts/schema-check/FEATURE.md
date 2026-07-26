@@ -4,7 +4,7 @@
 system. It pulls the **actual** database (one cached snapshot) and diffs it
 against everything the code assumes about the schema, so the 2026 schema reorg
 (and every future one) can't silently break a query. Python twin:
-`aidream/db/schema_analysis/`. Requirements: [`docs/SCHEMA_TRUTH_CHECK_REQUIREMENTS.md`](../../docs/SCHEMA_TRUTH_CHECK_REQUIREMENTS.md).
+`aidream/db/schema_analysis/`. Requirements: [`docs/archive/2026/SCHEMA_TRUTH_CHECK_REQUIREMENTS.md`](../../docs/archive/2026/SCHEMA_TRUTH_CHECK_REQUIREMENTS.md).
 
 > **Doctrine.** A moved/retired table has **no shim**. `supabase.from("notes")`
 > silently resolves to `public.notes`; once `notes` lives in `workbench` that

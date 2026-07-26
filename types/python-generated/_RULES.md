@@ -83,5 +83,5 @@ and surfaced at read time, and no code path can construct a non-conforming value
 
 ## Inventory & tracking
 
-- **Tracker (waves + checkboxes):** [`docs/type-drift/TRACKER.md`](../../docs/type-drift/TRACKER.md)
+- **Tracker (waves + checkboxes):** [`docs/archive/2026/type-drift/TRACKER.md`](../../docs/archive/2026/type-drift/TRACKER.md) (campaign complete)
 - **Regenerate hitlists:** `pnpm generate:type-drift-hitlists` → `docs/type-drift/generated/`
