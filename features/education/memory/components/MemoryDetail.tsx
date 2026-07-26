@@ -17,7 +17,7 @@ import { SourceCitations } from "@/features/education/trust/components/SourceCit
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import { useAccess } from "@/utils/permissions";
+import { useAccess } from "@/utils/permissions/access";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { MemoryAidView } from "./MemoryAidView";
@@ -45,7 +45,8 @@ export function MemoryDetail({ mediaId }: { mediaId: string }) {
     if (!media) return;
     const ok = await confirm({
       title: "Delete these memory aids?",
-      description: "They will be removed from your library. This can't be undone.",
+      description:
+        "They will be removed from your library. This can't be undone.",
       confirmLabel: "Delete",
       variant: "destructive",
     });
