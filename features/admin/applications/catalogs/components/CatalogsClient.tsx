@@ -7,7 +7,7 @@
 // Landing = app selector + kind-grouped dashboard with entry counts →
 // kind table → entry editor (generic + kind-aware). "Add from link" resolves
 // any HuggingFace/Civitai URL via aidream into a prefilled entry.
-// Cross-repo system-of-record: common-docs/remote-catalogs/FEATURE.md
+// Cross-repo system-of-record: common-docs/systems/remote-catalogs/FEATURE.md
 
 import { useMemo, useState } from "react";
 import { LibraryBig, Link2, Plus } from "lucide-react";

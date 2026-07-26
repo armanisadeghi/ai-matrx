@@ -1,21 +1,12 @@
 # Pending APPLY from archive/oom-batch-v0.4.66
-# Filter: still at A1 only.
-# done: 267 | ahead: 111 | STILL TO APPLY: 8
-# Unstaged for review: other (5)
-#
+# STILL TO APPLY: 3 (done=272 ahead=111)
+# Unstaged for review: admin applications (5) — comment path only
 # WILL NOT DO: ProTextarea, navActions, check-fake-dynamic-imports
 
 ## WILL NOT DO (3)
-X	components/official/ProTextarea.tsx	# next/dynamic lazy — keep eager
-X	features/shell/navigation/navActions.ts	# must NOT be dynamic import
-X	scripts/check-fake-dynamic-imports.mjs	# related to nav/dynamic campaign
-
-## admin applications (5)
-M	app/(admin)/administration/applications/catalogs/page.tsx
-M	app/(admin)/administration/applications/configuration/page.tsx
-M	features/admin/applications/catalogs/components/CatalogsClient.tsx
-M	features/admin/applications/catalogs/resolver.ts
-M	features/admin/applications/config/components/AppConfigClient.tsx
+X	components/official/ProTextarea.tsx	# keep eager
+X	features/shell/navigation/navActions.ts	# no dynamic
+X	scripts/check-fake-dynamic-imports.mjs	# related
 
 ## transcript-studio (2)
 M	features/transcript-studio/redux/realtimeMiddleware.ts

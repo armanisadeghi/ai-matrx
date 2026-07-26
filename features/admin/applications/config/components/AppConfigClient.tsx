@@ -6,7 +6,7 @@
 // desktop clients (one public.app_config row per app; anon-readable,
 // super-admin-writable via the admin_update_app_config RPC).
 // Landing = list of all rows; row click / "New app" opens the editor.
-// Cross-repo system-of-record: common-docs/app-config/FEATURE.md
+// Cross-repo system-of-record: common-docs/systems/app-config/FEATURE.md
 
 import { useCallback, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
