@@ -1,5 +1,7 @@
 // next.config.js
 
+const fs = require("fs");
+const path = require("path");
 const { getHeaders } = require("./utils/next-config/headers");
 const { adminLegacyRouteRedirects } = require("./utils/next-config/adminRouteRedirects");
 // const { remotePatterns } = require("./utils/next-config/imageConfig");
@@ -29,6 +31,32 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 // env alone). Strips (dev) `*.dev.tsx` route leaves from the compile.
 // Flip back to false after the experiment.
 const FORCE_CORE_PROFILE = true;
+// TEMP build A/B: park app/(admin) as a private `_` folder so Next does not
+// route/compile those pages. Runs at config load (Vercel build sandbox only
+// unless you run next locally). Flip false to restore — also restores the
+// folder if it was parked. Do NOT commit the parked rename; only this flag.
+const FORCE_EXCLUDE_ADMIN = true;
+const ADMIN_LIVE = path.join(__dirname, "app", "(admin)");
+const ADMIN_PARKED = path.join(__dirname, "app", "_admin_build_excluded");
+if (FORCE_EXCLUDE_ADMIN) {
+    if (fs.existsSync(ADMIN_LIVE)) {
+        fs.renameSync(ADMIN_LIVE, ADMIN_PARKED);
+        console.log(
+            "[matrx] FORCE_EXCLUDE_ADMIN: parked app/(admin) → app/_admin_build_excluded",
+        );
+    } else if (fs.existsSync(ADMIN_PARKED)) {
+        console.log(
+            "[matrx] FORCE_EXCLUDE_ADMIN: app/(admin) already parked at app/_admin_build_excluded",
+        );
+    } else {
+        console.warn(
+            "[matrx] FORCE_EXCLUDE_ADMIN: neither app/(admin) nor parked folder found",
+        );
+    }
+} else if (fs.existsSync(ADMIN_PARKED) && !fs.existsSync(ADMIN_LIVE)) {
+    fs.renameSync(ADMIN_PARKED, ADMIN_LIVE);
+    console.log("[matrx] FORCE_EXCLUDE_ADMIN=false: restored app/(admin)");
+}
 const rawProfile = (process.env.MATRX_PROFILE || "").trim().toLowerCase();
 if (rawProfile && rawProfile !== "full" && rawProfile !== "core") {
     console.warn(
@@ -44,6 +72,7 @@ const MATRX_PROFILE = FORCE_CORE_PROFILE
 console.log(
     `[matrx] MATRX_PROFILE=${MATRX_PROFILE}` +
         (FORCE_CORE_PROFILE ? " (FORCE_CORE_PROFILE=true)" : "") +
+        (FORCE_EXCLUDE_ADMIN ? " (FORCE_EXCLUDE_ADMIN=true)" : "") +
         ` (NODE_ENV=${process.env.NODE_ENV || "undefined"})`,
 );
 // In full mode `tsx` is listed FIRST so any plain page.tsx wins over a
