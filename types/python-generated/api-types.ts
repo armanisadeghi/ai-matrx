@@ -6504,6 +6504,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/youtube/videos/{video_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Youtube Video */
+        get: operations["get_youtube_video_research_youtube_videos__video_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/templates/list": {
         parameters: {
             query?: never;
@@ -50448,6 +50465,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["YouTubeSearchPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_youtube_video_research_youtube_videos__video_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeVideoCandidate"];
                 };
             };
             /** @description Validation Error */

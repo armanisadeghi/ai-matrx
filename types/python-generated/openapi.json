@@ -16962,6 +16962,48 @@
         }
       }
     },
+    "/research/youtube/videos/{video_id}": {
+      "get": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Get Youtube Video",
+        "operationId": "get_youtube_video_research_youtube_videos__video_id__get",
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Video Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YouTubeVideoCandidate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/research/templates/list": {
       "get": {
         "tags": [
