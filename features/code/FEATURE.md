@@ -127,6 +127,7 @@ Tier selection happens at `New sandbox` time and sticks per-user (`userPreferenc
 
 ## Change log
 
+- `2026-07-26` — Removed unused `views/source-control/index.ts` barrel; consumers already import `SourceControlPanel` / `CredentialsModal` directly.
 - `2026-07-24` — `matrx-user/code-editor` manifest brought to canonical standard: added `urlPattern`/`intro` + 4 curated groups (active_file / cursor_selection / workspace / diagnostics); new declared+emitted values `current_file_line_count`, `open_files` (per-tab `{path,name,language,modified}`), `filesystem_id`/`filesystem_label` (+ `workspace_root` now actually emitted from `codeWorkspaceSlice`), and `active_file_diagnostics`/`workspace_diagnostics` (canonical names for the previously `vsc_*`-only markers). Removed `current_function_name` (nothing ever computed it). `summarizeOpenTabs` now also returns `openFiles`; both `/code` menus pass filesystem identity.
 - `2026-07-23` — Persisted Code files can now be created from the panel header, empty state, or `My Files` / folder context menus. Creation accepts any filename/extension, uses the shared filename-to-Monaco mapping with plaintext fallback, and opens the new file immediately.
 - `2026-07-10` — Terminal no longer force-paints stderr red. stderr is a stream (git/npm progress), not an error; red is reserved for real exec-layer failures.

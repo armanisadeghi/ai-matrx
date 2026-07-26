@@ -1,31 +1,38 @@
-# Pending: archive/oom-batch-v0.4.66 vs local index (main@A1 + applied batches)
-# Base: 29dc5740b A1 READY
-# Parked prior tip: archive/pre-a1-reset-20260726
+# Pending: archive/oom-batch-v0.4.66 vs working tree
 #
-# APPLIED (staged locally, not necessarily pushed):
-#   - docs-only: 33 .md updates + 3 .md deletes
-#   - sharing: 11 sharing/UI files + AgentSharePanel (deep @/utils/permissions/* imports)
-#     KEPT utils/permissions/index.ts barrel (park deletes it — would break non-sharing consumers)
-#     SKIPPED utils/permissions/access.ts (comment-only)
+# APPLIED / DONE:
+#   - docs-only (.md)
+#   - sharing (+ AgentSharePanel)
+#   - barrel deletes: brokerSlice, matrx-agents/redux, permissions, source-control, workflow-emit
+#     DEFERRED: features/files/index.ts, features/files/api/index.ts
 #
-# API ROUTES: zero new; only M app/api/agent-apps/generate-favicon/route.ts still pending
-# TOTAL still pending: 339
+# TOTAL still pending: 300
+
+## SKIP — keep A1 config (1)
+M	tsconfig.json
 
 ## SKIP — fake-dynamic / audit scripts (2)
 D	scripts/audit-index-files.mjs
 D	scripts/check-fake-dynamic-imports.mjs
 
 ## BATCH — action-catalog (7)
-A	features/agents/components/settings-management/output-schema/applyDirectives.ts
 M	features/action-catalog/buildEnvelope.ts
 M	features/action-catalog/components/ActionBuilderPanel.tsx
 M	features/action-catalog/components/ActionCatalogGrid.tsx
 M	features/action-catalog/service.ts
 M	features/action-catalog/types.ts
 M	features/agents/components/settings-management/matrx-actions/directiveOptions.ts
+A	features/agents/components/settings-management/output-schema/applyDirectives.ts
 
+## BATCH — sharing (3)
+M	features/sharing/FEATURE.md
+M	features/sharing/README.md
+D	features/sharing/index.ts
 
-## BATCH — applet (59)
+## BATCH — permissions utils (1)
+M	utils/permissions/access.ts
+
+## BATCH — applet (23)
 M	features/applet/builder/modules/applet-builder/CreateAppletTab.tsx
 M	features/applet/builder/modules/smart-parts/applets/SmartAppletList.tsx
 M	features/applet/builder/modules/smart-parts/apps/SmartAppList.tsx
@@ -46,45 +53,9 @@ M	features/applet/home/applet-card/Modern.tsx
 M	features/applet/home/main-layout/Grid.tsx
 M	features/applet/home/main-layout/Sidebar.tsx
 M	features/applet/hooks/useAppletRecipe.ts
-M	features/applet/hooks/useAppletRecipeFastAPI.ts
-M	features/applet/runner/fields/AddressBlockField.tsx
-M	features/applet/runner/fields/ButtonGroupField.tsx
-M	features/applet/runner/fields/ButtonSelectionField.tsx
-M	features/applet/runner/fields/CheckboxGroupField.tsx
-M	features/applet/runner/fields/DateField.tsx
-M	features/applet/runner/fields/DateRangePicker.tsx
-M	features/applet/runner/fields/DependentDropdownField.tsx
-M	features/applet/runner/fields/DirectMultiSelectField.tsx
-M	features/applet/runner/fields/FileUploadField.tsx
-M	features/applet/runner/fields/InputField.tsx
-M	features/applet/runner/fields/JSONField.tsx
-M	features/applet/runner/fields/MultiDateField.tsx
-M	features/applet/runner/fields/MultiSearchableSelectField.tsx
-M	features/applet/runner/fields/NumberInputField.tsx
-M	features/applet/runner/fields/PhoneNumberField.tsx
-M	features/applet/runner/fields/RadioGroupField.tsx
-M	features/applet/runner/fields/RangeSlider.tsx
-M	features/applet/runner/fields/SearchableSelectField.tsx
-M	features/applet/runner/fields/SelectField.tsx
-M	features/applet/runner/fields/SimpleNumberField.tsx
-M	features/applet/runner/fields/SliderField.tsx
-M	features/applet/runner/fields/SortableField.tsx
-M	features/applet/runner/fields/StarRatingField.tsx
-M	features/applet/runner/fields/StepperNumberField.tsx
-M	features/applet/runner/fields/SwitchField.tsx
-M	features/applet/runner/fields/TagInputField.tsx
-M	features/applet/runner/fields/TextareaField.tsx
 M	features/applet/runner/fields/concept-broker-options/DragEditModifyTableField.tsx
 M	features/applet/runner/fields/concept-broker-options/SearchableSelectField.tsx
-M	features/applet/runner/fields/concepts/DragEditModifyTableField.tsx
-M	features/applet/runner/fields/concepts/DragTableRowAndColumnField.tsx
-M	features/applet/runner/fields/concepts/DraggableEditableTableField.tsx
-M	features/applet/runner/fields/concepts/DraggableTableField.tsx
-M	features/applet/runner/fields/core/DirectFields.tsx
 M	features/applet/runner/header/CustomAppHeader.tsx
-M	features/applet/runner/response/BrokerMapViewer.tsx
-M	features/applet/runner/response/BrokerValuesSimpleViewer.tsx
-M	features/applet/runner/response/ResponseLayoutManager.tsx
 
 ## BATCH — podcasts (19)
 M	app/(core)/podcast/PodcastGrid.tsx
@@ -139,8 +110,8 @@ M	features/research/hooks/usePipelineProgress.ts
 M	features/research/service.ts
 M	features/research/youtube-discovery/YouTubeDiscoveryDemo.tsx
 
-## BATCH — tool-call-visualization (11)
-M	features/tool-call-visualization/registry/registry.tsx
+## BATCH — tool-call-visualization (9)
+M	features/tool-call-visualization/FEATURE.md
 M	features/tool-call-visualization/renderers/document-content/DocumentContentInline.tsx
 M	features/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx
 M	features/tool-call-visualization/renderers/knowledge-browse/KnowledgeSourcesInline.tsx
@@ -155,26 +126,26 @@ D	features/transcript-studio/redux/actionTypes.ts
 M	features/transcript-studio/redux/realtimeMiddleware.ts
 M	features/transcript-studio/redux/thunks.ts
 
-## BATCH — scripts / package.json (5)
-A	scripts/migrate-brokerSlice-imports.mjs
-D	scripts/gen-action-nouns.mjs
+## BATCH — markdown docs (remaining) (3)
+M	features/code/FEATURE.md
+M	packages/matrx-agents/MIGRATION.md
+M	packages/matrx-agents/README.md
+
+## BATCH — scripts / package.json (4)
 M	package.json
 M	scripts/check-access-guards.ts
 M	scripts/check-protocol-sync.ts
+D	scripts/gen-action-nouns.mjs
 
 ## BATCH — python-generated types (2)
 M	types/python-generated/api-types.ts
 M	types/python-generated/openapi.json
 
-## BATCH — other (203)
-A	features/code/views/source-control/index.ts
+## BATCH — barrel index deletes (files ignored for now) (2)
 A	features/files/api/index.ts
 A	features/files/index.ts
-A	features/workflow-emit/index.ts
-A	lib/redux/brokerSlice/index.ts
-A	packages/matrx-agents/src/redux/index.ts
-D	features/matrx-envelope/catalog-nouns.generated.ts
-D	features/matrx-envelope/directives/planTree/PlanTreePreview.tsx
+
+## BATCH — other (195)
 M	app/(admin)/administration/ui/official-components/component-displays/image-asset-uploader.tsx
 M	app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx
 M	app/(admin)/administration/users/feedback/components/FeedbackTable.tsx
@@ -185,19 +156,15 @@ M	app/(core)/images/library/page.tsx
 M	app/(core)/invitations/organization/accept/[token]/page.tsx
 M	app/(core)/organizations/page.tsx
 M	app/(dev)/demos/tests/oauth/components/SlackManager.tsx
-M	app/(dev)/demos/tests/slack/with-brokers/SlackBrokersLayoutClient.tsx
 M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx
 M	app/(dev)/demos/tests/slack/with-brokers/components/BrokerSlackClient.tsx
-M	app/(dev)/demos/tests/slack/with-brokers/components/ChannelSelector.tsx
 M	app/(dev)/demos/tests/slack/with-brokers/components/SlackAuthentication.tsx
 M	app/(dev)/demos/tests/slack/with-brokers/components/TokenManager.tsx
-M	app/(dev)/demos/tests/slack/with-brokers/page.dev.tsx
 M	app/(public)/s/[token]/SharedResourceView.tsx
 M	app/(transitional)/apps/custom/[slug]/CustomAppSlugLayoutClient.tsx
 M	app/(transitional)/settings/feedback/page.tsx
 M	app/api/agent-apps/generate-favicon/route.ts
 M	components/applet/apps/AppletCard.tsx
-M	components/broker/UserBrokerInitializer.tsx
 M	components/image/ImageManager.tsx
 M	components/image/cloud/CloudFilesBrowserTable.tsx
 M	components/image/cloud/CloudFilesTab.tsx
@@ -210,11 +177,9 @@ M	components/image/cloud/ImageStudioTab.tsx
 M	components/image/cloud/__tests__/cloudFilesBrowserUtils.test.ts
 M	components/image/cloud/cloudFilesBrowserUtils.ts
 M	components/image/cloud/resolveCloudFileUrl.ts
-M	components/layout/new-layout/MobileUnifiedMenu.tsx
 M	components/mardown-display/blocks/presentations/SlideView.tsx
 M	components/mardown-display/blocks/tasks/tasklist-parser.tsx
 M	components/mardown-display/blocks/videos/VideoOutputBlockRenderer.tsx
-M	components/mardown-display/markdown-classification/DirectMarkdownRenderer.tsx
 M	components/mermaid/export.ts
 M	components/official/ImageAssetUploader.tsx
 M	components/official/ImageCropModal.tsx
@@ -224,6 +189,8 @@ M	components/official/image-cropper/ImageCropper.tsx
 M	components/ui/file-upload/FileUploadWithStorage.tsx
 M	components/ui/file-upload/ImageUploadField.tsx
 M	components/ui/file-upload/PasteImageHandler.tsx
+M	components/user-generated-table-data/TableListItem.tsx
+M	features/agent-apps/components/agent-app-listings/AgentAppCard.tsx
 M	features/agent-apps/components/inputs/AgentAppImageField.tsx
 M	features/agent-apps/route/AgentAppOverviewContent.tsx
 M	features/agents/components/builder/AgentResourcesManager.tsx
@@ -238,6 +205,7 @@ M	features/agents/components/messages-display/user/AgentUserMessage.tsx
 M	features/agents/components/settings-management/AgentSettingMediaPicker.tsx
 M	features/agents/components/settings-management/validation/__tests__/constraint-eval-fixture.test.ts
 M	features/agents/components/variables-management/CustomComponentConfigurator.tsx
+M	features/agents/package-bootstrap/configure-agents.ts
 M	features/agents/redux/execution-system/instance-resources/instance-resources.selectors.ts
 M	features/agents/redux/execution-system/instance-resources/resource-source.ts
 M	features/canvas/artifact-types/renderers/ImageArtifact.tsx
@@ -249,15 +217,14 @@ M	features/code/editor/CloudFilePreviewer.tsx
 M	features/code/hooks/useOpenFile.ts
 M	features/code/views/explorer/CloudFilesExplorer.tsx
 M	features/code/views/explorer/ExplorerPanel.tsx
-M	features/context-menu-v3/types.ts
+M	features/content-templates/components/TemplateCard.tsx
+M	features/cx-chat/components/ChatHeaderControls.tsx
+M	features/cx-chat/components/SsrSidebarChats.tsx
 M	features/cx-chat/components/messages/UserMessage.tsx
 M	features/cx-chat/components/user-input/ConversationInput.tsx
 M	features/cx-conversation/ConversationInput.tsx
 M	features/cx-conversation/UserMessage.tsx
 M	features/education/assessment/data/imageGrading.ts
-M	features/education/media/audio/components/AudioStudyDetail.tsx
-M	features/education/media/mindmap/components/MindMapDetail.tsx
-M	features/education/memory/components/MemoryDetail.tsx
 M	features/education/onboard/useIngest.ts
 M	features/education/study/components/SessionAudio.tsx
 M	features/education/trust/open-source.ts
@@ -271,7 +238,6 @@ M	features/files/cache/admin/BlobCacheInspector.tsx
 M	features/files/components/surfaces/single-file/PdfEditTab.tsx
 M	features/files/types.ts
 M	features/files/upload/tusUpload.ts
-M	features/flashcards/components/set-detail/SetDetailView.tsx
 M	features/flashcards/fast-fire/agents/gradeCard.thunk.ts
 M	features/flashcards/fast-fire/agents/gradeSpokenAnswer.thunk.ts
 M	features/flashcards/fast-fire/agents/grading-core.ts
@@ -300,7 +266,9 @@ M	features/marketing/components/pages/PageWorkspace.tsx
 M	features/marketing/components/shared/CaptureThumb.tsx
 M	features/marketing/components/site/SiteOverview.tsx
 M	features/matrx-envelope/ApplyDirectiveButton.tsx
+D	features/matrx-envelope/catalog-nouns.generated.ts
 M	features/matrx-envelope/components/ProposedDirectivesZone.tsx
+D	features/matrx-envelope/directives/planTree/PlanTreePreview.tsx
 M	features/matrx-envelope/directives/planTree/PlanTreeRenderer.tsx
 M	features/matrx-envelope/directives/planTree/resolvePlanTree.ts
 M	features/matrx-envelope/envelope.ts
@@ -312,8 +280,6 @@ M	features/organizations/components/GeneralSettings.tsx
 M	features/organizations/components/OrgManage.tsx
 M	features/organizations/components/OrgWorkspace.tsx
 M	features/organizations/components/OrganizationCard.tsx
-M	features/organizations/orgModuleSettings.ts
-M	features/overlays/OverlayController.tsx
 M	features/pdf-demo/components/PdfSourcePicker.tsx
 M	features/pdf-demo/components/PdfWorkbench.tsx
 M	features/pdf-extractor/studio/PdfManipulationWorkbench.tsx
@@ -340,6 +306,7 @@ M	features/resource-manager/resource-picker/UploadResourcePicker.tsx
 M	features/scopes/components/management/ScopesManager.tsx
 M	features/scraper/parts/ScrapedResultDetailTabs.tsx
 M	features/shell/navigation/navActions.ts
+M	features/tasks/components/TaskItem.tsx
 M	features/transcripts/components/TranscriptViewer.tsx
 M	features/user-profile/components/UserProfilePage.tsx
 M	features/war-room/components/thread/ThreadNewFileDialog.tsx
@@ -364,10 +331,14 @@ M	hooks/brokers/useSetGlobalBasics.ts
 M	lib/api/broker/types.ts
 M	lib/list-scope/types.ts
 M	lib/media/our-file-sources.ts
-M	lib/redux/app-runner/thunks/appRunnerThunks.ts
-M	lib/redux/app-runner/thunks/loadApplet.ts
+M	lib/server/brokerCache.ts
+M	lib/server/brokerService.ts
 M	packages/matrx-agents/package.json
+D	packages/matrx-agents/src/adapters/index.ts
+D	packages/matrx-agents/src/config/index.ts
+M	packages/matrx-agents/src/config/registry.ts
+D	packages/matrx-agents/src/public.ts
+D	packages/matrx-agents/src/types/agents-types.ts
+M	public/blob-sw.js
 M	types/generated/entity-types.generated.ts
-R	packages/matrx-agents/src/index.ts
-R	packages/matrx-agents/src/types/index.ts
 
