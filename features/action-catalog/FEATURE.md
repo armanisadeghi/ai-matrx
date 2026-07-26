@@ -55,6 +55,9 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
   (`components["schemas"]` in `types.ts`); derived `ActionState` / `ActionVerb` from
   `NounActions`; removed `?? ""` form-default hatches in `ActionBuilderPanel`; confirm
   consumer now passes required `force: false` on `DirectiveConfirmRequest`.
+- 2026-07-26 — `confirmDirective` uses `parseHttpError` → `BackendApiError` so callers
+  show the gentle `user_message` from `/actions/confirm` (plus structured
+  `details.issues` on the wire), not a Pydantic dump.
 - 2026-06-24 — Added the `ask`-policy **confirm round-trip**: `confirmDirective` +
   `POST /actions/confirm` (`service.ts` / `endpoints.ts` / `types.ts`). When a directive's
   resolved apply policy is `ask`, the brain streams `directive_apply.proposed`;

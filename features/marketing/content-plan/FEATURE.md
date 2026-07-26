@@ -130,6 +130,10 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-26 — Claude: **Site picker lists every RLS-visible site** (active org
+  first). Filtering to active-org-only hid sites like `prpinjectionmd.com`
+  (Titanium) when the shell org was something else — plans applied fine, the
+  dropdown just couldn't reach them. `?site=` orphans stay in the list.
 - 2026-07-25 — Claude: **agent-write path live end-to-end** — plan_tree /
   plan_node_patch envelopes (applied server-side by aidream; receipts render
   via `features/matrx-envelope/directives/planTree/`, resolving through THIS

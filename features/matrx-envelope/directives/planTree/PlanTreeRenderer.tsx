@@ -13,6 +13,7 @@ import { ExternalLink, ListTree, Loader2 } from "lucide-react";
 import { ApplyDirectiveButton } from "@/features/matrx-envelope/ApplyDirectiveButton";
 import { EnvelopeFallbackCard } from "@/features/matrx-envelope/EnvelopeFallbackCard";
 import type { EnvelopeRendererProps } from "@/features/matrx-envelope/registry";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 import { parsePlanTreeItems } from "./parseDirectiveItems";
 import { useResolvePlanTree } from "./useResolvePlanTree";
@@ -27,10 +28,14 @@ function PlanTreeItemCard({
 }) {
   const { status, data } = useResolvePlanTree(item);
   const specTotal = countSpecNodes(item.nodes);
+  const resolvedSiteId = data?.siteId ?? item.site_id;
   // Unresolved = the server never applied this (e.g. the agent had no output
   // schema, so the structured-output dispatcher never fired). It is NOT inert:
   // the user applies it with one click. See ApplyDirectiveButton.
-  const unapplied = status === "exhausted" || (!item.site_id && !data);
+  const unapplied = status === "exhausted" || (!resolvedSiteId && !data);
+  const contentPlanHref = resolvedSiteId
+    ? `${marketingRoutes.contentPlan()}?site=${resolvedSiteId}`
+    : marketingRoutes.contentPlan();
 
   return (
     <div className="my-2 rounded-lg border border-border bg-card p-3">
@@ -55,7 +60,9 @@ function PlanTreeItemCard({
         ) : null}
         {unapplied ? (
           <span className="ml-auto inline-flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">not applied yet</span>
+            <span className="text-xs text-muted-foreground">
+              not applied yet
+            </span>
             <ApplyDirectiveButton envelope={envelope} label="Apply plan" />
           </span>
         ) : null}
@@ -87,11 +94,7 @@ function PlanTreeItemCard({
         ) : null}
       </ul>
       <Link
-        href={
-          item.site_id
-            ? `/content-plan?site=${item.site_id}`
-            : "/content-plan"
-        }
+        href={contentPlanHref}
         className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
       >
         Open in Content Plan <ExternalLink className="h-3 w-3" />

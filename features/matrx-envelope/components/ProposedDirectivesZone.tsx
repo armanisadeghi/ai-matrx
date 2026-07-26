@@ -23,6 +23,7 @@ import {
   selectProposedDirectives,
   type ProposedDirective,
 } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+import { BackendApiError } from "@/lib/api/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +88,13 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       }
       dismiss();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Confirm failed");
+      const message =
+        err instanceof BackendApiError
+          ? err.userMessage
+          : err instanceof Error
+            ? err.message
+            : "That couldn't be applied just now. Please try again.";
+      toast.error(message);
       setBusy(false);
     }
   };

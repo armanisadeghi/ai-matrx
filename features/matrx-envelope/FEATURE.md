@@ -179,6 +179,13 @@ silently drops items the server would have happily applied.
 
 ## Change Log
 
+- 2026-07-26 — Claude: **`plan_tree` text `site` resolves on the client.**
+  Card polls/deep-links via domain→`web.site` lookup (`resolvePlanTreeSiteId`);
+  Content Plan href uses `marketingRoutes.contentPlan()` + `?site=`.
+- 2026-07-26 — Claude: **Apply/confirm failures speak gently.** `ApplyDirectiveButton`
+  and `ProposedDirectivesZone` show the server's `user_message` (via
+  `BackendApiError`), never a Pydantic dump. Clean red error text — not a
+  traceback wall.
 - 2026-07-25 — Claude: **References work in prose, and are attached without copy-pasting JSON.**
   A ```matrx fence pasted into a direct message rendered as raw code — the messaging surface
   printed `content` as plain text and never ran fence detection. New shared primitives:

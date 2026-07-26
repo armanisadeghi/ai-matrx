@@ -25,6 +25,7 @@ import { CheckCircle2, Loader2, Play, TriangleAlert } from "lucide-react";
 
 import { confirmDirective } from "@/features/action-catalog/service";
 import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
+import { BackendApiError } from "@/lib/api/errors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 
@@ -67,10 +68,14 @@ export function ApplyDirectiveButton({
         failed: result.failed,
       });
     } catch (error) {
-      setState({
-        status: "error",
-        message: error instanceof Error ? error.message : String(error),
-      });
+      // Prefer the server's gentle user_message; never dump Pydantic/wire detail.
+      const message =
+        error instanceof BackendApiError
+          ? error.userMessage
+          : error instanceof Error
+            ? error.message
+            : "That couldn't be applied just now. Please try again.";
+      setState({ status: "error", message });
     }
   }
 
@@ -107,7 +112,10 @@ export function ApplyDirectiveButton({
         {state.status === "applying" ? "Applying…" : label}
       </button>
       {state.status === "error" ? (
-        <span className="text-xs text-destructive">{state.message}</span>
+        <span className="inline-flex max-w-sm items-start gap-1 text-xs text-destructive">
+          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{state.message}</span>
+        </span>
       ) : null}
     </span>
   );
