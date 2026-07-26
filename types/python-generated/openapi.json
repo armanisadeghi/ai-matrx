@@ -10670,6 +10670,218 @@
         }
       }
     },
+    "/content-plan/sites/{site_id}/generate": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Generate Plan",
+        "operationId": "generate_plan_content_plan_sites__site_id__generate_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/GeneratePlanBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/nodes/{node_id}/deepen": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Deepen",
+        "operationId": "deepen_content_plan_nodes__node_id__deepen_post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/reconcile": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Reconcile",
+        "operationId": "reconcile_content_plan_sites__site_id__reconcile_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReconcileBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconcileReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/dispositions": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Dispositions",
+        "operationId": "dispositions_content_plan_sites__site_id__dispositions_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispositionsBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispositionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/public/structured-data/validate": {
       "post": {
         "tags": [
@@ -16374,6 +16586,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -16641,6 +16913,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CacheBustResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/youtube/search": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Search Youtube",
+        "description": "Search and enrich public YouTube videos without persisting a topic.\n\nThe research pipeline calls the same ``YouTubeDataApi`` primitive when it\nsearches a keyword, so this user-facing surface is a preview of the actual\ndiscovery payload rather than a separate test implementation.",
+        "operationId": "search_youtube_research_youtube_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YouTubeSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YouTubeSearchPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -61951,6 +62265,61 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -62854,6 +63223,83 @@
           "dismissed_at"
         ],
         "title": "DismissResponse"
+      },
+      "DispositionItem": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "merge",
+              "redirect",
+              "retire"
+            ],
+            "title": "Disposition"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "node_id",
+          "disposition"
+        ],
+        "title": "DispositionItem"
+      },
+      "DispositionResult": {
+        "properties": {
+          "written": {
+            "type": "integer",
+            "title": "Written",
+            "default": 0
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DispositionResult"
+      },
+      "DispositionsBody": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DispositionItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "DispositionsBody"
       },
       "DistinctValuesResponse": {
         "properties": {
@@ -69540,6 +69986,36 @@
           "node_id"
         ],
         "title": "FrontierInvocation"
+      },
+      "GeneratePlanBody": {
+        "properties": {
+          "max_nodes": {
+            "type": "integer",
+            "maximum": 150,
+            "minimum": 10,
+            "title": "Max Nodes",
+            "default": 40
+          },
+          "guidance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guidance"
+          },
+          "apply": {
+            "type": "boolean",
+            "title": "Apply",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "GeneratePlanBody"
       },
       "GenerateTagsRequest": {
         "properties": {
@@ -85802,6 +86278,93 @@
           "executions"
         ],
         "title": "RecentExecutionsResponse"
+      },
+      "ReconcileBody": {
+        "properties": {
+          "write_edges": {
+            "type": "boolean",
+            "title": "Write Edges",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReconcileBody"
+      },
+      "ReconcileMatch": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          },
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "route",
+          "page_id",
+          "url"
+        ],
+        "title": "ReconcileMatch"
+      },
+      "ReconcileReport": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "matched": {
+            "items": {
+              "$ref": "#/components/schemas/ReconcileMatch"
+            },
+            "type": "array",
+            "title": "Matched"
+          },
+          "orphans": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Orphans"
+          },
+          "ghosts": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Ghosts"
+          },
+          "edges_written": {
+            "type": "integer",
+            "title": "Edges Written",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id"
+        ],
+        "title": "ReconcileReport"
       },
       "RecoveryApplyAck": {
         "properties": {
@@ -105579,6 +106142,350 @@
         ],
         "title": "WriteArgs"
       },
+      "YouTubeSearchPage": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/YouTubeVideoCandidate"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token"
+          },
+          "prev_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prev Page Token"
+          },
+          "region_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Code"
+          },
+          "total_results": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Results"
+          },
+          "results_per_page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Results Per Page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "results"
+        ],
+        "title": "YouTubeSearchPage"
+      },
+      "YouTubeSearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Query"
+          },
+          "max_results": {
+            "type": "integer",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Max Results",
+            "default": 25
+          },
+          "page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Token"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "date",
+              "rating",
+              "relevance",
+              "title",
+              "viewCount"
+            ],
+            "title": "Order",
+            "default": "relevance"
+          },
+          "region_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Code",
+            "default": "US"
+          },
+          "relevance_language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevance Language",
+            "default": "en"
+          },
+          "safe_search": {
+            "type": "string",
+            "enum": [
+              "moderate",
+              "none",
+              "strict"
+            ],
+            "title": "Safe Search",
+            "default": "moderate"
+          },
+          "published_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published After"
+          },
+          "published_before": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Before"
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id"
+          },
+          "event_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "live",
+                  "upcoming"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Type"
+          },
+          "topic_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topic Id"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location",
+            "description": "Latitude,longitude pair; requires location_radius."
+          },
+          "location_radius": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Radius",
+            "description": "Radius with m, km, ft, or mi suffix; requires location."
+          },
+          "video_category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Category Id"
+          },
+          "video_caption": {
+            "type": "string",
+            "enum": [
+              "any",
+              "closedCaption",
+              "none"
+            ],
+            "title": "Video Caption",
+            "default": "any"
+          },
+          "video_definition": {
+            "type": "string",
+            "enum": [
+              "any",
+              "high",
+              "standard"
+            ],
+            "title": "Video Definition",
+            "default": "any"
+          },
+          "video_dimension": {
+            "type": "string",
+            "enum": [
+              "any",
+              "2d",
+              "3d"
+            ],
+            "title": "Video Dimension",
+            "default": "any"
+          },
+          "video_duration": {
+            "type": "string",
+            "enum": [
+              "any",
+              "short",
+              "medium",
+              "long"
+            ],
+            "title": "Video Duration",
+            "default": "any"
+          },
+          "video_embeddable": {
+            "type": "string",
+            "enum": [
+              "any",
+              "true"
+            ],
+            "title": "Video Embeddable",
+            "default": "any"
+          },
+          "video_license": {
+            "type": "string",
+            "enum": [
+              "any",
+              "creativeCommon",
+              "youtube"
+            ],
+            "title": "Video License",
+            "default": "any"
+          },
+          "video_paid_product_placement": {
+            "type": "string",
+            "enum": [
+              "any",
+              "true"
+            ],
+            "title": "Video Paid Product Placement",
+            "default": "any"
+          },
+          "video_syndicated": {
+            "type": "string",
+            "enum": [
+              "any",
+              "true"
+            ],
+            "title": "Video Syndicated",
+            "default": "any"
+          },
+          "video_type": {
+            "type": "string",
+            "enum": [
+              "any",
+              "episode",
+              "movie"
+            ],
+            "title": "Video Type",
+            "default": "any"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "YouTubeSearchRequest"
+      },
       "YouTubeTranscriptRequest": {
         "properties": {
           "youtube_url": {
@@ -105604,6 +106511,163 @@
           "youtube_url"
         ],
         "title": "YouTubeTranscriptRequest"
+      },
+      "YouTubeVideoCandidate": {
+        "properties": {
+          "video_id": {
+            "type": "string",
+            "title": "Video Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id"
+          },
+          "channel_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Title"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration"
+          },
+          "view_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View Count"
+          },
+          "like_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Like Count"
+          },
+          "comment_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Count"
+          },
+          "channel_subscriber_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Subscriber Count"
+          },
+          "channel_video_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Video Count"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "topic_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topic Categories"
+          },
+          "raw": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Raw"
+          }
+        },
+        "type": "object",
+        "required": [
+          "video_id",
+          "url",
+          "title"
+        ],
+        "title": "YouTubeVideoCandidate"
       },
       "aidream__api__routers__admin_app_logs__DeletedResponse": {
         "properties": {

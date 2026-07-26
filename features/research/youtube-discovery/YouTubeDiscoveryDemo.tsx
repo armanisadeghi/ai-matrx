@@ -1,0 +1,819 @@
+"use client";
+
+import Image from "next/image";
+import { FormEvent, useState, type ComponentProps } from "react";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Eye,
+  LoaderCircle,
+  MessageCircle,
+  Play,
+  Search,
+  SlidersHorizontal,
+  ThumbsUp,
+  Users,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Youtube } from "@/components/icons/brand-icons";
+import { youTubeEmbedUrl, youTubeWatchUrl } from "@/lib/media/youtube";
+import {
+  formatYouTubeCount,
+  formatYouTubeDate,
+  formatYouTubeDuration,
+  youTubeEngagementRate,
+} from "./formatters";
+import { searchYouTube } from "./service";
+import {
+  DEFAULT_YOUTUBE_SEARCH,
+  type YouTubeSearchPage,
+  type YouTubeSearchRequest,
+  type YouTubeVideoCandidate,
+} from "./types";
+
+type FormState = YouTubeSearchRequest & {
+  published_after: string;
+  published_before: string;
+  channel_id: string;
+  topic_id: string;
+  location: string;
+  location_radius: string;
+  video_category_id: string;
+};
+
+const INITIAL_FORM: FormState = {
+  ...DEFAULT_YOUTUBE_SEARCH,
+  published_after: "",
+  published_before: "",
+  channel_id: "",
+  topic_id: "",
+  location: "",
+  location_radius: "",
+  video_category_id: "",
+};
+
+const SELECT_CLASS =
+  "h-10 rounded-xl border-white/10 bg-white/[0.04] text-sm shadow-none focus:ring-cyan-400/30";
+
+function compactRequest(
+  form: FormState,
+  pageToken?: string,
+): YouTubeSearchRequest {
+  return {
+    ...form,
+    query: form.query.trim(),
+    page_token: pageToken,
+    region_code: form.region_code?.trim() || undefined,
+    relevance_language: form.relevance_language?.trim() || undefined,
+    published_after: form.published_after || undefined,
+    published_before: form.published_before || undefined,
+    channel_id: form.channel_id.trim() || undefined,
+    topic_id: form.topic_id.trim() || undefined,
+    location: form.location.trim() || undefined,
+    location_radius: form.location_radius.trim() || undefined,
+    video_category_id: form.video_category_id.trim() || undefined,
+  };
+}
+
+export function YouTubeDiscoveryDemo() {
+  const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [page, setPage] = useState<YouTubeSearchPage | null>(null);
+  const [selected, setSelected] = useState<YouTubeVideoCandidate | null>(null);
+  const [advanced, setAdvanced] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const runSearch = async (pageToken?: string) => {
+    if (!form.query.trim() || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await searchYouTube(compactRequest(form, pageToken));
+      setPage(result);
+      setSelected(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "YouTube search could not be completed.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    void runSearch();
+  };
+
+  return (
+    <main className="min-h-screen bg-[#07090d] text-zinc-100">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.13),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(34,211,238,0.1),transparent_34%)]" />
+      <div className="relative mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
+        <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-red-400">
+              <Youtube className="h-5 w-5" />
+              YouTube intelligence
+            </div>
+            <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
+              Find the signal in YouTube.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+              Search videos, inspect creator authority and engagement, and open
+              the strongest sources for deeper research.
+            </p>
+          </div>
+          {page && (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-400">
+              <span className="font-semibold text-white">
+                {formatYouTubeCount(page.total_results)}
+              </span>{" "}
+              estimated matches
+              {page.region_code ? ` · ${page.region_code}` : ""}
+            </div>
+          )}
+        </header>
+
+        <form
+          onSubmit={onSubmit}
+          className="mb-7 rounded-3xl border border-white/10 bg-zinc-950/70 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl"
+        >
+          <div className="flex flex-col gap-3 md:flex-row">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+              <Input
+                value={form.query}
+                onChange={(event) => update("query", event.target.value)}
+                placeholder="Search a topic, expert, question, or exact phrase…"
+                className="h-14 rounded-2xl border-white/10 bg-white/[0.04] pl-12 text-base shadow-none placeholder:text-zinc-600 focus-visible:ring-cyan-400/30"
+                aria-label="YouTube search query"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={!form.query.trim() || loading}
+              className="h-14 rounded-2xl bg-red-500 px-7 font-semibold text-white hover:bg-red-400"
+            >
+              {loading ? (
+                <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Search className="mr-2 h-5 w-5" />
+              )}
+              Search YouTube
+            </Button>
+          </div>
+
+          <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 sm:grid-cols-2 lg:grid-cols-5">
+            <FilterSelect
+              label="Sort by"
+              value={form.order ?? "relevance"}
+              onValueChange={(value) =>
+                update("order", value as FormState["order"])
+              }
+              options={[
+                ["relevance", "Most relevant"],
+                ["viewCount", "Most viewed"],
+                ["rating", "Highest rated"],
+                ["date", "Newest"],
+                ["title", "Title"],
+              ]}
+            />
+            <FilterSelect
+              label="Results"
+              value={String(form.max_results)}
+              onValueChange={(value) => update("max_results", Number(value))}
+              options={[
+                ["10", "10 videos"],
+                ["25", "25 videos"],
+                ["50", "50 videos"],
+              ]}
+            />
+            <FilterSelect
+              label="Duration"
+              value={form.video_duration ?? "any"}
+              onValueChange={(value) =>
+                update("video_duration", value as FormState["video_duration"])
+              }
+              options={[
+                ["any", "Any length"],
+                ["short", "Under 4 minutes"],
+                ["medium", "4–20 minutes"],
+                ["long", "Over 20 minutes"],
+              ]}
+            />
+            <FilterSelect
+              label="Captions"
+              value={form.video_caption ?? "any"}
+              onValueChange={(value) =>
+                update("video_caption", value as FormState["video_caption"])
+              }
+              options={[
+                ["any", "Any"],
+                ["closedCaption", "Has captions"],
+                ["none", "No captions"],
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => setAdvanced((current) => !current)}
+              className="flex h-[62px] items-end justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 pb-2.5 text-left text-sm transition hover:bg-white/[0.06]"
+            >
+              <span>
+                <span className="block text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                  Filters
+                </span>
+                <span className="mt-1 flex items-center gap-2 font-medium text-zinc-200">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Advanced
+                </span>
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 text-zinc-500 transition ${advanced ? "rotate-180" : ""}`}
+              />
+            </button>
+          </div>
+
+          {advanced && <AdvancedFilters form={form} update={update} />}
+          <p className="mt-3 px-1 text-xs text-zinc-600">
+            Power search: use{" "}
+            <code className="text-zinc-400">term1 | term2</code> for
+            alternatives and <code className="text-zinc-400">-term</code> to
+            exclude a word.
+          </p>
+        </form>
+
+        {error && (
+          <div className="mb-7 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+
+        {!page && !loading && <EmptyState />}
+
+        {page && page.results.length === 0 && (
+          <div className="rounded-3xl border border-dashed border-white/15 p-14 text-center">
+            <h2 className="text-lg font-semibold">No videos matched</h2>
+            <p className="mt-2 text-sm text-zinc-500">
+              Try broadening the query or removing one of the advanced filters.
+            </p>
+          </div>
+        )}
+
+        {page && page.results.length > 0 && (
+          <>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm text-zinc-500">
+                Showing {page.results.length} enriched videos for{" "}
+                <span className="text-zinc-300">“{page.query}”</span>
+              </p>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {page.results.map((video) => (
+                <VideoCard
+                  key={video.video_id}
+                  video={video}
+                  onPreview={() => setSelected(video)}
+                />
+              ))}
+            </div>
+            <div className="mt-8 flex justify-center gap-3">
+              <Button
+                variant="outline"
+                disabled={!page.prev_page_token || loading}
+                onClick={() =>
+                  void runSearch(page.prev_page_token ?? undefined)
+                }
+                className="rounded-xl border-white/10 bg-white/[0.03]"
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!page.next_page_token || loading}
+                onClick={() =>
+                  void runSearch(page.next_page_token ?? undefined)
+                }
+                className="rounded-xl border-white/10 bg-white/[0.03]"
+              >
+                Next
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {selected && (
+        <PreviewDialog video={selected} onClose={() => setSelected(null)} />
+      )}
+    </main>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onValueChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  options: [string, string][];
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
+      <Label className="mb-1 block text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+        {label}
+      </Label>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="h-7 border-0 bg-transparent px-0 text-sm shadow-none focus:ring-0">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(([optionValue, optionLabel]) => (
+            <SelectItem key={optionValue} value={optionValue}>
+              {optionLabel}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function AdvancedFilters({
+  form,
+  update,
+}: {
+  form: FormState;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+}) {
+  return (
+    <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+      <div className="mb-4">
+        <h2 className="font-medium">Advanced discovery</h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Every control maps to a supported YouTube discovery filter.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <TextFilter
+          label="Published after"
+          type="datetime-local"
+          value={form.published_after}
+          onChange={(value) => update("published_after", value)}
+        />
+        <TextFilter
+          label="Published before"
+          type="datetime-local"
+          value={form.published_before}
+          onChange={(value) => update("published_before", value)}
+        />
+        <TextFilter
+          label="Region"
+          placeholder="US"
+          maxLength={2}
+          value={form.region_code ?? ""}
+          onChange={(value) => update("region_code", value)}
+        />
+        <TextFilter
+          label="Language"
+          placeholder="en"
+          value={form.relevance_language ?? ""}
+          onChange={(value) => update("relevance_language", value)}
+        />
+        <TextFilter
+          label="Channel ID"
+          placeholder="UC…"
+          value={form.channel_id}
+          onChange={(value) => update("channel_id", value)}
+        />
+        <TextFilter
+          label="Category ID"
+          placeholder="e.g. 27"
+          value={form.video_category_id}
+          onChange={(value) => update("video_category_id", value)}
+        />
+        <TextFilter
+          label="Topic ID"
+          placeholder="/m/…"
+          value={form.topic_id}
+          onChange={(value) => update("topic_id", value)}
+        />
+        <FilterSelect
+          label="Live status"
+          value={form.event_type ?? "any"}
+          onValueChange={(value) =>
+            update(
+              "event_type",
+              value === "any" ? undefined : (value as FormState["event_type"]),
+            )
+          }
+          options={[
+            ["any", "Any"],
+            ["live", "Live now"],
+            ["upcoming", "Upcoming"],
+            ["completed", "Completed"],
+          ]}
+        />
+        <FilterSelect
+          label="Safe search"
+          value={form.safe_search ?? "moderate"}
+          onValueChange={(value) =>
+            update("safe_search", value as FormState["safe_search"])
+          }
+          options={[
+            ["moderate", "Moderate"],
+            ["strict", "Strict"],
+            ["none", "Unfiltered"],
+          ]}
+        />
+        <FilterSelect
+          label="Quality"
+          value={form.video_definition ?? "any"}
+          onValueChange={(value) =>
+            update("video_definition", value as FormState["video_definition"])
+          }
+          options={[
+            ["any", "Any"],
+            ["high", "High definition"],
+            ["standard", "Standard definition"],
+          ]}
+        />
+        <FilterSelect
+          label="Dimension"
+          value={form.video_dimension ?? "any"}
+          onValueChange={(value) =>
+            update("video_dimension", value as FormState["video_dimension"])
+          }
+          options={[
+            ["any", "Any"],
+            ["2d", "2D"],
+            ["3d", "3D"],
+          ]}
+        />
+        <FilterSelect
+          label="License"
+          value={form.video_license ?? "any"}
+          onValueChange={(value) =>
+            update("video_license", value as FormState["video_license"])
+          }
+          options={[
+            ["any", "Any"],
+            ["creativeCommon", "Creative Commons"],
+            ["youtube", "Standard YouTube"],
+          ]}
+        />
+        <FilterSelect
+          label="Video type"
+          value={form.video_type ?? "any"}
+          onValueChange={(value) =>
+            update("video_type", value as FormState["video_type"])
+          }
+          options={[
+            ["any", "Any"],
+            ["episode", "Episode"],
+            ["movie", "Movie"],
+          ]}
+        />
+        <TextFilter
+          label="Location"
+          placeholder="34.0522,-118.2437"
+          value={form.location}
+          onChange={(value) => update("location", value)}
+        />
+        <TextFilter
+          label="Location radius"
+          placeholder="25mi"
+          value={form.location_radius}
+          onChange={(value) => update("location_radius", value)}
+        />
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ToggleFilter
+          label="Embeddable only"
+          checked={form.video_embeddable === "true"}
+          onCheckedChange={(checked) =>
+            update("video_embeddable", checked ? "true" : "any")
+          }
+        />
+        <ToggleFilter
+          label="Playable outside YouTube"
+          checked={form.video_syndicated === "true"}
+          onCheckedChange={(checked) =>
+            update("video_syndicated", checked ? "true" : "any")
+          }
+        />
+        <ToggleFilter
+          label="Paid placement"
+          checked={form.video_paid_product_placement === "true"}
+          onCheckedChange={(checked) =>
+            update("video_paid_product_placement", checked ? "true" : "any")
+          }
+        />
+      </div>
+    </div>
+  );
+}
+
+function TextFilter({
+  label,
+  value,
+  onChange,
+  ...props
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+} & Omit<ComponentProps<typeof Input>, "value" | "onChange">) {
+  return (
+    <div>
+      <Label className="mb-1.5 block text-xs text-zinc-400">{label}</Label>
+      <Input
+        {...props}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={SELECT_CLASS}
+      />
+    </div>
+  );
+}
+
+function ToggleFilter({
+  label,
+  checked,
+  onCheckedChange,
+}: {
+  label: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+      <Label className="text-xs text-zinc-300">{label}</Label>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
+  );
+}
+
+function VideoCard({
+  video,
+  onPreview,
+}: {
+  video: YouTubeVideoCandidate;
+  onPreview: () => void;
+}) {
+  const engagement = youTubeEngagementRate(
+    video.like_count,
+    video.comment_count,
+    video.view_count,
+  );
+
+  return (
+    <article className="group overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/75 transition duration-300 hover:-translate-y-1 hover:border-white/20">
+      <button
+        type="button"
+        onClick={onPreview}
+        className="relative block aspect-video w-full overflow-hidden bg-zinc-900 text-left"
+        aria-label={`Preview ${video.title}`}
+      >
+        {video.thumbnail_url ? (
+          <Image
+            src={video.thumbnail_url}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            className="object-cover transition duration-500 group-hover:scale-[1.03]"
+          />
+        ) : null}
+        <span className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <span className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-red-500 text-white shadow-xl">
+          <Play className="ml-0.5 h-4 w-4 fill-current" />
+        </span>
+        <span className="absolute bottom-3 right-3 rounded-md bg-black/80 px-2 py-1 text-xs font-medium">
+          {formatYouTubeDuration(video.duration)}
+        </span>
+      </button>
+      <div className="p-5">
+        <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-red-400">
+          {video.channel_title ?? "YouTube creator"}
+        </p>
+        <h2 className="line-clamp-2 min-h-12 text-base font-semibold leading-6">
+          {video.title}
+        </h2>
+        <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-zinc-500">
+          {video.description || "No description supplied."}
+        </p>
+        <div className="mt-4 grid grid-cols-3 gap-2 border-y border-white/10 py-3">
+          <Metric
+            icon={Eye}
+            value={formatYouTubeCount(video.view_count)}
+            label="views"
+          />
+          <Metric
+            icon={ThumbsUp}
+            value={formatYouTubeCount(video.like_count)}
+            label="likes"
+          />
+          <Metric
+            icon={Users}
+            value={formatYouTubeCount(video.channel_subscriber_count)}
+            label="subscribers"
+          />
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-3 text-xs text-zinc-500">
+          <span className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {formatYouTubeDate(video.published_at)}
+          </span>
+          {engagement !== null && (
+            <span>{engagement.toFixed(2)}% engagement</span>
+          )}
+        </div>
+        <div className="mt-4 flex gap-2">
+          <Button
+            onClick={onPreview}
+            className="flex-1 rounded-xl bg-white text-black hover:bg-zinc-200"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Preview
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-xl border-white/10 bg-transparent"
+          >
+            <a
+              href={youTubeWatchUrl(video.video_id)}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open on YouTube"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Metric({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: typeof Eye;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div>
+      <span className="flex items-center gap-1.5 text-sm font-semibold text-zinc-200">
+        <Icon className="h-3.5 w-3.5 text-zinc-500" />
+        {value}
+      </span>
+      <span className="mt-0.5 block text-[10px] uppercase tracking-wider text-zinc-600">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function PreviewDialog({
+  video,
+  onClose,
+}: {
+  video: YouTubeVideoCandidate;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/85 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={video.title}
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) onClose();
+      }}
+    >
+      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0d1015] shadow-2xl">
+        <div className="aspect-video overflow-hidden rounded-t-3xl bg-black">
+          <iframe
+            src={youTubeEmbedUrl(video.video_id)}
+            title={video.title}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+        <div className="p-5 sm:p-7">
+          <div className="flex items-start justify-between gap-5">
+            <div>
+              <p className="text-sm font-medium text-red-400">
+                {video.channel_title ?? "YouTube creator"}
+              </p>
+              <h2 className="mt-1 text-xl font-semibold sm:text-2xl">
+                {video.title}
+              </h2>
+            </div>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="rounded-xl border-white/10"
+            >
+              Close
+            </Button>
+          </div>
+          <p className="mt-4 whitespace-pre-line text-sm leading-6 text-zinc-400">
+            {video.description || "No description supplied."}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3 text-xs text-zinc-400">
+            <span>
+              <Eye className="mr-1 inline h-3.5 w-3.5" />
+              {formatYouTubeCount(video.view_count)} views
+            </span>
+            <span>
+              <ThumbsUp className="mr-1 inline h-3.5 w-3.5" />
+              {formatYouTubeCount(video.like_count)} likes
+            </span>
+            <span>
+              <MessageCircle className="mr-1 inline h-3.5 w-3.5" />
+              {formatYouTubeCount(video.comment_count)} comments
+            </span>
+            <span>
+              <Users className="mr-1 inline h-3.5 w-3.5" />
+              {formatYouTubeCount(video.channel_subscriber_count)} subscribers
+            </span>
+          </div>
+          {(video.tags ?? []).length > 0 && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {(video.tags ?? []).slice(0, 12).map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-white/[0.06] px-3 py-1 text-xs text-zinc-400"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <section className="grid gap-4 md:grid-cols-3">
+      {[
+        [
+          "Discover expertise",
+          "Find creators and videos around a topic, question, or exact phrase.",
+        ],
+        [
+          "Compare authority",
+          "See views, engagement, channel scale, duration, captions, and publication date.",
+        ],
+        [
+          "Go deeper",
+          "Preview a source immediately, then carry the strongest videos into research.",
+        ],
+      ].map(([title, description], index) => (
+        <div
+          key={title}
+          className="rounded-3xl border border-white/10 bg-white/[0.025] p-6"
+        >
+          <span className="text-sm font-semibold text-red-400">
+            0{index + 1}
+          </span>
+          <h2 className="mt-7 text-lg font-semibold">{title}</h2>
+          <p className="mt-2 text-sm leading-6 text-zinc-500">{description}</p>
+        </div>
+      ))}
+    </section>
+  );
+}

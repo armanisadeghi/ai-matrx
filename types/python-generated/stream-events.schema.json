@@ -438,6 +438,12 @@
         "description": "Unix timestamp when the next retry is scheduled.",
         "title": "Retry At"
       },
+      "discard_partial_output": {
+        "default": false,
+        "description": "When true, the client must rewind text, reasoning, render blocks, and citations emitted by the failed provider attempt before rendering the next attempt.",
+        "title": "Discard Partial Output",
+        "type": "boolean"
+      },
       "schedule": {
         "items": {
           "type": "number"
@@ -8154,6 +8160,190 @@
       "latency_ms"
     ],
     "title": "RagVerifyResultData",
+    "type": "object"
+  },
+  "PlanGenStartedData": {
+    "additionalProperties": false,
+    "description": "Content-plan generator kickoff: which site, which research angles, and\nhow much keyword context (seo.site_keyword_value) the waves get to see.",
+    "properties": {
+      "type": {
+        "const": "plan_gen_started",
+        "default": "plan_gen_started",
+        "title": "Type",
+        "type": "string"
+      },
+      "site_id": {
+        "title": "Site Id",
+        "type": "string"
+      },
+      "domain": {
+        "title": "Domain",
+        "type": "string"
+      },
+      "angles": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Angles",
+        "type": "array"
+      },
+      "keyword_count": {
+        "default": 0,
+        "title": "Keyword Count",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "site_id",
+      "domain"
+    ],
+    "title": "PlanGenStartedData",
+    "type": "object"
+  },
+  "PlanGenCandidateData": {
+    "additionalProperties": false,
+    "description": "One research wave finished: its candidate tree size and rationale.",
+    "properties": {
+      "type": {
+        "const": "plan_gen_candidate",
+        "default": "plan_gen_candidate",
+        "title": "Type",
+        "type": "string"
+      },
+      "angle": {
+        "title": "Angle",
+        "type": "string"
+      },
+      "node_count": {
+        "title": "Node Count",
+        "type": "integer"
+      },
+      "rationale": {
+        "default": "",
+        "title": "Rationale",
+        "type": "string"
+      }
+    },
+    "required": [
+      "angle",
+      "node_count"
+    ],
+    "title": "PlanGenCandidateData",
+    "type": "object"
+  },
+  "PlanGenMergedData": {
+    "additionalProperties": false,
+    "description": "The merger produced the final tree.",
+    "properties": {
+      "type": {
+        "const": "plan_gen_merged",
+        "default": "plan_gen_merged",
+        "title": "Type",
+        "type": "string"
+      },
+      "node_count": {
+        "title": "Node Count",
+        "type": "integer"
+      },
+      "summary": {
+        "default": "",
+        "title": "Summary",
+        "type": "string"
+      },
+      "candidates_used": {
+        "default": 0,
+        "title": "Candidates Used",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "node_count"
+    ],
+    "title": "PlanGenMergedData",
+    "type": "object"
+  },
+  "PlanGenAppliedData": {
+    "additionalProperties": false,
+    "description": "Terminal: the tree was applied through the plan write path (or dry-run).",
+    "properties": {
+      "type": {
+        "const": "plan_gen_applied",
+        "default": "plan_gen_applied",
+        "title": "Type",
+        "type": "string"
+      },
+      "site_id": {
+        "title": "Site Id",
+        "type": "string"
+      },
+      "created": {
+        "title": "Created",
+        "type": "integer"
+      },
+      "existing": {
+        "title": "Existing",
+        "type": "integer"
+      },
+      "failed": {
+        "title": "Failed",
+        "type": "integer"
+      },
+      "errors": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Errors",
+        "type": "array"
+      },
+      "dry_run": {
+        "default": false,
+        "title": "Dry Run",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "site_id",
+      "created",
+      "existing",
+      "failed"
+    ],
+    "title": "PlanGenAppliedData",
+    "type": "object"
+  },
+  "PlanDeepenResultData": {
+    "additionalProperties": false,
+    "description": "Terminal event of POST /content-plan/nodes/{id}/deepen: the node's\nrefreshed brief size and how many cited sources were attached.",
+    "properties": {
+      "type": {
+        "const": "plan_deepen_result",
+        "default": "plan_deepen_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "node_id": {
+        "title": "Node Id",
+        "type": "string"
+      },
+      "route": {
+        "default": "",
+        "title": "Route",
+        "type": "string"
+      },
+      "brief_lines": {
+        "default": 0,
+        "title": "Brief Lines",
+        "type": "integer"
+      },
+      "sources_attached": {
+        "default": 0,
+        "title": "Sources Attached",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "node_id"
+    ],
+    "title": "PlanDeepenResultData",
     "type": "object"
   },
   "ToolStartedData": {

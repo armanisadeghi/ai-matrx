@@ -4227,6 +4227,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/sites/{site_id}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Plan */
+        post: operations["generate_plan_content_plan_sites__site_id__generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/nodes/{node_id}/deepen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deepen */
+        post: operations["deepen_content_plan_nodes__node_id__deepen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reconcile */
+        post: operations["reconcile_content_plan_sites__site_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/dispositions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dispositions */
+        post: operations["dispositions_content_plan_sites__site_id__dispositions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/public/structured-data/validate": {
         parameters: {
             query?: never;
@@ -6244,6 +6312,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -6382,6 +6474,30 @@ export interface paths {
          *     Admin-only.
          */
         post: operations["cache_bust_admin_tool_routing_cache_bust_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/youtube/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search Youtube
+         * @description Search and enrich public YouTube videos without persisting a topic.
+         *
+         *     The research pipeline calls the same ``YouTubeDataApi`` primitive when it
+         *     searches a keyword, so this user-facing surface is a preview of the actual
+         *     discovery payload rather than a separate test implementation.
+         */
+        post: operations["search_youtube_research_youtube_search_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -22375,6 +22491,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -22711,6 +22854,35 @@ export interface components {
              * Format: date-time
              */
             dismissed_at: string;
+        };
+        /** DispositionItem */
+        DispositionItem: {
+            /** Page Id */
+            page_id: string;
+            /** Node Id */
+            node_id: string;
+            /**
+             * Disposition
+             * @enum {string}
+             */
+            disposition: "keep" | "merge" | "redirect" | "retire";
+            /** Notes */
+            notes?: string | null;
+        };
+        /** DispositionResult */
+        DispositionResult: {
+            /**
+             * Written
+             * @default 0
+             */
+            written?: number;
+            /** Errors */
+            errors?: string[];
+        };
+        /** DispositionsBody */
+        DispositionsBody: {
+            /** Items */
+            items: components["schemas"]["DispositionItem"][];
         };
         /** DistinctValuesResponse */
         DistinctValuesResponse: {
@@ -25218,6 +25390,21 @@ export interface components {
             attempt?: number;
         } & {
             [key: string]: unknown;
+        };
+        /** GeneratePlanBody */
+        GeneratePlanBody: {
+            /**
+             * Max Nodes
+             * @default 40
+             */
+            max_nodes?: number;
+            /** Guidance */
+            guidance?: string | null;
+            /**
+             * Apply
+             * @default true
+             */
+            apply?: boolean;
         };
         /**
          * GenerateTagsRequest
@@ -31122,6 +31309,45 @@ export interface components {
             count: number;
             /** Executions */
             executions: components["schemas"]["ExecutionTreeNode"][];
+        };
+        /** ReconcileBody */
+        ReconcileBody: {
+            /**
+             * Write Edges
+             * @default true
+             */
+            write_edges?: boolean;
+        };
+        /** ReconcileMatch */
+        ReconcileMatch: {
+            /** Node Id */
+            node_id: string;
+            /** Route */
+            route: string;
+            /** Page Id */
+            page_id: string;
+            /** Url */
+            url: string;
+        };
+        /** ReconcileReport */
+        ReconcileReport: {
+            /** Site Id */
+            site_id: string;
+            /** Matched */
+            matched?: components["schemas"]["ReconcileMatch"][];
+            /** Orphans */
+            orphans?: {
+                [key: string]: string;
+            }[];
+            /** Ghosts */
+            ghosts?: {
+                [key: string]: string;
+            }[];
+            /**
+             * Edges Written
+             * @default 0
+             */
+            edges_written?: number;
         };
         /**
          * RecoveryApplyAck
@@ -38228,6 +38454,133 @@ export interface components {
             /** Expected Updated At */
             expected_updated_at?: string | null;
         };
+        /** YouTubeSearchPage */
+        YouTubeSearchPage: {
+            /** Query */
+            query: string;
+            /** Results */
+            results: components["schemas"]["YouTubeVideoCandidate"][];
+            /** Next Page Token */
+            next_page_token?: string | null;
+            /** Prev Page Token */
+            prev_page_token?: string | null;
+            /** Region Code */
+            region_code?: string | null;
+            /** Total Results */
+            total_results?: number | null;
+            /** Results Per Page */
+            results_per_page?: number | null;
+        };
+        /** YouTubeSearchRequest */
+        YouTubeSearchRequest: {
+            /** Query */
+            query: string;
+            /**
+             * Max Results
+             * @default 25
+             */
+            max_results?: number;
+            /** Page Token */
+            page_token?: string | null;
+            /**
+             * Order
+             * @default relevance
+             * @enum {string}
+             */
+            order?: "date" | "rating" | "relevance" | "title" | "viewCount";
+            /**
+             * Region Code
+             * @default US
+             */
+            region_code?: string | null;
+            /**
+             * Relevance Language
+             * @default en
+             */
+            relevance_language?: string | null;
+            /**
+             * Safe Search
+             * @default moderate
+             * @enum {string}
+             */
+            safe_search?: "moderate" | "none" | "strict";
+            /** Published After */
+            published_after?: string | null;
+            /** Published Before */
+            published_before?: string | null;
+            /** Channel Id */
+            channel_id?: string | null;
+            /** Event Type */
+            event_type?: ("completed" | "live" | "upcoming") | null;
+            /** Topic Id */
+            topic_id?: string | null;
+            /**
+             * Location
+             * @description Latitude,longitude pair; requires location_radius.
+             */
+            location?: string | null;
+            /**
+             * Location Radius
+             * @description Radius with m, km, ft, or mi suffix; requires location.
+             */
+            location_radius?: string | null;
+            /** Video Category Id */
+            video_category_id?: string | null;
+            /**
+             * Video Caption
+             * @default any
+             * @enum {string}
+             */
+            video_caption?: "any" | "closedCaption" | "none";
+            /**
+             * Video Definition
+             * @default any
+             * @enum {string}
+             */
+            video_definition?: "any" | "high" | "standard";
+            /**
+             * Video Dimension
+             * @default any
+             * @enum {string}
+             */
+            video_dimension?: "any" | "2d" | "3d";
+            /**
+             * Video Duration
+             * @default any
+             * @enum {string}
+             */
+            video_duration?: "any" | "short" | "medium" | "long";
+            /**
+             * Video Embeddable
+             * @default any
+             * @enum {string}
+             */
+            video_embeddable?: "any" | "true";
+            /**
+             * Video License
+             * @default any
+             * @enum {string}
+             */
+            video_license?: "any" | "creativeCommon" | "youtube";
+            /**
+             * Video Paid Product Placement
+             * @default any
+             * @enum {string}
+             */
+            video_paid_product_placement?: "any" | "true";
+            /**
+             * Video Syndicated
+             * @default any
+             * @enum {string}
+             */
+            video_syndicated?: "any" | "true";
+            /**
+             * Video Type
+             * @default any
+             * @enum {string}
+             */
+            video_type?: "any" | "episode" | "movie";
+        };
         /** YouTubeTranscriptRequest */
         YouTubeTranscriptRequest: {
             /**
@@ -38240,6 +38593,48 @@ export interface components {
              * @description Optional override for the agent's timestamp behaviour. Omit to keep the agent default (timestamps included).
              */
             timestamp_instruction?: string | null;
+        };
+        /** YouTubeVideoCandidate */
+        YouTubeVideoCandidate: {
+            /** Video Id */
+            video_id: string;
+            /** Url */
+            url: string;
+            /** Title */
+            title: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Published At */
+            published_at?: string | null;
+            /** Channel Id */
+            channel_id?: string | null;
+            /** Channel Title */
+            channel_title?: string | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /** Duration */
+            duration?: string | null;
+            /** View Count */
+            view_count?: number | null;
+            /** Like Count */
+            like_count?: number | null;
+            /** Comment Count */
+            comment_count?: number | null;
+            /** Channel Subscriber Count */
+            channel_subscriber_count?: number | null;
+            /** Channel Video Count */
+            channel_video_count?: number | null;
+            /** Tags */
+            tags?: string[];
+            /** Topic Categories */
+            topic_categories?: string[];
+            /** Raw */
+            raw?: {
+                [key: string]: unknown;
+            };
         };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
@@ -46004,6 +46399,142 @@ export interface operations {
             };
         };
     };
+    generate_plan_content_plan_sites__site_id__generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GeneratePlanBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deepen_content_plan_nodes__node_id__deepen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_content_plan_sites__site_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReconcileBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconcileReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dispositions_content_plan_sites__site_id__dispositions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispositionsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispositionResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     structured_data_validate_seo_public_structured_data_validate_post: {
         parameters: {
             query?: never;
@@ -49660,6 +50191,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -49860,6 +50426,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CacheBustResponse"];
+                };
+            };
+        };
+    };
+    search_youtube_research_youtube_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeSearchPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
