@@ -33,6 +33,7 @@
  * a hard fail — CI boxes may not have the sibling repo).
  */
 
+import { execSync } from "node:child_process";
 import { copyFileSync, existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -94,6 +95,12 @@ for (const rel of MIRROR_FILES) {
       diverged.push(`${rel} — differs from aidream (FE mtime ${feM}, aidream mtime ${aiM})`);
     }
   }
+}
+
+if (FIX) {
+  // The slim client noun table derives from the catalog manifest — regenerate it
+  // whenever the mirror may have moved so the two can never drift.
+  execSync("node scripts/gen-action-nouns.mjs", { stdio: "inherit", cwd: ROOT });
 }
 
 if (diverged.length === 0) {
