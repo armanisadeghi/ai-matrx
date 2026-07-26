@@ -131,12 +131,29 @@ function pickStatus(s?: MediaStatus | null): MediaStatus {
   return s === "streaming" || s === "error" ? s : "complete";
 }
 
-function pickVisibility(v?: MediaVisibility | null): MediaVisibility {
-  // Default unknown/null visibility to `private` — matches the
+// The WIRE speaks the DB enum `platform.visibility`
+// (personal < internal < link < public). The block domain speaks
+// `public | personal | shared` — see `toVisibility` in redux/converters.ts for
+// the same translation at the cld_files read boundary. Accept BOTH here: the
+// server sends canonical labels, but persisted `cx_message.content[]` items
+// written before the 2026-07-21 enum canonicalization can still carry the
+// retired `shared` / `private` spellings.
+type WireVisibility =
+  | "personal"
+  | "internal"
+  | "link"
+  | "public"
+  | "shared"
+  | "private";
+
+function pickVisibility(v?: WireVisibility | null): MediaVisibility {
+  // `link` is the enum value that carries the old "shared" meaning.
+  if (v === "public") return "public";
+  if (v === "link" || v === "shared") return "shared";
+  // Default unknown/null/`internal`/`private` to `personal` — matches the
   // `dbRowToCloudFile` and `from-cld-files-row.ts` defaults so a matrx
   // block arriving with a missing visibility doesn't get accidentally
   // promoted to public.
-  if (v === "public" || v === "shared") return v;
   return "personal";
 }
 

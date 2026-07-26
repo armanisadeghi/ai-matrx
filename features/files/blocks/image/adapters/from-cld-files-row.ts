@@ -54,7 +54,7 @@ export function fromCldFilesRow(row: CloudFileReadRow): MatrxImageBlock {
     origin: "matrx",
     fileId: row.id,
     // `files.files.visibility` is the canonical `platform.visibility` enum now
-    // (`private < internal < link < public`); the old free-text `'shared'` is
+    // (`personal < internal < link < public`); the old free-text `'shared'` is
     // `'link'`. The image-block domain speaks `public | private | shared`, so
     // map `'link'` → `'shared'` and treat `'internal'`/unknown as `'private'`.
     visibility:

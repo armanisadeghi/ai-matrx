@@ -36,7 +36,7 @@ import type { ShareLink as CanonicalShareLink } from "@/utils/permissions/shareL
  * Map a DB / RPC visibility value to the file domain's `Visibility` shape.
  *
  * The 2026 restructure switched `files.files`/`files.folders.visibility` to the
- * canonical `platform.visibility` enum (`private < internal < link < public`),
+ * canonical `platform.visibility` enum (`personal < internal < link < public`),
  * where the old free-text `'shared'` value is now `'link'`. The file domain
  * still speaks `public | private | shared`, so translate at the read boundary:
  *   - `'link'`     → `'shared'` (the new name for the old shared value)
