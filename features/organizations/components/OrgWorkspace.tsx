@@ -47,7 +47,7 @@ import {
 import type { Organization, OrganizationMemberWithUser } from "@/features/organizations/types";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { format } from "date-fns";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {

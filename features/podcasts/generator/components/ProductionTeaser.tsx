@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from "react";
 import { AudioLines } from "lucide-react";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
 import { parseScript, speakerSlot, SPEAKER_SLOT_TEXT } from "../script";

@@ -28,8 +28,8 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
-import { CloudFolders } from "@/features/files";
-import { InlineMediaRef } from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 export function ProfilePhotoTab() {
   const currentAvatar = useAppSelector(selectUserAvatarUrl);

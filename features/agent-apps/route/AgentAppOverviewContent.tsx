@@ -49,7 +49,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { siteConfig } from "@/config/extras/site";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {

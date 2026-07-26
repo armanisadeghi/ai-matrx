@@ -5,7 +5,7 @@ import { idMatchesQuery } from '@/utils/search-scoring';
 import { Plus, RefreshCw, Search, Pencil, Trash2, Link, Mic, Music, CheckCircle2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { InlineMediaRef } from '@/features/files';
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import {
     AlertDialog,
     AlertDialogAction,

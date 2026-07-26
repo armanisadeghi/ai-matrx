@@ -16586,66 +16586,6 @@
         }
       }
     },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -41897,7 +41837,7 @@
           "Actions"
         ],
         "summary": "Get Action Catalog",
-        "description": "The full action catalog (every noun × every verb, with capability states).",
+        "description": "The full action catalog — COMPUTED live from platform.entity_types + the\nenvelope shape registry (nouns, verb states, Plane-2 functions, per-noun\nidentity fields and write schemas). Registered means listed; nothing is\nhand-authored.",
         "operationId": "get_action_catalog_actions_catalog_get",
         "responses": {
           "200": {
@@ -44092,6 +44032,20 @@
             },
             "type": "array",
             "title": "Nouns"
+          },
+          "functions": {
+            "items": {
+              "$ref": "#/components/schemas/FunctionEntry"
+            },
+            "type": "array",
+            "title": "Functions"
+          },
+          "aliases": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Aliases"
           }
         },
         "additionalProperties": false,
@@ -44102,7 +44056,7 @@
           "nouns"
         ],
         "title": "ActionCatalog",
-        "description": "The whole grid: the verb axis + every noun row. This is what the API\nreturns and what the admin UI renders."
+        "description": "The whole grid: the verb axis + every noun row + the Plane-2 functions.\nThis is what the API returns and what the admin UI renders."
       },
       "ActionExecuteRequest": {
         "properties": {
@@ -62322,61 +62276,6 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
-      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -70047,6 +69946,48 @@
           "node_id"
         ],
         "title": "FrontierInvocation"
+      },
+      "FunctionEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "doc": {
+            "type": "string",
+            "title": "Doc",
+            "default": ""
+          },
+          "item_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Schema"
+          },
+          "deprecated": {
+            "type": "boolean",
+            "title": "Deprecated",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "kind"
+        ],
+        "title": "FunctionEntry",
+        "description": "One Plane-2 function (or a deprecated legacy named directive)."
       },
       "GeneratePlanBody": {
         "properties": {
@@ -79877,6 +79818,41 @@
               "no"
             ],
             "title": "Delete"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "title_column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title Column"
+          },
+          "identity_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Identity Fields"
+          },
+          "schemas": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schemas"
           }
         },
         "additionalProperties": false,

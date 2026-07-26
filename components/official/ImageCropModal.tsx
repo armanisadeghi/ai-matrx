@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/drawer';
 import { ImageCropUploader } from '@/components/official/ImageCropUploader';
 import type { ImageUploaderResult } from '@/components/official/ImageAssetUploader';
-import type { AssetPreset, Visibility } from '@/features/files';
+import type { AssetPreset, Visibility } from "@/features/files/types";
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 export interface ImageCropModalProps {

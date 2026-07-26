@@ -14,7 +14,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchAppletsThunk, deleteAppletThunk } from "@/lib/redux/app-builder/thunks/appletBuilderThunks";
 import { startNewApplet, setActiveApplet } from "@/lib/redux/app-builder/slices/appletBuilderSlice";
 import { v4 as uuidv4 } from "uuid";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import {
     selectAllApplets,
     selectAppletLoading,

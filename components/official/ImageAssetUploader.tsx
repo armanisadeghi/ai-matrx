@@ -49,14 +49,11 @@ import type {
   AssetPreset,
   AssetVariant,
   Visibility,
-} from "@/features/files";
-import {
-  useFileUpload,
-  InlineMediaRef,
-  openFilePicker,
-  getAssetForFile,
-  addAssetVariants,
-} from "@/features/files";
+} from "@/features/files/types";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { getAssetForFile, addAssetVariants } from "@/features/files/api/assets";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { extractErrorMessage } from "@/utils/errors";
@@ -77,7 +74,7 @@ import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/const
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type { AssetPreset } from "@/features/files";
+export type { AssetPreset } from "@/features/files/types";
 
 type SourceTab = "upload" | "library" | "url" | "generate";
 

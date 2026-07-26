@@ -19,27 +19,21 @@ const windowPanelsImportRestriction = {
             message:
                 "Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct imports break bundle splitting. See .claude/skills/overlay-system/SKILL.md.",
         },
-        // Phase 0 of the file-handling consolidation: external callers must
-        // import the public surface from `@/features/files` (the locked
-        // public index), never from internal subdirectories. Phase 1 will
-        // tighten further to deny the api/redux/upload subpaths entirely.
-        // See docs/FILE_HANDLING_CONSOLIDATION_PLAN.md.
+        // File-handling: the public index barrel was deleted (2026-07-26).
+        // Import directly from the owning module. Internal subdirs below
+        // stay banned. See features/files/FEATURE.md.
         {
             group: ['@/features/files/api', '@/features/files/api/*'],
             message:
-                'Do not import from features/files/api — use @/features/files (the public surface). HTTP helpers (getJson/postJson/del/patchJson/etc.) live at @/lib/python-client.',
+                'Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.).',
         },
-        // Tier 1 of the file-handling ring-fence (per
-        // docs/SWEEP_INTERNAL_IMPORTS.md): zero external importers today,
-        // so the ban lands now with no migration. New external imports of
-        // these internal subdirs fail the build.
         {
             group: [
                 '@/features/files/cache',
                 '@/features/files/cache/*',
             ],
             message:
-                'features/files/cache is internal infrastructure (in-memory LRU, IndexedDB store, Service Worker registration). Use the public hooks from @/features/files instead.',
+                'features/files/cache is internal infrastructure (in-memory LRU, IndexedDB store, Service Worker registration). Use @/features/files/hooks/useFileBlob.',
         },
         {
             group: [
@@ -47,19 +41,7 @@ const windowPanelsImportRestriction = {
                 '@/features/files/virtual-sources/*',
             ],
             message:
-                'features/files/virtual-sources is internal — the adapters are registered at module load. External code should compose against the public hooks / handler facade.',
-        },
-        // Tier 2 of the file-handling ring-fence (post-Tier-1, the
-        // tier-2 sweep cleared every external violator): hooks, upload,
-        // providers, services. Everything that was importable here is
-        // now re-exported on the public index.
-        {
-            group: [
-                '@/features/files/hooks',
-                '@/features/files/hooks/*',
-            ],
-            message:
-                'features/files/hooks is internal. Import the hook you need from @/features/files (the public surface index).',
+                'features/files/virtual-sources is internal — the adapters are registered at module load. Compose against @/features/files/handler/handler or the public hooks.',
         },
         {
             group: [
@@ -67,7 +49,7 @@ const windowPanelsImportRestriction = {
                 '@/features/files/upload/*',
             ],
             message:
-                'features/files/upload is internal. Use useFileUpload from @/features/files (or `requestUpload` for non-React imperative call sites — also exported from @/features/files).',
+                'features/files/upload is internal. Use useFileUpload from @/features/files/handler/hooks/useFileUpload (or requestUpload from @/features/files/upload/requestUpload for imperative call sites).',
         },
         {
             group: [
@@ -75,7 +57,7 @@ const windowPanelsImportRestriction = {
                 '@/features/files/providers/*',
             ],
             message:
-                'features/files/providers is internal. The single CloudFilesRealtimeProvider mount lives in app/Providers.tsx; import via @/features/files if you really need it.',
+                'features/files/providers is internal. The CloudFilesRealtimeProvider mount lives in app/Providers.tsx.',
         },
         {
             group: [
@@ -83,60 +65,7 @@ const windowPanelsImportRestriction = {
                 '@/features/files/services/*',
             ],
             message:
-                'features/files/services is internal. Use the public hooks from @/features/files.',
-        },
-        // Tier 4 of the file-handling ring-fence: the slice / selectors /
-        // thunks / converters / realtime middleware. Store wiring
-        // (cloudFilesReducer, cloudFilesRealtimeMiddleware) is re-exported
-        // on the public index so even lib/redux/{store,entity-store,
-        // rootReducer}.ts goes through @/features/files. Bulk-mutation
-        // callsites in the image-cloud cluster + the bulk-selector
-        // consumers (RAG hits, WhatsApp media, picker pages) are tracked
-        // for a follow-up sweep — they need new public hooks (a
-        // useFileMutation family + a paginated all-files view) before
-        // their imports can be cleanly migrated.
-        {
-            group: [
-                '@/features/files/redux',
-                '@/features/files/redux/*',
-            ],
-            message:
-                'Do not import slice/selectors/thunks/converters directly. Use the public hooks (useFile, useFileNode, useFolderNode, useCloudTree, useFolderContents) and converters (fileIdToMediaRef, cloudFileToMediaRef, urlToMediaRef) re-exported from @/features/files. Store wiring (cloudFilesReducer, cloudFilesRealtimeMiddleware) and the narrow explorer-state contract (setActiveFileId, setActiveFolderId, selectTreeStatus) are public named exports.',
-        },
-        // Tier 3 of the file-handling ring-fence (per
-        // docs/SWEEP_INTERNAL_IMPORTS.md): the four largest internal
-        // subdirs. External callers must import from `@/features/files`.
-        // app/(a)/files/** is allowlisted below for the co-located route
-        // shell (PageShell) and the server-only utils (server-cookies,
-        // server-search-params).
-        {
-            group: [
-                '@/features/files/handler',
-                '@/features/files/handler/*',
-            ],
-            message:
-                'Do not import handler internals — use the public surface (@/features/files) which re-exports fileHandler, useFile, useFileAs, useFileSrc, useFileBlob, useFileUpload, normalize, preferIdentityLocator, and all handler types.',
-        },
-        {
-            group: [
-                '@/features/files/components',
-                '@/features/files/components/*',
-            ],
-            message:
-                'Do not import component internals — use the public surface (@/features/files) which re-exports the canonical render / picker / dialog set (FilePreview, MediaThumbnail, FileTree, FileResourceChip, PreviewPane, WindowPanelShell, PdfAnnotationLayer, useFileActions, useFolderActions, CloudFilesPickerHost, openFilePicker, openFolderPicker, etc.). If your component is missing from the index, promote it instead of importing internally.',
-        },
-        {
-            group: ['@/features/files/types'],
-            message:
-                'Import types from @/features/files (the public surface re-exports the entire type module via `export type *`).',
-        },
-        {
-            group: [
-                '@/features/files/utils',
-                '@/features/files/utils/*',
-            ],
-            message:
-                'Do not import from features/files/utils — use the equivalent re-exports from @/features/files (CloudFolders, folderFor*, formatFileSize, isImageMime, getFilePreviewProfile, etc.). app/(a)/files/** is allowlisted for the server-only helpers (server-cookies, server-search-params).',
+                'features/files/services is internal. Use the public hooks under @/features/files/hooks/**.',
         },
     ],
 };
@@ -152,29 +81,34 @@ const windowPanelsImportRestriction = {
 const deletedFileHooksRestriction = {
     paths: [
         {
+            name: '@/features/files',
+            message:
+                'The features/files barrel (index.ts) was deleted. Import directly from the owning module — e.g. @/features/files/handler/handler, @/features/files/components/inline/InlineMediaRef, @/features/files/types. See features/files/FEATURE.md.',
+        },
+        {
             name: '@/features/files/hooks/useSignedUrl',
             message:
-                'useSignedUrl was deleted. Use useFileSrc({kind:"file_id",fileId}) from @/features/files.',
+                'useSignedUrl was deleted. Use useFileSrc({kind:"file_id",fileId}) from @/features/files/handler/hooks/useFileSrc.',
         },
         {
             name: '@/features/files/hooks/useGuardedFileUpload',
             message:
-                'useGuardedFileUpload was deleted. Use useFileUpload().uploadMany from @/features/files.',
+                'useGuardedFileUpload was deleted. Use useFileUpload().uploadMany from @/features/files/handler/hooks/useFileUpload.',
         },
         {
             name: '@/features/agents/hooks/useAiImageUrl',
             message:
-                'useAiImageUrl was deleted. Extract the cld_files UUID from the URL and use useFileSrc({kind:"file_id",fileId}) from @/features/files.',
+                'useAiImageUrl was deleted. Extract the cld_files UUID from the URL and use useFileSrc({kind:"file_id",fileId}) from @/features/files/handler/hooks/useFileSrc.',
         },
         {
             name: '@/components/ui/file-upload/useFileUploadWithStorage',
             message:
-                'useFileUploadWithStorage was deleted. Use useFileUpload from @/features/files.',
+                'useFileUploadWithStorage was deleted. Use useFileUpload from @/features/files/handler/hooks/useFileUpload.',
         },
         {
             name: '@/components/ui/file-upload/usePasteImageUpload',
             message:
-                'usePasteImageUpload was deleted. Attach a paste listener and call useFileUpload().upload({kind:"file"}) from @/features/files.',
+                'usePasteImageUpload was deleted. Attach a paste listener and call useFileUpload().upload({kind:"file"}) from @/features/files/handler/hooks/useFileUpload.',
         },
         {
             name: '@/features/files/handler/hooks/useFileMediaBlock',
@@ -189,7 +123,7 @@ const deletedFileHooksRestriction = {
         {
             name: '@/features/files/upload/cloudUpload',
             message:
-                'cloudUpload is internal to @/features/files. Use useFileUpload from @/features/files.',
+                'cloudUpload is internal to features/files/upload. Use useFileUpload from @/features/files/handler/hooks/useFileUpload.',
         },
     ],
 };
@@ -1078,13 +1012,9 @@ export default [
         },
     },
     {
-        // The /files route shells legitimately co-locate with the Files
-        // feature: they own the PageShell composition for `/files/*` and
-        // need the server-only utils (server-cookies, server-search-params)
-        // for SSR cookie + URL state parsing. The Tier-3 ring-fence does
-        // not apply to them. Every other path swap (`@/features/files/**`
-        // → `@/features/files`) is still in force for the rest of the
-        // codebase. See docs/SWEEP_INTERNAL_IMPORTS.md.
+        // The /files route shells co-locate with the Files feature and use
+        // server-only utils (server-cookies, server-search-params). The
+        // internal-subdir bans do not apply here. See docs/SWEEP_INTERNAL_IMPORTS.md.
         files: ['app/(a)/files/**/*', 'app/(core)/files/**/*'],
         rules: {
             'no-restricted-imports': 'off',
@@ -1169,43 +1099,6 @@ export default [
                 ...appContextWriteSyntaxRestrictions,
                 // toolResultsChokepointSyntaxRestrictions intentionally omitted.
             ],
-        },
-    },
-    // Tier-4 ring-fence — these files still import from
-    // @/features/files/redux/* because their migrations need new public-
-    // surface primitives that aren't shipped yet:
-    //
-    //   - image-cloud read surfaces (CloudFilesTab, CloudImagesTab,
-    //     CloudUploadTab, FilesResourcePicker) consume `selectAllFilesMap`
-    //     / `selectAllFilesArray` or dispatch `loadUserFileTree` /
-    //     `ensureFolderPath` thunks. The mutation surfaces
-    //     (CloudFilesBrowserTable) moved off this override in `phase 1.x`
-    //     once `useFileMutation` / `useFolderMutation` shipped.
-    //   - useImageStudio dispatches the bulk `uploadFiles` thunk with
-    //     concurrency + per-file metadata — needs a public bulk-upload
-    //     primitive.
-    //   - RagSearchHits / CldFilePicker / useWhatsAppMedia consume
-    //     `selectAllFilesMap` / `selectAllFilesArray` to iterate every
-    //     cached file — each is a legitimate architectural smell (each
-    //     re-renders on every files-map change) and needs a paginated
-    //     all-files / mime-filtered view hook rather than a bulk-read
-    //     escape hatch on the public index.
-    //
-    // The override is scoped exactly to these files so any NEW external
-    // import from features/files/redux fails the build.
-    {
-        files: [
-            'components/image/cloud/CloudFilesTab.tsx',
-            'components/image/cloud/CloudImagesTab.tsx',
-            'components/image/cloud/CloudUploadTab.tsx',
-            'features/image-studio/hooks/useImageStudio.ts',
-            'features/rag/components/data-stores/CldFilePicker.tsx',
-            'features/rag/components/search/RagSearchHits.tsx',
-            'features/resource-manager/resource-picker/FilesResourcePicker.tsx',
-            'features/whatsapp-clone/hooks/useWhatsAppMedia.ts',
-        ],
-        rules: {
-            'no-restricted-imports': 'off',
         },
     },
     // Doctrine anti-pattern #3 (Parallel Redux slices) — the parallelSliceRestriction

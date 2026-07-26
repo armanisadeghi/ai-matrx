@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Mic, Settings2 } from "lucide-react";
 import type { PcShow } from "@/features/podcasts/types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface PodcastGridProps {
   shows: PcShow[];

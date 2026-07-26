@@ -20,7 +20,7 @@
 // decoded buffer through the Start-resumed AudioContext (like the buzzer).
 
 import { useEffect, useRef } from "react";
-import { useFileSrc } from "@/features/files";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 
 export function SpokenFrontPlayer({
   fileId,

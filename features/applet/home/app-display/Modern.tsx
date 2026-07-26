@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
-import { InlineMediaRef } from '@/features/files';
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 const ModernAppDisplay: React.FC<AppDisplayProps> = ({
   appName,

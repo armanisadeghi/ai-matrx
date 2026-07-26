@@ -18,7 +18,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CloudFolders, fileHandler } from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { fileHandler } from "@/features/files/handler/handler";
 import {
   createTrackedObjectUrl,
   revokeTrackedObjectUrl,

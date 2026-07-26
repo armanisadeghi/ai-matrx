@@ -28,9 +28,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-// The public surface re-exports this hook, so importing the API / types
-// through @/features/files would be a cycle. Sibling hooks in this
-// directory take the same direct-path exemption.
+// hooks inside features/files/** import sibling modules directly to avoid
+// cycles through a deleted barrel. eslint-disable for features/files/api
+// remains until api/ is split or re-exported differently.
 // eslint-disable-next-line no-restricted-imports
 import { getAssetForFile } from "@/features/files/api/assets";
 import { useAppSelector } from "@/lib/redux/hooks";

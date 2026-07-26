@@ -29,10 +29,8 @@ import {
   refreshCaptureJournals,
 } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
 import { useCaptureUploadFeed } from "@/features/media-capture/hooks/useCaptureUploadFeed";
-import {
-  listStoredTusUploads,
-  type StoredTusUploadSummary,
-} from "@/features/files";
+import { listStoredTusUploads } from "@/features/files/upload/tusUpload";
+import type { StoredTusUploadSummary } from "@/features/files/upload/tusUpload";
 
 function probeRecordingMimes(kind: "video" | "audio"): string[] {
   if (

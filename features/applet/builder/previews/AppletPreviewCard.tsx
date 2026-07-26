@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { getIconComponent } from '@/components/official/icons/IconResolver';
-import { InlineMediaRef } from '@/features/files';
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface AppletPreviewCardProps {
   applet: CustomAppletConfig;

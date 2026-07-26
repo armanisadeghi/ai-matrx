@@ -5,13 +5,15 @@
  * loud rejection of invalid/hardware-identifying payloads.
  */
 
-jest.mock("@/features/files", () => ({
-  // Real folder constants/visibility rules; mocked network boundary.
-  ...jest.requireActual("@/features/files/utils/folder-conventions"),
+jest.mock("@/features/files/handler/handler", () => ({
   fileHandler: { upload: jest.fn() },
 }));
 
-import { fileHandler } from "@/features/files";
+jest.mock("@/features/files/utils/folder-conventions", () => ({
+  ...jest.requireActual("@/features/files/utils/folder-conventions"),
+}));
+
+import { fileHandler } from "@/features/files/handler/handler";
 import { captureFolderFor, uploadCapture } from "../capture-uploader";
 import {
   buildPhotoCaptureMetadata,
@@ -66,7 +68,12 @@ describe("buildPhotoCaptureMetadata", () => {
     const meta = buildPhotoCaptureMetadata({
       source: "capture-input",
       sourceFeature: "camera",
-      sourceSettings: { width: 10, height: 10, frame_rate: null, facing_mode: null },
+      sourceSettings: {
+        width: 10,
+        height: 10,
+        frame_rate: null,
+        facing_mode: null,
+      },
       framing: "full-frame",
       mirroredOutput: false,
     });

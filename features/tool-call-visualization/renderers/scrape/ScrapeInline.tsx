@@ -43,7 +43,7 @@ import {
     ScanText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ToolRendererProps } from "../../types";

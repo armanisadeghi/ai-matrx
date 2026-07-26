@@ -31,29 +31,17 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import {
-  openFolderPicker,
-  FileIcon,
-  MediaThumbnail,
-  ShareLinkDialog,
-  ShareLinkDialogBody,
-  useFileActions,
-  useFolderActions,
-  useFileMutation,
-  useFolderMutation,
-  formatFileSize,
-  formatRelativeTime,
-  isImageMime,
-  isVideoMime,
-  resolveMime,
-} from "@/features/files";
+import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { ShareLinkDialog, ShareLinkDialogBody } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
+import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
+import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
+import { useFileMutation, useFolderMutation } from "@/features/files/hooks/useFileMutation";
+import { formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
+import { isImageMime, isVideoMime, resolveMime } from "@/features/files/utils/file-types";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type {
-  CloudFileRecord,
-  CloudFolderRecord,
-  ResourceType,
-  Visibility,
-} from "@/features/files";
+import type { CloudFileRecord, CloudFolderRecord, ResourceType, Visibility } from "@/features/files/types";
 import {
   allCloudBrowserRowIds,
   buildCloudFilesBrowserRows,

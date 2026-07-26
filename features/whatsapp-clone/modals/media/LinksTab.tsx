@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { WAAvatar } from "../../shared/WAAvatar";
 import { formatLinkTime } from "../../shared/relative-time";
 import type { WALinkItem } from "../../types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface LinksTabProps {
   items: WALinkItem[];

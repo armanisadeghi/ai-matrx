@@ -35,12 +35,9 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  FileTree,
-  setActiveFileId,
-  setActiveFolderId,
-  selectTreeStatus,
-} from "@/features/files";
+import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
+import { setActiveFileId, setActiveFolderId } from "@/features/files/redux/slice";
+import { selectTreeStatus } from "@/features/files/redux/selectors";
 import { useOpenCloudFile } from "../../hooks/useOpenCloudFile";
 
 interface CloudFilesExplorerProps {

@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 import { resolveUnsplashImage, type ResolvedImage } from "./slide-images";
 

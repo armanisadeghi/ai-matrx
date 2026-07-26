@@ -9,7 +9,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
-import { colorsFor } from "@/features/files";
+import { colorsFor } from "@/features/pdf/components/viewer/annotation-layer/colors";
 import { InlineRawToggle } from "@/features/file-analysis/content/RawView";
 import { RawView } from "@/features/file-analysis/content/RawView";
 

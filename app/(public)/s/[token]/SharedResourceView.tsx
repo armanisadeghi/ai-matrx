@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { isForkable, type ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
-import { shareUrls } from "@/features/files";
+import { shareUrls } from "@/features/files/handler/utils/python-base";
 
 function str(resource: Record<string, unknown> | undefined, key: string): string {
   const v = resource?.[key];

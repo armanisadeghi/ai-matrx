@@ -1,6 +1,6 @@
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import { createFilesScope } from "@/features/surfaces/manifests/files.manifest";
-import type { CloudFileRecord, CloudFolderRecord } from "@/features/files";
+import type { CloudFileRecord, CloudFolderRecord } from "@/features/files/types";
 
 /**
  * Placements offered by the Files browser context menu.

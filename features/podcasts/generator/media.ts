@@ -10,8 +10,8 @@
 // (twin of the DB `mtx_is_durable_media_url` guard) so this rule is enforced the
 // same way everywhere.
 
-import { fileIdToMediaRef, urlToMediaRef } from "@/features/files";
-import type { MediaRef } from "@/features/files";
+import { fileIdToMediaRef, urlToMediaRef } from "@/features/files/redux/converters";
+import type { MediaRef } from "@/features/files/types";
 import {
   fileIdFromUserFilesUrl,
   reportMediaDurabilityViolation,

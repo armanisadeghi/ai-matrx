@@ -36,14 +36,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import {
-  FileRagBadge,
-  FileResourceChip,
-  InlineMediaRef,
-  useFileDocument,
-  useFileSrc,
-  useFileUpload,
-} from "@/features/files";
+import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
+import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { useFileDocument } from "@/features/files/hooks/useFileDocument";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   FilesResourcePicker,
   type FilesResourcePickerFilter,

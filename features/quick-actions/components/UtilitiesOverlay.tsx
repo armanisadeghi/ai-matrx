@@ -9,7 +9,7 @@ import TaskApp from "@/features/tasks/components/TaskApp";
 import dynamic from "next/dynamic";
 import { QuickChatSheet } from "./QuickChatSheet";
 import { QuickDataSheet } from "./QuickDataSheet";
-import { WindowPanelShell } from "@/features/files";
+import { WindowPanelShell } from "@/features/files/components/surfaces/WindowPanelShell";
 
 const LazyNotesView = dynamic(
   () =>

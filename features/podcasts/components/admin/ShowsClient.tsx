@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { podcastService } from "../../service";
 import type { PcShow } from "../../types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);

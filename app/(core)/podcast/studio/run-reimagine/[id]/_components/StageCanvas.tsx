@@ -21,7 +21,7 @@
 
 import { useEffect, useState } from "react";
 import { AudioLines, CheckCircle2 } from "lucide-react";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { cn } from "@/lib/utils";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import { ElapsedTimer } from "@/features/podcasts/generator/components/ElapsedTimer";

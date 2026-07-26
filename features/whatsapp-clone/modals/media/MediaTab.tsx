@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
-import { InlineMediaRef } from "@/features/files";
-import { useInfiniteWindow } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 import {
   formatDuration,
   formatRangeHeader,

@@ -21927,6 +21927,8 @@ export type Database = {
       }
       entity_types: {
         Row: {
+          agent_writable: boolean
+          agent_write_notes: string | null
           base_tier: number
           category: string | null
           content_role: string | null
@@ -21953,6 +21955,8 @@ export type Database = {
           token: string
         }
         Insert: {
+          agent_writable?: boolean
+          agent_write_notes?: string | null
           base_tier?: number
           category?: string | null
           content_role?: string | null
@@ -21981,6 +21985,8 @@ export type Database = {
           token: string
         }
         Update: {
+          agent_writable?: boolean
+          agent_write_notes?: string | null
           base_tier?: number
           category?: string | null
           content_role?: string | null
@@ -22017,6 +22023,39 @@ export type Database = {
             referencedColumns: ["slug"]
           },
         ]
+      }
+      matrx_action_ledger: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          item_index: number | null
+          key: string
+          kind: string
+          receipt: Json
+          type: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          item_index?: number | null
+          key: string
+          kind?: string
+          receipt?: Json
+          type: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          item_index?: number | null
+          key?: string
+          kind?: string
+          receipt?: Json
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       org_module_config: {
         Row: {

@@ -29,7 +29,8 @@ import type {
 } from "@/features/organizations/types";
 import { generateOrganizationAbbreviation } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
-import { InlineMediaRef, fileIdToMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 

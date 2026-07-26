@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS, getColorClasses } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
-import { InlineMediaRef } from '@/features/files';
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import GlassContainer from '@/components/ui/GlassContainer';
 
 const ModernGlassAppDisplay: React.FC<AppDisplayProps> = ({

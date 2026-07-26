@@ -33,7 +33,7 @@ import { buildDescribePreview } from "../utils/build-describe-preview";
 import { DESCRIBE_TEMP_FOLDER_PATH } from "../constants/describe";
 import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { CloudFolders } from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { uploadFiles, ensureFolderPath } from "@/features/files/redux/thunks";
 import {
   previewAssetMultipart,
@@ -41,7 +41,7 @@ import {
 } from "@/features/files/api/assets";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
-import type { Visibility } from "@/features/files";
+import type { Visibility } from "@/features/files/types";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import {

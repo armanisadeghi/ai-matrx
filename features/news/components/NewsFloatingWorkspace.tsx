@@ -6,7 +6,7 @@ import { fetchNews } from "@/actions/ai-actions/news-api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 const CATEGORIES = [
   "general",

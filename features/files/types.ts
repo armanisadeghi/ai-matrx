@@ -1,8 +1,8 @@
 /**
  * features/files/types.ts
  *
- * Single source of truth for all cloud-files types. Every consumer imports from
- * [features/files/index.ts](./index.ts) (barrel) — never from subfolders.
+ * Single source of truth for all cloud-files types. Import from
+ * `@/features/files/types` — never duplicate types in feature subfolders.
  *
  * LAYERS
  * ------

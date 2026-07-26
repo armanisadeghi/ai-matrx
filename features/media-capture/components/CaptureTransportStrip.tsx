@@ -23,7 +23,8 @@ import { AlertTriangle, History, Loader2, RefreshCw, Trash2 } from "lucide-react
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { UploadCloud } from "lucide-react";
-import { listStoredTusUploads, type StoredTusUploadSummary } from "@/features/files";
+import { listStoredTusUploads } from "@/features/files/upload/tusUpload";
+import type { StoredTusUploadSummary } from "@/features/files/upload/tusUpload";
 import { uploadCapture } from "@/features/media-capture/upload/capture-uploader";
 import {
   dismissCaptureFailure,

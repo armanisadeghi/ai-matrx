@@ -27,7 +27,7 @@ import {
   Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";

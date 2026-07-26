@@ -38,6 +38,10 @@ function source(overrides: Partial<ResearchSource> = {}): ResearchSource {
     analysis_status: null,
     pre_read_score: null,
     pre_read_breakdown: null,
+    scrape_worthiness: null,
+    redundancy_group: null,
+    entity_match_confidence: null,
+    snippet_relevance: null,
     ...overrides,
   };
 }
@@ -55,9 +59,7 @@ describe("preReadDisplayScore", () => {
   });
 
   it("rounds the raw pre_read_score directly (already normalized 0–100)", () => {
-    expect(formatPreReadDisplay(source({ pre_read_score: 71.6 }))).toBe(
-      "72",
-    );
+    expect(formatPreReadDisplay(source({ pre_read_score: 71.6 }))).toBe("72");
   });
 });
 

@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIcon } from '@/features/applet/styles/StyledComponents';
 import { AppletCardProps } from '@/features/applet/home/types';
-import { InlineMediaRef } from '@/features/files';
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import GlassContainer from '@/components/ui/GlassContainer';
 
 const EnhancedAppletCard: React.FC<AppletCardProps> = ({

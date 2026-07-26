@@ -22,7 +22,7 @@
 // the most specific / identity-recoverable origins first. Keep the host markers
 // in sync with the ESLint media-durability guard in `eslint.config.mjs`.
 
-import type { FileSource } from "@/features/files";
+import type { FileSource } from "@/features/files/handler/types";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { isSignedUrl } from "@/lib/media/signed-url";
 import { extractFileIdFromUrl } from "@/features/files/blocks/image/helpers/extract-file-id-from-url";

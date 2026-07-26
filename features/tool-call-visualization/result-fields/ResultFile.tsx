@@ -21,7 +21,11 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FileIcon, formatFileSize, useFileActions, useFileSrc, type FileSource } from "@/features/files";
+import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { formatFileSize } from "@/features/files/utils/format";
+import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import type { FileSource } from "@/features/files/handler/types";
 import type { ResultFileRef } from "./shape";
 
 export interface ResultFileProps {

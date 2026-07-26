@@ -6312,30 +6312,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -15201,7 +15177,10 @@ export interface paths {
         };
         /**
          * Get Action Catalog
-         * @description The full action catalog (every noun × every verb, with capability states).
+         * @description The full action catalog — COMPUTED live from platform.entity_types + the
+         *     envelope shape registry (nouns, verb states, Plane-2 functions, per-noun
+         *     identity fields and write schemas). Registered means listed; nothing is
+         *     hand-authored.
          */
         get: operations["get_action_catalog_actions_catalog_get"];
         put?: never;
@@ -15941,8 +15920,8 @@ export interface components {
         };
         /**
          * ActionCatalog
-         * @description The whole grid: the verb axis + every noun row. This is what the API
-         *     returns and what the admin UI renders.
+         * @description The whole grid: the verb axis + every noun row + the Plane-2 functions.
+         *     This is what the API returns and what the admin UI renders.
          */
         ActionCatalog: {
             /** Matrx Version */
@@ -15951,6 +15930,12 @@ export interface components {
             verbs: string[];
             /** Nouns */
             nouns: components["schemas"]["NounActions"][];
+            /** Functions */
+            functions?: components["schemas"]["FunctionEntry"][];
+            /** Aliases */
+            aliases?: {
+                [key: string]: string;
+            };
         };
         /**
          * ActionExecuteRequest
@@ -22508,33 +22493,6 @@ export interface components {
             /** Error */
             error?: string | null;
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -25407,6 +25365,30 @@ export interface components {
             attempt?: number;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * FunctionEntry
+         * @description One Plane-2 function (or a deprecated legacy named directive).
+         */
+        FunctionEntry: {
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Doc
+             * @default
+             */
+            doc?: string;
+            /** Item Schema */
+            item_schema?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated?: boolean;
         };
         /** GeneratePlanBody */
         GeneratePlanBody: {
@@ -28961,6 +28943,19 @@ export interface components {
              * @enum {string}
              */
             delete: "yes" | "planned" | "no";
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /** Title Column */
+            title_column?: string | null;
+            /** Identity Fields */
+            identity_fields?: string[];
+            /** Schemas */
+            schemas?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * OAuthTokenPersistRequest
@@ -50202,41 +50197,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

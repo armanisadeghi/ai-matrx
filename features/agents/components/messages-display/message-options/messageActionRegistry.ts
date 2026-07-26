@@ -52,7 +52,7 @@ import {
   FilesRouteIcon,
   CodeRouteIcon,
 } from "@/components/branding/RouteFaviconIcon";
-import { fileHandler } from "@/features/files";
+import { fileHandler } from "@/features/files/handler/handler";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
 import { NotesAPI } from "@/features/notes/service/notesApi";

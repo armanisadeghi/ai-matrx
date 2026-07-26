@@ -6,7 +6,7 @@ import {
   sendMessage,
   joinChannel
 } from '../utils/slackUtils';
-import { InlineMediaRef } from '@/features/files';
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface SlackManagerProps {
   tokenData: SlackTokenResponse | { access_token: string };
