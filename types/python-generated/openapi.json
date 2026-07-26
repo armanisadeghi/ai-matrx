@@ -48910,9 +48910,10 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "public",
               "personal",
-              "shared"
+              "internal",
+              "link",
+              "public"
             ],
             "title": "Visibility",
             "default": "personal"
@@ -49017,9 +49018,12 @@
               {
                 "type": "string",
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public",
+                  "shared",
+                  "private"
                 ]
               },
               {
@@ -51429,9 +51433,10 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "public",
               "personal",
-              "shared"
+              "internal",
+              "link",
+              "public"
             ],
             "title": "Visibility",
             "default": "public"
@@ -51534,9 +51539,12 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "public",
               "personal",
-              "shared"
+              "internal",
+              "link",
+              "public",
+              "shared",
+              "private"
             ],
             "title": "Visibility",
             "default": "personal"
@@ -57026,9 +57034,12 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "public",
               "personal",
-              "shared"
+              "internal",
+              "link",
+              "public",
+              "shared",
+              "private"
             ],
             "title": "Visibility",
             "default": "personal"
@@ -58977,9 +58988,10 @@
               {
                 "type": "string",
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public"
                 ]
               },
               {
@@ -59411,9 +59423,12 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "public",
               "personal",
-              "shared"
+              "internal",
+              "link",
+              "public",
+              "shared",
+              "private"
             ],
             "title": "Visibility",
             "default": "personal"
@@ -68144,9 +68159,12 @@
               {
                 "type": "string",
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public",
+                  "shared",
+                  "private"
                 ]
               },
               {
@@ -68650,9 +68668,10 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "public",
               "personal",
-              "shared"
+              "internal",
+              "link",
+              "public"
             ],
             "title": "Visibility",
             "default": "personal"
@@ -81707,9 +81726,12 @@
               {
                 "type": "string",
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public",
+                  "shared",
+                  "private"
                 ]
               },
               {
@@ -84116,9 +84138,12 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "public",
               "personal",
-              "shared"
+              "internal",
+              "link",
+              "public",
+              "shared",
+              "private"
             ],
             "title": "Visibility",
             "default": "personal"
@@ -106284,15 +106309,31 @@
             "title": "Relevance Language",
             "default": "en"
           },
-          "safe_search": {
-            "type": "string",
-            "enum": [
-              "moderate",
-              "none",
-              "strict"
+          "max_results_per_channel": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 50,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Safe Search",
-            "default": "moderate"
+            "title": "Max Results Per Channel"
+          },
+          "max_duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1440,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Duration Minutes"
           },
           "published_after": {
             "anyOf": [

@@ -233,6 +233,9 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- `2026-07-25` — Fixed the condensed authority export's canonical snippet
+  normalizer import and aligned the sources filter coverage prop with the
+  rendered string contract, restoring the research type gate.
 - `2026-07-25` — **`rs_context_bundle` default visibility corrected to
   `internal`.** The CREATE migration shipped with `DEFAULT 'personal'`, which
   locks out org collaborators (THE SECURITY PHILOSOPHY). Live default +

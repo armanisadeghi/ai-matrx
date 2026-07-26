@@ -17845,7 +17845,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "public" | "personal" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public";
             /** Folder */
             folder: string;
             /** Preset */
@@ -17893,7 +17893,7 @@ export interface components {
          */
         AssetPatchRequest: {
             /** Visibility */
-            visibility?: ("public" | "personal" | "shared") | null;
+            visibility?: ("personal" | "internal" | "link" | "public" | "shared" | "private") | null;
             /** Share With */
             share_with?: string[] | null;
             /**
@@ -18827,7 +18827,7 @@ export interface components {
              * @default public
              * @enum {string}
              */
-            visibility?: "public" | "personal" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public";
             /**
              * Share With
              * @description Comma-separated user IDs (legacy)
@@ -18876,7 +18876,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "public" | "personal" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /**
              * Share With
              * @description Comma-separated user IDs
@@ -20600,7 +20600,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "public" | "personal" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -21307,7 +21307,7 @@ export interface components {
             /** Folder */
             folder?: string | null;
             /** Visibility */
-            visibility?: ("public" | "personal" | "shared") | null;
+            visibility?: ("personal" | "internal" | "link" | "public") | null;
             /** Url */
             url?: string | null;
             /** Cdn Url */
@@ -21535,7 +21535,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "public" | "personal" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -24698,7 +24698,7 @@ export interface components {
          */
         FilePatchRequest: {
             /** Visibility */
-            visibility?: ("public" | "personal" | "shared") | null;
+            visibility?: ("personal" | "internal" | "link" | "public" | "shared" | "private") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -24888,7 +24888,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "public" | "personal" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public";
             /** File Name */
             file_name?: string | null;
             /** Mime Type */
@@ -29557,7 +29557,7 @@ export interface components {
              */
             folder_path?: string | null;
             /** Visibility */
-            visibility?: ("public" | "personal" | "shared") | null;
+            visibility?: ("personal" | "internal" | "link" | "public" | "shared" | "private") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -30502,7 +30502,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "public" | "personal" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -38498,12 +38498,10 @@ export interface components {
              * @default en
              */
             relevance_language?: string | null;
-            /**
-             * Safe Search
-             * @default moderate
-             * @enum {string}
-             */
-            safe_search?: "moderate" | "none" | "strict";
+            /** Max Results Per Channel */
+            max_results_per_channel?: number | null;
+            /** Max Duration Minutes */
+            max_duration_minutes?: number | null;
             /** Published After */
             published_after?: string | null;
             /** Published Before */

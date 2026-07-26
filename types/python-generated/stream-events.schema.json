@@ -2171,9 +2171,10 @@
             "anyOf": [
               {
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public"
                 ],
                 "type": "string"
               },
@@ -2433,9 +2434,10 @@
             "anyOf": [
               {
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public"
                 ],
                 "type": "string"
               },
@@ -2695,9 +2697,10 @@
             "anyOf": [
               {
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public"
                 ],
                 "type": "string"
               },
@@ -2970,9 +2973,10 @@
             "anyOf": [
               {
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public"
                 ],
                 "type": "string"
               },
@@ -3254,9 +3258,10 @@
             "anyOf": [
               {
                 "enum": [
-                  "public",
                   "personal",
-                  "shared"
+                  "internal",
+                  "link",
+                  "public"
                 ],
                 "type": "string"
               },

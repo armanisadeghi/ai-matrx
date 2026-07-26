@@ -9,6 +9,7 @@
 
 import type { Json } from "@/types/database.types";
 import type { CurationRow } from "../service";
+import { stringArrayFromJson } from "../types";
 import { compareSourcesForExport } from "../components/sources/sourceScoreDisplay";
 
 export interface CondensedAuthoritySourceRecord {

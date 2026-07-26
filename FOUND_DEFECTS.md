@@ -13,24 +13,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D104 — `condensedAuthorityExport.ts` does not compile on main (2026-07-25)
-
-`features/research/utils/condensedAuthorityExport.ts:98` calls
-`stringArrayFromJson(raw as Json)` — neither defined nor imported in that file.
-`pnpm type-check` fails on it (TS2304) at HEAD, so no new consumer can import the
-module. `features/research/components/sources/SourceList.tsx:1296` fails in the
-same area (TS2322, string assigned to number). The type gate is advisory here
-(`typescript.ignoreBuildErrors: true`), which is how both landed. The fix is
-small — define/import the helper, mirroring `normalizeSearchSnippets`'s
-object/array handling — but the file belongs to whoever is mid-change on the
-condensed authority export, so it is filed rather than patched.
-
-**Consequence today:** the research resource catalog needs the same snippet
-normalization for the condensed Sources render and cannot import it without
-inheriting the compile error, so it carries a private copy (`readSnippets` /
-`capSnippets` in `features/research/resources/catalog.ts`). Consolidate onto ONE
-normalizer once this compiles — the duplication is tracked, not accepted.
-
 ### D102 — a structured server validation error reaches the user as bare "HTTP 422" (2026-07-25)
 
 Every aidream 4xx with a validation body is surfaced to the user as just the
@@ -326,6 +308,10 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D104 — Research condensed export type-check failures fixed (2026-07-25):**
+  imported the canonical snippet normalizer and corrected the source-filter
+  coverage prop to its rendered string contract.
 
 - **D86 — actor-spoofing privilege escalation in the `public.industry_*` RPC family (found + fixed 2026-07-23).** `industry_upsert` / `industry_curator_grant` / `industry_curator_revoke` resolved their actor as `COALESCE(p_actor, auth.uid())` — the caller-supplied uuid won over the session — and all five `public.industry_*` RPCs were `EXECUTE`-granted to **anon**; any caller could pass a known super-admin uuid to perform super-admin writes, and `industry_curator_grant` writes `iam.industry_curators`, which `can_curate_library_document` reads (a path to WRITE on Shared Knowledge library documents, audit-logged under the impersonated admin). Fixed to `COALESCE(auth.uid(), p_actor)` + anon revoked on all five (`migrations/industry_rpc_actor_spoof_fix.sql`, applied + ledgered; anon call now 42501; audit log shows no prior exploitation). **Same class as D31 — when adding any SECURITY DEFINER RPC that accepts an actor param, the session identity must always win.**
 - **D77 — `podcast-assets` storage bucket deleted, all its URLs 400 (2026-07-20 → resolved 2026-07-22).** Dead image refs healed (Phoenix Echo cover re-pointed to its surviving CDN image; the rest nulled to the designed placeholder); the 4 episodes with unrecoverable dead audio, 2 untitled episodes, and 9 duplicate test runs were soft-deleted, and the empty `The AP Bio Podcast` show with them. Live podcast data is now 33 episodes / 3 shows, zero dead media refs. Standing gap it exposed — nothing re-audits media refs that go dead after a write — remains untracked; `mtx_public_url_guard` only checks URLs at write time.

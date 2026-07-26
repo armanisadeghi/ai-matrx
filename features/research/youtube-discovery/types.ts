@@ -9,10 +9,10 @@ export type YouTubeVideoCandidate =
 export const DEFAULT_YOUTUBE_SEARCH: YouTubeSearchRequest = {
   query: "",
   max_results: 25,
+  max_results_per_channel: 3,
   order: "relevance",
   region_code: "US",
   relevance_language: "en",
-  safe_search: "moderate",
   video_caption: "any",
   video_definition: "any",
   video_dimension: "any",

@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -66,7 +67,16 @@ const INITIAL_FORM: FormState = {
 };
 
 const SELECT_CLASS =
-  "h-10 rounded-xl border-white/10 bg-white/[0.04] text-sm shadow-none focus:ring-cyan-400/30";
+  "h-10 rounded-xl border-border bg-background text-sm shadow-none focus:ring-cyan-400/30 dark:border-white/10 dark:bg-white/[0.04]";
+
+type DurationChoice =
+  "any" | "short" | "under10" | "under20" | "medium" | "long";
+
+function selectedDuration(form: FormState): DurationChoice {
+  if (form.max_duration_minutes === 10) return "under10";
+  if (form.max_duration_minutes === 20) return "under20";
+  return (form.video_duration ?? "any") as DurationChoice;
+}
 
 function compactRequest(
   form: FormState,
@@ -126,26 +136,26 @@ export function YouTubeDiscoveryDemo() {
   };
 
   return (
-    <main className="min-h-screen bg-[#07090d] text-zinc-100">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.13),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(34,211,238,0.1),transparent_34%)]" />
+    <main className="min-h-screen bg-background text-foreground dark:bg-[#07090d] dark:text-zinc-100">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.08),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(8,145,178,0.07),transparent_34%)] dark:bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.13),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(34,211,238,0.1),transparent_34%)]" />
       <div className="relative mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
         <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-red-400">
+            <div className="mb-3 flex items-center gap-2 pt-3 text-sm font-medium text-red-600 dark:text-red-400">
               <Youtube className="h-5 w-5" />
               YouTube intelligence
             </div>
             <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
               Find the signal in YouTube.
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground dark:text-zinc-400 sm:text-base">
               Search videos, inspect creator authority and engagement, and open
               the strongest sources for deeper research.
             </p>
           </div>
           {page && (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-400">
-              <span className="font-semibold text-white">
+            <div className="rounded-2xl border border-border bg-card/80 px-4 py-3 text-sm text-muted-foreground dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
+              <span className="font-semibold text-foreground dark:text-white">
                 {formatYouTubeCount(page.total_results)}
               </span>{" "}
               estimated matches
@@ -156,16 +166,16 @@ export function YouTubeDiscoveryDemo() {
 
         <form
           onSubmit={onSubmit}
-          className="mb-7 rounded-3xl border border-white/10 bg-zinc-950/70 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl"
+          className="mb-7 rounded-3xl border border-border bg-card/90 p-3 shadow-2xl shadow-black/10 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70 dark:shadow-black/30"
         >
           <div className="flex flex-col gap-3 md:flex-row">
             <div className="relative min-w-0 flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground dark:text-zinc-500" />
               <Input
                 value={form.query}
                 onChange={(event) => update("query", event.target.value)}
                 placeholder="Search a topic, expert, question, or exact phrase…"
-                className="h-14 rounded-2xl border-white/10 bg-white/[0.04] pl-12 text-base shadow-none placeholder:text-zinc-600 focus-visible:ring-cyan-400/30"
+                className="h-14 rounded-2xl border-border bg-background pl-12 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-cyan-400/30 dark:border-white/10 dark:bg-white/[0.04] dark:placeholder:text-zinc-600"
                 aria-label="YouTube search query"
               />
             </div>
@@ -183,7 +193,7 @@ export function YouTubeDiscoveryDemo() {
             </Button>
           </div>
 
-          <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-6 dark:border-white/10">
             <FilterSelect
               label="Sort by"
               value={form.order ?? "relevance"}
@@ -210,13 +220,27 @@ export function YouTubeDiscoveryDemo() {
             />
             <FilterSelect
               label="Duration"
-              value={form.video_duration ?? "any"}
-              onValueChange={(value) =>
-                update("video_duration", value as FormState["video_duration"])
-              }
+              value={selectedDuration(form)}
+              onValueChange={(value) => {
+                if (value === "under10" || value === "under20") {
+                  setForm((current) => ({
+                    ...current,
+                    video_duration: "any",
+                    max_duration_minutes: value === "under10" ? 10 : 20,
+                  }));
+                  return;
+                }
+                setForm((current) => ({
+                  ...current,
+                  video_duration: value as FormState["video_duration"],
+                  max_duration_minutes: undefined,
+                }));
+              }}
               options={[
                 ["any", "Any length"],
                 ["short", "Under 4 minutes"],
+                ["under10", "Under 10 minutes"],
+                ["under20", "Under 20 minutes"],
                 ["medium", "4–20 minutes"],
                 ["long", "Over 20 minutes"],
               ]}
@@ -233,37 +257,58 @@ export function YouTubeDiscoveryDemo() {
                 ["none", "No captions"],
               ]}
             />
+            <FilterSelect
+              label="Per channel"
+              value={String(form.max_results_per_channel ?? "any")}
+              onValueChange={(value) =>
+                update(
+                  "max_results_per_channel",
+                  value === "any" ? undefined : Number(value),
+                )
+              }
+              options={[
+                ["1", "1 video"],
+                ["2", "2 videos"],
+                ["3", "3 videos"],
+                ["5", "5 videos"],
+                ["10", "10 videos"],
+                ["any", "No limit"],
+              ]}
+            />
             <button
               type="button"
               onClick={() => setAdvanced((current) => !current)}
-              className="flex h-[62px] items-end justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 pb-2.5 text-left text-sm transition hover:bg-white/[0.06]"
+              className="flex h-[62px] min-w-0 items-end justify-between rounded-2xl border border-border bg-muted/30 px-4 pb-2.5 text-left text-sm transition hover:bg-muted/60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
             >
               <span>
-                <span className="block text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                <span className="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground dark:text-zinc-500">
                   Filters
                 </span>
-                <span className="mt-1 flex items-center gap-2 font-medium text-zinc-200">
+                <span className="mt-1 flex items-center gap-2 font-medium text-foreground dark:text-zinc-200">
                   <SlidersHorizontal className="h-4 w-4" />
                   Advanced
                 </span>
               </span>
               <ChevronDown
-                className={`h-4 w-4 text-zinc-500 transition ${advanced ? "rotate-180" : ""}`}
+                className={`h-4 w-4 text-muted-foreground transition dark:text-zinc-500 ${advanced ? "rotate-180" : ""}`}
               />
             </button>
           </div>
 
           {advanced && <AdvancedFilters form={form} update={update} />}
-          <p className="mt-3 px-1 text-xs text-zinc-600">
+          <p className="mt-3 px-1 text-xs text-muted-foreground dark:text-zinc-600">
             Power search: use{" "}
-            <code className="text-zinc-400">term1 | term2</code> for
-            alternatives and <code className="text-zinc-400">-term</code> to
-            exclude a word.
+            <code className="text-foreground/70 dark:text-zinc-400">
+              term1 | term2
+            </code>{" "}
+            for alternatives and{" "}
+            <code className="text-foreground/70 dark:text-zinc-400">-term</code>{" "}
+            to exclude a word.
           </p>
         </form>
 
         {error && (
-          <div className="mb-7 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+          <div className="mb-7 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-200">
             {error}
           </div>
         )}
@@ -271,9 +316,9 @@ export function YouTubeDiscoveryDemo() {
         {!page && !loading && <EmptyState />}
 
         {page && page.results.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-white/15 p-14 text-center">
+          <div className="rounded-3xl border border-dashed border-border p-14 text-center dark:border-white/15">
             <h2 className="text-lg font-semibold">No videos matched</h2>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-sm text-muted-foreground dark:text-zinc-500">
               Try broadening the query or removing one of the advanced filters.
             </p>
           </div>
@@ -282,9 +327,11 @@ export function YouTubeDiscoveryDemo() {
         {page && page.results.length > 0 && (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-muted-foreground dark:text-zinc-500">
                 Showing {page.results.length} enriched videos for{" "}
-                <span className="text-zinc-300">“{page.query}”</span>
+                <span className="text-foreground/80 dark:text-zinc-300">
+                  “{page.query}”
+                </span>
               </p>
             </div>
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -304,7 +351,7 @@ export function YouTubeDiscoveryDemo() {
                 onClick={() =>
                   void runSearch(page.prev_page_token ?? undefined)
                 }
-                className="rounded-xl border-white/10 bg-white/[0.03]"
+                className="rounded-xl border-border bg-card dark:border-white/10 dark:bg-white/[0.03]"
               >
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous
@@ -315,7 +362,7 @@ export function YouTubeDiscoveryDemo() {
                 onClick={() =>
                   void runSearch(page.next_page_token ?? undefined)
                 }
-                className="rounded-xl border-white/10 bg-white/[0.03]"
+                className="rounded-xl border-border bg-card dark:border-white/10 dark:bg-white/[0.03]"
               >
                 Next
                 <ChevronRight className="ml-2 h-4 w-4" />
@@ -344,12 +391,12 @@ function FilterSelect({
   options: [string, string][];
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
-      <Label className="mb-1 block text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+    <div className="min-w-0 rounded-2xl border border-border bg-muted/30 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+      <Label className="mb-1 block text-[11px] uppercase tracking-[0.16em] text-muted-foreground dark:text-zinc-500">
         {label}
       </Label>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="h-7 border-0 bg-transparent px-0 text-sm shadow-none focus:ring-0">
+        <SelectTrigger className="h-7 w-full min-w-0 border-0 bg-transparent px-0 text-sm shadow-none focus:ring-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -372,10 +419,10 @@ function AdvancedFilters({
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
 }) {
   return (
-    <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+    <div className="mt-3 rounded-2xl border border-border bg-muted/20 p-4 dark:border-white/10 dark:bg-black/20">
       <div className="mb-4">
         <h2 className="font-medium">Advanced discovery</h2>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-muted-foreground dark:text-zinc-500">
           Every control maps to a supported YouTube discovery filter.
         </p>
       </div>
@@ -437,18 +484,6 @@ function AdvancedFilters({
             ["live", "Live now"],
             ["upcoming", "Upcoming"],
             ["completed", "Completed"],
-          ]}
-        />
-        <FilterSelect
-          label="Safe search"
-          value={form.safe_search ?? "moderate"}
-          onValueChange={(value) =>
-            update("safe_search", value as FormState["safe_search"])
-          }
-          options={[
-            ["moderate", "Moderate"],
-            ["strict", "Strict"],
-            ["none", "Unfiltered"],
           ]}
         />
         <FilterSelect
@@ -551,7 +586,9 @@ function TextFilter({
 } & Omit<ComponentProps<typeof Input>, "value" | "onChange">) {
   return (
     <div>
-      <Label className="mb-1.5 block text-xs text-zinc-400">{label}</Label>
+      <Label className="mb-1.5 block text-xs text-muted-foreground dark:text-zinc-400">
+        {label}
+      </Label>
       <Input
         {...props}
         value={value}
@@ -572,8 +609,10 @@ function ToggleFilter({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-      <Label className="text-xs text-zinc-300">{label}</Label>
+    <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.03]">
+      <Label className="text-xs text-foreground/80 dark:text-zinc-300">
+        {label}
+      </Label>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>
   );
@@ -595,11 +634,11 @@ function VideoCard({
   );
 
   return (
-    <article className="group overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/75 transition duration-300 hover:-translate-y-1 hover:border-white/20">
+    <article className="group overflow-hidden rounded-3xl border border-border bg-card transition duration-300 hover:-translate-y-1 hover:border-foreground/20 dark:border-white/10 dark:bg-zinc-950/75 dark:hover:border-white/20">
       <button
         type="button"
         onClick={onPreview}
-        className="relative block aspect-video w-full overflow-hidden bg-zinc-900 text-left"
+        className="relative block aspect-video w-full overflow-hidden bg-muted text-left dark:bg-zinc-900"
         aria-label={`Preview ${video.title}`}
       >
         {video.thumbnail_url ? (
@@ -621,16 +660,16 @@ function VideoCard({
         </span>
       </button>
       <div className="p-5">
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-red-400">
+        <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-red-600 dark:text-red-400">
           {video.channel_title ?? "YouTube creator"}
         </p>
         <h2 className="line-clamp-2 min-h-12 text-base font-semibold leading-6">
           {video.title}
         </h2>
-        <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-zinc-500">
+        <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground dark:text-zinc-500">
           {video.description || "No description supplied."}
         </p>
-        <div className="mt-4 grid grid-cols-3 gap-2 border-y border-white/10 py-3">
+        <div className="mt-4 grid grid-cols-3 gap-2 border-y border-border py-3 dark:border-white/10">
           <Metric
             icon={Eye}
             value={formatYouTubeCount(video.view_count)}
@@ -647,7 +686,7 @@ function VideoCard({
             label="subscribers"
           />
         </div>
-        <div className="mt-4 flex items-center justify-between gap-3 text-xs text-zinc-500">
+        <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground dark:text-zinc-500">
           <span className="flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
             {formatYouTubeDate(video.published_at)}
@@ -659,7 +698,7 @@ function VideoCard({
         <div className="mt-4 flex gap-2">
           <Button
             onClick={onPreview}
-            className="flex-1 rounded-xl bg-white text-black hover:bg-zinc-200"
+            className="flex-1 rounded-xl bg-foreground text-background hover:bg-foreground/85 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
             <Play className="mr-2 h-4 w-4" />
             Preview
@@ -667,7 +706,7 @@ function VideoCard({
           <Button
             asChild
             variant="outline"
-            className="rounded-xl border-white/10 bg-transparent"
+            className="rounded-xl border-border bg-transparent dark:border-white/10"
           >
             <a
               href={youTubeWatchUrl(video.video_id)}
@@ -678,6 +717,12 @@ function VideoCard({
               <ExternalLink className="h-4 w-4" />
             </a>
           </Button>
+          <CopyButton
+            content={youTubeWatchUrl(video.video_id)}
+            tooltip="Copy YouTube link"
+            size="icon"
+            className="h-10 w-10 rounded-xl border border-border bg-transparent px-0 dark:border-white/10"
+          />
         </div>
       </div>
     </article>
@@ -695,11 +740,11 @@ function Metric({
 }) {
   return (
     <div>
-      <span className="flex items-center gap-1.5 text-sm font-semibold text-zinc-200">
-        <Icon className="h-3.5 w-3.5 text-zinc-500" />
+      <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground/90 dark:text-zinc-200">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground dark:text-zinc-500" />
         {value}
       </span>
-      <span className="mt-0.5 block text-[10px] uppercase tracking-wider text-zinc-600">
+      <span className="mt-0.5 block text-[10px] uppercase tracking-wider text-muted-foreground dark:text-zinc-600">
         {label}
       </span>
     </div>
@@ -723,7 +768,7 @@ function PreviewDialog({
         if (event.currentTarget === event.target) onClose();
       }}
     >
-      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0d1015] shadow-2xl">
+      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-background text-foreground shadow-2xl dark:border-white/10 dark:bg-[#0d1015] dark:text-zinc-100">
         <div className="aspect-video overflow-hidden rounded-t-3xl bg-black">
           <iframe
             src={youTubeEmbedUrl(video.video_id)}
@@ -736,7 +781,7 @@ function PreviewDialog({
         <div className="p-5 sm:p-7">
           <div className="flex items-start justify-between gap-5">
             <div>
-              <p className="text-sm font-medium text-red-400">
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">
                 {video.channel_title ?? "YouTube creator"}
               </p>
               <h2 className="mt-1 text-xl font-semibold sm:text-2xl">
@@ -746,15 +791,23 @@ function PreviewDialog({
             <Button
               variant="outline"
               onClick={onClose}
-              className="rounded-xl border-white/10"
+              className="rounded-xl border-border dark:border-white/10"
             >
               Close
             </Button>
           </div>
-          <p className="mt-4 whitespace-pre-line text-sm leading-6 text-zinc-400">
-            {video.description || "No description supplied."}
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3 text-xs text-zinc-400">
+          <div className="mt-4 flex items-start gap-2">
+            <p className="min-w-0 flex-1 whitespace-pre-line text-sm leading-6 text-muted-foreground dark:text-zinc-400">
+              {video.description || "No description supplied."}
+            </p>
+            <CopyButton
+              content={video.description || "No description supplied."}
+              tooltip="Copy description"
+              size="icon"
+              className="h-8 w-8 shrink-0 rounded-lg border border-border px-0 dark:border-white/10"
+            />
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3 text-xs text-muted-foreground dark:text-zinc-400">
             <span>
               <Eye className="mr-1 inline h-3.5 w-3.5" />
               {formatYouTubeCount(video.view_count)} views
@@ -777,7 +830,7 @@ function PreviewDialog({
               {(video.tags ?? []).slice(0, 12).map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-white/[0.06] px-3 py-1 text-xs text-zinc-400"
+                  className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground dark:bg-white/[0.06] dark:text-zinc-400"
                 >
                   {tag}
                 </span>
@@ -809,13 +862,15 @@ function EmptyState() {
       ].map(([title, description], index) => (
         <div
           key={title}
-          className="rounded-3xl border border-white/10 bg-white/[0.025] p-6"
+          className="rounded-3xl border border-border bg-card/70 p-6 dark:border-white/10 dark:bg-white/[0.025]"
         >
-          <span className="text-sm font-semibold text-red-400">
+          <span className="text-sm font-semibold text-red-600 dark:text-red-400">
             0{index + 1}
           </span>
           <h2 className="mt-7 text-lg font-semibold">{title}</h2>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">{description}</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground dark:text-zinc-500">
+            {description}
+          </p>
         </div>
       ))}
     </section>

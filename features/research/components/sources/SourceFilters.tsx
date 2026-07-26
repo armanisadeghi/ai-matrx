@@ -18,7 +18,7 @@ interface SourceFiltersProps {
   hasActiveFilters: boolean;
   keywords: ResearchKeyword[];
   hostnames: string[];
-  count: number;
+  count: string;
   search?: string;
   onSearchChange?: (value: string) => void;
   trailing?: ReactNode;
