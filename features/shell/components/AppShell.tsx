@@ -27,6 +27,8 @@ import DeferredIslands from "@/features/shell/islands/DeferredIslands";
 import { ElevatedShellUserMenuRoot } from "@/components/matrx/resizable/ElevatedShellUserMenu";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
+// CJS flag — also read by next.config.js to alias Sidebar/etc. to stubs.
+import { FORCE_EXCLUDE_SIDEMENU } from "@/features/shell/build-flags.js";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -52,7 +54,11 @@ export default function AppShell({
 }: AppShellProps) {
   return (
     <Providers initialReduxState={initialReduxState}>
-      <div className="shell-root" data-pathname={pathname}>
+      <div
+        className="shell-root"
+        data-pathname={pathname}
+        {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
+      >
         <input
           type="checkbox"
           id="shell-sidebar-toggle"
@@ -64,6 +70,7 @@ export default function AppShell({
         <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
         <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
 
+        {/* When FORCE_EXCLUDE_SIDEMENU, next.config aliases these imports to stubs. */}
         <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
         <Header userData={userData} isAuthenticated={isAuthenticated} />
 

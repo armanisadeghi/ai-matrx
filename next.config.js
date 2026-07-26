@@ -13,6 +13,31 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
     generateStatsFile: true,
     statsFilename: "stats.json",
 });
+const { FORCE_EXCLUDE_SIDEMENU } = require("./features/shell/build-flags");
+
+/** Resolve aliases that swap heavy shell chrome for empty stubs (build A/B). */
+function sidemenuStubAliases() {
+    if (!FORCE_EXCLUDE_SIDEMENU) return {};
+    const root = __dirname;
+    return {
+        "@/features/shell/components/sidebar/Sidebar": path.join(
+            root,
+            "features/shell/components/sidebar/Sidebar.stub.tsx",
+        ),
+        "@/features/shell/components/mobile-sheet/MobileSideSheet": path.join(
+            root,
+            "features/shell/components/mobile-sheet/MobileSideSheet.stub.tsx",
+        ),
+        "@/features/shell/components/dock/MobileDock": path.join(
+            root,
+            "features/shell/components/dock/MobileDock.stub.tsx",
+        ),
+        "@/features/shell/components/ShellSidebarCookieSync": path.join(
+            root,
+            "features/shell/components/ShellSidebarCookieSync.stub.tsx",
+        ),
+    };
+}
 
 // MATRX_PROFILE controls which routes are compiled into the build:
 //   full (default everywhere — matches production / aimatrx.com) —
@@ -33,7 +58,7 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 // only filters route leaves, not arbitrary components.
 const VALID_PROFILES = new Set(["full", "core", "user", "slim"]);
 /** @type {null | "full" | "core" | "user" | "slim"} — null = use env / default */
-const FORCE_MATRX_PROFILE = "core";
+const FORCE_MATRX_PROFILE = "full";
 if (FORCE_MATRX_PROFILE && !VALID_PROFILES.has(FORCE_MATRX_PROFILE)) {
     throw new Error(
         `[matrx] Invalid FORCE_MATRX_PROFILE="${FORCE_MATRX_PROFILE}". ` +
@@ -94,6 +119,7 @@ console.log(
             ? ` (FORCE_MATRX_PROFILE=${FORCE_MATRX_PROFILE})`
             : "") +
         (FORCE_EXCLUDE_PUBLIC ? " (FORCE_EXCLUDE_PUBLIC=true)" : "") +
+        (FORCE_EXCLUDE_SIDEMENU ? " (FORCE_EXCLUDE_SIDEMENU=true)" : "") +
         ` (NODE_ENV=${process.env.NODE_ENV || "undefined"})`,
 );
 // When (dev) is included, `tsx` is listed FIRST so any plain page.tsx wins over
@@ -219,6 +245,7 @@ const nextConfig = {
         // pin it to its browser ES build everywhere.
         resolveAlias: {
             jspdf: "jspdf/dist/jspdf.es.min.js",
+            ...sidemenuStubAliases(),
         },
     },
     serverExternalPackages: ["canvas", "next-mdx-remote", "vscode-oniguruma", "websocket"],
@@ -423,6 +450,13 @@ const nextConfig = {
     webpack: (config, { isServer, dev }) => {
         // First apply your existing webpack config
         config = configureWebpack(config, { isServer });
+
+        if (FORCE_EXCLUDE_SIDEMENU) {
+            config.resolve.alias = {
+                ...config.resolve.alias,
+                ...sidemenuStubAliases(),
+            };
+        }
 
         // Optimize webpack for production builds - MINIMAL SAFE CONFIG
         if (!dev) {

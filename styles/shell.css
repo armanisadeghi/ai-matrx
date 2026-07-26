@@ -350,6 +350,14 @@
   transition: grid-template-columns 600ms var(--shell-ease-smooth);
 }
 
+/* Build A/B (FORCE_EXCLUDE_SIDEMENU): no sidebar column — header + main full width. */
+.shell-root[data-no-sidebar] {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "header"
+    "main";
+}
+
 /* ---------------------------------------------------------------------------
    8. Sidebar — CSS-Driven Toggle State
    --------------------------------------------------------------------------- */

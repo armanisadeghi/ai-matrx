@@ -29,7 +29,10 @@
 #   ./scripts/release.sh --patch      # patch bump
 #   ./scripts/release.sh --minor      # minor bump
 #   ./scripts/release.sh --major      # major bump
-#   ./scripts/release.sh --message "document shared OAuth"  # → commit "release: …"
+#   ./scripts/release.sh --message "document shared OAuth"
+#       → commit "release: vX.Y.Z - document shared OAuth"
+#   ./scripts/release.sh --ship --message "Added chat surface"
+#       → one commit of working tree + bump (used by ./ship.sh)
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --no-migrate # skip applying FE migrations
 #   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
@@ -40,8 +43,12 @@
 #
 # Production builds ONLY run for commits whose message starts with `release:`
 # (vercel.json ignoreCommand → scripts/vercel-ignore-build.sh). Plain pushes to
-# main are skipped. Custom --message text is always prefixed with `release:` so
-# a release can never accidentally skip its own deploy.
+# main are skipped. Commit messages are always `release: vX.Y.Z` (optionally
+# with ` - <note>`) so a release can never accidentally skip its own deploy.
+#
+# Dirty working tree: plain release IGNORES uncommitted changes (bumps + pushes
+# what is already committed). Only a remote sync that must FF/rebase will refuse
+# a dirty tree. ./ship.sh (--ship) folds the working tree into the release commit.
 #
 # Quality gates (doctrine, UI primitives, migration ledger, …) stay ADVISORY —
 # they scream loudly and never block the ship. Only git (and a failed migration
@@ -115,6 +122,7 @@ CUSTOM_MESSAGE=""
 DRY_RUN=false
 NO_MIGRATE=false
 NO_GATES=false
+SHIP_MODE=false
 
 # TEMP(oom-recovery 2026-07-26): skip migrations / protocol sync / attribution /
 # advisory gates so we can bisect the OOM with bump+push only. DELETE THIS BLOCK
@@ -129,15 +137,20 @@ while [[ $# -gt 0 ]]; do
         --message|-m)
             [[ -n "${2:-}" ]] || fail "--message requires an argument."
             CUSTOM_MESSAGE="$2"; shift 2 ;;
+        --ship) SHIP_MODE=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         --no-migrate) NO_MIGRATE=true; shift ;;
         --no-gates) NO_GATES=true; shift ;;
         -h|--help)
-            grep '^#' "$0" | head -40 | sed 's/^# \?//'
+            grep '^#' "$0" | head -45 | sed 's/^# \?//'
             exit 0 ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --dry-run, --no-migrate, or --no-gates." ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --dry-run, --no-migrate, or --no-gates." ;;
     esac
 done
+
+if $SHIP_MODE && [[ -z "$CUSTOM_MESSAGE" ]]; then
+    fail "--ship requires --message (./ship.sh passes it)."
+fi
 
 if $TEMP_SKIP_RELEASE_CHECKS; then
     NO_MIGRATE=true
@@ -152,13 +165,21 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [[ "$CURRENT_BRANCH" == "$BRANCH" ]] \
     || fail "Not on '$BRANCH' branch (currently on '$CURRENT_BRANCH'). Switch first."
 
-if [[ -n "$(git diff --cached --name-only)" ]]; then
-    fail "Staged but uncommitted changes detected. Commit or unstage them first."
-fi
+# Dirty tree is fine for a plain release (bump + push committed work only).
+# FF/rebase still needs a clean tree — enforced only when sync must mutate.
+working_tree_dirty() {
+    ! git diff --quiet \
+        || [[ -n "$(git diff --cached --name-only)" ]] \
+        || [[ -n "$(git ls-files --others --exclude-standard)" ]]
+}
 
-if ! git diff --quiet; then
-    fail "Uncommitted changes detected. Commit them first."
-fi
+require_clean_for_sync() {
+    if working_tree_dirty; then
+        fail "Uncommitted changes block syncing with $REMOTE/$BRANCH (FF/rebase needs a clean tree).
+Commit them (./ship.sh \"msg\"), stash them, or discard — then re-run.
+A plain release with a dirty tree is fine when you are already in sync or ahead."
+    fi
+}
 
 # ── Sync with remote (do-no-harm: runs BEFORE any commit/tag is created) ──────
 # Nothing has been bumped, committed, or tagged yet, so any abort here leaves
@@ -175,8 +196,12 @@ BASE_SHA=$(git merge-base "$BRANCH" "$REMOTE/$BRANCH")
 
 if [[ "$LOCAL_SHA" == "$REMOTE_SHA" ]]; then
     ok "Already in sync with $REMOTE/$BRANCH."
+    if working_tree_dirty && ! $SHIP_MODE; then
+        warn "Uncommitted local changes present — leaving them alone; release only bumps + pushes committed work."
+    fi
 elif [[ "$LOCAL_SHA" == "$BASE_SHA" ]]; then
     # Local is strictly behind remote — fast-forward is safe and lossless.
+    require_clean_for_sync
     if $DRY_RUN; then
         preview "$REMOTE/$BRANCH is ahead — would fast-forward local $BRANCH."
     else
@@ -187,10 +212,14 @@ elif [[ "$LOCAL_SHA" == "$BASE_SHA" ]]; then
     fi
 elif [[ "$REMOTE_SHA" == "$BASE_SHA" ]]; then
     # Remote is strictly behind — local is purely ahead, a normal push will work.
+    if working_tree_dirty && ! $SHIP_MODE; then
+        warn "Uncommitted local changes present — leaving them alone; release only bumps + pushes committed work."
+    fi
     ok "Local is ahead of $REMOTE/$BRANCH by $(git rev-list --count "$REMOTE/$BRANCH..$BRANCH") commit(s) — ready to release."
 else
     # Diverged. Try a clean rebase of local commits onto remote. If it would
     # conflict, abort and tell the user — never force, never half-finish.
+    require_clean_for_sync
     if $DRY_RUN; then
         # Probe whether a clean rebase is possible without mutating anything.
         if git merge-tree --write-tree "$REMOTE/$BRANCH" "$BRANCH" >/dev/null 2>&1; then
@@ -391,13 +420,17 @@ fi
 # ── Build commit message ─────────────────────────────────────────────────────
 # MUST start with `release:` — vercel.json ignoreCommand skips every other
 # commit message, so a custom message without the prefix would ship a tag
-# that never deploys.
-if [[ -n "$CUSTOM_MESSAGE" ]]; then
-    if [[ "$CUSTOM_MESSAGE" == release:* ]]; then
-        COMMIT_MSG="$CUSTOM_MESSAGE"
-    else
-        COMMIT_MSG="release: ${CUSTOM_MESSAGE}"
-    fi
+# that never deploys. Format: "release: vX.Y.Z" or "release: vX.Y.Z - note".
+NOTE="$CUSTOM_MESSAGE"
+if [[ "$NOTE" == release:* ]]; then
+    NOTE="${NOTE#release:}"
+    NOTE="${NOTE# }"
+fi
+# If the note already starts with the tag, don't double it.
+if [[ -n "$NOTE" && "$NOTE" != "$NEW_TAG" && "$NOTE" != "$NEW_TAG"* ]]; then
+    COMMIT_MSG="release: ${NEW_TAG} - ${NOTE}"
+elif [[ -n "$NOTE" && ( "$NOTE" == "$NEW_TAG" || "$NOTE" == "$NEW_TAG"* ) ]]; then
+    COMMIT_MSG="release: ${NOTE}"
 else
     COMMIT_MSG="release: ${NEW_TAG}"
 fi
@@ -430,9 +463,20 @@ npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version >/dev/null 
 ok "$VERSION_FILE → $NEW_VERSION"
 
 # ── Commit ───────────────────────────────────────────────────────────────────
+# --ship (./ship.sh): one commit = working tree + version bump.
+# Plain release: only the version files — leave any dirty tree alone.
 info "Committing..."
-git add package.json
-[[ -f package-lock.json ]] && git add package-lock.json
+if $SHIP_MODE; then
+    git add -A
+else
+    # Don't suck unrelated staged files into the version bump commit.
+    git reset -q HEAD -- . 2>/dev/null || true
+    git add package.json
+    [[ -f package-lock.json ]] && git add package-lock.json
+fi
+if git diff --cached --quiet; then
+    fail "Nothing to commit after version bump (unexpected)."
+fi
 git commit -m "$COMMIT_MSG"
 echo ""
 ok "Committed: '$COMMIT_MSG'"
