@@ -8,8 +8,11 @@
 -- in which resources they select and how they order and cap them.
 --
 -- Why the differences matter:
---   * Brand profile orders pages by AUTHORITY and caps them: a profile wants the
---     most trustworthy pages about the entity, not the most numerous.
+--   * Page reads are capped PER PAGE, not filtered by authority and not capped by
+--     count. Only high-authority sources get read at all, so an authority filter
+--     on reads removes nothing, and a topic seldom has enough reads for a count
+--     cap to bind — while ONE enormous page can eat a whole budget. A trimmed
+--     page says so in the payload.
 --   * Gap analysis leads with the INVENTORY — the counts and coverage are the
 --     evidence of what is missing; no other output cares about them first.
 --   * Literature review takes the most pages of all and always carries the
@@ -40,7 +43,7 @@ VALUES
     {"kind":"topic.brief","mode":"all"},
     {"kind":"topic.inventory","mode":"all"},
     {"kind":"search.result","mode":"filtered","filter":{"includedOnly":true},"order":"importance"},
-    {"kind":"page.content","mode":"filtered","filter":{"includedOnly":true,"goodScrapeOnly":true,"topN":25},"order":"authority"},
+    {"kind":"page.content","mode":"filtered","filter":{"goodScrapeOnly":true},"order":"importance","limit":{"maxCharsPerItem":12000}},
     {"kind":"page.analysis","mode":"filtered","filter":{"includedOnly":true,"currentOnly":true,"successOnly":true},"order":"importance"},
     {"kind":"synthesis.keyword","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"recent"},
     {"kind":"source.authority","mode":"all"},
@@ -101,7 +104,7 @@ VALUES
   '[
     {"kind":"topic.brief","mode":"all"},
     {"kind":"topic.inventory","mode":"all"},
-    {"kind":"page.content","mode":"filtered","filter":{"includedOnly":true,"goodScrapeOnly":true,"topN":40},"order":"authority"},
+    {"kind":"page.content","mode":"filtered","filter":{"goodScrapeOnly":true},"order":"importance","limit":{"maxCharsPerItem":12000}},
     {"kind":"page.analysis","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"authority"},
     {"kind":"page.scoring","mode":"filtered","filter":{"includedOnly":true},"order":"authority"},
     {"kind":"synthesis.keyword","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"recent"},
@@ -131,7 +134,7 @@ VALUES
   '[
     {"kind":"topic.brief","mode":"all"},
     {"kind":"search.result","mode":"filtered","filter":{"includedOnly":true},"order":"importance"},
-    {"kind":"page.content","mode":"filtered","filter":{"includedOnly":true,"goodScrapeOnly":true,"topN":30},"order":"importance"},
+    {"kind":"page.content","mode":"filtered","filter":{"goodScrapeOnly":true},"order":"importance","limit":{"maxCharsPerItem":12000}},
     {"kind":"page.analysis","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"importance"},
     {"kind":"tag.map","mode":"all"},
     {"kind":"synthesis.keyword","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"recent"},
@@ -164,7 +167,7 @@ VALUES
     {"kind":"topic.brief","mode":"all"},
     {"kind":"topic.inventory","mode":"all"},
     {"kind":"search.result","mode":"all","order":"rank"},
-    {"kind":"page.content","mode":"filtered","filter":{"goodScrapeOnly":true,"topN":30},"order":"rank"},
+    {"kind":"page.content","mode":"filtered","filter":{"goodScrapeOnly":true},"order":"importance","limit":{"maxCharsPerItem":12000}},
     {"kind":"page.analysis","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"importance"},
     {"kind":"synthesis.keyword","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"recent"},
     {"kind":"source.authority","mode":"all"},
@@ -194,7 +197,7 @@ VALUES
     {"kind":"topic.brief","mode":"all"},
     {"kind":"topic.inventory","mode":"all"},
     {"kind":"search.result","mode":"all","order":"rank"},
-    {"kind":"page.content","mode":"filtered","filter":{"goodScrapeOnly":true,"topN":30},"order":"rank"},
+    {"kind":"page.content","mode":"filtered","filter":{"goodScrapeOnly":true},"order":"importance","limit":{"maxCharsPerItem":12000}},
     {"kind":"page.analysis","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"importance"},
     {"kind":"synthesis.keyword","mode":"filtered","filter":{"currentOnly":true,"successOnly":true},"order":"recent"},
     {"kind":"source.authority","mode":"all"},

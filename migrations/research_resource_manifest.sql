@@ -81,7 +81,11 @@ BEGIN
       NULL::uuid            AS p,
       left(coalesce(s.title, s.url), 140) AS l,
       s.hostname            AS s2,
-      coalesce(length(s.title), 0) + coalesce(length(s.description), 0)
+      -- Sized for the CONDENSED render: url + age + title + description +
+      -- snippets. `site` and the score axes are deliberately not rendered, so
+      -- they are not counted either.
+      coalesce(length(s.url), 0) + coalesce(length(s.page_age), 0)
+        + coalesce(length(s.title), 0) + coalesce(length(s.description), 0)
         + coalesce(length(s.extra_snippets::text), 0) AS c,
       s.scrape_status       AS st,
       coalesce(s.last_seen_at, s.discovered_at) AS t,

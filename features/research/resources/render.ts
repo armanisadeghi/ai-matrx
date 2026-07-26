@@ -48,20 +48,30 @@ export function block(
   return lines.join("\n");
 }
 
-/** Standard provenance metadata for a source-derived item. */
+/**
+ * Standard provenance metadata for a source-derived item: the URL, and nothing
+ * else.
+ *
+ * It used to also carry Site, Authority, Best search rank and Importance. All
+ * four are removed on purpose:
+ *
+ *   * **Site** is already in the URL. Printing the hostname again costs tokens
+ *     on every single block and tells the model nothing new.
+ *   * **Authority / rank / importance** already decided WHAT the model is
+ *     looking at — they order and cap the selection. Restating them inside each
+ *     block asks the model to weight the same signal a second time, which
+ *     skews it toward whatever the pipeline already favoured instead of letting
+ *     it judge relevance to the actual task.
+ *
+ * Those axes are still available deliberately, as the `source.authority` and
+ * `source.importance` table kinds, for the jobs that genuinely need to reason
+ * about evidence quality (the literature review). Opt in; not ambient.
+ */
 export function sourceMeta(
   item: ResourceItem,
   ctx: RenderContext,
 ): Array<[string, string | number | null | undefined]> {
-  const url = ctx.urlForSource(item.sourceId);
-  const tier = typeof item.flags.tier === "string" ? item.flags.tier : null;
-  return [
-    ["URL", url],
-    ["Site", typeof item.flags.hostname === "string" ? item.flags.hostname : null],
-    ["Authority", item.authority !== null ? `${item.authority}/100${tier ? ` (${tier})` : ""}` : null],
-    ["Best search rank", item.bestRank !== null ? `#${item.bestRank}` : null],
-    ["Importance", item.importance !== null ? item.importance : null],
-  ];
+  return [["URL", ctx.urlForSource(item.sourceId)]];
 }
 
 /** Pretty-print a JSON payload for a model: stable, indented, fenced. */

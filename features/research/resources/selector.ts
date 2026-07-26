@@ -19,6 +19,7 @@ import type {
   ResourceManifest,
   ResourceSelector,
   SelectorFilter,
+  SelectorLimit,
   SelectorOrder,
 } from "./types";
 import { itemsOf } from "./manifest";
@@ -150,12 +151,13 @@ export function applySelector(
     const kept: ResourceItem[] = [];
     let running = 0;
     for (const item of pool) {
-      if (running + item.chars > maxChars && kept.length > 0) {
+      const cost = effectiveChars(item, selector.limit);
+      if (running + cost > maxChars && kept.length > 0) {
         dropped.overCharLimit += pool.length - kept.length;
         break;
       }
       kept.push(item);
-      running += item.chars;
+      running += cost;
     }
     pool = kept;
   }
@@ -163,9 +165,26 @@ export function applySelector(
   return { kind: selector.kind, items: pool, dropped };
 }
 
-/** Total measured characters of a selection — never an estimate. */
-export function charsOf(items: ResourceItem[]): number {
-  return items.reduce((sum, i) => sum + i.chars, 0);
+/**
+ * Characters this item will actually contribute, honouring a per-item cap.
+ * ONE helper so the budget meter and the resolver cannot disagree about what a
+ * capped page costs.
+ */
+export function effectiveChars(
+  item: ResourceItem,
+  limit: SelectorLimit | undefined,
+): number {
+  const cap = limit?.maxCharsPerItem;
+  if (cap === undefined || cap <= 0) return item.chars;
+  return Math.min(item.chars, cap);
+}
+
+/** Total characters of a selection, honouring a per-item cap. */
+export function charsOf(
+  items: ResourceItem[],
+  limit?: SelectorLimit,
+): number {
+  return items.reduce((sum, i) => sum + effectiveChars(i, limit), 0);
 }
 
 /** Convenience: an "everything of this kind" selector. */

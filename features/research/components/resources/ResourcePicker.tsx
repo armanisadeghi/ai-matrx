@@ -51,6 +51,21 @@ import type {
 } from "../../hooks/useContextBuilder";
 import { AuthorityTierBadge } from "../sources/AuthorityTierBadge";
 
+/**
+ * Kinds where ONE item can be enormous, so the useful control is length-per-item
+ * rather than a count. Page reads are the case that matters: only high-authority
+ * sources are read at all, so a topic seldom has enough reads for a count cap to
+ * bind — but a single 200k-character page would eat an entire budget.
+ */
+const PER_ITEM_CAP_KINDS = new Set<ResourceKey>([
+  "page.content",
+  "page.analysis",
+  "search.raw",
+  "search.keyword_serp",
+  "page.links",
+  "page.images",
+]);
+
 const ORDER_LABEL: Record<SelectorOrder, string> = {
   importance: "Importance",
   authority: "Authority",
@@ -72,6 +87,8 @@ const FILTER_CHIPS: Array<{
   {
     key: "goodScrapeOnly",
     label: "Read cleanly",
+    // Only for page content, and only as an opt-in: a failed read has no text
+    // to contribute, so this is about excluding empties, not about quality.
     applies: (k) => k === "page.content",
   },
   {
@@ -334,6 +351,36 @@ export function ResourcePicker({
                                 className="h-5 w-14 rounded border border-border/60 bg-transparent px-1 text-[10px] text-foreground"
                               />
                             </label>
+                            {PER_ITEM_CAP_KINDS.has(def.key) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                    Max chars each
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      step={1000}
+                                      value={sel.maxCharsPerItem ?? ""}
+                                      placeholder="full"
+                                      onChange={(e) =>
+                                        onPatchKind(def.key, {
+                                          maxCharsPerItem: e.target.value
+                                            ? Number(e.target.value)
+                                            : undefined,
+                                        })
+                                      }
+                                      className="h-5 w-16 rounded border border-border/60 bg-transparent px-1 text-[10px] text-foreground"
+                                    />
+                                  </label>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs text-xs">
+                                  Caps how much EACH item contributes, so one
+                                  enormous page cannot take the whole budget.
+                                  Anything trimmed says so in the payload. Leave
+                                  empty to send each item in full.
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
                           </>
                         )}
                       </div>

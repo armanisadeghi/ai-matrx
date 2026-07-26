@@ -30,7 +30,7 @@ import {
   kindDef,
   renderContextFor,
 } from "./catalog";
-import { applySelector, charsOf } from "./selector";
+import { applySelector, charsOf, effectiveChars } from "./selector";
 import { BLOCK_SEPARATOR, type RenderContext } from "./render";
 import type {
   ContextBundle,
@@ -42,6 +42,7 @@ import type {
   ResourceManifest,
   ResolvedBundle,
   ResolutionReport,
+  SelectorLimit,
 } from "./types";
 
 /**
@@ -84,6 +85,8 @@ interface PlannedKind {
   variable: string;
   items: ResourceItem[];
   dropped: Partial<Record<DropReason, number>>;
+  /** The selector's limits — carries `maxCharsPerItem` to the render step. */
+  limit: SelectorLimit | undefined;
 }
 
 function addDrop(
@@ -116,7 +119,13 @@ export function planResolution(
 
     if (isDerived(def)) {
       // Derived kinds are a single computed block; selection does not apply.
-      planned.push({ kind: selector.kind, variable, items: [], dropped: {} });
+      planned.push({
+        kind: selector.kind,
+        variable,
+        items: [],
+        dropped: {},
+        limit: selector.limit,
+      });
       continue;
     }
 
@@ -125,7 +134,13 @@ export function planResolution(
     addDrop(dropped, "filtered", result.dropped.filtered);
     addDrop(dropped, "over_item_limit", result.dropped.overItemLimit);
     addDrop(dropped, "over_char_limit", result.dropped.overCharLimit);
-    planned.push({ kind: selector.kind, variable, items: result.items, dropped });
+    planned.push({
+      kind: selector.kind,
+      variable,
+      items: result.items,
+      dropped,
+      limit: selector.limit,
+    });
   }
 
   if (budgetTokens === null) {
@@ -141,12 +156,13 @@ export function planResolution(
     if (entry.items.length === 0) continue;
     const kept: ResourceItem[] = [];
     for (const item of entry.items) {
-      if (running + item.chars > budgetChars && (kept.length > 0 || running > 0)) {
+      const cost = effectiveChars(item, entry.limit);
+      if (running + cost > budgetChars && (kept.length > 0 || running > 0)) {
         overBudget = true;
         continue;
       }
       kept.push(item);
-      running += item.chars;
+      running += cost;
     }
     addDrop(entry.dropped, "over_budget", entry.items.length - kept.length);
     entry.items = kept;
@@ -237,6 +253,7 @@ export async function resolveBundle(
         included: 0,
         chars: 0,
         tokens: 0,
+        trimmed: 0,
         dropped: entry.dropped,
       });
       continue;
@@ -244,6 +261,7 @@ export async function resolveBundle(
     const blocks: string[] = [];
     let included = 0;
     let chars = 0;
+    let trimmed = 0;
 
     if (isDerived(def)) {
       const text = derived.get(entry.kind) ?? "";
@@ -269,10 +287,22 @@ export async function resolveBundle(
           addDrop(entry.dropped, "body_missing", 1);
           continue;
         }
-        const text = def.render ? def.render(item, body, ctx).trim() : (body?.text ?? "").trim();
-        if (!text) {
+        const full = def.render
+          ? def.render(item, body, ctx).trim()
+          : (body?.text ?? "").trim();
+        if (!full) {
           addDrop(entry.dropped, "empty_body", 1);
           continue;
+        }
+        // Per-item cap. A trimmed item SAYS it was trimmed, in the payload the
+        // model reads — a silently shortened page is indistinguishable from a
+        // page that simply ended, which is how a model comes to a confident
+        // conclusion from half a document.
+        const cap = entry.limit?.maxCharsPerItem;
+        let text = full;
+        if (cap !== undefined && cap > 0 && full.length > cap) {
+          text = `${full.slice(0, cap)}\n\n[trimmed to ${cap.toLocaleString()} of ${full.length.toLocaleString()} characters by the per-item limit]`;
+          trimmed += 1;
         }
         if (budgetChars !== null && assembledChars + text.length > budgetChars) {
           addDrop(entry.dropped, "over_budget", 1);
@@ -300,8 +330,14 @@ export async function resolveBundle(
       included,
       chars,
       tokens: estimateTokens(chars, def.shape),
+      trimmed,
       dropped: entry.dropped,
     });
+    if (trimmed > 0) {
+      notes.push(
+        `${def.label}: ${trimmed} item(s) shortened by the ${entry.limit?.maxCharsPerItem?.toLocaleString()}-character per-item limit`,
+      );
+    }
 
     for (const [reason, count] of Object.entries(entry.dropped)) {
       if (!count) continue;
@@ -325,11 +361,12 @@ export async function resolveBundle(
   const totalChars = Object.values(variables).reduce((s, v) => s + v.length, 0);
   // "Truncated" means the SYSTEM dropped something, not the selection's own
   // rules — see VOLUNTARY_DROPS.
-  const truncated = perKind.some((k) =>
-    Object.entries(k.dropped).some(
-      ([reason, n]) =>
-        !VOLUNTARY_DROPS.has(reason as DropReason) && (n ?? 0) > 0,
-    ),
+  const truncated = perKind.some(
+    (k) =>
+      Object.entries(k.dropped).some(
+        ([reason, n]) =>
+          !VOLUNTARY_DROPS.has(reason as DropReason) && (n ?? 0) > 0,
+      ) || k.trimmed > 0,
   );
 
   const totalTokens = perKind.reduce((s, k) => s + k.tokens, 0);
@@ -420,7 +457,7 @@ export function previewBundle(
     const derivedKind = def !== undefined && isDerived(def);
     const chars = derivedKind
       ? (manifest.rollups.get(entry.kind)?.chars ?? 0)
-      : charsOf(entry.items);
+      : charsOf(entry.items, entry.limit);
     return {
       kind: entry.kind,
       items: derivedKind ? (chars > 0 ? 1 : 0) : entry.items.length,

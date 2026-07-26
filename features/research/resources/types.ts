@@ -210,6 +210,18 @@ export interface SelectorFilter {
 export interface SelectorLimit {
   maxItems?: number;
   maxChars?: number;
+  /**
+   * Cap on the characters taken from EACH item, independent of how many items
+   * there are.
+   *
+   * This is the right control for page content. Only high-authority sources get
+   * read in the first place, so filtering reads by authority removes nothing —
+   * and a topic rarely has enough reads for an item cap to bind. The real risk
+   * is ONE enormous page eating the whole budget, which is a per-item problem
+   * and needs a per-item answer. A trimmed item is always marked in the text;
+   * it is never silently shortened.
+   */
+  maxCharsPerItem?: number;
 }
 
 /**
@@ -305,6 +317,8 @@ export interface KindResolution {
   included: number;
   chars: number;
   tokens: number;
+  /** Items kept but shortened by `maxCharsPerItem`. Always reported. */
+  trimmed: number;
   /** Per-reason counts for everything left out. Empty = nothing dropped. */
   dropped: Partial<Record<DropReason, number>>;
 }

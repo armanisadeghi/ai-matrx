@@ -40,6 +40,12 @@ import {
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { estimateTokens } from "@/lib/tokens/estimate";
+// NOT imported from `../utils/condensedAuthorityExport`, which owns the same
+// parsing for the authority export: that module does not compile on main (it
+// calls an undefined `stringArrayFromJson` — see FOUND_DEFECTS D104), so
+// importing it would put a type error on this path. Consolidate onto ONE
+// normalizer the moment that file is fixed; this duplication is a defect with a
+// pointer, not a decision.
 import type {
   ResourceBody,
   ResourceGranularity,
@@ -60,6 +66,68 @@ import {
 
 /** Supabase `.in()` chunk size — keeps request URLs under gateway limits. */
 const FETCH_CHUNK = 150;
+
+/**
+ * Per-snippet cap for the condensed index. Long enough to keep a real snippet
+ * intact, short enough that one verbose result cannot dominate the budget.
+ */
+const CONDENSED_SNIPPET_MAX_CHARS = 500;
+
+/**
+ * Snippets as the provider gave them: sometimes plain strings, sometimes
+ * `{text}` / `{snippet}` objects, sometimes on the column and sometimes only
+ * inside the raw payload. All four shapes exist in live rows.
+ */
+function readSnippets(raw: unknown): string[] {
+  if (raw == null) return [];
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    return t ? [t] : [];
+  }
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const item of raw) {
+    if (typeof item === "string") {
+      const t = item.trim();
+      if (t) out.push(t);
+      continue;
+    }
+    if (item && typeof item === "object") {
+      const rec = item as Record<string, unknown>;
+      const text = rec.text ?? rec.snippet;
+      if (typeof text === "string") {
+        const t = text.trim();
+        if (t) out.push(t);
+      }
+    }
+  }
+  return out;
+}
+
+/** Cap each snippet so one verbose result cannot dominate the budget. */
+function capSnippets(snippets: string[], maxChars: number): string[] {
+  if (maxChars <= 0) return snippets;
+  return snippets.map((s) =>
+    s.length <= maxChars ? s : `${s.slice(0, maxChars)}…`,
+  );
+}
+
+/**
+ * Kinds a fresh selection starts with.
+ *
+ * Sources is here because it is the one resource that is almost always worth
+ * its tokens: scrapes fail constantly — plenty of the best sites simply refuse
+ * — and for every one of those sources the search snippets are the ONLY
+ * substance we hold. A run that omits them throws away the cheapest real
+ * evidence in the topic. The brief frames the subject for a few hundred chars.
+ *
+ * These are DEFAULTS, not force: the picker pre-checks them and every shipped
+ * bundle carries them, and the user can uncheck them like anything else.
+ */
+export const RECOMMENDED_KINDS: ResourceKey[] = [
+  "topic.brief",
+  "search.result",
+];
 
 export interface ResourceKindDef {
   key: ResourceKey;
@@ -313,7 +381,7 @@ export const CATALOG: ResourceKindDef[] = [
     key: "search.result",
     label: "Sources",
     description:
-      "Every search result: title, description, snippets, rank and site. The same rows the Sources page lists. Broad coverage, cheap per item.",
+      "Every search result in the tightest useful form: URL, age, title, description and all snippets. The highest value per token in the whole catalogue — a page the reader could not fetch still contributes its snippets here, and many of the best sites never allow a read at all.",
     icon: Globe,
     group: "search",
     granularity: "source",
@@ -323,40 +391,53 @@ export const CATALOG: ResourceKindDef[] = [
     fetchBodies: async (ids) => {
       const rows = await fetchRows<{
         id: string;
+        url: string | null;
         title: string | null;
         description: string | null;
-        extra_snippets: unknown;
         page_age: string | null;
-      }>("rs_source", "id,title,description,extra_snippets,page_age", ids);
+        extra_snippets: unknown;
+        raw_search_result: unknown;
+      }>(
+        "rs_source",
+        "id,url,title,description,page_age,extra_snippets,raw_search_result",
+        ids,
+      );
       const map = new Map<string, ResourceBody>();
       for (const r of rows) {
-        const snippets = bulletList(r.extra_snippets, (e) => {
-          const v = e.text ?? e.snippet;
-          return typeof v === "string" ? v : null;
-        });
-        const text = [
-          textOf(r.description),
-          snippets ? `Snippets:\n${snippets}` : "",
-        ]
-          .filter(Boolean)
-          .join("\n\n");
-        map.set(r.id, {
-          id: r.id,
-          text,
-          meta: { page_age: r.page_age ?? undefined },
-        });
+        // Snippets live on `extra_snippets`, or inside the raw provider payload
+        // on older rows. ONE normalizer — the same one the condensed authority
+        // export proved — never a second copy of this parsing.
+        const raw =
+          r.raw_search_result && typeof r.raw_search_result === "object"
+            ? (r.raw_search_result as Record<string, unknown>)
+            : null;
+        let snippets = readSnippets(r.extra_snippets);
+        if (snippets.length === 0 && raw) {
+          snippets = readSnippets(raw.extra_snippets);
+        }
+        snippets = capSnippets(snippets, CONDENSED_SNIPPET_MAX_CHARS);
+
+        const age =
+          r.page_age?.trim() ||
+          (typeof raw?.age === "string" ? raw.age.trim() : "") ||
+          "";
+
+        // A flat record, NOT `block()`. On 236 sources a `## heading` plus a
+        // `- URL:` meta line per row costs more than the content it labels, and
+        // the URL already says what site it is. No authority / rank /
+        // importance either — those chose what the model is looking at; saying
+        // them again asks it to weight the same signal twice.
+        const lines: string[] = [];
+        lines.push(age ? `- ${r.url ?? ""} (${age})` : `- ${r.url ?? ""}`);
+        if (r.title?.trim()) lines.push(`  ${r.title.trim()}`);
+        if (r.description?.trim()) lines.push(`  ${r.description.trim()}`);
+        for (const sn of snippets) lines.push(`  • ${sn}`);
+        map.set(r.id, { id: r.id, text: lines.join("\n") });
       }
       return map;
     },
-    render: (item, body, ctx) =>
-      block(
-        item.label,
-        [
-          ...sourceMeta(item, ctx),
-          ["Published", typeof body?.meta?.page_age === "string" ? body.meta.page_age : null],
-        ],
-        body?.text ?? "",
-      ),
+    // The record is already complete and self-labelling by its URL.
+    render: (_item, body) => body?.text ?? "",
   },
   {
     key: "search.raw",

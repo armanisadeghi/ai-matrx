@@ -144,20 +144,44 @@ function ResearchContextPreviewWindowInner({
 
   const names = useMemo(() => Object.keys(variables ?? {}), [variables]);
 
+  /**
+   * Variable → the human labels the PICKER shows for the kinds feeding it.
+   *
+   * The rail used to lead with the wire name (`scraped_pages`), which is not
+   * what the page calls that resource ("Content"). Two names for one thing in
+   * two panes of the same feature is exactly the confusion this avoids: the
+   * label leads, the variable name stays visible underneath because it is what
+   * the agent actually receives.
+   */
+  const labelsByVariable = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const k of report?.perKind ?? []) {
+      if (k.included <= 0) continue;
+      const label = kindDef(k.kind)?.label ?? k.kind;
+      const prev = map.get(k.variable);
+      map.set(k.variable, prev ? `${prev}, ${label}` : label);
+    }
+    return map;
+  }, [report]);
+
   /** The whole payload, each variable headed by its name. */
   const everything = useMemo(() => {
     if (!variables) return "";
     return names
-      .map((n) => `# ${n}\n\n${variables[n]}`)
+      .map((n) => {
+        const label = labelsByVariable.get(n);
+        const heading = label ? `# ${label}` : `# ${n}`;
+        return `${heading}\n\n_variable:_ \`${n}\`\n\n${variables[n]}`;
+      })
       .join("\n\n---\n\n");
-  }, [variables, names]);
+  }, [variables, names, labelsByVariable]);
 
   const shownContent =
     active === EVERYTHING ? everything : (variables?.[active] ?? "");
   const shownTitle =
     active === EVERYTHING
       ? `${title ?? "Research context"} — full context`
-      : `${title ?? "Research context"} — ${active}`;
+      : `${title ?? "Research context"} — ${labelsByVariable.get(active) ?? active}`;
 
   const collectData = useCallback(
     (): Record<string, unknown> => ({ topicId, bundle, title }),
@@ -256,13 +280,9 @@ function ResearchContextPreviewWindowInner({
               {names.map((n) => (
                 <RailItem
                   key={n}
-                  label={n}
-                  sublabel={
-                    report?.perKind
-                      .filter((k) => k.variable === n && k.included > 0)
-                      .map((k) => kindDef(k.kind)?.label ?? k.kind)
-                      .join(", ") || undefined
-                  }
+                  label={labelsByVariable.get(n) ?? n}
+                  sublabel={n}
+                  sublabelIsCode
                   chars={(variables?.[n] ?? "").length}
                   active={active === n}
                   onClick={() => setActive(n)}
@@ -354,12 +374,15 @@ function ResearchContextPreviewWindowInner({
 function RailItem({
   label,
   sublabel,
+  sublabelIsCode,
   chars,
   active,
   onClick,
 }: {
   label: string;
   sublabel?: string;
+  /** Render the sublabel as code — it is a wire name, not prose. */
+  sublabelIsCode?: boolean;
   chars: number;
   active: boolean;
   onClick: () => void;
@@ -374,9 +397,9 @@ function RailItem({
       )}
     >
       <div className="flex items-center gap-1.5">
-        <code className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+        <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground">
           {label}
-        </code>
+        </span>
         <Badge
           variant="secondary"
           className="h-4 shrink-0 px-1 text-[9px] tabular-nums"
@@ -385,7 +408,12 @@ function RailItem({
         </Badge>
       </div>
       {sublabel && (
-        <span className="truncate text-[10px] text-muted-foreground">
+        <span
+          className={cn(
+            "truncate text-[10px] text-muted-foreground",
+            sublabelIsCode && "font-mono",
+          )}
+        >
           {sublabel}
         </span>
       )}

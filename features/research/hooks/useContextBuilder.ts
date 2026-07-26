@@ -34,9 +34,18 @@ export interface KindSelection {
   order: SelectorOrder;
   /** Cap on items after ordering. 0/undefined = no cap. */
   topN?: number;
+  /**
+   * Cap on characters taken from EACH item. The right control for page content:
+   * only high-authority sources get read at all, so quality filters remove
+   * nothing there, and the real risk is one huge page eating the budget.
+   */
+  maxCharsPerItem?: number;
 }
 
 export type SelectionMap = Map<ResourceKey, KindSelection>;
+
+/** Default per-page ceiling for read page content. ~4k tokens of one page. */
+export const DEFAULT_MAX_CHARS_PER_PAGE = 12_000;
 
 const DEFAULT_SELECTION: KindSelection = {
   mode: "filtered",
@@ -50,15 +59,28 @@ function toSelector(
   sel: KindSelection,
 ): ResourceSelector {
   if (sel.mode === "explicit") {
-    return { kind, mode: "explicit", ids: sel.ids };
+    return {
+      kind,
+      mode: "explicit",
+      ids: sel.ids,
+      limit:
+        sel.maxCharsPerItem && sel.maxCharsPerItem > 0
+          ? { maxCharsPerItem: sel.maxCharsPerItem }
+          : undefined,
+    };
   }
   const filter: SelectorFilter = { ...sel.filter };
   if (sel.topN && sel.topN > 0) filter.topN = sel.topN;
+  const limit =
+    sel.maxCharsPerItem && sel.maxCharsPerItem > 0
+      ? { maxCharsPerItem: sel.maxCharsPerItem }
+      : undefined;
   return {
     kind,
     mode: Object.keys(filter).length > 0 ? "filtered" : "all",
     filter: Object.keys(filter).length > 0 ? filter : undefined,
     order: sel.order,
+    limit,
   };
 }
 
@@ -131,6 +153,7 @@ export function bundleToSelection(bundle: ContextBundle): SelectionMap {
       filter,
       order: selector.order ?? "importance",
       topN,
+      maxCharsPerItem: selector.limit?.maxCharsPerItem,
     });
   }
   return map;
@@ -176,9 +199,11 @@ export interface UseContextBuilder {
 }
 
 export function useContextBuilder(topicId: string): UseContextBuilder {
-  const [manifest, setManifest] = useState<ResourceManifest | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<{
+    key: string;
+    manifest: ResourceManifest | null;
+    error: string | null;
+  } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   const [selection, setSelectionState] = useState<SelectionMap>(new Map());
@@ -192,26 +217,34 @@ export function useContextBuilder(topicId: string): UseContextBuilder {
     DEFAULT_BUDGET_TOKENS,
   );
 
+  /**
+   * Manifest load. `loading` is DERIVED from whether the result we hold answers
+   * the request we are on, rather than set synchronously in the effect body — a
+   * synchronous setState in an effect is a cascading render.
+   */
+  const requestKey = `${topicId}:${reloadKey}`;
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     getResourceManifest(topicId)
       .then((m) => {
-        if (!cancelled) setManifest(m);
+        if (!cancelled) setLoaded({ key: requestKey, manifest: m, error: null });
       })
       .catch((e: unknown) => {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to load resources");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (cancelled) return;
+        setLoaded({
+          key: requestKey,
+          manifest: null,
+          error: e instanceof Error ? e.message : "Failed to load resources",
+        });
       });
     return () => {
       cancelled = true;
     };
-  }, [topicId, reloadKey]);
+  }, [topicId, requestKey]);
+
+  const manifest = loaded?.key === requestKey ? loaded.manifest : null;
+  const error = loaded?.key === requestKey ? loaded.error : null;
+  const loading = loaded?.key !== requestKey;
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
@@ -246,6 +279,11 @@ export function useContextBuilder(topicId: string): UseContextBuilder {
         ...DEFAULT_SELECTION,
         filter,
         order: def?.granularity === "source" ? "importance" : "recent",
+        // Page content defaults to a per-page cap, not a count cap: a topic
+        // rarely has enough reads for a count to bind, and one 200k-character
+        // page would otherwise take the whole budget.
+        maxCharsPerItem:
+          kind === "page.content" ? DEFAULT_MAX_CHARS_PER_PAGE : undefined,
       });
       return next;
     });
