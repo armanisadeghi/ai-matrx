@@ -41,6 +41,8 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { SshAccessPanel } from "@/components/sandbox/ssh-access-panel";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createSandboxesScope } from "@/features/surfaces/manifests/sandboxes.manifest";
 import { sandboxInstanceSummary } from "@/lib/sandbox/format";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
 import {
@@ -387,8 +389,45 @@ export default function SandboxDetailPage() {
     },
   ];
 
+  // Surface scope — assembled at trigger time (▶ Run) from the live instance
+  // and terminal session, so an agent launched here sees the machine as it is
+  // right now rather than at mount.
+  const getSandboxScope = () =>
+    createSandboxesScope({
+      sandbox_instance_id: instance.id,
+      sandbox_id: instance.sandbox_id,
+      sandbox_status: effectiveStatus,
+      sandbox_stop_reason: instance.stop_reason ?? undefined,
+      sandbox_created_at: instance.created_at,
+      sandbox_expires_at: instance.expires_at ?? undefined,
+      sandbox_time_remaining: remaining.text,
+      container_id: instance.container_id ?? undefined,
+      sandbox_proxy_url: instance.proxy_url ?? undefined,
+      sandbox_hot_path: instance.hot_path ?? undefined,
+      sandbox_cold_path: instance.cold_path ?? undefined,
+      sandbox_last_heartbeat_at: instance.last_heartbeat_at ?? undefined,
+      sandbox_config: instance.config ?? undefined,
+      sandbox_instance: instance,
+      current_working_directory: cwd,
+      command_history: commandHistory,
+      terminal_output: terminalHistory.length
+        ? terminalHistory
+            .map((e) =>
+              e.type === "command"
+                ? `$ ${e.text}`
+                : e.exitCode !== undefined
+                  ? `${e.text}\n[exit ${e.exitCode}]`
+                  : e.text,
+            )
+            .join("\n")
+        : undefined,
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/sandboxes"
+      getScope={getSandboxScope}
+    >
       <EntityModeHeader
         backHref="/sandbox"
         entityLabel={instance.sandbox_id}
@@ -987,6 +1026,6 @@ export default function SandboxDetailPage() {
         </DialogContent>
       </Dialog>
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

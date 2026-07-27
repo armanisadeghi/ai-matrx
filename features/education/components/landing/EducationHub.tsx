@@ -7,6 +7,7 @@ import Link from "next/link";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
 import { StudyTodayCard } from "../../study/dashboard/StudyTodayCard";
+import { EducationHubSurface } from "./EducationHubSurface";
 import { EduHero } from "../sections/EduHero";
 import { SectionRenderer } from "../sections/SectionRenderer";
 import { EDU_TOOLS } from "../../data/tools";
@@ -123,6 +124,9 @@ export function EducationHub() {
 
   return (
     <MarketingPageShell>
+      {/* Render-free: registers this route's live surface scope for the
+          AppShell Agents chrome (matrx-user/education). */}
+      <EducationHubSurface />
       <AuthedWorkspaceCTA
         workspaceHref={EDU_WORKSPACE_HREF}
         workspaceLabel={EDU_WORKSPACE_LABEL}

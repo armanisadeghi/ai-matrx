@@ -85,6 +85,9 @@ import { contentPlanManifest } from "./content-plan.manifest";
 import { agentsHubManifest } from "./agents-hub.manifest";
 import { organizationsManifest } from "./organizations.manifest";
 import { dashboardManifest } from "./dashboard.manifest";
+import { educationManifest } from "./education.manifest";
+import { educationTutorManifest } from "./education-tutor.manifest";
+import { educationFlashcardsManifest } from "./education-flashcards.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
@@ -111,6 +114,13 @@ import { agentGateManifest } from "./agent-gate.manifest";
 import { agentRunHistoryManifest } from "./agent-run-history.manifest";
 import { agentSettingsManifest } from "./agent-settings.manifest";
 import { smartCodeEditorManifest } from "./smart-code-editor.manifest";
+import { sandboxesManifest } from "./sandboxes.manifest";
+import { markdownStudioManifest } from "./markdown-studio.manifest";
+import { schedulesManifest } from "./schedules.manifest";
+import { workbooksManifest } from "./workbooks.manifest";
+import { podcastManifest } from "./podcast.manifest";
+import { podcastStudioManifest } from "./podcast-studio.manifest";
+import { podcastRunManifest } from "./podcast-run.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -181,6 +191,9 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentsHubManifest,
   organizationsManifest,
   dashboardManifest,
+  educationManifest,
+  educationTutorManifest,
+  educationFlashcardsManifest,
   settingsManifest,
   agentAppsManifest,
   agentConnectionsManifest,
@@ -209,6 +222,13 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentRunHistoryManifest,
   agentSettingsManifest,
   smartCodeEditorManifest,
+  sandboxesManifest,
+  markdownStudioManifest,
+  schedulesManifest,
+  workbooksManifest,
+  podcastManifest,
+  podcastStudioManifest,
+  podcastRunManifest,
 ];
 
 // ---------------------------------------------------------------------------

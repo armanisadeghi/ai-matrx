@@ -26,6 +26,8 @@
 // prep_user_message, first_show_info_text, truncate_audio_for_testing.
 
 import { useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createPodcastStudioScope } from "@/features/surfaces/manifests/podcast-studio.manifest";
 import {
   AudioLines,
   Plus,
@@ -266,8 +268,11 @@ export function GeneratorForm({
         ? resolvedText.trim().length > 0
         : text.trim().length > 0);
 
-  const handleGenerate = () => {
-    if (!canGenerate || !activeSource.inputDataType) return;
+  /** The exact request the form would submit right now, or null when the
+   *  selected source has no wired input type. Shared by Generate and the
+   *  surface emitter so `generate_request` can never drift from what is sent. */
+  const buildRequestBody = (): PodcastGenerateRequest | null => {
+    if (!activeSource.inputDataType) return null;
     const body: PodcastGenerateRequest = {
       input_data_type: activeSource.inputDataType,
       podcast_type: deriveBackendPodcastType(language, format),
@@ -343,7 +348,59 @@ export function GeneratorForm({
     // Saved podcast audio is the high-quality use case → request the HQ model
     // tier on every provider (the backend resolves the latest HQ model id).
     body.tts_quality = "high_quality";
+    return body;
+  };
+
+  const handleGenerate = () => {
+    if (!canGenerate) return;
+    const body = buildRequestBody();
+    if (!body) return;
     onGenerate(body);
+  };
+
+  // ── Surface emitter (matrx-user/podcast-studio) ───────────────────────
+  // Built at Run time from live state. NOTE: no media URLs leave this
+  // surface — resolved sources are emitted as extracted TEXT, and file
+  // sources as the public URLs the user typed.
+  const getSurfaceScope = () => {
+    const request = buildRequestBody();
+    return createPodcastStudioScope({
+      source_kind: sourceKind,
+      source_resolving: resolverBusy,
+      language,
+      format,
+      host_count: hostCount,
+      image_mode: imageMode,
+      video_mode: videoMode,
+      feature_image_style: featureImageStyle,
+      truncate_audio_for_testing: truncate,
+      can_generate: canGenerate,
+      source_text: activeSource.control === "text" ? text || undefined : undefined,
+      source_topic:
+        sourceKind === "topic" ? text.trim() || undefined : undefined,
+      source_urls: cleanUrls.length > 0 ? cleanUrls : undefined,
+      resolved_source_text:
+        activeSource.control === "resolve" ? resolvedText || undefined : undefined,
+      theme: theme.trim() || undefined,
+      speaker_cast: request?.speakers,
+      cast_provider: castPreview.preview?.provider,
+      voice_catalog_size: voices.length,
+      show_id: showId ?? undefined,
+      available_shows: shows.map((s) => ({
+        id: s.id,
+        slug: s.slug,
+        title: s.title,
+      })),
+      first_show_info: firstShowInfo.trim() || undefined,
+      prep_instructions: prepMessage.trim() || undefined,
+      dictionary_entry_count:
+        (dictConsumption?.resolved.entries.length ?? 0) +
+        (dictConsumption?.customEntries.length ?? 0),
+      generate_request: request
+        ? (request as unknown as Record<string, unknown>)
+        : undefined,
+      selection: window.getSelection()?.toString() || undefined,
+    });
   };
 
   /** Switch source — clear the per-source text so stale content never leaks. */
@@ -354,6 +411,11 @@ export function GeneratorForm({
   };
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/podcast-studio"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="space-y-7">
       {/* ── 1. SOURCE ─────────────────────────────────────────────────── */}
       <section className="space-y-2.5">
@@ -865,6 +927,7 @@ export function GeneratorForm({
         </Button>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

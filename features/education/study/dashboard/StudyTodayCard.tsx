@@ -36,6 +36,7 @@ import {
   modeReviewHref,
   modeWeakHref,
 } from "./nextActions";
+import { setStudyTodaySnapshot } from "./studyTodaySnapshot";
 import type { StudyPlanBlockRow } from "../planner/types";
 import type { StudyGoalRow } from "../types";
 
@@ -174,12 +175,36 @@ export function StudyTodayCard() {
         !!plan ||
         currentStreak > 0 ||
         goals.length > 0;
+      const shown = built.slice(0, 4);
       setEmpty(!hasSignal);
-      setActions(built.slice(0, 4));
+      setActions(shown);
       setLoading(false);
+
+      // Publish for the Education Hub surface emitter (EducationHubSurface),
+      // which reads this at agent-trigger time rather than re-fetching the
+      // spine. Null when there is no signal → the surface honestly reports
+      // `study_snapshot_available: false` for anon / brand-new learners.
+      setStudyTodaySnapshot(
+        hasSignal
+          ? {
+              has_active_plan: !!plan,
+              is_rest_day: isRestDayEntry(todayEntry),
+              streak_days: currentStreak,
+              next_actions: shown.map((a) => ({
+                key: a.key,
+                label: a.label,
+                why: a.why,
+                minutes: a.minutes,
+                href: a.href,
+              })),
+              total_minutes: shown.reduce((s, a) => s + (a.minutes ?? 0), 0),
+            }
+          : null,
+      );
     })();
     return () => {
       cancelled = true;
+      setStudyTodaySnapshot(null);
     };
   }, []);
 

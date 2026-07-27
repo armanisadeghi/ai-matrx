@@ -40,6 +40,9 @@ import type {
   TriggerConfig,
   TriggerType,
 } from "../../types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
+import { buildOpenScheduleValues } from "../../lib/schedules-scope";
 import { OneShotForm } from "./triggers/OneShotForm";
 import { IntervalForm } from "./triggers/IntervalForm";
 import { CronForm } from "./triggers/CronForm";
@@ -233,7 +236,39 @@ export function ScheduleForm({ task }: Props) {
     }
   };
 
+  // Surface emitter for `matrx-user/schedules` on the create/edit routes.
+  // Nested under nothing else on those pages, so this provider owns the live
+  // scope: the editor-draft group plus (in edit mode) the saved record the
+  // draft started from. Built at trigger time — `form` is read live.
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/schedules"
+      isEditable
+      getScope={() =>
+        createSchedulesScope({
+          ...(task ? buildOpenScheduleValues(task) : {}),
+          schedule_draft_mode: task ? "edit" : "create",
+          schedule_draft: {
+            title: form.title,
+            description: form.description,
+            surfaces: form.surfaces,
+            tags: form.tags,
+            prompt: form.prompt,
+            agent_id: form.agentId,
+            variables: form.variables,
+            persistent_conversation_id: form.persistentConversationId,
+            auth_mode: form.authMode,
+            max_runtime_seconds: form.maxRuntimeSeconds,
+            max_concurrent: form.maxConcurrent,
+            expires_at: form.expiresAt,
+            trigger_type: form.triggerType,
+            trigger_config: form.triggerConfig,
+          },
+          schedule_draft_errors: errors,
+          schedule_draft_submitting: submitting,
+        })
+      }
+    >
     <form
       onSubmit={(e) => {
         e.preventDefault();
@@ -570,6 +605,7 @@ export function ScheduleForm({ task }: Props) {
         </Button>
       </div>
     </form>
+    </SurfaceRuntimeProvider>
   );
 }
 

@@ -50,6 +50,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/code", surface: "matrx-user/code-editor" },
   { prefix: "/smart-code-editor", surface: "matrx-user/smart-code-editor" },
   { prefix: "/markdown-editor", surface: "matrx-user/markdown-editor" },
+  { prefix: "/markdown-studio", surface: "matrx-user/markdown-studio" },
   { prefix: "/notes", surface: "matrx-user/notes" },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
@@ -61,7 +62,6 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/lists", surface: "matrx-user/lists" },
   { prefix: "/tools/pdf-extractor", surface: "matrx-user/pdf-extractor" },
   { prefix: "/tools/scanner", surface: "matrx-user/scanner" },
-  { prefix: "/tools", surface: "matrx-user/tools" },
   { prefix: "/documents", surface: "matrx-user/documents" },
   { prefix: "/settings", surface: "matrx-user/settings" },
   { prefix: "/user-settings", surface: "matrx-user/settings" },
@@ -83,7 +83,23 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/transcripts/scribe", surface: "matrx-user/transcript-scribe" },
   { prefix: "/transcripts", surface: "matrx-user/transcripts" },
   { prefix: "/transcript-studio", surface: "matrx-user/transcript-studio" },
+  // Education: specific tools BEFORE the hub prefix.
+  { prefix: "/education/tutor", surface: "matrx-user/education-tutor" },
+  {
+    prefix: "/education/flashcards",
+    surface: "matrx-user/education-flashcards",
+  },
+  { prefix: "/education", surface: "matrx-user/education" },
   { prefix: "/dashboard", surface: "matrx-user/dashboard" },
+  // Podcast: run + create studios BEFORE the hub prefix.
+  { prefix: "/podcast/studio/run", surface: "matrx-user/podcast-run" },
+  {
+    prefix: "/podcast/studio/create",
+    surface: "matrx-user/podcast-studio",
+  },
+  { prefix: "/podcast", surface: "matrx-user/podcast" },
+  { prefix: "/schedules", surface: "matrx-user/schedules" },
+  { prefix: "/workbooks", surface: "matrx-user/workbooks" },
   {
     prefix: "/observational-memory",
     surface: "matrx-user/observational-memory",

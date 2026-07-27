@@ -16,16 +16,61 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import type { PcShow } from "@/features/podcasts/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createPodcastScope,
+  type PodcastHubShowEntry,
+} from "@/features/surfaces/manifests/podcast.manifest";
 import { PodcastGrid } from "./PodcastGrid";
+
+/** Surface values are ids + titles only — never a cover/audio URL (they expire). */
+function showEntry(s: PcShow): PodcastHubShowEntry {
+  return {
+    id: s.id,
+    slug: s.slug,
+    title: s.title,
+    description: s.description,
+    author: s.author,
+    is_published: s.is_published,
+  };
+}
 
 export function PodcastIndexClient({ published }: { published: PcShow[] }) {
   const userId = useAppSelector(selectUserId);
-  const { myShows, loading } = useMyPodcasts();
+  const { myShows, episodes, loading, error } = useMyPodcasts();
 
   const myShowIds = new Set(myShows.map((s) => s.id));
   const browse = published.filter((s) => !myShowIds.has(s.id));
 
+  // Built at Run time from live values — never on mount.
+  const getSurfaceScope = () =>
+    createPodcastScope({
+      my_show_count: myShows.length,
+      my_episode_count: episodes.length,
+      library_loading: loading,
+      published_show_count: browse.length,
+      my_shows: myShows.map(showEntry),
+      my_episodes: episodes.map((e) => ({
+        id: e.id,
+        slug: e.slug,
+        title: e.title,
+        show_id: e.show_id,
+        episode_number: e.episode_number,
+        duration_seconds: e.duration_seconds,
+        host_count: e.host_count,
+        is_published: e.is_published,
+      })),
+      library_error: error ?? undefined,
+      published_shows: browse.map(showEntry),
+      selection: window.getSelection()?.toString() || undefined,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/podcast"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="h-full w-full overflow-y-auto overscroll-contain bg-background">
       {/* Hero — semantic tokens only, so it reads correctly in both themes
           (a hardcoded dark slab here was invisible-text city in light mode). */}
@@ -92,5 +137,6 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
         </section>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

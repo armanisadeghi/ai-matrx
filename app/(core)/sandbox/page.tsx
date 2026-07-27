@@ -43,6 +43,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createSandboxesScope } from "@/features/surfaces/manifests/sandboxes.manifest";
 import { sandboxInstanceSummary } from "@/lib/sandbox/format";
 import { toast } from "@/lib/toast";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
@@ -322,8 +324,20 @@ export default function SandboxListPage() {
     }
   };
 
+  // Surface scope — the list half of `matrx-user/sandboxes`, read at trigger
+  // time so the agent sees the latest poll rather than the mount snapshot.
+  const getSandboxListScope = () =>
+    createSandboxesScope({
+      active_sandbox_count: activeCount,
+      total_sandbox_count: total,
+      sandbox_list: uniqueInstances,
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/sandboxes"
+      getScope={getSandboxListScope}
+    >
       <RouteHeader
         left={
           <div className="flex items-center gap-2 min-w-0 px-1.5">
@@ -951,6 +965,6 @@ export default function SandboxListPage() {
         busy={historyDeleting}
         onConfirm={() => void handleHistoryBatchDelete()}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

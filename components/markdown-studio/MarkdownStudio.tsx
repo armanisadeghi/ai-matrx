@@ -29,6 +29,8 @@ import { TemplatesPalette } from "./TemplatesPalette";
 import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import type { UserMarkdownSample } from "./user-samples-service";
 import type { StudioTemplate } from "./templates";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarkdownStudioScope } from "@/features/surfaces/manifests/markdown-studio.manifest";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderToggle from "@/features/shell/components/header/variants/variants/HeaderToggle";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
@@ -245,7 +247,45 @@ export function MarkdownStudio() {
     handleForkAction,
   ]);
 
+  // Surface scope — built at trigger time (▶ Run), never on mount, so the
+  // agent always sees the live buffer rather than a render-stale copy.
+  const getScope = useCallback(() => {
+    const ta = textareaRef.current;
+    const selected =
+      ta && ta.selectionStart !== ta.selectionEnd
+        ? ta.value.slice(ta.selectionStart, ta.selectionEnd)
+        : undefined;
+    return createMarkdownStudioScope({
+      content,
+      document_label: contentLabel,
+      is_from_library: Boolean(loadedSample),
+      detected_blocks: detectRenderBlocks(content),
+      is_dirty: isDirty,
+      is_saving: saving,
+      view_mode: mode,
+      library_sample_count: samples.length,
+      sample_id: loadedSampleId ?? undefined,
+      sample_name: loadedSampleName ?? undefined,
+      selection: selected,
+    });
+  }, [
+    content,
+    contentLabel,
+    loadedSample,
+    isDirty,
+    saving,
+    mode,
+    samples.length,
+    loadedSampleId,
+    loadedSampleName,
+  ]);
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/markdown-studio"
+      getScope={getScope}
+      isEditable
+    >
     <div className="flex h-full w-full flex-col bg-textured">
       <PageHeader>
         <HeaderToggle
@@ -348,5 +388,6 @@ export function MarkdownStudio() {
         onConfirm={handleSaveAs}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

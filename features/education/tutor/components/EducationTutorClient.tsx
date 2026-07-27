@@ -46,8 +46,14 @@ import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { Eye } from "lucide-react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationTutorScope } from "@/features/surfaces/manifests/education-tutor.manifest";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
-import { assembleTutorGrounding, type TutorGroundingSeed } from "../grounding";
+import {
+  assembleTutorGrounding,
+  type TutorGroundingSeed,
+  type TutorLaunchGrounding,
+} from "../grounding";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import { extractTurnTrust } from "../turnTrust";
 import { TutorLanding } from "./TutorLanding";
@@ -193,6 +199,12 @@ export function EducationTutorClient({
   // transcript (below) so the strip is present on every tutor view.
   const [tutorTrust, setTutorTrust] = useState<TrustEnvelope | null>(null);
 
+  // The last successfully assembled grounding, held in a ref so the surface
+  // emitter (below) can report what the tutor was ACTUALLY given at agent-
+  // trigger time without re-assembling it. Only `trust` needs to drive a
+  // render, so the rest deliberately stays out of state.
+  const groundingRef = useRef<TutorLaunchGrounding | null>(null);
+
   const groundedRef = useRef<string | null>(null);
   useEffect(() => {
     if (conversationIdProp || !liveConversationId || !authReady) return;
@@ -209,6 +221,7 @@ export function EducationTutorClient({
       try {
         const grounding = await assembleTutorGrounding({ seed });
         if (cancelled) return;
+        groundingRef.current = grounding;
         setTutorTrust(grounding.trust);
         dispatch(
           setContextEntries({
@@ -242,7 +255,9 @@ export function EducationTutorClient({
     (async () => {
       try {
         const grounding = await assembleTutorGrounding({ seed });
-        if (!cancelled) setTutorTrust(grounding.trust);
+        if (cancelled) return;
+        groundingRef.current = grounding;
+        setTutorTrust(grounding.trust);
       } catch (err) {
         console.error("[EducationTutorClient] trust derivation failed", err);
       }
@@ -405,6 +420,7 @@ export function EducationTutorClient({
       try {
         const grounding = await assembleTutorGrounding({ seed });
         if (cancelled) return;
+        groundingRef.current = grounding;
         setTutorTrust(grounding.trust);
         dispatch(
           setContextEntries({
@@ -436,6 +452,45 @@ export function EducationTutorClient({
   const showEmptyState = !hideLanding && isFreshRoute && messageCount === 0;
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-tutor"
+      // Mounted only past the `!conversationId` early return above, so
+      // `conversation_id` is a genuine guarantee (alwaysAvailable: true).
+      // Scope is assembled at TRIGGER time from live refs — the grounding ref
+      // is whatever the tutor was last actually given, never a re-assembly.
+      getScope={() => {
+        const grounding = groundingRef.current;
+        return createEducationTutorScope({
+          conversation_id: conversationId,
+          tutor_agent_id: agentId,
+          message_count: messageCount,
+          is_fresh_session: isFreshRoute,
+          is_shared_view: isSharedView,
+          is_embedded: embedded,
+          grounding_available: grounding !== null,
+          send_blocked: sendBlocked,
+          compliance_blocked: coppa.blocked,
+          ...(seed ? { grounding_seed: { ...seed } } : {}),
+          ...(grounding
+            ? {
+                learner_memory: grounding.learner_memory,
+                study_material: grounding.study_material,
+                teaching_mode: grounding.teaching_mode,
+                personality_style: grounding.personality_style,
+              }
+            : {}),
+          ...(tutorTrust
+            ? {
+                trust_confidence: tutorTrust.confidence,
+                trust_citation_count: tutorTrust.citations.length,
+                trust_envelope: { ...tutorTrust },
+              }
+            : {}),
+          ...(turnTrust ? { turn_trust: { ...turnTrust } } : {}),
+          ...(tutorMsg.limit != null ? { tutor_message_limit: tutorMsg.limit } : {}),
+        });
+      }}
+    >
     <div className="flex h-full flex-col overflow-hidden bg-textured">
       {/* Owner share affordance / shared-view read-only banner (P7). Only on an
           existing conversation, and never when embedded in an AskTutor panel. */}
@@ -500,5 +555,6 @@ export function EducationTutorClient({
       </div>
       <coppa.Gate />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

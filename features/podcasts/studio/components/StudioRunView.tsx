@@ -41,6 +41,29 @@ import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunReco
 import { RunTruthInspector } from "@/features/podcasts/studio/components/RunTruthInspector";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 import { ResearchActivityFeed } from "@/features/podcasts/studio/components/ResearchActivityFeed";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createPodcastRunScope,
+  type PodcastRunSlotEntry,
+} from "@/features/surfaces/manifests/podcast-run.manifest";
+import type { RunAsset } from "@/features/podcasts/studio/runs/run-types";
+
+/** Durable refs only — the run's asset URLs are signed and expire, so the
+ *  surface emits `file_id` and status, never a link. */
+function slotEntries(
+  assets: RunAsset[] | undefined,
+  kind: "image" | "video",
+): PodcastRunSlotEntry[] {
+  return (assets ?? [])
+    .filter((a) => a.asset_kind === kind)
+    .map((a) => ({
+      index: a.slot,
+      status: a.status,
+      prompt: a.prompt,
+      model_alias: a.model_alias,
+      file_id: a.file_id,
+    }));
+}
 
 export function StudioRunView({ runId }: { runId: string }) {
   const {
@@ -150,8 +173,99 @@ export function StudioRunView({ runId }: { runId: string }) {
     state.videos.filter((s) => s.status === "done" && s.url).length;
   const mergedVideoMissing = isDone && !mergedVideoUrl && doneMediaCount >= 2;
 
+  // ── Surface emitter (matrx-user/podcast-run) ──────────────────────────
+  // Built at Run time from live state + the durable run detail. Per-slot
+  // file_ids only exist once the detail has loaded; before that the live
+  // slots are emitted with a null file_id rather than an expiring URL.
+  const getSurfaceScope = () =>
+    createPodcastRunScope({
+      studio_run_id: runId,
+      run_status: state.status,
+      progress_percent: state.progress,
+      total_steps: state.totalSteps,
+      streaming,
+      stalled,
+      background_working: backgroundWorking,
+      audio_available: !!state.audioUrl,
+      official_video_available: !!state.officialVideoUrl,
+      backend_run_id: detail?.run_id ?? undefined,
+      liveness: detail?.liveness,
+      podcast_type: state.podcastType ?? undefined,
+      run_source: detail?.source
+        ? {
+            input_data_type: detail.source.input_data_type,
+            summary: detail.source.summary,
+            file_urls: detail.source.file_urls,
+          }
+        : undefined,
+      started_at: startedAt ? new Date(startedAt).toISOString() : undefined,
+      stages: state.stages.map((s) => ({
+        stage: s.stage,
+        label: s.label,
+        status: s.status,
+        step: s.step,
+        total: s.total,
+      })),
+      current_stage_label: state.currentLabel || undefined,
+      episode_title: state.title || undefined,
+      episode_description: state.description || undefined,
+      script: state.script || undefined,
+      script_preview: state.scriptPreview || undefined,
+      source_preview: state.sourcePreview || undefined,
+      episode_id: state.episodeId ?? undefined,
+      episode_slug: state.episodeSlug ?? undefined,
+      show_id: state.showId ?? undefined,
+      audio_file_id: state.audioFileId ?? detail?.audio_file_id ?? undefined,
+      cover_file_id: detail?.cover_file_id ?? undefined,
+      image_slots: detail?.assets
+        ? slotEntries(detail.assets, "image")
+        : state.images.map((s) => ({
+            index: s.index,
+            status: s.status,
+            prompt: s.prompt,
+            model_alias: null,
+            file_id: null,
+          })),
+      video_slots: detail?.assets
+        ? slotEntries(detail.assets, "video")
+        : state.videos.map((s) => ({
+            index: s.index,
+            status: s.status,
+            prompt: s.prompt,
+            model_alias: null,
+            file_id: null,
+          })),
+      run_error: state.error ?? undefined,
+      recovery: detail
+        ? {
+            resumable: detail.recovery.resumable,
+            can_rerun_from_source: detail.recovery.can_rerun_from_source,
+            can_reconnect: canReconnect,
+          }
+        : undefined,
+      stage_progress: detail
+        ? {
+            done: detail.stage_progress.done,
+            failed: detail.stage_progress.failed,
+            total: detail.stage_progress.total,
+          }
+        : undefined,
+      run_request: detail?.request,
+      research_activity: researchActivity.map((e) => ({
+        tool: e.toolName,
+        event: e.event,
+        message: e.message,
+        at: e.at,
+      })),
+      selection: window.getSelection()?.toString() || undefined,
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/podcast-run"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
       <EntityModeHeader
         backHref="/podcast/studio"
         entityLabel={isRunning && !streaming ? "Studio run" : "Episode"}
@@ -313,6 +427,6 @@ export function StudioRunView({ runId }: { runId: string }) {
         />
       </div>
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -12,6 +12,9 @@ import { ReferenceCopyButton } from "@/features/matrx-envelope/components/Refere
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createWorkbooksScope } from "@/features/surfaces/manifests/workbooks.manifest";
+import { readWorkbookScopeSource } from "@/features/data-tables/workbook-scope-source";
 import {
   getWorkbook,
   renameWorkbook,
@@ -118,8 +121,68 @@ export default function WorkbookPage({
     );
   }
 
+  // Surface emitter for `matrx-user/workbooks` on the editor route. Identity
+  // and permissions come from this page's state; sheets, snapshot, save
+  // status and collab presence are read at trigger time from the mounted
+  // editor via the scope source (null until Univer has booted, in which case
+  // those keys are simply omitted).
+  const getScope = () => {
+    const live = readWorkbookScopeSource(id);
+    return createWorkbooksScope({
+      workbook_id: id,
+      ...(workbook
+        ? {
+            workbook_name: workbook.workbook_name,
+            ...(workbook.description
+              ? { workbook_description: workbook.description }
+              : {}),
+            workbook_source: workbook.source,
+            workbook_updated_at: workbook.updated_at,
+            workbook_permissions: {
+              is_owner: isOwner,
+              can_edit: canEdit,
+              is_public: workbook.is_public,
+            },
+            open_workbook: {
+              id: workbook.id,
+              name: workbook.workbook_name,
+              description: workbook.description,
+              source: workbook.source,
+              version: workbook.version,
+              is_public: workbook.is_public,
+              original_file_id: workbook.original_file_id,
+              created_at: workbook.created_at,
+              updated_at: workbook.updated_at,
+            },
+          }
+        : {}),
+      ...(live
+        ? {
+            workbook_sheets: live.sheets,
+            ...(live.activeSheetId
+              ? { active_sheet_id: live.activeSheetId }
+              : {}),
+            ...(live.activeSheetName
+              ? { active_sheet_name: live.activeSheetName }
+              : {}),
+            ...(live.snapshot ? { workbook_snapshot: live.snapshot } : {}),
+            workbook_editor_status: {
+              boot_state: live.bootState,
+              load_error: live.loadError,
+            },
+            workbook_save_status: live.saveStatus,
+            workbook_collab: live.collab,
+          }
+        : {}),
+    });
+  };
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/workbooks"
+      isEditable={canEdit}
+      getScope={getScope}
+    >
       <RouteHeader
         left={
           <>
@@ -185,6 +248,6 @@ export default function WorkbookPage({
           <EditorBootSpinner />
         )}
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -40,6 +40,8 @@ import type {
   ImportRouteDetection,
   ImportRouting,
 } from "@/features/data-tables/smart-importer";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createWorkbooksScope } from "@/features/surfaces/manifests/workbooks.manifest";
 import { ImportRouteDialog } from "@/features/data-tables/components/ImportRouteDialog";
 import { smartImportPickupSlot } from "@/features/data-tables/smart-import-pickup";
 
@@ -300,8 +302,44 @@ export default function WorkbooksLandingPage() {
     [reload],
   );
 
+  // Surface emitter for `matrx-user/workbooks` on the library route. Built at
+  // trigger time from live state; the open-workbook / sheet / editor values
+  // belong to /workbooks/[id] and are deliberately absent here.
+  const getScope = () =>
+    createWorkbooksScope({
+      workbooks_load_status: { loading, error },
+      ...(loading || error
+        ? {}
+        : {
+            workbooks_count: workbooks.length,
+            workbooks_summary: workbooks.map((wb) => ({
+              id: wb.id,
+              name: wb.workbook_name,
+              description: wb.description,
+              source: wb.source,
+              is_public: wb.is_public,
+              version: wb.version,
+              updated_at: wb.updated_at,
+            })),
+          }),
+      ...(creating || importing || smartCommitting || smartDialogOpen
+        ? {
+            workbook_import_state: {
+              creating,
+              importing,
+              smart_dialog_open: smartDialogOpen,
+              smart_file_name: smartFile?.name ?? null,
+              detection: smartDetection,
+            },
+          }
+        : {}),
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/workbooks"
+      getScope={getScope}
+    >
       {/*
         No `accept` filter — Drive / Google Sheets shortcuts and many
         mobile pickers grey out everything when an accept whitelist is
@@ -525,6 +563,6 @@ export default function WorkbooksLandingPage() {
         onCommit={handleSmartCommit}
         isCommitting={smartCommitting}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

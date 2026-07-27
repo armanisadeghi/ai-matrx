@@ -8,10 +8,34 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
 import { useScheduledTasks } from "../../hooks/useScheduledTasks";
+import { buildScheduleRosterValues } from "../../lib/schedules-scope";
 import { ScheduleRow } from "./ScheduleRow";
 
+/**
+ * Surface emitter for `matrx-user/schedules` on the list route. The scope is
+ * built at trigger time from the live Redux-backed roster (never on mount),
+ * and only the roster group is emitted here — the open-schedule / run-history
+ * / editor-draft values belong to the detail and form routes.
+ */
 export function ScheduleList() {
+  const { tasks, status, error } = useScheduledTasks();
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/schedules"
+      getScope={() =>
+        createSchedulesScope(buildScheduleRosterValues(tasks, status, error))
+      }
+    >
+      <ScheduleListBody />
+    </SurfaceRuntimeProvider>
+  );
+}
+
+function ScheduleListBody() {
   const { tasks, status, error, refetch } = useScheduledTasks();
 
   if (status === "loading" || status === "idle") {

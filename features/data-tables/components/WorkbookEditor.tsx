@@ -46,6 +46,7 @@ import { disposeUniverInstance } from "../utils/disposeUniverInstance";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import { WorkbookCursorOverlay } from "./WorkbookCursorOverlay";
 import { getLatestSnapshot, saveSnapshot } from "../workbook-service";
+import { registerWorkbookScopeSource } from "../workbook-scope-source";
 import { isServiceFailure } from "../types";
 import { downloadUniverAsXlsx } from "../univer-to-xlsx";
 import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";
@@ -498,6 +499,76 @@ export default function WorkbookEditor({
       });
     }
   }, [workbookId, workbookName]);
+
+  // Surface bridge — publish the live editor state (sheets, snapshot, save
+  // status, collab presence) for the `matrx-user/workbooks` emitter on the
+  // page above us. Read-on-demand at agent-launch time, never pushed up as
+  // state (that would re-render the editor on every keystroke). Returns null
+  // until Univer has booted, so the emitter omits the values rather than
+  // faking them. See `../workbook-scope-source.ts`.
+  useEffect(() => {
+    return registerWorkbookScopeSource({
+      workbookId,
+      read: () => {
+        const api = apiRef.current;
+        const workbook = api?.getActiveWorkbook?.();
+        if (!workbook) return null;
+        let snapshot: Record<string, unknown> | null = null;
+        try {
+          snapshot = workbook.getSnapshot() as unknown as Record<
+            string,
+            unknown
+          >;
+        } catch {
+          snapshot = null;
+        }
+        const order = Array.isArray(snapshot?.sheetOrder)
+          ? (snapshot.sheetOrder as string[])
+          : [];
+        const sheetMap = (snapshot?.sheets ?? {}) as Record<
+          string,
+          { id?: string; name?: string }
+        >;
+        const sheets = order.map((sheetId, index) => ({
+          id: sheetId,
+          name: sheetMap[sheetId]?.name ?? sheetId,
+          index,
+        }));
+        const activeSheet = (
+          workbook as unknown as {
+            getActiveSheet?: () => {
+              getSheetId?: () => string;
+              getSheetName?: () => string;
+            } | null;
+          }
+        ).getActiveSheet?.();
+        return {
+          sheets,
+          activeSheetId: activeSheet?.getSheetId?.() ?? null,
+          activeSheetName: activeSheet?.getSheetName?.() ?? null,
+          snapshot,
+          bootState,
+          loadError,
+          saveStatus,
+          collab: {
+            enabled: collab,
+            is_host: collabIsHost,
+            self_uid: collabSelfUid,
+            remote_peers: remoteAwareness.size,
+          },
+        };
+      },
+    });
+  }, [
+    workbookId,
+    bootState,
+    loadError,
+    saveStatus,
+    collab,
+    collabIsHost,
+    collabSelfUid,
+    remoteAwareness,
+  ]);
 
   // Save-status pill text/style.
   const statusPill = useMemo(() => statusPillFor(saveStatus), [saveStatus]);

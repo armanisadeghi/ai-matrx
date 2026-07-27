@@ -17,8 +17,16 @@ import {
   runTaskNowThunk,
   toggleTaskEnabled,
 } from "../../redux/tasks/thunks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
 import { useTaskDetail } from "../../hooks/useTaskDetail";
 import { useScheduledTasks } from "../../hooks/useScheduledTasks";
+import { useTaskRuns } from "../../hooks/useTaskRuns";
+import {
+  buildOpenScheduleValues,
+  buildScheduleRosterValues,
+  buildScheduleRunValues,
+} from "../../lib/schedules-scope";
 import { SpecCard } from "./SpecCard";
 import { TriggerCard } from "./TriggerCard";
 import { RunHistoryCard } from "./RunHistoryCard";
@@ -27,7 +35,39 @@ interface Props {
   taskId: string;
 }
 
+/**
+ * Surface emitter for `matrx-user/schedules` on the detail route. Emits the
+ * roster plus the open schedule, its target action and its run history; the
+ * scope is assembled at trigger time from live Redux state. `useTaskRuns`
+ * here is the same hook `RunHistoryCard` uses (it no-ops when the runs are
+ * already loaded), so no extra fetch is introduced.
+ */
 export function ScheduleDetail({ taskId }: Props) {
+  const { task } = useTaskDetail(taskId);
+  const { tasks, status, error } = useScheduledTasks();
+  const {
+    runs,
+    status: runsStatus,
+    error: runsError,
+  } = useTaskRuns(taskId);
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/schedules"
+      getScope={() =>
+        createSchedulesScope({
+          ...buildScheduleRosterValues(tasks, status, error),
+          ...(task ? buildOpenScheduleValues(task) : {}),
+          ...buildScheduleRunValues(runs, runsStatus, runsError),
+        })
+      }
+    >
+      <ScheduleDetailBody taskId={taskId} />
+    </SurfaceRuntimeProvider>
+  );
+}
+
+function ScheduleDetailBody({ taskId }: Props) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { task, status, error } = useTaskDetail(taskId);
