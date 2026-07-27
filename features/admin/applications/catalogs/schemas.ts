@@ -320,6 +320,11 @@ export const credentialFieldSchema = loose({
   format: z.string().nullable().optional(),
   validation_regex: z.string().nullable().optional(),
   env_aliases: z.array(z.string().regex(ENV_ALIAS_REGEX)).optional(),
+  // Where the value lives: 'encrypted' -> users.user_secrets (handling applies);
+  // 'metadata' -> plaintext credential_items metadata (reserved field_keys
+  // 'login_urls'/'notes' map to first-class columns; the rest to
+  // non_secret_fields). Default (absent) = 'encrypted'.
+  storage_class: z.enum(["metadata", "encrypted"]).optional(),
   handling: z.enum(["visible", "revealable", "sealed"]).optional(),
   editable: z.boolean().optional(),
   inject_into_sandbox: z.boolean().optional(),
