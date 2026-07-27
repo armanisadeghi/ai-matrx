@@ -13,6 +13,18 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D110 — stray or broken Cloudflare Workers build is red on frontend releases (2026-07-27)
+
+GitHub check `Workers Builds: ai-matrx-admin` failed on release `v0.4.154`
+(`005edd3af`, Cloudflare build `7328b9c2-77b0-4809-bb15-411a8b3f3105`) and on
+multiple recent release commits, while the canonical Vercel deployment is green
+and `aimatrx.com` is serving it. No Wrangler/Cloudflare deployment config exists
+in the repository; the check comes from an external Cloudflare integration whose
+dashboard logs require account access. Decision needed: if that deployment is
+retired, remove the GitHub/Cloudflare integration; if it is intended, inspect the
+Cloudflare build log and add the missing repository configuration or build
+settings.
+
 ### D109 — frontend release gates are globally disabled by environment (2026-07-27)
 
 Both `scripts/release.sh` runs for the feedback MCP printed
