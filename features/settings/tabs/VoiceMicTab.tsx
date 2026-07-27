@@ -4,7 +4,7 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 const VoiceSettingsPage = lazy(
-  () => import("@/app/(transitional)/settings/voice/page"),
+  () => import("@/features/settings/pages/VoiceSettingsPage"),
 );
 
 export default function VoiceMicTab() {

@@ -4,7 +4,7 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 const IntegrationsPage = lazy(
-  () => import("@/app/(transitional)/settings/integrations/page"),
+  () => import("@/features/settings/pages/IntegrationsSettingsPage"),
 );
 
 export default function IntegrationsTab() {
