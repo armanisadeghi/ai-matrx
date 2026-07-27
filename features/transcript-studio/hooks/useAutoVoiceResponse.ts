@@ -32,6 +32,7 @@ import {
   selectPrimaryRequest,
   selectSpokenText,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+// eslint-disable-next-line no-restricted-syntax -- THE one legal importer: this hook owns the app's single streaming speaker, mounted only inside the lazy AudioSystemHostImpl.
 import { useCartesiaStreamingSpeaker } from "@/features/tts/hooks/useCartesiaStreamingSpeaker";
 import { SCRIBE_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import {

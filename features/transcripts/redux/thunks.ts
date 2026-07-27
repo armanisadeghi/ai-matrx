@@ -23,7 +23,6 @@ import type {
 import * as transcriptsService from "../service/transcriptsService";
 import {
   activeTranscriptChanged,
-  selectActiveTranscript,
   selectTranscriptsInitialized,
   transcriptAdded,
   transcriptPatched,
@@ -157,6 +156,3 @@ export const setActiveTranscript = (
     dispatch(activeTranscriptChanged(transcript?.id ?? null));
   };
 };
-
-/** Re-export for convenience in components that inspect the active row. */
-export { selectActiveTranscript };

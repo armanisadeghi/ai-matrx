@@ -633,6 +633,41 @@ const reactFlowStaticImportBan = [
     },
 ];
 
+// Audio system entry modules (2026-07 audio consolidation): the ENTIRE audio
+// system mounts lazily via providers/AudioSystemHost.tsx → AudioSystemHostImpl
+// on first user engagement. That only holds if the heavy entry modules never
+// re-enter an always-loaded graph via a static value import. Each has exactly
+// ONE legal importer, which carries a justified inline disable:
+//   - useChunkedRecordAndTranscribe (971L recorder → micStream, speechApi,
+//     audioSafetyStore, chunk journal, file handler) → GlobalRecordingEngine
+//   - useCartesiaStreamingSpeaker (843L + @cartesia/cartesia-js SDK) →
+//     useAutoVoiceResponse
+//   - useAutoVoiceResponse (drags the speaker + agents execution selectors) →
+//     providers/AudioOutputHostImpl
+// Everything else uses useGlobalRecording()/useVoiceCapture (recording),
+// voicePlaybackBus (read-aloud), or enqueuePlayback (TTS queue) — all light,
+// all activation-latch-wired. `import type` and dynamic import() are fine.
+const audioSystemStaticImportBan = [
+    {
+        selector:
+            "ImportDeclaration[importKind!='type'][source.value=/^@\\/features\\/audio\\/hooks\\/useChunkedRecordAndTranscribe$/]",
+        message:
+            "Do not statically import useChunkedRecordAndTranscribe — it drags the whole recording graph (micStream, speechApi, audioSafetyStore, chunk journal, file handler) into this chunk and creates a second recorder outside the global engine. Record via useGlobalRecording()/useVoiceCapture (state from recordingsSlice, verbs from recordingCommands — the engine mounts on demand). Only providers/GlobalRecordingEngine.tsx may import this, with a justified inline disable. `import type {...}` is fine. See the code-splitting skill + providers/AudioSystemHost.tsx.",
+    },
+    {
+        selector:
+            "ImportDeclaration[importKind!='type'][source.value=/^@\\/features\\/tts\\/hooks\\/useCartesiaStreamingSpeaker$/]",
+        message:
+            "Do not statically import useCartesiaStreamingSpeaker — it drags the @cartesia/cartesia-js SDK into this chunk. Read-aloud goes through voicePlaybackBus (requestVoicePlayback / stopVoicePlayback); queued TTS goes through enqueuePlayback. Only features/transcript-studio/hooks/useAutoVoiceResponse.ts may import it, with a justified inline disable. `import type {...}` is fine. See providers/AudioSystemHost.tsx.",
+    },
+    {
+        selector:
+            "ImportDeclaration[importKind!='type'][source.value=/^@\\/features\\/transcript-studio\\/hooks\\/useAutoVoiceResponse$/]",
+        message:
+            "Do not statically import useAutoVoiceResponse — it owns the Cartesia streaming speaker and must live ONLY inside the lazy audio system. Drive read-aloud via voicePlaybackBus instead. Only providers/AudioOutputHostImpl.tsx may import it, with a justified inline disable. `import type {...}` is fine. See providers/AudioSystemHost.tsx.",
+    },
+];
+
 // Camera getUserMedia chokepoint (docs/media-capture-plan.md §5 invariant 1,
 // the camera twin of the micStream rule): the ONE legal `getUserMedia({video})`
 // call site is features/media-capture/runtime/camera-stream-manager.ts —
@@ -824,6 +859,7 @@ export default [
                 ...heavyImplStaticImportBan,
                 // React Flow is a heavy browser-only canvas — only the Agent Set builder Impl may import it.
                 ...reactFlowStaticImportBan,
+                ...audioSystemStaticImportBan,
                 // getUserMedia({video}) only inside the camera stream manager.
                 ...cameraGetUserMediaChokepointBan,
                 ...surfaceLabelOverrideBan,
@@ -948,6 +984,7 @@ export default [
                 ...contextMenuV3StaticImportBan,
                 ...heavyImplStaticImportBan,
                 ...reactFlowStaticImportBan,
+                ...audioSystemStaticImportBan,
                 {
                     selector: "JSXOpeningElement[name.name='img']",
                     message:
@@ -1235,6 +1272,7 @@ export default [
                 ...contextMenuV3StaticImportBan,
                 ...heavyImplStaticImportBan,
                 ...reactFlowStaticImportBan,
+                ...audioSystemStaticImportBan,
             ],
         },
     },
@@ -1298,6 +1336,7 @@ export default [
                 ...contextMenuV3StaticImportBan,
                 ...heavyImplStaticImportBan,
                 ...reactFlowStaticImportBan,
+                ...audioSystemStaticImportBan,
             ],
         },
     },

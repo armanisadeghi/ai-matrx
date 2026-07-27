@@ -19,6 +19,7 @@
 // latch); a request published before this mounts is picked up on mount via
 // useSyncExternalStore's snapshot read. Renders no UI of its own.
 
+// eslint-disable-next-line no-restricted-syntax -- THE one legal importer: this host mounts the speaker owner, and lives only inside the lazy AudioSystemHostImpl.
 import { useAutoVoiceResponse } from "@/features/transcript-studio/hooks/useAutoVoiceResponse";
 
 export default function AudioOutputHostImpl() {

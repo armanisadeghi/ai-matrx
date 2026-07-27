@@ -1,13 +1,16 @@
 // features/education/notes/LiveCaptureButton.tsx
 //
 // Live lecture capture (P4): press record → real-time transcription streams into
-// the OPEN note editor. Reuses the ONE canonical streaming-transcription path
-// (features/audio useChunkedRecordAndTranscribe → the shared mic stream + Groq
-// chunk pipeline) — never a second capture path. Each transcribed chunk is
-// appended to the note's live Redux content (updateNoteContent), so it renders in
-// the editor as the lecturer speaks and autosaves through the notes middleware.
-// The student can keep typing/annotating between chunks — appends always target
-// the freshest content, so manual edits are never clobbered.
+// the OPEN note editor. Drives the ONE global recorder via `useVoiceCapture`
+// (context-free `useGlobalRecording` under the hood) — never a second recorder
+// instance, so start-always-wins arbitration and the unified Audio panel session
+// registry apply, and the heavy recording graph stays out of this route chunk.
+// Each transcribed chunk is appended to the note's live Redux content
+// (updateNoteContent), so it renders in the editor as the lecturer speaks and
+// autosaves through the notes middleware. The student can keep typing/annotating
+// between chunks — appends always target the freshest content, so manual edits
+// are never clobbered. All recording state reads are ownership-gated on this
+// note's instanceId, so another surface's recording never lights this button.
 
 "use client";
 
@@ -19,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { updateNoteContent } from "@/features/notes/redux/slice";
 import { selectNoteContent } from "@/features/notes/redux/selectors";
-import { useChunkedRecordAndTranscribe } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
+import { useVoiceCapture } from "@/features/audio/hooks/useVoiceCapture";
 
 function formatDuration(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -53,11 +56,20 @@ export function LiveCaptureButton({ noteId }: { noteId: string }) {
   const {
     isRecording,
     isTranscribing,
-    duration,
-    startRecording,
-    stopRecording,
-  } = useChunkedRecordAndTranscribe({
-    onChunkTranscribed: (chunkText) => appendToNote(chunkText),
+    isFinalizing,
+    durationSec,
+    start: startCapture,
+    stop: stopCapture,
+  } = useVoiceCapture({
+    instanceId: noteId,
+    label: "Live capture",
+    onChunk: (chunkText) => appendToNote(chunkText),
+    // Chunks were already appended live — the final accumulated text must not
+    // be appended again; this fires once finalization lands, so it carries the
+    // "saved" toast.
+    onTranscript: () => {
+      toast.success("Live capture stopped — transcript saved to the note");
+    },
     onError: (message) => toast.error(message || "Recording failed"),
   });
 
@@ -65,15 +77,10 @@ export function LiveCaptureButton({ noteId }: { noteId: string }) {
     const heading = `## Live capture — ${new Date().toLocaleString()}`;
     appendToNote(heading, { asHeader: true });
     try {
-      await startRecording();
+      await startCapture();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not start recording");
     }
-  };
-
-  const stop = async () => {
-    await stopRecording();
-    toast.success("Live capture stopped — transcript saved to the note");
   };
 
   if (isRecording) {
@@ -81,7 +88,7 @@ export function LiveCaptureButton({ noteId }: { noteId: string }) {
       <Button
         size="sm"
         variant="destructive"
-        onClick={stop}
+        onClick={stopCapture}
         className="gap-1.5"
         title="Stop live capture"
       >
@@ -90,7 +97,7 @@ export function LiveCaptureButton({ noteId }: { noteId: string }) {
           <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
         </span>
         <Square className="h-3.5 w-3.5" />
-        <span className="tabular-nums">{formatDuration(duration)}</span>
+        <span className="tabular-nums">{formatDuration(durationSec)}</span>
       </Button>
     );
   }
@@ -100,11 +107,11 @@ export function LiveCaptureButton({ noteId }: { noteId: string }) {
       size="sm"
       variant="outline"
       onClick={start}
-      disabled={isTranscribing}
+      disabled={isTranscribing || isFinalizing}
       className={cn("gap-1.5")}
       title="Record a lecture and transcribe it live into this note"
     >
-      {isTranscribing ? (
+      {isTranscribing || isFinalizing ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
         <Mic className="h-3.5 w-3.5" />

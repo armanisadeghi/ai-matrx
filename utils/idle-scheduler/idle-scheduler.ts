@@ -107,6 +107,17 @@ export function onFlushComplete(listener: () => void): UnregisterFn {
     }
 
     flushListeners.add(listener);
+
+    // A "tell me when idle" subscriber needs the pipeline RUNNING. Before
+    // 2026-07-26 only registerIdleTask started it, so on routes where nothing
+    // registered an idle task the flush never ran, useIdleReady stayed false
+    // forever, and DeferredSingletonWrapper never mounted the core (killing
+    // OverlayController — every overlay app-wide). Subscribing must start the
+    // pipeline too.
+    if (flushState === 'idle') {
+        startFlushPipeline();
+    }
+
     return () => {
         flushListeners.delete(listener);
     };
@@ -125,6 +136,14 @@ export function getSchedulerState(): {
         pendingCount: queue.size,
         pendingKeys: Array.from(queue.keys()),
     };
+}
+
+// Diagnostics probe: lets a console / agent read the live scheduler state
+// (`window.__idleSched()`) — the wrapper-never-mounts class of bug is invisible
+// without it.
+if (typeof window !== "undefined") {
+    (window as unknown as { __idleSched?: () => unknown }).__idleSched =
+        getSchedulerState;
 }
 
 /**
@@ -158,10 +177,28 @@ function startFlushPipeline(): void {
     };
 
     const waitForPaint = () => {
-        const rafId = requestAnimationFrame(() => {
+        // requestAnimationFrame NEVER fires while the tab is hidden (background
+        // tab, restored session, headless browser) — before 2026-07-26 this
+        // stage hung the whole pipeline forever in that state, so useIdleReady
+        // never flipped and DeferredSingletonWrapper never mounted the core
+        // (no OverlayController, no singletons, app-wide). Paint alignment is
+        // an optimization, not a correctness requirement: race the rAF against
+        // a timeout so a hidden tab still flushes.
+        let advanced = false;
+        const advance = () => {
+            if (advanced) return;
+            advanced = true;
             waitForIdle();
+        };
+        const rafId = requestAnimationFrame(advance);
+        const timeoutId = setTimeout(
+            advance,
+            document.visibilityState === "hidden" ? 250 : 1_500,
+        );
+        cleanupFns.push(() => {
+            cancelAnimationFrame(rafId);
+            clearTimeout(timeoutId);
         });
-        cleanupFns.push(() => cancelAnimationFrame(rafId));
     };
 
     const waitForIdle = () => {

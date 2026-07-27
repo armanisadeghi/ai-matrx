@@ -25,6 +25,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+// eslint-disable-next-line no-restricted-syntax -- THE one legal importer: this engine IS the single shared recorder, mounted only inside the lazy AudioSystemHostImpl.
 import {
   useChunkedRecordAndTranscribe,
 } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
@@ -260,7 +261,9 @@ export function GlobalRecordingEngine() {
     recorder.stopRecording();
   }, [dispatch, recorder, setIsFinalizing]);
   // Keep the capture-lock takeover handle pointed at the latest stop().
-  stopRef.current = stop;
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
 
   const start = useCallback(
     async (args: StartRecordingArgs): Promise<void> => {
