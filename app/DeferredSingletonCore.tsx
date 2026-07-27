@@ -18,7 +18,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";
 import OverlayController from "@/features/overlays/OverlayController";
-import { AudioRecoveryToast } from "@/features/audio/components/AudioRecoveryToast";
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
 import AnnouncementProvider from "@/components/layout/AnnouncementProvider";
 import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
@@ -95,7 +94,6 @@ export default function DeferredSingletonCore() {
       <PersistentDOMConnector />
       <OverlayController />
       <LazyMessagingIsland />
-      <AudioRecoveryToast />
       <KgNewSuggestionNotifier />
       <AuthSessionWatcher />
       <AnnouncementProvider />

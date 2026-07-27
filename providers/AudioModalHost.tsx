@@ -13,7 +13,7 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import type { AudioModalOptions } from '@/types/audio';
-import { registerAudioModal } from '@/utils/audio/audioModal';
+import { registerAudioModal, unregisterAudioModal } from '@/utils/audio/audioModal';
 
 const AudioModal = dynamic(() => import('@/components/audio/AudioModal'), { ssr: false });
 
@@ -27,7 +27,11 @@ export function AudioModalHost() {
     }, []);
 
     useEffect(() => {
+        // registerAudioModal flushes any request queued before this host
+        // mounted (cold-tab showAudioModal() activates the audio system and
+        // queues latest-wins — see utils/audio/audioModal.ts).
         registerAudioModal(showAudioModal);
+        return () => unregisterAudioModal();
     }, [showAudioModal]);
 
     if (!modalProps) return null;

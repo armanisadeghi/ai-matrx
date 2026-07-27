@@ -10,6 +10,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { audioSafetyStore, SafetyRecord } from "../services/audioSafetyStore";
 import { discardChunkJournal } from "../services/audioChunkJournal";
+import { clearAudioBootMarker } from "../audioBootMarker";
 
 interface AudioRecoveryContextValue {
   hasRecoveredData: boolean;
@@ -48,6 +49,9 @@ export function AudioRecoveryProvider({
       if (typeof window === "undefined" || !window.indexedDB) return;
       const orphans = await audioSafetyStore.getOrphaned();
       setRecoveredItems(orphans);
+      // Clean scan — nothing to recover, so the dirty-recording boot marker
+      // (which auto-activates the audio system on boot) has done its job.
+      if (orphans.length === 0) clearAudioBootMarker();
     } catch (err) {
       console.warn("[AudioRecoveryProvider] Failed to check IndexedDB:", err);
     }
@@ -65,7 +69,12 @@ export function AudioRecoveryProvider({
       // User explicitly discarded the recording — drop its eager chunk
       // journal (cross-device staging) too. Best-effort.
       void discardChunkJournal(id);
-      setRecoveredItems((prev) => prev.filter((item) => item.id !== id));
+      setRecoveredItems((prev) => {
+        const next = prev.filter((item) => item.id !== id);
+        // Last orphan handled — stop re-activating audio on every boot.
+        if (next.length === 0) clearAudioBootMarker();
+        return next;
+      });
     } catch (err) {
       console.error("[AudioRecoveryProvider] Failed to delete entry:", err);
     }
@@ -78,6 +87,7 @@ export function AudioRecoveryProvider({
         void discardChunkJournal(item.id);
       }
       setRecoveredItems([]);
+      clearAudioBootMarker();
     } catch (err) {
       console.error(
         "[AudioRecoveryProvider] Failed to clear all entries:",

@@ -9,15 +9,15 @@
 // read-aloud that is mid-stream keeps playing while the user navigates.
 //
 // Output-only: it speaks agent responses. It requests NO microphone permission
-// (mic capture is the recording side — GlobalRecordingProvider). The Cartesia
+// (mic capture is the recording side — GlobalRecordingEngine). The Cartesia
 // streaming speaker only plays audio out; it never opens an input stream.
 //
-// This file is `next/dynamic({ ssr: false })`-loaded by AudioOutputHost so the
-// Cartesia SDK stays off the server render and out of every page's static
-// graph — it enters the client chunk exactly once (benefit: SSR exclusion for a
-// browser-only dep + a single app-shell singleton). Driven entirely by
-// `voicePlaybackBus` (surfaces publish `requestVoicePlayback(...)`); renders no
-// UI of its own.
+// Mounted STATICALLY inside providers/AudioSystemHostImpl.tsx — the lazy audio
+// system. The Cartesia SDK therefore loads only after first audio engagement,
+// never in any page's chunk. Driven entirely by `voicePlaybackBus` (surfaces
+// publish `requestVoicePlayback(...)`, which itself fires the activation
+// latch); a request published before this mounts is picked up on mount via
+// useSyncExternalStore's snapshot read. Renders no UI of its own.
 
 import { useAutoVoiceResponse } from "@/features/transcript-studio/hooks/useAutoVoiceResponse";
 

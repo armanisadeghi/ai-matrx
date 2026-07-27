@@ -34,14 +34,11 @@ import { PersistentComponentProvider } from "@/providers/persistance/PersistentC
 import { SelectedImagesProvider } from "@/components/image/context/SelectedImagesProvider";
 import { UniformHeightProvider } from "@/features/applet/runner/layouts/core/UniformHeightWrapper";
 import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
-// disaster
-import { AudioRecoveryProvider } from "@/features/audio/providers/AudioRecoveryProvider";
-// TEMP (Step 2 of audio consolidation): the recording engine is mounted
-// statically here for functional parity while the AudioSystemHost lands in
-// Step 4, which moves it behind the activation-gated dynamic boundary.
-// The old GlobalRecordingProvider context wrapper is gone — useGlobalRecording
-// is context-free (Redux state + command proxy).
-import { GlobalRecordingEngine } from "@/providers/GlobalRecordingEngine";
+// ONE audio mount. The entire audio system (recording engine, TTS speaker,
+// playback/session mirrors, device manager, audio modal, crash recovery) sits
+// behind this paper-thin activation-gated shell — nothing audio-related loads
+// until the user's first audio engagement. See providers/AudioSystemHost.tsx.
+import { AudioSystemHost } from "@/providers/AudioSystemHost";
 import { RequestRecoveryProvider } from "@/features/request-recovery/providers/RequestRecoveryProvider";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
@@ -87,11 +84,6 @@ import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHos
 import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { ScopeMismatchDialogHost } from "@/components/dialogs/scope-mismatch/ScopeMismatchDialogHost";
-import { AudioModalHost } from "@/providers/AudioModalHost";
-import { AudioOutputHost } from "@/providers/AudioOutputHost";
-import { AudioPlaybackHost } from "@/features/audio/playback/AudioPlaybackHost";
-import { AudioSessionHost } from "@/features/audio/session/AudioSessionHost";
-import { AudioDeviceProvider } from "@/providers/AudioDeviceProvider";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
 // imported by `build-tool-injection.ts` (the CLIENT-side consumer) — NOT here.
@@ -132,15 +124,13 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                   <ModuleHeaderProvider>
                     <UniformHeightProvider>
                       <SelectedImagesProvider>
-                          <AudioRecoveryProvider>
                             <RequestRecoveryProvider>
-                              {/* App-root audio DEVICE manager (mic/speaker
-                                selection + permission). Mounted above the
-                                recording provider so the persisted mic device is
-                                applied to the singleton before the first
-                                recording. Renders nothing; effects only. */}
-                              <AudioDeviceProvider />
-                              <GlobalRecordingEngine />
+                              {/* ONE audio mount — the whole audio system
+                                (devices, recording engine, TTS output,
+                                playback/session mirrors, modal, recovery)
+                                mounts lazily on first audio engagement.
+                                See providers/AudioSystemHost.tsx. */}
+                              <AudioSystemHost />
                               <React.Fragment>
                                 {children}
                                 <RecoveryWindow />
@@ -191,40 +181,9 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   chat's durable tags. Dismiss cancels the send.
                                   See components/dialogs/scope-mismatch/. */}
                                 <ScopeMismatchDialogHost />
-                                {/* Imperative audio modal host. Exposes the global
-                                  `showAudioModal({ text, title, ... })` helper
-                                  (see utils/audio/audioModal.ts). The modal is
-                                  next/dynamic — no TTS code loads until first use. */}
-                                <AudioModalHost />
-                                {/* App-root audio OUTPUT singleton — owns the
-                                  read-aloud / TTS streaming speaker so playback
-                                  survives War Room tab switches and route
-                                  changes (it used to die when the Agent+ tab
-                                  unmounted). Output-only (no mic permission).
-                                  Sibling of GlobalRecordingProvider (audio IN).
-                                  Surfaces drive it via voicePlaybackBus
-                                  (requestVoicePlayback / stopVoicePlayback). The
-                                  Cartesia SDK is next/dynamic — nothing TTS
-                                  loads on the server. See providers/AudioOutputHost. */}
-                                <AudioOutputHost />
-                                {/* App-root mirror of the single audio
-                                  playback QUEUE (features/audio/playback). Keeps
-                                  Redux in sync with the framework-free queue
-                                  singleton so Speaker buttons + the playback
-                                  window-panel render one shared queue. Imports
-                                  only the queue's subscribe API — provider SDKs
-                                  (Cartesia/Groq) load lazily on first speak, not
-                                  in the app shell. */}
-                                <AudioPlaybackHost />
-                                {/* App-root mirror of the unified audio SESSION
-                                  registry (features/audio/session). The single
-                                  source of truth for EVERY audio activity — in +
-                                  out, live + history — that the avatar-menu Audio
-                                  panel renders. Mirrors the registry into Redux
-                                  and projects the playback queue into it. SDK-free
-                                  (subscribe APIs only); producers register
-                                  themselves. */}
-                                <AudioSessionHost />
+                                {/* Audio hosts (modal, TTS output, playback +
+                                  session mirrors, devices, recording, recovery)
+                                  all live inside <AudioSystemHost /> above. */}
                                 {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the OverlayController — no host needed
@@ -234,7 +193,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                     openFilePreview(fileId); */}
                               </React.Fragment>
                             </RequestRecoveryProvider>
-                          </AudioRecoveryProvider>
                       </SelectedImagesProvider>
                     </UniformHeightProvider>
                   </ModuleHeaderProvider>

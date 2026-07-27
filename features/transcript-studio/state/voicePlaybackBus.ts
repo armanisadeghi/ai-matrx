@@ -5,7 +5,7 @@
 //
 //   ▸ REQUEST (down): a surface asks "read THIS conversation's responses aloud"
 //     (or "stop"). It publishes `{ conversationId, enabled }` here. The single
-//     app-root owner — `AudioOutputHost` (providers/AudioOutputHost.tsx) — is
+//     app-root owner — `AudioOutputHostImpl` (inside providers/AudioSystemHostImpl.tsx) — is
 //     the ONLY subscriber that mounts the actual speaker, so playback lives at
 //     the top of the tree and SURVIVES tab switches and route changes. The
 //     surface that asked can unmount (War Room tab switch, navigation) and the

@@ -3,7 +3,7 @@
 // useAutoVoiceResponse — speak assistant responses aloud AS THEY STREAM IN.
 //
 // OWNERSHIP (2026-06-23): this hook owns a `useCartesiaStreamingSpeaker` and is
-// now mounted ONCE at app-root by `AudioOutputHost` (providers/AudioOutputHost),
+// now mounted ONCE by the lazy audio system (providers/AudioSystemHostImpl),
 // NOT inside a tab/route component. That is the whole point: the speaker (and
 // its WebSocket + SinkAwarePlayer) no longer unmount on a War Room tab switch or a
 // route change, so an in-flight read-aloud keeps playing. The conversation to
