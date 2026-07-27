@@ -10,6 +10,12 @@ import {
 } from "@/features/marketing/components/crawls/crawl-session-panels";
 import { useCrawl } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
 import {
   formatDate,
   formatDuration,
@@ -74,18 +80,103 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
       ],
       attributes: { session_id: row.id, site_id: site.id },
     });
+  const pageLocation = `AI Matrx — Marketing — Crawl summary — session ${row.id}`;
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "session",
+      title: "Session timing",
+      description: "The full crawl session row (timing, trigger, status).",
+      build: (level) => (level === "brief" ? { status: row.status } : row),
+    },
+    {
+      id: "scope",
+      title: "Frozen crawl scope",
+      description: "Seeds, limits, and inclusion rules frozen for this crawl.",
+      cuttable: true,
+      build: (level) => (level === "full" ? row.scope : { note: "Full only" }),
+    },
+    {
+      id: "stats",
+      title: "Reconciliation and run stats",
+      description: "Run statistics and registry reconciliation counts.",
+      build: (level) =>
+        level === "full"
+          ? row.stats
+          : {
+              discovered: jsonNumber(row.stats, ["pages_discovered"]),
+              captured: jsonNumber(row.stats, ["pages_fetched"]),
+              failed: jsonNumber(row.stats, ["pages_failed"]),
+            },
+    },
+    {
+      id: "metadata",
+      title: "Session metadata",
+      description: "Metadata recorded on this crawl session.",
+      cuttable: true,
+      build: (level) => (level === "full" ? row.metadata : { note: "Full only" }),
+    },
+  ];
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Crawl session ${row.id.slice(0, 8)}`,
+    kind: "marketing-crawl-summary-page",
+    location: pageLocation,
+    description: `The full crawl session summary for session ${row.id}.`,
+    attributes: { session_id: row.id, site_id: site.id, status: row.status },
+    summary: sessionCopy.human(),
+    sections: groomerSections(),
+  });
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+  const metricCopy = (label: string, value: number | string) =>
+    webCopy({
+      kind: "web-crawl-metric",
+      label,
+      description: `The "${label}" crawl KPI for session ${row.id}.`,
+      surface: `Crawl summary — ${label} — session ${row.id}`,
+      data: { metric: label, value },
+      lines: [[label, value]],
+      attributes: { session_id: row.id, metric: label },
+    });
   return (
     <CrawlSurfaceProvider crawlId={crawlId} crawl={row}>
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
+      <div className="flex shrink-0 items-center justify-end gap-1.5">
+        <CopyButtons
+          size="icon"
+          label={`Crawl summary (${row.id.slice(0, 8)})`}
+          human={() => sessionCopy.human()}
+          json={pageFullData}
+          agent={() => ({
+            kind: "marketing-crawl-summary-page",
+            location: pageLocation,
+            description: `The full crawl session summary for session ${row.id}.`,
+            data: pageFullData(),
+            summary: sessionCopy.human(),
+            attributes: { session_id: row.id, site_id: site.id },
+          })}
+        />
+        <AgentCopyGroomerLauncher config={groomerConfig} />
+      </div>
       <CrawlSubnav crawl={row} />
       <section className="grid shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
         <MetricCell
           label="URLs discovered"
           value={jsonNumber(row.stats, ["pages_discovered"]).toLocaleString()}
+          copy={metricCopy(
+            "URLs discovered",
+            jsonNumber(row.stats, ["pages_discovered"]),
+          )}
         />
         <MetricCell
           label="Captured"
           value={jsonNumber(row.stats, ["pages_fetched"]).toLocaleString()}
+          copy={metricCopy("Captured", jsonNumber(row.stats, ["pages_fetched"]))}
         />
         <MetricCell
           label="New pages"
@@ -93,6 +184,10 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
             "reconciliation",
             "new",
           ]).toLocaleString()}
+          copy={metricCopy(
+            "New pages",
+            jsonNumberPath(row.stats, ["reconciliation", "new"]),
+          )}
         />
         <MetricCell
           label="Missing"
@@ -105,15 +200,24 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
               ? "warning"
               : "good"
           }
+          copy={metricCopy(
+            "Missing",
+            jsonNumberPath(row.stats, ["reconciliation", "missing"]),
+          )}
         />
         <MetricCell
           label="Failed"
           value={jsonNumber(row.stats, ["pages_failed"]).toLocaleString()}
           tone={jsonNumber(row.stats, ["pages_failed"]) ? "bad" : "good"}
+          copy={metricCopy("Failed", jsonNumber(row.stats, ["pages_failed"]))}
         />
         <MetricCell
           label="Duration"
           value={formatDuration(row.started_at, row.finished_at)}
+          copy={metricCopy(
+            "Duration",
+            formatDuration(row.started_at, row.finished_at),
+          )}
         />
       </section>
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-2 lg:grid-rows-2 lg:[grid-template-rows:minmax(0,1fr)_minmax(0,1fr)] [&>section]:flex [&>section]:min-h-0 [&>section]:flex-col">
