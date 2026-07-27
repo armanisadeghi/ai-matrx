@@ -26,6 +26,17 @@ Items 1-3 look like ONE bug class: the save shape and the load shape have drifte
 
 Owner's framing: these are real but not blocking — the core scoring/triage work is "significantly better" — so this was deliberately deferred to keep momentum, not silently dropped.
 
+### D107 — the build-OOM fix is UNATTRIBUTED: two candidate causes landed in the same green build (2026-07-27)
+
+Production was stuck on v0.4.129 for seven releases; v0.4.130–136 all SIGKILL'd with a compile-phase OOM. v0.4.138 went green (15.9 min). **But two independent changes landed between the last failure and that success, and nobody has isolated which one did it:**
+
+1. **v0.4.137** (parallel session) — reverted the ENTIRE `React.lazy → next/dynamic` campaign (the v0.4.124–132 changes), restoring pre-124 code paths specifically to isolate the OOM.
+2. **v0.4.138** (this session) — `turbopackMemoryLimit` 40GiB → 30GiB in `next.config.js`, on the evidence that measured peak RSS was 58.49 GiB against a 60 GB machine.
+
+Both are plausible sole causes. Consequences of leaving this unresolved: (a) if the revert was the fix, the memory ceiling is costing wall-clock on every build for nothing; (b) if the ceiling was the fix, the lazy→dynamic campaign was reverted for nothing and should be re-landed; (c) if BOTH were needed, the headroom is thin again the moment either is undone.
+
+Isolate with one controlled experiment before building anything else on top: restore `turbopackMemoryLimit` to 40GiB alone and release. Green ⇒ the revert was the fix and the ceiling should go back to 40GiB. Red ⇒ the ceiling is load-bearing, keep 30GiB and re-land the lazy→dynamic campaign on top of it. **Do not re-land the campaign and change the ceiling in the same release** — that is exactly how this became unattributable.
+
 ### D106b — five more surfaces still claim "Only you" from data that can't support it (2026-07-26)
 
 Same class as the files fix (`22e8d79ea`) and the `PermissionsList` fix: a surface reads one signal — a `visibility` value or an empty grant list — and renders a privacy guarantee. None of them can see container conveyance via `platform.reachability`, so each can be wrong the moment the record is attached to a scope, project, or data store.
