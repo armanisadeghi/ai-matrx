@@ -45,8 +45,31 @@ export function buildHtmlPagesListContextData(
     live_url: selected?.url ?? "",
     meta_title: selected?.meta_title ?? "",
     is_indexable: selected?.is_indexable ?? false,
+    sibling_page_count: pages.length,
     meta_description: selected?.meta_description || undefined,
     meta_keywords: selected?.meta_keywords || undefined,
+    og_image: selected?.og_image || undefined,
+    canonical_url: selected?.canonical_url || undefined,
+    page_seo: selected
+      ? {
+          meta_title: selected.meta_title,
+          meta_description: selected.meta_description,
+          meta_keywords: selected.meta_keywords,
+          og_image: selected.og_image,
+          canonical_url: selected.canonical_url,
+          is_indexable: selected.is_indexable,
+        }
+      : undefined,
+    page_timestamps: selected
+      ? { created_at: selected.created_at, updated_at: selected.updated_at }
+      : undefined,
+    page_provenance: selected
+      ? {
+          artifact_id: selected.artifact_id,
+          source_message_id: selected.source_message_id,
+          source_conv_id: selected.source_conv_id,
+        }
+      : undefined,
   });
 
   return scope as Record<string, unknown>;

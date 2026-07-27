@@ -29,6 +29,7 @@ import {
 } from "../agent-context/buildCmsPageContextData";
 import type {
   ClientComponent,
+  ClientEntityVersion,
   ClientPage,
   ClientPageSummary,
   ClientSite,
@@ -50,6 +51,18 @@ export interface UseCmsPageSurfaceScopeParams {
   jsContent: string;
   metaTitle: string;
   metaDescription: string;
+  metaKeywords: string;
+  ogImage: string;
+  canonicalUrl: string;
+  excerpt: string;
+  showInNav: boolean;
+  sortOrder: number;
+  /** Comma-separated tags exactly as typed in the Settings tab. */
+  tags: string;
+  /** The save/load error currently shown in the editor, if any. */
+  editorError?: string | null;
+  /** Version history as loaded by the History tab — empty for a new page. */
+  versions: readonly ClientEntityVersion[];
   /** Ref to whichever of the HTML/CSS/JS textareas is currently mounted (only one at a time). */
   textareaRef: RefObject<HTMLTextAreaElement | null>;
 }
@@ -72,6 +85,15 @@ export function useCmsPageSurfaceScope(
     jsContent,
     metaTitle,
     metaDescription,
+    metaKeywords,
+    ogImage,
+    canonicalUrl,
+    excerpt,
+    showInNav,
+    sortOrder,
+    tags,
+    editorError,
+    versions,
     textareaRef,
   } = params;
 
@@ -95,6 +117,15 @@ export function useCmsPageSurfaceScope(
       jsContent,
       metaTitle,
       metaDescription,
+      metaKeywords,
+      ogImage,
+      canonicalUrl,
+      excerpt,
+      showInNav,
+      sortOrder,
+      tags,
+      editorError,
+      versions,
       selectionStart,
       selectionEnd,
     }) as SurfaceScopePayload;
@@ -113,6 +144,15 @@ export function useCmsPageSurfaceScope(
     jsContent,
     metaTitle,
     metaDescription,
+    metaKeywords,
+    ogImage,
+    canonicalUrl,
+    excerpt,
+    showInNav,
+    sortOrder,
+    tags,
+    editorError,
+    versions,
     textareaRef,
   ]);
 }

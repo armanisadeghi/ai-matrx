@@ -314,6 +314,15 @@ export default function PageEditor({
     jsContent,
     metaTitle,
     metaDescription,
+    metaKeywords,
+    ogImage,
+    canonicalUrl,
+    excerpt,
+    showInNav,
+    sortOrder,
+    tags,
+    editorError: error,
+    versions: versions.versions,
     textareaRef,
   });
 

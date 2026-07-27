@@ -17,11 +17,15 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { Save, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { normalizeDomainInput } from "@/features/cms/utils/pageUrls";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
+import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 
 export default function SiteSettingsPage() {
   const { siteId } = useParams() as { siteId: string };
   const router = useRouter();
-  const { site, refreshSite } = useSiteContext();
+  const { site, refreshSite, pages, components, allSites, currentMode } =
+    useSiteContext();
 
   const [name, setName] = useState(site.name);
   const [slug, setSlug] = useState(site.slug);
@@ -88,7 +92,30 @@ export default function SiteSettingsPage() {
     }
   };
 
+  // Nested `matrx-user/cms-site` runtime: the unsaved form values live only
+  // here, so this tab re-emits the full site scope plus `settings_draft`.
+  // Deepest provider wins, so it shadows the layout's while mounted.
+  const buildSurfaceScope = useCmsSiteSurfaceScope({
+    site,
+    pages,
+    components,
+    allSites,
+    currentMode,
+    settingsDraft: {
+      name,
+      slug,
+      domain,
+      favicon,
+      global_css: globalCss,
+      is_active: isActive,
+    },
+  });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={CMS_SITE_CONTEXT_MENU_PROPS.surfaceName}
+      getScope={buildSurfaceScope}
+    >
     <div className="h-full overflow-auto">
       <div className="px-4 sm:px-6 py-6 space-y-6">
         <div className="flex items-center justify-end">
@@ -282,5 +309,6 @@ export default function SiteSettingsPage() {
         onConfirm={() => runDelete(true)}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

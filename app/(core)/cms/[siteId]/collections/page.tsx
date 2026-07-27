@@ -36,6 +36,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
+import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 
 function maskKey(key: string): string {
   if (key.length <= 8) return "••••••••";
@@ -185,7 +188,8 @@ function PolicyBadges({ collection }: { collection: SiteCollection }) {
 
 export default function CollectionsPage() {
   const { siteId } = useParams() as { siteId: string };
-  const { refreshSite } = useSiteContext();
+  const { refreshSite, site, pages, components, allSites, currentMode } =
+    useSiteContext();
 
   const [collections, setCollections] = useState<SiteCollectionSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -257,6 +261,18 @@ export default function CollectionsPage() {
     }
   };
 
+  // Nested `matrx-user/cms-site` runtime: this tab is the ONLY place the
+  // collections values exist, so it re-emits the full site scope plus its own.
+  // Deepest provider wins, so it shadows the layout's while mounted.
+  const buildSurfaceScope = useCmsSiteSurfaceScope({
+    site,
+    pages,
+    components,
+    allSites,
+    currentMode,
+    collections,
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -269,6 +285,10 @@ export default function CollectionsPage() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={CMS_SITE_CONTEXT_MENU_PROPS.surfaceName}
+      getScope={buildSurfaceScope}
+    >
     <div className="h-full overflow-auto">
       <div className="px-4 sm:px-6 py-6 space-y-4">
         {/* Route chrome (site name, tabs, back) comes from EntityModeHeader in
@@ -424,5 +444,6 @@ export default function CollectionsPage() {
         onConfirm={handleDelete}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

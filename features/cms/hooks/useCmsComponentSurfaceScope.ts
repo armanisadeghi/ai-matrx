@@ -21,13 +21,24 @@ export interface UseCmsComponentSurfaceScopeParams {
   editingComponent: ClientComponent | null;
   htmlContent?: string;
   cssContent?: string;
+  /** Unsaved "New Component" dialog values — undefined when the dialog is closed. */
+  pendingComponent?: { name: string; componentType: string };
 }
 
 export function useCmsComponentSurfaceScope(
   params: UseCmsComponentSurfaceScopeParams,
 ): () => SurfaceScopePayload {
-  const { site, pages, components, editingComponent, htmlContent, cssContent } =
-    params;
+  const {
+    site,
+    pages,
+    components,
+    editingComponent,
+    htmlContent,
+    cssContent,
+    pendingComponent,
+  } = params;
+  const pendingName = pendingComponent?.name;
+  const pendingType = pendingComponent?.componentType;
 
   return useCallback(
     () =>
@@ -38,7 +49,20 @@ export function useCmsComponentSurfaceScope(
         editingComponent,
         htmlContent,
         cssContent,
+        pendingComponent:
+          pendingName !== undefined && pendingType !== undefined
+            ? { name: pendingName, componentType: pendingType }
+            : undefined,
       }) as SurfaceScopePayload,
-    [site, pages, components, editingComponent, htmlContent, cssContent],
+    [
+      site,
+      pages,
+      components,
+      editingComponent,
+      htmlContent,
+      cssContent,
+      pendingName,
+      pendingType,
+    ],
   );
 }

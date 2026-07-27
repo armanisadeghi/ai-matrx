@@ -39,6 +39,10 @@ import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
 import { usePathname } from "next/navigation";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
+import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
+import type { CmsSiteMode } from "@/features/cms/agent-context/buildCmsSiteContextData";
 
 interface SiteContextValue {
   site: ClientSite;
@@ -59,6 +63,15 @@ interface SiteContextValue {
   refreshComponents: () => Promise<void>;
   /** Builds the shared `site_structure` framing XML from the cached pages/components. */
   buildStructureXml: (current?: SiteStructureCurrent) => string;
+  /**
+   * Every site the user owns — loaded for the switcher dropdown and emitted as
+   * the `matrx-user/cms` inventory values this surface INHERITS. Empty array
+   * while the list request is in flight (never null, so the inherited
+   * always-available promise stays honest).
+   */
+  allSites: ClientSite[];
+  /** Which tab of the workspace is showing, derived from the pathname. */
+  currentMode: CmsSiteMode;
 }
 
 const SiteContext = createContext<SiteContextValue | null>(null);
@@ -79,6 +92,22 @@ function subViewSuffix(pathname: string, siteId: string): string {
   return "";
 }
 
+/**
+ * Which tab the user is on, for the `current_mode` surface value. Kept beside
+ * `subViewSuffix` so the two pathname readers can never disagree about what
+ * counts as a sub-view.
+ */
+function currentModeFromPath(pathname: string, siteId: string): CmsSiteMode {
+  const rest = pathname.slice(`/cms/${siteId}`.length);
+  if (rest.startsWith("/components")) return "components";
+  if (rest.startsWith("/collections/")) return "collection-items";
+  if (rest.startsWith("/collections")) return "collections";
+  if (rest.startsWith("/settings")) return "settings";
+  if (rest.startsWith("/pages/new")) return "new-page";
+  if (rest.startsWith("/pages/")) return "page-editor";
+  return "pages";
+}
+
 /** Header shown while the site is loading/errored — back affordance only, so
  *  the shell row is never dead. */
 function SiteHeaderFallback() {
@@ -86,6 +115,47 @@ function SiteHeaderFallback() {
     <RouteHeader
       left={<ChevronLeftTapButton href="/cms" ariaLabel="All sites" />}
     />
+  );
+}
+
+/**
+ * Mounts the live `matrx-user/cms-site` scope for the header Agents chrome.
+ *
+ * Its own component because the scope builder needs a LOADED site, which only
+ * exists past the layout's loading/error early returns — calling the hook up
+ * top would either break the rules of hooks or force the builder to lie about
+ * a site it doesn't have. Tabs holding extra state (Collections, Settings)
+ * nest their own provider inside this one; deepest wins.
+ */
+function SiteSurfaceRuntime({
+  site,
+  pages,
+  components,
+  allSites,
+  currentMode,
+  children,
+}: {
+  site: ClientSite;
+  pages: ClientPageSummary[];
+  components: ClientComponent[];
+  allSites: ClientSite[];
+  currentMode: CmsSiteMode;
+  children: React.ReactNode;
+}) {
+  const getScope = useCmsSiteSurfaceScope({
+    site,
+    pages,
+    components,
+    allSites,
+    currentMode,
+  });
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={CMS_SITE_CONTEXT_MENU_PROPS.surfaceName}
+      getScope={getScope}
+    >
+      {children}
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -235,6 +305,8 @@ export default function SiteLayoutClient({
         componentsLoading,
         refreshComponents,
         buildStructureXml,
+        allSites,
+        currentMode: currentModeFromPath(pathname, siteId),
       }}
     >
       <EntityModeHeader
@@ -276,9 +348,17 @@ export default function SiteLayoutClient({
           },
         ]}
       />
-      <div className="h-full flex flex-col overflow-hidden pt-[var(--shell-header-h)]">
-        <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
-      </div>
+      <SiteSurfaceRuntime
+        site={site}
+        pages={pages}
+        components={components}
+        allSites={allSites}
+        currentMode={currentModeFromPath(pathname, siteId)}
+      >
+        <div className="h-full flex flex-col overflow-hidden pt-[var(--shell-header-h)]">
+          <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+        </div>
+      </SiteSurfaceRuntime>
     </SiteContext.Provider>
   );
 }

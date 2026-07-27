@@ -130,6 +130,9 @@ export default function HtmlPageEditor({
     ogImage,
     canonicalUrl,
     isIndexable,
+    isDirty: dirty,
+    prevPageId: nav.prevId,
+    nextPageId: nav.nextId,
     textareaRef: metaDescriptionRef,
   });
 

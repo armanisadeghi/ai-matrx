@@ -14,11 +14,24 @@ import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
 export default function SiteDashboardPage() {
   const { siteId } = useParams() as { siteId: string };
   const router = useRouter();
-  const { site, pages, pagesLoading, components, refreshPages } =
-    useSiteContext();
+  const {
+    site,
+    pages,
+    pagesLoading,
+    components,
+    refreshPages,
+    allSites,
+    currentMode,
+  } = useSiteContext();
   const [error, setError] = useState<string | null>(null);
 
-  const buildSurfaceScope = useCmsSiteSurfaceScope({ site, pages, components });
+  const buildSurfaceScope = useCmsSiteSurfaceScope({
+    site,
+    pages,
+    components,
+    allSites,
+    currentMode,
+  });
   const siteExtraSections = createCmsSiteExtraSections({
     liveUrl: clientSiteRootUrl(site.slug),
     onNewPage: () => router.push(`/cms/${siteId}/pages/new`),

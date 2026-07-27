@@ -30,6 +30,7 @@ import { CMS_HUB_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsHubC
 import { createCmsHubExtraSections } from "@/features/cms/agent-context/cmsHubExtraSections";
 import { useCmsHubSurfaceScope } from "@/features/cms/hooks/useCmsHubSurfaceScope";
 import { buildCmsHubContextData } from "@/features/cms/agent-context/buildCmsHubContextData";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 export default function SitesListPage() {
   const router = useRouter();
@@ -50,6 +51,8 @@ export default function SitesListPage() {
   const buildSurfaceScope = useCmsHubSurfaceScope({
     sites,
     selectedSiteId: hoveredSiteId,
+    newSiteDraft: { name: newName, slug: newSlug, domain: newDomain },
+    loadError: error,
   });
   const hubExtraSections = createCmsHubExtraSections({
     onNewSite: () => setDialogOpen(true),
@@ -154,6 +157,13 @@ export default function SitesListPage() {
   return (
     <>
       {header}
+      {/* Live scope for the header Agents chrome — read at Run time, never on
+          mount, so an agent launched from anywhere on the hub sees the sites
+          list, the focused card, and any in-progress create-dialog draft. */}
+      <SurfaceRuntimeProvider
+        surfaceName={CMS_HUB_CONTEXT_MENU_PROPS.surfaceName}
+        getScope={buildSurfaceScope}
+      >
       <NonEditableContextMenu
         {...CMS_HUB_CONTEXT_MENU_PROPS}
         extraSections={hubExtraSections}
@@ -279,6 +289,12 @@ export default function SitesListPage() {
                       buildCmsHubContextData({
                         sites,
                         selectedSiteId: site.id,
+                        newSiteDraft: {
+                          name: newName,
+                          slug: newSlug,
+                          domain: newDomain,
+                        },
+                        loadError: error,
                       }) as Record<string, unknown>
                     }
                   >
@@ -324,6 +340,7 @@ export default function SitesListPage() {
           </div>
         </div>
       </NonEditableContextMenu>
+      </SurfaceRuntimeProvider>
     </>
   );
 }

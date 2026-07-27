@@ -290,6 +290,21 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-27` — **`cms-page` / `cms-component` / `html-page` surfaces driven from `stub` to
+  `verified`.** Full completeness audit of the three manifests against the live routes: curated
+  value groups, `intro` blocks, honest `alwaysAvailable`, real `typicalCharCount`, and empty-case
+  descriptions everywhere (counts are surface-specific values, excluding baselines). cms-page 21 → 43 (SEO keywords/OG/canonical, the Settings-tab
+  fields, page layout/timestamps/provenance, site name/domain/global CSS/profile, version history +
+  latest restorable version, `page_seo`/`page_settings` composites); cms-component 10 → 20 (site
+  framing, component record, components list, create-dialog draft); html-page 9 → 19 (full
+  `html_content`, active tab, dirty flag, provenance/context-metadata, prev/next nav, `page_seo`
+  composite). Every new value is emitted — `buildCmsPageContextData` / `buildCmsComponentContextData`
+  / `buildHtmlPageContextData` + `buildHtmlPagesListContextData` and their hooks and call sites
+  (`PageEditor`, `/cms/[siteId]/components`, `HtmlPageEditor`) were extended in the same change.
+  Big bodies (`html_content` on html-page, site global CSS, composites, history) are
+  `autoContext: false` — declared and bindable, not auto-shipped. DB sync (`ui_surface_value` rows)
+  still pending.
+
 - `2026-07-24` — **Collections admin: item authoring + an adversarial-findings pass.** Added
   `items_create` / `items_update` (twinning aidream `collection_item_service`, CONTRACT §CW2) and a
   schema-driven `CollectionItemEditorDialog`, closing the vision gap where an admin could triage but

@@ -138,6 +138,9 @@ export default function ComponentsPage() {
     editingComponent,
     htmlContent: editingComponent ? editHtml : undefined,
     cssContent: editingComponent ? editCss : undefined,
+    pendingComponent: dialogOpen
+      ? { name: createName, componentType: createType }
+      : undefined,
   });
 
   const makeApplicationScope =

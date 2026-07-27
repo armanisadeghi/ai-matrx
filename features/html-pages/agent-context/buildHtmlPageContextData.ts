@@ -30,6 +30,11 @@ export interface BuildHtmlPageContextDataArgs {
   ogImage: string;
   canonicalUrl: string;
   isIndexable: boolean;
+  /** True when the editor holds unsaved changes. */
+  isDirty: boolean;
+  /** Adjacent page ids the editor's prev/next controls move to. */
+  prevPageId?: string | null;
+  nextPageId?: string | null;
   /** Selection within the active tab's textarea, when known. */
   selectionStart?: number;
   selectionEnd?: number;
@@ -61,6 +66,9 @@ export function buildHtmlPageContextData(
     ogImage,
     canonicalUrl,
     isIndexable,
+    isDirty,
+    prevPageId,
+    nextPageId,
     selectionStart = 0,
     selectionEnd = 0,
   } = args;
@@ -94,10 +102,34 @@ export function buildHtmlPageContextData(
     live_url: page.url,
     meta_title: metaTitle,
     is_indexable: isIndexable,
+    sibling_page_count: siblingPages.length,
     meta_description: metaDescription || undefined,
     meta_keywords: metaKeywords || undefined,
     og_image: ogImage || undefined,
     canonical_url: canonicalUrl || undefined,
+    page_seo: {
+      meta_title: metaTitle,
+      meta_description: metaDescription,
+      meta_keywords: metaKeywords,
+      og_image: ogImage,
+      canonical_url: canonicalUrl,
+      is_indexable: isIndexable,
+    },
+    page_timestamps: {
+      created_at: page.created_at,
+      updated_at: page.updated_at,
+    },
+    page_provenance: {
+      artifact_id: page.artifact_id,
+      source_message_id: page.source_message_id,
+      source_conv_id: page.source_conv_id,
+    },
+    page_context_metadata: page.context_metadata ?? undefined,
+    html_content: htmlContent || undefined,
+    active_tab: activeTab,
+    is_dirty: isDirty,
+    prev_page_id: prevPageId ?? undefined,
+    next_page_id: nextPageId ?? undefined,
     content: activeContent || undefined,
     selection: selectedText || undefined,
     text_before: textBefore || undefined,

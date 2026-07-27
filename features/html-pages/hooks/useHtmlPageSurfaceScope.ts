@@ -30,6 +30,11 @@ export interface UseHtmlPageSurfaceScopeParams {
   ogImage: string;
   canonicalUrl: string;
   isIndexable: boolean;
+  /** True when the editor holds unsaved changes. */
+  isDirty: boolean;
+  /** Adjacent page ids the editor's prev/next controls move to. */
+  prevPageId?: string | null;
+  nextPageId?: string | null;
   /** Ref to the meta-description textarea — only meaningful when `activeTab === "meta"`. */
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
 }
@@ -48,6 +53,9 @@ export function useHtmlPageSurfaceScope(
     ogImage,
     canonicalUrl,
     isIndexable,
+    isDirty,
+    prevPageId,
+    nextPageId,
     textareaRef,
   } = params;
 
@@ -70,6 +78,9 @@ export function useHtmlPageSurfaceScope(
       ogImage,
       canonicalUrl,
       isIndexable,
+      isDirty,
+      prevPageId,
+      nextPageId,
       selectionStart,
       selectionEnd,
     }) as SurfaceScopePayload;
@@ -84,6 +95,9 @@ export function useHtmlPageSurfaceScope(
     ogImage,
     canonicalUrl,
     isIndexable,
+    isDirty,
+    prevPageId,
+    nextPageId,
     textareaRef,
   ]);
 }
