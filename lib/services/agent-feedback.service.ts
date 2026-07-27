@@ -48,6 +48,62 @@ export interface AgentTriageInput {
 
 // ============= Submit =============
 
+/** The account agent-submitted feedback is attributed to when the caller's
+ *  own id is not a real `auth.users` row. */
+const AGENT_SERVICE_ACCOUNT_EMAIL = "claude-01@aimatrx.com";
+
+let cachedAgentUserId: string | null = null;
+
+/**
+ * Resolve the `user_id` for an agent submission.
+ *
+ * `users.user_feedback.user_id` is NOT NULL with an FK to `auth.users`, but
+ * an agent's `agent_id` is a self-chosen tracking UUID — including the
+ * sentinel values the MCP schema itself advertises — so using it directly
+ * meant every agent without a real account got an opaque FK violation.
+ *
+ * The supplied id is honored when it IS a real user; otherwise the
+ * submission is attributed to the shared agent service account and the
+ * caller's own id is preserved in `metadata.agent_id`. Nothing is silently
+ * dropped, and the agent's name still lands in `username`.
+ */
+async function resolveAgentUserId(
+  supabase: ReturnType<typeof createAdminClient>,
+  agentId: string,
+): Promise<{ userId: string; substituted: boolean }> {
+  // `users.profiles` is 1:1 with `auth.users`, so a profile row proves the id
+  // satisfies the feedback FK. (`auth.users` itself is not PostgREST-readable.)
+  const { data: real } = await supabase
+    .schema("users")
+    .from("profiles")
+    .select("id")
+    .eq("id", agentId)
+    .maybeSingle();
+  if (real?.id) return { userId: real.id, substituted: false };
+
+  if (!cachedAgentUserId) {
+    // The canonical email→user resolver (same RPC the sharing UI uses).
+    const { data, error } = await supabase.rpc("lookup_user_by_email", {
+      lookup_email: AGENT_SERVICE_ACCOUNT_EMAIL,
+    });
+    const accountId = data?.[0]?.user_id;
+    if (error || !accountId) {
+      throw new Error(
+        `agent feedback cannot be attributed: ${agentId} is not a Matrx user and ` +
+          `the agent service account ${AGENT_SERVICE_ACCOUNT_EMAIL} was not found`,
+      );
+    }
+    cachedAgentUserId = accountId;
+  }
+  // Loud: an agent id that isn't a real user is expected for external agents,
+  // but the substitution should never be invisible.
+  console.warn(
+    `[agent-feedback] agent_id ${agentId} is not a Matrx user — attributing to ` +
+      `${AGENT_SERVICE_ACCOUNT_EMAIL} and preserving the id in metadata.agent_id`,
+  );
+  return { userId: cachedAgentUserId, substituted: true };
+}
+
 /** Create a new feedback item on behalf of an agent */
 export async function submitFeedback(
   agentId: string,
@@ -56,6 +112,7 @@ export async function submitFeedback(
 ): Promise<ServiceResult<UserFeedback>> {
   try {
     const supabase = createAdminClient();
+    const { userId, substituted } = await resolveAgentUserId(supabase, agentId);
 
     const { data, error } = await supabase
       .schema("users").from("user_feedback")
@@ -63,7 +120,10 @@ export async function submitFeedback(
         // External agents have no personal org (no Supabase session); their
         // feedback homes to the global system org.
         organization_id: await resolveSystemOrgId(supabase),
-        user_id: agentId,
+        user_id: userId,
+        metadata: substituted
+          ? { agent_id: agentId, attributed_to_service_account: true }
+          : { agent_id: agentId },
         username: agentName,
         feedback_type: input.feedback_type,
         // route is NOT NULL with no DB default; "" is the deliberate
