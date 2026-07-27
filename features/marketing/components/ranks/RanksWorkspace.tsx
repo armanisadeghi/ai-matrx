@@ -7,7 +7,7 @@
  * table + competitive SERP landscape).
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -62,6 +62,9 @@ import {
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingRanksScope } from "@/features/surfaces/manifests/marketing-ranks.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { RankSparkline } from "./RankSparkline";
 import {
   humanHistory,
@@ -77,7 +80,28 @@ import {
   useRunRankCheck,
 } from "./useRanks";
 import { TRACKING_MODES } from "./types";
-import type { AiAnswerEngine, RankPortfolioItem, RankProvider } from "./types";
+import type {
+  AiAnswerEngine,
+  RankPortfolioItem,
+  RankProvider,
+  RankTargetHistoryPoint,
+  SerpLandscape,
+} from "./types";
+
+/**
+ * What the open history dialog currently holds. The dialog owns the fetch (and
+ * its own expand toggle), but the surface scope is assembled once at the
+ * workspace level — so the dialog reports its loaded state up through a ref
+ * rather than mounting a second, thinner provider that would shadow the
+ * portfolio values.
+ */
+interface HistorySnapshot {
+  points: RankTargetHistoryPoint[];
+  landscape: SerpLandscape | null;
+  visibleCount: number;
+  showingAll: boolean;
+  error: string | null;
+}
 
 function MovementBadge({ movement }: { movement: number | null }) {
   if (movement === null)
@@ -261,11 +285,13 @@ function HistoryDialog({
   targetId,
   keyword,
   siteDomain,
+  onSnapshot,
   onClose,
 }: {
   targetId: string;
   keyword: string;
   siteDomain: string;
+  onSnapshot: (snapshot: HistorySnapshot) => void;
   onClose: () => void;
 }) {
   const { points, landscape, loading, error } = useRankTargetHistory(targetId);
@@ -275,6 +301,25 @@ function HistoryDialog({
   const visibleLandscape = showAllLandscape
     ? landscapeResults
     : landscapeResults.slice(0, 30);
+
+  // Surface emitter feed — keep the workspace scope honest about what this
+  // drill-in has actually loaded and how much of it is on screen.
+  useEffect(() => {
+    onSnapshot({
+      points,
+      landscape,
+      visibleCount: visibleLandscape.length,
+      showingAll: showAllLandscape,
+      error,
+    });
+  }, [
+    onSnapshot,
+    points,
+    landscape,
+    visibleLandscape.length,
+    showAllLandscape,
+    error,
+  ]);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -438,8 +483,34 @@ function HistoryDialog({
   );
 }
 
+/** Rollup emitted as the `portfolio_summary` surface value. */
+function summarizePortfolio(rows: RankPortfolioItem[]): Record<string, unknown> {
+  const ranked = rows.filter((item) => item.latest_position !== null);
+  const bests = rows
+    .map((item) => item.best_position)
+    .filter((value): value is number => value !== null);
+  return {
+    tracked: rows.length,
+    active: rows.filter((item) => item.is_active).length,
+    ranked: ranked.length,
+    never_checked: rows.filter((item) => item.last_checked_at === null).length,
+    average_position:
+      ranked.length === 0
+        ? null
+        : Math.round(
+            (ranked.reduce((sum, item) => sum + (item.latest_position ?? 0), 0) /
+              ranked.length) *
+              10,
+          ) / 10,
+    improving: rows.filter((item) => (item.movement ?? 0) > 0).length,
+    declining: rows.filter((item) => (item.movement ?? 0) < 0).length,
+    best_position: bests.length === 0 ? null : Math.min(...bests),
+  };
+}
+
 export function RanksWorkspace() {
   const { site } = useMarketingSite();
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const {
     items,
     loading,
@@ -461,12 +532,64 @@ export function RanksWorkspace() {
   const rows = items;
   const pageLocation = `Marketing — Rank portfolio for ${site.domain}`;
 
+  // Live drill-in state, reported up by the open history dialog.
+  const historySnapshotRef = useRef<HistorySnapshot | null>(null);
+  const handleHistorySnapshot = (snapshot: HistorySnapshot) => {
+    historySnapshotRef.current = snapshot;
+  };
+
+  const getSurfaceScope = () => {
+    const snapshot = historyTarget ? historySnapshotRef.current : null;
+    const landscapeResults = snapshot?.landscape?.results ?? [];
+    return createMarketingRanksScope({
+      ...getBaseValues(),
+      site_domain: site.domain,
+      portfolio_summary: summarizePortfolio(rows),
+      rank_portfolio: rows as unknown as Array<Record<string, unknown>>,
+      tracking_modes: TRACKING_MODES as unknown as Array<
+        Record<string, unknown>
+      >,
+      portfolio_load_error: error ?? undefined,
+      selected_target_id: historyTarget?.target_id,
+      selected_target: historyTarget
+        ? (historyTarget as unknown as Record<string, unknown>)
+        : undefined,
+      target_history: snapshot?.points.length
+        ? (snapshot.points as unknown as Array<Record<string, unknown>>)
+        : undefined,
+      serp_landscape: snapshot?.landscape
+        ? (snapshot.landscape as unknown as Record<string, unknown>)
+        : undefined,
+      landscape_view: landscapeResults.length
+        ? {
+            total_results: landscapeResults.length,
+            visible_results: snapshot?.visibleCount ?? 0,
+            showing_all: snapshot?.showingAll ?? false,
+          }
+        : undefined,
+      history_load_error: snapshot?.error ?? undefined,
+      rank_check_state:
+        Object.keys(checking).length > 0
+          ? (checking as unknown as Record<string, unknown>)
+          : undefined,
+    });
+  };
+
+  const withSurface = (children: ReactNode) => (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-ranks"
+      getScope={getSurfaceScope}
+    >
+      {children}
+    </SurfaceRuntimeProvider>
+  );
+
   if (loading && rows.length === 0) {
-    return <LoadingSurface label="Loading rank portfolio…" />;
+    return withSurface(<LoadingSurface label="Loading rank portfolio…" />);
   }
   if (error) {
-    return (
-      <QueryError error={new Error(error)} onRetry={() => void reload()} />
+    return withSurface(
+      <QueryError error={new Error(error)} onRetry={() => void reload()} />,
     );
   }
 
@@ -520,8 +643,8 @@ export function RanksWorkspace() {
     sections: groomerSections(),
   });
 
-  return (
-    <div className="grid gap-4 p-4">
+  return withSurface(
+    <div className="grid gap-4 p-4" data-surface-value="portfolio_summary">
       <SectionCard
         title="Rank portfolio"
         headerExtra={
@@ -566,7 +689,7 @@ export function RanksWorkspace() {
         }
       >
         <AddTargetForm onAdd={async (input) => void (await addTarget(input))} />
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" data-surface-value="rank_portfolio">
           <Table>
             <TableHeader>
               <TableRow>
@@ -699,9 +822,13 @@ export function RanksWorkspace() {
           targetId={historyTarget.target_id}
           keyword={historyTarget.keyword}
           siteDomain={site.domain}
-          onClose={() => setHistoryTarget(null)}
+          onSnapshot={handleHistorySnapshot}
+          onClose={() => {
+            historySnapshotRef.current = null;
+            setHistoryTarget(null);
+          }}
         />
       ) : null}
-    </div>
+    </div>,
   );
 }
