@@ -4613,7 +4613,6 @@ export type Database = {
           organization_id: string
           overrides: Json
           parent_conversation_id: string | null
-          project_id: string | null
           sandbox_instance_id: string | null
           source_app: string
           source_feature: string
@@ -4654,7 +4653,6 @@ export type Database = {
           organization_id: string
           overrides?: Json
           parent_conversation_id?: string | null
-          project_id?: string | null
           sandbox_instance_id?: string | null
           source_app?: string
           source_feature?: string
@@ -4695,7 +4693,6 @@ export type Database = {
           organization_id?: string
           overrides?: Json
           parent_conversation_id?: string | null
-          project_id?: string | null
           sandbox_instance_id?: string | null
           source_app?: string
           source_feature?: string

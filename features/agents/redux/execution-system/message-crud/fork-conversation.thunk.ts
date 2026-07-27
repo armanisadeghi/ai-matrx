@@ -63,7 +63,6 @@ interface ForkBundle {
     forked_from_id: string | null;
     forked_at_position: number | null;
     organization_id: string | null;
-    project_id: string | null;
     task_id: string | null;
     visibility: ConversationVisibility;
     is_ephemeral: boolean;
@@ -147,7 +146,6 @@ export const forkConversation = createAsyncThunk<
         forkedFromId: conv.forked_from_id,
         forkedAtPosition: conv.forked_at_position,
         organizationId: conv.organization_id,
-        projectId: conv.project_id,
         taskId: conv.task_id,
         isEphemeral: conv.is_ephemeral,
         visibility: conv.visibility,

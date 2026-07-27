@@ -206,7 +206,6 @@ export const loadConversation = createAsyncThunk<
         forkedFromId: conv.forked_from_id,
         forkedAtPosition: conv.forked_at_position,
         organizationId: conv.organization_id,
-        projectId: conv.project_id,
         taskId: conv.task_id,
         isEphemeral: conv.is_ephemeral,
         visibility: conv.visibility,

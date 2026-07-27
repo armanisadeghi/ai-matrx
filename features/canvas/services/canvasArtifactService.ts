@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
@@ -546,8 +547,9 @@ export const canvasArtifactService = {
       }
       if (existing) return { id: existing.id };
 
-      // Scope columns: chat rows inherit the conversation's org/project/
-      // task; non-chat rows fall back to the active/personal org.
+      // Scope columns: chat rows inherit org/task from the conversation and
+      // project from its canonical association edge; non-chat rows fall back
+      // to the active/personal org.
       let organizationId: string | null = null;
       let projectId: string | null = null;
       let taskId: string | null = null;
@@ -559,7 +561,7 @@ export const canvasArtifactService = {
         const { data: conversation, error: conversationErr } = await supabase
           .schema("chat")
           .from("conversation")
-          .select("organization_id, project_id, task_id")
+          .select("organization_id, task_id")
           .is("deleted_at", null)
           .eq("id", input.conversationId)
           .maybeSingle();
@@ -572,8 +574,20 @@ export const canvasArtifactService = {
           return null;
         }
         organizationId = conversation.organization_id;
-        projectId = conversation.project_id;
         taskId = conversation.task_id;
+        const projectResult = await associationsService.listForSources(
+          "conversation",
+          [input.conversationId],
+          "project",
+        );
+        if (!projectResult.ok) {
+          console.error(
+            "[canvasArtifactService.upsertDiscoveryIndex] project association lookup error:",
+            projectResult.error,
+          );
+        } else {
+          projectId = projectResult.data.edges[0]?.targetId ?? null;
+        }
       } else {
         organizationId = await ensureOrgId(undefined);
       }

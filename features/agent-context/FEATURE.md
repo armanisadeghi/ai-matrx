@@ -101,7 +101,7 @@ A surface (notes, code editor, flashcard) builds an `ApplicationScope` object de
 
 ### `appContext` (global)
 
-`organization_id`, `scope_selections`, `project_id`, `task_id`, `conversation_id`. Injected into every API call by `assembleRequest()`. Stamped onto `cx_conversation.organization_id / project_id / task_id` server-side. **Owned by `lib/redux/slices/appContextSlice.ts`** — defined and written there; this feature only reads it.
+`organization_id`, `scope_selections`, `project_id`, `task_id`, `conversation_id`. Injected into every API call by `assembleRequest()`. The server persists conversation organization/task identity; optional project membership lives only as canonical `conversation → project` associations and is restored from those edges. **Owned by `lib/redux/slices/appContextSlice.ts`** — defined and written there; this feature only reads it.
 
 ### Variable vs slot definitions on an agent
 
@@ -230,6 +230,7 @@ Until Phase 5 lands:
 
 ## Change log
 
+- `2026-07-27` — codex: removed the forbidden physical conversation→project FK from the client contract. Conversation project context is now association-derived; load/fork hydration no longer expects a `chat.conversation.project_id` field.
 - `2026-07-15` — codex: legacy `hierarchyService.createOrganization` now delegates to the canonical atomic `org_create` RPC; it can no longer leave an ownerless organization if the second client transaction fails.
 - `2026-07-12` — claude: **Legacy hierarchy-selection family converted to MULTI-SCOPE; dead variants deleted.** `features/agent-context/components/hierarchy-selection/*`: `useHierarchySelection` now keys `scopeSelections` by SCOPE ID (value === key, matching `appContextSlice`) with additive `toggleScope`/`clearScopeType` (replacing type-keyed radio `setScopeValue`); `HierarchyCascade`/`HierarchyTree`/`HierarchyPills` use checkbox semantics with faithful multi display ("first +N"); `useReduxBridge` diffs scope ids into surgical `addActiveScope`/`removeActiveScope` dispatches (no wholesale `setScopeSelections`); `AgentAppHierarchyCascade` maps every assigned scope id straight into the selection (first-wins trimming deleted). Dead code deleted outright per no-legacy-code: `HierarchyBreadcrumb`, `HierarchyHoverMenu`, `HierarchyCommand` (demo-only) and `features/shell/components/sidebar/SidebarContextSelector.tsx` (rendered on no route); `/demos/selection-demo` trimmed to the live variants.
 - `2026-07-07` — claude: D12 closed — `selectContextPayload` (execution-system `instance-context.selectors.ts`) now wraps PRIMITIVE entry values in the backend rich form `{content, type, label}` so authored labels/types reach the manifest; `max_inline_chars` is deliberately omitted (backend default/slot ceiling unchanged → inline-vs-deferred byte-identical), rich/raw dict values pass through untouched. Also restored live `resolve_full_context` `cell_values`/system-cells/dataset-pointers (lost in a schema-move rebase — `migrations/ctx_resolve_full_context_restore_cells_after_schema_move.sql`), un-breaking UUID scope bindings (D10).
