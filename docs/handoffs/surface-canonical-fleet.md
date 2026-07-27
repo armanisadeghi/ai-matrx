@@ -23,6 +23,14 @@ vision: []
 - Sync: `POST /api/admin/surfaces/sync-manifests` or `scripts/emit-surface-sync-sql.ts` → Supabase MCP. Gates: `pnpm check:surface-drift` (validates readiness/labels/groups), `pnpm type-check`.
 - System doc: `features/surfaces/FEATURE.md` (NAMING LAW + groups + readiness sections). Test login: `/login` admin@admin.com / Password1234#.
 
+## Route-resolution law (learned the hard way, 2026-07-27)
+
+`SURFACE_ROUTE_MAPPINGS` is **prefix-only** — it cannot see through a dynamic segment. Three whole families were silently resolving to their parent hub because their real routes nest an id: `/cms/[siteId]/…`, `/agents/[id]/build|run`, `/marketing/…/[siteId]/ranks`. Each is fixed by a `resolveXSurface()` function (see `resolveMarketingSurface` / `resolveCmsSurface` / `resolveAgentsSurface` in `features/surfaces/utils/route-to-surface.ts`), covered by `route-to-surface.test.ts` (15 tests). **When registering any surface whose route contains `[param]`, add a resolver + tests — a prefix entry will look right and do nothing.**
+
+## Do NOT surface a placeholder
+
+`/marketing/{ranks,analytics,campaigns,competitors,content-studio,reports,social,email}` render `MarketingComingSoon` and load nothing. Authoring manifests for them would be fiction (violates "never declare what nothing emits"). They get surfaces when the features ship. Two manifests were found describing pages that never existed (`documents` described a RAG viewer; `agent-builder` declared a nonexistent test-prompt input) — **audit the live page before trusting an inherited manifest.**
+
 ## Remaining work — the board drives everything (live: ~18 verified / ~28 partial / ~33 stub / ~54 unregistered after overlay registration; read fresh counts from the board)
 
 1. **Unregistered real pages → manifests** (full recipe incl. route prefix + registry + sync). Ranked by user dwell: `/education` (~90 routes; plan a parent + children tree), `/images` (21), `/podcast` (26), `/rag` (11 — DB row `matrx-user/rag` is `is_active=false`; reactivate when registering), `/schedules`, `/scopes` + `/context-items`, `/workbooks`, `/knowledge`, `/shapes`, `/legal/ca-wc`, `/artifacts`, `/reports`, `/markdown-studio`, `/seo/keyword-research`, `/voice`, `/surfaces`, `/tools` (hub), `/chat/voice` (`matrx-user/chat-voice` — already load-bearing at runtime), `/transcripts/scribe/[sessionId]` (`transcript-scribe-live` — name hardcoded in `ScribeLiveScreen`), `/sandbox` (`matrx-user/sandboxes`).
