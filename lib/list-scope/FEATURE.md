@@ -7,22 +7,73 @@ RLS is the ceiling, never the view definition. A list query that relies on
 belongs to more than one org (every user does — personal org + N
 companies). Every list query MUST declare its own scope explicitly.
 
-## The canonical scope model
+## The canonical scope model — a FIXED vocabulary of five
 
-- **Mine** — rows created by the caller, across all orgs (`{ kind: "mine" }`).
-- **Shared with me** — rows explicitly granted to the caller, not owned,
-  not by org (`{ kind: "shared" }`). No generic filter yet — each feature
-  supplies its own shared-with-me RPC/fetcher (a platform-wide shared RPC
-  is tracked as Brief 3A).
-- **Org** — rows belonging to ONE specific org the caller is a member of
-  (`{ kind: "org"; organizationId }`). One chip per org, never a blended
-  "all my orgs" bucket.
+Ratified 2026-07-26. A list surface declares WHICH of these five it supports
+and supplies the predicate. **It may not invent a sixth.** The flexibility is
+in which subset applies, not in the vocabulary — a scope the user learns on one
+page must mean the same thing on every other page.
+
+| Scope | The question it answers | Reach |
+|---|---|---|
+| **Mine** | What did I make? | `created_by = auth.uid()` (some tables use `user_id` — check) |
+| **My Orgs** | What does my team have? | created by someone else, in a **non-personal** org I belong to, at a visibility that admits org-mates |
+| **Shared with me** | What did someone hand me? | an explicit `iam.permissions` grant (to me, or to one of my orgs) |
+| **Industry** | What does my field publish? | see below |
+| **Public** | What has the platform published? | `visibility = 'public'`, not mine |
+
+`My Orgs` and `Shared with me` may overlap on the same row. That is correct —
+they answer different questions, and hiding an org row because it also carries
+a grant would make "what does my team have?" lie.
+
+### Industry — subscription, not ambient reach
+
+Industry is the one scope with a two-sided contract, and it is **opt-in on both
+ends**:
+
+- **Publishing in** is restricted: the platform, or an approved curator
+  (`iam.industry_curators` / `is_industry_curator(user, industry)`).
+- **Reading out** requires an org to have *attached* the industry —
+  `iam.org_industries`, written by `industry_assign_org`. Once attached, the
+  corpus is instantly available to every member of that org.
+
+So the predicate is: *the record is granted to industry I, AND one of my orgs
+has attached I.* It is `My Orgs` with one more hop, not a new kind of thing.
+
+**Records attach to an industry by GRANT ROW**, following the precedent already
+in the DB (`rag.data_store_grants.industry_id`): a record can be granted to N
+industries, the grant is a deliberate revocable act, and reach is computed the
+same way for every feature. Never an `industry_id` column on the record (one
+industry only, re-classification with no audit trail) and never a
+`platform.associations` edge (associations are explicitly NOT an access grant —
+see `common-docs/systems/access-architecture/FEATURE.md` §2.4).
+
+`iam.industries` is a hierarchy with a `facet` (`domain` / `jurisdiction` /
+`practice_area`): `legal` → `workers-comp` → `ca-workers-comp`. Reach should
+respect `parent_id`, so attaching `workers-comp` sees `ca-workers-comp` content.
+
+### UI shape
+
+`Mine · My Orgs · Shared · Industry · Public` as fixed tabs, each showing a TRUE
+server count. **My Orgs and Industry each render as ONE tab with a dropdown to
+narrow**, never one chip per org/industry — a user belongs to a personal org + N
+companies and may attach several industries, so a chip-per-entity tab bar has
+unbounded width and offers no blended view.
+
+> `components/official/ListScopeSwitcher.tsx` still implements the older
+> chip-per-org shape and knows nothing about Industry or Public. The worked
+> implementation of this model is `features/agents/browse/components/BrowseScopeTabs.tsx`
+> (live at `/agents/all`). ListScopeSwitcher should absorb that shape rather
+> than the two diverging further.
 
 ## The primitive
 
 - `types.ts` — `ListScope` union + narrowing helpers (`isMineScope`,
   `isOrgScope`, `isSharedScope`).
 - `applyListScope.ts` — `applyListScope(query, scope, { userId, ownerColumn?, orgColumn? })`.
+  Covers only the simple table-query cases. A surface with real scale (server
+  paging, per-column filtering, true counts) uses a dedicated
+  `*_list_scoped` RPC instead — see the template note below.
   Applies `.eq(ownerColumn ?? "created_by", userId)` for "mine",
   `.eq(orgColumn ?? "organization_id", scope.organizationId)` for "org",
   and throws a descriptive error for "shared" (use the feature's own
@@ -49,8 +100,35 @@ companies). Every list query MUST declare its own scope explicitly.
 4. `owner_column` defaults to `created_by`; several tables use `user_id`
    instead — check the table before assuming.
 
+## Scoped-list RPCs — hand-written from a template, not generated
+
+A list surface that pages server-side gets its own `<feature>_list_scoped` RPC.
+These are **hand-written per feature from a documented template**, deliberately
+not generated: a generator would have to model every feature's access semantics
+and would become its own language to debug, whereas ~150 lines of explicit SQL
+is readable and fixable at 2am. `public.agx_list_scoped`
+(`migrations/agx_list_scoped_v3_all_columns.sql`) is the worked reference.
+
+Invariants the template carries, all of them learned the hard way:
+
+1. **Every `ORDER BY` ends in `id`.** A non-total order silently drops rows
+   across pages — that bug cost the agents table 59 of 365 rows once.
+2. **`deleted_at IS NULL`**, always.
+3. **`count(*) OVER ()` as `total_count`** — the caller needs a true total, not
+   `rows.length`.
+4. **One `p_filters jsonb` bag** keyed by column id, so column headers and a
+   filter panel write the same structure and cannot drift.
+5. **Filter and sort server-side or not at all.** A control that filters only
+   the loaded page is worse than no control.
+6. `SECURITY DEFINER` ⇒ the function enforces membership itself; never trust a
+   passed-in org/industry id without joining the membership table.
+
 ## Change log
 
+- 2026-07-26 — Scope vocabulary ratified as a fixed FIVE (adds Industry and
+  Public). Industry documented as opt-in subscription (`iam.org_industries`)
+  over curator-published content attached by grant row. Scoped-list RPC
+  template rules recorded. Worked implementation: `/agents/all`.
 - 2026-07-22 — Primitive created (types, `applyListScope`,
   `ListScopeSwitcher`) as part of the VIEW LAW rollout across the 14 bare-RLS
   personal-space list surfaces; wired as the reference implementation into
