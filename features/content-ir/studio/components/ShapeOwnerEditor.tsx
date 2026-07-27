@@ -34,11 +34,10 @@ const SHAPE_VISIBILITIES: ReadonlyArray<{
   label: string;
   description: string;
 }> = [
-  {
-    value: "personal",
-    label: "Personal",
-    description: "Only you and explicitly granted people.",
-  },
+  // No "Personal" option — a personal kind is editable only by the one account
+  // that created it (org admins and super admins resolve to viewer), which
+  // strands the shape the moment its author is unavailable. The DB CHECK
+  // `kind_definition_no_personal_visibility` rejects the value outright.
   {
     value: "internal",
     label: "Organization",
@@ -93,7 +92,7 @@ export default function ShapeOwnerEditor({
   const [visibility, setVisibility] = useState<ShapeVisibility>(
     SHAPE_VISIBILITIES.some((option) => option.value === initialVisibility)
       ? (initialVisibility as ShapeVisibility)
-      : "personal",
+      : "internal",
   );
   const [titleKey, setTitleKey] = useState(initialTitleKey ?? "");
   const [loadingComponent, setLoadingComponent] = useState(
