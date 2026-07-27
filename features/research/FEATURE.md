@@ -210,6 +210,11 @@ find yourself writing code to add an output, something above is wrong.
 
 ---
 
+> **Continuing this work?** Read
+> [`docs/handoffs/research-lens-video-and-experts.md`](../../docs/handoffs/research-lens-video-and-experts.md)
+> — vision, gap analysis, and the prioritized next steps for per-keyword goals,
+> video, and expert identification.
+
 ## Invariants & gotchas
 
 - **READINESS IS ONE PRIMITIVE — `readiness.ts` decides what "done" means, and nothing re-derives it.** Row counts cannot answer "is this topic finished?": a topic with 4 keywords, 3 researched, has data at every stage and rendered uniformly green while a whole keyword sat unprocessed. `get_topic_overview` returns a **`pending` ledger** (`migrations/research_overview_readiness_ledger.sql`) whose every field mirrors a real gate in the aidream orchestrator — so the UI never offers work the pipeline would refuse, and never calls a stage finished when it is not. `deriveReadiness(progress)` turns it into per-stage `ready | behind | stale`; the orchestra, the Next Steps card, the synthesis banner, and the document banner all consume THAT.
