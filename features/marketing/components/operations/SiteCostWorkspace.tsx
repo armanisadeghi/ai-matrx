@@ -4,6 +4,12 @@ import Link from "next/link";
 import { CircleDollarSign } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
 import { CostModeButtons } from "@/features/marketing/components/operations/CostModeButtons";
 import {
   QueryError,
@@ -122,22 +128,124 @@ export function SiteCostWorkspace() {
     table.onStateChange({ ...table.state, page: 1, anyOf: value });
   };
 
+  const pageLocation = webLocation(`Site cost — ${site.root_url}`);
+  const rows = costs.data?.rows ?? [];
+  const pageHuman = () =>
+    humanLines([
+      ["Site", site.root_url],
+      ["Rollup mode", displayMode],
+      ["Loaded rollup rows", rows.length],
+      ["Total matching", costs.data?.total ?? 0],
+      ["All attributed cost", formatRuntimeCost(total.data)],
+    ]);
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "total",
+      title: "All attributed cost",
+      description: "The site's total runtime execution cost across every rollup.",
+      build: () => ({ total_cost_usd: total.data ?? null }),
+    },
+    {
+      id: "rollups",
+      title: `Cost rollups (${displayMode})`,
+      description: `${rows.length} loaded of ${costs.data?.total ?? 0} recorded (current rollup mode + filters).`,
+      cuttable: true,
+      levelLabels: {
+        full: `Loaded ${rows.length} (raw)`,
+        compact: "Top 25 (key fields)",
+        brief: "Counts only",
+      },
+      build: (level) =>
+        level === "full"
+          ? { rollup_mode: displayMode, query: table.state, rows }
+          : level === "compact"
+            ? {
+                rollup_mode: displayMode,
+                rows: rows.slice(0, 25).map((row) => ({
+                  mode: row.mode,
+                  label: row.label,
+                  cost: row.cost,
+                })),
+              }
+            : {
+                rollup_mode: displayMode,
+                total_matching: costs.data?.total ?? 0,
+                loaded_rows: rows.length,
+              },
+    },
+  ];
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Site cost — ${site.root_url}`,
+    kind: "marketing-site-cost-page",
+    location: pageLocation,
+    description: `Runtime execution cost attributed to ${site.root_url}.`,
+    attributes: { site_id: site.id, domain: site.root_url },
+    summary: pageHuman(),
+    sections: groomerSections(),
+  });
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
   return (
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <section className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
         <div className="min-w-0">
-          <h1 className="text-sm font-semibold text-foreground">Site cost</h1>
+          <h1 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            Site cost
+            <span className="text-xs font-normal tabular-nums text-muted-foreground">
+              {(costs.data?.total ?? 0).toLocaleString()}
+            </span>
+          </h1>
           <p className="truncate text-[11px] text-muted-foreground">
             Runtime execution cost attributed through batch items.
           </p>
         </div>
-        <div className="text-right">
-          <p className="font-mono text-lg font-semibold tabular-nums text-foreground">
-            {total.isLoading ? "—" : formatRuntimeCost(total.data)}
-          </p>
-          <p className="text-[10px] uppercase text-muted-foreground">
-            All attributed cost
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="group/metric relative text-right">
+            <p className="font-mono text-lg font-semibold tabular-nums text-foreground">
+              {total.isLoading ? "—" : formatRuntimeCost(total.data)}
+            </p>
+            <p className="text-[10px] uppercase text-muted-foreground">
+              All attributed cost
+            </p>
+            <span className="absolute -left-6 top-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/metric:opacity-100">
+              <CopyButtons
+                size="xs"
+                label="All attributed cost"
+                human={() =>
+                  `All attributed cost for ${site.root_url}: ${formatRuntimeCost(total.data)}`
+                }
+                agent={() => ({
+                  kind: "web-site-cost-total",
+                  location: pageLocation,
+                  description: "The site's total attributed runtime execution cost.",
+                  data: { total_cost_usd: total.data ?? null },
+                  attributes: { site_id: site.id },
+                })}
+              />
+            </span>
+          </div>
+          <CopyButtons
+            size="icon"
+            label={`Site cost page (${site.root_url})`}
+            human={pageHuman}
+            json={pageFullData}
+            agent={() => ({
+              kind: "marketing-site-cost-page",
+              location: pageLocation,
+              description: `Runtime execution cost attributed to ${site.root_url}.`,
+              data: pageFullData(),
+              summary: pageHuman(),
+              attributes: { site_id: site.id, domain: site.root_url },
+            })}
+          />
+          <AgentCopyGroomerLauncher config={groomerConfig} />
         </div>
       </section>
       <div className="min-h-0 flex-1">
