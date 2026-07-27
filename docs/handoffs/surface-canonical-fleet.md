@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-24
+updated: 2026-07-27
 repos: [matrx-frontend, aidream]
 vision: []
 ---
@@ -35,18 +35,22 @@ vision: []
 
 1. **Unregistered real pages → manifests** (full recipe incl. route prefix + registry + sync). Ranked by user dwell: `/education` (~90 routes; plan a parent + children tree), `/images` (21), `/podcast` (26), `/rag` (11 — DB row `matrx-user/rag` is `is_active=false`; reactivate when registering), `/schedules`, `/scopes` + `/context-items`, `/workbooks`, `/knowledge`, `/shapes`, `/legal/ca-wc`, `/artifacts`, `/reports`, `/markdown-studio`, `/seo/keyword-research`, `/voice`, `/surfaces`, `/tools` (hub), `/chat/voice` (`matrx-user/chat-voice` — already load-bearing at runtime), `/transcripts/scribe/[sessionId]` (`transcript-scribe-live` — name hardcoded in `ScribeLiveScreen`), `/sandbox` (`matrx-user/sandboxes`).
 2. **matrx-admin fleet** — all 33 admin surfaces are unregistered; they map 1:1 to live `/administration/*` routes. Biggest single block on the board.
-3. **Partial → verified** (each carries a `readinessNote` saying exactly what's missing): 12 marketing verticals (groups), pdf-extractor family (groups + audit), agent-builder, rag-search, working-document/scratchpad, war-room(+thread), mermaid-editor, agent-run, marketing hub/site-pages, agent-apps (hub grid emitter), transcript-scribe (emitter), quick-tasks / task-create / quick-note-save / file-preview (thread inner form state up — see notes in each manifest).
-4. **Stub → verified**: the 14 old toy manifests (documents, research, files, messages, lists, canvas, ai-results, agent-advanced-editor, cms family, html-page) + the 13 manifest-only overlay stubs (image-viewer, image-uploader, gallery, share, feedback, canvas-viewer, voice-pad, transcript-studio — preserve its hand-coded 3-pipeline vocabulary, observational-memory, agent-gate, agent-run-history, agent-settings, smart-code-editor).
-5. **Matrx-vs-matrix live binding test** on marketing-page (surface-registration Layer 6) — still not run post-overhaul.
-6. **Locate anchors** on upgraded surfaces beyond marketing/notes/tasks (cheap `data-surface-value` adds).
+3. **Partial → verified (15)** — each carries a `readinessNote` naming the exact gap. Notable: `marketing` hub (its five owned views ARE complete; it stays partial only because unmapped hub routes still fall through to it), `extractor-chunker` (server-side emitter in aidream `services/page_extraction/chunking.py#_build_surface_vars` supplies only 4 of the 11 keys once claimed guaranteed — promoting it needs an aidream change), `files` / `documents` (need sync + live binding test; files also needs a mobile `MobileStack` provider), `quick-tasks` / `task-create` / `quick-note-save` / `file-preview` (thread inner form state up out of their `*Core` components), `agent-apps` (hub grid emitter), `content-plan` (Locate anchors done; agent roles still unbound), `transcript-scribe` (no surface-scope emitter — its context flows via `useStudioAssistant` instance-context).
+4. **Stub → verified (19)** — mostly the manifest-only overlay windows (image-viewer, image-uploader, gallery, share, feedback, canvas-viewer, voice-pad, transcript-studio *(preserve its hand-coded 3-pipeline vocabulary)*, observational-memory, agent-gate, agent-run-history, agent-settings, smart-code-editor) plus the remaining toy manifests (messages, lists, canvas, ai-results, agent-advanced-editor, mermaid-editor). Each needs a live audit + nested emitter inside its window component.
+5. **Matrx-vs-matrix live binding test** (surface-registration Layer 6) — still not run post-overhaul on any surface.
+6. **Locate anchors** beyond marketing/content-plan/notes/tasks. Worth doing once at the primitive level: `MatrxDataTable` could grow anchor slots for filter/sort/pagination chrome so every list surface gets `active_filters` / `*_sort` / `*_pagination` anchors for free.
 7. Inactive matrx-admin debug overlay rows (13, e.g. `stream-debug`, `json-truncator`) — register with `overlayId` or delete during the admin wave.
 
 ## Done
 
 - Canonical platform (NAMING/COMPLETENESS laws, groups, provenance, breadcrumb, Locate, agent-feed contract) — `features/surfaces/FEATURE.md` 2026-07-24 entries; aidream deployed.
-- **Readiness tracking system** — required manifest field + DB mirror + admin board; all 79 manifests stamped honestly.
+- **Readiness tracking system** — required manifest field + DB mirror + admin board; all 84 manifests stamped honestly.
 - **Overlay surfaces** — 19 window panels registered with `overlayId`; 6 with live nested emitters (quick-tasks, task-create, quick-note-save, file-preview, markdown-editor, list-manager).
-- Verified-complete (18): marketing page/site/brand, notes, chat, assistant-message, tasks, projects, transcripts(+cleanup), code-editor, scraper, agents-hub, organizations, dashboard, settings, agent-connections, connections-skills (+ markdown-editor, list-manager overlays).
+- **Verified-complete: 50 surfaces** (2026-07-27). The whole marketing tree (hub views, brand, site, page, 12 verticals, ranks, batches, keyword surfaces), the whole CMS tree (hub, site, page, component, html-page), notes, chat, assistant-message, tasks, projects, transcripts family, code-editor, scraper, research, rag-search, war-room(+thread), working-document/scratchpad, agent-builder, agent-run, pdf-extractor/analysis-studio/scanner, agents-hub, organizations, dashboard, settings, agent-connections, connections-skills, markdown-editor, list-manager.
+- **New surfaces created this campaign**: content-plan, keyword-research, marketing-site-keywords, marketing-ranks, agents-hub, organizations, dashboard, settings, agent-apps, agent-connections, connections-skills + 19 overlays.
+- **New emitters built from nothing**: agent-run, analysis-studio, scanner (shared across both skins), rag-search, documents (×2 routes), CMS hub/site/tabs, marketing hub ×5 views.
+- **Shared primitives extracted** (instead of forking): `table-view-values.ts`, `marketing-hub-scope.ts`, `pdf-extractor-scope.ts`, `agent-system-instruction.ts`, `CONVERSATION_DOCUMENT_GROUPS`.
+- **Bugs fixed en route**: three dynamic-route resolution families (CMS, agents, ranks) + 15 tests; `documents` manifest was pure fiction; 5 rag-search values leaking as undeclared runtime keys; `extractor-chunker` inheritance violation; war-room recording selector keyed on the wrong id; `BatchesTable` dropping scope when empty; `workspace_root` declared-but-never-emitted; files `durablePublicUrl` guard against signed-URL leakage.
 - 11 zero-reference stale DB rows deleted; 8 orphaned manifests activated via route prefixes; fictional prefixes/url_patterns fixed; dead `SurfacesAdminPage`/`SurfaceDetailDrawer` deleted.
 
 ## Decisions needed
