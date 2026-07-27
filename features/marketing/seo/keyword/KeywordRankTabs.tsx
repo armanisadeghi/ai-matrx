@@ -73,14 +73,16 @@ function MovementGlyph({ movement }: { movement: number | null }) {
 
 export function KeywordRankingsTab({
   siteId,
+  organizationId,
   phrase,
   keywordId,
 }: {
   siteId: string;
+  organizationId: string;
   phrase: string;
   keywordId: string | null;
 }) {
-  const portfolio = usePortfolio(siteId);
+  const portfolio = usePortfolio(siteId, organizationId);
   const rankCheck = useRunRankCheck(() => void portfolio.reload());
   const [adding, setAdding] = useState(false);
   const targets = matchingTargets(portfolio.items, phrase, keywordId);
@@ -201,14 +203,16 @@ export function KeywordRankingsTab({
 
 export function KeywordSerpTab({
   siteId,
+  organizationId,
   phrase,
   keywordId,
 }: {
   siteId: string;
+  organizationId: string;
   phrase: string;
   keywordId: string | null;
 }) {
-  const portfolio = usePortfolio(siteId);
+  const portfolio = usePortfolio(siteId, organizationId);
   const targets = matchingTargets(portfolio.items, phrase, keywordId);
   // The freshest checked target owns the landscape.
   const target =

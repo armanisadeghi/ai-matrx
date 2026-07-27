@@ -134,7 +134,7 @@ type ResearchStreamRequest =
       body?: undefined;
     };
 
-export function useKeywordResearch() {
+export function useKeywordResearch(organizationId?: string | null) {
   const dispatch = useAppDispatch();
   const [keywords, setKeywords] = useState<KeywordWithMarket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -284,6 +284,9 @@ export function useKeywordResearch() {
               path: request.path,
               method: "POST",
               body: request.body,
+              scopeOverrides: organizationId
+                ? { organization_id: organizationId }
+                : undefined,
               stream: true,
               onStreamEvent,
             })
@@ -335,7 +338,7 @@ export function useKeywordResearch() {
       setClusterPhrases(Array.from(new Set(phrases)));
       void reload(search);
     },
-    [dispatch, reload, search],
+    [dispatch, organizationId, reload, search],
   );
 
   const runResearch = useCallback(
@@ -403,6 +406,9 @@ export function useKeywordResearch() {
           path: "/seo/keywords/volume-refresh",
           method: "POST",
           body: { phrases, force_refresh: forceRefresh },
+          scopeOverrides: organizationId
+            ? { organization_id: organizationId }
+            : undefined,
           stream: true,
           onStreamEvent: (event) => {
             const data = streamData(event);
@@ -426,7 +432,7 @@ export function useKeywordResearch() {
       setVolumeStage(null);
       return completedResult;
     },
-    [dispatch, reload, search],
+    [dispatch, organizationId, reload, search],
   );
 
   const loadEdges = useCallback(

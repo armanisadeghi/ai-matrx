@@ -20,8 +20,14 @@ import { useKeywordResearch } from "@/features/marketing/seo/keyword-research/us
 import LiveResearchFeed from "@/features/marketing/seo/keyword-research/components/LiveResearchFeed";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export function KeywordResearchTab({ phrase }: { phrase: string }) {
-  const research = useKeywordResearch();
+export function KeywordResearchTab({
+  phrase,
+  organizationId,
+}: {
+  phrase: string;
+  organizationId?: string | null;
+}) {
+  const research = useKeywordResearch(organizationId);
   const { run } = research;
   const running = run.status === "running";
   const queryClient = useQueryClient();

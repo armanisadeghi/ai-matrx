@@ -15,7 +15,7 @@ keyword payload for AI — call `buildKeywordBrief`.**
 |---|---|---|
 | `KeywordInput` | `KeywordInput.tsx` | THE canonical keyword input: live library resolution, data chips underneath, contextual + library suggestion dropdown (source-tagged: GSC / Analyzer / Library), Keyword Intelligence launcher. Controlled; callers own save. |
 | `KeywordIntelPanel` | `KeywordIntelPanel.tsx` | The full dossier: Overview (market + 13-column classification), Relationships (edge navigation re-targets the panel), Site (v_site_keyword_performance), Rankings (rank targets + live check + track), SERP (stored landscape as a Google-style results page, own site highlighted), Research (full pipeline, live kind components). |
-| `keywordWindow` overlay | `features/window-panels/windows/seo/KeywordWindow.tsx` + `features/overlays/openers/keywordWindow.tsx` | The panel as a floating window. Open from anywhere: `useOpenKeywordWindow({ phrase, siteId, pageId, brandId, tab })`. Site-scoped tabs light up only with a site binding. `?panels=keyword`. |
+| `keywordWindow` overlay | `features/window-panels/windows/seo/KeywordWindow.tsx` + `features/overlays/openers/keywordWindow.tsx` | The panel as a floating window. Open from anywhere: `useOpenKeywordWindow({ phrase, organizationId, siteId, pageId, brandId, tab })`. A site binding always travels with its owning organization; site-scoped compute tabs stay off without both. `?panels=keyword`. |
 | `buildKeywordBrief` | `keyword-brief.ts` | The condensed keyword+data payload (`{ data, lines }`) for Copy-for-AI envelopes and agent payloads. |
 | `KeywordDataChips` | `KeywordDataChips.tsx` | Inline condensed data row (volume, trend, competition, CPC, site position). |
 | `KeywordUsageChips` | `KeywordUsageChips.tsx` + `keywordUsedIn` | Presence checks of a phrase across observed fields (title/description/H1/URL). |
@@ -42,6 +42,9 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
   visuals.
 - **Every stream lands on a terminal state** — in-band `error` events captured,
   post-stream forced done/error (the rank-check 429 class).
+- **Entity scope beats ambient scope.** Site/page-bound compute passes the
+  entity's `organization_id` through `scopeOverrides` (or the typed raw body);
+  global keyword tools intentionally inherit the active organization.
 - `normalizeKeywordPhrase` is a LOOKUP mirror of `seo.fn_normalize_phrase`;
   persisted normalization stays server-owned.
 - Consumers today: page-workspace intent form (scope-bound input, GSC/analyzer
@@ -52,6 +55,9 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-07-27 — Codex: made site-bound keyword operations organization-safe
+  end to end (window persistence, research, volume refresh, rank mutations,
+  content-plan/page/site launchers).
 - 2026-07-27 — Claude: the window became a registered SURFACE
   (`matrx-user/keyword-intelligence`, DB-synced live); `target_keyword_data`
   added to the marketing-page surface; adoption sweep (ranks, site keywords,

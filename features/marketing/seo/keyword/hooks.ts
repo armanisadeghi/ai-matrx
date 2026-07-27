@@ -159,7 +159,7 @@ function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
  * completion every `seoKeywordKeys` cache is invalidated so chips, tabs, and
  * the workbench all see the new market data.
  */
-export function useKeywordVolumeRefresh() {
+export function useKeywordVolumeRefresh(organizationId?: string | null) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const [state, setState] = useState<VolumeRefreshState>({ status: "idle" });
@@ -176,6 +176,9 @@ export function useKeywordVolumeRefresh() {
           path: "/seo/keywords/volume-refresh",
           method: "POST",
           body: { phrases: [trimmed], force_refresh: forceRefresh },
+          scopeOverrides: organizationId
+            ? { organization_id: organizationId }
+            : undefined,
           stream: true,
           onStreamEvent: (event) => {
             if (event.event === "error") {
@@ -208,7 +211,7 @@ export function useKeywordVolumeRefresh() {
       setState({ status: "done" });
       return true;
     },
-    [dispatch, queryClient],
+    [dispatch, organizationId, queryClient],
   );
 
   return { state, run };

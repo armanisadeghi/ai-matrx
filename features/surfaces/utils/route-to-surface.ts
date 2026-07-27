@@ -117,6 +117,7 @@ const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
   sitemaps: "matrx-user/marketing-sitemaps",
   discovery: "matrx-user/marketing-discovery",
   integrations: "matrx-user/marketing-integrations",
+  keywords: "matrx-user/marketing-site-keywords",
   // access / settings / cost stay on the site surface — they configure the
   // same entity and don't warrant their own agent bindings.
 };
@@ -129,6 +130,7 @@ function resolveMarketingSurface(stripped: string): string | null {
 
   // /marketing/batches[...]
   if (segments[1] === "batches") return "matrx-user/marketing-batches";
+  if (segments[1] === "keyword-research") return "matrx-user/keyword-research";
 
   // /marketing/brands/[brandId][...]
   if (segments[1] === "brands" && segments.length >= 3) {

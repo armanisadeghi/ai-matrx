@@ -135,8 +135,10 @@ export function KeywordIntelPanel({
   // Lifted from the Relationships tab so the surface scope always carries the
   // edges once loaded (the tab consumes the same query result as a prop).
   const edges = useKeywordEdges(keyword?.id);
-  const volumeRefresh = useKeywordVolumeRefresh();
-  const hasSite = Boolean(scope?.siteId);
+  const volumeRefresh = useKeywordVolumeRefresh(scope?.organizationId);
+  const siteId = scope?.siteId;
+  const organizationId = scope?.organizationId;
+  const hasSite = Boolean(siteId && organizationId);
 
   useEffect(() => {
     onStateChange?.({ phrase, activeTab });
@@ -314,19 +316,36 @@ export function KeywordIntelPanel({
             known={Boolean(keyword)}
           />
         ) : activeTab === "rankings" ? (
-          <KeywordRankingsTab
-            siteId={scope?.siteId as string}
-            phrase={phrase}
-            keywordId={keyword?.id ?? null}
-          />
+          siteId && organizationId ? (
+            <KeywordRankingsTab
+              siteId={siteId}
+              organizationId={organizationId}
+              phrase={phrase}
+              keywordId={keyword?.id ?? null}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Open Keyword Intelligence from a site to see rank tracking.
+            </p>
+          )
         ) : activeTab === "serp" ? (
-          <KeywordSerpTab
-            siteId={scope?.siteId as string}
-            phrase={phrase}
-            keywordId={keyword?.id ?? null}
-          />
+          siteId && organizationId ? (
+            <KeywordSerpTab
+              siteId={siteId}
+              organizationId={organizationId}
+              phrase={phrase}
+              keywordId={keyword?.id ?? null}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Open Keyword Intelligence from a site to inspect stored SERPs.
+            </p>
+          )
         ) : (
-          <KeywordResearchTab phrase={phrase} />
+          <KeywordResearchTab
+            phrase={phrase}
+            organizationId={scope?.organizationId}
+          />
         )}
       </div>
     </div>

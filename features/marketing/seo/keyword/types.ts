@@ -26,6 +26,7 @@ import type {
  * works site-less (e.g. the global tools grid) and gets smarter as context
  * is supplied. */
 export interface KeywordScope {
+  organizationId?: string | null;
   siteId?: string | null;
   pageId?: string | null;
   brandId?: string | null;

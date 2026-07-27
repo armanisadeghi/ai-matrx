@@ -16,6 +16,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
 import { syncBingSearchPerformance } from "@/features/marketing/bing/service";
 import { extractErrorMessage } from "@/utils/errors";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import type {
@@ -33,6 +34,9 @@ import {
   projectKeywordPerformanceRow,
   providerLabel,
 } from "@/features/marketing/seo/keyword-research/format";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import { buildSiteKeywordsScope } from "@/features/marketing/lib/scopes/site-keywords-scope";
 import { KeywordCompetitionBadge } from "./KeywordMetrics";
 
 import type { SiteKeywordPerformanceRow } from "../types";
@@ -40,19 +44,25 @@ import { useSiteKeywordPerformance } from "../useSiteKeywordPerformance";
 
 export function SiteKeywordPerformanceWorkspace() {
   const { site, sitePath } = useMarketingSite();
+  const dispatch = useAppDispatch();
   const openKeywordWindow = useOpenKeywordWindow();
   const table = useMarketingTableState({
     defaultSort: { id: "clicks", direction: "desc" },
     defaultPageSize: 50,
   });
   const performance = useSiteKeywordPerformance(site.id, table.queryState);
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const bingBinding = parseBingSiteBinding(site.integrations);
   const [syncingBing, setSyncingBing] = useState(false);
 
   const runBingSync = async () => {
     setSyncingBing(true);
     try {
-      await syncBingSearchPerformance(site.id);
+      await syncBingSearchPerformance(
+        dispatch,
+        site.id,
+        site.organization_id,
+      );
       await performance.refetch();
       toast.success("Bing search performance synced", {
         description: `Fresh Bing query evidence is stored for ${site.domain}.`,
@@ -301,7 +311,24 @@ export function SiteKeywordPerformanceWorkspace() {
     sections: groomerSections(),
   });
 
+  // Surface emitter — nested inside the site provider (deeper wins), built at
+  // trigger time from the live table state and loaded rows.
+  const getScope = () =>
+    buildSiteKeywordsScope({
+      base: getBaseValues(),
+      siteDomain: site.domain,
+      bingConnected: Boolean(bingBinding?.enabled),
+      tableState: table.state,
+      rows,
+      total,
+      loading: performance.isLoading,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-site-keywords"
+      getScope={getScope}
+    >
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3 sm:p-4">
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
         <div className="min-w-0">
@@ -417,6 +444,7 @@ export function SiteKeywordPerformanceWorkspace() {
                 event.stopPropagation();
                 openKeywordWindow({
                   phrase: row.query ?? "",
+                  organizationId: site.organization_id,
                   siteId: site.id,
                   brandId: site.brand_id ?? undefined,
                   tab: "site",
@@ -443,5 +471,6 @@ export function SiteKeywordPerformanceWorkspace() {
         />
       </section>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }

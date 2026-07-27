@@ -20,6 +20,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildKeywordResearchScope } from "@/features/marketing/lib/scopes/keyword-research-scope";
 
 import { useKeywordResearch } from "../useKeywordResearch";
 import KeywordResearchLauncher from "./KeywordResearchLauncher";
@@ -246,7 +248,21 @@ export default function KeywordResearchWorkbench() {
     }
   }, [sorted, refreshVolume]);
 
+  // Surface emitter — built at trigger time from the live workbench state.
+  const getScope = () =>
+    buildKeywordResearchScope({
+      search,
+      visibleKeywords: sorted,
+      run,
+      clusterPhrases,
+      volumeStage,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/keyword-research"
+      getScope={getScope}
+    >
     <div
       className="flex h-full flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
@@ -352,6 +368,7 @@ export default function KeywordResearchWorkbench() {
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

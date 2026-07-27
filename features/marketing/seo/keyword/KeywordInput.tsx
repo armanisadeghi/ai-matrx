@@ -124,6 +124,7 @@ export function KeywordInput({
   const openIntel = () => {
     openKeywordWindow({
       phrase: value.trim(),
+      organizationId: scope?.organizationId ?? undefined,
       siteId: scope?.siteId ?? undefined,
       pageId: scope?.pageId ?? undefined,
       brandId: scope?.brandId ?? undefined,
