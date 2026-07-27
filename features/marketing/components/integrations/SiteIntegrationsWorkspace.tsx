@@ -55,7 +55,10 @@ import {
 } from "@/features/marketing/data/integrations-service";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { syncGsc } from "@/features/marketing/crawler/direct-client";
-import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  BackendFailureDetails,
+  formatCompactDate,
+} from "@/features/marketing/components/shared/MarketingUi";
 import {
   describeBackendFailure,
   type BackendFailureExplanation,
@@ -360,12 +363,10 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     },
     lines: [
       ["Site", site.domain],
-      ...builtIns.map(
-        ({ key, label }): [string, string] => [
-          label,
-          `${draft[key].enabled ? "enabled" : "disabled"} · ${providerStatusLabel(key)}`,
-        ],
-      ),
+      ...builtIns.map(({ key, label }): [string, string] => [
+        label,
+        `${draft[key].enabled ? "enabled" : "disabled"} · ${providerStatusLabel(key)}`,
+      ]),
       ["Custom providers", draft.customProviders.length],
       ["Unsaved changes", dirty ? "yes" : "no"],
     ],
@@ -414,217 +415,223 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
         })
       }
     >
-    <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-base font-semibold">Site integrations</h1>
-            <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
-              Connect data sources for {site.domain}, then choose the property
-              that belongs to this website.
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CopyButtons size="icon" {...integrationsCopy} />
-            <Badge variant="outline" className="gap-1 text-[10px] font-medium">
-              <KeyRound className="h-3 w-3" /> Credentials protected
-            </Badge>
-          </div>
-        </div>
-
-        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
-          <div className="flex min-w-0 items-start gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <KeyRound className="h-4 w-4" />
-            </span>
+      <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-xs font-semibold">Connect Google directly</h2>
-              <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                Authorize Search Console, choose the property for {site.domain},
-                and connect it to this managed site. Analytics is optional and
-                does not affect this setup.
+              <h1 className="text-base font-semibold">Site integrations</h1>
+              <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
+                Connect data sources for {site.domain}, then choose the property
+                that belongs to this website.
               </p>
             </div>
+            <div className="flex items-center gap-1.5">
+              <CopyButtons size="icon" {...integrationsCopy} />
+              <Badge
+                variant="outline"
+                className="gap-1 text-[10px] font-medium"
+              >
+                <KeyRound className="h-3 w-3" /> Credentials protected
+              </Badge>
+            </div>
           </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
+
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                <KeyRound className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-xs font-semibold">
+                  Connect Google directly
+                </h2>
+                <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                  Authorize Search Console, choose the property for{" "}
+                  {site.domain}, and connect it to this managed site. Analytics
+                  is optional and does not affect this setup.
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button
+                size="sm"
+                className="h-8 gap-1.5"
+                disabled={
+                  googleConnectionOwner !== null ||
+                  google.isInitializing ||
+                  !google.isGoogleLoaded
+                }
+                onClick={() => void startGoogleConnection("organization")}
+              >
+                {googleConnectionOwner === "organization" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <KeyRound className="h-3.5 w-3.5" />
+                )}
+                Connect Search Console
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                disabled={
+                  googleConnectionOwner !== null ||
+                  google.isInitializing ||
+                  !google.isGoogleLoaded
+                }
+                onClick={() => void startGoogleConnection("user")}
+              >
+                {googleConnectionOwner === "user" ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                Connect personally
+              </Button>
+            </div>
+          </section>
+
+          <div className="grid gap-3 xl:grid-cols-3">
+            {builtIns.map(({ key, ...provider }) => (
+              <BuiltInProviderCard
+                key={key}
+                providerKey={key}
+                {...provider}
+                copy={
+                  <CopyButtons
+                    size="icon"
+                    {...providerCopy(key, provider.label)}
+                  />
+                }
+                footer={
+                  key === "googleSearchConsole" ? (
+                    <GscSyncRow
+                      site={site}
+                      status={providerReferenceStatus(
+                        draft.googleSearchConsole,
+                        true,
+                      )}
+                      connection={
+                        googleInventory.data?.connections.find(
+                          (candidate) =>
+                            candidate.id ===
+                            draft.googleSearchConsole.credentialRef,
+                        ) ?? null
+                      }
+                    />
+                  ) : undefined
+                }
+                value={draft[key]}
+                connections={googleInventory.data?.connections ?? []}
+                resources={googleInventory.data?.resources ?? []}
+                dirty={
+                  JSON.stringify(draft[key]) !== JSON.stringify(initial[key])
+                }
+                saving={update.isPending}
+                onSave={save}
+                onEnable={() => {
+                  void persistBuiltInProvider(
+                    key,
+                    { ...draft[key], enabled: true },
+                    `${provider.label} enabled`,
+                    `${provider.label} is now enabled for ${site.domain}.`,
+                  ).catch((error) =>
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : `Unable to enable ${provider.label}.`,
+                    ),
+                  );
+                }}
+                onChange={(next) => setBuiltIn(key, next)}
+              />
+            ))}
+          </div>
+
+          <section className="rounded-lg border border-border bg-card">
+            <div className="flex min-h-10 items-center justify-between gap-3 border-b border-border px-3 py-1.5">
+              <div>
+                <h2 className="text-sm font-semibold">Additional providers</h2>
+                <p className="text-[10px] text-muted-foreground">
+                  Add extensible provider bindings without placing credentials
+                  in site JSON.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5"
+                onClick={addCustomProvider}
+              >
+                <Plus className="h-3.5 w-3.5" /> Add provider
+              </Button>
+            </div>
+            {draft.customProviders.length ? (
+              <div className="divide-y divide-border">
+                {draft.customProviders.map((provider, index) => (
+                  <CustomProviderRow
+                    key={provider.id}
+                    index={index}
+                    value={provider}
+                    onChange={(next) => setCustomProvider(index, next)}
+                    onRemove={() => removeCustomProvider(index)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="p-3 text-xs text-muted-foreground">
+                No additional provider references are configured.
+              </p>
+            )}
+          </section>
+
+          {issues.length ? (
+            <Alert variant="destructive" className="py-2.5">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle className="text-xs">
+                Resolve {issues.length} configuration issue
+                {issues.length === 1 ? "" : "s"}
+              </AlertTitle>
+              <AlertDescription>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px]">
+                  {issues.map((issue) => (
+                    <li key={`${issue.field}:${issue.message}`}>
+                      {issue.message}
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {update.isError ? (
+            <Alert variant="destructive" className="py-2.5">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle className="text-xs">Save failed</AlertTitle>
+              <AlertDescription className="text-[11px]">
+                {update.error.message}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border/80 bg-background/95 py-2 backdrop-blur">
+            <p className="text-[11px] text-muted-foreground">
+              {dirty ? "Unsaved changes" : "All integration changes saved"}
+            </p>
             <Button
               size="sm"
-              className="h-8 gap-1.5"
-              disabled={
-                googleConnectionOwner !== null ||
-                google.isInitializing ||
-                !google.isGoogleLoaded
-              }
-              onClick={() => void startGoogleConnection("organization")}
+              className="gap-1.5"
+              disabled={!dirty || issues.length > 0 || update.isPending}
+              onClick={save}
             >
-              {googleConnectionOwner === "organization" ? (
+              {update.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <KeyRound className="h-3.5 w-3.5" />
+                <Save className="h-3.5 w-3.5" />
               )}
-              Connect Search Console
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8"
-              disabled={
-                googleConnectionOwner !== null ||
-                google.isInitializing ||
-                !google.isGoogleLoaded
-              }
-              onClick={() => void startGoogleConnection("user")}
-            >
-              {googleConnectionOwner === "user" ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : null}
-              Connect personally
+              {update.isPending ? "Saving…" : "Save integrations"}
             </Button>
           </div>
-        </section>
-
-        <div className="grid gap-3 xl:grid-cols-3">
-          {builtIns.map(({ key, ...provider }) => (
-            <BuiltInProviderCard
-              key={key}
-              providerKey={key}
-              {...provider}
-              copy={
-                <CopyButtons
-                  size="icon"
-                  {...providerCopy(key, provider.label)}
-                />
-              }
-              footer={
-                key === "googleSearchConsole" ? (
-                  <GscSyncRow
-                    site={site}
-                    status={providerReferenceStatus(
-                      draft.googleSearchConsole,
-                      true,
-                    )}
-                    connection={
-                      googleInventory.data?.connections.find(
-                        (candidate) =>
-                          candidate.id === draft.googleSearchConsole.credentialRef,
-                      ) ?? null
-                    }
-                  />
-                ) : undefined
-              }
-              value={draft[key]}
-              connections={googleInventory.data?.connections ?? []}
-              resources={googleInventory.data?.resources ?? []}
-              dirty={
-                JSON.stringify(draft[key]) !== JSON.stringify(initial[key])
-              }
-              saving={update.isPending}
-              onSave={save}
-              onEnable={() => {
-                void persistBuiltInProvider(
-                  key,
-                  { ...draft[key], enabled: true },
-                  `${provider.label} enabled`,
-                  `${provider.label} is now enabled for ${site.domain}.`,
-                ).catch((error) =>
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : `Unable to enable ${provider.label}.`,
-                  ),
-                );
-              }}
-              onChange={(next) => setBuiltIn(key, next)}
-            />
-          ))}
         </div>
-
-        <section className="rounded-lg border border-border bg-card">
-          <div className="flex min-h-10 items-center justify-between gap-3 border-b border-border px-3 py-1.5">
-            <div>
-              <h2 className="text-sm font-semibold">Additional providers</h2>
-              <p className="text-[10px] text-muted-foreground">
-                Add extensible provider bindings without placing credentials in
-                site JSON.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1.5"
-              onClick={addCustomProvider}
-            >
-              <Plus className="h-3.5 w-3.5" /> Add provider
-            </Button>
-          </div>
-          {draft.customProviders.length ? (
-            <div className="divide-y divide-border">
-              {draft.customProviders.map((provider, index) => (
-                <CustomProviderRow
-                  key={provider.id}
-                  index={index}
-                  value={provider}
-                  onChange={(next) => setCustomProvider(index, next)}
-                  onRemove={() => removeCustomProvider(index)}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="p-3 text-xs text-muted-foreground">
-              No additional provider references are configured.
-            </p>
-          )}
-        </section>
-
-        {issues.length ? (
-          <Alert variant="destructive" className="py-2.5">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="text-xs">
-              Resolve {issues.length} configuration issue
-              {issues.length === 1 ? "" : "s"}
-            </AlertTitle>
-            <AlertDescription>
-              <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px]">
-                {issues.map((issue) => (
-                  <li key={`${issue.field}:${issue.message}`}>
-                    {issue.message}
-                  </li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        {update.isError ? (
-          <Alert variant="destructive" className="py-2.5">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="text-xs">Save failed</AlertTitle>
-            <AlertDescription className="text-[11px]">
-              {update.error.message}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border/80 bg-background/95 py-2 backdrop-blur">
-          <p className="text-[11px] text-muted-foreground">
-            {dirty ? "Unsaved changes" : "All integration changes saved"}
-          </p>
-          <Button
-            size="sm"
-            className="gap-1.5"
-            disabled={!dirty || issues.length > 0 || update.isPending}
-            onClick={save}
-          >
-            {update.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
-            {update.isPending ? "Saving…" : "Save integrations"}
-          </Button>
-        </div>
-      </div>
-    </main>
+      </main>
     </SurfaceRuntimeProvider>
   );
 }
@@ -651,7 +658,9 @@ function GscSyncRow({
 }) {
   const queryClient = useQueryClient();
   const [syncing, setSyncing] = useState(false);
-  const [failure, setFailure] = useState<BackendFailureExplanation | null>(null);
+  const [failure, setFailure] = useState<BackendFailureExplanation | null>(
+    null,
+  );
   const connected = status === "reference_configured";
   const diagnosis = connection ? diagnoseGoogleConnection(connection) : null;
   const blocked = Boolean(diagnosis?.blocking);
@@ -734,45 +743,7 @@ function GscSyncRow({
       ) : null}
 
       {failure ? (
-        <div className="rounded-sm border border-destructive/40 bg-destructive/5 p-1.5">
-          <p className="text-[10px] font-medium text-destructive">
-            Last sync failed: {failure.headline}
-          </p>
-          <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
-            {(
-              [
-                ["Cause", failure.cause],
-                ["Error code", failure.code],
-                ["Request id", failure.requestId || "not reported"],
-                ["HTTP status", failure.status ? String(failure.status) : "—"],
-              ] as Array<[string, string]>
-            ).map(([label, value]) => (
-              <div key={label} className="col-span-2 grid grid-cols-subgrid">
-                <dt className="text-[10px] text-muted-foreground">{label}</dt>
-                <dd className="break-words font-mono text-[10px] text-foreground">
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          {failure.chain.length > 1 ? (
-            <details className="mt-1">
-              <summary className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground">
-                Full service chain ({failure.chain.length} layers)
-              </summary>
-              <ol className="mt-1 space-y-0.5">
-                {failure.chain.map((entry, index) => (
-                  <li
-                    key={`${index}:${entry.slice(0, 24)}`}
-                    className="break-words font-mono text-[10px] text-muted-foreground"
-                  >
-                    {index + 1}. {entry}
-                  </li>
-                ))}
-              </ol>
-            </details>
-          ) : null}
-        </div>
+        <BackendFailureDetails failure={failure} label="Last sync failed" />
       ) : null}
     </div>
   );

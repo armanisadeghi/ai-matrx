@@ -1,6 +1,12 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { buildHeaders, resolveBaseUrl } from "@/lib/python-client";
+import {
+  parseHttpError,
+  parsePersistedBackendError,
+  parseStreamError,
+  type BackendApiError,
+} from "@/lib/api/errors";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type { TypedStreamEvent } from "@/lib/api/types";
 
@@ -58,6 +64,26 @@ export async function listPagePerformance(
   return (response.data ?? []) as PagePerformanceRow[];
 }
 
+export async function getLatestPagespeedFailure(
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<BackendApiError | null> {
+  await requireAuthenticatedSupabaseSession(supabase);
+  const response = await supabase
+    .schema("seo")
+    .from("collection_run")
+    .select("status, error, request_id")
+    .eq("page_id", pageId)
+    .eq("provider", "pagespeed_insights")
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .abortSignal(signal ?? new AbortController().signal);
+  if (response.error) throw response.error;
+  const latest = response.data[0];
+  if (!latest || latest.status !== "failed") return null;
+  return parsePersistedBackendError(latest.error, latest.request_id ?? "");
+}
+
 export interface PagespeedSyncCallbacks {
   signal?: AbortSignal;
   onEvent?: (event: TypedStreamEvent) => void;
@@ -83,17 +109,7 @@ export async function syncPagespeed(
     },
   );
   if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as {
-      detail?: unknown;
-    };
-    const detail = payload.detail;
-    const message =
-      typeof detail === "string"
-        ? detail
-        : typeof (detail as { message?: unknown })?.message === "string"
-          ? ((detail as { message: string }).message as string)
-          : `PageSpeed Insights sync failed (HTTP ${response.status}).`;
-    throw new Error(message);
+    throw await parseHttpError(response);
   }
   let runId: string | null = null;
   const { events } = parseNdjsonStream(response, callbacks.signal);
@@ -106,10 +122,7 @@ export async function syncPagespeed(
       }
     }
     if (event.event === "error") {
-      const data = event.data as { message?: string; detail?: string };
-      throw new Error(
-        data.message || data.detail || "PageSpeed Insights sync failed.",
-      );
+      throw parseStreamError(event.data);
     }
   }
   return { runId };

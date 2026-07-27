@@ -10,6 +10,7 @@ import {
   BackendApiError,
   describeBackendFailure,
   isGenericUserMessage,
+  parsePersistedBackendError,
   parseStreamError,
   unwrapUpstreamError,
 } from "../errors";
@@ -27,9 +28,13 @@ const GSC_STREAM_ERROR = {
 describe("isGenericUserMessage", () => {
   it("rejects the streaming layer's templates and empty strings", () => {
     expect(
-      isGenericUserMessage("CanonicalGscSync failed unexpectedly. Please try again or adjust your settings."),
+      isGenericUserMessage(
+        "CanonicalGscSync failed unexpectedly. Please try again or adjust your settings.",
+      ),
     ).toBe(true);
-    expect(isGenericUserMessage("Something went wrong. Please try again later.")).toBe(true);
+    expect(
+      isGenericUserMessage("Something went wrong. Please try again later."),
+    ).toBe(true);
     expect(isGenericUserMessage("Request failed (500)")).toBe(true);
     expect(isGenericUserMessage("")).toBe(true);
     expect(isGenericUserMessage(null)).toBe(true);
@@ -37,9 +42,15 @@ describe("isGenericUserMessage", () => {
 
   it("keeps messages that name a cause", () => {
     expect(
-      isGenericUserMessage("Google connection 7223 has no vault credential — it needs re-authentication"),
+      isGenericUserMessage(
+        "Google connection 7223 has no vault credential — it needs re-authentication",
+      ),
     ).toBe(false);
-    expect(isGenericUserMessage("Your session has expired. Sign in again, then retry.")).toBe(false);
+    expect(
+      isGenericUserMessage(
+        "Your session has expired. Sign in again, then retry.",
+      ),
+    ).toBe(false);
   });
 });
 
@@ -61,7 +72,9 @@ describe("unwrapUpstreamError", () => {
 
 describe("describeBackendFailure", () => {
   it("promotes the real cause over the generic stream template", () => {
-    const explanation = describeBackendFailure(parseStreamError(GSC_STREAM_ERROR));
+    const explanation = describeBackendFailure(
+      parseStreamError(GSC_STREAM_ERROR),
+    );
     expect(explanation.headlineWasGeneric).toBe(true);
     expect(explanation.headline).toContain("needs re-authentication");
     expect(explanation.cause).toContain("has no vault credential");
@@ -81,14 +94,60 @@ describe("describeBackendFailure", () => {
       }),
     );
     expect(explanation.headlineWasGeneric).toBe(false);
-    expect(explanation.headline).toBe("You don’t have permission to manage this site.");
-    expect(explanation.cause).toBe("You don’t have permission to manage this site.");
+    expect(explanation.headline).toBe(
+      "You don’t have permission to manage this site.",
+    );
+    expect(explanation.cause).toBe(
+      "You don’t have permission to manage this site.",
+    );
     expect(explanation.status).toBe(403);
   });
 
   it("handles plain errors and non-error throws without losing the text", () => {
-    expect(describeBackendFailure(new Error("boom at the edge")).headline).toBe("boom at the edge");
-    expect(describeBackendFailure("string failure").cause).toBe("string failure");
+    expect(describeBackendFailure(new Error("boom at the edge")).headline).toBe(
+      "boom at the edge",
+    );
+    expect(describeBackendFailure("string failure").cause).toBe(
+      "string failure",
+    );
     expect(describeBackendFailure(undefined).cause).toBe("Unknown error");
+  });
+
+  it("retains request correlation from structured stream details", () => {
+    const explanation = describeBackendFailure(
+      parseStreamError({
+        error_type: "seo_provider_response_error",
+        message: "Google Analytics Data API is disabled.",
+        user_message: "Google Analytics Data API is disabled.",
+        code: "Ga4PartialCollectionError",
+        details: { request_id: "request-123", failures: [] },
+      }),
+    );
+
+    expect(explanation.code).toBe("Ga4PartialCollectionError");
+    expect(explanation.requestId).toBe("request-123");
+    expect(explanation.headline).toBe("Google Analytics Data API is disabled.");
+  });
+});
+
+describe("parsePersistedBackendError", () => {
+  it("restores the specific provider cause and request id after refresh", () => {
+    const error = parsePersistedBackendError(
+      {
+        type: "Ga4PartialCollectionError",
+        message: "1 GA4 request or pagination failure(s)",
+        failures: [
+          {
+            message:
+              "GA4 Data API PERMISSION_DENIED: Google Analytics Data API is disabled.",
+          },
+        ],
+      },
+      "request-456",
+    );
+
+    expect(error?.code).toBe("Ga4PartialCollectionError");
+    expect(error?.detail).toContain("Google Analytics Data API is disabled.");
+    expect(error?.requestId).toBe("request-456");
   });
 });

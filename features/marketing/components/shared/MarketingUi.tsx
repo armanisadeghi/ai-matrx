@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import { isJsonRecord } from "@/features/marketing/types";
+import type { BackendFailureExplanation } from "@/lib/api/errors";
 
 export function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -396,6 +397,56 @@ export function JsonPreview({ value }: { value: Json }) {
     <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words p-3 font-mono text-[11px] leading-5 text-foreground">
       {JSON.stringify(value, null, 2)}
     </pre>
+  );
+}
+
+export function BackendFailureDetails({
+  failure,
+  label = "Last operation failed",
+}: {
+  failure: BackendFailureExplanation;
+  label?: string;
+}) {
+  return (
+    <div className="rounded-sm border border-destructive/40 bg-destructive/5 p-1.5">
+      <p className="text-[10px] font-medium text-destructive">
+        {label}: {failure.headline}
+      </p>
+      <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
+        {(
+          [
+            ["Cause", failure.cause],
+            ["Error code", failure.code],
+            ["Request id", failure.requestId || "not reported"],
+            ["HTTP status", failure.status ? String(failure.status) : "—"],
+          ] as Array<[string, string]>
+        ).map(([fieldLabel, value]) => (
+          <div key={fieldLabel} className="col-span-2 grid grid-cols-subgrid">
+            <dt className="text-[10px] text-muted-foreground">{fieldLabel}</dt>
+            <dd className="break-words font-mono text-[10px] text-foreground">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {failure.chain.length > 1 ? (
+        <details className="mt-1">
+          <summary className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground">
+            Full service chain ({failure.chain.length} layers)
+          </summary>
+          <ol className="mt-1 space-y-0.5">
+            {failure.chain.map((entry, index) => (
+              <li
+                key={`${index}:${entry.slice(0, 24)}`}
+                className="break-words font-mono text-[10px] text-muted-foreground"
+              >
+                {index + 1}. {entry}
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
+    </div>
   );
 }
 

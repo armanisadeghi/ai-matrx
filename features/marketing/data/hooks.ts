@@ -73,8 +73,14 @@ import {
   updateProperty,
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
-import { listPagePerformance } from "@/features/marketing/pagespeed/data";
-import { listWebAnalyticsDailyForPage } from "@/features/marketing/analytics/data";
+import {
+  getLatestPagespeedFailure,
+  listPagePerformance,
+} from "@/features/marketing/pagespeed/data";
+import {
+  getLatestAnalyticsFailure,
+  listWebAnalyticsDailyForPage,
+} from "@/features/marketing/analytics/data";
 import {
   buildSiteAuditRollup,
   buildSiteAuditTrend,
@@ -267,6 +273,14 @@ export function usePagePerformance(siteId: string, pageId: string) {
   });
 }
 
+export function useLatestPagespeedFailure(siteId: string, pageId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.page(siteId, pageId), "pagespeed-run"] as const,
+    queryFn: ({ signal }) => getLatestPagespeedFailure(pageId, signal),
+    enabled: Boolean(siteId && pageId),
+  });
+}
+
 /** Stored GA4 landing-page rows for one page (shared query cache). */
 export function usePageWebAnalytics(siteId: string, pageId: string) {
   return useQuery({
@@ -274,6 +288,14 @@ export function usePageWebAnalytics(siteId: string, pageId: string) {
     queryFn: ({ signal }) =>
       listWebAnalyticsDailyForPage(siteId, pageId, signal),
     enabled: Boolean(siteId && pageId),
+  });
+}
+
+export function useLatestAnalyticsFailure(siteId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.site(siteId), "ga4-run"] as const,
+    queryFn: ({ signal }) => getLatestAnalyticsFailure(siteId, signal),
+    enabled: Boolean(siteId),
   });
 }
 

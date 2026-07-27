@@ -6,6 +6,7 @@ import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import {
   marketingKeys,
+  useLatestPagespeedFailure,
   usePagePerformance,
 } from "@/features/marketing/data/hooks";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,12 +15,17 @@ import { latestPagespeedByStrategy } from "@/features/marketing/lib/marketing-pa
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import {
+  BackendFailureDetails,
   CondensedFieldGrid,
   formatDate,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { extractErrorMessage } from "@/utils/errors";
 import { syncPagespeed } from "@/features/marketing/pagespeed/data";
+import {
+  describeBackendFailure,
+  type BackendFailureExplanation,
+} from "@/lib/api/errors";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -38,6 +44,7 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
   // Shared query cache — the PageWorkspace surface scope (pagespeed) reads
   // the exact same rows this card renders.
   const performance = usePagePerformance(page.site_id, page.id);
+  const latestRunFailure = useLatestPagespeedFailure(page.site_id, page.id);
   const rows = performance.data ?? null;
   const loading = performance.isLoading;
   const loadError = performance.isError
@@ -46,18 +53,23 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
   const [syncingStrategy, setSyncingStrategy] = useState<
     "mobile" | "desktop" | null
   >(null);
+  const [syncFailure, setSyncFailure] =
+    useState<BackendFailureExplanation | null>(null);
 
   const runSync = async (strategy: "mobile" | "desktop") => {
     setSyncingStrategy(strategy);
+    setSyncFailure(null);
     try {
       await syncPagespeed(page.id, strategy);
       await queryClient.invalidateQueries({
-        queryKey: [...marketingKeys.page(page.site_id, page.id), "pagespeed"],
+        queryKey: marketingKeys.page(page.site_id, page.id),
       });
       toast.success(`PageSpeed Insights synced (${strategy})`);
     } catch (error) {
+      const explanation = describeBackendFailure(error);
+      setSyncFailure(explanation);
       toast.error("PageSpeed Insights sync failed", {
-        description: extractErrorMessage(error),
+        description: explanation.headline,
       });
     } finally {
       setSyncingStrategy(null);
@@ -66,8 +78,14 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
 
   // Same latest-per-strategy selection the surface scope emits.
   const latestByStrategy = latestPagespeedByStrategy(rows);
+  const persistedFailure = latestRunFailure.data
+    ? describeBackendFailure(latestRunFailure.data)
+    : null;
+  const visibleFailure = syncFailure ?? persistedFailure;
 
-  const scoreTone = (value: number | null): "good" | "warning" | "bad" | "default" => {
+  const scoreTone = (
+    value: number | null,
+  ): "good" | "warning" | "bad" | "default" => {
     if (value === null) return "default";
     if (value >= 0.9) return "good";
     if (value >= 0.5) return "warning";
@@ -110,16 +128,28 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
         data: rows ?? [],
         lines: [
           ["URL", page.url],
-          ...[...latestByStrategy.entries()].map(([strategy, row]): [string, string] => [
-            `${strategy} performance`,
-            row.performance_score === null ? "—" : `${Math.round(row.performance_score * 100)}`,
-          ]),
+          ...[...latestByStrategy.entries()].map(
+            ([strategy, row]): [string, string] => [
+              `${strategy} performance`,
+              row.performance_score === null
+                ? "—"
+                : `${Math.round(row.performance_score * 100)}`,
+            ],
+          ),
         ],
         attributes: { page_id: page.id },
       })}
     >
       <div className="grid gap-3 p-3">
-        {loadError ? <p className="text-xs text-destructive">{loadError}</p> : null}
+        {loadError ? (
+          <p className="text-xs text-destructive">{loadError}</p>
+        ) : null}
+        {visibleFailure ? (
+          <BackendFailureDetails
+            failure={visibleFailure}
+            label="Last sync failed"
+          />
+        ) : null}
         {loading && !rows ? (
           <div className="h-32 animate-pulse rounded-md border border-border bg-muted/40" />
         ) : null}
@@ -129,7 +159,9 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
               <Gauge className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-xs font-medium text-foreground">No evidence yet</p>
+              <p className="text-xs font-medium text-foreground">
+                No evidence yet
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Run a mobile or desktop PageSpeed Insights collection to persist
                 lab (Lighthouse) and field (CrUX) evidence for this page.
@@ -145,9 +177,14 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
           const cls = metrics.cls?.numeric_value;
           const inp = metrics.inp_ms?.numeric_value;
           const fieldCategory =
-            row.crux?.page?.overall_category ?? row.crux?.origin?.overall_category ?? null;
+            row.crux?.page?.overall_category ??
+            row.crux?.origin?.overall_category ??
+            null;
           return (
-            <div key={strategy} className="rounded-lg border border-border p-2.5">
+            <div
+              key={strategy}
+              className="rounded-lg border border-border p-2.5"
+            >
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-medium capitalize text-foreground">
                   {strategy === "mobile" ? (
@@ -189,13 +226,18 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
                   },
                   {
                     label: "SEO",
-                    value: row.seo_score === null ? "—" : Math.round(row.seo_score * 100),
+                    value:
+                      row.seo_score === null
+                        ? "—"
+                        : Math.round(row.seo_score * 100),
                     tone: scoreTone(row.seo_score),
                   },
                   {
                     label: "LCP (lab)",
                     value:
-                      typeof lcp === "number" ? `${(lcp / 1000).toFixed(2)}s` : "—",
+                      typeof lcp === "number"
+                        ? `${(lcp / 1000).toFixed(2)}s`
+                        : "—",
                   },
                   {
                     label: "CLS (lab)",
@@ -203,7 +245,8 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
                   },
                   {
                     label: "INP (lab)",
-                    value: typeof inp === "number" ? `${Math.round(inp)}ms` : "—",
+                    value:
+                      typeof inp === "number" ? `${Math.round(inp)}ms` : "—",
                   },
                   {
                     label: "Field data (CrUX)",

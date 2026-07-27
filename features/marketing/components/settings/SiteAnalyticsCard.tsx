@@ -8,13 +8,21 @@
  * from the site's live GA4 binding).
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Loader2, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { BackendFailureDetails } from "@/features/marketing/components/shared/MarketingUi";
+import { marketingKeys } from "@/features/marketing/data/hooks";
 import {
+  describeBackendFailure,
+  type BackendFailureExplanation,
+} from "@/lib/api/errors";
+import {
+  getLatestAnalyticsFailure,
   listWebAnalyticsDaily,
   syncSiteAnalytics,
   type WebAnalyticsDailyRow,
@@ -31,37 +39,42 @@ export function SiteAnalyticsCard({
   siteId: string;
   ga4Enabled: boolean;
 }) {
-  const [rows, setRows] = useState<WebAnalyticsDailyRow[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [syncing, setSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setRows(await listWebAnalyticsDaily(siteId));
-    } catch (err) {
-      setError(extractErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siteId]);
+  const [syncFailure, setSyncFailure] =
+    useState<BackendFailureExplanation | null>(null);
+  const analytics = useQuery({
+    queryKey: [...marketingKeys.site(siteId), "web-analytics"] as const,
+    queryFn: async () => {
+      const [rows, latestFailure] = await Promise.all([
+        listWebAnalyticsDaily(siteId),
+        getLatestAnalyticsFailure(siteId),
+      ]);
+      return { rows, latestFailure };
+    },
+  });
+  const rows = analytics.data?.rows ?? null;
+  const loading = analytics.isLoading;
+  const error = analytics.isError ? extractErrorMessage(analytics.error) : null;
+  const persistedFailure = analytics.data?.latestFailure
+    ? describeBackendFailure(analytics.data.latestFailure)
+    : null;
+  const visibleFailure = syncFailure ?? persistedFailure;
 
   const runSync = async () => {
     setSyncing(true);
+    setSyncFailure(null);
     try {
       await syncSiteAnalytics(siteId);
-      await load();
+      await queryClient.invalidateQueries({
+        queryKey: marketingKeys.site(siteId),
+      });
       toast.success("Google Analytics synced");
     } catch (err) {
+      const explanation = describeBackendFailure(err);
+      setSyncFailure(explanation);
       toast.error("Google Analytics sync failed", {
-        description: extractErrorMessage(err),
+        description: explanation.headline,
       });
     } finally {
       setSyncing(false);
@@ -116,8 +129,12 @@ export function SiteAnalyticsCard({
         </button>
       </div>
       <div className="grid gap-2 p-3">
-        {error ? (
-          <p className="text-xs text-destructive">{error}</p>
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {visibleFailure ? (
+          <BackendFailureDetails
+            failure={visibleFailure}
+            label="Last sync failed"
+          />
         ) : null}
         {loading && !rows ? (
           <div className="h-20 animate-pulse rounded-md border border-border bg-muted/40" />
@@ -135,7 +152,9 @@ export function SiteAnalyticsCard({
               <thead>
                 <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                   <th className="py-1.5 pr-3 font-medium">Date</th>
-                  <th className="py-1.5 pr-3 font-medium text-right">Sessions</th>
+                  <th className="py-1.5 pr-3 font-medium text-right">
+                    Sessions
+                  </th>
                   <th className="py-1.5 pr-3 font-medium text-right">Users</th>
                   <th className="py-1.5 pr-3 font-medium text-right">
                     Engaged sessions

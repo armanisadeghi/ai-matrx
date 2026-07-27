@@ -1,6 +1,12 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { buildHeaders, resolveBaseUrl } from "@/lib/python-client";
+import {
+  parseHttpError,
+  parsePersistedBackendError,
+  parseStreamError,
+  type BackendApiError,
+} from "@/lib/api/errors";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type { TypedStreamEvent } from "@/lib/api/types";
 
@@ -72,6 +78,26 @@ export async function listWebAnalyticsDailyForPage(
   return (response.data ?? []) as WebAnalyticsDailyRow[];
 }
 
+export async function getLatestAnalyticsFailure(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<BackendApiError | null> {
+  await requireAuthenticatedSupabaseSession(supabase);
+  const response = await supabase
+    .schema("seo")
+    .from("collection_run")
+    .select("status, error, request_id")
+    .eq("site_id", siteId)
+    .eq("provider", "ga4")
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .abortSignal(signal ?? new AbortController().signal);
+  if (response.error) throw response.error;
+  const latest = response.data[0];
+  if (!latest || latest.status !== "failed") return null;
+  return parsePersistedBackendError(latest.error, latest.request_id ?? "");
+}
+
 export interface AnalyticsSyncCallbacks {
   signal?: AbortSignal;
   onEvent?: (event: TypedStreamEvent) => void;
@@ -97,17 +123,7 @@ export async function syncSiteAnalytics(
     },
   );
   if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as {
-      detail?: unknown;
-    };
-    const detail = payload.detail;
-    const message =
-      typeof detail === "string"
-        ? detail
-        : typeof (detail as { message?: unknown })?.message === "string"
-          ? ((detail as { message: string }).message as string)
-          : `Google Analytics sync failed (HTTP ${response.status}).`;
-    throw new Error(message);
+    throw await parseHttpError(response);
   }
   let runId: string | null = null;
   const { events } = parseNdjsonStream(response, callbacks.signal);
@@ -120,10 +136,7 @@ export async function syncSiteAnalytics(
       }
     }
     if (event.event === "error") {
-      const data = event.data as { message?: string; detail?: string };
-      throw new Error(
-        data.message || data.detail || "Google Analytics sync failed.",
-      );
+      throw parseStreamError(event.data);
     }
   }
   return { runId };

@@ -7,6 +7,7 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   marketingKeys,
+  useLatestAnalyticsFailure,
   usePageWebAnalytics,
 } from "@/features/marketing/data/hooks";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,12 +16,17 @@ import { webAnalyticsTotals } from "@/features/marketing/lib/marketing-page-scop
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import {
+  BackendFailureDetails,
   CondensedFieldGrid,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { extractErrorMessage } from "@/utils/errors";
 import { syncSiteAnalytics } from "@/features/marketing/analytics/data";
+import {
+  describeBackendFailure,
+  type BackendFailureExplanation,
+} from "@/lib/api/errors";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -39,26 +45,32 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   // Shared query cache — the PageWorkspace surface scope (ga4_metrics) reads
   // the exact same rows this card renders.
   const analytics = usePageWebAnalytics(site.id, page.id);
+  const latestRunFailure = useLatestAnalyticsFailure(site.id);
   const rows = analytics.data ?? null;
   const loading = analytics.isLoading;
   const loadError = analytics.isError
     ? extractErrorMessage(analytics.error)
     : null;
   const [syncing, setSyncing] = useState(false);
+  const [syncFailure, setSyncFailure] =
+    useState<BackendFailureExplanation | null>(null);
   const integrations = parseSiteIntegrations(site.integrations);
   const ga4Enabled = integrations.googleAnalytics4.enabled;
 
   const runSync = async () => {
     setSyncing(true);
+    setSyncFailure(null);
     try {
       await syncSiteAnalytics(site.id);
       await queryClient.invalidateQueries({
-        queryKey: [...marketingKeys.page(site.id, page.id), "web-analytics"],
+        queryKey: marketingKeys.site(site.id),
       });
       toast.success("Google Analytics synced");
     } catch (error) {
+      const explanation = describeBackendFailure(error);
+      setSyncFailure(explanation);
       toast.error("Google Analytics sync failed", {
-        description: extractErrorMessage(error),
+        description: explanation.headline,
       });
     } finally {
       setSyncing(false);
@@ -67,6 +79,10 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
 
   // Same totals math the surface scope emits.
   const { engagementRate, ...totals } = webAnalyticsTotals(rows);
+  const persistedFailure = latestRunFailure.data
+    ? describeBackendFailure(latestRunFailure.data)
+    : null;
+  const visibleFailure = syncFailure ?? persistedFailure;
 
   return (
     <SectionCard
@@ -96,7 +112,8 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
       copy={webCopy({
         kind: "web-page-google-analytics",
         label: L.ga4_metrics,
-        description: "Persisted GA4 landing-page traffic for this canonical page.",
+        description:
+          "Persisted GA4 landing-page traffic for this canonical page.",
         surface: `Google Analytics — ${page.url}`,
         data: { url: page.url, enabled: ga4Enabled, totals },
         lines: [
@@ -109,7 +126,15 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
       })}
     >
       <div className="grid gap-3 p-3">
-        {loadError ? <p className="text-xs text-destructive">{loadError}</p> : null}
+        {loadError ? (
+          <p className="text-xs text-destructive">{loadError}</p>
+        ) : null}
+        {visibleFailure ? (
+          <BackendFailureDetails
+            failure={visibleFailure}
+            label="Last sync failed"
+          />
+        ) : null}
         {loading && !rows ? (
           <div className="h-32 animate-pulse rounded-md border border-border bg-muted/40" />
         ) : null}
@@ -119,7 +144,9 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
               <LineChart className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-xs font-medium text-foreground">No evidence yet</p>
+              <p className="text-xs font-medium text-foreground">
+                No evidence yet
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {ga4Enabled
                   ? "Run a GA4 collection to persist sessions, users, and engagement."
@@ -133,10 +160,16 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
             fields={[
               { label: "Sessions", value: totals.sessions.toLocaleString() },
               { label: "Users", value: totals.users.toLocaleString() },
-              { label: "Engaged sessions", value: totals.engagedSessions.toLocaleString() },
+              {
+                label: "Engaged sessions",
+                value: totals.engagedSessions.toLocaleString(),
+              },
               {
                 label: "Engagement rate",
-                value: engagementRate === null ? "—" : `${engagementRate.toFixed(1)}%`,
+                value:
+                  engagementRate === null
+                    ? "—"
+                    : `${engagementRate.toFixed(1)}%`,
               },
             ]}
           />
