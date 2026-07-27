@@ -240,6 +240,7 @@ model overrides.
 
 ## Invariants & gotchas
 
+- **Every conversation START sends three required fields: `conversation_id` (we mint it, always), `is_new`, `store`.** `store:false` is the ONLY thing that makes a run ephemeral — omitting the id and sending `is_new:false` is a 422 from the server and a throw from `buildAgentStartLifecycleFields`. The id is our correlation handle, so concurrent sends can be told apart. Continue calls (`/ai/conversations/{id}`) are exempt: the id is in the path. Server contract: `/Users/armanisadeghi/code/aidream/aidream/services/conversation_context/FEATURE.md` § "Starting a conversation".
 - **Wire / stream / DB types are never hand-mirrored.** Python → `types/python-generated/api-types.ts` + `stream-events.ts`; DB → `types/database.types.ts`. Alias with `components["schemas"]["…"]`. Hitlist: `pnpm generate:type-drift-hitlists` → `docs/type-drift/generated/`. Invoke the **`type-safety`** skill before adding or "fixing" a type at a data boundary.
 - **`BackendChannel` lives in `resolve-base-url.ts` only.** `RequestRouting.channel` must use that type — never re-declare the union (a stale copy already dropped `local-runtime`).
 - **`agentId` is read once at instance creation.** Do not re-read during execution. If the agent definition changes mid-run, the instance must not notice.
