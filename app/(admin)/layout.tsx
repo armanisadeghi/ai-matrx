@@ -59,8 +59,8 @@ export default async function AdminLayout({
   // higher bar self-gate with `selectAdminLevel` / the super-admin RPC family;
   // protected resources (admins table, etc.) are DB-gated regardless. The real
   // authorization always lives at the data layer, never this redirect.
-  const isAdmin = await checkIsUserAdmin(supabase, user.id);
-  if (!isAdmin) {
+  const isAdminGate = await checkIsUserAdmin(supabase, user.id);
+  if (!isAdminGate) {
     return redirect("/dashboard");
   }
 
