@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
 
 const STATS = [
   { value: "100%", label: "AMA Guides aligned" },
@@ -199,6 +200,10 @@ const PROCUREMENT = [
 export default function CaWcLanding() {
   return (
     <div className="min-h-dvh">
+      <AuthedWorkspaceCTA
+        workspaceHref="/legal/ca-wc/cases"
+        workspaceLabel="WC Cases"
+      />
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
@@ -231,9 +236,12 @@ export default function CaWcLanding() {
             <Button
               size="lg"
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
+              asChild
             >
-              Get Started
-              <ArrowRight className="h-4 w-4" />
+              <Link href="/sign-up?source=ca-wc-landing">
+                Get Started
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
             <Button
               variant="outline"
@@ -471,9 +479,11 @@ export default function CaWcLanding() {
             defense firms alike. Built for California WC, replayable end to
             end, and built to clear your firm&rsquo;s procurement bar.
           </p>
-          <Button size="lg" className="min-h-[44px] text-base px-10 gap-2">
-            Get Started
-            <ArrowRight className="h-4 w-4" />
+          <Button size="lg" className="min-h-[44px] text-base px-10 gap-2" asChild>
+            <Link href="/sign-up?source=ca-wc-landing">
+              Get Started
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </section>

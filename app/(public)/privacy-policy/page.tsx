@@ -1,8 +1,19 @@
 import React from 'react';
+import { createRouteMetadata } from '@/utils/route-metadata';
+
+export const metadata = createRouteMetadata('/privacy-policy', {
+  title: 'Privacy Policy',
+  description:
+    'How AI Matrx collects, uses, and protects your information across the web app and the Matrx Extend Chrome extension.',
+  letter: 'P',
+  canonicalPath: '/privacy-policy',
+});
 
 const PrivacyPolicyPage = () => {
   return (
-    <div className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
+    // PublicLayout's main is overflow-hidden — the page must own its scroll.
+    <div className="h-full overflow-y-auto">
+      <div className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
       <h1>Privacy Policy</h1>
       <p>
         <strong>Last updated:</strong> July 20, 2026
@@ -528,6 +539,7 @@ const PrivacyPolicyPage = () => {
         Email:{' '}
         <a href="mailto:support@aimatrx.com">support@aimatrx.com</a>
       </p>
+      </div>
     </div>
   );
 };

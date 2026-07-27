@@ -13,6 +13,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D104 — no footer anywhere in `(public)`; legal docs are near-unreachable (2026-07-26)
+
+`app/(public)/layout.tsx` renders `PublicHeader` and no footer; no public footer component exists in the repo. `/privacy-policy` and `/terms-and-conditions` are linked only from OAuth consent screens, SMS compliance constants, and the hand-rolled footer on `app/page.tsx:122-131` (which links Privacy but NOT Terms). Fix: one shared public footer component (Privacy, Terms, Contact) mounted in `(public)/layout.tsx` and reused by `app/page.tsx`. Product call on placement/links: Arman.
+
+### D103 — legal vertical landings predate `ModuleLanding`; PD calculator has no guest landing (2026-07-26)
+
+`features/legal/components/landing/LegalLanding.tsx` + `features/legal/wc/components/landing/CaWcLanding.tsx` are ~900 lines hand-duplicating the structure `ModuleLanding` was modeled on (`ModuleLanding.tsx:73-78`), are not registered in `MODULE_LANDING_DIRECTORY` (so `/legal` is invisible on `/features`), and get no guest conversion nudges. Dead CTAs + missing `AuthedWorkspaceCTA` were fixed 2026-07-26; the remaining fix is migrating both onto `ModuleLanding` + directory registration. Related orphan: `features/legal/wc/pd-ratings/components/landing/PdRatingsCalculatorLanding.tsx` (331 lines, zero importers) while `/legal/ca-wc/pd-ratings-calculator/page.tsx` renders the client workspace unconditionally with no guest branch — wire the orphan in via the `module-landing-pages` skill postures or delete it.
+
 ### D102 — a structured server validation error reaches the user as bare "HTTP 422" (2026-07-25)
 
 Every aidream 4xx with a validation body is surfaced to the user as just the

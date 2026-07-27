@@ -141,6 +141,7 @@ const EDU_ALLOWED_EXACT = new Set([
   "/contact",
   "/about",
   "/privacy-policy",
+  "/terms-and-conditions",
   "/sitemap.xml",
   "/robots.txt",
   "/manifest.webmanifest",
