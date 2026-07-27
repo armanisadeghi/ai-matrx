@@ -553,7 +553,8 @@ export interface ExecutionInstance {
    * (specifically the messages slice) is the sole source of truth.
    *
    * Routing implication handled by `launchConversation`:
-   *   Turn 1  — POST /ai/agents/{id} with is_new:false, store:false (no convId).
+   *   Turn 1  — POST /ai/agents/{id} with the client's id, is_new:true,
+   *             store:false. `store` is what makes it ephemeral.
    *   Turn 2+ — POST /ai/chat (NOT /conversations/{id}; it 404s with no row).
    *             Client sends the full accumulated history from `messages/`.
    */
@@ -1351,7 +1352,8 @@ export interface ManagedAgentOptions {
   /**
    * When true, the server writes nothing to the DB and Redux becomes the sole
    * source of truth for the transcript.
-   *   Turn 1:  POST /ai/agents/{id} with `is_new:false, store:false`.
+   *   Turn 1:  POST /ai/agents/{id} with the client's id, `is_new:true`,
+   *            `store:false`.
    *   Turn 2+: POST /ai/conversations/{id} with `store:false`. The server
    *            still streams the next iteration; nothing is persisted.
    * Stamped onto the conversation record via `createInstance`; the execute

@@ -407,18 +407,18 @@ describe("assembleManualRequest — live read contract", () => {
     expect(payload.file_urls).toBeUndefined();
   });
 
-  test("omits conversation_id and sets is_new — server mints the id", async () => {
-    // Sending a client-minted wire conversation_id with `is_new: true`
-    // collides with cx_conversation rows the server creates on its own
-    // (409 "conversation already exists"). The contract is: client sends
-    // is_new: true and OMITS the conversation_id field; server generates
-    // a fresh id and echoes it back via X-Conversation-ID. The local
-    // Redux conversationId stays stable for UI continuity (not on the wire).
+  test("mints a FRESH wire conversation_id per send, with is_new", async () => {
+    // conversation_id is required on every start request — it is the client's
+    // correlation handle. Manual mode carries history client-side, so each
+    // send is its own server conversation: reusing the local Redux id would
+    // 409 on turn 2 against the row turn 1 created. The local Redux id stays
+    // the UI identity and never goes on the wire.
     const state = makeState({});
     const a = (await assembleManualRequest(state, CONVERSATION_ID))!;
     const b = (await assembleManualRequest(state, CONVERSATION_ID))!;
-    expect(a.conversation_id).toBeUndefined();
-    expect(b.conversation_id).toBeUndefined();
+    expect(a.conversation_id).toEqual(expect.any(String));
+    expect(a.conversation_id).not.toBe(CONVERSATION_ID);
+    expect(b.conversation_id).not.toBe(a.conversation_id);
     expect(a.is_new).toBe(true);
     expect(b.is_new).toBe(true);
   });

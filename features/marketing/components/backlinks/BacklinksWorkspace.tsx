@@ -15,6 +15,23 @@ import {
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import {
+  humanBacklinkRow,
+  humanDimensionList,
+  humanDimensionRow,
+  humanMetric,
+  humanSummarySnapshot,
+  humanTrend,
+  projectBacklinkRow,
+  projectDimensionRow,
+} from "@/features/marketing/components/backlinks/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,13 +106,17 @@ function MetricCard({
   label,
   value,
   detail,
+  siteDomain,
+  location,
 }: {
   label: string;
   value: number | null | undefined;
   detail?: string;
+  siteDomain: string;
+  location: string;
 }) {
   return (
-    <div className="rounded-lg bg-muted/40 p-3">
+    <div className="group/metric relative rounded-lg bg-muted/40 p-3">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
@@ -105,6 +126,21 @@ function MetricCard({
       {detail ? (
         <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
       ) : null}
+      <div className="absolute right-1.5 top-1.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/metric:opacity-100">
+        <CopyButtons
+          size="xs"
+          label={label}
+          human={() => humanMetric(label, value, siteDomain, detail)}
+          agent={() => ({
+            kind: "backlink-metric",
+            location,
+            description: `The "${label}" backlink KPI for ${siteDomain}.`,
+            data: { metric: label, value: value ?? null, detail: detail ?? null },
+            summary: humanMetric(label, value, siteDomain, detail),
+            attributes: { metric: label },
+          })}
+        />
+      </div>
     </div>
   );
 }
@@ -112,23 +148,46 @@ function MetricCard({
 function DimensionList({
   title,
   rows,
+  kind,
+  location,
+  siteDomain,
 }: {
   title: string;
   rows: BacklinkDimensionRow[];
+  /** Stable slug for agent payloads, e.g. "backlink-referring-domains". */
+  kind: string;
+  location: string;
+  siteDomain: string;
 }) {
   return (
     <section className="min-w-0 rounded-lg bg-muted/40 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <span className="text-xs text-muted-foreground">
-          top {Math.min(rows.length, 8)}
+        <span className="flex shrink-0 items-center gap-1">
+          <CopyButtons
+            size="xs"
+            label={`${title} (all ${rows.length})`}
+            disabled={!rows.length}
+            human={() => humanDimensionList(title, rows)}
+            agent={() => ({
+              kind: `${kind}-list`,
+              location,
+              description: `All stored "${title}" backlink dimension rows for ${siteDomain}.`,
+              data: rows,
+              summary: humanDimensionList(title, rows),
+              attributes: { count: rows.length, shown: Math.min(rows.length, 8) },
+            })}
+          />
+          <span className="text-xs text-muted-foreground">
+            top {Math.min(rows.length, 8)}
+          </span>
         </span>
       </div>
       <div className="space-y-1.5">
         {rows.slice(0, 8).map((row) => (
           <div
             key={row.id}
-            className="flex min-w-0 items-center justify-between gap-3 text-xs"
+            className="group/dim flex min-w-0 items-center justify-between gap-2 text-xs"
           >
             <span
               className="truncate text-foreground"
@@ -136,8 +195,24 @@ function DimensionList({
             >
               {row.label ?? row.dimension_key}
             </span>
-            <span className="shrink-0 tabular-nums text-muted-foreground">
-              {compactNumber(row.backlinks ?? row.referring_domains)}
+            <span className="flex shrink-0 items-center gap-1">
+              <CopyButtons
+                size="xs"
+                className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/dim:opacity-100"
+                label={row.label ?? row.dimension_key}
+                human={() => humanDimensionRow(row)}
+                agent={() => ({
+                  kind,
+                  location,
+                  description: `One "${title}" backlink dimension row for ${siteDomain}.`,
+                  data: row,
+                  summary: humanDimensionRow(row),
+                  attributes: { label: row.label ?? row.dimension_key },
+                })}
+              />
+              <span className="tabular-nums text-muted-foreground">
+                {compactNumber(row.backlinks ?? row.referring_domains)}
+              </span>
             </span>
           </div>
         ))}
@@ -266,6 +341,196 @@ export function BacklinksWorkspace() {
   const data = workspace.data;
   const summary = data?.latestByDataset.summary;
   const detailSnapshot = data?.latestByDataset.backlinks;
+  const pageLocation = `Marketing — Backlink intelligence for ${site.domain}`;
+
+  const dimensionGroups = [
+    {
+      id: "referring_domains",
+      title: "Referring domains",
+      kind: "backlink-referring-domain",
+      rows: data?.referringDomains ?? [],
+    },
+    {
+      id: "anchors",
+      title: "Anchor text",
+      kind: "backlink-anchor",
+      rows: data?.anchors ?? [],
+    },
+    {
+      id: "target_pages",
+      title: "Linked pages",
+      kind: "backlink-target-page",
+      rows: data?.targetPages ?? [],
+    },
+    {
+      id: "competitors",
+      title: "Competitors",
+      kind: "backlink-competitor",
+      rows: data?.competitors ?? [],
+    },
+  ] as const;
+
+  const pageHuman = () =>
+    [
+      `Backlink intelligence — ${site.domain}`,
+      humanSummarySnapshot(summary, site.domain),
+      humanTrend(trend.data ?? []),
+      ...dimensionGroups.map((group) =>
+        humanDimensionList(group.title, group.rows),
+      ),
+      `Stored backlink rows: ${(backlinks.data?.total ?? 0).toLocaleString()} total recorded${
+        detailSnapshot
+          ? `, collected until ${formatCompactDate(detailSnapshot.created_at)}`
+          : ""
+      }.`,
+    ].join("\n\n");
+
+  const groomerSections = (): AgentCopyGroomerSection[] => {
+    const trendPoints = trend.data ?? [];
+    const tableRows = backlinks.data?.rows ?? [];
+    const sections: AgentCopyGroomerSection[] = [
+      {
+        id: "summary",
+        title: "KPI summary",
+        description: "Latest backlink summary snapshot (totals, rank).",
+        build: (level) =>
+          !summary
+            ? null
+            : level === "full"
+              ? summary
+              : level === "compact"
+                ? {
+                    total_backlinks: summary.total_backlinks,
+                    referring_domains: summary.referring_domains,
+                    dofollow_backlinks: summary.dofollow_backlinks,
+                    nofollow_backlinks: summary.nofollow_backlinks,
+                    rank_score: summary.rank_score,
+                    collected_at: summary.created_at,
+                  }
+                : {
+                    total_backlinks: summary.total_backlinks,
+                    referring_domains: summary.referring_domains,
+                    collected_at: summary.created_at,
+                  },
+        levelLabels: { full: "Raw snapshot", compact: "KPIs", brief: "Core" },
+      },
+      {
+        id: "refresh_schedule",
+        title: "Refresh schedule",
+        description: "Automatic refresh config + selected manual profile.",
+        cuttable: true,
+        build: () => ({
+          automatic_refresh: schedule,
+          manual_profile: profile,
+          seo_environment: seoTarget?.environment ?? null,
+        }),
+      },
+      {
+        id: "trend",
+        title: "New vs. lost trend",
+        description: `${trendPoints.length} stored timeseries periods.`,
+        cuttable: true,
+        levelLabels: {
+          full: `All ${trendPoints.length}`,
+          compact: "Last 12",
+          brief: "Totals",
+        },
+        build: (level) =>
+          level === "full"
+            ? trendPoints
+            : level === "compact"
+              ? trendPoints.slice(-12)
+              : { summary: humanTrend(trendPoints) },
+      },
+      ...dimensionGroups.map(
+        (group): AgentCopyGroomerSection => ({
+          id: group.id,
+          title: group.title,
+          description: `${group.rows.length} stored dimension rows.`,
+          cuttable: true,
+          levelLabels: {
+            full: `All ${group.rows.length} (raw)`,
+            compact: "Top 8",
+            brief: "Top 3",
+          },
+          build: (level) =>
+            level === "full"
+              ? group.rows
+              : group.rows
+                  .slice(0, level === "compact" ? 8 : 3)
+                  .map(projectDimensionRow),
+        }),
+      ),
+      {
+        id: "backlink_rows",
+        title: "Stored backlink rows",
+        description: `${tableRows.length} loaded of ${(backlinks.data?.total ?? 0).toLocaleString()} recorded (current table page + filters).`,
+        cuttable: true,
+        levelLabels: {
+          full: `Loaded ${tableRows.length} (raw)`,
+          compact: "Top 25 (key fields)",
+          brief: "Counts only",
+        },
+        build: (level) =>
+          level === "full"
+            ? { query: table.state, rows: tableRows }
+            : level === "compact"
+              ? {
+                  query: table.state,
+                  rows: tableRows.slice(0, 25).map(projectBacklinkRow),
+                }
+              : {
+                  total_recorded: backlinks.data?.total ?? 0,
+                  loaded_rows: tableRows.length,
+                  top_source_domains: tableRows
+                    .slice(0, 5)
+                    .map((row) => row.source_domain ?? row.source_url),
+                },
+      },
+    ];
+    if (receipt) {
+      sections.push({
+        id: "refresh_receipt",
+        title: "Refresh receipt",
+        description: "Raw receipt from the last manual refresh in this tab.",
+        cuttable: true,
+        defaultSelection: "off",
+        build: (level) =>
+          level === "full"
+            ? receipt
+            : { note: "Receipt trimmed — switch to Full for the raw payload." },
+      });
+    }
+    return sections;
+  };
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Backlinks — ${site.domain}`,
+    kind: "marketing-backlinks-page",
+    location: pageLocation,
+    description: `The full backlink intelligence workspace for ${site.domain}.`,
+    attributes: { site_id: site.id, domain: site.domain },
+    context: { seo_environment: seoTarget?.environment ?? undefined },
+    summary: humanSummarySnapshot(summary, site.domain),
+    sections: groomerSections(),
+  });
+
+  const pageAgentPayload = (): AgentPayloadInput => {
+    const sections = groomerSections();
+    const full: Record<string, unknown> = {};
+    for (const section of sections) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return {
+      kind: "marketing-backlinks-page",
+      location: pageLocation,
+      description: `The full backlink intelligence workspace for ${site.domain}.`,
+      data: full,
+      summary: humanSummarySnapshot(summary, site.domain),
+      attributes: { site_id: site.id, domain: site.domain },
+    };
+  };
   const columns: MatrxColumnDef<BacklinkObservationRow>[] = [
     {
       id: "source_domain",
@@ -424,6 +689,13 @@ export function BacklinksWorkspace() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <CopyButtons
+              size="icon"
+              label={`Backlinks page (${site.domain})`}
+              human={pageHuman}
+              agent={pageAgentPayload}
+            />
+            <AgentCopyGroomerLauncher config={groomerConfig} />
             <Select
               value={profile}
               onValueChange={(value) =>
@@ -535,14 +807,36 @@ export function BacklinksWorkspace() {
         </section>
 
         <section className="grid grid-cols-2 gap-2 lg:grid-cols-6">
-          <MetricCard label="Backlinks" value={summary?.total_backlinks} />
+          <MetricCard
+            label="Backlinks"
+            value={summary?.total_backlinks}
+            siteDomain={site.domain}
+            location={pageLocation}
+          />
           <MetricCard
             label="Referring domains"
             value={summary?.referring_domains}
+            siteDomain={site.domain}
+            location={pageLocation}
           />
-          <MetricCard label="Dofollow" value={summary?.dofollow_backlinks} />
-          <MetricCard label="Nofollow" value={summary?.nofollow_backlinks} />
-          <MetricCard label="Rank" value={summary?.rank_score} />
+          <MetricCard
+            label="Dofollow"
+            value={summary?.dofollow_backlinks}
+            siteDomain={site.domain}
+            location={pageLocation}
+          />
+          <MetricCard
+            label="Nofollow"
+            value={summary?.nofollow_backlinks}
+            siteDomain={site.domain}
+            location={pageLocation}
+          />
+          <MetricCard
+            label="Rank"
+            value={summary?.rank_score}
+            siteDomain={site.domain}
+            location={pageLocation}
+          />
           <MetricCard
             label="Last refreshed"
             value={null}
@@ -551,6 +845,8 @@ export function BacklinksWorkspace() {
                 ? formatCompactDate(summary.created_at)
                 : "No snapshot yet"
             }
+            siteDomain={site.domain}
+            location={pageLocation}
           />
         </section>
 
@@ -579,13 +875,16 @@ export function BacklinksWorkspace() {
         </section>
 
         <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-          <DimensionList
-            title="Referring domains"
-            rows={data?.referringDomains ?? []}
-          />
-          <DimensionList title="Anchor text" rows={data?.anchors ?? []} />
-          <DimensionList title="Linked pages" rows={data?.targetPages ?? []} />
-          <DimensionList title="Competitors" rows={data?.competitors ?? []} />
+          {dimensionGroups.map((group) => (
+            <DimensionList
+              key={group.id}
+              title={group.title}
+              rows={group.rows}
+              kind={group.kind}
+              location={pageLocation}
+              siteDomain={site.domain}
+            />
+          ))}
         </section>
 
         {receipt ? (
@@ -596,6 +895,13 @@ export function BacklinksWorkspace() {
               defaultView="json"
               defaultExpandDepth={3}
               className="rounded-none"
+              agentCopy={() => ({
+                kind: "backlink-refresh-receipt",
+                location: pageLocation,
+                description: `The raw receipt from the last manual backlink refresh for ${site.domain}.`,
+                data: receipt,
+                attributes: { profile },
+              })}
             />
           </section>
         ) : null}
@@ -663,6 +969,29 @@ export function BacklinksWorkspace() {
               onStateChange: table.onStateChange,
             }}
             toolbar={{ search: false }}
+            copy={{
+              label: "Backlink",
+              listLabel: "Stored backlinks view",
+              location: pageLocation,
+              rowKind: "backlink",
+              listKind: "backlinks",
+              humanRow: humanBacklinkRow,
+              rowAttributes: (row) => ({
+                id: row.id,
+                state: row.state,
+                dofollow: row.is_dofollow ?? undefined,
+                domain_rank: row.domain_rank ?? undefined,
+              }),
+              listAttributes: (visible) => ({
+                page: table.state.page,
+                loaded_rows: visible.length,
+                total_recorded: backlinks.data?.total ?? 0,
+                search: table.state.search || undefined,
+              }),
+            }}
+            window={{
+              title: (row) => row.source_domain ?? row.source_url,
+            }}
             pageSizeOptions={[25, 50, 100]}
             emptyState={{
               icon: <Link2 className="h-8 w-8 text-muted-foreground" />,

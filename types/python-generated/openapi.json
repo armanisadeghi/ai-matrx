@@ -16586,6 +16586,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -44812,6 +44872,108 @@
       },
       "AgentBlocksStartRequest": {
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
+          "context_anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature"
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store"
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "is_new": {
+            "type": "boolean",
+            "title": "Is New"
+          },
           "user_input": {
             "anyOf": [
               {
@@ -44861,31 +45023,14 @@
             "type": "boolean",
             "title": "Debug",
             "default": false
-          },
-          "conversation_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Conversation Id"
-          },
-          "is_new": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is New"
           }
         },
         "type": "object",
+        "required": [
+          "store",
+          "conversation_id",
+          "is_new"
+        ],
         "title": "AgentBlocksStartRequest"
       },
       "AgentConfigSettings": {
@@ -45554,8 +45699,7 @@
           },
           "store": {
             "type": "boolean",
-            "title": "Store",
-            "default": true
+            "title": "Store"
           },
           "target_instance_id": {
             "anyOf": [
@@ -45567,6 +45711,14 @@
               }
             ],
             "title": "Target Instance Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "is_new": {
+            "type": "boolean",
+            "title": "Is New"
           },
           "user_input": {
             "anyOf": [
@@ -45754,28 +45906,6 @@
             "title": "Allow Context Create",
             "default": false
           },
-          "conversation_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Conversation Id"
-          },
-          "is_new": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is New"
-          },
           "is_version": {
             "type": "boolean",
             "title": "Is Version",
@@ -45852,6 +45982,11 @@
           }
         },
         "type": "object",
+        "required": [
+          "store",
+          "conversation_id",
+          "is_new"
+        ],
         "title": "AgentStartRequest"
       },
       "AgentStartStrictInput": {
@@ -45940,7 +46075,7 @@
               }
             ],
             "title": "Is New",
-            "description": "Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing), None = default behavior."
+            "description": "Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing). Blank means: new when no conversation_id was given, continue when one was."
           },
           "ide_state": {
             "anyOf": [
@@ -54277,8 +54412,7 @@
           },
           "store": {
             "type": "boolean",
-            "title": "Store",
-            "default": true
+            "title": "Store"
           },
           "verbosity": {
             "anyOf": [
@@ -54965,6 +55099,14 @@
             ],
             "title": "Target Instance Id"
           },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "is_new": {
+            "type": "boolean",
+            "title": "Is New"
+          },
           "ai_model_id": {
             "type": "string",
             "title": "Ai Model Id"
@@ -54975,28 +55117,6 @@
             },
             "type": "array",
             "title": "Messages"
-          },
-          "conversation_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Conversation Id"
-          },
-          "is_new": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is New"
           },
           "agent_id": {
             "anyOf": [
@@ -55302,6 +55422,9 @@
         "additionalProperties": true,
         "type": "object",
         "required": [
+          "store",
+          "conversation_id",
+          "is_new",
           "ai_model_id",
           "messages"
         ],
@@ -62275,6 +62398,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -84716,8 +84894,7 @@
           },
           "store": {
             "type": "boolean",
-            "title": "Store",
-            "default": true
+            "title": "Store"
           },
           "target_instance_id": {
             "anyOf": [
@@ -84729,6 +84906,14 @@
               }
             ],
             "title": "Target Instance Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "is_new": {
+            "type": "boolean",
+            "title": "Is New"
           },
           "user_input": {
             "anyOf": [
@@ -84873,31 +85058,14 @@
             "type": "object",
             "title": "Context",
             "default": {}
-          },
-          "conversation_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Conversation Id"
-          },
-          "is_new": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is New"
           }
         },
         "type": "object",
+        "required": [
+          "store",
+          "conversation_id",
+          "is_new"
+        ],
         "title": "PromptStartRequest"
       },
       "PromptWarmRequest": {
@@ -85624,6 +85792,21 @@
             "type": "string",
             "title": "Device"
           },
+          "search_type": {
+            "type": "string",
+            "title": "Search Type"
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
           "target_domain": {
             "anyOf": [
               {
@@ -85767,6 +85950,8 @@
           "engine",
           "language",
           "device",
+          "search_type",
+          "location_name",
           "target_domain",
           "target_page_id",
           "group",
@@ -85909,6 +86094,22 @@
               }
             ],
             "title": "Location Name"
+          },
+          "search_type": {
+            "type": "string",
+            "title": "Search Type",
+            "default": "organic"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
           }
         },
         "additionalProperties": false,

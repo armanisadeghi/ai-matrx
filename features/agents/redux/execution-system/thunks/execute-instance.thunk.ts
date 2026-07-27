@@ -102,20 +102,34 @@ import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 
 /**
- * Build the persistence/identity fields for a first-turn saved-agent request.
+ * Build the three REQUIRED conversation-start fields for a first-turn request.
  *
- * Persistent runs reserve the client-generated conversation id. Ephemeral runs
- * must not send that local Redux key: `is_new:false` plus a supplied id makes
- * the server resolve an existing conversation, which cannot exist when
- * `store:false`.
+ * The client ALWAYS sends its own `conversation_id` — it is our correlation
+ * handle, and with several requests in flight a server-minted id that only
+ * arrives when the response opens cannot tell them apart. `is_new` is an
+ * assertion about that id (turn 1 always creates it). `store` alone decides
+ * whether the server writes a row.
+ *
+ * Ephemeral used to send `is_new:false` with NO id — "this is not a new
+ * conversation, and I won't tell you which one" — which the server
+ * reinterpreted as "run stateless". That contradiction is now a 422 on both
+ * sides; ephemerality rides on `store:false`, which we already sent.
  */
 export function buildAgentStartLifecycleFields(
   conversationId: string,
   isEphemeral: boolean,
 ): Record<string, unknown> {
-  return isEphemeral
-    ? { is_new: false, store: false }
-    : { conversation_id: conversationId, is_new: true };
+  if (!conversationId) {
+    throw new Error(
+      "buildAgentStartLifecycleFields: conversation_id is required — the client " +
+        "mints it, always. A start request without one cannot be correlated.",
+    );
+  }
+  return {
+    conversation_id: conversationId,
+    is_new: true,
+    store: !isEphemeral,
+  };
 }
 
 // =============================================================================
@@ -649,9 +663,9 @@ export const executeInstance = createAsyncThunk<
       // continuation.
       const isContinuation = selectMessageCount(conversationId)(state) > 0;
 
-      // Ephemeral conversations stream without writing any cx_* rows. Turn 1
-      // omits the local Redux conversation key from the wire and sends
-      // `is_new:false, store:false`. The local key remains the UI identity.
+      // Ephemeral conversations stream without writing any cx_* rows. The
+      // client id still goes on the wire (correlation); `store:false` is what
+      // keeps the server from writing anything.
       const isEphemeral = instance.isEphemeral === true;
 
       // (Optimistic user bubble + request status were dispatched up-front,
@@ -762,9 +776,8 @@ export const executeInstance = createAsyncThunk<
         // server uses the same endpoint with `is_version: true` to read
         // from `agx_version`.
         //
-        // Persistent → client id + is_new:true (server creates the row).
-        // Ephemeral → no wire id + is_new:false, store:false. The server may
-        // mint a transient wire id; runAiStream keeps the local Redux key.
+        // Always: client id + is_new:true. `store` decides whether the
+        // server writes a row (false for ephemeral).
         const pinnedVersionId = instance.initialAgentVersionId ?? null;
         const targetId = pinnedVersionId ?? instance.agentId;
         const agentPath = resolveEndpointPath(

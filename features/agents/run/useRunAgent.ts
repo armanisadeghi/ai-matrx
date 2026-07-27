@@ -13,7 +13,11 @@
 //
 // Backend contract (verified against the Agent Demo, the reference caller):
 //   POST {base}/ai/agents/{agentId}
-//   body: { user_input, variables, config_overrides?, stream, debug }
+//   body: { conversation_id, is_new, store, user_input, variables,
+//           config_overrides?, stream, debug }
+//   conversation_id / is_new / store are REQUIRED on every start request. A
+//   one-shot run still mints an id (it is the caller's correlation handle) and
+//   opts out of persistence with store:false.
 //   → NDJSON stream; `event: "chunk"` carries `data.text`; `event: "error"`
 //     carries a structured error. `consumeStream` returns `accumulatedText`.
 //
@@ -83,6 +87,11 @@ export function buildRunAgentRequest(args: RunAgentArgs): {
 
   return {
     body: {
+      // One-shot run: a freshly minted id for correlation, is_new so the
+      // server never looks anything up, store:false so nothing is written.
+      conversation_id: crypto.randomUUID(),
+      is_new: true,
+      store: false,
       user_input: args.userInput ?? null,
       variables:
         args.variables && Object.keys(args.variables).length > 0

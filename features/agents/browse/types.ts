@@ -30,26 +30,33 @@ export const DEFAULT_BROWSE_SCOPE: BrowseScope = {
   organizationId: null,
 };
 
-export type FavoritesFilter = "all" | "only" | "exclude";
 export type ArchivedFilter = "active" | "archived" | "all";
 
 /**
- * Query half of list state — never persisted, always starts clean.
- * EVERY field here is honored server-side by agx_list_scoped. A filter the
- * server cannot serve does not belong in this shape; it would only ever filter
- * the current page, which is a lie at any scale that matters.
+ * ONE filter vocabulary, shared by the column headers and the Filters panel.
+ * Serialized straight into `agx_list_scoped(p_filters)` — so a filter set from
+ * a column header and the same filter set from the panel are the same query,
+ * and neither can drift into "filters only the current page".
  */
+export type BrowseFilterValue =
+  | { kind: "text"; value: string }
+  | { kind: "select"; values: string[] }
+  | { kind: "boolean"; value: boolean };
+
+export type BrowseFilters = Record<string, BrowseFilterValue>;
+
+/** Query half of list state — never persisted, always starts clean. */
 export interface BrowseQuery {
   scope: BrowseScope;
   search: string;
   /** Reach into prompt content. Opt-in — it is a full jsonb scan server-side. */
   deep: boolean;
-  favorites: FavoritesFilter;
+  /**
+   * Kept separate from `filters` because it carries a DEFAULT ("active only")
+   * rather than being absent-means-unfiltered like every other column.
+   */
   archived: ArchivedFilter;
-  /** OR-set. `__none__` = uncategorized. Empty = no category filter. */
-  categories: string[];
-  /** OR-set. `__none__` = untagged. Empty = no tag filter. */
-  tags: string[];
+  filters: BrowseFilters;
   page: number;
 }
 
@@ -57,34 +64,26 @@ export const DEFAULT_BROWSE_QUERY: BrowseQuery = {
   scope: DEFAULT_BROWSE_SCOPE,
   search: "",
   deep: false,
-  favorites: "all",
   archived: "active",
-  categories: [],
-  tags: [],
+  filters: {},
   page: 1,
 };
 
-/** How many query fields are narrowing the list right now (badge on Filters). */
+/** How many things are narrowing the list right now (badge on Filters). */
 export function countActiveFilters(query: BrowseQuery): number {
-  return (
-    (query.favorites !== "all" ? 1 : 0) +
-    (query.archived !== "active" ? 1 : 0) +
-    (query.categories.length > 0 ? 1 : 0) +
-    (query.tags.length > 0 ? 1 : 0)
-  );
+  return Object.keys(query.filters).length + (query.archived !== "active" ? 1 : 0);
 }
 
 /** Server-computed filter options for the current scope + search. */
 export interface BrowseFacets {
-  categories: { value: string; count: number }[];
-  tags: { value: string; count: number }[];
+  /** facet kind → values with counts, most-used first. */
+  byKind: Record<string, { value: string; count: number }[]>;
   favoriteCount: number;
   archivedCount: number;
 }
 
 export const EMPTY_FACETS: BrowseFacets = {
-  categories: [],
-  tags: [],
+  byKind: {},
   favoriteCount: 0,
   archivedCount: 0,
 };
@@ -106,3 +105,11 @@ export const EMPTY_SCOPE_COUNTS: BrowseScopeCounts = {
   public: 0,
   byOrg: {},
 };
+
+/** Fields the table can write back inline. */
+export interface AgentRowEdit {
+  name?: string;
+  description?: string | null;
+  category?: string | null;
+  tags?: string[];
+}

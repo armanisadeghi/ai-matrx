@@ -3,10 +3,10 @@
  *
  * Reuses `assembleManualRequest` so the previewed payload is byte-identical to
  * what a real manual run would send (draft model, settings, messages, tools,
- * structured system instruction, scope). Adds `dry_run:true` + an ephemeral
- * conversation (`conversation_id:null` + `is_new:false`) so the backend runs the
- * FULL pre-LLM assembly — context resolution, system-prompt render, tool merge —
- * and returns it as JSON without calling the model or persisting anything.
+ * structured system instruction, scope). Adds `dry_run:true` (don't call the
+ * model) + `store:false` (write nothing) so the backend runs the FULL pre-LLM
+ * assembly — context resolution, system-prompt render, tool merge — and returns
+ * it as JSON without calling the model or persisting anything.
  */
 
 import type { RootState } from "@/lib/redux/store";
@@ -55,12 +55,15 @@ export async function requestPromptPreview(
   const url = `${trimRoot(baseUrl)}${path}`;
 
   // Dry-run + ephemeral: full assembly, no LLM turn, nothing persisted.
+  // `store:false` is what makes it write nothing — `dry_run` only says "don't
+  // call the model" and has nothing to do with conversation identity. The wire
+  // conversation_id comes from assembleManualRequest (minted per send) and is
+  // required on every start request.
   const body = {
     ...payload,
     dry_run: true,
     stream: false,
-    is_new: false,
-    conversation_id: null,
+    store: false,
   };
 
   const response = await fetch(url, {

@@ -400,13 +400,13 @@ export async function assembleManualRequest(
   const { sourceApp, sourceFeature } = instance;
   const isEphemeral = instance.isEphemeral === true;
 
-  // We do NOT send a wire `conversation_id`. The server mints a fresh one
-  // and echoes it via X-Conversation-ID / typed `conversation_id` events.
-  // Sending a client-minted UUID with `is_new: true` collides with server-
-  // side cx_conversation rows. Multi-turn history is carried entirely
-  // client-side in messages[]; stream events carry the server's id and are
-  // remapped to the local Redux conversationId via processStream's
-  // forceLocalConversationId flag.
+  // Every manual send is its own server-side conversation — multi-turn history
+  // is carried entirely client-side in messages[], so the local Redux
+  // conversationId must NOT be reused on the wire (turn 2 would 409 against the
+  // row turn 1 created). We mint a fresh wire id per send: `conversation_id` is
+  // REQUIRED on every start request, and it is what lets several in-flight
+  // sends be told apart. Stream events carry it back and are remapped to the
+  // local Redux conversationId via processStream's forceLocalConversationId.
   const request: Partial<ChatRequestPayload> = {
     ai_model_id,
     messages: messages as ChatRequestPayload["messages"],
@@ -415,6 +415,7 @@ export async function assembleManualRequest(
     debug: advancedSettings?.debug ?? false,
     max_iterations: advancedSettings?.maxIterations ?? 100,
     max_retries_per_iteration: advancedSettings?.maxRetriesPerIteration ?? 2,
+    conversation_id: uuidv4(),
     is_new: true,
     ...(fullSettings as Partial<ChatRequestPayload>),
   };

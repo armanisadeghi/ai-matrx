@@ -190,7 +190,8 @@ function warnUnsupported(invocation: ConversationInvocation): void {
   // Ephemeral routing is wired end-to-end. The invocation's `isEphemeral`
   // flag is stamped on the ConversationRecord via `createInstance` and
   // `execute-instance` branches on `instance.isEphemeral`:
-  //   Turn 1:  POST /ai/agents/{id} with `is_new:false, store:false`.
+  //   Turn 1:  POST /ai/agents/{id} with the client's id, `is_new:true`,
+  //            `store:false`.
   //   Turn 2+: POST /ai/conversations/{id} with `store:false`. The server
   //            still streams the next iteration; nothing is persisted.
   // No warning needed here — the flag is honored. See

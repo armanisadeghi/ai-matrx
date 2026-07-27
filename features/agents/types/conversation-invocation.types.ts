@@ -113,11 +113,12 @@ export interface ConversationInvocationOrigin {
    * When true, no rows are persisted to the database for this invocation.
    *
    * Routing implication:
-   *   Turn 1  — POST /ai/agents/{id} with `is_new: false`, `store: false`,
-   *             NO conversationId. Server streams but writes nothing.
+   *   Turn 1  — POST /ai/agents/{id} with the client's `conversation_id`,
+   *             `is_new: true`, `store: false`. Server streams but writes
+   *             nothing; the id is correlation only.
    *   Turn 2+ — POST /ai/chat (NOT /conversations/{id}, which would 404
    *             because no DB row exists). Client sends the FULL accumulated
-   *             message history each turn with `is_new: false`, `store: false`.
+   *             message history each turn with `store: false`.
    *
    * When ephemeral, Redux (the `messages/` slice) is the only source of truth.
    * The `launchConversation` thunk branches on this flag to choose the endpoint
@@ -317,12 +318,16 @@ export interface ConversationInvocation {
 /**
  * Endpoint routing table — the canonical mapping for `launchConversation`.
  *
+ * Every START call sends all three required fields: the client's own
+ * `conversation_id`, `is_new`, and `store`. `store` is the ONLY ephemeral
+ * signal — omitting the id was the old (now rejected) way to say "stateless".
+ *
  * | apiEndpointMode | isEphemeral | Turn 1                                   | Turn 2+                                                                   |
  * | ---------------- | ----------- | ---------------------------------------- | ------------------------------------------------------------------------- |
  * | "agent"          | false       | POST /ai/agents/{id}                     | POST /ai/conversations/{id}                                               |
+ * |                  |             |   id + is_new:true + store:true          |                                                                           |
  * | "agent"          | true        | POST /ai/agents/{id}                     | POST /ai/chat                                                             |
- * |                  |             |   with is_new:false, store:false         |   with is_new:false, store:false                                          |
- * |                  |             |   no conversationId — server writes none |   client sends full accumulated history from the `messages/` slice       |
+ * |                  |             |   id + is_new:true + store:false         |   store:false; client sends full accumulated history from `messages/`     |
  * | "manual"         | any         | POST /prompts                            | POST /prompts (reuseConversationId toggles server REPLACE vs BRANCH)      |
  *
  * Callers never construct this table manually — `launchConversation` reads

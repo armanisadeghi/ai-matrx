@@ -2,9 +2,17 @@
 
 // features/agents/browse/columns.tsx
 //
-// EVERY column the row can show, declared once. The table is deliberately
-// un-opinionated: it does not decide what matters to you, it ships a sensible
-// default set and lets you turn any of the rest on.
+// EVERY column the row can show, declared once.
+//
+// APP POLICY: every column sorts AND filters. No exceptions. Both are served by
+// agx_list_scoped, so they apply to the whole result set, never to the loaded
+// page. Where a column has a finite value set (category, visibility, access,
+// version, org, owner, favorite, archived) the filter offers real OPTIONS with
+// counts from `agx_list_facets` — not a bare text box.
+//
+// Sorting is on the DATABASE column, never on the rendered cell. That is why a
+// favorite star inside the Name cell cannot disturb alphabetical order, and why
+// Favorite is its own sortable column rather than a decoration on Name.
 //
 // `defaultHidden` is a starting point, never a restriction — anything here is
 // one click away in the column picker, and the choice is persisted per user.
@@ -24,6 +32,8 @@ export interface BrowseColumnSpec {
   scopedToShared?: boolean;
   /** Never hideable — the row needs something to identify it by. */
   locked?: boolean;
+  /** Facet kind that supplies this column's filter options, when finite. */
+  facet?: string;
   column: MatrxColumnDef<AgentBrowseRow>;
 }
 
@@ -64,19 +74,11 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       id: "name",
       accessorKey: "name",
       header: "Name",
-      filter: false,
+      filter: "text",
+      editable: "string",
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">
-          {row.is_favorite && (
-            <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500" />
-          )}
-          <Link
-            href={`/agents/${row.id}/run`}
-            className="truncate font-medium hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {row.name}
-          </Link>
+          <span className="truncate font-medium">{row.name}</span>
           {row.is_archived && (
             <Badge variant="outline" className="shrink-0 py-0 text-[10px]">
               <Archive className="mr-1 h-2.5 w-2.5" />
@@ -94,8 +96,8 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       id: "description",
       accessorKey: "description",
       header: "Description",
-      sortable: false,
-      filter: false,
+      filter: "text",
+      editable: "string",
       cell: (row) => (
         <span className="line-clamp-1 text-muted-foreground">
           {row.description || "—"}
@@ -106,12 +108,14 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
   {
     id: "category",
     label: "Category",
+    facet: "category",
     column: {
       id: "category",
       accessorKey: "category",
       header: "Category",
-      filter: false,
-      width: 150,
+      filter: "select",
+      editable: "select",
+      width: 160,
       cell: (row) =>
         row.category ? (
           <Badge variant="secondary" className="py-0 text-[10px] font-normal">
@@ -125,12 +129,14 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
   {
     id: "tags",
     label: "Tags",
+    facet: "tag",
     column: {
       id: "tags",
+      accessorKey: "tags",
       header: "Tags",
-      sortable: false,
-      filter: false,
-      width: 180,
+      filter: "select",
+      editable: "tags",
+      width: 190,
       cell: (row) =>
         row.tags?.length ? (
           // nowrap: wrapping tags made one row three times the height of its
@@ -161,15 +167,35 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     },
   },
   {
+    id: "favorite",
+    label: "Favorite",
+    facet: "favorite",
+    defaultHidden: true,
+    column: {
+      id: "favorite",
+      accessorKey: "is_favorite",
+      header: "Fav",
+      filter: "boolean",
+      width: 64,
+      align: "center",
+      cell: (row) =>
+        row.is_favorite ? (
+          <Star className="mx-auto h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+        ) : (
+          <Muted>—</Muted>
+        ),
+    },
+  },
+  {
     id: "organization_name",
     label: "Organization",
     scopedToShared: true,
+    facet: "organization_name",
     column: {
       id: "organization_name",
       accessorKey: "organization_name",
       header: "Organization",
-      sortable: false,
-      filter: false,
+      filter: "text",
       width: 170,
       cell: (row) =>
         row.organization_name ? (
@@ -186,12 +212,12 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     id: "owner_email",
     label: "Owner",
     scopedToShared: true,
+    facet: "owner_email",
     column: {
       id: "owner_email",
       accessorKey: "owner_email",
       header: "Owner",
-      sortable: false,
-      filter: false,
+      filter: "text",
       width: 190,
       cell: (row) => (
         <span className="truncate text-muted-foreground">
@@ -204,13 +230,13 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     id: "access_level",
     label: "Access",
     scopedToShared: true,
+    facet: "access_level",
     column: {
       id: "access_level",
       accessorKey: "access_level",
       header: "Access",
-      sortable: false,
-      filter: false,
-      width: 100,
+      filter: "select",
+      width: 110,
       cell: (row) => (
         <Badge variant="outline" className="py-0 text-[10px] capitalize">
           {row.access_level}
@@ -225,7 +251,7 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       id: "updated",
       accessorKey: "updated_at",
       header: "Updated",
-      filter: false,
+      filter: false, // dates filter by range in the panel, not by value list
       width: 120,
       align: "right",
       cell: (row) => timeCell(row.updated_at),
@@ -250,13 +276,13 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     id: "version",
     label: "Version",
     defaultHidden: true,
+    facet: "version",
     column: {
       id: "version",
       accessorKey: "version",
       header: "Ver",
-      sortable: false,
-      filter: false,
-      width: 70,
+      filter: "select",
+      width: 80,
       align: "right",
       cell: (row) => (
         <span className="tabular-nums text-muted-foreground">
@@ -269,13 +295,13 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     id: "visibility",
     label: "Visibility",
     defaultHidden: true,
+    facet: "visibility",
     column: {
       id: "visibility",
       accessorKey: "visibility",
       header: "Visibility",
-      sortable: false,
-      filter: false,
-      width: 110,
+      filter: "select",
+      width: 120,
       cell: (row) => (
         <Badge variant="outline" className="py-0 text-[10px] capitalize">
           {row.visibility}
@@ -284,37 +310,23 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     },
   },
   {
-    id: "favorite",
-    label: "Favorite",
+    id: "archived",
+    label: "Archived",
     defaultHidden: true,
+    facet: "archived",
     column: {
-      id: "favorite",
-      accessorKey: "is_favorite",
-      header: "Fav",
-      sortable: false,
-      filter: false,
-      width: 60,
+      id: "archived",
+      accessorKey: "is_archived",
+      header: "Archived",
+      filter: "boolean",
+      width: 90,
       align: "center",
       cell: (row) =>
-        row.is_favorite ? (
-          <Star className="mx-auto h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+        row.is_archived ? (
+          <Archive className="mx-auto h-3.5 w-3.5 text-muted-foreground" />
         ) : (
           <Muted>—</Muted>
         ),
-    },
-  },
-  {
-    id: "id",
-    label: "Agent ID",
-    defaultHidden: true,
-    column: {
-      id: "id",
-      accessorKey: "id",
-      header: "ID",
-      sortable: false,
-      filter: false,
-      cellKind: "uuid",
-      width: 130,
     },
   },
 ];
@@ -322,4 +334,9 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
 /** Column ids hidden by default — the initial `hiddenColumns` for a new user. */
 export const DEFAULT_HIDDEN_COLUMNS = BROWSE_COLUMNS.filter(
   (c) => c.defaultHidden,
+).map((c) => c.id);
+
+/** Columns the user can edit inline. Used to build the save payload. */
+export const EDITABLE_COLUMN_IDS = BROWSE_COLUMNS.filter(
+  (c) => c.column.editable,
 ).map((c) => c.id);

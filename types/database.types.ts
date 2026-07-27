@@ -28222,11 +28222,9 @@ export type Database = {
       agx_list_scope_counts: {
         Args: {
           p_archived?: string
-          p_categories?: string[]
           p_deep?: boolean
-          p_favorites?: string
+          p_filters?: Json
           p_search?: string
-          p_tags?: string[]
         }
         Returns: {
           org_id: string
@@ -28237,18 +28235,16 @@ export type Database = {
       agx_list_scoped: {
         Args: {
           p_archived?: string
-          p_categories?: string[]
           p_deep?: boolean
           p_dir?: string
-          p_favorites?: string
           p_favorites_first?: boolean
+          p_filters?: Json
           p_limit?: number
           p_offset?: number
           p_org_id?: string
           p_scope?: string
           p_search?: string
           p_sort?: string
-          p_tags?: string[]
         }
         Returns: {
           access_level: string

@@ -6312,6 +6312,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -16231,6 +16255,27 @@ export interface components {
         };
         /** AgentBlocksStartRequest */
         AgentBlocksStartRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+            /** Store */
+            store: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Is New */
+            is_new: boolean;
             /** User Input */
             user_input?: string | {
                 [key: string]: unknown;
@@ -16250,10 +16295,6 @@ export interface components {
              * @default false
              */
             debug?: boolean;
-            /** Conversation Id */
-            conversation_id?: string | null;
-            /** Is New */
-            is_new?: boolean | null;
         };
         /**
          * AgentConfigSettings
@@ -16541,13 +16582,14 @@ export interface components {
             source_app?: string | null;
             /** Source Feature */
             source_feature?: string | null;
-            /**
-             * Store
-             * @default true
-             */
-            store?: boolean;
+            /** Store */
+            store: boolean;
             /** Target Instance Id */
             target_instance_id?: string | null;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Is New */
+            is_new: boolean;
             /** User Input */
             user_input?: string | {
                 [key: string]: unknown;
@@ -16604,10 +16646,6 @@ export interface components {
              * @default false
              */
             allow_context_create?: boolean;
-            /** Conversation Id */
-            conversation_id?: string | null;
-            /** Is New */
-            is_new?: boolean | null;
             /**
              * Is Version
              * @default false
@@ -16698,7 +16736,7 @@ export interface components {
             conversation_id?: string | null;
             /**
              * Is New
-             * @description Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing), None = default behavior.
+             * @description Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing). Blank means: new when no conversation_id was given, continue when one was.
              */
             is_new?: boolean | null;
             /**
@@ -19827,11 +19865,8 @@ export interface components {
              * @default true
              */
             stream?: boolean;
-            /**
-             * Store
-             * @default true
-             */
-            store?: boolean;
+            /** Store */
+            store: boolean;
             /** Verbosity */
             verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
@@ -19933,14 +19968,14 @@ export interface components {
             source_feature?: string | null;
             /** Target Instance Id */
             target_instance_id?: string | null;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Is New */
+            is_new: boolean;
             /** Ai Model Id */
             ai_model_id: string;
             /** Messages */
             messages: components["schemas"]["ChatMessageInput"][];
-            /** Conversation Id */
-            conversation_id?: string | null;
-            /** Is New */
-            is_new?: boolean | null;
             /** Agent Id */
             agent_id?: string | null;
             /**
@@ -22492,6 +22527,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -30765,13 +30827,14 @@ export interface components {
             source_app?: string | null;
             /** Source Feature */
             source_feature?: string | null;
-            /**
-             * Store
-             * @default true
-             */
-            store?: boolean;
+            /** Store */
+            store: boolean;
             /** Target Instance Id */
             target_instance_id?: string | null;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Is New */
+            is_new: boolean;
             /** User Input */
             user_input?: string | {
                 [key: string]: unknown;
@@ -30808,10 +30871,6 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             };
-            /** Conversation Id */
-            conversation_id?: string | null;
-            /** Is New */
-            is_new?: boolean | null;
         };
         /** PromptWarmRequest */
         PromptWarmRequest: {
@@ -31098,6 +31157,10 @@ export interface components {
             language: string;
             /** Device */
             device: string;
+            /** Search Type */
+            search_type: string;
+            /** Location Name */
+            location_name: string | null;
             /** Target Domain */
             target_domain: string | null;
             /** Target Page Id */
@@ -31175,6 +31238,13 @@ export interface components {
             cadence_days?: number;
             /** Location Name */
             location_name?: string | null;
+            /**
+             * Search Type
+             * @default organic
+             */
+            search_type?: string;
+            /** Engine */
+            engine?: string | null;
         };
         /** RankTargetHistoryPoint */
         RankTargetHistoryPoint: {
@@ -50197,6 +50267,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

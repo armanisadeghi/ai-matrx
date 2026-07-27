@@ -139,6 +139,11 @@ export function runAssignmentDemo(): AppThunk<Promise<void>> {
       const response = await callAgentStart({
         agentId: state.agentId,
         body: {
+          // Required on every start request: client-minted id (correlation),
+          // is_new, and store. This demo run persists like a normal chat.
+          conversation_id: crypto.randomUUID(),
+          is_new: true,
+          store: true,
           user_input: state.userInput,
           variables: {
             [variableName]: { type: "auto_assign", strategy: "random" },

@@ -85,6 +85,8 @@ export default function LocalChatTestPage() {
         ],
         stream: true,
         store: false,
+        // conversation_id / is_new / store are all required on a start request.
+        conversation_id: "00000000-0000-4000-8000-000000000001",
         is_new: true,
         client: { surface: "matrx-user/chat" },
       },
