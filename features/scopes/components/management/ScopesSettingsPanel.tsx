@@ -17,6 +17,15 @@ import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTreeFetchedAt } from "@/features/scopes/redux/selectors/tree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createScopesScope,
+  SCOPES_SURFACE_NAME,
+} from "@/features/surfaces/manifests/scopes.manifest";
+import {
+  buildScopesDirectoryValues,
+  currentSelection,
+} from "@/features/scopes/lib/scopes-surface-scope";
 
 export function ScopesSettingsPanel() {
   const { organizations, status, error, refresh } = useScopeTree();
@@ -24,7 +33,23 @@ export function ScopesSettingsPanel() {
   const active = useActiveContext();
   const activeOrg = organizations.find((o) => o.id === active.organizationId);
 
+  // ── Surface emitter (`matrx-user/scopes`, view "settings") ────────────
+  const getScope = () =>
+    createScopesScope({
+      current_view: "settings",
+      ...buildScopesDirectoryValues(organizations, active),
+      tree_status: status,
+      ...(treeFetchedAt ? { tree_fetched_at: String(treeFetchedAt) } : {}),
+      ...(error ? { tree_error: error } : {}),
+      selection: currentSelection(),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={SCOPES_SURFACE_NAME}
+      getScope={getScope}
+      isEditable={false}
+    >
     <div className="space-y-5">
       <Card className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
@@ -111,6 +136,7 @@ export function ScopesSettingsPanel() {
         </Card>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

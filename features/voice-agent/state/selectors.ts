@@ -86,6 +86,11 @@ export const selectVoiceTurns = (
 ): ReadonlyArray<VoiceTurn> =>
   getInstance(state, instanceId).turns ?? EMPTY_TURNS;
 
+export const selectVoiceSessionStartedAtMs = (
+  state: StateWithVoiceAgent,
+  instanceId: string,
+) => getInstance(state, instanceId).sessionStartedAtMs;
+
 export const selectVoiceTotalInterruptions = (
   state: StateWithVoiceAgent,
   instanceId: string,

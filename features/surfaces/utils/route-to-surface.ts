@@ -44,6 +44,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/agent-apps", surface: "matrx-user/agent-apps" },
 
   // Standalone top-level pages.
+  { prefix: "/chat/voice", surface: "matrx-user/chat-voice" },
   { prefix: "/chat/a/", surface: "matrx-user/chat" },
   { prefix: "/chat", surface: "matrx-user/chat" },
   { prefix: "/code-editor", surface: "matrx-user/code-editor" },
@@ -74,6 +75,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/war-room/all", surface: "matrx-user/war-room" },
   { prefix: "/war-room", surface: "matrx-user/war-room-thread" },
   { prefix: "/organizations", surface: "matrx-user/organizations" },
+  { prefix: "/context-items", surface: "matrx-user/context-items" },
+  { prefix: "/scopes", surface: "matrx-user/scopes" },
   { prefix: "/canvas", surface: "matrx-user/canvas" },
   { prefix: "/ai-results", surface: "matrx-user/ai-results" },
   { prefix: "/rag/search", surface: "matrx-user/rag-search" },

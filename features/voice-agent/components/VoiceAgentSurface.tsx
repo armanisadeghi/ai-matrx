@@ -22,10 +22,24 @@ import { useRealtimeAgentConfig } from "../hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession } from "../hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "../hooks/usePersistVoiceTranscript";
 import {
+  selectVoiceConversationId,
   selectVoiceError,
+  selectVoiceInstructions,
+  selectVoiceLatencySummary,
+  selectVoiceMicMuted,
+  selectVoiceSessionStartedAtMs,
   selectVoiceStatus,
+  selectVoiceTools,
+  selectVoiceTotalInterruptions,
   selectVoiceTurns,
+  selectVoiceVoiceId,
 } from "../state/selectors";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CHAT_VOICE_SURFACE,
+  createChatVoiceScope,
+} from "@/features/surfaces/manifests/chat-voice.manifest";
+import { deriveVoiceTranscriptScope } from "../agent-context/voiceTranscriptScope";
 import { VoiceOrb } from "./VoiceOrb";
 import { VoiceEdgeRibbon } from "./VoiceEdgeRibbon";
 import { VoiceControlCluster } from "./VoiceControlCluster";
@@ -35,8 +49,13 @@ import { VoiceErrorBanner } from "./VoiceErrorBanner";
 import { PlaygroundSettingsSheet } from "./playground/PlaygroundSettingsSheet";
 import type { VoiceAgentPreset } from "../types";
 
-/** DB surface name for the live `/chat/voice` route — drives allowed-set + default tools. */
-const VOICE_CHAT_SURFACE = "matrx-user/chat-voice";
+/**
+ * DB surface name for the live `/chat/voice` route — drives allowed-set +
+ * default tools, AND the surface scope this page emits. Imported from the
+ * manifest so the tool-resolution key and the declared surface can never
+ * drift apart.
+ */
+const VOICE_CHAT_SURFACE = CHAT_VOICE_SURFACE;
 
 interface VoiceAgentSurfaceProps {
   preset: VoiceAgentPreset;
@@ -95,6 +114,62 @@ export function VoiceAgentSurface({
   // it's set without a status flip.
   const liveError = useAppSelector((s) => selectVoiceError(s, instanceId));
   const liveStatus = useAppSelector((s) => selectVoiceStatus(s, instanceId));
+
+  // ─── Surface scope (matrx-user/chat-voice) ──────────────────────────────
+  // Read every declared value in render so the closure below always sees the
+  // latest store snapshot; `getScope` itself runs only when the user hits ▶ in
+  // the header Agents panel, never on mount.
+  const scopeVoiceId = useAppSelector((s) => selectVoiceVoiceId(s, instanceId));
+  const scopeInstructions = useAppSelector((s) =>
+    selectVoiceInstructions(s, instanceId),
+  );
+  const scopeTools = useAppSelector((s) => selectVoiceTools(s, instanceId));
+  const scopeMicMuted = useAppSelector((s) => selectVoiceMicMuted(s, instanceId));
+  const scopeConversationId = useAppSelector((s) =>
+    selectVoiceConversationId(s, instanceId),
+  );
+  const scopeStartedAtMs = useAppSelector((s) =>
+    selectVoiceSessionStartedAtMs(s, instanceId),
+  );
+  const scopeInterruptions = useAppSelector((s) =>
+    selectVoiceTotalInterruptions(s, instanceId),
+  );
+  const scopeLatency = useAppSelector((s) =>
+    selectVoiceLatencySummary(s, instanceId),
+  );
+
+  const getSurfaceScope = () => {
+    // Durable/arrived transcript, never the audio-gated render buffer.
+    const transcript = deriveVoiceTranscriptScope(turns);
+    return createChatVoiceScope({
+      session_preset: preset,
+      voice_id: scopeVoiceId,
+      voice_instructions: scopeInstructions,
+      connection_status: liveStatus,
+      mic_muted: scopeMicMuted,
+      total_interruptions: scopeInterruptions,
+      latency_summary: scopeLatency,
+      turn_count: transcript.turn_count,
+      transcript_turns: transcript.transcript_turns,
+      realtime_tool_names: scopeTools.map((t) => t.name),
+      realtime_tools: scopeTools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        execution: t.execution,
+      })),
+      // The transcript doubles as the baseline `content` so surface-agnostic
+      // agents reach it without a per-surface remapping.
+      content: transcript.transcript_text,
+      transcript_text: transcript.transcript_text,
+      last_user_utterance: transcript.last_user_utterance,
+      last_assistant_utterance: transcript.last_assistant_utterance,
+      active_turn: transcript.active_turn,
+      voice_agent_id: agentId ?? undefined,
+      conversation_id: scopeConversationId ?? undefined,
+      session_started_at_ms: scopeStartedAtMs ?? undefined,
+      connection_error: liveError ?? undefined,
+    });
+  };
 
   // Silence "dispatch is unused if no playground" — the dispatch is consumed
   // by the PlaygroundSettingsSheet through Redux, but we keep the import here
@@ -181,6 +256,10 @@ export function VoiceAgentSurface({
   }, [liveError]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={VOICE_CHAT_SURFACE}
+      getScope={getSurfaceScope}
+    >
     <div
       className={cn(
         "relative h-dvh flex flex-col overflow-hidden bg-background text-foreground",
@@ -239,6 +318,7 @@ export function VoiceAgentSurface({
             "[mask-image:linear-gradient(to_bottom,transparent,#000_12%,#000_72%,transparent)]",
           )}
           aria-label="Voice transcript"
+          data-surface-value="transcript_text"
         >
           {turns.length === 0 ? (
             <EmptyTranscript preset={preset} />
@@ -256,7 +336,9 @@ export function VoiceAgentSurface({
             "-translate-y-1/2 flex flex-col items-center gap-5 px-4 pb-safe",
           )}
         >
-          <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
+          <div data-surface-value="connection_status">
+            <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
+          </div>
           <div className="pointer-events-auto relative size-[260px]">
             <VoiceOrb status={liveStatus} />
             <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
@@ -274,6 +356,7 @@ export function VoiceAgentSurface({
         </section>
       </main>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

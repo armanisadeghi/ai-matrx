@@ -53,6 +53,9 @@ import { aiResultsManifest } from "./ai-results.manifest";
 import { agentAdvancedEditorManifest } from "./agent-advanced-editor.manifest";
 import { mermaidEditorManifest } from "./mermaid-editor.manifest";
 import { ragSearchManifest } from "./rag-search.manifest";
+import { ragLibraryManifest } from "./rag-library.manifest";
+import { ragDataStoresManifest } from "./rag-data-stores.manifest";
+import { ragViewerManifest } from "./rag-viewer.manifest";
 import { workingDocumentManifest } from "./working-document.manifest";
 import { scratchpadManifest } from "./scratchpad.manifest";
 import { warRoomThreadManifest } from "./war-room-thread.manifest";
@@ -121,6 +124,10 @@ import { workbooksManifest } from "./workbooks.manifest";
 import { podcastManifest } from "./podcast.manifest";
 import { podcastStudioManifest } from "./podcast-studio.manifest";
 import { podcastRunManifest } from "./podcast-run.manifest";
+import { scopesManifest } from "./scopes.manifest";
+import { contextItemsManifest } from "./context-items.manifest";
+import { chatVoiceManifest } from "./chat-voice.manifest";
+import { transcriptScribeLiveManifest } from "./transcript-scribe-live.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -154,6 +161,9 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentAdvancedEditorManifest,
   mermaidEditorManifest,
   ragSearchManifest,
+  ragLibraryManifest,
+  ragDataStoresManifest,
+  ragViewerManifest,
   workingDocumentManifest,
   scratchpadManifest,
   warRoomThreadManifest,
@@ -229,6 +239,10 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   podcastManifest,
   podcastStudioManifest,
   podcastRunManifest,
+  scopesManifest,
+  contextItemsManifest,
+  chatVoiceManifest,
+  transcriptScribeLiveManifest,
 ];
 
 // ---------------------------------------------------------------------------

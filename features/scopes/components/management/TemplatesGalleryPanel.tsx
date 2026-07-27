@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { AlertTriangle, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,15 @@ import { useTemplates } from "@/features/scopes/hooks/useTemplates";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createScopesScope,
+  SCOPES_SURFACE_NAME,
+} from "@/features/surfaces/manifests/scopes.manifest";
+import {
+  buildScopesDirectoryValues,
+  currentSelection,
+} from "@/features/scopes/lib/scopes-surface-scope";
 
 export function TemplatesGalleryPanel() {
   const { templates, status, error, refresh } = useTemplates();
@@ -41,8 +50,41 @@ export function TemplatesGalleryPanel() {
     return out;
   }, [templates]);
 
+  // ── Surface emitter (`matrx-user/scopes`, view "templates") ────────────
+  const getScope = () =>
+    createScopesScope({
+      current_view: "templates",
+      ...buildScopesDirectoryValues(organizations, active),
+      ...(status === "ready"
+        ? {
+            template_count: templates.length,
+            templates_summary: templates.map((t) => ({
+              id: t.id,
+              key: t.key,
+              name: t.name,
+              description: t.description,
+              category: t.category,
+              scope_type_count: t.scope_type_count,
+              context_item_count: t.context_item_count,
+            })),
+            template_categories: Object.keys(grouped),
+          }
+        : {}),
+      ...(targetOrg ? { template_target_organization_id: targetOrg.id } : {}),
+      selection: currentSelection(),
+    });
+  const wrap = (body: ReactNode) => (
+    <SurfaceRuntimeProvider
+      surfaceName={SCOPES_SURFACE_NAME}
+      getScope={getScope}
+      isEditable={false}
+    >
+      {body}
+    </SurfaceRuntimeProvider>
+  );
+
   if (status === "loading" && templates.length === 0) {
-    return (
+    return wrap(
       <div className="space-y-3">
         <div className="h-7 w-56 bg-muted animate-pulse rounded" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -54,12 +96,12 @@ export function TemplatesGalleryPanel() {
             </Card>
           ))}
         </div>
-      </div>
+      </div>,
     );
   }
 
   if (status === "error") {
-    return (
+    return wrap(
       <Card className="p-4 flex items-start gap-3">
         <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
         <div className="text-sm">
@@ -72,19 +114,19 @@ export function TemplatesGalleryPanel() {
             Try again
           </button>
         </div>
-      </Card>
+      </Card>,
     );
   }
 
   if (templates.length === 0) {
-    return (
+    return wrap(
       <Card className="p-6 text-sm text-muted-foreground text-center">
         No templates available yet.
-      </Card>
+      </Card>,
     );
   }
 
-  return (
+  return wrap(
     <div className="space-y-5">
       {Object.entries(grouped).map(([category, list]) => (
         <section key={category} className="space-y-2">
@@ -136,7 +178,7 @@ export function TemplatesGalleryPanel() {
           </div>
         </section>
       ))}
-    </div>
+    </div>,
   );
 }
 

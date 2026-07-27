@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   fetchScopeTypes,
   selectScopeTypeBySlugOrId,
@@ -36,7 +36,19 @@ import {
   canManageSettings,
   type OrgRole,
 } from "@/features/organizations/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
+  createContextItemsScope,
+  CONTEXT_ITEMS_SURFACE_NAME,
+} from "@/features/surfaces/manifests/context-items.manifest";
+import type {
+  ScopesContextItemEntry,
+  ScopesOrganizationEntry,
+  ScopesScopeTypeEntry,
+} from "@/features/surfaces/manifests/scopes.manifest";
+import { currentSelection } from "@/features/scopes/lib/scopes-surface-scope";
+import {
+  selectAllContextItems,
   listScopeTypeItems,
   updateContextItem,
   selectItemsByType,
@@ -107,7 +119,99 @@ export function AllContextItemsHub() {
     (o) => o.id !== PERSONAL_PROJECTS_ORG_ID,
   );
 
+  // ── Surface emitter (`matrx-user/context-items`) ───────────────────────
+  // Item sections load lazily per scope type, so the catalog values are read
+  // from the live store at Run time — never from a render-time snapshot.
+  const store = useAppStore();
+  const getScope = () => {
+    const state = store.getState();
+    const loadedTypeIds: string[] = state.contextItems.loadedTypes;
+    const scopeTypes: ScopesScopeTypeEntry[] = [];
+    const organizations: ScopesOrganizationEntry[] = [];
+    const manageableOrgIds: string[] = [];
+    for (const org of realOrgs) {
+      const types = selectScopeTypesByOrg(state, org.id);
+      for (const t of types) {
+        scopeTypes.push({
+          id: t.id,
+          organization_id: org.id,
+          organization_name: org.name,
+          label_singular: t.label_singular,
+          label_plural: t.label_plural,
+          icon: t.icon,
+          color: t.color,
+          sort_order: t.sort_order,
+          parent_type_id: t.parent_type_id,
+          scope_count: org.scopes.filter((s) => s.scope_type_id === t.id)
+            .length,
+        });
+      }
+      organizations.push({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        abbreviation: org.abbreviation ?? "",
+        is_personal: org.is_personal,
+        role: org.role,
+        scope_type_count: types.length,
+        scope_count: org.scopes.length,
+      });
+      if (canManageSettings(org.role as OrgRole)) manageableOrgIds.push(org.id);
+    }
+
+    const typeOrgId = new Map(scopeTypes.map((t) => [t.id, t.organization_id]));
+    const knownTypeIds = new Set(scopeTypes.map((t) => t.id));
+    const items: ScopesContextItemEntry[] = [];
+    const categories = new Set<string>();
+    const valueTypeCounts: Record<string, number> = {};
+    for (const item of selectAllContextItems(state)) {
+      if (!knownTypeIds.has(item.scope_type_id)) continue;
+      items.push({
+        id: item.id,
+        scope_type_id: item.scope_type_id,
+        key: item.key,
+        display_name: item.display_name,
+        description: item.description,
+        value_type: item.value_type,
+        sort_order: item.sort_order ?? 0,
+      });
+      if (item.category) categories.add(item.category);
+      valueTypeCounts[item.value_type] =
+        (valueTypeCounts[item.value_type] ?? 0) + 1;
+    }
+    const loadedHere = loadedTypeIds.filter((id) => knownTypeIds.has(id));
+
+    return createContextItemsScope({
+      current_view: "all-context-items",
+      ...(realOrgs.length > 0
+        ? {
+            organization_count: organizations.length,
+            organizations_summary: organizations,
+            scope_type_count: scopeTypes.length,
+            scope_types_summary: scopeTypes,
+          }
+        : {}),
+      ...(loadedHere.length > 0
+        ? {
+            context_item_count: items.length,
+            context_items_summary: items,
+            context_item_value_type_counts: valueTypeCounts,
+          }
+        : {}),
+      context_item_categories: [...categories],
+      manageable_organization_ids: manageableOrgIds,
+      loaded_scope_type_ids: loadedHere,
+      tree_status: status,
+      selection: currentSelection(),
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={CONTEXT_ITEMS_SURFACE_NAME}
+      getScope={getScope}
+      isEditable={false}
+    >
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
         Every field across all your organizations, grouped by org and scope
@@ -124,6 +228,7 @@ export function AllContextItemsHub() {
         realOrgs.map((org) => <OrgContextItemsBlock key={org.id} org={org} />)
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

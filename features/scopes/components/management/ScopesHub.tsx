@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -30,6 +30,18 @@ import { useScopeTypeTables } from "@/features/scopes/hooks/useScopeTypeTables";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { HeavyHitterSuggestionsInbox } from "@/features/kg-suggestions/components/HeavyHitterSuggestionsInbox";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createScopesScope,
+  SCOPES_SURFACE_NAME,
+  type ScopesContextItemEntry,
+} from "@/features/surfaces/manifests/scopes.manifest";
+import {
+  buildScopesDirectoryValues,
+  currentSelection,
+} from "@/features/scopes/lib/scopes-surface-scope";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectTreeFetchedAt } from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/utils/cn";
 import type {
   ContextItemRow,
@@ -70,12 +82,70 @@ export function ScopesHub() {
     dimensions.flatMap((d) => d.type.scopes.map((s) => s.id)),
   );
 
+  // ── Surface emitter (`matrx-user/scopes`, view "hub") ──────────────────
+  // Built at Run time from live render values; `wrap` keeps every early-return
+  // branch inside the provider so the surface emits during load and error too.
+  const treeFetchedAt = useAppSelector(selectTreeFetchedAt);
+  const getScope = () => {
+    const items: ScopesContextItemEntry[] = [];
+    for (const list of Object.values(tables.itemsByType)) {
+      for (const item of list) {
+        items.push({
+          id: item.id,
+          scope_type_id: item.scope_type_id,
+          key: item.key,
+          display_name: item.display_name,
+          description: item.description,
+          value_type: item.value_type,
+          sort_order: item.sort_order,
+        });
+      }
+    }
+    const itemKeyById = new Map(items.map((i) => [i.id, i.key]));
+    const cells: Record<string, Record<string, string>> = {};
+    for (const [scopeId, byItem] of Object.entries(tables.valuesByScope)) {
+      const row: Record<string, string> = {};
+      for (const [itemId, cell] of Object.entries(byItem)) {
+        const summary = summarizeContextCell(cell);
+        if (summary) row[itemKeyById.get(itemId) ?? itemId] = summary;
+      }
+      cells[scopeId] = row;
+    }
+    const catalogReady = tables.status === "ready";
+    return createScopesScope({
+      current_view: "hub",
+      ...buildScopesDirectoryValues(organizations, active),
+      ...(catalogReady
+        ? {
+            context_item_count: items.length,
+            context_items_summary: items,
+            scope_context_values: cells,
+          }
+        : {}),
+      context_catalog_status: tables.status,
+      ...(query.trim() ? { search_query: query.trim() } : {}),
+      tree_status: status,
+      ...(treeFetchedAt ? { tree_fetched_at: String(treeFetchedAt) } : {}),
+      ...(error ? { tree_error: error } : {}),
+      selection: currentSelection(),
+    });
+  };
+  const wrap = (body: ReactNode) => (
+    <SurfaceRuntimeProvider
+      surfaceName={SCOPES_SURFACE_NAME}
+      getScope={getScope}
+      isEditable={false}
+    >
+      {body}
+    </SurfaceRuntimeProvider>
+  );
+
   if (status === "loading" && organizations.length === 0) {
-    return <HubSkeleton />;
+    return wrap(<HubSkeleton />);
   }
 
   if (status === "error") {
-    return (
+    return wrap(
       <Card className="p-6 flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
         <div className="space-y-2">
@@ -90,12 +160,12 @@ export function ScopesHub() {
             Try again
           </button>
         </div>
-      </Card>
+      </Card>,
     );
   }
 
   if (organizations.length === 0) {
-    return (
+    return wrap(
       <Card className="p-8 text-center">
         <Building className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
         <div className="font-medium">No organizations yet</div>
@@ -108,7 +178,7 @@ export function ScopesHub() {
         >
           Go to Organizations
         </Link>
-      </Card>
+      </Card>,
     );
   }
 
@@ -132,7 +202,7 @@ export function ScopesHub() {
   const activeScopeIds = new Set(active.scopeIds);
   const showOrg = organizations.length > 1;
 
-  return (
+  return wrap(
     <div className="space-y-5">
       <HeavyHitterSuggestionsInbox />
 
@@ -198,7 +268,7 @@ export function ScopesHub() {
           ))}
         </div>
       )}
-    </div>
+    </div>,
   );
 }
 

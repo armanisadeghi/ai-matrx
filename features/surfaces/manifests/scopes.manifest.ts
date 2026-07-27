@@ -545,5 +545,5 @@ export interface ScopesScopeValues {
 export function createScopesScope(
   values: ScopesScopeValues,
 ): SurfaceScopePayload {
-  return values as SurfaceScopePayload;
+  return values as unknown as SurfaceScopePayload;
 }

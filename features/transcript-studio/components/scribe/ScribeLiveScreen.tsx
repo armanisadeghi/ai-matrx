@@ -28,10 +28,19 @@ import { SCRIBE_LIVE_AGENT_ID } from "@/features/voice-agent/constants";
 import "./realtimeWorkingDocTools";
 import { updateConfig } from "@/features/voice-agent/state/voiceAgentSlice";
 import {
+  selectVoiceConversationId,
   selectVoiceError,
+  selectVoiceMicMuted,
   selectVoiceStatus,
+  selectVoiceTotalInterruptions,
   selectVoiceTurns,
 } from "@/features/voice-agent/state/selectors";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  TRANSCRIPT_SCRIBE_LIVE_SURFACE,
+  createTranscriptScribeLiveScope,
+} from "@/features/surfaces/manifests/transcript-scribe-live.manifest";
+import { deriveVoiceTranscriptScope } from "@/features/voice-agent/agent-context/voiceTranscriptScope";
 import { VoiceOrb } from "@/features/voice-agent/components/VoiceOrb";
 import { VoiceEdgeRibbon } from "@/features/voice-agent/components/VoiceEdgeRibbon";
 import { VoiceControlCluster } from "@/features/voice-agent/components/VoiceControlCluster";
@@ -43,8 +52,12 @@ import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { cn } from "@/lib/utils";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 
-/** DB surface name for the Scribe Live voice surface (re-parented under chat). */
-const SCRIBE_LIVE_SURFACE = "matrx-user/transcript-scribe-live";
+/**
+ * DB surface name for the Scribe Live voice surface. Imported from the
+ * manifest so the realtime tool-resolution key and the surface this tab emits
+ * scope for can never drift apart.
+ */
+const SCRIBE_LIVE_SURFACE = TRANSCRIPT_SCRIBE_LIVE_SURFACE;
 
 interface ScribeLiveScreenProps {
   sessionId: string;
@@ -135,6 +148,47 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   void status;
   void error;
 
+  // ─── Surface scope (matrx-user/transcript-scribe-live) ──────────────────
+  // Nested inside the studio shell: the deepest registered provider wins, so
+  // while the Live tab is mounted ITS scope is what the header Agents panel
+  // runs against. Values are read in render; `getScope` runs only on ▶.
+  const scopeMicMuted = useAppSelector((s) => selectVoiceMicMuted(s, instanceId));
+  const scopeConversationId = useAppSelector((s) =>
+    selectVoiceConversationId(s, instanceId),
+  );
+  const scopeInterruptions = useAppSelector((s) =>
+    selectVoiceTotalInterruptions(s, instanceId),
+  );
+
+  const getSurfaceScope = () => {
+    // Durable/arrived transcript, never the audio-gated render buffer.
+    const transcript = deriveVoiceTranscriptScope(turns);
+    const doc = docContent.trim();
+    return createTranscriptScribeLiveScope({
+      session_id: sessionId,
+      live_agent_id: SCRIBE_LIVE_AGENT_ID,
+      // The persisted studio_documents body is the durable truth here — the
+      // spoken chatter about it is not.
+      working_document_word_count: doc ? doc.split(/\s+/).length : 0,
+      connection_status: liveStatus,
+      mic_muted: scopeMicMuted,
+      total_interruptions: scopeInterruptions,
+      turn_count: transcript.turn_count,
+      transcript_turns: transcript.transcript_turns,
+      // Baseline `content` is the ARTIFACT (the working document), not the
+      // conversation — a generic "clean this up" agent must act on the doc.
+      content: doc || undefined,
+      working_document_id: assistant.workingDocument?.id ?? undefined,
+      working_document_content: doc || undefined,
+      voice_conversation_id: scopeConversationId ?? undefined,
+      connection_error: liveError ?? undefined,
+      transcript_text: transcript.transcript_text,
+      last_user_utterance: transcript.last_user_utterance,
+      last_assistant_utterance: transcript.last_assistant_utterance,
+      active_turn: transcript.active_turn,
+    });
+  };
+
   // Keep the injected document fresh. The orchestrator reads instructions
   // from the slice at session start (`session.update`), so the next time the
   // user taps the mic the agent sees the latest document.
@@ -174,6 +228,10 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   }, [liveError]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={SCRIBE_LIVE_SURFACE}
+      getScope={getSurfaceScope}
+    >
     <div className="relative flex h-full flex-col overflow-hidden">
       <VoiceEdgeRibbon status={liveStatus} />
 
@@ -191,6 +249,7 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
           "[mask-image:linear-gradient(to_bottom,transparent,#000_15%,#000_85%,transparent)]",
         )}
         aria-label="Live voice transcript"
+        data-surface-value="transcript_text"
       >
         {turns.length === 0 ? (
           <div className="flex h-full items-center justify-center px-6">
@@ -210,7 +269,9 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
           taller than the tab and the mic/error get clipped off the bottom. A
           smaller orb keeps the whole control cluster on-screen. */}
       <section className="relative z-10 flex shrink-0 flex-col items-center justify-end gap-3 px-4 pb-4 pb-safe">
-        <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
+        <div data-surface-value="connection_status">
+          <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
+        </div>
         <div className="relative inline-flex items-center justify-center">
           <VoiceOrb status={liveStatus} size={188} />
           <div className="relative z-10">
@@ -225,5 +286,6 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
         <VoiceErrorBanner error={liveError} />
       </section>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

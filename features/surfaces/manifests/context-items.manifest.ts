@@ -132,5 +132,5 @@ export function createContextItemsScope(
     loaded_scope_type_ids?: string[];
   },
 ): SurfaceScopePayload {
-  return values as SurfaceScopePayload;
+  return values as unknown as SurfaceScopePayload;
 }
