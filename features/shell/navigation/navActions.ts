@@ -18,6 +18,16 @@
  *
  * Handlers must be cheap to build every render — they're plain closures over
  * opener hooks (React Compiler handles memoization; do not hand-memoize).
+ *
+ * BUILD-GRAPH LAW: this file is statically reachable from AppShell → Sidebar,
+ * i.e. from EVERY (core)/(admin) route entry. A static import here is
+ * multiplied across all of them, server AND client pass. Therefore the only
+ * allowed static imports are ids, router, toast, redux hooks, and thin
+ * overlay openers (dispatch-only). The machinery a handler needs — thunks,
+ * services, anything with a feature graph behind it — MUST be
+ * `await import()`ed INSIDE the handler body, so it compiles into its own
+ * chunk and loads on first click. One static thunk import here once dragged
+ * 420 modules / 3.7 MB into every route (the war-room engine, 2026-07).
  */
 
 import { useRouter } from "next/navigation";
@@ -27,10 +37,6 @@ import { useOpenStructuredListManagerV2Window } from "@/features/overlays/opener
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { createWarRoomSession } from "@/features/war-room/redux/thunks";
-import { createNewNote } from "@/features/notes/redux/thunks";
-import { createDocument } from "@/features/data-tables/document-service";
-import { createWorkbook } from "@/features/data-tables/workbook-service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import type { ShellNavActionId } from "../constants/nav-data";
 
@@ -53,8 +59,12 @@ export function useNavActions(): ShellNavActionHandlers {
     },
     "create-war-room": () => {
       // Creates the session server-side, then navigates into it. The thunk
-      // raises its own error toast on failure (returns null).
+      // raises its own error toast on failure (returns null). The war-room
+      // engine is the heaviest graph in the app — loaded here, on click only.
       void (async () => {
+        const { createWarRoomSession } = await import(
+          "@/features/war-room/redux/thunks"
+        );
         const session = await dispatch(createWarRoomSession());
         if (session) router.push(`/war-room/${session.id}`);
       })();
@@ -64,6 +74,9 @@ export function useNavActions(): ShellNavActionHandlers {
       // in-page "New Note" button behavior (create-then-open).
       void (async () => {
         try {
+          const { createNewNote } = await import(
+            "@/features/notes/redux/thunks"
+          );
           const note = await dispatch(createNewNote({})).unwrap();
           if (note?.id) router.push(`/notes/${note.id}`);
         } catch {
@@ -75,6 +88,9 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /documents page "New" button: create a blank cloud doc,
       // then open it.
       void (async () => {
+        const { createDocument } = await import(
+          "@/features/data-tables/document-service"
+        );
         const res = await createDocument({ name: "Untitled document" });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the document");
@@ -87,6 +103,9 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /workbooks page "New" button: create a blank workbook,
       // then open it.
       void (async () => {
+        const { createWorkbook } = await import(
+          "@/features/data-tables/workbook-service"
+        );
         const res = await createWorkbook({ name: "Untitled workbook" });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the workbook");
