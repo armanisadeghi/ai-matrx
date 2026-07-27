@@ -47,9 +47,17 @@ export interface CopyButtonsProps {
   agent: Resolvable<AgentPayloadInput | string>;
   /** Used in toasts and tooltips, e.g. "Sandbox sbx-123" or "All sandboxes". */
   label: string;
-  /** "icon" = compact icon-only pair (rows/cards); "sm" = icon + text (headers). */
-  size?: "icon" | "sm";
-  /** Disable Webhookh buttons. */
+  /**
+   * "xs" = micro icon-only pair (dense list items, metric cards, per-field);
+   * "icon" = compact icon-only pair (rows/cards); "sm" = icon + text (headers).
+   */
+  size?: "xs" | "icon" | "sm";
+  /**
+   * Stop click events from bubbling (rows/cards with their own onClick).
+   * Default true — copying should never also select/navigate.
+   */
+  stopPropagation?: boolean;
+  /** Disable both buttons. */
   disabled?: boolean;
   /** Wrapper className. */
   className?: string;
@@ -74,6 +82,7 @@ export function CopyButtons({
   label,
   size = "icon",
   disabled = false,
+  stopPropagation = true,
   className,
 }: CopyButtonsProps) {
   const [copied, setCopied] = React.useState<"human" | "agent" | null>(null);
@@ -98,41 +107,52 @@ export function CopyButtons({
     toast.success(`${label} copied for AI agent`);
   };
 
-  const isIcon = size === "icon";
+  const isText = size === "sm";
+  const buttonCls =
+    size === "xs" ? "h-5 w-5" : size === "icon" ? "h-7 w-7" : undefined;
+  const iconCls =
+    size === "xs" ? "h-3 w-3" : size === "icon" ? "h-3.5 w-3.5" : "h-4 w-4";
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div
+      className={cn(
+        "flex items-center",
+        size === "xs" ? "gap-0.5" : "gap-1",
+        className,
+      )}
+      onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
+    >
       <Button
         type="button"
         variant="ghost"
-        size={isIcon ? "icon" : "sm"}
-        className={isIcon ? "h-7 w-7" : undefined}
+        size={isText ? "sm" : "icon"}
+        className={buttonCls}
         disabled={disabled}
         onClick={handleHuman}
         title={`Copy ${label} (human-readable)`}
       >
         {copied === "human" ? (
-          <Check className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <Check className={iconCls} />
         ) : (
-          <Copy className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <Copy className={iconCls} />
         )}
-        {!isIcon && <span className="ml-1">Copy</span>}
+        {isText && <span className="ml-1">Copy</span>}
       </Button>
       <Button
         type="button"
         variant="ghost"
-        size={isIcon ? "icon" : "sm"}
-        className={isIcon ? "h-7 w-7" : undefined}
+        size={isText ? "sm" : "icon"}
+        className={buttonCls}
         disabled={disabled}
         onClick={handleAgent}
         title={`Copy ${label} with full context, formatted for an AI agent`}
       >
         {copied === "agent" ? (
-          <Check className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <Check className={iconCls} />
         ) : (
-          <CopyForAiIcon className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <CopyForAiIcon className={iconCls} />
         )}
-        {!isIcon && <span className="ml-1">Copy for AI</span>}
+        {isText && <span className="ml-1">Copy for AI</span>}
       </Button>
     </div>
   );

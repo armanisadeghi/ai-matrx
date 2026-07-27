@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
 
 function formatValue(value: unknown): string {
@@ -29,21 +30,52 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /**
  * Default detail / window View body for any row. Renders a scannable key/value
- * inspector. UUID-shaped values use MatrxUuidCell (short + copy). Pass a custom
- * `renderView` / `renderDetail` to replace it.
+ * inspector. UUID-shaped values use MatrxUuidCell (short + copy). Every field
+ * row gets hover-revealed Copy + Copy-for-AI buttons (set `fieldCopy={false}`
+ * to opt out). Pass a custom `renderView` / `renderDetail` to replace it.
  */
 export function DataRowInspector({
   row,
   title,
   className,
+  fieldCopy = true,
+  recordKind = "record",
+  recordLabel,
+  location,
 }: {
   row: unknown;
   title?: ReactNode;
   className?: string;
+  /** Hover Copy + Copy-for-AI on every field row. Default true. */
+  fieldCopy?: boolean;
+  /** Stable slug for the record type, used in field agent payloads. */
+  recordKind?: string;
+  /** Human label for the record, used in toasts ("Backlink · anchor_text"). */
+  recordLabel?: string;
+  /** Where the user is, in words, for field agent payloads. */
+  location?: string;
 }) {
   const entries = isPlainObject(row)
     ? Object.entries(row)
     : [["value", row] as const];
+
+  const fieldButtons = (key: string, value: unknown) =>
+    fieldCopy ? (
+      <div className="absolute right-1 top-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/field:opacity-100">
+        <CopyButtons
+          size="xs"
+          label={recordLabel ? `${recordLabel} · ${key}` : key}
+          human={() => formatValue(value)}
+          agent={() => ({
+            kind: `${recordKind}-field`,
+            location: location ?? "Data row inspector",
+            description: `The "${key}" field of one ${recordLabel ?? recordKind}.`,
+            data: { field: key, value, record: row },
+            attributes: { field: key },
+          })}
+        />
+      </div>
+    ) : null;
 
   return (
     <div
@@ -61,7 +93,7 @@ export function DataRowInspector({
               return (
                 <div
                   key={key}
-                  className="grid grid-cols-[minmax(7rem,9rem)_1fr] gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2"
+                  className="group/field relative grid grid-cols-[minmax(7rem,9rem)_1fr] gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2"
                 >
                   <dt className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                     {key}
@@ -78,7 +110,7 @@ export function DataRowInspector({
             return (
               <div
                 key={key}
-                className="grid grid-cols-[minmax(7rem,9rem)_1fr] gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2"
+                className="group/field relative grid grid-cols-[minmax(7rem,9rem)_1fr] gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2"
               >
                 <dt className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   {key}
@@ -92,6 +124,7 @@ export function DataRowInspector({
                 >
                   {formatted}
                 </dd>
+                {fieldButtons(key, value)}
               </div>
             );
           })}

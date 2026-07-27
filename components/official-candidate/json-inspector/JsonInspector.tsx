@@ -19,6 +19,11 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  buildAgentPayload,
+  type AgentPayloadInput,
+} from "@/components/agent-copy/buildAgentPayload";
+import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
+import {
   cleanJson,
   formatJson,
   formatJsonAtExpandDepth,
@@ -89,6 +94,13 @@ export interface JsonInspectorProps {
   onUpdate?: (next: unknown) => void;
   /** When true (default), the edit tab is read-only. Ignored without onUpdate. */
   editorReadOnly?: boolean;
+  /**
+   * When provided, renders a "Copy for AI" button beside "Copy JSON" that
+   * copies the data wrapped in the standard agent envelope
+   * (buildAgentPayload — live URL/route/timestamp + JSON dump). Called at
+   * click time.
+   */
+  agentCopy?: AgentPayloadInput | (() => AgentPayloadInput);
   /**
    * When true (requires `onUpdate`), skip inspect tabs and render the CodeMirror
    * editor pane directly — for form fields where editing must be obvious.
@@ -169,6 +181,7 @@ export function JsonInspector({
   onUpdate,
   editorReadOnly = false,
   editOnly = false,
+  agentCopy,
   className,
 }: JsonInspectorProps) {
   const editable = typeof onUpdate === "function";
@@ -193,6 +206,7 @@ export function JsonInspector({
     () => new Set<JsonInspectorView>([defaultView]),
   );
   const [copied, setCopied] = useState(false);
+  const [agentCopied, setAgentCopied] = useState(false);
   const resolvedDefaultExpandDepth = useMemo(
     () => resolveDefaultExpandDepth(data, maxExpandDepth, defaultExpandDepth),
     [data, maxExpandDepth, defaultExpandDepth],
@@ -253,6 +267,18 @@ export function JsonInspector({
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
       console.error("Failed to copy JSON:", err);
+    }
+  };
+
+  const handleAgentCopy = async () => {
+    if (!agentCopy) return;
+    const input = typeof agentCopy === "function" ? agentCopy() : agentCopy;
+    try {
+      await navigator.clipboard.writeText(buildAgentPayload(input));
+      setAgentCopied(true);
+      setTimeout(() => setAgentCopied(false), 1500);
+    } catch (err) {
+      console.error("Failed to copy for AI:", err);
     }
   };
 
@@ -380,6 +406,24 @@ export function JsonInspector({
               <Copy className={ICON_CLS} />
             )}
           </button>
+          {agentCopy ? (
+            <button
+              onClick={() => void handleAgentCopy()}
+              className={ICON_BUTTON_CLS}
+              title={
+                agentCopied
+                  ? "Copied for AI"
+                  : "Copy with full context, formatted for an AI agent"
+              }
+              aria-label="Copy for AI"
+            >
+              {agentCopied ? (
+                <CheckCircle2 className={cn(ICON_CLS, "text-green-500")} />
+              ) : (
+                <CopyForAiIcon className={ICON_CLS} />
+              )}
+            </button>
+          ) : null}
         </div>
 
         <TabsContent value="json" className={JSON_PANE_CLS}>

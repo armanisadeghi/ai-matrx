@@ -5,6 +5,16 @@ row, card, or page that shows data. It centralizes clipboard writes (with a
 legacy `execCommand` fallback), success toasts, and the AI payload envelope so
 no page reimplements them.
 
+**Pieces:**
+- `CopyButtons` — the two-button pair. `size`: `"xs"` (h-5, dense list items /
+  metric cards / per-field), `"icon"` (h-7, rows/cards), `"sm"` (icon + text,
+  headers). Stops click propagation by default (`stopPropagation={false}` to opt out).
+- `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
+  JSON dump).
+- `AgentCopyGroomerLauncher` + `AgentCopyGroomerWindow` (+ `groomer-types.ts`)
+  — the **page-level** "Copy for AI": a WindowPanel where the user grooms the
+  whole-page payload before copying. See "Whole-page copy" below.
+
 > Forward-looking: the **Copy for AI** button is the seam where these become
 > "connect this data to an agent" actions. The infrastructure already exists in
 > `features/surfaces/` (surface manifests) and `hooks/useScreenCapture.ts`
@@ -57,14 +67,52 @@ click time, not render time.
 
 ## Placement guidance
 
-It depends on the surface — favor granular AND big-picture where both add value:
+Copy exists at EVERY level of granularity — individual field/entry, item, list,
+record, page. **Never display data the user can't copy** (each part alone, and
+the whole with context). Dense surfaces use hover-reveal `size="xs"` pairs
+(`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`) so density
+survives.
 
 - **Lists/tables** (sandboxes, models, tasks…): per-row copy **and** a
   copy-all in the header. You want "this one" or "the whole list."
-- **Detail/record pages**: a single copy in the header for the whole record —
-  the live URL + full state here is the highest-value capture.
-- **Don't overwhelm**: skip surfaces where there's no meaningful record (pure
-  tools, visualizers, demos, editors whose state isn't a copyable record).
+- **Metric cards / dimension list items**: hover-reveal `xs` pair per card and
+  per item, plus a whole-list pair in the section header.
+- **Detail/record pages & row windows**: a record-level pair in the header +
+  per-field hover pairs (see MatrxDataTable integration below).
+- **Whole page**: quick `CopyButtons` pair (human snapshot + full payload) AND
+  an `AgentCopyGroomerLauncher` in the page header.
+- **Don't overwhelm visually** — hover-reveal keeps ubiquity from becoming
+  clutter. Skip surfaces with no meaningful record (pure tools, visualizers,
+  demos).
+
+## Built-in integrations (don't rewire by hand)
+
+- **`MatrxDataTable`** — pass the `copy` config and you get per-row pairs, a
+  toolbar this-view pair (markdown table + summaries), a record pair in the row
+  window header (`DataRowWindow.headerActions`), and per-field hover pairs in
+  `DataRowInspector` (side panel + window View tab). One config, five surfaces.
+- **`DataRowInspector`** — per-field hover copy is ON by default
+  (`fieldCopy={false}` to opt out); pass `recordKind`/`recordLabel`/`location`
+  for correct payloads.
+- **`JsonInspector`** — pass `agentCopy` (an `AgentPayloadInput` or builder) to
+  add a Copy-for-AI button beside Copy JSON.
+
+## Whole-page copy — the Groomer
+
+The page header's `AgentCopyGroomerLauncher` opens `AgentCopyGroomerWindow`
+(WindowPanel, loaded via `dynamic ssr:false` inside the launcher — never
+static-import the window). The user grooms the payload before copying:
+
+- **Sections** (`AgentCopyGroomerSection[]`): each page area declares
+  `build(level)` for `full | compact | brief`, optional per-level labels, and
+  `cuttable: true` when dropping it entirely is known-safe.
+- **Presets**: Everything (all full) / Balanced (all compact) / Minimal (brief;
+  cuttable → off), plus per-section dials.
+- **Live size** per section and total (chars + ~tokens) and a live preview of
+  the exact payload.
+
+Pass `config` as a function — resolved at open, so sections capture the data on
+screen. Reference wiring: `features/marketing/components/backlinks/BacklinksWorkspace.tsx`.
 
 ## Rollout checklist for a new page
 

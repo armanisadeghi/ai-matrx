@@ -33,6 +33,8 @@ export interface DataRowWindowProps {
   editContent?: React.ReactNode;
   /** Which tab to open. Default: "edit" when editContent exists, else "view". */
   defaultTab?: DataRowWindowTab;
+  /** Right-side header actions (e.g. CopyButtons for the whole record). */
+  headerActions?: React.ReactNode;
   width?: number;
   height?: number;
   windowId?: string;
@@ -47,6 +49,7 @@ export function DataRowWindow({
   viewContent,
   editContent,
   defaultTab,
+  headerActions,
   width = 720,
   height = 560,
   windowId = "matrx-data-row-window",
@@ -90,6 +93,7 @@ export function DataRowWindow({
       height={height}
       minWidth={420}
       minHeight={320}
+      actionsRight={headerActions}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       sidebarDefaultSize={140}
       sidebarMinSize={110}

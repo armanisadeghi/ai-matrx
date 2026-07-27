@@ -23,9 +23,18 @@ Source + full docs: [`components/agent-copy/README.md`](../../../components/agen
   dump. The raw dump is what keeps it future-proof — never hand-list fields for
   the agent flavor.
 - **`<CopyButtons>`** — the UI. Renders the two buttons, owns clipboard (with
-  legacy fallback) + success toasts. You pass `human` (readable text) and
-  `agent` (an `AgentPayloadInput`, a prebuilt string, or a builder fn) + a
-  `label`.
+  legacy fallback) + success toasts + click-propagation stopping. You pass
+  `human` (readable text) and `agent` (an `AgentPayloadInput`, a prebuilt
+  string, or a builder fn) + a `label`. Sizes: `"xs"` (h-5 — dense items,
+  metric cards, per-field), `"icon"` (h-7 — rows/cards), `"sm"` (icon + text —
+  headers).
+- **Copy exists at EVERY granularity** — field/entry, item, row, list, record,
+  page. Never display data the user can't copy. Dense surfaces hide the pair
+  until hover (`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`).
+- **`AgentCopyGroomerLauncher`** — the page-level "Copy for AI". Opens a
+  WindowPanel where the user grooms the whole-page payload: sections with
+  `full/compact/brief/off` dials, Everything/Balanced/Minimal presets, live
+  size (chars + ~tokens), live preview. Full contract in the README.
 - The **"Copy for AI" button is a deliberate seam**: when the surfaces-registry
   + tool-injection layer lands, it flips from "copy to clipboard" to "hand
   context + callable actions to the agent" and every existing callsite comes
@@ -66,6 +75,23 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 Always pass `human`/`agent` as **functions** so URL/timestamp/data are captured
 at click time, not render.
+
+### Tables: use the built-in config, never hand-wire rows
+
+`MatrxDataTable` takes a `copy` config (`rowKind`/`listKind`/`humanRow`/…) and
+delivers ALL of: per-row pairs, toolbar this-view pair, a record pair in the
+row-window header, and per-field hover pairs in `DataRowInspector` (side panel
++ window). Also pass `window={{ title }}` so rows open the record window.
+`JsonInspector` takes `agentCopy` for raw-JSON surfaces. Reference wiring for a
+full page (cards + dimension lists + table + groomer):
+`features/marketing/components/backlinks/BacklinksWorkspace.tsx`.
+
+### Whole-page: quick pair + Groomer
+
+Page header gets a quick `CopyButtons` pair (human snapshot + everything-level
+payload) AND an `AgentCopyGroomerLauncher` whose sections mirror the page's
+areas. Declare sections once and derive the quick payload from
+`sections.build("full")` — never maintain two section lists.
 
 ### Step-by-step
 
@@ -112,10 +138,16 @@ at click time, not render.
 ## Rollout status (update this as you go)
 
 **Done:**
-- Primitive + README + roadmap (`components/agent-copy/`).
-- Shared formatters: `lib/sandbox/format.ts`, `features/ai-models/format.ts`.
+- Primitive + README + roadmap (`components/agent-copy/`), `xs` size, groomer
+  window (`AgentCopyGroomerWindow` + launcher + `groomer-types.ts`).
+- Built-in integrations: `MatrxDataTable` `copy` config → row/view/window/field
+  pairs; `DataRowInspector` per-field hover copy; `JsonInspector` `agentCopy`.
+- Shared formatters: `lib/sandbox/format.ts`, `features/ai-models/format.ts`,
+  `features/marketing/components/backlinks/format.ts`.
 - Pages: sandbox admin / user-list / detail; `administration/admins` (admins +
-  audit); `administration/ai-tasks`; `administration/invitation-requests`.
+  audit); `administration/ai-tasks`; `administration/invitation-requests`;
+  `/marketing/brands/[id]/sites/[id]/backlinks` (the full-granularity + groomer
+  reference page).
 - Feature component: `features/ai-models` (AiModelTable rows + AiModelFilterBar
   toolbar).
 

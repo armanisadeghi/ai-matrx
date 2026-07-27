@@ -773,7 +773,12 @@ export function MatrxDataTable<T>({
           }
         >
           {detail?.render?.(selectedRow) ?? (
-            <DataRowInspector row={selectedRow} />
+            <DataRowInspector
+              row={selectedRow}
+              recordKind={copy?.rowKind}
+              recordLabel={copy?.label}
+              location={copy?.location}
+            />
           )}
         </SidePanelSurface>
       ) : null}
@@ -791,7 +796,27 @@ export function MatrxDataTable<T>({
           height={windowConfig?.height}
           windowId={`matrx-data-row-${getRowId(windowRow)}`}
           defaultTab={windowConfig?.defaultTab}
-          viewContent={windowConfig?.renderView?.(windowRow)}
+          headerActions={
+            copy ? (
+              <CopyButtons
+                size="icon"
+                label={copy.label}
+                human={() => copy.humanRow(windowRow)}
+                agent={() => buildRowAgentInput(copy, windowRow)}
+              />
+            ) : undefined
+          }
+          viewContent={
+            windowConfig?.renderView?.(windowRow) ??
+            (copy ? (
+              <DataRowInspector
+                row={windowRow}
+                recordKind={copy.rowKind}
+                recordLabel={copy.label}
+                location={copy.location}
+              />
+            ) : undefined)
+          }
           editContent={
             windowConfig?.renderEdit === false
               ? undefined
