@@ -23,6 +23,10 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { createMarketingLinksScope } from "@/features/surfaces/manifests/marketing-links.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import {
+  tableFilterValues,
+  tableViewState,
+} from "@/features/marketing/lib/scopes/table-view-values";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   useCrawlLinks,
@@ -58,6 +62,22 @@ function humanLinkEdgeRow(row: InspectionLinkRow): string {
   ]);
 }
 
+/** One raw edge row → the shape the `link_rows` surface value declares. */
+function projectLinkRow(row: InspectionLinkRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    source_url: sourceUrl(row),
+    target_url: row.target_url,
+    is_internal: row.is_internal,
+    http_status: row.http_status,
+    anchor_text: row.anchor_text,
+    rel: row.rel,
+    position: row.position,
+    snapshot_id: row.snapshot_id,
+    recorded_at: row.snapshot?.captured_at ?? row.created_at,
+  };
+}
+
 function sourceUrl(row: InspectionLinkRow): string {
   return row.source_page?.url ?? row.source_page_id;
 }
@@ -72,8 +92,18 @@ function hostnameOf(url: string): string | null {
   }
 }
 
+interface LinkTotals extends Record<string, unknown> {
+  edges: number;
+  edges_loaded: number;
+  truncated: boolean;
+  internal_pages: number;
+  external_domains: number;
+  nofollow_links: number;
+  broken_links: number;
+}
+
 /** Run-time aggregate over already-cached link-graph edges. Pure, no fetch. */
-function buildLinkTotals(result: LinkGraphEdgeResult): Record<string, unknown> {
+function buildLinkTotals(result: LinkGraphEdgeResult): LinkTotals {
   const internalPages = new Set<string>();
   const externalDomains = new Set<string>();
   let nofollowLinks = 0;
@@ -532,7 +562,16 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
   // register it here (this page IS a crawl route), never marketing-links.
   if (crawlId) {
     return (
-      <CrawlSurfaceProvider crawlId={crawlId} crawl={crawl.data ?? null}>
+      <CrawlSurfaceProvider
+        crawlId={crawlId}
+        crawl={crawl.data ?? null}
+        view="links"
+        getViewSummary={() =>
+          links.data
+            ? { loaded_rows: links.data.rows.length, total_rows: links.data.total }
+            : undefined
+        }
+      >
         {content}
       </CrawlSurfaceProvider>
     );
@@ -543,13 +582,31 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       surfaceName="matrx-user/marketing-links"
       getScope={() => {
         const result = graphEdges.data;
+        const totals = result ? buildLinkTotals(result) : undefined;
+        const liveRows = view === "table" ? (links.data?.rows ?? []) : [];
+        const onTable = view === "table" && Boolean(links.data);
         return createMarketingLinksScope({
           ...getBaseValues(),
           view_mode: view,
-          link_totals: result ? buildLinkTotals(result) : undefined,
+          link_totals: totals,
+          edge_total: totals?.edges,
+          edges_loaded: totals?.edges_loaded,
+          graph_truncated: totals?.truncated,
+          internal_page_count: totals?.internal_pages,
+          broken_link_count: totals?.broken_links,
+          nofollow_link_count: totals?.nofollow_links,
+          external_domain_count: totals?.external_domains,
           external_domains_top: result
             ? buildExternalDomainsTop(result.rows)
             : undefined,
+          link_rows:
+            liveRows.length > 0 ? liveRows.map(projectLinkRow) : undefined,
+          link_rows_total: onTable ? links.data?.total : undefined,
+          link_rows_loaded: onTable ? liveRows.length : undefined,
+          active_filters: onTable
+            ? tableFilterValues(table.state)
+            : undefined,
+          links_view_state: onTable ? tableViewState(table.state) : undefined,
         });
       }}
     >

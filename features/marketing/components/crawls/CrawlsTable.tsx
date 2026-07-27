@@ -254,6 +254,8 @@ export function CrawlsTable() {
                   error: row.error,
                 }))
               : undefined,
+          sessions_total: crawls.data?.total,
+          sessions_query: { ...table.state },
         });
       }}
     >

@@ -110,7 +110,16 @@ export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
       />
     );
   return (
-    <CrawlSurfaceProvider crawlId={crawlId} crawl={crawl.data ?? null}>
+    <CrawlSurfaceProvider
+      crawlId={crawlId}
+      crawl={crawl.data ?? null}
+      view="logs"
+      getViewSummary={() =>
+        events.data
+          ? { loaded_rows: events.data.rows.length, total_rows: events.data.total }
+          : undefined
+      }
+    >
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <CrawlSubnav crawl={crawl.data} />
       <div className="min-h-0 flex-1">

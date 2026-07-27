@@ -11,47 +11,173 @@
  * top issues with sample pages, and worst pages. Inherits the brand + site
  * context backbone from `matrx-user/marketing-site`.
  *
- * Runtime emitter: features/marketing/lib/scopes/marketing-audit-scope.ts —
- * being built in parallel.
+ * Runtime emitter: `AuditWorkspace` mounts the nested
+ * `SurfaceRuntimeProvider` itself — it renders ONLY after the rollup query has
+ * resolved, so every rollup-derived value below is genuinely guaranteed.
  */
 
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
+const groups: SurfaceValueGroup[] = [
+  {
+    key: "audit_coverage",
+    label: "Audit coverage",
+    sortOrder: 100,
+    description:
+      "How much of the canonical page registry actually carries stored audit metrics.",
+  },
+  {
+    key: "audit_verdicts",
+    label: "Verdicts & pass rates",
+    sortOrder: 200,
+    description:
+      "Indexability verdict distribution and per-section pass counts across the audited pages.",
+  },
+  {
+    key: "audit_findings",
+    label: "Findings",
+    sortOrder: 300,
+    description:
+      "The rolled-up issues and the pages carrying the most of them.",
+  },
+  {
+    key: "audit_trend",
+    label: "Trend",
+    sortOrder: 400,
+    description: "Composite audit score over the stored capture days.",
+  },
+];
+
 const surfaceSpecific: SurfaceValue[] = [
-  // ── Observed evidence (400-499) ───────────────────────────────────────
+  // ── Audit coverage ────────────────────────────────────────────────────
   {
     name: "audit_rollup",
     label: "Site audit rollup",
     description:
-      "The full deterministic audit rollup (SiteAuditRollup): total/audited/uncomputed page counts, the count of known non-HTML resources excluded from page findings, indexability verdict counts, per-section pass counts (serp/social/headings/url), top issues with sample pages, and worst pages. Pure aggregation of stored per-snapshot metrics. Empty during initial load.",
+      "The full deterministic audit rollup (SiteAuditRollup) as one composite object: total/audited/uncomputed page counts, non-HTML resource count, indexability verdict counts, per-section pass counts (serp/social/headings/url), top issues with sample pages, and worst pages. Mirrors every individual audit value as one bag. Always present — the workspace only renders once the rollup has resolved.",
     valueType: "object",
-    alwaysAvailable: false,
+    alwaysAvailable: true,
     typicalCharCount: 2500,
-    sortOrder: 400,
+    sortOrder: 300,
+    group: "audit_coverage",
   },
-
-  // ── Workspace signals (600-649) ───────────────────────────────────────
+  {
+    name: "pages_total",
+    label: "Pages in registry",
+    description:
+      "Count of canonical URLs eligible for page auditing (HTML, or not fetched yet). Zero when the site has no pages registered.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 310,
+    group: "audit_coverage",
+  },
   {
     name: "pages_audited",
     label: "Pages audited",
     description:
-      "Number of canonical pages whose latest snapshot carries stored deterministic metrics. Zero when the site has never been crawled since metric stamping began; empty during initial load.",
+      "Number of canonical pages whose latest snapshot carries stored deterministic metrics. Zero when the site has never been crawled since metric stamping began.",
     valueType: "number",
-    alwaysAvailable: false,
+    alwaysAvailable: true,
     typicalCharCount: 5,
+    sortOrder: 320,
+    group: "audit_coverage",
+  },
+  {
+    name: "pages_uncomputed",
+    label: "Pages not yet audited",
+    description:
+      "Number of pages with no stored metrics yet (never crawled, or captured before metric stamping). Treat these as unknown — never as passing or failing. Zero when every page has metrics.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 330,
+    group: "audit_coverage",
+  },
+  {
+    name: "non_html_resources",
+    label: "Non-HTML resources",
+    description:
+      "Number of known non-HTML resources (PDFs, images, feeds…) retained as crawl evidence but excluded from HTML-only page findings. Zero when the registry holds only HTML URLs.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 340,
+    group: "audit_coverage",
+  },
+
+  // ── Verdicts & pass rates ─────────────────────────────────────────────
+  {
+    name: "indexability_verdicts",
+    label: "Indexability verdicts",
+    description:
+      "Verdict distribution across audited pages: { indexable, check, blocked } counts. All zeros when nothing has been audited yet.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 70,
+    sortOrder: 400,
+    group: "audit_verdicts",
+  },
+  {
+    name: "section_passes",
+    label: "Section pass counts",
+    description:
+      "Pass counts per audit section: { serp, social, headings, url }. SERP/social/headings are out of pages_audited; url is out of pages_total (URL quality needs no crawl). All zeros when nothing passes or nothing is audited.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 90,
+    sortOrder: 410,
+    group: "audit_verdicts",
+  },
+
+  // ── Findings ──────────────────────────────────────────────────────────
+  {
+    name: "top_issues",
+    label: "Top issues",
+    description:
+      "The distinct rolled-up audit issues ranked by severity then page count (capped at 14): per issue its section, severity, message, affected page count, and up to 3 sample pages. Empty array when every audited page is clean.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 2000,
+    sortOrder: 500,
+    group: "audit_findings",
+  },
+  {
+    name: "worst_pages",
+    label: "Pages needing attention",
+    description:
+      "The pages ranked worst by error then warning count (capped at 10): per page its id, path, url, error/warning counts, and indexability verdict. Empty array when every audited page is clean.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 1200,
+    sortOrder: 510,
+    group: "audit_findings",
+  },
+
+  // ── Trend ─────────────────────────────────────────────────────────────
+  {
+    name: "audit_score_trend",
+    label: "Audit score trend",
+    description:
+      "One point per stored capture day: { day, overallScore (0-100 average pass rate, null when nothing was audited that day), totalPages, auditedPages }. Empty array while the trend query is still loading or when no captures are stored.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 1500,
+    autoContext: false,
     sortOrder: 600,
+    group: "audit_trend",
   },
 ];
 
 export const marketingAuditManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-audit",
-  readiness: "partial",
-  readinessNote: "Values emitted; no groups",
+  readiness: "verified",
   label: "Marketing Site Audit",
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/audit",
   inheritsFrom: "matrx-user/marketing-site",
@@ -60,8 +186,10 @@ You are on the site audit dashboard of a managed website: a site-wide rollup of 
 Every metric here is DETERMINISTIC and STORED: the scraper (and its byte-identical client twin) stamps seo_metrics and audit_metrics on each snapshot at capture time, and this view only aggregates those stored values — it never recomputes them. You must do the same: trust the provided counts, verdicts, and pass rates exactly as given, and never re-derive a metric (no re-counting characters, re-judging indexability, or re-scoring a page yourself).
 The user comes here to decide what to fix first across the whole site. Your job is prioritization and remediation planning from the evidence — turning top issues and worst pages into an ordered work plan — not re-auditing.
 Uncomputed pages are pages with no stored metrics yet (never crawled or pre-stamping); treat them as unknown, never as passing or failing.
-Known non-HTML resources are retained as crawl evidence and reported in nonHtmlResources, but are not pages eligible for HTML-only findings. An unusual URL that returned HTML remains a normal audited page.
+Known non-HTML resources are retained as crawl evidence and reported in non_html_resources, but are not pages eligible for HTML-only findings. An unusual URL that returned HTML remains a normal audited page.
+Read the individual values (pages_total / pages_audited / pages_uncomputed / non_html_resources, indexability_verdicts, section_passes, top_issues, worst_pages, audit_score_trend) rather than re-deriving them from audit_rollup — the composite exists only for callers that want the whole bag at once.
 </surface_intro>`,
+  groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
@@ -104,9 +232,19 @@ export function createMarketingAuditScope(values: {
   site_name?: string;
   site_root_url?: string;
   site_context?: string;
-  // surface-specific optional
-  audit_rollup?: Record<string, unknown>;
-  pages_audited?: number;
+  gsc_synced_at?: string;
+  // alwaysAvailable: true (surface-specific) → required. The workspace mounts
+  // this provider only after the rollup query has resolved.
+  audit_rollup: Record<string, unknown>;
+  pages_total: number;
+  pages_audited: number;
+  pages_uncomputed: number;
+  non_html_resources: number;
+  indexability_verdicts: Record<string, unknown>;
+  section_passes: Record<string, unknown>;
+  top_issues: Array<Record<string, unknown>>;
+  worst_pages: Array<Record<string, unknown>>;
+  audit_score_trend: Array<Record<string, unknown>>;
   // baseline
   selection?: string;
   context?: Record<string, unknown>;

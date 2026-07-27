@@ -190,7 +190,13 @@ export function NewCrawlWorkspace() {
       getScope={() =>
         createMarketingCrawlsScope({
           ...getBaseValues(),
+          crawl_options: { ...options },
           active_crawl_id: sessionId ?? undefined,
+          crawl_run_status: status,
+          live_events: events.length
+            ? events.slice(-50).map((event) => ({ ...event }))
+            : undefined,
+          crawl_run_error: visibleError ?? undefined,
         })
       }
     >

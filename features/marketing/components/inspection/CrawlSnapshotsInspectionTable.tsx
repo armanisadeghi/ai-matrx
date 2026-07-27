@@ -163,7 +163,19 @@ export function CrawlSnapshotsInspectionTable({
   }
 
   return (
-    <CrawlSurfaceProvider crawlId={crawlId} crawl={crawl.data ?? null}>
+    <CrawlSurfaceProvider
+      crawlId={crawlId}
+      crawl={crawl.data ?? null}
+      view="snapshots"
+      getViewSummary={() =>
+        snapshots.data
+          ? {
+              loaded_rows: snapshots.data.rows.length,
+              total_rows: snapshots.data.total,
+            }
+          : undefined
+      }
+    >
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <CrawlSubnav crawl={crawl.data} />
       <section className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">

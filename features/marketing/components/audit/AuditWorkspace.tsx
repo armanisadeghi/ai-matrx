@@ -582,7 +582,8 @@ export function AuditWorkspace() {
   const trend = useSiteAuditTrend(site.id);
   if (rollup.isLoading)
     return <LoadingSurface label="Aggregating site audit…" />;
-  if (rollup.isError || !rollup.data) {
+  const data = rollup.data;
+  if (rollup.isError || !data) {
     return (
       <QueryError
         error={rollup.error ?? new Error("Audit rollup unavailable")}
@@ -593,17 +594,24 @@ export function AuditWorkspace() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-audit"
-      getScope={() => {
-        const data = rollup.data;
-        return createMarketingAuditScope({
+      getScope={() =>
+        createMarketingAuditScope({
           ...getBaseValues(),
-          audit_rollup: data ? { ...data } : undefined,
-          pages_audited: data?.auditedPages,
-        });
-      }}
+          audit_rollup: { ...data },
+          pages_total: data.totalPages,
+          pages_audited: data.auditedPages,
+          pages_uncomputed: data.uncomputedPages,
+          non_html_resources: data.nonHtmlResources,
+          indexability_verdicts: { ...data.verdicts },
+          section_passes: { ...data.passes },
+          top_issues: data.topIssues.map((issue) => ({ ...issue })),
+          worst_pages: data.worstPages.map((page) => ({ ...page })),
+          audit_score_trend: (trend.data ?? []).map((point) => ({ ...point })),
+        })
+      }
     >
       <AuditBody
-        rollup={rollup.data}
+        rollup={data}
         sitePath={sitePath}
         trendPoints={trend.data ?? []}
         siteDomain={site.domain}

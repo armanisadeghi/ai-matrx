@@ -144,7 +144,7 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
       attributes: { session_id: row.id, metric: label },
     });
   return (
-    <CrawlSurfaceProvider crawlId={crawlId} crawl={row}>
+    <CrawlSurfaceProvider crawlId={crawlId} crawl={row} view="summary">
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <div className="flex shrink-0 items-center justify-end gap-1.5">
         <CopyButtons

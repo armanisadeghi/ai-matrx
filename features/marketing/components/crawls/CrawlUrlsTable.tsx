@@ -161,7 +161,16 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
       />
     );
   return (
-    <CrawlSurfaceProvider crawlId={crawlId} crawl={crawl.data ?? null}>
+    <CrawlSurfaceProvider
+      crawlId={crawlId}
+      crawl={crawl.data ?? null}
+      view="urls"
+      getViewSummary={() =>
+        urls.data
+          ? { loaded_rows: urls.data.rows.length, total_rows: urls.data.total }
+          : undefined
+      }
+    >
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <CrawlSubnav crawl={crawl.data} />
       <div className="min-h-0 flex-1">

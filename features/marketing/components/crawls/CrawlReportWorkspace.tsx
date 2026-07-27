@@ -744,6 +744,12 @@ export function CrawlReportWorkspace({
     <CrawlSurfaceProvider
       crawlId={crawlId}
       crawl={crawl.data}
+      view="report"
+      getViewSummary={() =>
+        query.data
+          ? { loaded_rows: query.data.rows.length, total_rows: query.data.total }
+          : undefined
+      }
       reportKey={reportKey}
       getReportSummary={() => {
         if (!query.data) return undefined;
