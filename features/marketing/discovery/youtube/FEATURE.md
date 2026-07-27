@@ -17,7 +17,8 @@ same enriched YouTube Data API primitive as the automated research pipeline.
 - API types and defaults: `types.ts`
 - Canonical route: `/marketing/discovery/youtube`
 - Direct preview: `/marketing/discovery/youtube/videos/[videoId]`
-- Compatibility redirects: `/demos/youtube-discovery/**`
+- Compatibility redirects: `/demos/youtube-discovery/**` in `next.config.js`
+  (with route-level shims as defense in depth)
 - Server route: `POST /api/research/youtube/search`
 
 ## Invariants

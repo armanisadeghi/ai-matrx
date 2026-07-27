@@ -314,6 +314,20 @@ const nextConfig = {
     async redirects() {
         return [
             ...adminLegacyRouteRedirects,
+            // 2026-07-26: YouTube Discovery graduated from a dev demo into its
+            // permanent authenticated Marketing home. These must be config
+            // redirects (not only route shims): the deployment proxy sends
+            // `/demos/*` to demos.aimatrx.com before a page can render.
+            {
+                source: '/demos/youtube-discovery/videos/:videoId',
+                destination: '/marketing/discovery/youtube/videos/:videoId',
+                permanent: true,
+            },
+            {
+                source: '/demos/youtube-discovery',
+                destination: '/marketing/discovery/youtube',
+                permanent: true,
+            },
             // 2026-07-25: Marketing consolidation. Content planning and keyword
             // research were mistakenly mounted as ROOT routes (`/content-plan`,
             // `/seo/keyword-research`). Both are marketing surfaces and now live
