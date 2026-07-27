@@ -31,12 +31,14 @@ import {
   saveSnapshot,
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
-import { xlsxToUniverWorkbook } from "@/features/data-tables/xlsx-to-univer";
 import { fileHandler } from "@/features/files/handler/handler";
-import {
-  detectImportRoute,
-  type ImportRouteDetection,
-  type ImportRouting,
+// xlsx-to-univer (xlsx + @univerjs/*) and smart-importer (xlsx) are heavy —
+// this is a LIST page that renders no spreadsheet. Both load via
+// await import() inside the async upload handlers (code-splitting skill,
+// rule 6); only their types stay static.
+import type {
+  ImportRouteDetection,
+  ImportRouting,
 } from "@/features/data-tables/smart-importer";
 import { ImportRouteDialog } from "@/features/data-tables/components/ImportRouteDialog";
 import { smartImportPickupSlot } from "@/features/data-tables/smart-import-pickup";
@@ -140,6 +142,9 @@ export default function WorkbooksLandingPage() {
       try {
         // Parse first — if the file is malformed, we surface the error
         // BEFORE creating an empty workbook the user would have to delete.
+        const { xlsxToUniverWorkbook } = await import(
+          "@/features/data-tables/xlsx-to-univer"
+        );
         const snapshot = await xlsxToUniverWorkbook(file);
 
         // Stash the lossless original in cld_files so users can download or
@@ -222,6 +227,9 @@ export default function WorkbooksLandingPage() {
     }
 
     try {
+      const { detectImportRoute } = await import(
+        "@/features/data-tables/smart-importer"
+      );
       const detection = await detectImportRoute(file);
       setSmartFile(file);
       setSmartDetection(detection);
