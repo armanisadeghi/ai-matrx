@@ -169,6 +169,47 @@ function resolveMarketingSurface(stripped: string): string | null {
  * the site id picks the surface; page/component detail routes belong to their
  * own editor surfaces.
  */
+/**
+ * Agent routes nest a dynamic `[id]` (`/agents/[id]/build`, `/agents/[id]/run`),
+ * so the flat prefixes `/agents/builder` and `/agents/run` never matched the
+ * real paths — every agent sub-route fell through to `matrx-user/agents`.
+ * The segment AFTER the agent id picks the surface.
+ */
+const AGENT_SUBROUTE_SURFACES: Readonly<Record<string, string>> = {
+  build: "matrx-user/agent-builder",
+  run: "matrx-user/agent-run",
+  shortcuts: "matrx-user/agent-shortcuts",
+  apps: "matrx-user/agent-apps",
+};
+
+function resolveAgentsSurface(stripped: string): string | null {
+  if (stripped !== "/agents" && !stripped.startsWith("/agents/")) return null;
+  const segments = stripped.split("/").filter(Boolean); // ["agents", ...]
+  if (segments.length < 3) return null; // /agents, /agents/all → flat prefixes
+
+  // Non-id second segments (all, new, battle, sets, templates, admin) are
+  // hub routes, not a specific agent.
+  const HUB_SEGMENTS = new Set([
+    "all",
+    "new",
+    "battle",
+    "sets",
+    "templates",
+    "admin",
+    "builder",
+    "run",
+    "run-history",
+    "edit",
+    "settings",
+    "gate",
+    "shortcuts",
+  ]);
+  if (HUB_SEGMENTS.has(segments[1])) return null; // fall through to prefixes
+
+  // /agents/[id]/<section>
+  return AGENT_SUBROUTE_SURFACES[segments[2]] ?? null;
+}
+
 function resolveCmsSurface(stripped: string): string | null {
   if (stripped !== "/cms" && !stripped.startsWith("/cms/")) return null;
   const segments = stripped.split("/").filter(Boolean); // ["cms", ...]
@@ -220,6 +261,9 @@ export function surfaceFromPathname(
 
   const cms = resolveCmsSurface(stripped);
   if (cms) return cms;
+
+  const agents = resolveAgentsSurface(stripped);
+  if (agents) return agents;
 
   for (const { prefix, surface } of SURFACE_ROUTE_MAPPINGS) {
     if (

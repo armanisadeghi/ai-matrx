@@ -146,3 +146,40 @@ describe("CMS surface resolution (nested [siteId])", () => {
     );
   });
 });
+
+describe("Agent surface resolution (nested [id])", () => {
+  const A = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+
+  it("per-agent sub-routes resolve to their own surfaces", () => {
+    expect(surfaceFromPathname(`/agents/${A}/build`)).toBe(
+      "matrx-user/agent-builder",
+    );
+    expect(surfaceFromPathname(`/agents/${A}/run`)).toBe(
+      "matrx-user/agent-run",
+    );
+    expect(surfaceFromPathname(`/agents/${A}/shortcuts`)).toBe(
+      "matrx-user/agent-shortcuts",
+    );
+    expect(surfaceFromPathname(`/agents/${A}/apps`)).toBe(
+      "matrx-user/agent-apps",
+    );
+  });
+
+  it("hub routes and unmapped sub-routes stay on the agents hub", () => {
+    expect(surfaceFromPathname("/agents")).toBe("matrx-user/agents");
+    expect(surfaceFromPathname("/agents/all")).toBe("matrx-user/agents");
+    expect(surfaceFromPathname("/agents/new")).toBe("matrx-user/agents");
+    expect(surfaceFromPathname("/agents/battle")).toBe("matrx-user/agents");
+    expect(surfaceFromPathname(`/agents/${A}`)).toBe("matrx-user/agents");
+    expect(surfaceFromPathname(`/agents/${A}/surfaces`)).toBe(
+      "matrx-user/agents",
+    );
+  });
+
+  it("legacy flat prefixes still resolve", () => {
+    expect(surfaceFromPathname("/agents/run")).toBe("matrx-user/agent-run");
+    expect(surfaceFromPathname("/agents/shortcuts")).toBe(
+      "matrx-user/agent-shortcuts",
+    );
+  });
+});

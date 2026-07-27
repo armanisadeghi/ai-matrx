@@ -37,6 +37,8 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AgentRunHeader } from "./AgentRunHeader";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useAgentRunSurfaceScope } from "@/features/agents/hooks/useAgentRunSurfaceScope";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 const RUN_INITIAL_MESSAGE_LIMIT = 12;
@@ -200,6 +202,17 @@ export function AgentRunnerPage({
   // Completely unrelated to the normal run.
   const sidebarSurfaceKey = `${sourceFeature}-sidebar:${agentId}`;
 
+  // Live scope for the `matrx-user/agent-run` surface. Declared here (above
+  // the early returns) because hooks cannot be conditional; only MOUNTED for
+  // the standalone run route — `/code` embeds this same component under its
+  // own surface and must not claim this one.
+  const isAgentRunSurface = sourceFeature === "agent-runner";
+  const getAgentRunScope = useAgentRunSurfaceScope({
+    agentId,
+    conversationId: conversationIdFromUrl ?? conversationId ?? undefined,
+    sourceFeature,
+  });
+
   const agentName = useAppSelector((state) => selectAgentName(state, agentId));
   // Wait for the browser Supabase session to hydrate before issuing the
   // bundle queries — RLS denials look like empty `{}` errors otherwise.
@@ -321,7 +334,7 @@ export function AgentRunnerPage({
     );
   }
 
-  return (
+  const body = (
     <div className="relative flex flex-col h-full overflow-hidden">
       <DebugSessionActivator />
       {/* <AgentRunHeader
@@ -347,5 +360,16 @@ export function AgentRunnerPage({
         />
       </div>
     </div>
+  );
+
+  if (!isAgentRunSurface) return body;
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/agent-run"
+      getScope={getAgentRunScope}
+    >
+      {body}
+    </SurfaceRuntimeProvider>
   );
 }

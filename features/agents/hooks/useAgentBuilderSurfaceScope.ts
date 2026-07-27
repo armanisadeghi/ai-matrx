@@ -2,9 +2,11 @@
  * Build the agent-level surface scope for `matrx-user/agent-builder`.
  *
  * Returns the agent-definition half of the scope (everything an action that
- * operates on "the agent being edited" needs): identity, model, tools,
- * context slots, variable definitions, output schema, settings, and the full
- * agent serialized as JSON.
+ * operates on "the agent being edited" needs): identity, system instruction,
+ * message templates, model + tiers, tools, custom tools, MCP servers, skills,
+ * Matrx actions, context slots, variable definitions, output schema, UI gates,
+ * settings, governance/lineage (visibility, access, version), the dirty-state
+ * tracking, and the full agent serialized as JSON.
  *
  * Callsites merge this with the field-specific `content` they're editing and
  * pass the result as `contextData` to `<UnifiedAgentContextMenu>`. Selection /
@@ -25,6 +27,7 @@ import { useCallback } from "react";
 
 import { useAppStore } from "@/lib/redux/hooks";
 import { createAgentBuilderScope } from "@/features/surfaces/manifests/agent-builder.manifest";
+import { extractAgentSystemInstruction } from "@/features/agents/utils/agent-system-instruction";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import {
   selectAgentAccessLevel,
@@ -95,7 +98,7 @@ export function useAgentBuilderSurfaceScope(
       agent_tags: selectAgentTags(state, agentId) ?? undefined,
 
       // ── Definition ─────────────────────────────────────────────────────
-      system_instruction: extractSystemInstruction(
+      system_instruction: extractAgentSystemInstruction(
         selectAgentSystemMessage(state, agentId),
       ),
       agent_messages: selectAgentMessages(state, agentId) ?? undefined,
@@ -114,10 +117,10 @@ export function useAgentBuilderSurfaceScope(
       agent_tools: selectAgentTools(state, agentId) ?? undefined,
       agent_custom_tools: selectAgentCustomTools(state, agentId) ?? undefined,
       agent_mcp_servers: selectAgentMcpServers(state, agentId) ?? undefined,
-      agent_skill_config: selectAgentSkillConfig(state, agentId) as Record<
-        string,
-        unknown
-      >,
+      agent_skill_config: selectAgentSkillConfig(
+        state,
+        agentId,
+      ) as unknown as Record<string, unknown>,
       agent_matrx_actions: selectAgentMatrxActions(state, agentId) as Record<
         string,
         unknown
@@ -151,26 +154,4 @@ export function useAgentBuilderSurfaceScope(
       dirty_fields: dirtyFields ? Object.keys(dirtyFields) : [],
     });
   }, [store, agentId]);
-}
-
-/**
- * Flatten the agent's system message content blocks into the plain
- * instruction text. The canonical text field is `.text` (normalised at the
- * Redux boundary); non-text blocks (files, images) are skipped. Returns
- * undefined when the agent has no system message or no text block.
- */
-function extractSystemInstruction(
-  systemMessage: { content?: unknown } | undefined,
-): string | undefined {
-  const blocks = systemMessage?.content;
-  if (!Array.isArray(blocks)) return undefined;
-  const text = blocks
-    .filter(
-      (b): b is { type?: string; text?: string } =>
-        !!b && typeof b === "object" && (b as { type?: string }).type === "text",
-    )
-    .map((b) => b.text ?? "")
-    .filter(Boolean)
-    .join("\n");
-  return text.length > 0 ? text : undefined;
 }
