@@ -6,6 +6,13 @@ import { CircleGauge, ListChecks, Loader2, RefreshCw } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import {
   SEVERITY_OPTIONS,
   SeverityBadge,
@@ -22,6 +29,29 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+
+function humanPriorityRow(row: PriorityQueueRow): string {
+  return humanLines([
+    ["Priority", row.priority === null ? null : Number(row.priority).toFixed(2)],
+    ["Severity", row.severity],
+    ["Item", row.item_key],
+    ["Category", row.category],
+    ["Subcategory", row.subcategory],
+    ["Page", row.page_path ?? (row.page_id ? row.page_id : "site-level")],
+    ["Page URL", row.page_url],
+  ]);
+}
+
+function projectPriorityRow(row: PriorityQueueRow) {
+  return {
+    priority: row.priority,
+    severity: row.severity,
+    item_key: row.item_key,
+    category: row.category,
+    subcategory: row.subcategory,
+    page_path: row.page_path,
+  };
+}
 
 function filteredFindingsHref(basePath: string, row: PriorityQueueRow) {
   const params = new URLSearchParams();
@@ -133,6 +163,72 @@ export function SiteAnalysisTable() {
     startNavigation(() => router.push(href));
   };
 
+  const pageLocation = webLocation(
+    `Analysis priority queue — ${site.root_url}`,
+  );
+  const rows = priority.data?.rows ?? [];
+  const total = priority.data?.total ?? 0;
+
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "priority_queue",
+      title: "Priority queue",
+      description: `${rows.length} loaded of ${total.toLocaleString()} matching (current filters, sort, and page).`,
+      levelLabels: {
+        full: `Loaded ${rows.length} (raw)`,
+        compact: "Top 25 (key fields)",
+        brief: "Counts only",
+      },
+      build: (level) =>
+        level === "full"
+          ? { query: table.state, rows }
+          : level === "compact"
+            ? { query: table.state, rows: rows.slice(0, 25).map(projectPriorityRow) }
+            : {
+                total_matching: total,
+                loaded_rows: rows.length,
+                by_severity: rows.reduce<Record<string, number>>((acc, row) => {
+                  const key = row.severity ?? "unknown";
+                  acc[key] = (acc[key] ?? 0) + 1;
+                  return acc;
+                }, {}),
+              },
+    },
+  ];
+
+  const pageHuman = () =>
+    [
+      `Analysis priority queue — ${site.domain}`,
+      `${total.toLocaleString()} matching items (${rows.length} loaded).`,
+      ...rows.slice(0, 25).map(humanPriorityRow),
+    ].join("\n\n");
+
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
+  const pageAgentPayload = (): AgentPayloadInput => ({
+    kind: "marketing-analysis-page",
+    location: pageLocation,
+    description: `The analysis priority queue for ${site.domain}.`,
+    data: pageFullData(),
+    attributes: { site_id: site.id, total_matching: total },
+  });
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Analysis — ${site.domain}`,
+    kind: "marketing-analysis-page",
+    location: pageLocation,
+    description: `The full analysis priority queue for ${site.domain}.`,
+    attributes: { site_id: site.id, domain: site.domain },
+    sections: groomerSections(),
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-analysis"
@@ -173,6 +269,14 @@ export function SiteAnalysisTable() {
           searchPlaceholder: "Search item, category, or subcategory…",
           actions: (
             <div className="flex items-center gap-2">
+              <CopyButtons
+                size="icon"
+                label={`Analysis priority queue (${site.domain})`}
+                human={pageHuman}
+                json={pageFullData}
+                agent={pageAgentPayload}
+              />
+              <AgentCopyGroomerLauncher config={groomerConfig} />
               <Button
                 variant="outline"
                 size="sm"
@@ -215,19 +319,7 @@ export function SiteAnalysisTable() {
             "One open, non-suppressed finding projection ranked by weight × severity × confidence.",
           listDescription:
             "The currently loaded priority queue rows (respecting search, filters, sort, and pagination).",
-          humanRow: (row) =>
-            humanLines([
-              [
-                "Priority",
-                row.priority === null ? null : Number(row.priority).toFixed(2),
-              ],
-              ["Severity", row.severity],
-              ["Item", row.item_key],
-              ["Category", row.category],
-              ["Subcategory", row.subcategory],
-              ["Page", row.page_path ?? (row.page_id ? row.page_id : "site-level")],
-              ["Page URL", row.page_url],
-            ]),
+          humanRow: humanPriorityRow,
           rowAttributes: (row) => ({
             site_id: site.id,
             item_id: row.item_id,

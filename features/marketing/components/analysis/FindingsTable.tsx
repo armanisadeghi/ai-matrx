@@ -7,6 +7,13 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import {
   FINDING_STATUS_OPTIONS,
   FindingStatusBadge,
@@ -23,12 +30,44 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useSiteFindings } from "@/features/marketing/data/analysis-hooks";
-import type { FindingListRow } from "@/features/marketing/data/analysis-types";
+import type {
+  FindingListRow,
+} from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+
+function humanFindingRow(row: FindingListRow): string {
+  return humanLines([
+    ["Finding", row.id],
+    ["Item", row.item_key],
+    ["Category", `${row.category} / ${row.subcategory}`],
+    ["Severity", row.severity],
+    ["Lifecycle", row.status],
+    ["Subject", row.subject_type],
+    ["Page", row.page_path ?? (row.page_id ? row.page_id : "site-level")],
+    ["Page URL", row.page_url],
+    ["Suppressed", row.suppressed ? "yes" : "no"],
+    ["Last detected", formatCompactDate(row.last_detected_at)],
+  ]);
+}
+
+function projectFindingRow(row: FindingListRow) {
+  return {
+    id: row.id,
+    item_key: row.item_key,
+    category: row.category,
+    subcategory: row.subcategory,
+    severity: row.severity,
+    status: row.status,
+    subject_type: row.subject_type,
+    page_path: row.page_path,
+    suppressed: row.suppressed,
+    last_detected_at: row.last_detected_at,
+  };
+}
 
 export function FindingsTable() {
   const router = useRouter();
@@ -158,6 +197,69 @@ export function FindingsTable() {
     startNavigation(() => router.push(href));
   };
 
+  const pageLocation = webLocation(`Findings register — ${site.root_url}`);
+  const rows = findings.data?.rows ?? [];
+  const total = findings.data?.total ?? 0;
+
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "findings",
+      title: "Findings",
+      description: `${rows.length} loaded of ${total.toLocaleString()} matching (current filters, sort, and page).`,
+      levelLabels: {
+        full: `Loaded ${rows.length} (raw)`,
+        compact: "Top 25 (key fields)",
+        brief: "Counts only",
+      },
+      build: (level) =>
+        level === "full"
+          ? { query: table.state, rows }
+          : level === "compact"
+            ? { query: table.state, rows: rows.slice(0, 25).map(projectFindingRow) }
+            : {
+                total_matching: total,
+                loaded_rows: rows.length,
+                by_severity: rows.reduce<Record<string, number>>((acc, row) => {
+                  acc[row.severity] = (acc[row.severity] ?? 0) + 1;
+                  return acc;
+                }, {}),
+              },
+    },
+  ];
+
+  const pageHuman = () =>
+    [
+      `Findings register — ${site.domain}`,
+      `${total.toLocaleString()} matching findings (${rows.length} loaded).`,
+      ...rows.slice(0, 25).map(humanFindingRow),
+    ].join("\n\n");
+
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
+  const pageAgentPayload = (): AgentPayloadInput => ({
+    kind: "marketing-findings-page",
+    location: pageLocation,
+    description: `The findings register for ${site.domain}.`,
+    data: pageFullData(),
+    attributes: { site_id: site.id, total_matching: total },
+  });
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Findings — ${site.domain}`,
+    kind: "marketing-findings-page",
+    location: pageLocation,
+    description: `The full findings register for ${site.domain}.`,
+    attributes: { site_id: site.id, domain: site.domain },
+    sections: groomerSections(),
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-findings"
@@ -187,6 +289,14 @@ export function FindingsTable() {
             "Search item, category, subcategory, or suppression reason…",
           actions: (
             <div className="flex items-center gap-2">
+              <CopyButtons
+                size="icon"
+                label={`Findings register (${site.domain})`}
+                human={pageHuman}
+                json={pageFullData}
+                agent={pageAgentPayload}
+              />
+              <AgentCopyGroomerLauncher config={groomerConfig} />
               <Button
                 variant="outline"
                 size="sm"
@@ -229,19 +339,7 @@ export function FindingsTable() {
             "One durable finding lifecycle record from this site's register.",
           listDescription:
             "The currently loaded finding rows (respecting search, filters, sort, and pagination).",
-          humanRow: (row) =>
-            humanLines([
-              ["Finding", row.id],
-              ["Item", row.item_key],
-              ["Category", `${row.category} / ${row.subcategory}`],
-              ["Severity", row.severity],
-              ["Lifecycle", row.status],
-              ["Subject", row.subject_type],
-              ["Page", row.page_path ?? (row.page_id ? row.page_id : "site-level")],
-              ["Page URL", row.page_url],
-              ["Suppressed", row.suppressed ? "yes" : "no"],
-              ["Last detected", formatCompactDate(row.last_detected_at)],
-            ]),
+          humanRow: humanFindingRow,
           rowAttributes: (row) => ({
             finding_id: row.id,
             site_id: site.id,
