@@ -183,8 +183,10 @@ export interface CredentialIdentity {
   icon: LucideIcon;
   accent: CredentialAccent;
   iconClass: string;
-  /** Human type label — catalog label first, humanized key as the fallback. */
-  kindLabel: string;
+  /** Human type label — catalog label first, humanized key as the fallback.
+   *  NULL when it merely restates the item's name, so no surface renders the
+   *  same words twice. */
+  kindLabel: string | null;
   /** One line under the name: the account it signs in as, its host, or its
    *  env alias. Null when the name already says everything. */
   subtitle: string | null;
@@ -292,8 +294,14 @@ export function credentialIdentity(
     (definition ? FAMILY_LOOK[definition.payload.family] : undefined) ??
     FAMILY_LOOK.generic;
 
-  const kindLabel =
+  const rawKindLabel =
     definition?.payload.label ?? humanizeKey(item.definition_key);
+  // A type label that just restates the name is noise: "YouTube Data API"
+  // sitting above "Youtube Data API" reads as a rendering bug, not as
+  // information. Suppress it and let the meta line carry the subtitle alone.
+  const kindLabel = echoesName(rawKindLabel, item.display_name)
+    ? null
+    : rawKindLabel;
   const firstUrl = item.login_urls[0];
   const host = firstUrl ? hostOfUrl(firstUrl) : null;
   const identityField = identityFieldOf(item);

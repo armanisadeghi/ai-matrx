@@ -345,10 +345,9 @@ export function VaultWorkspace({
                   {selected?.display_name}
                 </span>
                 <span className="block truncate text-xs font-normal text-muted-foreground">
-                  {selectedIdentity?.kindLabel}
-                  {selectedIdentity?.subtitle
-                    ? ` · ${selectedIdentity.subtitle}`
-                    : ""}
+                  {[selectedIdentity?.kindLabel, selectedIdentity?.subtitle]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               </span>
             </CredenzaTitle>
@@ -449,10 +448,13 @@ function VaultItemCard({
               </Badge>
             )}
           </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {identity.kindLabel}
-            {identity.subtitle ? ` · ${identity.subtitle}` : ""}
-          </p>
+          {(identity.kindLabel || identity.subtitle) && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {[identity.kindLabel, identity.subtitle]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </div>
         {item.organization_id && item.access_mode === "restricted" && (
           <Badge variant="outline" className="shrink-0 font-normal">
