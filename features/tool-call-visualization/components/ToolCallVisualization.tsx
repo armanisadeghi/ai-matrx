@@ -296,6 +296,7 @@ const ToolCallVisualizationInner: React.FC<{
     toolDisplayName,
     phase,
     headerTool?.errorMessage ?? null,
+    headerTool ?? undefined,
   );
 
   // Query subtitle (e.g. "AI lawyers" for a search) — kept ONLY when it adds

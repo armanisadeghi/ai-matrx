@@ -188,6 +188,12 @@ export interface ToolRenderer {
    */
   phaseLabels?: ToolPhaseLabels;
 
+  /**
+   * Optional entry-aware labels for action-dispatched or contract-dispatched
+   * tools. Takes precedence over `phaseLabels`.
+   */
+  getPhaseLabels?: (entry: ToolLifecycleEntry) => ToolPhaseLabels | null;
+
   /** Custom label for the results/output tab in the overlay. */
   resultsLabel?: string;
 

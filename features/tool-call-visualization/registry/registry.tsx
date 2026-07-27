@@ -32,6 +32,7 @@ import {
   LayoutGrid,
   MousePointerClick,
   Wrench,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
@@ -96,6 +97,8 @@ import { SkillInline } from "../renderers/skill/SkillInline";
 import { AskInline } from "../renderers/ask/AskInline";
 import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
+import { AgentCallInline } from "../renderers/agent-call/AgentCallInline";
+import { isImageGenerationAgentCall } from "../renderers/agent-call/agentCallKind";
 
 import {
   resultAsObject,
@@ -251,6 +254,29 @@ function webHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const toolRendererRegistry: ToolRegistry = {
+  agent_call: {
+    toolName: "agent_call",
+    displayName: "Agent Call",
+    icon: Network,
+    accent: "violet",
+    phaseLabels: {
+      running: "Calling agent",
+      complete: "Agent finished",
+      errorPrefix: "Agent call failed",
+    },
+    getPhaseLabels: (entry) =>
+      isImageGenerationAgentCall(entry)
+        ? {
+            running: "Creating image",
+            complete: "Created image",
+            errorPrefix: "Image generation failed",
+          }
+        : null,
+    resultsLabel: "Agent Result",
+    InlineComponent: AgentCallInline,
+    keepExpandedOnStream: true,
+  },
+
   // ───────────────────────────────────────────────────────────────────────────
   // `web` — THE REAL, CURRENT web tool (verified live in cx_tool_call: 47 calls,
   // latest today). A SINGLE tool dispatched by `arguments.action`:
@@ -1755,9 +1781,16 @@ export function getToolPhaseLabel(
   displayName: string,
   phase: "starting" | "processing" | "complete" | "error",
   errorMessage?: string | null,
+  entry?: ToolLifecycleEntry,
 ): string {
   if (toolName) {
     const reg = toolRendererRegistry[toolName];
+    if (entry && reg?.getPhaseLabels) {
+      const dynamicLabels = reg.getPhaseLabels(entry);
+      if (dynamicLabels) {
+        return formatPhaseLabel(dynamicLabels, phase, errorMessage);
+      }
+    }
     if (reg?.phaseLabels) {
       return formatPhaseLabel(reg.phaseLabels, phase, errorMessage);
     }

@@ -21,7 +21,7 @@
  *     tool's display name. So a real run plays through the SAME faithful turn,
  *     carrying the "real data" badge.
  *
- *   • "Synthetic scenarios" — the curated eight, with hand-written args/results,
+ *   • "Synthetic scenarios" — curated examples with hand-written args/results,
  *     for tools the user hasn't actually run.
  *
  * The render area is the EXACT chat-response column: `<ChatResultColumn>`
@@ -45,7 +45,7 @@ import {
   Loader2,
   Database,
   Gauge,
-  Sparkles,
+  TestTube2,
   Search,
   ArrowDownAZ,
   BarChart3,
@@ -80,7 +80,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 // The surrounding "around" content for a turn — intro markdown the agent
 // writes, its thinking trace, the "about to act" header, and the wrap-up. These
 // are keyed by canonical tool name; a real run for one of these tools reuses its
-// script, and the eight synthetic scenarios are built straight from them.
+// script, and the synthetic scenarios are built straight from them.
 
 interface ToolScript {
   /** Canonical tool name (registry key / `cx_tool_call.tool_name`). */
@@ -104,6 +104,30 @@ interface ToolScript {
 }
 
 const SCRIPTS: ToolScript[] = [
+  {
+    name: "agent_call",
+    label: "Generate an image",
+    intro:
+      "I’ll turn that into a polished visual. I’m handing the art direction to the image specialist now.",
+    thinking:
+      "This request needs an image model, not a text-only answer. I should pass the complete visual brief through the agent-call contract and let the specialist compose the final image.",
+    actionHeader:
+      "## Creating the image\n\nComposing the scene, lighting, details, and finish.",
+    outro:
+      "Your image is ready. I can also create a variation with a different composition, mood, or aspect ratio.",
+    workMs: 5000,
+    syntheticArgs: {
+      agent_id: "replaceable-image-agent",
+      variables: {
+        image_description:
+          "A cinematic alpine observatory beneath the northern lights",
+      },
+    },
+    syntheticResult: {
+      agent_name: "Image Specialist",
+      result: "Image generated successfully.",
+    },
+  },
   {
     name: "web_search",
     label: "Web Search",
@@ -1026,7 +1050,7 @@ function ModeToggle({
       {tab(
         "synthetic",
         "Synthetic scenarios",
-        <Sparkles className="h-3.5 w-3.5" />,
+        <TestTube2 className="h-3.5 w-3.5" />,
       )}
     </div>
   );
