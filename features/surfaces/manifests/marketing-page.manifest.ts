@@ -50,6 +50,13 @@ const groups: SurfaceValueGroup[] = [
       "The user's editorial targets — what this page's metadata should become.",
   },
   {
+    key: "authoring",
+    label: "Authoring",
+    sortOrder: 250,
+    description:
+      "User-authored desired state beyond metadata: draft content, per-area desired values, the keyword batch, and the image plan.",
+  },
+  {
     key: "observed_seo",
     label: "Observed SEO",
     sortOrder: 300,
@@ -80,6 +87,13 @@ const groups: SurfaceValueGroup[] = [
     sortOrder: 700,
     description:
       "Search Console, PageSpeed, and GA4 evidence for this page.",
+  },
+  {
+    key: "attachments",
+    label: "Attachments",
+    sortOrder: 800,
+    description:
+      "Work and resources associated with this page: tasks and attached items.",
   },
 ];
 
@@ -234,6 +248,52 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "page_intent",
   },
 
+  // ── Authoring — desired state beyond metadata ─────────────────────────
+  {
+    name: "desired_values",
+    label: "Desired values",
+    description:
+      "The per-area desired-state mirror (`web.page.desired_values`): social_card, indexability (canonical/robots), headings (outline plan), image_plan, and free notes. Empty object when the user has expressed no desired state yet. Agents proposing changes to these areas write candidates for the matching key.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 1200,
+    sortOrder: 300,
+    group: "authoring",
+  },
+  {
+    name: "draft_content",
+    label: "Draft content",
+    description:
+      "The user-authored draft content for this page (`web.page_content.content`, markdown) — the editorial target body, distinct from the observed captured content. Empty when no draft has been written.",
+    valueType: "document",
+    alwaysAvailable: false,
+    typicalCharCount: 8000,
+    sortOrder: 310,
+    group: "authoring",
+  },
+  {
+    name: "keyword_batch",
+    label: "Keyword batch",
+    description:
+      "The batch of keyword-library keywords attached to this page via association edges (role primary|supporting): one entry per keyword with phrase, role, search volume, and competition. The primary target_keyword rides separately in page intent. Empty array when nothing is attached.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 800,
+    sortOrder: 320,
+    group: "authoring",
+  },
+  {
+    name: "image_plan",
+    label: "Image plan",
+    description:
+      "The planned images for this page (from desired_values.image_plan): per entry a description, alt text, placement, status (planned|generated|placed), and the generated image's file_id when produced. Empty array when no images are planned.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    sortOrder: 330,
+    group: "authoring",
+  },
+
   // ── Observed SEO — crawl evidence ─────────────────────────────────────
   {
     name: "observed_title",
@@ -321,6 +381,39 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 800,
     sortOrder: 630,
+    group: "observed_seo",
+  },
+  {
+    name: "structured_data",
+    label: "Structured data",
+    description:
+      "Observed schema.org structured data from the latest snapshot: detected schema_types plus the raw payload evidence. Empty when uncrawled or the page declares none.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 1500,
+    sortOrder: 645,
+    group: "observed_seo",
+  },
+  {
+    name: "perf",
+    label: "Crawl performance",
+    description:
+      "Crawl-time performance evidence from the latest snapshot (response time, payload bytes). Empty when uncrawled. Distinct from PageSpeed Insights lab data.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 150,
+    sortOrder: 650,
+    group: "observed_seo",
+  },
+  {
+    name: "images",
+    label: "Images",
+    description:
+      "Observed image evidence from the latest snapshot. Currently the scraper stores counts only ({ count, missing_alt }); a per-image inventory lands here when the crawler starts persisting it. Empty when uncrawled.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    sortOrder: 655,
     group: "observed_seo",
   },
   {
@@ -451,6 +544,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "analysis",
   },
   {
+    name: "findings",
+    label: "Findings",
+    description:
+      "The open, non-suppressed analysis findings against this page as listed on the workspace (bounded list): per finding its check, severity, message, and status. Empty array when nothing is open. Complements the open_findings count.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 1200,
+    sortOrder: 605,
+    group: "analysis",
+  },
+  {
     name: "page_analyzer",
     label: "Page Analyzer",
     description:
@@ -519,6 +623,50 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "performance",
   },
   {
+    name: "gsc_queries",
+    label: "GSC top queries",
+    description:
+      "The top real Search Console queries already reaching this page (bounded list): per query its clicks, impressions, and average position. Empty array when GSC is not connected or reports nothing.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 700,
+    sortOrder: 472,
+    group: "performance",
+  },
+  {
+    name: "inbound_links",
+    label: "Inbound internal links",
+    description:
+      "Internal pages linking TO this page (bounded list from web.link_edge): per link the source URL and anchor text. Empty array when the crawl found none.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    sortOrder: 474,
+    group: "performance",
+  },
+  {
+    name: "outbound_links",
+    label: "Outbound internal links",
+    description:
+      "Internal pages this page links OUT to (bounded list from web.link_edge): per link the target URL and anchor text. Empty array when the crawl found none.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    sortOrder: 476,
+    group: "performance",
+  },
+  {
+    name: "backlinks",
+    label: "Backlinks",
+    description:
+      "External backlink evidence for this page as loaded on the workspace: the latest snapshot totals and top referring rows. Empty when no backlink collection has run.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 1000,
+    sortOrder: 478,
+    group: "performance",
+  },
+  {
     name: "sitemap_memberships",
     label: "Sitemap memberships",
     description:
@@ -528,6 +676,30 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 400,
     sortOrder: 495,
     group: "performance",
+  },
+
+  // ── Attachments — associated work + resources ─────────────────────────
+  {
+    name: "page_tasks",
+    label: "Page tasks",
+    description:
+      "Tasks associated with this page (via web_page association edges): per task its title, status, priority, and due date. Empty array when no tasks are linked.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    sortOrder: 810,
+    group: "attachments",
+  },
+  {
+    name: "attached_items",
+    label: "Attached items",
+    description:
+      "Summary of everything associated with this page (notes, files, conversations, working documents…): counts per entity type from the association edges. Empty when nothing is attached.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 820,
+    group: "attachments",
   },
 ];
 
@@ -541,7 +713,7 @@ export const marketingPageManifest: SurfaceManifest = {
 The inherited brand_context and site_context values give you the client and website this page belongs to — read them for framing before working on the page itself.
 You are on the Marketing page workspace: one canonical URL of a managed website, with the evidence of what it currently serves and the user's editorial intent for what it should become.
 Two kinds of values live here and must never be confused: OBSERVED values (observed_title, observed_description, observed_seo_metrics) are immutable crawl evidence of the live site; DESIRED values (desired_title, desired_description, desired_seo_metrics) are the user's editorial targets stored on the page. When asked to improve metadata, you propose DESIRED values — you never alter or invent observed evidence.
-Beyond metadata, the surface also carries visual captures (screenshots), analysis evidence (Page Analyzer keyword picture, page score, open findings), and performance evidence (Search Console, PageSpeed Insights, GA4) when loaded.
+Beyond metadata, the surface also carries visual captures (screenshots), analysis evidence (Page Analyzer keyword picture, page score, open findings + findings rows), performance evidence (Search Console metrics + top queries, PageSpeed Insights, GA4, internal links, backlinks), and the user's AUTHORING layer: draft_content (the markdown body the page SHOULD have), desired_values (per-area desired state: social card, canonical/robots, heading-structure plan, image plan), the keyword_batch (library keywords attached to this page alongside the primary target_keyword), and page_tasks (work linked to this page).
 SEO metrics are deterministic (shared pixel-width table between browser and scraper): trust the provided pixel_width / ok flags instead of estimating lengths, and validate any candidate you generate with the seo tool before presenting it.
 </surface_intro>`,
   groups,
@@ -589,6 +761,15 @@ SEO metrics are deterministic (shared pixel-width table between browser and scra
       kind: "single",
       defaultAgentId: null,
       sortOrder: 130,
+    },
+    {
+      name: "image_producer",
+      label: "Image producer",
+      description:
+        "Generates images for the page's image plan from a per-image spec (description, alt intent, placement). Must be bound to an agent whose model outputs images; the plan card's Generate button runs it headlessly and stores the produced file id on the plan entry.",
+      kind: "single",
+      defaultAgentId: null,
+      sortOrder: 140,
     },
   ],
 };
@@ -642,7 +823,14 @@ export function createMarketingPageScope(values: {
   http_status?: number;
   indexability?: Record<string, unknown>;
   social_card?: Record<string, unknown>;
+  structured_data?: Record<string, unknown>;
+  perf?: Record<string, unknown>;
+  images?: Record<string, unknown>;
   url_quality_issues?: Array<Record<string, unknown>>;
+  desired_values?: Record<string, unknown>;
+  draft_content?: string;
+  keyword_batch?: Array<Record<string, unknown>>;
+  image_plan?: Array<Record<string, unknown>>;
   page_content?: string;
   content?: string;
   word_count?: number;
@@ -653,13 +841,20 @@ export function createMarketingPageScope(values: {
   has_desktop_capture?: boolean;
   has_mobile_capture?: boolean;
   open_findings?: number;
+  findings?: Array<Record<string, unknown>>;
   page_analyzer?: Record<string, unknown>;
   page_score?: number;
   failed_checks?: number;
   gsc_metrics_28d?: Record<string, unknown>;
+  gsc_queries?: Array<Record<string, unknown>>;
+  inbound_links?: Array<Record<string, unknown>>;
+  outbound_links?: Array<Record<string, unknown>>;
+  backlinks?: Record<string, unknown>;
   pagespeed?: Record<string, unknown>;
   ga4_metrics?: Record<string, unknown>;
   sitemap_memberships?: Array<Record<string, unknown>>;
+  page_tasks?: Array<Record<string, unknown>>;
+  attached_items?: Record<string, unknown>;
   selection?: string;
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {

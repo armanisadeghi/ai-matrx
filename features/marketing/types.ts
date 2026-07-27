@@ -510,8 +510,6 @@ export interface PageDesiredValues {
   headings?: { outline?: DesiredHeadingEntry[]; notes?: string };
   structured_data_notes?: string;
   image_plan?: DesiredImagePlanEntry[];
-  /** Desired alt text per observed image src. */
-  image_alts?: Record<string, string>;
   additional_content_notes?: string;
 }
 

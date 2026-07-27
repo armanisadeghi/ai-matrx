@@ -201,6 +201,23 @@ export function buildMarketingPageScope(input: {
    * never just the phrase.
    */
   targetKeywordData?: Record<string, unknown> | null;
+  /** The authored draft body (`web.page_content.content`), when loaded. */
+  draftContent?: string | null;
+  /** The attached keyword batch rows (page-keywords board), when loaded. */
+  keywordBatch?: readonly Record<string, unknown>[] | null;
+  /** Open findings rows as listed on the workspace, when loaded. */
+  findingsRows?: readonly Record<string, unknown>[] | null;
+  /** GSC top-query rows (usePageTopQueries), when loaded. */
+  gscQueries?: readonly Record<string, unknown>[] | null;
+  /** Inbound / outbound internal-link rows, when loaded. */
+  inboundLinks?: readonly Record<string, unknown>[] | null;
+  outboundLinks?: readonly Record<string, unknown>[] | null;
+  /** Backlink evidence bundle, when loaded. */
+  backlinks?: Record<string, unknown> | null;
+  /** Tasks associated with this page, when loaded. */
+  pageTasks?: readonly Record<string, unknown>[] | null;
+  /** Association-edge counts per entity type, when loaded. */
+  attachedItems?: Record<string, unknown> | null;
   /**
    * Inherited site-level base values (brand/site identity + XML context) from
    * `useMarketingSiteSurfaceBase().getBaseValues()`. Spread first — the
@@ -224,8 +241,24 @@ export function buildMarketingPageScope(input: {
     pageScore,
     failedChecks,
     targetKeywordData,
+    draftContent,
+    keywordBatch,
+    findingsRows,
+    gscQueries,
+    inboundLinks,
+    outboundLinks,
+    backlinks,
+    pageTasks,
+    attachedItems,
     base,
   } = input;
+  const desiredValues = isJsonRecord(page.desired_values)
+    ? (page.desired_values as Record<string, unknown>)
+    : null;
+  const imagePlan =
+    desiredValues && Array.isArray(desiredValues.image_plan)
+      ? (desiredValues.image_plan as Array<Record<string, unknown>>)
+      : null;
   const headings = snapshot ? parseSnapshotHeadings(snapshot.headings).all : [];
   const head = snapshot ? parseSnapshotHeadTags(snapshot.head_tags) : null;
   const extracted = snapshot ? parseSnapshotExtracted(snapshot.extracted) : null;
@@ -428,6 +461,35 @@ export function buildMarketingPageScope(input: {
     page_score: pageScore ?? undefined,
     failed_checks: failedChecks ?? undefined,
     http_status: page.http_status_last ?? undefined,
+    structured_data: snapshot
+      ? ((snapshot.structured_data ?? undefined) as
+          | Record<string, unknown>
+          | undefined)
+      : undefined,
+    perf: snapshot
+      ? ((snapshot.perf ?? undefined) as Record<string, unknown> | undefined)
+      : undefined,
+    images: snapshot
+      ? ((snapshot.images ?? undefined) as Record<string, unknown> | undefined)
+      : undefined,
+    desired_values:
+      desiredValues && Object.keys(desiredValues).length > 0
+        ? desiredValues
+        : undefined,
+    draft_content: draftContent || undefined,
+    keyword_batch:
+      keywordBatch && keywordBatch.length > 0 ? [...keywordBatch] : undefined,
+    image_plan: imagePlan && imagePlan.length > 0 ? imagePlan : undefined,
+    findings:
+      findingsRows && findingsRows.length > 0 ? [...findingsRows] : undefined,
+    gsc_queries: gscQueries && gscQueries.length > 0 ? [...gscQueries] : undefined,
+    inbound_links:
+      inboundLinks && inboundLinks.length > 0 ? [...inboundLinks] : undefined,
+    outbound_links:
+      outboundLinks && outboundLinks.length > 0 ? [...outboundLinks] : undefined,
+    backlinks: backlinks ?? undefined,
+    page_tasks: pageTasks && pageTasks.length > 0 ? [...pageTasks] : undefined,
+    attached_items: attachedItems ?? undefined,
     selection,
   });
 }

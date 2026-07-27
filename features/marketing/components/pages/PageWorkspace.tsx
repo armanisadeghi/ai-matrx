@@ -21,12 +21,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
+  usePageContent,
   usePagePerformance,
   usePageScreenshots,
   usePageSitemapMemberships,
   usePageWebAnalytics,
   usePageWorkspace,
 } from "@/features/marketing/data/hooks";
+import {
+  usePageBacklinks,
+  usePageInboundLinks,
+  usePageOutboundLinks,
+} from "@/features/marketing/data/page-links";
+import { usePageOpenFindings } from "@/features/marketing/data/analysis-hooks";
+import { usePageTopQueries } from "@/features/marketing/seo/keyword/hooks";
+import { pageKeywordsQueryKey } from "@/features/marketing/components/pages/cards/PageKeywordsCard";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  fetchTasksForEntity,
+  selectTasksForEntity,
+} from "@/features/tasks/redux/taskAssociationsSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { usePageAnalyzer } from "@/features/marketing/components/pages/usePageAnalyzer";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -70,6 +86,12 @@ import { ContentStats } from "@/features/marketing/components/pages/cards/Conten
 import { SitemapMembershipsCard } from "@/features/marketing/components/pages/cards/SitemapMembershipsCard";
 import { PageCapturesCard } from "@/features/marketing/components/pages/cards/PageCapturesCard";
 import { PageAnalyzerCard } from "@/features/marketing/components/pages/cards/PageAnalyzerCard";
+import { PageDraftContentCard } from "@/features/marketing/components/pages/cards/PageDraftContentCard";
+import { PageTasksCard } from "@/features/marketing/components/pages/cards/PageTasksCard";
+import { PageKeywordsCard } from "@/features/marketing/components/pages/cards/PageKeywordsCard";
+import { PageImagePlanCard } from "@/features/marketing/components/pages/cards/PageImagePlanCard";
+import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
+import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
 import { PagespeedCard } from "@/features/marketing/components/pages/cards/PagespeedCard";
 import { PageAnalyticsCard } from "@/features/marketing/components/pages/cards/PageAnalyticsCard";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
@@ -92,6 +114,27 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const analyticsRows = usePageWebAnalytics(site.id, pageId);
   // Lifted so the surface scope emits the same artifact the card renders.
   const analyzer = usePageAnalyzer(pageId, site.organization_id);
+  // COMPLETENESS LAW: every card-rendered dataset is also emitted as a
+  // surface value. These share react-query caches with the cards (same keys).
+  const draftContent = usePageContent(site.id, pageId);
+  const findingsRows = usePageOpenFindings(site.id, pageId, 10);
+  const topQueries = usePageTopQueries(pageId);
+  const outboundLinks = usePageOutboundLinks(site.id, pageId);
+  const inboundLinks = usePageInboundLinks(
+    site.id,
+    pageId,
+    workspace.data?.page.url ?? "",
+  );
+  const backlinks = usePageBacklinks(site.id, pageId);
+  const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
+  const pageTasks = useAppSelector(selectTasksForEntity("web_page", pageId));
+  const associations = useAssociations({ type: "web_page", id: pageId });
+  useEffect(() => {
+    void dispatch(
+      fetchTasksForEntity({ entityType: "web_page", entityId: pageId }),
+    );
+  }, [dispatch, pageId]);
   // The saved target keyword resolved against the keyword library — shares
   // the react-query cache with IntentForm; feeds `target_keyword_data` into
   // the surface scope so agents get the market data, never just the phrase.
@@ -203,6 +246,32 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               market: resolvedTargetKeyword.data.market,
             }).data
           : null,
+      draftContent: draftContent.data?.content ?? null,
+      // Trigger-time cache read — the board card owns the fetch; the scope
+      // reads the same react-query entry without a second subscription.
+      keywordBatch:
+        queryClient.getQueryData<Array<Record<string, unknown>>>(
+          pageKeywordsQueryKey(page.id),
+        ) ?? null,
+      findingsRows:
+        (findingsRows.data as unknown as Record<string, unknown>[]) ?? null,
+      gscQueries:
+        (topQueries.data as unknown as Record<string, unknown>[]) ?? null,
+      inboundLinks:
+        (inboundLinks.data as unknown as Record<string, unknown>[]) ?? null,
+      outboundLinks:
+        (outboundLinks.data as unknown as Record<string, unknown>[]) ?? null,
+      backlinks:
+        (backlinks.data as unknown as Record<string, unknown>) ?? null,
+      pageTasks: pageTasks as unknown as Record<string, unknown>[],
+      attachedItems: (() => {
+        const counts: Record<string, number> = {};
+        for (const edge of associations.edges) {
+          if (edge.direction !== "incoming") continue;
+          counts[edge.otherType] = (counts[edge.otherType] ?? 0) + 1;
+        }
+        return Object.keys(counts).length > 0 ? counts : null;
+      })(),
       base: getBaseValues(),
     });
 
@@ -419,6 +488,12 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             analyzerKeywords={analyzerKeywordSuggestions}
           />
         </div>
+
+        <PageKeywordsCard
+          page={page}
+          brandId={brandId}
+          suggestions={analyzerKeywordSuggestions}
+        />
 
         {snapshot ? (
           <>
@@ -739,6 +814,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 getPageScope={getScope}
               />
             ) : null}
+            <PageDraftContentCard page={page} />
           </>
         ) : (
           <section className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
@@ -757,6 +833,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           <PageFindingsCard page={page} />
         </div>
 
+        <PageTasksCard page={page} />
+
         <div className="grid gap-3 lg:grid-cols-2">
           <PageLinksCard page={page} />
           <PageBacklinksCard page={page} />
@@ -764,7 +842,25 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
 
         <SitemapMembershipsCard page={page} />
 
-          <PageCapturesCard page={page} />
+        <PageImagePlanCard page={page} />
+
+        <PageCapturesCard page={page} />
+
+        <section className="rounded-lg border border-border bg-card p-3">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Attached to this page
+          </h2>
+          <PrimaryEntityProvider
+            value={{
+              type: "web_page",
+              id: page.id,
+              orgId: page.organization_id,
+              label: page.path || page.url,
+            }}
+          >
+            <AssociationCardGrid />
+          </PrimaryEntityProvider>
+        </section>
         </div>
       </main>
     </SurfaceRuntimeProvider>
