@@ -26,6 +26,7 @@ import {
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { useChatPersistence } from "../../hooks/useChatPersistence";
 import { sidebarEvents } from "../../events/sidebarEvents";
@@ -574,8 +575,13 @@ export function SidebarChats({
 
     // Subscribe to real-time changes on cx_conversations table
     // Listen for INSERT (new conversations) and UPDATE (title/status changes)
+    // uniqueChannelTopic (supabase-realtime doctrine rule 4): a STATIC topic
+    // collides with the still-joined previous channel on remount / effect
+    // re-run and throws "cannot add postgres_changes callbacks after
+    // subscribe()" — which crashed /p/chat's error boundary in production
+    // (2026-07-27, surfaced by a sidebar mount-timing change).
     const subscription = supabase
-      .channel("cx_conversations_realtime")
+      .channel(uniqueChannelTopic("cx_conversations_realtime"))
       .on(
         "postgres_changes",
         {
