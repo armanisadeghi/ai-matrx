@@ -346,6 +346,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       overlayId: "socialCardAnalyzerWindow",
       description: "Social Cards (SocialCardAnalyzer) in a floating window.",
     },
+    {
+      overlayId: "keywordWindow",
+      description:
+        "Keyword Intelligence — the canonical per-keyword dossier (market, classification, relationships, site performance, rankings, SERP, research). Registered agent surface matrx-user/keyword-intelligence.",
+    },
   ],
   components: [
     {
