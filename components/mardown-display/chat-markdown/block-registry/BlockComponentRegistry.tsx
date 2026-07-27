@@ -1,6 +1,5 @@
 "use client";
 
-// eslint-disable-next-line no-restricted-syntax -- deliberate React.lazy exception: this registry is fully behind the MarkdownStream dynamic({ssr:false}) gate (zero server-pass cost); conversion explicitly deferred by Arman 2026-07-27.
 import React, { Suspense, lazy } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../BasicMarkdownContent";

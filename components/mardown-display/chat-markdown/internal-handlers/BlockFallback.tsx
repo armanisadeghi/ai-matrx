@@ -1,6 +1,5 @@
 "use client";
 
-// eslint-disable-next-line no-restricted-syntax -- deliberate React.lazy exception: the Suspense fallback shows the block's RAW CODE while the pretty renderer chunk loads (runtime data next/dynamic's static `loading` cannot render); in-gate behind MarkdownStream, zero server-pass cost.
 import React, { Suspense, lazy } from "react";
 import { MarkdownErrorBoundary } from "./MarkdownErrorBoundary";
 import { RenderBlock } from "../block-registry/BlockRenderer";
