@@ -1,6 +1,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { postNdjson } from "@/lib/python-client";
+import { callApi } from "@/lib/api/call-api";
+import type { AppDispatch } from "@/lib/redux/store";
 import {
   parsePersistedBackendError,
   parseStreamError,
@@ -92,26 +93,42 @@ export interface PagespeedSyncResult {
 }
 
 export async function syncPagespeed(
+  dispatch: AppDispatch,
   pageId: string,
+  organizationId: string,
   strategy: "mobile" | "desktop" = "mobile",
   callbacks: PagespeedSyncCallbacks = {},
 ): Promise<PagespeedSyncResult> {
   let runId: string | null = null;
-  for await (const event of postNdjson(
-    `/seo/pages/${encodeURIComponent(pageId)}/pagespeed/sync`,
-    { strategy },
-    { signal: callbacks.signal },
-  )) {
-    callbacks.onEvent?.(event);
-    if (event.event === "data") {
-      const data = event.data as { kind?: unknown; run_id?: unknown };
-      if (data.kind === "seo.receipt" && typeof data.run_id === "string") {
-        runId = data.run_id;
-      }
-    }
-    if (event.event === "error") {
-      throw parseStreamError(event.data);
-    }
+  let streamError: Error | null = null;
+  const response = await dispatch(
+    callApi({
+      path: "/seo/pages/{page_id}/pagespeed/sync",
+      method: "POST",
+      pathParams: { page_id: pageId },
+      body: { strategy },
+      scopeOverrides: { organization_id: organizationId },
+      stream: true,
+      signal: callbacks.signal,
+      onStreamEvent: (event) => {
+        callbacks.onEvent?.(event);
+        if (event.event === "data") {
+          const data = event.data as { kind?: unknown; run_id?: unknown };
+          if (data.kind === "seo.receipt" && typeof data.run_id === "string") {
+            runId = data.run_id;
+          }
+        }
+        if (event.event === "error") {
+          streamError = parseStreamError(event.data);
+        }
+      },
+    }),
+  );
+  if (response.error) {
+    throw new Error(response.error.message);
+  }
+  if (streamError) {
+    throw streamError;
   }
   return { runId };
 }

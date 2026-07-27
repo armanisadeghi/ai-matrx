@@ -14,6 +14,7 @@ const OVERLAY_ID = "keywordWindow" as const;
  */
 export interface OpenKeywordWindowOptions {
   phrase?: string;
+  organizationId?: string;
   siteId?: string;
   pageId?: string;
   brandId?: string;
@@ -30,6 +31,7 @@ export function useOpenKeywordWindow() {
           overlayId: OVERLAY_ID,
           data: {
             phrase: options.phrase ?? "",
+            organizationId: options.organizationId ?? "",
             siteId: options.siteId ?? "",
             pageId: options.pageId ?? "",
             brandId: options.brandId ?? "",

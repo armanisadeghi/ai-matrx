@@ -57,10 +57,12 @@ const ROLE_LABELS: Record<PlanNodeEntityRole, string> = {
 export function NodeAssociations({
   nodeId,
   siteId,
+  organizationId,
   entities,
 }: {
   nodeId: string;
   siteId: string;
+  organizationId: string;
   entities: PlanEntityRow[];
 }) {
   const edges = usePlanNodeEdges(nodeId);
@@ -113,6 +115,7 @@ export function NodeAssociations({
       />
       <SecondaryKeywordSection
         siteId={siteId}
+        organizationId={organizationId}
         keywordEdges={keywordEdges}
         onAdd={(keywordId) => run({ kind: "add-secondary-keyword", keywordId })}
         onRemove={(keywordId) =>
@@ -264,11 +267,13 @@ function TopicSection({
 
 function SecondaryKeywordSection({
   siteId,
+  organizationId,
   keywordEdges,
   onAdd,
   onRemove,
 }: {
   siteId: string;
+  organizationId: string;
   keywordEdges: Edge[];
   onAdd: (keywordId: string) => void;
   onRemove: (keywordId: string) => void;
@@ -284,6 +289,7 @@ function SecondaryKeywordSection({
       </h4>
       <KeywordPicker
         siteId={siteId}
+        organizationId={organizationId}
         value={null}
         clearable={false}
         placeholder="Attach secondary keyword…"

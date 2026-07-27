@@ -3948,6 +3948,7 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "keywordWindow" }))
             }
             initialPhrase={str("phrase")}
+            initialOrganizationId={str("organizationId")}
             initialSiteId={str("siteId")}
             initialPageId={str("pageId")}
             initialBrandId={str("brandId")}

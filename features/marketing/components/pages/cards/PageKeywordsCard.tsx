@@ -234,6 +234,7 @@ export function PageKeywordsCard({
                 onClick={() =>
                   openKeywordIntel({
                     phrase: primaryPhrase,
+                    organizationId: page.organization_id,
                     siteId: page.site_id,
                     pageId: page.id,
                     brandId: brandId ?? undefined,
@@ -300,6 +301,7 @@ export function PageKeywordsCard({
                           onClick={() =>
                             openKeywordIntel({
                               phrase: entry.phrase,
+                              organizationId: page.organization_id,
                               siteId: page.site_id,
                               pageId: page.id,
                               brandId: brandId ?? undefined,
@@ -341,7 +343,12 @@ export function PageKeywordsCard({
             <KeywordInput
               value={draftPhrase}
               onChange={setDraftPhrase}
-              scope={{ siteId: page.site_id, pageId: page.id, brandId }}
+              scope={{
+                organizationId: page.organization_id,
+                siteId: page.site_id,
+                pageId: page.id,
+                brandId,
+              }}
               suggestions={suggestions}
               placeholder="Add a supporting keyword"
             />

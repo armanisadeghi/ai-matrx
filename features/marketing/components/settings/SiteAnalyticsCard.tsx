@@ -14,6 +14,7 @@ import { LineChart, Loader2, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
 import { BackendFailureDetails } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingKeys } from "@/features/marketing/data/hooks";
@@ -34,11 +35,14 @@ function integer(value: number): string {
 
 export function SiteAnalyticsCard({
   siteId,
+  organizationId,
   ga4Enabled,
 }: {
   siteId: string;
+  organizationId: string;
   ga4Enabled: boolean;
 }) {
+  const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const [syncing, setSyncing] = useState(false);
   const [syncFailure, setSyncFailure] =
@@ -65,7 +69,7 @@ export function SiteAnalyticsCard({
     setSyncing(true);
     setSyncFailure(null);
     try {
-      await syncSiteAnalytics(siteId);
+      await syncSiteAnalytics(dispatch, siteId, organizationId);
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(siteId),
       });

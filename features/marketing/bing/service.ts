@@ -1,7 +1,8 @@
 import { createClient } from "@/utils/supabase/client";
-import { buildHeaders, resolveBaseUrl } from "@/lib/python-client";
-import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { callApi } from "@/lib/api/call-api";
+import { parseStreamError } from "@/lib/api/errors";
 import type { TypedStreamEvent } from "@/lib/api/types";
+import type { AppDispatch } from "@/lib/redux/store";
 import type {
   BingConnectionInventory,
   BingConnectionOwner,
@@ -213,49 +214,42 @@ export interface BingSyncResult {
  * caller disconnects; this just follows the live stream.
  */
 export async function syncBingSearchPerformance(
+  dispatch: AppDispatch,
   siteId: string,
+  organizationId: string,
   options: { windowDays?: number } = {},
   callbacks: BingSyncCallbacks = {},
 ): Promise<BingSyncResult> {
-  const { headers } = await buildHeaders({ signal: callbacks.signal }, true);
-  const response = await fetch(
-    `${resolveBaseUrl()}/seo/sites/${siteId}/bing/search-performance/sync`,
-    {
-      method: "POST",
-      headers: { ...headers, Accept: "application/x-ndjson" },
-      body: JSON.stringify({ window_days: options.windowDays ?? 28 }),
-      signal: callbacks.signal,
-    },
-  );
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as {
-      detail?: unknown;
-    };
-    const detail = payload.detail;
-    const message =
-      typeof detail === "string"
-        ? detail
-        : typeof (detail as { message?: unknown })?.message === "string"
-          ? ((detail as { message: string }).message as string)
-          : `Bing search-performance sync failed (HTTP ${response.status}).`;
-    throw new Error(message);
-  }
   let runId: string | null = null;
-  const { events } = parseNdjsonStream(response, callbacks.signal);
-  for await (const event of events) {
-    callbacks.onEvent?.(event);
-    if (event.event === "data") {
-      const data = event.data as { kind?: unknown; run_id?: unknown };
-      if (data.kind === "seo.receipt" && typeof data.run_id === "string") {
-        runId = data.run_id;
-      }
-    }
-    if (event.event === "error") {
-      const data = event.data as { message?: string; detail?: string };
-      throw new Error(
-        data.message || data.detail || "Bing search-performance sync failed.",
-      );
-    }
+  let streamError: Error | null = null;
+  const response = await dispatch(
+    callApi({
+      path: "/seo/sites/{site_id}/bing/search-performance/sync",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: { window_days: options.windowDays ?? 28 },
+      scopeOverrides: { organization_id: organizationId },
+      stream: true,
+      signal: callbacks.signal,
+      onStreamEvent: (event) => {
+        callbacks.onEvent?.(event);
+        if (event.event === "data") {
+          const data = event.data as { kind?: unknown; run_id?: unknown };
+          if (data.kind === "seo.receipt" && typeof data.run_id === "string") {
+            runId = data.run_id;
+          }
+        }
+        if (event.event === "error") {
+          streamError = parseStreamError(event.data);
+        }
+      },
+    }),
+  );
+  if (response.error) {
+    throw new Error(response.error.message);
+  }
+  if (streamError) {
+    throw streamError;
   }
   return { runId };
 }

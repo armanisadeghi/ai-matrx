@@ -180,6 +180,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
       onClick={() =>
         openKeywordIntel({
           phrase: phrase || undefined,
+          organizationId: page.organization_id,
           siteId: page.site_id,
           pageId: page.id,
         })

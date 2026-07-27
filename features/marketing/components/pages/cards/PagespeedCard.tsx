@@ -10,6 +10,7 @@ import {
   usePagePerformance,
 } from "@/features/marketing/data/hooks";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import type { MarketingPage } from "@/features/marketing/types";
 import { latestPagespeedByStrategy } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
@@ -40,6 +41,7 @@ const L = surfaceValueLabels(marketingPageManifest);
  * Replaces the former disabled placeholder.
  */
 export function PagespeedCard({ page }: { page: MarketingPage }) {
+  const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   // Shared query cache — the PageWorkspace surface scope (pagespeed) reads
   // the exact same rows this card renders.
@@ -60,7 +62,12 @@ export function PagespeedCard({ page }: { page: MarketingPage }) {
     setSyncingStrategy(strategy);
     setSyncFailure(null);
     try {
-      await syncPagespeed(page.id, strategy);
+      await syncPagespeed(
+        dispatch,
+        page.id,
+        page.organization_id,
+        strategy,
+      );
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.page(page.site_id, page.id),
       });

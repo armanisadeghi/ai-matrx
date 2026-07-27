@@ -7,8 +7,9 @@
  * the "Provider spend" mode on `/marketing/cost`.
  */
 
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useQuery } from "@tanstack/react-query";
 
 const SPEND_SUMMARY_PATH = "/seo/spend/summary";
@@ -52,11 +53,22 @@ export interface SeoSpendSummary {
 
 export function useSeoSpendSummary() {
   const dispatch = useAppDispatch();
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
   return useQuery({
-    queryKey: ["marketing", "seo-spend-summary"],
+    queryKey: ["marketing", "seo-spend-summary", organizationId],
+    enabled: Boolean(organizationId),
     queryFn: async () => {
+      if (!organizationId) {
+        throw new Error(
+          "An organization is required to load the SEO spend summary.",
+        );
+      }
       const response = await dispatch(
-        callApi({ path: SPEND_SUMMARY_PATH, method: "GET" }),
+        callApi({
+          path: SPEND_SUMMARY_PATH,
+          method: "GET",
+          queryParams: { organization_id: organizationId },
+        }),
       );
       if (response.error) throw new Error(response.error.message);
       return response.data as unknown as SeoSpendSummary;

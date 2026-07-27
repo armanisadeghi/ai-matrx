@@ -30,12 +30,14 @@ import { useKeywordLabels, useSiteKeywordValues } from "../data/hooks";
 
 export function KeywordPicker({
   siteId,
+  organizationId,
   value,
   onChange,
   placeholder = "Pick keyword",
   clearable = true,
 }: {
   siteId: string;
+  organizationId: string;
   value: string | null;
   onChange: (keywordId: string | null) => void;
   placeholder?: string;
@@ -179,7 +181,11 @@ export function KeywordPicker({
           title="Keyword Intelligence"
           disabled={!selectedPhrase || selectedPhrase === "…"}
           onClick={() =>
-            openKeywordWindow({ phrase: selectedPhrase ?? "", siteId })
+            openKeywordWindow({
+              phrase: selectedPhrase ?? "",
+              organizationId,
+              siteId,
+            })
           }
         >
           <BrainCircuit className="h-3.5 w-3.5" />

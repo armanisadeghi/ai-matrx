@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search as SearchIcon, ExternalLink } from "lucide-react";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { components } from "@/types/python-generated/api-types";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 
@@ -48,11 +49,12 @@ export function QuickSearchDialog({
   // Reset on open / doc change
   useEffect(() => {
     if (open) {
-      setQuery("");
-      setHits(null);
-      setError(null);
-      // Autofocus
-      const t = setTimeout(() => inputRef.current?.focus(), 50);
+      const t = setTimeout(() => {
+        setQuery("");
+        setHits(null);
+        setError(null);
+        inputRef.current?.focus();
+      }, 50);
       return () => clearTimeout(t);
     }
     return undefined;
@@ -64,6 +66,7 @@ export function QuickSearchDialog({
     setError(null);
     setHits(null);
     try {
+      const organizationId = await ensureOrgId(undefined);
       const { data } = await apiPost(
         buildPath("/rag/library/{processed_document_id}/test-search", {
           processed_document_id: processedDocumentId,
@@ -71,6 +74,7 @@ export function QuickSearchDialog({
         {
           query: query.trim(),
           limit: 15,
+          organization_id: organizationId,
         },
       );
       setHits(Array.isArray(data?.hits) ? data.hits : []);

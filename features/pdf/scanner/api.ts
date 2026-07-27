@@ -11,6 +11,7 @@ import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseHttpError } from "@/lib/api/errors";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { buildHeaders, postNdjson, resolveBaseUrl } from "@/lib/python-client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { ImageDocumentDetectedData } from "@/types/python-generated/stream-events";
 
 import type {
@@ -36,10 +37,12 @@ export async function detectDocument(
   fileId: string,
   mode: "standard" | "relaxed" = "standard",
 ): Promise<DetectDocumentResponse> {
+  const organizationId = await ensureOrgId(undefined);
   let result: DetectDocumentResponse | null = null;
   for await (const evt of postNdjson("/images/detect-document", {
     source_id: fileId,
     mode,
+    organization_id: organizationId,
   })) {
     if (evt.event === "error") {
       throw new Error(

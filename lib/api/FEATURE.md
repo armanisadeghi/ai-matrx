@@ -89,6 +89,16 @@ body shape/key, wrong response field. When `pnpm sync-types` regenerates the
 contract after a backend change, every drifted callsite lights up red in the
 same PR.
 
+**3. Organization-aware compute never relies on a backend fallback.**
+`callApi` injects the active organization into JSON bodies automatically.
+When a call acts on an existing entity, pass that entity's durable organization
+with `scopeOverrides`; it wins over ambient app context. Typed-client and raw
+stream callers must send the generated `organization_id` field explicitly,
+resolving global actions through `ensureOrgId` and entity actions from the
+entity row. GET endpoints that declare `organization_id` receive it as a query
+parameter—body injection does not apply to GET. A server-side personal-org
+fallback is loud recovery for a frontend defect, never the normal request path.
+
 ## Multipart nuance (read before touching a `*/multipart` call)
 
 FastAPI multipart bodies encode JSON fields as **strings** at the wire
@@ -186,6 +196,9 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-07-27 — Documented the organization-propagation contract after the
+  application-wide compute audit: entity-local overrides, explicit typed/raw
+  bodies, and explicit GET query scoping.
 - 2026-07-25 — Regated loopback targets on admin presence instead of `NODE_ENV`. The
   2026-07-24 change also removed the toggle for admins on the deployed site, killing the
   deployed-frontend → local-server workflow; admins get it back, ordinary visitors stay

@@ -11,6 +11,7 @@ import {
   usePageWebAnalytics,
 } from "@/features/marketing/data/hooks";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import type { MarketingPage } from "@/features/marketing/types";
 import { webAnalyticsTotals } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
@@ -41,6 +42,7 @@ const L = surfaceValueLabels(marketingPageManifest);
  */
 export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   const { site } = useMarketingSite();
+  const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   // Shared query cache — the PageWorkspace surface scope (ga4_metrics) reads
   // the exact same rows this card renders.
@@ -61,7 +63,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
     setSyncing(true);
     setSyncFailure(null);
     try {
-      await syncSiteAnalytics(site.id);
+      await syncSiteAnalytics(dispatch, site.id, site.organization_id);
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(site.id),
       });

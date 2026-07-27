@@ -17,6 +17,7 @@
 
 import { postJson, postNdjson } from "@/lib/python-client";
 import { apiGet } from "@/lib/api/typed-client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { components } from "@/types/python-generated/api-types";
 import type { ImageEditCompleteData } from "@/types/python-generated/stream-events";
 
@@ -90,12 +91,16 @@ export type EditResponse = AssetEnvelope;
  * per the backend contract that field is the verbatim legacy Asset
  * envelope, byte-identical to the old blocking response body.
  */
-async function drainEditStream<B>(
+async function drainEditStream<B extends object>(
   path: string,
   body: B,
 ): Promise<EditResponse> {
+  const organizationId = await ensureOrgId(undefined);
   let asset: EditResponse | null = null;
-  for await (const evt of postNdjson(path, body)) {
+  for await (const evt of postNdjson(path, {
+    ...body,
+    organization_id: organizationId,
+  })) {
     if (evt.event === "error") {
       throw new Error(
         evt.data.user_message ?? evt.data.message ?? "Image edit failed.",

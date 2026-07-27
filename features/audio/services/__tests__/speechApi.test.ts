@@ -5,6 +5,9 @@ jest.mock("@/lib/api/typed-client", () => ({
   apiPost: jest.fn(),
   apiMultipart: jest.fn(),
 }));
+jest.mock("@/lib/organizations/personalOrg", () => ({
+  ensureOrgId: jest.fn().mockResolvedValue("org-1"),
+}));
 
 const apiPostMock = jest.mocked(apiPost);
 const responseMeta = { requestId: "request-1", status: 200, serverRequestId: null };
@@ -45,6 +48,7 @@ describe("speechApi", () => {
     expect(apiPostMock).toHaveBeenCalledWith("/audio/transcribe-url", {
       url: "https://cdn.matrxserver.com/audio.wav",
       language: undefined,
+      organization_id: "org-1",
     });
   });
 
@@ -63,6 +67,7 @@ describe("speechApi", () => {
 
     expect(apiPostMock).toHaveBeenCalledWith("/audio/text-to-speech", {
       text: "Hello",
+      organization_id: "org-1",
       voice: undefined,
       quality: "fast",
     });

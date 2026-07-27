@@ -15,8 +15,8 @@ import {
  * relationships, site performance, rank tracking, the stored Google SERP,
  * live research) in one floating tabbed panel.
  *
- * Open from anywhere with `useOpenKeywordWindow({ phrase, siteId, pageId,
- * brandId, tab })` (features/overlays/openers/keywordWindow.tsx). Site-scoped
+ * Open from anywhere with `useOpenKeywordWindow({ phrase, organizationId,
+ * siteId, pageId, brandId, tab })` (features/overlays/openers/keywordWindow.tsx). Site-scoped
  * tabs light up when a site binding is supplied. The window contributes zero
  * business logic — the body is `KeywordIntelPanel`
  * (features/marketing/seo/keyword/).
@@ -25,6 +25,7 @@ export interface KeywordWindowProps {
   isOpen: boolean;
   onClose: () => void;
   initialPhrase?: string;
+  initialOrganizationId?: string;
   initialSiteId?: string;
   initialPageId?: string;
   initialBrandId?: string;
@@ -39,6 +40,7 @@ export default function KeywordWindow(props: KeywordWindowProps) {
 function KeywordWindowInner({
   onClose,
   initialPhrase,
+  initialOrganizationId,
   initialSiteId,
   initialPageId,
   initialBrandId,
@@ -62,11 +64,12 @@ function KeywordWindowInner({
     (): Record<string, unknown> => ({
       phrase: stateRef.current.phrase,
       activeTab: stateRef.current.activeTab,
+      organizationId: initialOrganizationId ?? "",
       siteId: initialSiteId ?? "",
       pageId: initialPageId ?? "",
       brandId: initialBrandId ?? "",
     }),
-    [initialSiteId, initialPageId, initialBrandId],
+    [initialOrganizationId, initialSiteId, initialPageId, initialBrandId],
   );
 
   return (
@@ -87,6 +90,7 @@ function KeywordWindowInner({
       <KeywordIntelPanel
         initialPhrase={initialPhrase ?? ""}
         scope={{
+          organizationId: initialOrganizationId || undefined,
           siteId: initialSiteId || undefined,
           pageId: initialPageId || undefined,
           brandId: initialBrandId || undefined,

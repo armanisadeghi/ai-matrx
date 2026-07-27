@@ -448,7 +448,7 @@ export function RanksWorkspace() {
     addTarget,
     updateTarget,
     removeTarget,
-  } = usePortfolio(site.id);
+  } = usePortfolio(site.id, site.organization_id);
   const [historyTarget, setHistoryTarget] = useState<RankPortfolioItem | null>(
     null,
   );

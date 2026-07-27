@@ -121,6 +121,7 @@ export function PageIntentCard({
             onClick: () =>
               openKeywordIntel({
                 phrase: savedKeyword,
+                organizationId: page.organization_id,
                 siteId: page.site_id,
                 pageId: page.id,
                 brandId: brandId ?? undefined,
@@ -205,7 +206,12 @@ export function PageIntentCard({
             id="target-keyword"
             value={keyword}
             onChange={setKeyword}
-            scope={{ siteId: page.site_id, pageId: page.id, brandId }}
+            scope={{
+              organizationId: page.organization_id,
+              siteId: page.site_id,
+              pageId: page.id,
+              brandId,
+            }}
             suggestions={keywordSuggestions}
           />
           <KeywordUsageChips

@@ -31,7 +31,7 @@ const RANK_TARGET_HISTORY_PATH = "/seo/rank-targets/{target_id}/history";
 const RANK_TARGET_LANDSCAPE_PATH = "/seo/rank-targets/{target_id}/landscape";
 const RANK_TARGET_CHECK_PATH = "/seo/rank-targets/{target_id}/check";
 
-export function usePortfolio(siteId: string) {
+export function usePortfolio(siteId: string, organizationId: string) {
   const dispatch = useAppDispatch();
   const [items, setItems] = useState<RankPortfolioItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,7 @@ export function usePortfolio(siteId: string) {
   }, [dispatch, siteId]);
 
   useEffect(() => {
-    void reload();
+    void Promise.resolve().then(reload);
   }, [reload]);
 
   const addTarget = useCallback(
@@ -69,13 +69,14 @@ export function usePortfolio(siteId: string) {
           method: "POST",
           pathParams: { site_id: siteId },
           body: input,
+          scopeOverrides: { organization_id: organizationId },
         }),
       );
       if (response.error) throw new Error(response.error.message);
       await reload();
       return response.data as unknown as RankPortfolioItem;
     },
-    [dispatch, siteId, reload],
+    [dispatch, siteId, organizationId, reload],
   );
 
   const updateTarget = useCallback(
@@ -86,13 +87,14 @@ export function usePortfolio(siteId: string) {
           method: "PATCH",
           pathParams: { target_id: targetId },
           body: patch,
+          scopeOverrides: { organization_id: organizationId },
         }),
       );
       if (response.error) throw new Error(response.error.message);
       await reload();
       return response.data as unknown as RankPortfolioItem;
     },
-    [dispatch, reload],
+    [dispatch, organizationId, reload],
   );
 
   const removeTarget = useCallback(
@@ -122,14 +124,17 @@ export function useRankTargetHistory(targetId: string | null) {
 
   useEffect(() => {
     if (!targetId) {
-      setPoints([]);
-      setLandscape(null);
+      void Promise.resolve().then(() => {
+        setPoints([]);
+        setLandscape(null);
+      });
       return;
     }
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    void (async () => {
+    void Promise.resolve().then(async () => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
       try {
         const [historyResponse, landscapeResponse] = await Promise.all([
           dispatch(
@@ -157,7 +162,7 @@ export function useRankTargetHistory(targetId: string | null) {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    });
     return () => {
       cancelled = true;
     };

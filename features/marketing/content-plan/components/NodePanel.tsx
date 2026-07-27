@@ -307,6 +307,7 @@ export function NodePanel({
             </Label>
             <KeywordPicker
               siteId={siteId}
+              organizationId={node.organization_id}
               value={current.primary_keyword_id}
               onChange={(keywordId) =>
                 setDraft((d) => ({ ...d, primary_keyword_id: keywordId }))
@@ -345,7 +346,12 @@ export function NodePanel({
           onChange={(attributes) => setDraft((d) => ({ ...d, attributes }))}
         />
 
-        <NodeAssociations nodeId={node.id} siteId={siteId} entities={entities} />
+        <NodeAssociations
+          nodeId={node.id}
+          siteId={siteId}
+          organizationId={node.organization_id}
+          entities={entities}
+        />
         </div>
       </div>
 

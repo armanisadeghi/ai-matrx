@@ -1,14 +1,13 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { buildHeaders, resolveBaseUrl } from "@/lib/python-client";
+import { callApi } from "@/lib/api/call-api";
 import {
-  parseHttpError,
   parsePersistedBackendError,
   parseStreamError,
   type BackendApiError,
 } from "@/lib/api/errors";
-import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type { TypedStreamEvent } from "@/lib/api/types";
+import type { AppDispatch } from "@/lib/redux/store";
 
 /**
  * GA4 persisted read/sync (M-74, WS-12).
@@ -108,36 +107,42 @@ export interface AnalyticsSyncResult {
 }
 
 export async function syncSiteAnalytics(
+  dispatch: AppDispatch,
   siteId: string,
+  organizationId: string,
   options: { windowDays?: number } = {},
   callbacks: AnalyticsSyncCallbacks = {},
 ): Promise<AnalyticsSyncResult> {
-  const { headers } = await buildHeaders({ signal: callbacks.signal }, true);
-  const response = await fetch(
-    `${resolveBaseUrl()}/seo/sites/${siteId}/analytics/sync`,
-    {
-      method: "POST",
-      headers: { ...headers, Accept: "application/x-ndjson" },
-      body: JSON.stringify({ window_days: options.windowDays ?? 28 }),
-      signal: callbacks.signal,
-    },
-  );
-  if (!response.ok) {
-    throw await parseHttpError(response);
-  }
   let runId: string | null = null;
-  const { events } = parseNdjsonStream(response, callbacks.signal);
-  for await (const event of events) {
-    callbacks.onEvent?.(event);
-    if (event.event === "data") {
-      const data = event.data as { kind?: unknown; run_id?: unknown };
-      if (data.kind === "seo.receipt" && typeof data.run_id === "string") {
-        runId = data.run_id;
-      }
-    }
-    if (event.event === "error") {
-      throw parseStreamError(event.data);
-    }
+  let streamError: Error | null = null;
+  const response = await dispatch(
+    callApi({
+      path: "/seo/sites/{site_id}/analytics/sync",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: { window_days: options.windowDays ?? 28 },
+      scopeOverrides: { organization_id: organizationId },
+      stream: true,
+      signal: callbacks.signal,
+      onStreamEvent: (event) => {
+        callbacks.onEvent?.(event);
+        if (event.event === "data") {
+          const data = event.data as { kind?: unknown; run_id?: unknown };
+          if (data.kind === "seo.receipt" && typeof data.run_id === "string") {
+            runId = data.run_id;
+          }
+        }
+        if (event.event === "error") {
+          streamError = parseStreamError(event.data);
+        }
+      },
+    }),
+  );
+  if (response.error) {
+    throw new Error(response.error.message);
+  }
+  if (streamError) {
+    throw streamError;
   }
   return { runId };
 }

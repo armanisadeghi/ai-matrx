@@ -10,15 +10,17 @@
  * arguments — the response is what the model actually receives, not a
  * recreation. Never replace this with a client-side approximation.
  *
- * organization_id / project_id / task_id are injected by callApi from
- * appContextSlice; scope_ids are passed explicitly from the active scope
- * selections — the same source `assembleRequest` uses for real runs.
+ * organization_id is local-first: an existing conversation's durable org
+ * overrides the active app org, while an agent-only preview inherits the
+ * active app org from callApi. project_id / task_id still inherit active
+ * app context; scope_ids are passed explicitly from the active selections.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { selectScopeSelectionsContext } from "@/lib/redux/slices/appContextSlice";
+import { selectConversationScopeIds } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { extractErrorMessage } from "@/utils/errors";
 import type { components } from "@/types/python-generated/api-types";
 
@@ -44,6 +46,9 @@ export function useContextPreview(opts: {
   const dispatch = useAppDispatch();
 
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
+  const conversationScope = useAppSelector(
+    selectConversationScopeIds(conversationId ?? ""),
+  );
   const scopeIds = useMemo(
     () => Object.values(scopeSelections).filter((v): v is string => !!v),
     [scopeSelections],
@@ -71,6 +76,9 @@ export function useContextPreview(opts: {
           agent_id: agentId ?? null,
           scope_ids: scopeIds,
         },
+        scopeOverrides: conversationScope.organizationId
+          ? { organization_id: conversationScope.organizationId }
+          : undefined,
       }),
     ).then((result) => {
       if (seq !== requestSeq.current) return; // superseded
@@ -86,7 +94,13 @@ export function useContextPreview(opts: {
       setError(null);
       setStatus("ready");
     });
-  }, [conversationId, agentId, scopeIds, dispatch]);
+  }, [
+    conversationId,
+    agentId,
+    scopeIds,
+    conversationScope.organizationId,
+    dispatch,
+  ]);
 
   const refresh = useCallback(() => {
     setStatus("loading");

@@ -27,7 +27,13 @@ interface StrategyInterviewResult {
   open_questions: string[];
 }
 
-export function SiteStrategyCard({ siteId }: { siteId: string }) {
+export function SiteStrategyCard({
+  siteId,
+  organizationId,
+}: {
+  siteId: string;
+  organizationId: string;
+}) {
   const dispatch = useAppDispatch();
   const [businessContext, setBusinessContext] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -43,6 +49,7 @@ export function SiteStrategyCard({ siteId }: { siteId: string }) {
           path: STRATEGY_INTERVIEW_PATH,
           method: "POST",
           body: { site_id: siteId, business_context: context },
+          scopeOverrides: { organization_id: organizationId },
         }),
       );
       if (response.error) {

@@ -122,6 +122,7 @@ export function PageQueriesCard({ page }: { page: MarketingPage }) {
                 onClick={() =>
                   openKeywordWindow({
                     phrase: row.query,
+                    organizationId: site.organization_id,
                     siteId: site.id,
                     pageId: page.id,
                     brandId,

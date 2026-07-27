@@ -311,10 +311,14 @@ export function SiteSettingsWorkspace() {
 
         <SiteAnalyticsCard
           siteId={site.id}
+          organizationId={site.organization_id}
           ga4Enabled={parseSiteIntegrations(site.integrations).googleAnalytics4.enabled}
         />
 
-        <SiteStrategyCard siteId={site.id} />
+        <SiteStrategyCard
+          siteId={site.id}
+          organizationId={site.organization_id}
+        />
 
         <section className="overflow-hidden rounded-lg border border-destructive/40 bg-card">
           <div className="flex h-10 items-center gap-2 border-b border-destructive/30 px-3">
