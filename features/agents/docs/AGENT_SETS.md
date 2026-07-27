@@ -24,6 +24,7 @@ The set's name/description ARE the orchestrator agent's — no duplicated identi
   - **Header:** the builder owns NO in-body header. It consumes the shared `EntityModeHeader` template (back → `/agents/sets`, set-name dropdown over the user's other sets, `Canvas | Grid` mode nav, actions: library toggle / Run / Sync agent listings / Orchestrator / Set settings) which portals into the shell header; on mobile everything collapses into the one `…` bottom sheet. Body is `h-full` + `pt-[var(--shell-header-h)]` — never a `calc(100vh − header)` (that produced the overlap + dead bottom strip fixed 2026-07-24).
   - **Canvas/Grid lives in the URL** (`?view=grid`), because the mode nav is href-driven; `activeModeHref` is passed explicitly since the two modes share a pathname.
   - **The library rail is a static column on `md+` and a slide-over below it**, toggled from the header (`PanelLeft`). 16rem of fixed rail on a phone left no canvas at all.
+  - **Inspectors (right side, mutually exclusive):** every node carries a hover toolbar. A **member** node → **Quick look** (snapshot) + **Edit role** (→ `MemberInspector`: role title / gap / I/O). The **orchestrator** hub node → **Quick look** + **Orchestrator details** (→ `OrchestratorInspector`). The orchestrator inspector mirrors the member one (snapshot + `AgentIODetails` inputs/outputs + Open/Run) and adds the one thing unique to an orchestrator: **View system prompt**, which opens the Agent Advanced Editor restricted to the System Instructions tab (`useOpenAgentContentWindow({ tabs:["system"] })`) — the orchestrator's prompt is auto-generatable, so direct access from the builder matters. The shared I/O block lives in `AgentIODetails` (consumed by both inspectors — never duplicate it).
 
 ## Generating an orchestrator (for users without one)
 
@@ -62,7 +63,7 @@ Running an orchestrator makes it **call its members as tools** and weave their o
 - `agent-sets/service/agentSetsService.ts` — thin service over the association chokepoint + `agent_set_list()`. **Owns no new mutation path.**
 - `agent-sets/orchestrator/` — the "generate an orchestrator" flow (template copy + headless description-generator run + `<available_agents>` injection + set wiring; `GenerateOrchestratorDialog` is its UI).
 - `agent-sets/redux/{slice,thunks,selectors}.ts` — `agentSets` read-model (list + per-set member/config cache; optimistic writes reconcile on error).
-- `agent-sets/components/` — `SetBuilder` (shell), `SetBuilderCanvas` (+ `…Impl`), `AgentLibraryRail`, `SetMemberGrid`, `MemberInspector`, `AgentRoleCard`, `AgentSetCard`, `AddToSetMenu`, `CreateSetDialog`, `SetSettingsDialog`, `accents.ts`.
+- `agent-sets/components/` — `SetBuilder` (shell), `SetBuilderCanvas` (+ `…Impl`), `AgentLibraryRail`, `SetMemberGrid`, `MemberInspector`, `OrchestratorInspector`, `AgentIODetails` (shared I/O block), `AgentRoleCard`, `AgentPeekButton`, `AgentSetCard`, `AddToSetMenu`, `CreateSetDialog`, `SetSettingsDialog`, `accents.ts`.
 - `agent-sets/hooks/` — `useAgentSetsList`, `useAgentSet`.
 
 ## Invariants
