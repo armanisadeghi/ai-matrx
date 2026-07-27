@@ -42,6 +42,7 @@ import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import { FileRagStatusChip } from "@/features/rag/components/FileRagStatusChip";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
+import type { Visibility } from "@/features/files/types";
 import {
   fileInfoHumanSummary,
   type FileInfoSnapshot,
@@ -381,15 +382,25 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
 // ---------------------------------------------------------------------------
 
 /**
- * Fallback for VIRTUAL rows only. It reads the client-side `Visibility` union,
- * which `toVisibility()` collapses (`internal` → `personal`), so it cannot be
- * trusted for real files — those get <AccessSummaryPanel>, which reports the
- * DB's true visibility alongside every reason access is granted.
+ * Fallback for VIRTUAL rows only — they have no entity row, so
+ * `entity_access_summary` has nothing to answer about. Real files get
+ * <AccessSummaryPanel>, which reports the DB's visibility alongside every
+ * reason access is granted.
+ *
+ * Says nothing about WHO can see the file: even here, a container can convey
+ * access this label cannot see.
  */
-function visibilityLabel(visibility: string): string {
-  if (visibility === "public") return "Public — anyone with a link";
-  if (visibility === "shared") return "Shared — specific grantees + share links";
-  return "Not published or directly shared";
+function visibilityLabel(visibility: Visibility): string {
+  switch (visibility) {
+    case "public":
+      return "Public — anyone with a link";
+    case "link":
+      return "Anyone with the link";
+    case "internal":
+      return "Organization — readable by everyone in the owning org";
+    default:
+      return "Personal — not published or directly shared";
+  }
 }
 
 function Section({
