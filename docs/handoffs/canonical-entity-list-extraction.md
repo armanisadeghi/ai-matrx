@@ -1,4 +1,4 @@
-# Handoff — extract the canonical entity-list shell, second consumer `/transcripts`
+# Handoff — extract the one entity-list shell, second consumer `/transcripts`
 
 **State:** the proving ground is DONE and live in production (`/agents/all`,
 v0.4.133). Everything below is the extraction that makes it reusable.
