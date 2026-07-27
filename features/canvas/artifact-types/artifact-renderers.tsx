@@ -16,7 +16,8 @@
  * checks before delegating.
  */
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
+import dynamic from "next/dynamic";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
 
@@ -58,42 +59,50 @@ export interface ArtifactRendererProps {
 type ArtifactRendererComponent = React.ComponentType<ArtifactRendererProps>;
 
 /**
- * canvasType → unified renderer (lazy). Populated per type across Wave B.
+ * Per-renderer loading fallback — matches the old `<Suspense>` fallback so the
+ * user-visible loading state is unchanged after the lazy→dynamic conversion.
  */
-const RENDERERS: Record<
-  string,
-  React.LazyExoticComponent<ArtifactRendererComponent>
-> = {
-  comparison: lazy(() => import("./renderers/ComparisonArtifact")),
-  flashcards: lazy(() => import("./renderers/FlashcardsArtifact")),
-  timeline: lazy(() => import("./renderers/TimelineArtifact")),
-  research: lazy(() => import("./renderers/ResearchArtifact")),
-  resources: lazy(() => import("./renderers/ResourcesArtifact")),
-  progress: lazy(() => import("./renderers/ProgressArtifact")),
-  troubleshooting: lazy(() => import("./renderers/TroubleshootingArtifact")),
-  recipe: lazy(() => import("./renderers/RecipeArtifact")),
-  diagram: lazy(() => import("./renderers/DiagramArtifact")),
-  "decision-tree": lazy(() => import("./renderers/DecisionTreeArtifact")),
-  presentation: lazy(() => import("./renderers/PresentationArtifact")),
-  math_problem: lazy(() => import("./renderers/MathProblemArtifact")),
-  quiz: lazy(() => import("./renderers/QuizArtifact")),
-  mermaid: lazy(() => import("./renderers/MermaidArtifact")),
-  svg: lazy(() => import("./renderers/SvgArtifact")),
-  chart: lazy(() => import("./renderers/ChartArtifact")),
-  map: lazy(() => import("./renderers/MapArtifact")),
-  stats: lazy(() => import("./renderers/StatsArtifact")),
-  diff: lazy(() => import("./renderers/DiffArtifact")),
-  questionnaire: lazy(() => import("./renderers/QuestionnaireArtifact")),
-  tasks: lazy(() => import("./renderers/TasksArtifact")),
-  html: lazy(() => import("./renderers/HtmlArtifact")),
-  react: lazy(() => import("./renderers/ReactArtifact")),
-  table: lazy(() => import("./renderers/TableArtifact")),
-  transcript: lazy(() => import("./renderers/TranscriptArtifact")),
-  structured_info: lazy(() => import("./renderers/StructuredInfoArtifact")),
-  tree: lazy(() => import("./renderers/TreeArtifact")),
-  iframe: lazy(() => import("./renderers/IframeArtifact")),
-  code: lazy(() => import("./renderers/CodeArtifact")),
-  image: lazy(() => import("./renderers/ImageArtifact")),
+const rendererLoading = () => <MatrxMiniLoader />;
+
+/**
+ * canvasType → unified renderer, code-split with `next/dynamic({ ssr: false })`
+ * (never `React.lazy` — see the code-splitting skill). `ssr: false` keeps all
+ * 30 heavy renderer graphs (mermaid, charts, maps, react-runner, …) out of the
+ * server compile pass for every route that statically reaches this registry
+ * (e.g. /artifacts/[id] via CmsArtifactDetail). Each entry is still its own
+ * chunk, fetched only when that type actually renders.
+ */
+const RENDERERS: Record<string, ArtifactRendererComponent> = {
+  comparison: dynamic(() => import("./renderers/ComparisonArtifact"), { ssr: false, loading: rendererLoading }),
+  flashcards: dynamic(() => import("./renderers/FlashcardsArtifact"), { ssr: false, loading: rendererLoading }),
+  timeline: dynamic(() => import("./renderers/TimelineArtifact"), { ssr: false, loading: rendererLoading }),
+  research: dynamic(() => import("./renderers/ResearchArtifact"), { ssr: false, loading: rendererLoading }),
+  resources: dynamic(() => import("./renderers/ResourcesArtifact"), { ssr: false, loading: rendererLoading }),
+  progress: dynamic(() => import("./renderers/ProgressArtifact"), { ssr: false, loading: rendererLoading }),
+  troubleshooting: dynamic(() => import("./renderers/TroubleshootingArtifact"), { ssr: false, loading: rendererLoading }),
+  recipe: dynamic(() => import("./renderers/RecipeArtifact"), { ssr: false, loading: rendererLoading }),
+  diagram: dynamic(() => import("./renderers/DiagramArtifact"), { ssr: false, loading: rendererLoading }),
+  "decision-tree": dynamic(() => import("./renderers/DecisionTreeArtifact"), { ssr: false, loading: rendererLoading }),
+  presentation: dynamic(() => import("./renderers/PresentationArtifact"), { ssr: false, loading: rendererLoading }),
+  math_problem: dynamic(() => import("./renderers/MathProblemArtifact"), { ssr: false, loading: rendererLoading }),
+  quiz: dynamic(() => import("./renderers/QuizArtifact"), { ssr: false, loading: rendererLoading }),
+  mermaid: dynamic(() => import("./renderers/MermaidArtifact"), { ssr: false, loading: rendererLoading }),
+  svg: dynamic(() => import("./renderers/SvgArtifact"), { ssr: false, loading: rendererLoading }),
+  chart: dynamic(() => import("./renderers/ChartArtifact"), { ssr: false, loading: rendererLoading }),
+  map: dynamic(() => import("./renderers/MapArtifact"), { ssr: false, loading: rendererLoading }),
+  stats: dynamic(() => import("./renderers/StatsArtifact"), { ssr: false, loading: rendererLoading }),
+  diff: dynamic(() => import("./renderers/DiffArtifact"), { ssr: false, loading: rendererLoading }),
+  questionnaire: dynamic(() => import("./renderers/QuestionnaireArtifact"), { ssr: false, loading: rendererLoading }),
+  tasks: dynamic(() => import("./renderers/TasksArtifact"), { ssr: false, loading: rendererLoading }),
+  html: dynamic(() => import("./renderers/HtmlArtifact"), { ssr: false, loading: rendererLoading }),
+  react: dynamic(() => import("./renderers/ReactArtifact"), { ssr: false, loading: rendererLoading }),
+  table: dynamic(() => import("./renderers/TableArtifact"), { ssr: false, loading: rendererLoading }),
+  transcript: dynamic(() => import("./renderers/TranscriptArtifact"), { ssr: false, loading: rendererLoading }),
+  structured_info: dynamic(() => import("./renderers/StructuredInfoArtifact"), { ssr: false, loading: rendererLoading }),
+  tree: dynamic(() => import("./renderers/TreeArtifact"), { ssr: false, loading: rendererLoading }),
+  iframe: dynamic(() => import("./renderers/IframeArtifact"), { ssr: false, loading: rendererLoading }),
+  code: dynamic(() => import("./renderers/CodeArtifact"), { ssr: false, loading: rendererLoading }),
+  image: dynamic(() => import("./renderers/ImageArtifact"), { ssr: false, loading: rendererLoading }),
 };
 
 export function hasArtifactRenderer(canvasType: string | null | undefined): boolean {
