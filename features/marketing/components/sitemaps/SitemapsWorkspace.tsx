@@ -213,7 +213,22 @@ export function SitemapsWorkspace() {
             fetch_error: sitemap.fetch_error,
             last_fetched_at: sitemap.last_fetched_at,
           })),
+          sitemap_counts: {
+            total: coverage.data?.sitemaps ?? rows.length,
+            indexes: indexes.length,
+            url_sets: urlsets.length,
+          },
+          sitemap_coverage: coverage.data
+            ? {
+                sitemaps: coverage.data.sitemaps,
+                pages_in_sitemaps: coverage.data.pagesInSitemaps,
+                never_crawled: coverage.data.neverCrawled,
+                last_synced_at: coverage.data.lastSyncedAt,
+              }
+            : undefined,
           sitemap_pages_total: coverage.data?.pagesInSitemaps,
+          sitemap_never_crawled: coverage.data?.neverCrawled,
+          sitemaps_last_synced_at: coverage.data?.lastSyncedAt ?? undefined,
         })
       }
     >

@@ -10,32 +10,155 @@
  * the matching `?coverage=` filter. Inherits brand + site context from
  * `matrx-user/marketing-site`.
  *
- * Runtime emitter: features/marketing/lib/scopes/coverage-scope.ts (being
- * built in parallel).
+ * Runtime emitter: `CoverageWorkspace.tsx` mounts the nested
+ * `<SurfaceRuntimeProvider>` and spreads
+ * `useMarketingSiteSurfaceBase().getBaseValues()` into
+ * `createMarketingCoverageScope(...)` at trigger time.
  */
 
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
-const surfaceSpecific: SurfaceValue[] = [
-  // ── Observed evidence (400-499) ───────────────────────────────────────
+const groups: SurfaceValueGroup[] = [
   {
+    key: "registry_totals",
+    label: "Registry totals",
+    sortOrder: 100,
+    description:
+      "How many canonical pages exist and how many each evidence source knows about.",
+  },
+  {
+    key: "source_disagreement",
+    label: "Source disagreement",
+    sortOrder: 200,
+    description:
+      "The cells where sitemaps and crawls contradict each other — the intelligence of this surface.",
+  },
+  {
+    key: "provenance",
+    label: "First source",
+    sortOrder: 300,
+    description: "Which source first recorded each canonical page.",
+  },
+  {
+    key: "google_coverage",
+    label: "Google coverage",
+    sortOrder: 400,
+    description:
+      "What Search Console reports about this registry — meaningful only once GSC has synced.",
+  },
+  {
+    key: "navigation",
+    label: "Navigation",
+    sortOrder: 500,
+    description:
+      "The filtered page-list destinations each coverage cell opens.",
+  },
+];
+
+const surfaceSpecific: SurfaceValue[] = [
+  // ── Registry totals ───────────────────────────────────────────────────
+  {
+    group: "registry_totals",
     name: "coverage_matrix",
     label: "Coverage matrix counts",
     description:
-      "The full disagreement matrix over the canonical page registry: total pages, in-sitemap / crawled / never-crawled counts, the two sitemap-vs-crawl disagreement cells, first-source provenance counts, and the three GSC cells (in GSC, in Google not in sitemap, in sitemaps invisible to Google — null when GSC has never synced). Populated once the workspace has loaded; empty during initial load.",
+      "The full disagreement matrix over the canonical page registry as one object: total pages, in-sitemap / crawled / never-crawled counts, the two sitemap-vs-crawl disagreement cells, first-source provenance counts, and the three GSC cells (in GSC, in Google not in sitemap, in sitemaps invisible to Google — meaningless when GSC has never synced). Mirrors every individual coverage value as one group value. Empty during initial load.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1200,
     sortOrder: 400,
   },
-
-  // ── Workspace signals (600-649) ───────────────────────────────────────
   {
+    group: "registry_totals",
+    name: "total_pages",
+    label: "Canonical pages",
+    description:
+      "Count of every canonical URL any source has recorded for this site — the denominator for every other cell. Zero when no source has ever run; empty during initial load.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 410,
+  },
+  {
+    group: "registry_totals",
+    name: "in_sitemaps",
+    label: "In a sitemap",
+    description:
+      "Count of canonical pages advertised by at least one sitemap document. Zero when no sitemap sync has run; empty during initial load.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 420,
+  },
+  {
+    group: "registry_totals",
+    name: "crawled",
+    label: "Crawled",
+    description:
+      "Count of canonical pages with at least one accepted crawl snapshot. Zero when no crawl has run; empty during initial load.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 430,
+  },
+  {
+    group: "registry_totals",
+    name: "never_crawled",
+    label: "Never crawled",
+    description:
+      "Count of canonical pages no crawl has ever captured — the registry knows the URL but has no content evidence for it. Zero when everything is captured; empty during initial load.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 440,
+  },
+
+  // ── Source disagreement ───────────────────────────────────────────────
+  {
+    group: "source_disagreement",
+    name: "sitemap_not_crawled",
+    label: "Advertised but never crawled",
+    description:
+      "Count of pages a sitemap advertises that no crawl has captured — the site claims them but we have no evidence of what they serve. Zero when the crawl covers every advertised URL; empty during initial load.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 450,
+  },
+  {
+    group: "source_disagreement",
+    name: "crawled_no_sitemap",
+    label: "Crawled but unadvertised",
+    description:
+      "Count of pages a crawl captured that no sitemap advertises — real pages the site does not declare to search engines. Zero when the sitemaps are complete; empty during initial load.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 460,
+  },
+
+  // ── First source ──────────────────────────────────────────────────────
+  {
+    group: "provenance",
+    name: "pages_by_provenance",
+    label: "Pages by first source",
+    description:
+      "Count of canonical pages per first-recording source: { sitemap, crawl, gsc, manual }. Answers how each URL entered the registry. Empty during initial load; individual keys are zero when that source has never contributed.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 90,
+    sortOrder: 470,
+  },
+
+  // ── Google coverage ───────────────────────────────────────────────────
+  {
+    group: "google_coverage",
     name: "gsc_synced",
     label: "GSC ever synced",
     description:
@@ -45,12 +168,58 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 5,
     sortOrder: 600,
   },
+  {
+    group: "google_coverage",
+    name: "in_gsc",
+    label: "Reported by Google",
+    description:
+      "Count of canonical pages Search Console reports impressions or clicks for. Zero when GSC reports none; meaningless (and the tiles are hidden) when gsc_synced is false.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 610,
+  },
+  {
+    group: "google_coverage",
+    name: "gsc_no_sitemap",
+    label: "In Google, not in a sitemap",
+    description:
+      "Count of pages Google serves that no sitemap advertises — traffic the site is not declaring. Zero when the sitemaps cover everything Google reports; meaningless when gsc_synced is false.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 620,
+  },
+  {
+    group: "google_coverage",
+    name: "sitemap_no_gsc",
+    label: "Advertised, invisible to Google",
+    description:
+      "Count of sitemap-advertised pages Search Console never reports — declared but earning nothing in search. Zero when Google reports every advertised page; meaningless when gsc_synced is false.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 630,
+  },
+
+  // ── Navigation ────────────────────────────────────────────────────────
+  {
+    group: "navigation",
+    name: "coverage_filters",
+    label: "Coverage filter destinations",
+    description:
+      "The filtered page-list destination behind every tile: per cell its filter key, human label, current count, and the pages-table URL that lists exactly those pages. Use it to name a concrete destination when recommending work. Always emitted once the workspace has loaded.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 1400,
+    autoContext: false,
+    sortOrder: 700,
+  },
 ];
 
 export const marketingCoverageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-coverage",
-  readiness: "partial",
-  readinessNote: "Values emitted; no groups",
+  readiness: "verified",
   label: "Marketing Coverage Matrix",
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/coverage",
   inheritsFrom: "matrx-user/marketing-site",
@@ -58,8 +227,9 @@ export const marketingCoverageManifest: SurfaceManifest = {
 You are on the coverage matrix of a managed website: where the evidence sources — sitemaps, crawls, first-source provenance, and Google Search Console — agree and disagree about the canonical page registry. The brand_context and site_context values give you the client and website framing; read them first.
 The disagreement cells are the intelligence: pages advertised in sitemaps but never crawled, pages crawled that no sitemap advertises, pages Google serves traffic to that no sitemap mentions, and advertised pages Google never reports. Every count in coverage_matrix is derived from stored registry evidence — trust the numbers, never re-derive or estimate them.
 Check gsc_synced before reasoning about the Google cells: when it is false, Search Console evidence has never been collected and those cells mean nothing yet — the right recommendation is to connect and sync GSC, not to interpret absent data.
-The user triages indexation health here; each cell corresponds to a filtered page list, so recommendations should name the specific coverage cell (and its pages filter) the user should work through.
+The user triages indexation health here; each cell corresponds to a filtered page list, so recommendations should name the specific coverage cell (and its pages filter) the user should work through — coverage_filters carries every cell's filter key, count, and destination URL.
 </surface_intro>`,
+  groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
@@ -97,9 +267,21 @@ export function createMarketingCoverageScope(values: {
   site_id: string;
   // surface-specific optionals
   coverage_matrix?: Record<string, unknown>;
+  total_pages?: number;
+  in_sitemaps?: number;
+  crawled?: number;
+  never_crawled?: number;
+  sitemap_not_crawled?: number;
+  crawled_no_sitemap?: number;
+  pages_by_provenance?: Record<string, unknown>;
   gsc_synced?: boolean;
+  in_gsc?: number;
+  gsc_no_sitemap?: number;
+  sitemap_no_gsc?: number;
+  coverage_filters?: Array<Record<string, unknown>>;
   // inherited optionals
   brand_name?: string;
+  gsc_synced_at?: string;
   brand_context?: string;
   brand_profile?: Record<string, unknown>;
   site_name?: string;

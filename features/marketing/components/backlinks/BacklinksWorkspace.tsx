@@ -704,12 +704,43 @@ export function BacklinksWorkspace() {
           backlink_trend: (trend.data ?? []).slice(-30).map((point) => ({
             ...point,
           })),
+          backlink_profile: summary
+            ? {
+                summary: {
+                  total_backlinks: summary.total_backlinks,
+                  referring_domains: summary.referring_domains,
+                  dofollow_backlinks: summary.dofollow_backlinks,
+                  nofollow_backlinks: summary.nofollow_backlinks,
+                  rank_score: summary.rank_score,
+                  collected_at: summary.created_at,
+                },
+                referring_domain_count: data?.referringDomains.length ?? 0,
+                anchor_count: data?.anchors.length ?? 0,
+                target_page_count: data?.targetPages.length ?? 0,
+                competitor_count: data?.competitors.length ?? 0,
+                trend_points: (trend.data ?? []).length,
+              }
+            : undefined,
           backlinks_table_state: {
             total_recorded: backlinks.data?.total ?? 0,
             loaded_rows: backlinks.data?.rows.length ?? 0,
             page: table.state.page,
             search: table.state.search || null,
           },
+          backlink_rows: backlinks.data?.rows.map((row) =>
+            projectBacklinkRow(row),
+          ) as Array<Record<string, unknown>> | undefined,
+          backlinks_collected_at: detailSnapshot?.created_at ?? undefined,
+          refresh_schedule: {
+            enabled: savedSchedule.enabled,
+            cadence: savedSchedule.cadence,
+            detail_limit: savedSchedule.detailLimit,
+          },
+          refresh_profile: profile,
+          seo_environment: seoTarget?.environment ?? undefined,
+          refresh_receipt: receipt
+            ? (receipt as unknown as Record<string, unknown>)
+            : undefined,
         })
       }
     >

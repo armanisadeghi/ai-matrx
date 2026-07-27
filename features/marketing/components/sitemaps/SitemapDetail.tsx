@@ -134,6 +134,17 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
   }
 
   const doc = sitemap.data;
+  /** The surface's `open_sitemap` shape — one document, emitted twice. */
+  const openSitemap: Record<string, unknown> = {
+    url: doc.url,
+    kind: doc.kind,
+    http_status: doc.status_code,
+    url_count: doc.url_count,
+    child_count: doc.child_count,
+    is_active: doc.is_active,
+    fetch_error: doc.fetch_error,
+    last_fetched_at: doc.last_fetched_at,
+  };
   const sitemapCopy = webCopy({
     kind: "web-sitemap",
     label: `Sitemap ${doc.url}`,
@@ -158,18 +169,24 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
         createMarketingSitemapsScope({
           ...getBaseValues(),
           sitemap_id: sitemapId,
-          sitemaps_summary: [
-            {
-              url: doc.url,
-              kind: doc.kind,
-              http_status: doc.status_code,
-              url_count: doc.url_count,
-              child_count: doc.child_count,
-              is_active: doc.is_active,
-              fetch_error: doc.fetch_error,
-              last_fetched_at: doc.last_fetched_at,
-            },
-          ],
+          sitemaps_summary: [openSitemap],
+          open_sitemap: openSitemap,
+          sitemap_pages: (pages.data?.rows ?? []).map((row) => ({
+            page_id: row.page_id,
+            path: row.page.path,
+            url: row.page.url,
+            crawled: Boolean(row.page.latest_snapshot_id),
+            status: row.page.status,
+            membership_count: row.membership_count,
+            lastmod: row.lastmod,
+          })),
+          sitemap_pages_table_state: {
+            total_matching: pages.data?.total ?? 0,
+            loaded_rows: pages.data?.rows.length ?? 0,
+            page: table.state.page,
+            search: table.state.search || null,
+            listed_filter: filter,
+          },
         })
       }
     >

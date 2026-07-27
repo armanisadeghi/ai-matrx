@@ -10,6 +10,7 @@ import { useCoverageMatrix } from "@/features/marketing/data/hooks";
 import type {
   PageCoverageFilter,
   PageProvenance,
+  SiteCoverageMatrix,
 } from "@/features/marketing/data/service";
 import { PAGE_PROVENANCES } from "@/features/marketing/data/service";
 import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
@@ -29,6 +30,25 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
+
+/**
+ * Every coverage cell rendered as a tile, paired with the matrix field it
+ * counts. ONE list so the tiles, the surface `coverage_filters` value, and the
+ * pages-table destinations can never drift apart.
+ */
+const COVERAGE_TILE_FILTERS: ReadonlyArray<{
+  filter: PageCoverageFilter;
+  count: (matrix: SiteCoverageMatrix) => number;
+}> = [
+  { filter: "in_sitemap", count: (m) => m.inSitemaps },
+  { filter: "crawled", count: (m) => m.crawled },
+  { filter: "never_crawled", count: (m) => m.neverCrawled },
+  { filter: "sitemap_not_crawled", count: (m) => m.sitemapNotCrawled },
+  { filter: "crawled_no_sitemap", count: (m) => m.crawledNoSitemap },
+  { filter: "in_gsc", count: (m) => m.inGsc },
+  { filter: "gsc_no_sitemap", count: (m) => m.gscNoSitemap },
+  { filter: "sitemap_no_gsc", count: (m) => m.sitemapNoGsc },
+];
 
 const PROVENANCE_COPY: Record<
   PageProvenance,
@@ -200,7 +220,26 @@ export function CoverageWorkspace() {
         createMarketingCoverageScope({
           ...getBaseValues(),
           coverage_matrix: data ? { ...data } : undefined,
+          total_pages: data?.totalPages,
+          in_sitemaps: data?.inSitemaps,
+          crawled: data?.crawled,
+          never_crawled: data?.neverCrawled,
+          sitemap_not_crawled: data?.sitemapNotCrawled,
+          crawled_no_sitemap: data?.crawledNoSitemap,
+          pages_by_provenance: data ? { ...data.byProvenance } : undefined,
           gsc_synced: Boolean(site.gsc_synced_at),
+          in_gsc: data?.inGsc,
+          gsc_no_sitemap: data?.gscNoSitemap,
+          sitemap_no_gsc: data?.sitemapNoGsc,
+          coverage_filters: data
+            ? COVERAGE_TILE_FILTERS.map((tile) => ({
+                filter: tile.filter,
+                label: COVERAGE_FILTER_COPY[tile.filter].label,
+                description: COVERAGE_FILTER_COPY[tile.filter].description,
+                count: tile.count(data),
+                pages_url: pagesHref(tile.filter),
+              }))
+            : undefined,
         })
       }
     >
