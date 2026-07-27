@@ -69,6 +69,9 @@ import {
   updateBusinessFact,
   fetchSiteAuditRows,
   fetchSiteAuditTrendRows,
+  getPageContent,
+  savePageContent,
+  updatePageDesiredValues,
   updatePageIntent,
   updateProperty,
   updateSiteIdentity,
@@ -90,7 +93,10 @@ import type {
   PageCoverageFilter,
   SitemapPagesFilter,
 } from "@/features/marketing/data/service";
-import type { DiscoveredItemStatus } from "@/features/marketing/types";
+import type {
+  DiscoveredItemStatus,
+  UpdatePageDesiredValuesInput,
+} from "@/features/marketing/types";
 
 export const marketingKeys = {
   root: ["marketing"] as const,
@@ -242,6 +248,44 @@ export function useUpdatePageIntent() {
       });
       void queryClient.invalidateQueries({
         queryKey: [...marketingKeys.site(page.site_id), "pages"],
+      });
+    },
+  });
+}
+
+/** The ONE mutation every desired-value card section saves through. */
+export function useUpdatePageDesiredValues() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdatePageDesiredValuesInput) =>
+      updatePageDesiredValues(input),
+    onSuccess: (page) => {
+      void queryClient.invalidateQueries({
+        queryKey: marketingKeys.page(page.site_id, page.id),
+      });
+    },
+  });
+}
+
+/** Authored draft content (1:1 web.page_content); null until first save. */
+export function usePageContent(siteId: string, pageId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.page(siteId, pageId), "draft-content"] as const,
+    queryFn: ({ signal }) => getPageContent(siteId, pageId, signal),
+    enabled: Boolean(siteId && pageId),
+  });
+}
+
+export function useSavePageContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: savePageContent,
+    onSuccess: (row) => {
+      void queryClient.invalidateQueries({
+        queryKey: [
+          ...marketingKeys.page(row.site_id, row.page_id),
+          "draft-content",
+        ],
       });
     },
   });

@@ -45,6 +45,7 @@ import {
   FolderGit2,
   FolderKanban,
   GitBranch,
+  Globe,
   Layers,
   Layers3,
   LayoutTemplate,
@@ -354,6 +355,16 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     titleColumn: "title",
     hrefFor: (id) => `/tasks/${id}`,
     contentRole: "container",
+  },
+
+  // ─── Web (canonical pages — the marketing page workspace anchors here) ────
+  web_page: {
+    Icon: Globe,
+    labelPlural: "Canonical Pages",
+    // titleColumn comes from the DB metadata ('url'); hrefFor resolves the
+    // nested brand/site route via a tiny server redirect.
+    hrefFor: (id) => `/marketing/pages/${id}`,
+    contentRole: "source",
   },
 
   // ─── Container display only (candidates come from the scope tree, not a

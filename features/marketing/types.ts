@@ -481,6 +481,68 @@ export interface UpdatePageIntentInput {
   desiredMetaDescription: string | null;
 }
 
+// ─── Desired values (web.page.desired_values jsonb) ─────────────────────────
+// The per-area desired-state mirror. Each card owns ONE key and saves through
+// the single read-merge-write path (updatePageDesiredValues) so two cards can
+// never clobber each other's areas. Add a key here + a card section — no
+// migration needed.
+
+export interface DesiredHeadingEntry {
+  level: number;
+  text: string;
+}
+
+export type DesiredImagePlanStatus = "planned" | "generated" | "placed";
+
+export interface DesiredImagePlanEntry {
+  id: string;
+  description: string;
+  alt: string;
+  placement: string;
+  status: DesiredImagePlanStatus;
+  file_id: string | null;
+}
+
+export interface PageDesiredValues {
+  social_card?: { og_title?: string; og_description?: string };
+  h1?: string;
+  headings_outline?: DesiredHeadingEntry[];
+  canonical_url?: string;
+  meta_robots?: string;
+  structured_data_notes?: string;
+  image_plan?: DesiredImagePlanEntry[];
+  /** Desired alt text per observed image src. */
+  image_alts?: Record<string, string>;
+  additional_content_notes?: string;
+}
+
+export type PageDesiredValuesKey = keyof PageDesiredValues;
+
+/** Loose reader over the jsonb column — unknown keys survive round-trips. */
+export function readPageDesiredValues(page: MarketingPage): PageDesiredValues {
+  const raw = page.desired_values;
+  return isJsonRecord(raw) ? (raw as PageDesiredValues) : {};
+}
+
+export interface UpdatePageDesiredValuesInput {
+  siteId: string;
+  pageId: string;
+  /** Only the caller's own keys — merged over the fresh row server-side value. */
+  patch: Partial<PageDesiredValues>;
+}
+
+// ─── Authored draft content (web.page_content, 1:1 with web.page) ───────────
+
+export type PageContent = WebTables["page_content"]["Row"];
+
+export interface SavePageContentInput {
+  siteId: string;
+  pageId: string;
+  content: string;
+  /** Version of the row being replaced; null when creating the first row. */
+  expectedVersion: number | null;
+}
+
 export interface MarketingTableStateOptions {
   defaultSort: NonNullable<MatrxDataTableQueryState["sort"]>;
   defaultPageSize?: number;

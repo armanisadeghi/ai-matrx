@@ -141,6 +141,8 @@ export const ASSOCIATION_TARGET_TYPES = [
   "plan_entity", //          a Content Planning person/source/media/org — plan_node role edges (about/cites/embeds/authored_by/reviewed_by) target it
   "seo_topic", //            a taxonomy topic — plan_node/plan_entity tag into it (role 'topic')
   "seo_keyword", //          a keyword — plan_node attaches secondaries (role 'secondary_keyword'; the primary is an FK, never an edge)
+  "web_page", //             a canonical page — the page workspace attaches notes/tasks/files/keywords onto it (keyword edges: role 'primary'|'supporting')
+  "web_screenshot", //       a page capture — per-image attachments on the page workspace
 ] as const satisfies readonly EntityTypeToken[];
 
 export type AssociationTargetType = (typeof ASSOCIATION_TARGET_TYPES)[number];

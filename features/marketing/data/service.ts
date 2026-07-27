@@ -46,6 +46,10 @@ import type {
   UpdateBrandAssetInput,
   UpdateBrandInput,
   UpdateBusinessFactInput,
+  PageContent,
+  PageDesiredValues,
+  SavePageContentInput,
+  UpdatePageDesiredValuesInput,
   UpdatePageIntentInput,
   UpdatePropertyInput,
   UpdateSiteIdentityInput,
@@ -527,7 +531,7 @@ export async function listBrandOptions(
 
 /** Every `web.page` column — ONE list so selects can never drift per call site. */
 export const PAGE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, latest_snapshot_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, desired_values, latest_snapshot_id";
 
 /** Every `web.snapshot` column — ONE list so selects can never drift per call site. */
 export const SNAPSHOT_COLUMNS =
@@ -1056,6 +1060,108 @@ export async function updatePageIntent(
   if (!response.data) {
     throw new Error(
       "This page changed in another session. Reload and try again.",
+    );
+  }
+  return response.data;
+}
+
+/**
+ * The ONE write path for `web.page.desired_values`. Read-merge-write: fetch
+ * the fresh row (values + version), shallow-merge ONLY the caller's keys over
+ * it, and update guarded by that fresh version. Two cards saving different
+ * areas can never clobber each other; a true concurrent edit of the same page
+ * still trips the version guard (one silent retry, then a loud error).
+ */
+export async function updatePageDesiredValues(
+  input: UpdatePageDesiredValuesInput,
+  attempt = 0,
+): Promise<MarketingPage> {
+  const db = await authenticatedWebDb(supabase);
+  const freshResponse = await db
+    .from("page")
+    .select("desired_values, version")
+    .eq("site_id", input.siteId)
+    .eq("id", input.pageId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  const fresh = assertFound(freshResponse.data, freshResponse.error, "page");
+  const current: PageDesiredValues = isJsonRecord(fresh.desired_values)
+    ? (fresh.desired_values as PageDesiredValues)
+    : {};
+  const merged = { ...current, ...input.patch };
+  const response = await db
+    .from("page")
+    .update({ desired_values: merged as PageUpdate["desired_values"] })
+    .eq("site_id", input.siteId)
+    .eq("id", input.pageId)
+    .eq("version", fresh.version)
+    .is("deleted_at", null)
+    .select(PAGE_COLUMNS)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) {
+    if (attempt === 0) return updatePageDesiredValues(input, 1);
+    throw new Error(
+      "This page changed in another session. Reload and try again.",
+    );
+  }
+  return response.data;
+}
+
+/** Authored draft content row for a page (1:1); null until first save. */
+export async function getPageContent(
+  siteId: string,
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<PageContent | null> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("page_content")
+    .select("*")
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  return response.data;
+}
+
+/**
+ * Explicit save of the authored draft (create-on-first-save). Own version
+ * lock — draft saves deliberately never touch `web.page.version`, so they can
+ * never fail an intent save.
+ */
+export async function savePageContent(
+  input: SavePageContentInput,
+): Promise<PageContent> {
+  const db = await authenticatedWebDb(supabase);
+  if (input.expectedVersion === null) {
+    const response = await db
+      .from("page_content")
+      .insert({
+        site_id: input.siteId,
+        page_id: input.pageId,
+        content: input.content,
+      })
+      .select("*")
+      .maybeSingle();
+    if (response.error) throw response.error;
+    if (!response.data) throw new Error("Draft create returned no row.");
+    return response.data;
+  }
+  const response = await db
+    .from("page_content")
+    .update({ content: input.content })
+    .eq("site_id", input.siteId)
+    .eq("page_id", input.pageId)
+    .eq("version", input.expectedVersion)
+    .is("deleted_at", null)
+    .select("*")
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) {
+    throw new Error(
+      "This draft changed in another session. Reload and try again.",
     );
   }
   return response.data;
