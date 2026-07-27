@@ -1,0 +1,121 @@
+{
+  "_comment": "Shared fixture for the TS scorer (score.ts) and its SQL mirror (public.agx_search_score). Both must produce these scores. Regenerate the SQL side with scripts/check-search-score-parity.sql when weights change.",
+  "cases": [
+    {
+      "why": "name exact",
+      "query": "image",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "image"
+      },
+      "score": 10000
+    },
+    {
+      "why": "name starts-with",
+      "query": "image",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Image Prompt Generator"
+      },
+      "score": 5000
+    },
+    {
+      "why": "name word-boundary mid-string",
+      "query": "image",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Basic Image Generator"
+      },
+      "score": 3000
+    },
+    {
+      "why": "name substring not on a word boundary (plural)",
+      "query": "image",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Generate Images with Styles"
+      },
+      "score": 2000
+    },
+    {
+      "why": "description only \u2014 MUST rank below any name match",
+      "query": "image",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "App Description Generator",
+        "description": "Generates an image for the listing"
+      },
+      "score": 500
+    },
+    {
+      "why": "category only",
+      "query": "vision",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Helper",
+        "category": "Vision Tools"
+      },
+      "score": 300
+    },
+    {
+      "why": "tag only",
+      "query": "seo",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Helper",
+        "tags": [
+          "matrx-seo"
+        ]
+      },
+      "score": 300
+    },
+    {
+      "why": "shared-by email",
+      "query": "arman",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Helper",
+        "sharedByEmail": "arman@armansadeghi.com"
+      },
+      "score": 200
+    },
+    {
+      "why": "id exact wins outright",
+      "query": "11111111-1111-1111-1111-111111111111",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Helper"
+      },
+      "score": 100000
+    },
+    {
+      "why": "no match",
+      "query": "zzzznope",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Helper",
+        "description": "nothing"
+      },
+      "score": 0
+    },
+    {
+      "why": "multi-term, all terms land, name-weighted",
+      "query": "image gen",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Picture Imagerator",
+        "description": "gen tool"
+      },
+      "score": 500
+    },
+    {
+      "why": "multi-term, one term missing = no match",
+      "query": "image zzzznope",
+      "agent": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Basic Image Generator"
+      },
+      "score": 0
+    }
+  ]
+}

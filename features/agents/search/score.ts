@@ -13,6 +13,20 @@
 //
 // Adding a field? Add it here and it lights up on every surface at once.
 // Never fork this function.
+//
+// ── SQL PARITY (load-bearing) ───────────────────────────────────────────────
+// `public.agx_search_score` in migrations/agx_search_score.sql is the SQL
+// mirror of this function. Server-side paging FORCES a second implementation —
+// relevance has to be computed before LIMIT, which the browser cannot do — but
+// the two must stay in lockstep.
+//
+// CHANGE ONE, CHANGE THE OTHER IN THE SAME COMMIT, and keep the weights below
+// identical to the SQL constants. Guarded by score.parity.test.ts against the
+// shared fixture in __fixtures__/search-score-parity.json.
+//
+// This is not hypothetical: /agents/all shipped with a flat SQL `ILIKE OR` and
+// no ranking at all, so a description match tied with a name match and
+// searching "image" buried every image agent under unrelated ones.
 
 /**
  * The structural shape a record needs to be searchable. Every field except
@@ -55,6 +69,9 @@ export function computeAgentSearchScore(
 
   if (name === q) score += 10000;
   else if (name.startsWith(q)) score += 5000;
+  // Word-boundary beats a mid-word substring: "image" ranks
+  // "Basic Image Generator" above "Reimagine Helper".
+  else if (matchesWholeWord(name, q)) score += 3000;
   else if (name.includes(q)) score += 2000;
 
   if (desc === q) score += 1000;
@@ -75,7 +92,36 @@ export function computeAgentSearchScore(
   // Helps find agents shared by a specific person.
   if (agent.sharedByEmail?.toLowerCase().includes(q)) score += 200;
 
+  // Multi-term fallback: "image gen" matches nothing as a phrase. Score per
+  // TERM, and only when EVERY term lands somewhere — so multi-word searches
+  // work without degrading into a loose OR that matches half the list.
+  if (score === 0 && q.includes(" ")) {
+    const terms = q.split(/\s+/).filter(Boolean);
+    let hits = 0;
+    let termScore = 0;
+    for (const term of terms) {
+      const inName = name.includes(term);
+      const matched =
+        inName ||
+        desc.includes(term) ||
+        (agent.category?.toLowerCase().includes(term) ?? false) ||
+        (agent.tags?.some((t) => t.toLowerCase().includes(term)) ?? false);
+      if (matched) {
+        hits += 1;
+        termScore += inName ? 400 : 100;
+      }
+    }
+    // All-or-nothing: a partial term match is not a match.
+    if (hits === terms.length) score += termScore;
+  }
+
   return score;
+}
+
+/** True when `q` appears in `haystack` on word boundaries. */
+function matchesWholeWord(haystack: string, q: string): boolean {
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b${escaped}\\b`).test(haystack);
 }
 
 /** True when the agent matches the query at all. */
