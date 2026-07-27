@@ -89,7 +89,7 @@ export function ChatRunHeader({
             appContextSlice; Clear lives in the tree footer. */}
         <ActiveContextLensChip
           conversationId={conversationId}
-          className="shrink-0"
+          className="min-w-0"
         />
       </div>
       <div className="flex shrink-0 items-center gap-1">

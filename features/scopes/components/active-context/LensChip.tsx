@@ -56,25 +56,22 @@ export function summarizeLensSelection(nodes: LensChipNode[]): string {
     "project",
     "task",
   ];
-  return order.flatMap((k) => {
-    if (!counts.has(k)) return [];
-    if (k === "org") {
-      const labels = nodes
-        .filter((node) => node.kind === "org")
-        .map((node) => node.label?.trim())
-        .filter((label): label is string => Boolean(label));
-      const unlabeledCount = (counts.get(k) ?? 0) - labels.length;
-      return [
-        ...labels,
-        ...(unlabeledCount > 0
-          ? [
-              `${unlabeledCount} ${
-                plural[k][unlabeledCount === 1 ? 0 : 1]
-              }`,
-            ]
-          : []),
-      ];
-    }
+  return order
+    .flatMap((k) => {
+      if (!counts.has(k)) return [];
+      if (k === "org") {
+        const labels = nodes
+          .filter((node) => node.kind === "org")
+          .map((node) => node.label?.trim())
+          .filter((label): label is string => Boolean(label));
+        const unlabeledCount = (counts.get(k) ?? 0) - labels.length;
+        return [
+          ...labels,
+          ...(unlabeledCount > 0
+            ? [`${unlabeledCount} ${plural[k][unlabeledCount === 1 ? 0 : 1]}`]
+            : []),
+        ];
+      }
 
       const c = counts.get(k) ?? 0;
       return [`${c} ${plural[k][c === 1 ? 0 : 1]}`];
@@ -105,7 +102,7 @@ export function LensChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-xs text-foreground hover:bg-muted",
+        "inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card px-2.5 text-xs text-foreground hover:bg-muted",
         className,
       )}
     >
@@ -116,7 +113,7 @@ export function LensChip({
         </>
       ) : (
         <>
-          <span className="flex items-center -space-x-0.5">
+          <span className="flex shrink-0 items-center -space-x-0.5">
             {dots.map((s) => (
               <span
                 key={s}
@@ -124,10 +121,12 @@ export function LensChip({
               />
             ))}
           </span>
-          <span>{summarizeLensSelection(nodes)}</span>
+          <span className="min-w-0 truncate">
+            {summarizeLensSelection(nodes)}
+          </span>
         </>
       )}
-      <ChevronsUpDown className="h-3 w-3 text-muted-foreground" />
+      <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
     </button>
   );
 }

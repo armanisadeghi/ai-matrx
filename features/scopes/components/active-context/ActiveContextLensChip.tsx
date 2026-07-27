@@ -95,12 +95,12 @@ export function ActiveContextLensChip({
     <ActiveContextTree
       conversationId={conversationId}
       maxHeight={isMobile ? 420 : 320}
-      className="w-[320px]"
+      className={isMobile ? "mx-3 mb-3 w-auto" : "w-[320px]"}
     />
   ) : null;
 
   const trigger = (
-    <span className="inline-flex max-w-full">
+    <span className="inline-flex min-w-0 max-w-full overflow-hidden">
       <LensChip
         nodes={chipNodes}
         onClick={isMobile ? () => setOpen(true) : () => {}}
@@ -110,7 +110,7 @@ export function ActiveContextLensChip({
   );
 
   return (
-    <div className="inline-flex min-w-0 items-center">
+    <div className="inline-flex min-w-0 max-w-full items-center overflow-hidden">
       {isMobile ? (
         <>
           {trigger}

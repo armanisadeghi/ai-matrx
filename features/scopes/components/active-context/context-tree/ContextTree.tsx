@@ -72,7 +72,6 @@ interface TreeRow {
   add?: { placeholder: string; commit: (v: string) => void };
 }
 
-const ROW_H = 22;
 const INDENT = 12;
 
 export function ContextTree({
@@ -613,8 +612,8 @@ export function ContextTree({
       )}
 
       {showSearch && (
-        <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border px-1.5">
-          <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
+        <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-2 md:h-7 md:gap-1.5 md:px-1.5">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground md:h-3 md:w-3" />
           <input
             autoFocus={autoFocus}
             value={query}
@@ -682,25 +681,25 @@ export function ContextTree({
                 onMouseEnter={() => setActive(i)}
                 onClick={() => onRowClick(r)}
                 className={cn(
-                  "flex cursor-pointer items-center gap-1 pr-1.5",
+                  "flex h-9 cursor-pointer items-center gap-1.5 pr-2 md:h-[22px] md:gap-1 md:pr-1.5",
                   i === activeIdx ? "bg-accent" : "hover:bg-muted/60",
                 )}
-                style={{ height: ROW_H, paddingLeft: 4 + r.depth * INDENT }}
+                style={{ paddingLeft: 4 + r.depth * INDENT }}
               >
                 {r.expandable ? (
                   <ChevronRight
                     className={cn(
-                      "h-3 w-3 shrink-0 text-muted-foreground/70 transition-transform",
+                      "h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform md:h-3 md:w-3",
                       open && "rotate-90",
                     )}
                   />
                 ) : (
-                  <span className="w-3 shrink-0" />
+                  <span className="w-4 shrink-0 md:w-3" />
                 )}
                 {r.icon}
                 <span
                   className={cn(
-                    "min-w-0 flex-1 truncate text-xs",
+                    "min-w-0 flex-1 truncate text-sm md:text-xs",
                     r.tone,
                     r.isCreate && "text-primary",
                   )}
@@ -730,7 +729,7 @@ export function ContextTree({
                       e.stopPropagation();
                       doSelect(r, true);
                     }}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center md:h-5 md:w-5"
                   >
                     <CheckGlyph on={on} />
                   </button>
@@ -741,21 +740,21 @@ export function ContextTree({
         )}
       </div>
 
-      <div className="flex h-6 shrink-0 items-center gap-2 border-t border-border bg-muted/30 px-1.5">
+      <div className="flex h-9 shrink-0 items-center gap-2 border-t border-border bg-muted/30 px-2 md:h-6 md:px-1.5">
         {!isEmptySelection(selection) && onClear && (
           <button
             type="button"
             onClick={onClear}
-            className="inline-flex shrink-0 items-center gap-0.5 rounded bg-primary px-1 font-mono text-[9px] text-primary-foreground hover:bg-primary/90"
+            className="inline-flex h-7 shrink-0 items-center gap-0.5 rounded bg-primary px-2 font-mono text-[11px] text-primary-foreground hover:bg-primary/90 md:h-auto md:px-1 md:text-[9px]"
           >
-            <X className="h-2.5 w-2.5" />
+            <X className="h-3 w-3 md:h-2.5 md:w-2.5" />
             clear
           </button>
         )}
-        <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground">
+        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground md:text-[10px]">
           {summarizeSelection(selection)}
         </span>
-        <span className="shrink-0 font-mono text-[9px] text-muted-foreground">
+        <span className="shrink-0 font-mono text-[10px] text-muted-foreground md:text-[9px]">
           {mode === "single"
             ? "picks one"
             : `${selectionCount(selection)} selected`}

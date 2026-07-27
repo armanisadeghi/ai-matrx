@@ -43,7 +43,7 @@ export function ContextSheet({
       contentClassName="bg-card"
     >
       {title && <BottomSheetHeader title={title} trailing={headerTrailing} />}
-      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col pb-safe">{children}</div>
     </BottomSheet>
   );
 }
