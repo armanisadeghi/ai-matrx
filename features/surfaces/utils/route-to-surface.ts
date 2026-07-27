@@ -64,7 +64,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/user-settings", surface: "matrx-user/settings" },
   { prefix: "/data-tables", surface: "matrx-user/data-tables" },
   { prefix: "/data", surface: "matrx-user/data-tables" },
-  // CMS + War Room — manifests existed but were unreachable (no prefix).
+  // CMS: /cms and /cms/html-pages are plain prefixes; the site workspace
+  // nests a dynamic [siteId] and is resolved by resolveCmsSurface below.
   { prefix: "/cms/html-pages", surface: "matrx-user/html-page" },
   { prefix: "/cms", surface: "matrx-user/cms" },
   { prefix: "/war-room/all", surface: "matrx-user/war-room" },
@@ -160,6 +161,40 @@ function resolveMarketingSurface(stripped: string): string | null {
 }
 
 /**
+ * CMS nests a dynamic `[siteId]` (`/cms/[siteId]/pages/[pageId]`), so plain
+ * prefix matching can't tell the site workspace from the hub — every
+ * `/cms/<uuid>` route fell through to `matrx-user/cms`. First segment AFTER
+ * the site id picks the surface; page/component detail routes belong to their
+ * own editor surfaces.
+ */
+function resolveCmsSurface(stripped: string): string | null {
+  if (stripped !== "/cms" && !stripped.startsWith("/cms/")) return null;
+  const segments = stripped.split("/").filter(Boolean); // ["cms", ...]
+
+  // /cms/html-pages[...] and /cms/admin keep their own handling.
+  if (segments[1] === "html-pages") return "matrx-user/html-page";
+  if (segments[1] === "admin") return "matrx-user/cms";
+
+  // /cms/[siteId][...]
+  if (segments.length >= 2) {
+    const section = segments[2];
+    if (!section) return "matrx-user/cms-site";
+    // Page detail / new-page editor is the page surface; the pages LIST is
+    // part of the site workspace (it emits the site scope + tab extras).
+    if (section === "pages") {
+      return segments.length >= 4
+        ? "matrx-user/cms-page"
+        : "matrx-user/cms-site";
+    }
+    if (section === "components") return "matrx-user/cms-component";
+    // collections / settings configure the same entity — stay on the site.
+    return "matrx-user/cms-site";
+  }
+
+  return "matrx-user/cms";
+}
+
+/**
  * Resolve the active surface name from a pathname. Returns null when no
  * mapping matches — callers omit `client.surface` in that case and the
  * server resolves tools without DB surface inheritance.
@@ -180,6 +215,9 @@ export function surfaceFromPathname(
 
   const marketing = resolveMarketingSurface(stripped);
   if (marketing) return marketing;
+
+  const cms = resolveCmsSurface(stripped);
+  if (cms) return cms;
 
   for (const { prefix, surface } of SURFACE_ROUTE_MAPPINGS) {
     if (

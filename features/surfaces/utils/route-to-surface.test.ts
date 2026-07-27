@@ -107,3 +107,42 @@ describe("surfaceFromPathname — marketing tree", () => {
     expect(surfaceFromPathname("/agents/run")).toBe("matrx-user/agent-run");
   });
 });
+
+describe("CMS surface resolution (nested [siteId])", () => {
+  const SITE = "11111111-2222-3333-4444-555555555555";
+  const PAGE = "66666666-7777-8888-9999-000000000000";
+
+  it("hub and html-pages keep their own surfaces", () => {
+    expect(surfaceFromPathname("/cms")).toBe("matrx-user/cms");
+    expect(surfaceFromPathname("/cms/html-pages")).toBe("matrx-user/html-page");
+    expect(surfaceFromPathname(`/cms/html-pages/${PAGE}`)).toBe(
+      "matrx-user/html-page",
+    );
+    expect(surfaceFromPathname("/cms/admin")).toBe("matrx-user/cms");
+  });
+
+  it("site workspace and its configuring tabs resolve to cms-site", () => {
+    expect(surfaceFromPathname(`/cms/${SITE}`)).toBe("matrx-user/cms-site");
+    expect(surfaceFromPathname(`/cms/${SITE}/pages`)).toBe(
+      "matrx-user/cms-site",
+    );
+    expect(surfaceFromPathname(`/cms/${SITE}/collections`)).toBe(
+      "matrx-user/cms-site",
+    );
+    expect(surfaceFromPathname(`/cms/${SITE}/settings`)).toBe(
+      "matrx-user/cms-site",
+    );
+  });
+
+  it("page and component editors get their own surfaces", () => {
+    expect(surfaceFromPathname(`/cms/${SITE}/pages/${PAGE}`)).toBe(
+      "matrx-user/cms-page",
+    );
+    expect(surfaceFromPathname(`/cms/${SITE}/pages/new`)).toBe(
+      "matrx-user/cms-page",
+    );
+    expect(surfaceFromPathname(`/cms/${SITE}/components`)).toBe(
+      "matrx-user/cms-component",
+    );
+  });
+});
