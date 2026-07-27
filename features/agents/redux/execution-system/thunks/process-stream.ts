@@ -2817,12 +2817,16 @@ export async function processStream({
     // Push every render-block in the just-committed assistant turn(s) into
     // canvas_items immediately, stamp each with a UUID, and rewrite the message
     // content to its canonical `<artifact id>body</artifact>` text form (R1).
-    // Fire-and-forget: the raw
-    // content is already committed (Redux + server), the upserts are idempotent
-    // on (source_message_id, artifact_index), and the reconcile-on-load pass
-    // retries anything that doesn't finish — so a tab close mid-materialization
-    // never loses or duplicates an artifact. Loud on failure, never silent.
-    if (materializeTargets.length > 0) {
+    // Fire-and-forget: the raw content is already committed (Redux + server),
+    // the upserts are idempotent on (source_message_id, artifact_index), and
+    // the reconcile-on-load pass retries anything that doesn't finish — so a
+    // tab close mid-materialization never loses or duplicates an artifact.
+    //
+    // A transport-complete stream may still carry a terminal `agent_error`.
+    // In that case the persistence coordinator rolls back its earlier
+    // record_reserved rows, so those UUIDs are NOT durable chat.message ids
+    // and must never be used as canvas source FKs.
+    if (finalErrorMessage === null && materializeTargets.length > 0) {
       void Promise.all(
         materializeTargets.map((target) =>
           materializeMessageArtifacts({

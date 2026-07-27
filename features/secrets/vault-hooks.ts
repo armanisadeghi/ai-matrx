@@ -391,21 +391,28 @@ const REVEAL_CLEAR_MS = 30_000;
  */
 export function useTransientSecret(clearAfterMs: number = REVEAL_CLEAR_MS) {
   const [value, setValue] = useState<string | null>(null);
+  // When the auto-clear fires. A timestamp is NOT the secret, so surfacing it
+  // is safe — and showing the user that a revealed value hides itself is the
+  // difference between the rule feeling like a guarantee and a surprise.
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clear = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     setValue(null);
+    setExpiresAt(null);
   }, []);
 
   const hold = useCallback(
     (plaintext: string) => {
       if (timer.current) clearTimeout(timer.current);
       setValue(plaintext);
+      setExpiresAt(Date.now() + clearAfterMs);
       timer.current = setTimeout(() => {
         timer.current = null;
         setValue(null);
+        setExpiresAt(null);
       }, clearAfterMs);
     },
     [clearAfterMs],
@@ -413,5 +420,5 @@ export function useTransientSecret(clearAfterMs: number = REVEAL_CLEAR_MS) {
 
   useEffect(() => clear, [clear]);
 
-  return { value, hold, clear };
+  return { value, hold, clear, expiresAt };
 }

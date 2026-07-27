@@ -9,24 +9,23 @@
  * Revealed plaintext is component-local via `useTransientSecret` with a
  * ~30s auto-clear — never Redux, storage, or query caches.
  */
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   ArrowLeftRight,
   Building2,
   Check,
-  Copy,
-  Eye,
-  EyeOff,
   GitFork,
   Globe,
   History,
   Loader2,
   Lock,
+  MoreHorizontal,
   Pencil,
   Plus,
   RotateCcw,
   Settings2,
   Trash2,
+  TriangleAlert,
   UserPlus,
   Users,
   X,
@@ -36,6 +35,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -46,20 +51,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
-import {
-  useOrganizationMembers,
-  useUserOrganizations,
-} from "@/features/organizations/hooks";
-import { searchUserByEmail } from "@/features/organizations/userSearch";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 
+import { useVaultAudit, useVaultGrants, type VaultActions } from "../vault-hooks";
+import { resolveVaultFields } from "../vault-service";
 import {
-  useTransientSecret,
-  useVaultAudit,
-  useVaultGrants,
-  type VaultActions,
-} from "../vault-hooks";
-import { resolveVaultFields, revealVaultField } from "../vault-service";
+  envAliasIsRedundant,
+  fieldLabelOf,
+  identityFieldOf,
+  primarySecretFieldOf,
+} from "../credential-identity";
+import { SecretValue } from "./SecretValue";
 import {
   FIELD_KEY_RE,
   HANDLING_LABELS,
@@ -110,109 +114,167 @@ export function VaultItemDetail({
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState(item.display_name);
 
-  const fieldLabels = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const f of definition?.payload.fields ?? []) {
-      map.set(f.field_key, f.label);
-    }
-    return map;
-  }, [definition]);
+  const fieldLabels = new Map<string, string>(
+    (definition?.payload.fields ?? []).map((f) => [f.field_key, f.label]),
+  );
+
+  // The primary pair leads, exactly as a password manager does: who this signs
+  // in as, then the value that protects it. Everything else is subordinate.
+  const identityField = identityFieldOf(item);
+  const secretField = primarySecretFieldOf(item);
+  const primaryIds = new Set(
+    [identityField?.id, secretField?.id].filter((id): id is string => Boolean(id)),
+  );
+  const otherFields = item.fields.filter((f) => !primaryIds.has(f.id));
+
+  const renderField = (field: VaultField, emphasis: boolean) => (
+    <FieldRow
+      key={field.id}
+      item={item}
+      field={field}
+      label={fieldLabels.get(field.field_key) ?? null}
+      emphasis={emphasis}
+      busy={busy}
+      actions={actions}
+    />
+  );
+
+  const allOverflowActions: {
+    key: Panel;
+    icon: typeof Plus;
+    label: string;
+    show: boolean;
+  }[] = [
+    {
+      key: "transfer",
+      icon: ArrowLeftRight,
+      label: "Move scope",
+      show: caps.can_manage === true,
+    },
+    {
+      key: "give",
+      icon: UserPlus,
+      label: "Give ownership",
+      show: caps.can_manage === true && Boolean(item.user_id),
+    },
+    {
+      key: "fork",
+      icon: GitFork,
+      label: "Copy as independent",
+      show: caps.can_use === true,
+    },
+    { key: "audit", icon: History, label: "Audit trail", show: true },
+  ];
+  const overflowActions = allOverflowActions.filter((entry) => entry.show);
 
   return (
-    <div className="space-y-4">
-      {/* Header metadata */}
-      <div className="space-y-2">
-        {renaming ? (
-          <div className="flex items-center gap-2">
-            <Input
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              className="h-8"
-              autoFocus
-            />
-            <Button
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              disabled={busy || !nameDraft.trim()}
-              onClick={async () => {
-                await actions.updateItem(item.id, { display_name: nameDraft.trim() });
-                setRenaming(false);
-              }}
-              aria-label="Save name"
-            >
-              <Check className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 shrink-0"
-              onClick={() => {
-                setNameDraft(item.display_name);
-                setRenaming(false);
-              }}
-              aria-label="Cancel rename"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
+    <div className="space-y-3">
+      {/* Header metadata — the name and type live in the dialog title, so this
+          row carries only what the title cannot: provenance and lifecycle. */}
+      {renaming ? (
+        <div className="flex items-center gap-2">
+          <Input
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            className="h-9"
+            autoFocus
+          />
+          <Button
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            disabled={busy || !nameDraft.trim()}
+            onClick={async () => {
+              await actions.updateItem(item.id, { display_name: nameDraft.trim() });
+              setRenaming(false);
+            }}
+            aria-label="Save name"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 shrink-0"
+            onClick={() => {
+              setNameDraft(item.display_name);
+              setRenaming(false);
+            }}
+            aria-label="Cancel rename"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        (item.provider_key ||
+          item.status !== "active" ||
+          item.organization_id ||
+          item.description ||
+          caps.can_edit) && (
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary" className="font-normal">
-              {definition?.payload.label ?? item.definition_key}
-            </Badge>
             {item.provider_key && (
               <Badge variant="outline" className="font-normal">
                 {item.provider_key}
               </Badge>
             )}
-            <Badge variant="outline" className="font-normal capitalize">
-              {item.status.replaceAll("_", " ")}
-            </Badge>
+            {item.status !== "active" && (
+              <Badge
+                variant="outline"
+                className="border-warning/40 font-normal capitalize text-warning"
+              >
+                {item.status.replaceAll("_", " ")}
+              </Badge>
+            )}
             {item.organization_id && (
               <Badge variant="outline" className="gap-1 font-normal">
                 <Building2 className="h-3 w-3" />
                 {item.access_mode === "all_members" ? "All members" : "Restricted"}
               </Badge>
             )}
+            {item.description && (
+              <span className="min-w-0 truncate text-xs text-muted-foreground">
+                {item.description}
+              </span>
+            )}
             {caps.can_edit && (
               <Button
-                size="icon"
+                size="sm"
                 variant="ghost"
-                className="h-6 w-6"
+                className="ml-auto h-7 px-2 text-xs text-muted-foreground"
                 onClick={() => setRenaming(true)}
-                aria-label="Rename credential"
               >
-                <Pencil className="h-3 w-3" />
+                <Pencil className="mr-1.5 h-3 w-3" />
+                Rename
               </Button>
             )}
           </div>
-        )}
-        {item.description && (
-          <p className="text-xs text-muted-foreground">{item.description}</p>
-        )}
-      </div>
+        )
+      )}
 
-      {/* Destination — where this login is used, and whether Matrx may fill it */}
+      {/* The credential itself — always first, always the loudest thing here */}
+      {item.fields.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+          No active fields on this credential.
+        </p>
+      ) : (
+        <div className="space-y-1.5">
+          {identityField && renderField(identityField, true)}
+          {secretField && renderField(secretField, true)}
+          {otherFields.length > 0 && (
+            <div className="space-y-1.5 pt-1.5">
+              {primaryIds.size > 0 && (
+                <p className="px-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Other fields
+                </p>
+              )}
+              {otherFields.map((field) => renderField(field, false))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Destination — after the credential, because for an API key it is a
+          footnote and only for a website login is it part of the identity. */}
       <DestinationSection item={item} busy={busy} actions={actions} caps={caps} />
-
-      {/* Login — the encrypted fields */}
-      <div className="space-y-2">
-        {item.fields.map((field) => (
-          <FieldRow
-            key={field.id}
-            item={item}
-            field={field}
-            label={fieldLabels.get(field.field_key) ?? null}
-            busy={busy}
-            actions={actions}
-          />
-        ))}
-        {item.fields.length === 0 && (
-          <p className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-            No active fields on this credential.
-          </p>
-        )}
-      </div>
 
       {/* Notes and other details — deliberately plaintext, loudly labelled */}
       <NotEncryptedSection
@@ -222,8 +284,9 @@ export function VaultItemDetail({
         canEdit={caps.can_edit === true}
       />
 
-      {/* Action bar */}
-      <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+      {/* Action bar — the three everyday actions stay in reach; the rare and
+          irreversible ones live one deliberate click away. */}
+      <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
         {caps.can_edit && (
           <ActionToggle
             panel="add-field"
@@ -251,49 +314,36 @@ export function VaultItemDetail({
             label="Share"
           />
         )}
-        {caps.can_manage && (
-          <ActionToggle
-            panel="transfer"
-            current={panel}
-            setPanel={setPanel}
-            icon={ArrowLeftRight}
-            label="Move scope"
-          />
+        {overflowActions.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8">
+                <MoreHorizontal className="mr-1.5 h-4 w-4" />
+                More
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {overflowActions.map(({ key, icon: Icon, label }) => (
+                <DropdownMenuItem
+                  key={key}
+                  onSelect={() => setPanel(panel === key ? "none" : key)}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
-        {caps.can_manage && item.user_id && (
-          <ActionToggle
-            panel="give"
-            current={panel}
-            setPanel={setPanel}
-            icon={UserPlus}
-            label="Give ownership"
-          />
-        )}
-        {caps.can_use && (
-          <ActionToggle
-            panel="fork"
-            current={panel}
-            setPanel={setPanel}
-            icon={GitFork}
-            label="Copy as independent"
-          />
-        )}
-        <ActionToggle
-          panel="audit"
-          current={panel}
-          setPanel={setPanel}
-          icon={History}
-          label="Audit"
-        />
         {caps.can_manage && (
           <Button
             size="sm"
             variant="ghost"
-            className="ml-auto text-destructive hover:text-destructive"
+            className="ml-auto h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
             disabled={busy}
             onClick={() => setConfirmDelete(true)}
           >
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+            <Trash2 className="mr-1.5 h-4 w-4" />
             Delete
           </Button>
         )}
@@ -393,13 +443,16 @@ function ActionToggle({
   icon: typeof Plus;
   label: string;
 }) {
+  const active = current === panel;
   return (
     <Button
       size="sm"
-      variant={current === panel ? "secondary" : "ghost"}
-      onClick={() => setPanel(current === panel ? "none" : panel)}
+      variant="ghost"
+      aria-pressed={active}
+      className={cn("h-8", active && "bg-accent text-accent-foreground")}
+      onClick={() => setPanel(active ? "none" : panel)}
     >
-      <Icon className="mr-1.5 h-3.5 w-3.5" />
+      <Icon className="mr-1.5 h-4 w-4" />
       {label}
     </Button>
   );
@@ -411,175 +464,123 @@ function FieldRow({
   item,
   field,
   label,
+  emphasis,
   busy,
   actions,
 }: {
   item: VaultItem;
   field: VaultField;
   label: string | null;
+  /** Part of the primary pair — the username/secret a person came here for. */
+  emphasis: boolean;
   busy: boolean;
   actions: VaultActions;
 }) {
   const caps = item.capabilities;
-  const revealed = useTransientSecret();
-  const [revealing, setRevealing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [valueDraft, setValueDraft] = useState("");
-  const [copied, setCopied] = useState(false);
   const [metaOpen, setMetaOpen] = useState(false);
   const [envDraft, setEnvDraft] = useState(field.env_key ?? "");
   const [descDraft, setDescDraft] = useState(field.description ?? "");
   const [confirmSeal, setConfirmSeal] = useState(false);
 
-  const canShow =
-    field.handling === "visible"
-      ? caps.can_use
-      : field.handling === "revealable"
-        ? caps.can_reveal
-        : false;
-
-  const show = async () => {
-    setRevealing(true);
-    try {
-      // `visible` resolves under can_use; `revealable` uses the audited
-      // reveal endpoint under can_reveal. `sealed` has no human path.
-      const value =
-        field.handling === "visible"
-          ? (await resolveVaultFields([
-              { item_id: item.id, field_key: field.field_key },
-            ]))[`${item.id}/${field.field_key}`]
-          : (await revealVaultField(item.id, field.field_key)).value;
-      if (typeof value !== "string") throw new Error("No value returned");
-      revealed.hold(value);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    } finally {
-      setRevealing(false);
-    }
-  };
-
-  const copyValue = async () => {
-    let value = revealed.value;
-    if (value === null) {
-      setRevealing(true);
-      try {
-        value =
-          field.handling === "visible"
-            ? ((await resolveVaultFields([
-                { item_id: item.id, field_key: field.field_key },
-              ]))[`${item.id}/${field.field_key}`] ?? null)
-            : (await revealVaultField(item.id, field.field_key)).value;
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : String(e));
-        return;
-      } finally {
-        setRevealing(false);
-      }
-    }
-    if (value === null) return;
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
+  const displayLabel = fieldLabelOf(field, label);
+  const showEnvAlias = !envAliasIsRedundant(field);
 
   return (
-    <div className="rounded-md border border-border p-2.5">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <code className="text-xs font-semibold">
-          {label ?? field.env_key ?? field.field_key}
-        </code>
-        {field.env_key && field.env_key !== (label ?? field.field_key) && (
-          <code className="text-xs text-muted-foreground">{field.env_key}</code>
+    <div
+      className={cn(
+        "rounded-lg border transition-colors",
+        emphasis
+          ? "border-border bg-card px-3 py-2.5"
+          : "border-border/70 bg-card/50 px-3 py-2",
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span
+          className={cn(
+            "min-w-0 truncate font-medium",
+            emphasis ? "text-[13px] text-foreground" : "text-xs text-muted-foreground",
+          )}
+        >
+          {displayLabel}
+        </span>
+        {showEnvAlias && (
+          <code className="shrink-0 rounded bg-muted px-1 py-px font-mono text-[11px] text-muted-foreground">
+            {field.env_key}
+          </code>
         )}
-        <Badge variant="outline" className="gap-1 font-normal">
-          {field.handling === "sealed" && <Lock className="h-3 w-3" />}
-          {HANDLING_LABELS[field.handling] ?? field.handling}
-        </Badge>
+        {/* `revealable` is the default and needs no chip — only the states
+            that change what a human may do with the value are called out. */}
+        {field.handling === "visible" && (
+          <Badge variant="outline" className="shrink-0 font-normal">
+            {HANDLING_LABELS.visible}
+          </Badge>
+        )}
         {!field.editable && (
-          <Badge variant="outline" className="font-normal">
+          <Badge variant="outline" className="shrink-0 font-normal">
             Managed
           </Badge>
         )}
         {field.inject_into_sandbox && (
-          <Badge variant="outline" className="font-normal">
+          <Badge variant="outline" className="shrink-0 font-normal">
             Sandbox
           </Badge>
         )}
+
+        <span className="ml-auto flex shrink-0 items-center gap-0.5">
+          {caps.can_edit && field.editable && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={() => setEditing((v) => !v)}
+              aria-label={`Replace ${displayLabel}`}
+              title="Replace value"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {caps.can_edit && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className={cn(
+                "h-7 w-7 text-muted-foreground hover:text-foreground",
+                metaOpen && "bg-accent text-accent-foreground",
+              )}
+              aria-pressed={metaOpen}
+              onClick={() => setMetaOpen((v) => !v)}
+              aria-label={`Settings for ${displayLabel}`}
+              title="Field settings"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {caps.can_edit && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              disabled={busy}
+              onClick={() => void actions.deleteField(item.id, field.id)}
+              aria-label={`Delete ${displayLabel}`}
+              title="Delete field"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </span>
       </div>
 
-      <div className="mt-1.5 flex items-center gap-1.5">
-        <p className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
-          {revealed.value ?? field.value_hint ?? "•••"}
-        </p>
-        {canShow && (
-          <>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 shrink-0"
-              disabled={revealing}
-              onClick={() => (revealed.value !== null ? revealed.clear() : void show())}
-              aria-label={revealed.value !== null ? "Hide value" : "Show value"}
-            >
-              {revealing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : revealed.value !== null ? (
-                <EyeOff className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 shrink-0"
-              disabled={revealing}
-              onClick={() => void copyValue()}
-              aria-label="Copy value"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-primary" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          </>
-        )}
-        {caps.can_edit && field.editable && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 shrink-0"
-            onClick={() => setEditing((v) => !v)}
-            aria-label="Edit value"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-        )}
-        {caps.can_edit && (
-          <Button
-            size="icon"
-            variant={metaOpen ? "secondary" : "ghost"}
-            className="h-7 w-7 shrink-0"
-            onClick={() => setMetaOpen((v) => !v)}
-            aria-label="Field settings"
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-          </Button>
-        )}
-        {caps.can_edit && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 shrink-0"
-            disabled={busy}
-            onClick={() => void actions.deleteField(item.id, field.id)}
-            aria-label="Delete field"
-          >
-            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-          </Button>
-        )}
-      </div>
+      {/* THE control — identical here, on the list card, and anywhere else a
+          value is shown. Masked until asked; sealed shows a lock and nothing. */}
+      <SecretValue
+        item={item}
+        field={field}
+        showCountdown
+        className={cn("mt-0.5", emphasis && "mt-1")}
+      />
 
       {field.description && (
         <p className="mt-1 text-xs text-muted-foreground">{field.description}</p>
@@ -592,17 +593,17 @@ function FieldRow({
             value={valueDraft}
             onChange={(e) => setValueDraft(e.target.value)}
             placeholder="New value"
-            className="h-8 font-mono text-xs"
+            className="h-9 font-mono text-sm"
             autoComplete="off"
           />
           <Button
             size="sm"
+            className="h-9"
             disabled={busy || !valueDraft}
             onClick={async () => {
               await actions.updateFieldValue(item.id, field.id, valueDraft);
               setValueDraft("");
               setEditing(false);
-              revealed.clear();
             }}
           >
             Save
@@ -610,35 +611,32 @@ function FieldRow({
         </div>
       )}
 
-      {caps.can_edit && (
-        // A sandbox env is a NAME->value map: with no env key the value has
-        // nowhere to land, so injection is impossible rather than merely
-        // unconfigured. The server refuses that state outright (422); the
-        // switch is disabled here so the user is pointed at the fix — set an
-        // env key below — instead of hitting an error. Flipping this on used
-        // to "succeed" and silently do nothing forever.
-        <label
-          className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground"
-          title={
-            field.env_key
-              ? undefined
-              : "Set an env key below first — a sandbox variable needs a name."
-          }
-        >
-          Inject into sandboxes{field.env_key ? "" : " (set an env key first)"}
-          <Switch
-            checked={field.inject_into_sandbox}
-            disabled={busy || !field.env_key}
-            onCheckedChange={(checked) =>
-              void actions.setInject(item.id, field.id, checked)
-            }
-            aria-label="Inject into sandboxes"
-          />
-        </label>
-      )}
-
       {metaOpen && caps.can_edit && (
         <div className="mt-2 space-y-2 rounded-md bg-muted/40 p-2.5">
+          {/* A sandbox env is a NAME->value map: with no env key the value has
+              nowhere to land, so injection is impossible rather than merely
+              unconfigured. The server refuses that state outright (422); the
+              switch is disabled here so the user is pointed at the fix — set
+              an env key below — instead of hitting an error. Flipping this on
+              used to "succeed" and silently do nothing forever. */}
+          <label
+            className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
+            title={
+              field.env_key
+                ? undefined
+                : "Set an env key below first — a sandbox variable needs a name."
+            }
+          >
+            Inject into sandboxes{field.env_key ? "" : " (set an env key first)"}
+            <Switch
+              checked={field.inject_into_sandbox}
+              disabled={busy || !field.env_key}
+              onCheckedChange={(checked) =>
+                void actions.setInject(item.id, field.id, checked)
+              }
+              aria-label="Inject into sandboxes"
+            />
+          </label>
           <div className="flex items-end gap-2">
             <div className="min-w-0 flex-1 space-y-1">
               <Label className="text-xs">Env key</Label>
@@ -761,10 +759,11 @@ function FieldRow({
         variant="destructive"
         busy={busy}
         onConfirm={async () => {
+          // No explicit clear needed: `SecretValue` drops any held plaintext
+          // the moment the field stops being showable.
           await actions.updateFieldMeta(item.id, field.id, {
             handling: "sealed",
           });
-          revealed.clear();
           setConfirmSeal(false);
         }}
       />
@@ -1026,8 +1025,27 @@ function DestinationSection({
   const hasDestination = item.login_urls.length > 0;
   if (!hasDestination && !caps.can_edit && promotable.length === 0) return null;
 
+  // An API key or an env value has no destination and never will. Showing it a
+  // full card — above the credential, as this used to — buried the thing the
+  // user actually opened the item for. Until there IS a destination, it is one
+  // quiet line.
+  if (!hasDestination && promotable.length === 0 && !adding) {
+    return (
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => setAdding(true)}
+        className="flex w-full items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-60"
+      >
+        <Globe className="h-3.5 w-3.5 shrink-0" />
+        Add a login URL to let Matrx fill this login in a browser
+        <Plus className="ml-auto h-3.5 w-3.5 shrink-0" />
+      </button>
+    );
+  }
+
   return (
-    <div className="space-y-2 rounded-md border border-border bg-card p-3">
+    <div className="space-y-2 rounded-lg border border-border bg-card p-3">
       <div className="flex items-center gap-2">
         <Globe className="h-3.5 w-3.5 text-primary" />
         <p className="text-xs font-semibold">Destination</p>
@@ -1214,10 +1232,14 @@ function NotEncryptedSection({
   if (!hasContent && !canEdit) return null;
 
   return (
-    <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+    <div className="space-y-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
       <div className="flex items-center gap-2">
+        <TriangleAlert className="h-3.5 w-3.5 shrink-0 text-warning" />
         <p className="text-xs font-semibold">Notes and other details</p>
-        <Badge variant="outline" className="border-amber-500/40 text-[10px]">
+        <Badge
+          variant="outline"
+          className="border-warning/40 text-[10px] font-medium text-warning"
+        >
           Not encrypted
         </Badge>
       </div>
@@ -1529,8 +1551,9 @@ function GiveOwnershipPanel({
           className="h-8 text-xs"
         />
       </div>
-      <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2 text-xs">
-        <p className="font-medium text-foreground">
+      <div className="rounded-md border border-warning/30 bg-warning/5 p-2.5 text-xs">
+        <p className="flex items-center gap-1.5 font-medium text-foreground">
+          <TriangleAlert className="h-3.5 w-3.5 shrink-0 text-warning" />
           You will lose access to this credential.
         </p>
         <p className="mt-1 text-muted-foreground">
