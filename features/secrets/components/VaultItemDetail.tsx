@@ -611,11 +611,24 @@ function FieldRow({
       )}
 
       {caps.can_edit && (
-        <label className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          Inject into sandboxes{field.env_key ? "" : " (needs an env key)"}
+        // A sandbox env is a NAME->value map: with no env key the value has
+        // nowhere to land, so injection is impossible rather than merely
+        // unconfigured. The server refuses that state outright (422); the
+        // switch is disabled here so the user is pointed at the fix — set an
+        // env key below — instead of hitting an error. Flipping this on used
+        // to "succeed" and silently do nothing forever.
+        <label
+          className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground"
+          title={
+            field.env_key
+              ? undefined
+              : "Set an env key below first — a sandbox variable needs a name."
+          }
+        >
+          Inject into sandboxes{field.env_key ? "" : " (set an env key first)"}
           <Switch
             checked={field.inject_into_sandbox}
-            disabled={busy}
+            disabled={busy || !field.env_key}
             onCheckedChange={(checked) =>
               void actions.setInject(item.id, field.id, checked)
             }
@@ -834,9 +847,21 @@ function AddFieldPanel({
               <SelectItem value="sealed">Sealed</SelectItem>
             </SelectContent>
           </Select>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <label
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+            title={
+              envKey
+                ? undefined
+                : "Sandbox injection needs an env key — a container variable must have a name."
+            }
+          >
             Sandbox
-            <Switch checked={inject} onCheckedChange={setInject} aria-label="Inject into sandboxes" />
+            <Switch
+              checked={inject && Boolean(envKey)}
+              disabled={!envKey}
+              onCheckedChange={setInject}
+              aria-label="Inject into sandboxes"
+            />
           </label>
         </div>
         <Button
@@ -849,7 +874,9 @@ function AddFieldPanel({
               env_key: envKey || null,
               handling,
               editable: true,
-              inject_into_sandbox: inject,
+              // Never send an impossible combination: without an env key the
+              // server refuses injection (it could never take effect).
+              inject_into_sandbox: inject && Boolean(envKey),
               description: null,
             })
           }

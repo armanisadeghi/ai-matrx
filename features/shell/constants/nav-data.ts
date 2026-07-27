@@ -460,10 +460,27 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Vault",
+        href: "/vault",
+        iconName: "ShieldCheck",
+        description:
+          "Every login, API key, and token the platform signs in with — encrypted, shareable one-to-one, and usable by agents without ever showing them the value.",
+        color: "amber",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
+      {
         label: "Context Switcher Window",
         href: "/scopes",
         iconName: NAV_WINDOW_PANEL_ICON,
         panelAction: "open-context-switcher-panel",
+      },
+      {
+        label: "Vault Window",
+        href: "/vault",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-vault-panel",
       },
       // Actions — collected at the bottom below a divider. `?create=1` opens
       // the canonical Create Organization modal on the launcher page.

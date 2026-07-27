@@ -32,6 +32,7 @@ export type ShellNavPanelActionId =
   | "open-smart-code-editor-panel"
   | "open-code-files-panel"
   | "open-context-switcher-panel"
+  | "open-vault-panel"
   | "open-news-panel"
   | "open-ai-voice-panel"
   | "open-transcription-cleanup-panel"
@@ -182,6 +183,12 @@ export const NAV_WINDOW_PANEL_ACTIONS: Record<
     label: "Context Switcher Window",
     iconName: NAV_WINDOW_PANEL_ICON,
     href: "/scopes",
+  },
+  "open-vault-panel": {
+    tileId: "tile.credential-vault",
+    label: "Vault Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/vault",
   },
   "open-news-panel": {
     tileId: "tile.news",

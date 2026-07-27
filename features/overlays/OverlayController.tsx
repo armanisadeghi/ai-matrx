@@ -426,6 +426,10 @@ const ContextSwitcherWindow = lazyOverlay(
     ),
   { ssr: false },
 );
+const CredentialVaultWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/vault/VaultWindow"),
+  { ssr: false },
+);
 const DrillDeckContextWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/DrillDeckContextWindow").then(
@@ -1053,6 +1057,9 @@ export default function OverlayController() {
     contextSwitcherWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "contextSwitcherWindow"),
     ),
+    credentialVaultWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "credentialVaultWindow"),
+    ),
     drillDeckContextWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "drillDeckContextWindow"),
     ),
@@ -1376,6 +1383,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     contextSwitcherWindow: useAppSelector((s) =>
       selectOverlayData(s, "contextSwitcherWindow"),
+    ) as Record<string, unknown> | null,
+    credentialVaultWindow: useAppSelector((s) =>
+      selectOverlayData(s, "credentialVaultWindow"),
     ) as Record<string, unknown> | null,
     drillDeckContextWindow: useAppSelector((s) =>
       selectOverlayData(s, "drillDeckContextWindow"),
@@ -3196,6 +3206,26 @@ export default function OverlayController() {
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "contextSwitcherWindow" }))
             }
+          />
+        );
+      })()}
+
+      {/* credentialVaultWindow */}
+      {(() => {
+        const isOpen = isOpenById.credentialVaultWindow;
+        const data = dataById.credentialVaultWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <CredentialVaultWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "credentialVaultWindow" }))
+            }
+            initialSelectedItemId={
+              (data?.selectedItemId as string | null) ?? null
+            }
+            initialScope={(data?.scope as string | null) ?? null}
           />
         );
       })()}

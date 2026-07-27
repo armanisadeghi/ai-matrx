@@ -688,6 +688,21 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
+  // ── Vault ─────────────────────────────────────────────────────────────────
+  // Persisted: reopening to the same credential you were looking at is the
+  // whole point of having it in a window instead of a page.
+  {
+    slug: "credential-vault-window",
+    overlayId: "credentialVaultWindow",
+    kind: "window",
+    label: "Vault",
+    defaultData: {
+      selectedItemId: null,
+      scope: "mine",
+    },
+    mobilePresentation: "drawer",
+  },
+
   // ── Drill Deck Context ────────────────────────────────────────────────────
   {
     slug: "drill-deck-context-window",

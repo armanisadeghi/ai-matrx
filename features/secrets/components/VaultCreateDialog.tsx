@@ -626,6 +626,13 @@ function DefinitionForm({
     if (draft.envKey && !VALID_KEY_RE.test(draft.envKey)) {
       problems.push(`${label}: environment key must be a valid identifier.`);
     }
+    // A sandbox variable needs a NAME. The server refuses inject-without-alias
+    // outright (it could never take effect); say so here rather than letting
+    // the save fail. Catalog definitions like `env_value` ship inject=true with
+    // no default alias, so this is the normal prompt, not an edge case.
+    if (draft.inject && !draft.envKey) {
+      problems.push(`${label}: sandbox injection needs an environment key.`);
+    }
   }
   if (loginUrlDef && (loginUrlDef.required ?? true) && urls.length === 0) {
     problems.push(`${loginUrlDef.label} is required.`);
@@ -646,7 +653,7 @@ function DefinitionForm({
         env_key: d.envKey || null,
         handling: (d.def.handling ?? "revealable") as VaultHandling,
         editable: d.def.editable ?? true,
-        inject_into_sandbox: d.inject,
+        inject_into_sandbox: d.inject && Boolean(d.envKey),
         description: d.def.description ?? null,
       }));
 
@@ -910,10 +917,18 @@ function DefinitionForm({
                       aria-invalid={Boolean(draft.envKey) && !VALID_KEY_RE.test(draft.envKey)}
                     />
                   </div>
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <label
+                    className="flex items-center gap-2 text-xs text-muted-foreground"
+                    title={
+                      draft.envKey
+                        ? undefined
+                        : "Name the environment key first — a sandbox variable needs a name."
+                    }
+                  >
                     Sandbox
                     <Switch
-                      checked={draft.inject}
+                      checked={draft.inject && Boolean(draft.envKey)}
+                      disabled={!draft.envKey}
                       onCheckedChange={(checked) => setDraft(index, { inject: checked })}
                       aria-label={`Inject ${draft.def.label} into sandboxes`}
                     />
@@ -1065,7 +1080,10 @@ function CustomBuilder({
       (f) =>
         FIELD_KEY_RE.test(f.fieldKey) &&
         (f.value.length > 0 || isGeneratedField(f.fieldKey)) &&
-        (!f.envKey || VALID_KEY_RE.test(f.envKey)),
+        (!f.envKey || VALID_KEY_RE.test(f.envKey)) &&
+        // Sandbox injection without an env key can never take effect and the
+        // server refuses it — don't let the dialog build that request.
+        (!f.inject || Boolean(f.envKey)),
     ) &&
     new Set(fields.map((f) => f.fieldKey)).size === fields.length &&
     (!assigning || EMAIL_RE.test(recipient));
@@ -1079,7 +1097,7 @@ function CustomBuilder({
         env_key: f.envKey || null,
         handling: f.handling,
         editable: true,
-        inject_into_sandbox: f.inject,
+        inject_into_sandbox: f.inject && Boolean(f.envKey),
         description: null,
       }));
 
@@ -1230,10 +1248,18 @@ function CustomBuilder({
                     <SelectItem value="sealed">Sealed</SelectItem>
                   </SelectContent>
                 </Select>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <label
+                  className="flex items-center gap-2 text-xs text-muted-foreground"
+                  title={
+                    field.envKey
+                      ? undefined
+                      : "Name the environment key first — a sandbox variable needs a name."
+                  }
+                >
                   Sandbox
                   <Switch
-                    checked={field.inject}
+                    checked={field.inject && Boolean(field.envKey)}
+                    disabled={!field.envKey}
                     onCheckedChange={(checked) => setField(index, { inject: checked })}
                     aria-label="Inject into sandboxes"
                   />

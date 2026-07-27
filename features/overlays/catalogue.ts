@@ -310,6 +310,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  credentialVaultWindow: {
+    label: "Vault Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   drillDeckContextWindow: {
     label: "Drill Deck Context Window",
     instanceMode: "singleton",

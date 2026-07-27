@@ -48,6 +48,18 @@ export function initUrlHydration() {
     );
   });
 
+  // Vault — `?panels=vault` (optionally `:itemId`) so a link can drop someone
+  // straight onto the credential they need.
+  registerPanelHydrator("vault", (dispatch, id) => {
+    dispatch(
+      openOverlay({
+        overlayId: "credentialVaultWindow",
+        instanceId: "default",
+        data: { selectedItemId: id ?? null, scope: "mine" },
+      }),
+    );
+  });
+
   // Feedback Window
   registerPanelHydrator("feedback", (dispatch) => {
     dispatch(openOverlay({ overlayId: "feedbackDialog" }));

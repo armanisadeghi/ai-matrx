@@ -53,14 +53,38 @@ export interface VaultWorkspaceProps {
   /** Org-admin flag from the host (OrgManage `canManageSettings`). Ignored
    *  for the personal principal — owners always hold full capabilities. */
   canManage?: boolean;
+  /** Optional controlled selection/scope, so a host that persists its own
+   *  position (the window panel) can restore it. Omit both and the workspace
+   *  manages them internally, which is what the page surfaces do. */
+  selectedItemId?: string | null;
+  onSelectedItemIdChange?: (id: string | null) => void;
+  scope?: string;
+  onScopeChange?: (scope: string) => void;
 }
 
-export function VaultWorkspace({ principal, canManage }: VaultWorkspaceProps) {
+export function VaultWorkspace({
+  principal,
+  canManage,
+  selectedItemId,
+  onSelectedItemIdChange,
+  scope: controlledScope,
+  onScopeChange,
+}: VaultWorkspaceProps) {
   const orgAdmin = principal.type === "organization" ? Boolean(canManage) : true;
   // The personal surface offers Mine / Shared with me; the organization
   // surface is always its own scope (an org page showing another person's
   // shared personal items would be a category error).
-  const [personalScope, setPersonalScope] = useState<"mine" | "shared">("mine");
+  const [uncontrolledScope, setUncontrolledScope] = useState<"mine" | "shared">(
+    "mine",
+  );
+  const personalScope: "mine" | "shared" =
+    controlledScope === "shared" || controlledScope === "mine"
+      ? controlledScope
+      : uncontrolledScope;
+  const setPersonalScope = (next: "mine" | "shared") => {
+    setUncontrolledScope(next);
+    onScopeChange?.(next);
+  };
   const scope: VaultScope =
     principal.type === "organization"
       ? { kind: "organization", organizationId: principal.organizationId }
@@ -81,7 +105,15 @@ export function VaultWorkspace({ principal, canManage }: VaultWorkspaceProps) {
   const [family, setFamily] = useState<"all" | CredentialFamily>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [uncontrolledSelectedId, setUncontrolledSelectedId] = useState<
+    string | null
+  >(null);
+  const selectedId =
+    selectedItemId !== undefined ? selectedItemId : uncontrolledSelectedId;
+  const setSelectedId = (next: string | null) => {
+    setUncontrolledSelectedId(next);
+    onSelectedItemIdChange?.(next);
+  };
   // Creating is meaningless in "Shared with me" — those items are owned by
   // someone else.
   const canCreate = orgAdmin && !isShared;

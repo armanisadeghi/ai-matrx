@@ -76,6 +76,7 @@ import {
   Search,
   Settings,
   Share2,
+  ShieldCheck,
   Shrink,
   SlidersHorizontal,
   CircleDot,
@@ -626,6 +627,15 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     category: "dupes",
     gate: "admin",
     overlayId: "contextSwitcherWindow",
+  },
+  {
+    // Promoted into the My Orgs nav flyout; category "dupes" per the
+    // nav-window-panels contract so it isn't offered twice.
+    id: "tile.credential-vault",
+    label: "Vault",
+    icon: ShieldCheck,
+    category: "dupes",
+    overlayId: "credentialVaultWindow",
   },
   {
     id: "tile.drill-deck-context",
