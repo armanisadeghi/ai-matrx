@@ -47,6 +47,7 @@ function narrowFeedbackStatus(raw: string): FeedbackStatus {
   switch (raw) {
     case "new":
     case "triaged":
+    case "in_review":
     case "in_progress":
     case "awaiting_review":
     case "user_review":

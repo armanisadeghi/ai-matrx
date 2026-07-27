@@ -9,10 +9,13 @@ import type {
   UserFeedback,
   FeedbackComment,
   FeedbackType,
+  FeedbackStatus,
   FeedbackPriority,
   AiComplexity,
   AdminDecision,
+  UpdateFeedbackInput,
 } from "@/types/feedback.types";
+import { isDurableMediaUrl } from "@/lib/media/durability";
 import {
   mapFeedbackCommentRows,
   mapFeedbackCommentRow,
@@ -34,6 +37,16 @@ export interface AgentSubmitInput {
   feedback_type: FeedbackType;
   description: string;
   route?: string;
+  priority?: FeedbackPriority;
+  image_urls?: string[];
+}
+
+export interface AgentListInput {
+  query?: string;
+  status?: FeedbackStatus;
+  priority?: FeedbackPriority;
+  feedback_type?: FeedbackType;
+  limit?: number;
 }
 
 export interface AgentTriageInput {
@@ -48,8 +61,7 @@ export interface AgentTriageInput {
 
 // ============= Submit =============
 
-/** The account agent-submitted feedback is attributed to when the caller's
- *  own id is not a real `auth.users` row. */
+/** The valid auth user that owns external agent submissions. */
 const AGENT_SERVICE_ACCOUNT_EMAIL = "claude-01@aimatrx.com";
 
 let cachedAgentUserId: string | null = null;
@@ -57,29 +69,27 @@ let cachedAgentUserId: string | null = null;
 /**
  * Resolve the `user_id` for an agent submission.
  *
- * `users.user_feedback.user_id` is NOT NULL with an FK to `auth.users`, but
- * an agent's `agent_id` is a self-chosen tracking UUID — including the
- * sentinel values the MCP schema itself advertises — so using it directly
- * meant every agent without a real account got an opaque FK violation.
+ * `users.user_feedback.user_id` is NOT NULL with an FK to `auth.users`.
+ * Caller identity is optional: a real Matrx user id is honored, a legacy
+ * external id is preserved in metadata, and no id uses the service account.
  *
- * The supplied id is honored when it IS a real user; otherwise the
- * submission is attributed to the shared agent service account and the
- * caller's own id is preserved in `metadata.agent_id`. Nothing is silently
- * dropped, and the agent's name still lands in `username`.
+ * Submission never fails because an external agent lacks an arbitrary UUID.
  */
 async function resolveAgentUserId(
   supabase: ReturnType<typeof createAdminClient>,
-  agentId: string,
+  agentId?: string,
 ): Promise<{ userId: string; substituted: boolean }> {
   // `users.profiles` is 1:1 with `auth.users`, so a profile row proves the id
   // satisfies the feedback FK. (`auth.users` itself is not PostgREST-readable.)
-  const { data: real } = await supabase
-    .schema("users")
-    .from("profiles")
-    .select("id")
-    .eq("id", agentId)
-    .maybeSingle();
-  if (real?.id) return { userId: real.id, substituted: false };
+  if (agentId) {
+    const { data: real } = await supabase
+      .schema("users")
+      .from("profiles")
+      .select("id")
+      .eq("id", agentId)
+      .maybeSingle();
+    if (real?.id) return { userId: real.id, substituted: false };
+  }
 
   if (!cachedAgentUserId) {
     // The canonical email→user resolver (same RPC the sharing UI uses).
@@ -89,7 +99,7 @@ async function resolveAgentUserId(
     const accountId = data?.[0]?.user_id;
     if (error || !accountId) {
       throw new Error(
-        `agent feedback cannot be attributed: ${agentId} is not a Matrx user and ` +
+        `agent feedback cannot be attributed: ${agentId ?? "no agent id"} is not a Matrx user and ` +
           `the agent service account ${AGENT_SERVICE_ACCOUNT_EMAIL} was not found`,
       );
     }
@@ -97,17 +107,47 @@ async function resolveAgentUserId(
   }
   // Loud: an agent id that isn't a real user is expected for external agents,
   // but the substitution should never be invisible.
-  console.warn(
-    `[agent-feedback] agent_id ${agentId} is not a Matrx user — attributing to ` +
-      `${AGENT_SERVICE_ACCOUNT_EMAIL} and preserving the id in metadata.agent_id`,
-  );
+  if (agentId) {
+    console.warn(
+      `[agent-feedback] agent_id ${agentId} is not a Matrx user — attributing to ` +
+        `${AGENT_SERVICE_ACCOUNT_EMAIL} and preserving the id in metadata.agent_id`,
+    );
+  }
   return { userId: cachedAgentUserId, substituted: true };
+}
+
+export function validateFeedbackScreenshotUrls(urls: string[]): string[] {
+  const normalized = urls.map((raw) => raw.trim()).filter(Boolean);
+  for (const url of normalized) {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new Error(
+        `Screenshot URL must be a durable public HTTPS URL: ${url}`,
+      );
+    }
+    const ephemeralShare =
+      parsed.hostname === "server.app.matrxserver.com" &&
+      parsed.pathname.startsWith("/share/");
+    if (
+      parsed.protocol !== "https:" ||
+      !isDurableMediaUrl(url) ||
+      ephemeralShare
+    ) {
+      throw new Error(
+        "Screenshot URLs must be durable public URLs. Upload/publish the image " +
+          `first and pass its CDN URL; expiring URL rejected: ${url}`,
+      );
+    }
+  }
+  return [...new Set(normalized)];
 }
 
 /** Create a new feedback item on behalf of an agent */
 export async function submitFeedback(
-  agentId: string,
-  agentName: string,
+  agentId: string | undefined,
+  agentName: string | undefined,
   input: AgentSubmitInput,
 ): Promise<ServiceResult<UserFeedback>> {
   try {
@@ -115,24 +155,32 @@ export async function submitFeedback(
     const { userId, substituted } = await resolveAgentUserId(supabase, agentId);
 
     const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+      .schema("users")
+      .from("user_feedback")
       .insert({
         // External agents have no personal org (no Supabase session); their
         // feedback homes to the global system org.
         organization_id: await resolveSystemOrgId(supabase),
         user_id: userId,
-        metadata: substituted
-          ? { agent_id: agentId, attributed_to_service_account: true }
-          : { agent_id: agentId },
-        username: agentName,
+        metadata: agentId
+          ? {
+              agent_id: agentId,
+              attributed_to_service_account: substituted,
+            }
+          : { submitted_via: "agent_feedback_api" },
+        username: agentName || "External agent",
         feedback_type: input.feedback_type,
         // route is NOT NULL with no DB default; "" is the deliberate
         // sentinel for "no route supplied" (route is optional at the API/MCP
         // boundary — general feedback with no specific location).
         // MATRX-EXCEPTION: honest default for a NOT NULL column, not a boundary failure
-        route: input.route || "",
+        route: input.route ? input.route : "",
         description: input.description,
         status: "new",
+        priority: input.priority ?? "medium",
+        image_urls: input.image_urls
+          ? validateFeedbackScreenshotUrls(input.image_urls)
+          : null,
       })
       .select()
       .single();
@@ -159,7 +207,8 @@ export async function getFeedbackItem(
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+      .schema("users")
+      .from("user_feedback")
       .select("*")
       .eq("id", feedbackId)
       .single();
@@ -174,6 +223,111 @@ export async function getFeedbackItem(
       err instanceof Error
         ? err.message
         : "Unexpected error in getFeedbackItem";
+    return { success: false, error: message };
+  }
+}
+
+/** List/search feedback without requiring callers to know an item ID first. */
+export async function listFeedbackItems(
+  input: AgentListInput = {},
+): Promise<ServiceResult<UserFeedback[]>> {
+  try {
+    const supabase = createAdminClient();
+    const requestedLimit = Math.min(Math.max(input.limit ?? 50, 1), 100);
+    const fetchLimit = input.query ? 500 : requestedLimit;
+    let request = supabase
+      .schema("users")
+      .from("user_feedback")
+      .select("*")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(fetchLimit);
+
+    if (input.status) request = request.eq("status", input.status);
+    if (input.priority) request = request.eq("priority", input.priority);
+    if (input.feedback_type) {
+      request = request.eq("feedback_type", input.feedback_type);
+    }
+
+    const { data, error } = await request;
+    if (error) return { success: false, error: error.message };
+
+    let items = mapUserFeedbackRows(data ?? []);
+    if (input.query) {
+      const needle = input.query.toLocaleLowerCase();
+      items = items.filter((item) => {
+        const searchable = [item.id, item.description, item.route];
+        if (item.username) searchable.push(item.username);
+        return searchable.join(" ").toLocaleLowerCase().includes(needle);
+      });
+    }
+    return { success: true, data: items.slice(0, requestedLimit) };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Unexpected error in listFeedbackItems";
+    return { success: false, error: message };
+  }
+}
+
+/** Apply a typed patch, including status and durable screenshot updates. */
+export async function updateFeedbackItem(
+  feedbackId: string,
+  updates: UpdateFeedbackInput,
+): Promise<ServiceResult<UserFeedback>> {
+  try {
+    if (Object.keys(updates).length === 0) {
+      return {
+        success: false,
+        error: "updates must contain at least one field",
+      };
+    }
+
+    const supabase = createAdminClient();
+    const patch: UpdateFeedbackInput = { ...updates };
+    if (Array.isArray(patch.image_urls)) {
+      patch.image_urls = validateFeedbackScreenshotUrls(patch.image_urls);
+    }
+
+    if (
+      (patch.status === "closed" || patch.status === "resolved") &&
+      !patch.testing_result
+    ) {
+      const current = await getFeedbackItem(feedbackId);
+      if (!current.success || !current.data) return current;
+      if (!current.data.testing_result) {
+        return {
+          success: false,
+          error:
+            "Closing/resolving feedback requires testing_result " +
+            "(pass, fail, partial, pending, or admin_closed).",
+        };
+      }
+    }
+
+    if (patch.status === "closed" || patch.status === "resolved") {
+      patch.resolved_at ??= new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .schema("users")
+      .from("user_feedback")
+      .update(patch)
+      .eq("id", feedbackId)
+      .select()
+      .single();
+
+    if (error) return { success: false, error: error.message };
+    if (data === null) {
+      return { success: false, error: "updateFeedbackItem returned no row" };
+    }
+    return { success: true, data: mapUserFeedbackRow(data) };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Unexpected error in updateFeedbackItem";
     return { success: false, error: message };
   }
 }
@@ -247,7 +401,8 @@ export async function getReworkItems(): Promise<ServiceResult<UserFeedback[]>> {
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+      .schema("users")
+      .from("user_feedback")
       .select("*")
       .eq("admin_decision", "approved")
       .eq("status", "in_progress")

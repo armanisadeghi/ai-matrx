@@ -37,6 +37,10 @@ Both are plausible sole causes. Consequences of leaving this unresolved: (a) if 
 
 Isolate with one controlled experiment before building anything else on top: restore `turbopackMemoryLimit` to 40GiB alone and release. Green ⇒ the revert was the fix and the ceiling should go back to 40GiB. Red ⇒ the ceiling is load-bearing, keep 30GiB and re-land the lazy→dynamic campaign on top of it. **Do not re-land the campaign and change the ceiling in the same release** — that is exactly how this became unattributable.
 
+### D108 — seven historic feedback screenshots are permanently dead (2026-07-27)
+
+`users.user_feedback.image_urls` has seven `https://server.app.matrxserver.com/share/<uuid>/download` values whose share rows no longer exist; all return `404 share_link_invalid`, so those screenshots cannot be recovered from the stored pointer. New MCP writes reject this expiring URL class and accept only durable public URLs. Remaining fix: recover the original files from backups/audit history if available and replace these seven pointers with CDN URLs; otherwise mark the affected items' screenshot evidence irrecoverable.
+
 ### D106b — five more surfaces still claim "Only you" from data that can't support it (2026-07-26)
 
 Same class as the files fix (`22e8d79ea`) and the `PermissionsList` fix: a surface reads one signal — a `visibility` value or an empty grant list — and renders a privacy guarantee. None of them can see container conveyance via `platform.reachability`, so each can be wrong the moment the record is attached to a scope, project, or data store.
@@ -73,14 +77,13 @@ unregistered `source_feature` it returns
 `{"error":"validation_error","user_message":"Request validation failed with 1
 issue: \`body.source_feature\`: … add the real feature to
 source_attribution.SOURCE_FEATURES or fix the caller","details":[{field,
-message,help,rejected_input}]}` — and NONE of it is shown or logged; the toast
+message,help,rejected_input}]}`— and NONE of it is shown or logged; the toast
 says "HTTP 422" and the Error Inspector entry carries no more. Cost three
-failed agent runs and a manual `fetch` replay in the browser console to
-discover, and it will cost the same again every time. Fix: in the `callApi`
+failed agent runs and a manual`fetch`replay in the browser console to
+discover, and it will cost the same again every time. Fix: in the`callApi`
 error path (`lib/api/call-api.ts`), parse the JSON body and prefer
-`user_message` / `message` / `details[].message` over the status line, the way
-the stream `error` event is already handled in
-`features/agents/run/useRunAgent.ts`. Found while wiring the research Context
+`user_message`/`message`/`details[].message`over the status line, the way
+the stream`error`event is already handled in`features/agents/run/useRunAgent.ts`. Found while wiring the research Context
 Builder; unrelated to that feature, and it affects every Python call in the app.
 
 ### D101 (partial) — `agx_get_list` has no org scope; the delete path is a HARD delete (2026-07-25)
@@ -190,9 +193,9 @@ The failed `research.rs_topic` insert exposed a live `_mirror_proj` trigger call
 
 Verified live: every one of the 10,676 `web.link_edge` rows (internal AND external) has `http_status = null` — the scraper records link edges from snapshots but never checks their targets, so broken internal links and broken outbound links cannot be flagged anywhere. The FE is ready: the link graph colors/flags broken targets (`features/marketing/components/inspection/link-graph/`), the External view shows an honest "status not checked" notice, and the table has an HTTP column — all waiting on data. Fix lives in the scraper (matrx-scraper/aidream): a post-crawl link-check pass (HEAD/GET with caps + per-domain rate limits, internal targets resolvable from crawled snapshots without any fetch) writing `http_status` back to `web.link_edge`. Backend owner decides scheduling; relay prompt handed to Arman 2026-07-20.
 
-### D73 — Folder picking needs a canonical story; feedback MCP rejects agent submissions (2026-07-20)
+### D73 — Folder picking needs a canonical story (2026-07-20)
 
-The one-file-picker consolidation is DONE (see `features/files/FEATURE.md` 2026-07-20): `FilesResourcePicker` + `FilePickerWindow` everywhere; thin `FilePicker`/`useFilePicker`, `AssociationPickerSheet`, and rag `CldFilePicker` deleted. Two remainders: (1) `FolderPicker`/`SaveAsDialog` (folder selection, not file pick) still use the old `PickerShell` dialog — needs a decision on a canonical folder-select mode (extend `FilesResourcePicker` or keep a dedicated folder surface, then retire `PickerShell`); safe meanwhile (DB listing gate protects all tree consumers). (2) matrx-feedback MCP `submit_feedback` fails with FK violation `user_feedback_user_id_fkey` for agent submissions — backend bug in the feedback service.
+The one-file-picker consolidation is DONE (see `features/files/FEATURE.md` 2026-07-20): `FilesResourcePicker` + `FilePickerWindow` everywhere; thin `FilePicker`/`useFilePicker`, `AssociationPickerSheet`, and rag `CldFilePicker` deleted. `FolderPicker`/`SaveAsDialog` (folder selection, not file pick) still use the old `PickerShell` dialog — decide whether to extend `FilesResourcePicker` with folder-select mode or keep a dedicated folder surface, then retire `PickerShell`. Safe meanwhile: the DB listing gate protects all tree consumers.
 
 ### D72 — CRITICAL: /files desktop table row click can create a real share link as a side effect (2026-07-19)
 
@@ -258,6 +261,7 @@ This is the ROOT CAUSE of the D62/D63 drift class: a `TEMP:` flag flip survived 
 ### D67 — doctrine says "banned", ESLint says `warn`, with live violations (2026-07-18)
 
 Three bans CLAUDE.md/PRINCIPLES.md state absolutely are `warn` in `eslint.config.mjs`, and with no CI (D64) a warning stops nothing:
+
 - **Browser dialogs** (`no-alert`, `no-restricted-globals`, `:775-797`) — doc says "forbidden anywhere a human can see — including demos, admin, prototypes". Live: 2 `window.*` forms plus ~20 bare `confirm(`/`alert(`/`prompt(` in `app/(transitional)/apps/app-builder/**` (unsaved-changes guards) and `app/(dev)/demos/**`.
 - **Barrel files** (`no-barrel-files`, `:735`) — 488 warnings, 37 `index.ts` remain.
 - **Banned lucide brand icons** (`matrx/no-banned-lucide-icons`, `:736`) — held at `warn` since 2026-05-18 "while we clean up"; these are type-valid but **runtime-missing → 500s**, so a warning is the wrong severity for this one specifically.
@@ -300,6 +304,7 @@ Observed twice during a live `/chat` stream that rendered a `db_kind_component` 
 The `/chat/a/[agentId]` single-hop draft transfer (`chat-draft-transfer.ts`) now works for standard chat agents — the entry-existence race is fixed (ChatRoomClient gates the consume on `selectUserInputEntryExists`; before, `setUserInputText` silently dropped the write because the input entry is created only after the launcher's async agent fetch, losing every stashed draft). **Still broken for agents with launch variables/broker inputs** (repro: agent `a2525cd3` "Get Gemini Image" — stash consumed, dispatch fires, but the smart-input's message box stays empty; the plain-agent path verified working with `c50529ec`). Suspect: the variable-bearing smart input binds its message text differently from `AgentTextarea`'s `selectUserInputText`, or the instance is recreated when variables hydrate. Matters for the Shapes studio create-with-agent handoff (`features/content-ir/studio/components/NewShapeClient.tsx`) if K2's creator agent ships with launch variables. Also: the `setUserInputText` reducer's `if (!entry) return;` is a silent drop — should scream per loud-recovery doctrine.
 
 ### D59 — CRITICAL: follow-up turns must CONFIRM identity-context changes with the user (2026-07-15)
+
 **Very serious.** Context (`organization_id`, `project_id`, `task_id`, `scope_ids`, `source_*`, agent identity) must not silently drift between turns. Required: FE reads previous (`metadata.last_request_context` from BE) + current AppContext; if they differ, **prompt the user to confirm** before POST — only explicit user-driven actions may change context without that prompt. Today: yellow console warn at call time (`warn-request-context-drift.ts`) + BE stream warning `request_context_changed` — **neither blocks nor confirms**. Twin entry: aidream `FOUND_DEFECTS.md`. Owner: Arman (confirm UX).
 
 ### D58 — Convergence-C: paid-class gate is a no-op stub — `edu_class_purchase` grants entitlement with NO payment (2026-07-14)
@@ -308,11 +313,11 @@ The `/chat/a/[agentId]` single-hop draft transfer (`chat-draft-transfer.ts`) now
 
 ### D57 — Convergence-C COPPA gate: client fail-open CLOSED + SERVER-SIDE enforcement DONE + `age_band` write-tamper CODE gap CLOSED (2026-07-15); only the LEGAL policy call is open
 
-**Decides: Arman/legal (only the remaining LEGAL items — self-declared-age *policy* + verifiable-consent *method*; the CODE parts are done).** The gate DB layer is correct and self-scoped (`edu_coppa_gate`/`edu_set_age_band` operate on `auth.uid()`), the CLIENT rollout is complete (9 education AI entry points call `useAiComplianceGate.ensureAllowed()` first), the **client fail-open hole is fixed** (fails CLOSED for the minor path on a resolver error), and the **SERVER-SIDE enforcement is DONE** — aidream's agent-execution funnel (`enforce_education_coppa`, scoped by `source_feature=education-*`, fails CLOSED) independently REFUSES an education generation for a signed-in under-13 without a VERIFIED guardian link, refusing a client bypass (devtools/direct API) with `error_type="education_coppa_consent_required"`. Contract: aidream `services/education_compliance/FEATURE.md`.
+**Decides: Arman/legal (only the remaining LEGAL items — self-declared-age _policy_ + verifiable-consent _method_; the CODE parts are done).** The gate DB layer is correct and self-scoped (`edu_coppa_gate`/`edu_set_age_band` operate on `auth.uid()`), the CLIENT rollout is complete (9 education AI entry points call `useAiComplianceGate.ensureAllowed()` first), the **client fail-open hole is fixed** (fails CLOSED for the minor path on a resolver error), and the **SERVER-SIDE enforcement is DONE** — aidream's agent-execution funnel (`enforce_education_coppa`, scoped by `source_feature=education-*`, fails CLOSED) independently REFUSES an education generation for a signed-in under-13 without a VERIFIED guardian link, refusing a client bypass (devtools/direct API) with `error_type="education_coppa_consent_required"`. Contract: aidream `services/education_compliance/FEATURE.md`.
 
 **`age_band` write-tamper — CODE DONE (2026-07-15).** The 2026-07-15 adversarial review found `edu_set_age_band` was NOT the only write path — the `users.profiles` `std_update` RLS policy (`created_by = auth.uid()`) let a user directly `UPDATE users.profiles SET age_band='adult'` via PostgREST, bypassing the RPC entirely (live-repro'd). Fixed: `migrations/edu_age_band_write_guard.sql` adds a `BEFORE UPDATE` trigger (`users._guard_age_band_change()`) that blocks any `age_band` write unless it comes through `edu_set_age_band()` (sets a tx-local GUC the trigger checks) or a genuine `service_role` caller — `errcode 42501` otherwise. Every column-except-`age_band` update is untouched (verified: a `display_name` edit still succeeds). Every `age_band` change is now audited to `education.data_rights_event` (`action='age_band_change'`, `old_band`/`new_band`/`via`); a self-declared `under_13 → adult` transition additionally sets `detail.review_signal=true` + `RAISE WARNING` — a detectability signal, not a block (see policy note below). Live-verified via Supabase MCP (project `txzxabzwovsujtloxrus`): direct table UPDATE of `age_band` as an authenticated non-owner-bypass user → blocked 42501; `edu_set_age_band()` → succeeds + writes the audit row; unrelated column edit → succeeds, `age_band` untouched; `under_13→adult` → `review_signal:true` confirmed on the audit row. `AgeBandPrivacyCard.tsx` already called the RPC (not a direct write) — no FE change needed.
 
-**STILL OPEN (Arman/legal, NOT code — the mechanism above enforces whatever policy Arman picks):** (1) `age_band` is still *self-declared* — the RPC will still let an under-13 set `adult` (now audited + flagged, not blocked); whether to hard-block that transition behind a verifiable-age step vs. allow it audited (COPPA-standard neutral age screening) is Arman's call — see `COPPA_VERIFIABLE_CONSENT_RUNBOOK.md` §1 last item + `CONVERGENCE_C_LAUNCH_RUNBOOK.md` §3 item 2. (2) "guardian approves from their own account" is consent capture, not a legally *verifiable* method (COPPA §312.5) — same runbook §1.
+**STILL OPEN (Arman/legal, NOT code — the mechanism above enforces whatever policy Arman picks):** (1) `age_band` is still _self-declared_ — the RPC will still let an under-13 set `adult` (now audited + flagged, not blocked); whether to hard-block that transition behind a verifiable-age step vs. allow it audited (COPPA-standard neutral age screening) is Arman's call — see `COPPA_VERIFIABLE_CONSENT_RUNBOOK.md` §1 last item + `CONVERGENCE_C_LAUNCH_RUNBOOK.md` §3 item 2. (2) "guardian approves from their own account" is consent capture, not a legally _verifiable_ method (COPPA §312.5) — same runbook §1.
 
 ### D53 — FIXED + PUBLISHED; pending EC2 container deploy: `files.matrxserver.com` CORS blocks local browser uploads (2026-07-14)
 
@@ -360,6 +365,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D73-feedback** — External MCP submission no longer requires `agent_id`; the preferred `feedback` tool reports with description only and the service account satisfies the live auth-user FK. `app/api/mcp/[transport]/route.ts`, `lib/services/agent-feedback.service.ts`. 2026-07-27.
 
 - **D104 — Research condensed export type-check failures fixed (2026-07-25):**
   imported the canonical snippet normalizer and corrected the source-filter

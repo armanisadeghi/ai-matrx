@@ -4,6 +4,7 @@ export type FeedbackType = "bug" | "feature" | "suggestion" | "other";
 export type FeedbackStatus =
   | "new"
   | "triaged"
+  | "in_review"
   | "in_progress"
   | "awaiting_review"
   | "user_review"
@@ -14,11 +15,7 @@ export type FeedbackStatus =
   | "deferred";
 export type FeedbackPriority = "low" | "medium" | "high" | "critical";
 export type AdminDecision =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "deferred"
-  | "split";
+  "pending" | "approved" | "rejected" | "deferred" | "split";
 export type AiComplexity = "simple" | "moderate" | "complex";
 export type TestingResult =
   | "pending"
@@ -122,11 +119,16 @@ export interface UpdateFeedbackInput {
   description?: string;
   feedback_type?: FeedbackType;
   route?: string;
+  image_urls?: string[] | null;
   status?: FeedbackStatus;
   priority?: FeedbackPriority;
   admin_notes?: string;
   ai_assessment?: string;
   autonomy_score?: number;
+  ai_solution_proposal?: string;
+  ai_suggested_priority?: FeedbackPriority;
+  ai_complexity?: AiComplexity;
+  ai_estimated_files?: string[];
   resolution_notes?: string;
   resolved_at?: string | null;
   resolved_by?: string | null;
@@ -217,6 +219,7 @@ export const CATEGORY_COLORS: Record<
 export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
   new: "Submitted",
   triaged: "Under Review",
+  in_review: "In Review",
   in_progress: "In Progress",
   awaiting_review: "Fix Ready",
   user_review: "Your Review Needed",
@@ -231,6 +234,7 @@ export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
 export const ADMIN_STATUS_LABELS: Record<FeedbackStatus, string> = {
   new: "New",
   triaged: "Triaged",
+  in_review: "In Review",
   in_progress: "In Progress",
   awaiting_review: "Ready for Testing",
   user_review: "User Review",
@@ -250,6 +254,10 @@ export const FEEDBACK_STATUS_COLORS: Record<
   triaged: {
     bg: "bg-indigo-500/15",
     text: "text-indigo-700 dark:text-indigo-400",
+  },
+  in_review: {
+    bg: "bg-violet-500/15",
+    text: "text-violet-700 dark:text-violet-400",
   },
   in_progress: {
     bg: "bg-yellow-500/15",
