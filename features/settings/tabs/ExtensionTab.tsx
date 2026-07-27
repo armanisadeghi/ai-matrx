@@ -1,11 +1,11 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+import { TabLoading } from "@/features/settings/components/TabLoading";
 import { Loader2 } from "lucide-react";
 
-const ExtensionAuthPage = lazy(
-  () => import("@/features/settings/pages/ExtensionSettingsPage"),
-);
+const ExtensionAuthPage = dynamic(() => import("@/features/settings/pages/ExtensionSettingsPage"), { ssr: false, loading: TabLoading });
 
 export default function ExtensionTab() {
   return (

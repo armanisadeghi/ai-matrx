@@ -1,13 +1,13 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+import { TabLoading } from "@/features/settings/components/TabLoading";
 import { Loader2 } from "lucide-react";
 
 // Lazy-load the actual form so the rest of the settings shell isn't
 // blocked by the avatar uploader's heavy dependency graph.
-const UserProfilePage = lazy(
-  () => import("@/features/user-profile/components/UserProfilePage"),
-);
+const UserProfilePage = dynamic(() => import("@/features/user-profile/components/UserProfilePage"), { ssr: false, loading: TabLoading });
 
 export default function ProfileTab() {
   return (

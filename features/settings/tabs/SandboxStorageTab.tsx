@@ -1,11 +1,11 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+import { TabLoading } from "@/features/settings/components/TabLoading";
 import { Loader2 } from "lucide-react";
 
-const SandboxStoragePage = lazy(
-  () => import("@/features/settings/pages/SandboxStorageSettingsPage"),
-);
+const SandboxStoragePage = dynamic(() => import("@/features/settings/pages/SandboxStorageSettingsPage"), { ssr: false, loading: TabLoading });
 
 export default function SandboxStorageTab() {
   return (

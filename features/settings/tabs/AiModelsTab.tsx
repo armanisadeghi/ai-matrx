@@ -1,6 +1,8 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+import { TabLoading } from "@/features/settings/components/TabLoading";
 import { Cpu, Loader2 } from "lucide-react";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -17,9 +19,7 @@ import { SettingsCallout } from "@/components/official/settings/layout/SettingsC
  *   (a) extract a shared SettingsModelList primitive and rebuild, or
  *   (b) formally bless this tab as a "custom" tab type in the registry.
  */
-const LegacyAiModelsPreferences = lazy(
-  () => import("@/components/user-preferences/AiModelsPreferences"),
-);
+const LegacyAiModelsPreferences = dynamic(() => import("@/components/user-preferences/AiModelsPreferences"), { ssr: false, loading: TabLoading });
 
 export default function AiModelsTab() {
   return (

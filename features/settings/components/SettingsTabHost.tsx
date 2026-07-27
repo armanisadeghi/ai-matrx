@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, Component, type ReactNode } from "react";
-import { Loader2, AlertTriangle, Settings as SettingsIcon } from "lucide-react";
+import { AlertTriangle, Settings as SettingsIcon } from "lucide-react";
+import { TabLoading } from "./TabLoading";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsBreadcrumb } from "@/components/official/settings/tree/SettingsBreadcrumb";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
@@ -73,13 +74,7 @@ function EmptyState() {
   );
 }
 
-function TabLoading() {
-  return (
-    <div className="flex h-full items-center justify-center py-12">
-      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-    </div>
-  );
-}
+
 
 type ErrorBoundaryProps = { children: ReactNode; tabLabel: string };
 type ErrorBoundaryState = { error: Error | null };

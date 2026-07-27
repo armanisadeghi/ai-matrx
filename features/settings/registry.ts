@@ -1,4 +1,5 @@
-import { lazy } from "react";
+import dynamic from "next/dynamic";
+import { TabLoading } from "./components/TabLoading";
 import {
   Palette,
   Bell,
@@ -53,9 +54,14 @@ import type { SettingsTreeNode } from "@/components/official/settings/tree/types
  * is assignable.
  */
 
+// Tabs are code-split with next/dynamic({ ssr: false }) — never React.lazy
+// (code-splitting doctrine rule 3): lazy SSRs by default, which compiled every
+// tab's feature graph into the server pass of each route reaching this
+// registry. TabLoading keeps the chunk-load spinner identical to the old
+// Suspense fallback.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const lazyTab = (importer: () => Promise<{ default: any }>): any =>
-  lazy(importer);
+  dynamic(importer, { ssr: false, loading: TabLoading });
 
 // ── Placeholder (used only for category-only nodes) ──────────────────────────
 const Placeholder = lazyTab(() => import("./tabs/PlaceholderTab"));
