@@ -12,6 +12,13 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { createMarketingLinksScope } from "@/features/surfaces/manifests/marketing-links.manifest";
@@ -37,6 +44,19 @@ import { ExternalLinksView } from "@/features/marketing/components/inspection/li
 import { LinkGraphView } from "@/features/marketing/components/inspection/link-graph/LinkGraphView";
 import { displayUrl } from "@/features/marketing/components/inspection/link-graph/model";
 import { cn } from "@/lib/utils";
+
+function humanLinkEdgeRow(row: InspectionLinkRow): string {
+  return humanLines([
+    ["Source", sourceUrl(row)],
+    ["Target", row.target_url],
+    ["Scope", row.is_internal ? "internal" : "external"],
+    ["HTTP", row.http_status],
+    ["Anchor", row.anchor_text],
+    ["Rel", row.rel],
+    ["Position", row.position],
+    ["Recorded", formatCompactDate(row.snapshot?.captured_at ?? row.created_at)],
+  ]);
+}
 
 function sourceUrl(row: InspectionLinkRow): string {
   return row.source_page?.url ?? row.source_page_id;
@@ -286,6 +306,101 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
     );
   }
 
+  const pageLocation = webLocation(
+    crawlId
+      ? `Crawl link edges — session ${crawlId}`
+      : `Site link graph — ${site.root_url}`,
+  );
+  const edgesResult = graphEdges.data;
+  const linkTotals = edgesResult ? buildLinkTotals(edgesResult) : undefined;
+  const externalDomainsTop = edgesResult
+    ? buildExternalDomainsTop(edgesResult.rows)
+    : [];
+  const tableRows = links.data?.rows ?? [];
+
+  const groomerSections = (): AgentCopyGroomerSection[] => {
+    const sections: AgentCopyGroomerSection[] = [
+      {
+        id: "link_totals",
+        title: "Link totals",
+        description: "Aggregate counts over the cached link-graph edges.",
+        build: () => linkTotals ?? { note: "Graph view has not loaded edges yet." },
+      },
+      {
+        id: "external_domains",
+        title: "Top external domains",
+        description: `${externalDomainsTop.length} destination domains ranked by outbound link count.`,
+        cuttable: true,
+        levelLabels: { full: "All 15", compact: "Top 8", brief: "Top 3" },
+        build: (level) =>
+          level === "full"
+            ? externalDomainsTop
+            : externalDomainsTop.slice(0, level === "compact" ? 8 : 3),
+      },
+    ];
+    if (view === "table") {
+      sections.push({
+        id: "table_rows",
+        title: "Link edge rows",
+        description: `${tableRows.length} loaded of ${(links.data?.total ?? 0).toLocaleString()} recorded (current table page + filters).`,
+        cuttable: true,
+        levelLabels: {
+          full: `Loaded ${tableRows.length} (raw)`,
+          compact: "Top 25",
+          brief: "Counts only",
+        },
+        build: (level) =>
+          level === "full"
+            ? { query: table.state, rows: tableRows }
+            : level === "compact"
+              ? { query: table.state, rows: tableRows.slice(0, 25) }
+              : { total_recorded: links.data?.total ?? 0, loaded_rows: tableRows.length },
+      });
+    }
+    return sections;
+  };
+
+  const pageHuman = () =>
+    [
+      crawlId ? `Crawl link edges — session ${crawlId}` : `Site link graph — ${site.domain}`,
+      linkTotals
+        ? Object.entries(linkTotals).map(([k, v]) => `${k}: ${v}`).join("\n")
+        : "Link graph not loaded yet.",
+      externalDomainsTop.length
+        ? `Top external domains:\n${externalDomainsTop.map((d) => `- ${d.domain}: ${d.links} links`).join("\n")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
+  const pageAgentPayload = (): AgentPayloadInput => ({
+    kind: "marketing-links-page",
+    location: pageLocation,
+    description: crawlId
+      ? `The crawl link-edge inspection view for session ${crawlId}.`
+      : `The site link inspection view (graph/external/table) for ${site.domain}.`,
+    data: pageFullData(),
+    attributes: { site_id: site.id, session_id: crawlId, view_mode: view },
+  });
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: crawlId ? `Crawl links — ${crawlId}` : `Links — ${site.domain}`,
+    kind: "marketing-links-page",
+    location: pageLocation,
+    description: "The full link inspection workspace (graph, external, table).",
+    attributes: { site_id: site.id, domain: site.domain, session_id: crawlId },
+    sections: groomerSections(),
+  });
+
   const content = (
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       {crawl.data ? <CrawlSubnav crawl={crawl.data} /> : null}
@@ -306,6 +421,14 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
               {(links.data?.total ?? 0).toLocaleString()} edges
             </span>
           ) : null}
+          <CopyButtons
+            size="icon"
+            label={crawlId ? `Crawl link edges (${crawlId})` : `Site link graph (${site.domain})`}
+            human={pageHuman}
+            json={pageFullData}
+            agent={pageAgentPayload}
+          />
+          <AgentCopyGroomerLauncher config={groomerConfig} />
           <div className="flex items-center rounded-md border border-border p-0.5">
             {(
               [
@@ -373,20 +496,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
                 "One immutable link edge observed in a retained snapshot.",
               listDescription:
                 "The currently loaded link-edge rows (respecting search, filters, sort, and pagination).",
-              humanRow: (row) =>
-                humanLines([
-                  ["Source", sourceUrl(row)],
-                  ["Target", row.target_url],
-                  ["Scope", row.is_internal ? "internal" : "external"],
-                  ["HTTP", row.http_status],
-                  ["Anchor", row.anchor_text],
-                  ["Rel", row.rel],
-                  ["Position", row.position],
-                  [
-                    "Recorded",
-                    formatCompactDate(row.snapshot?.captured_at ?? row.created_at),
-                  ],
-                ]),
+              humanRow: humanLinkEdgeRow,
               rowAttributes: (row) => ({
                 link_edge_id: row.id,
                 source_page_id: row.source_page_id,
