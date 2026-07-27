@@ -6,29 +6,60 @@
 
 ## The feature is multi-pillar — websites are ONE pillar
 
-Marketing owns five peer pillars, declared ONCE in
+Marketing owns **eight peer pillars**, declared ONCE in
 `features/marketing/lib/marketing-nav.ts` (`MARKETING_PILLARS`) and rendered by
-the `/marketing` hub, `/marketing/tools`, and the shell nav:
+the `/marketing` hub, `/marketing/tools`, the shell nav (generated —
+`marketingNavChildren()`), and the route metadata. One declaration, four
+surfaces; they cannot drift.
 
-| Pillar                       | Lives at                                                                          |
-| ---------------------------- | --------------------------------------------------------------------------------- |
-| Brands & Websites            | `/marketing/brands`, `/marketing/sites` (+ `features/marketing/**`)               |
-| Content Planning             | `/marketing/content-plan` (`features/marketing/content-plan/`)                    |
-| Discovery, Search & Keywords | `/marketing/discovery/youtube`, `/marketing/keyword-research`                     |
-| SEO Tools                    | `/marketing/tools` → the PUBLIC analyzers on `/seo/*` (`features/marketing/seo/`) |
-| Data & Operations            | `/marketing/connections`, `/marketing/batches`, `/marketing/cost`                 |
+| Pillar | Live today | Reserved (coming soon) |
+| --- | --- | --- |
+| Brands & Websites | `/marketing/brands`, `/marketing/sites` | `/marketing/local` |
+| Strategy & Planning | `/marketing/content-plan` | `/marketing/campaigns`, `/calendar`, `/audience` |
+| Discovery, Search & Visibility | `/marketing/keyword-research`, `/marketing/discovery/youtube` | `/marketing/ranks`, `/marketing/ai-visibility` |
+| Content & Channels | — | `/marketing/content-studio`, `/social`, `/email`, `/ads`, `/outreach` |
+| Market Intelligence | — | `/marketing/competitors`, `/marketing/monitoring` |
+| Measurement | `/marketing/cost` | `/marketing/analytics`, `/marketing/reports` |
+| SEO Tools | `/marketing/tools` → the PUBLIC analyzers on `/seo/*` | — |
+| Data & Operations | `/marketing/connections`, `/marketing/batches` | `/marketing/automations` |
 
-**Rules:**
+### Rules
 
 - **No marketing surface gets a root-level route.** Content planning and keyword
   research were mounted at `/content-plan` and `/seo/keyword-research`; both moved
   under `/marketing/*` on 2026-07-25 (permanent redirects in `next.config.js`).
 - **`/seo/*` is reserved for the `(public)` route group** — anonymous lead-gen
   analyzers that must render without a session. Never add an authed `/seo/*` route.
-- **Adding a Marketing surface means editing `marketing-nav.ts`**, not the hub page,
-  the tools page, or the nav individually.
+- **Adding or shipping a Marketing surface means editing `marketing-nav.ts`** —
+  never the hub page, the tools page, the sidebar, or the metadata individually.
 - The brands/websites pillar is the largest, not the most important. `/marketing`
   is a list view of all pillars — it must never redirect into one of them.
+- **The scraper is NOT part of Marketing.** `/scraper/*` and `features/scraper/`
+  are shared platform infrastructure that Marketing's crawler borrows. Do not
+  move them in, and do not fork a second crawler here.
+
+### Reserved routes — the coming-soon contract
+
+Each reserved surface is a **real route** rendering
+`features/marketing/components/MarketingComingSoon.tsx`, not a dead link. Three
+declarations must exist together, or the placeholder throws at render:
+
+1. an entry in `MARKETING_PILLARS` with `status: "coming-soon"` + `comingSoonId`,
+2. a `marketing.*` row in `lib/coming-soon/registry.ts` (the user-facing promise —
+   see that FEATURE.md: a promise is tracked like a defect), and
+3. a builder in `lib/routes.ts` (`marketingRoutes`).
+
+**Shipping one:** build the real page at the SAME URL, delete its registry row,
+and drop `status`/`comingSoonId` from its nav entry. The href never changes —
+that permanence is the whole point of reserving it.
+
+### Guest vs. authed
+
+`app/(core)/marketing/layout.tsx` branches server-side: guests get
+`MarketingLanding` (`features/auth/components/module-landing/landings/`) on ANY
+`/marketing/*` URL — never a login wall, never an error. Signed-in users fall
+through to the workspace. Registered in `MODULE_LANDING_DIRECTORY` so it appears
+on `/features`. See `.claude/skills/module-landing-pages`.
 
 ## Purpose
 
@@ -210,6 +241,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-27 — Claude: **module build-out.** Marketing now covers eight pillars with 16 RESERVED routes (campaigns, calendar, audience, local, ranks, ai-visibility, content-studio, social, email, ads, outreach, competitors, monitoring, analytics, reports, automations) rendering the new shared `MarketingComingSoon`, each tracked in `lib/coming-soon/registry.ts`. Added the public `MarketingLanding` + server-side guest/authed branch in the module layout (guests never hit a login wall) and registered it in `MODULE_LANDING_DIRECTORY`. The shell sidebar is now GENERATED from `MARKETING_PILLARS` (`marketingNavChildren()`), as is reserved-route metadata — hub, menu, and metadata can no longer drift. Admin map covers all 16.
 - 2026-07-27 — Codex: **site-overview context-menu reference wiring.** The canonical site cockpit now mounts the v3 `NonEditableContextMenu` over the whole read-only workspace with the complete live `matrx-user/marketing-site` scope, raw-document Export/Download, and the real `web_site` entity for Attach To + Share. Opening the inline identity editor suppresses that outer menu and gives each controlled text field its own `EditableContextMenu`, so selection, Cut/Paste, Save, content insertion, and inline-agent edits target the exact field without nested menus double-opening. This is the reference pattern for the remaining Marketing rollout: one read-only surface wrapper, field-specific editable wrappers only while an editor is active.
 - 2026-07-27 — Claude: **page workspace authoring layer — desired values, keyword batch, tasks, draft content, image plan, associations.** Every important card now has a desired/target twin: ONE `web.page.desired_values` jsonb (one key per card, merge-safe single write path `updatePageDesiredValues` + shared `useDesiredValueSlice`/`DesiredSection` primitives in `components/pages/desired/` — no remount wipes; PageIntentCard's remount key narrowed to intent fields) with embedded editors in SocialCardPreview (share title/description), IndexabilitySection (canonical/robots), HeadingsOutline (`DesiredOutlineEditor` — the header-structure plan: add/indent/reorder/seed-from-observed). Authored draft content lives in the NEW 1:1 `web.page_content` table (own version lock so draft saves never bump `web.page.version`), edited by `PageDraftContentCard` (BasicContentEditor behind one dynamic edge, explicit Save + beforeunload guard). `PageKeywordsCard` is the keyword batch on the real keyword plane: `seo_keyword → web_page` supporting-role edges (typed wrappers `data/page-keywords.ts`; unknown phrases ensured via `seo.fn_upsert_keyword`, now authenticated-executable) with promote-to-primary writing `target_keyword`. Tasks are first-class: `PageTasksCard` + header/per-card `PageTaskButton` → task quick-create window pre-linked (`web_page` source; canonical edge direction is entity→task). `PageImagePlanCard` plans images in `desired_values.image_plan` and generates them headlessly via the surface's new `image_producer` agent role (`lib/generate-page-image.ts`, imageGrading pattern; file_id lands on the entry). Attachability: `web_page` token gained `title_column='url'` + registry overlay + `/marketing/pages/[pageId]` short-link resolver; bottom `AssociationCardGrid` under `PrimaryEntityProvider`; per-capture `CaptureAttachments` (TaskChipRow + note/file picker on `web_screenshot`). Surface: `authoring`/`attachments` groups + 12 values (draft_content, desired_values, keyword_batch, image_plan, findings, gsc_queries, in/outbound_links, backlinks, structured_data, perf, images, page_tasks, attached_items), all emitted by `buildMarketingPageScope`; DB synced (74 values / 12 roles live). **Platform class fix:** the association read RPCs (`assoc_for_entity`/`assoc_for_targets`/`assoc_for_sources`) now honor the `iam.system_orgs.global_readable` tier via new `iam.org_readable` — system-org edges (ALL keyword edges) were previously invisible to every client. Known gap: the scraper stores only image counts, so per-image observed inventory/alt editing waits on an aidream scraper change.
 - 2026-07-27 — Claude: **keyword intelligence wave 2 + page evidence cards.** The Keyword Intelligence window is now a registered agent surface (`matrx-user/keyword-intelligence` — 17 values incl. `keyword_brief`, 3 unbound roles, emitter inside `KeywordIntelPanel`; DB-synced live) and the marketing-page surface emits `target_keyword_data` (condensed market brief for the saved target keyword). Page workspace gained four evidence cards with full Copy/Copy-for-AI: Queries reaching this page (per-page GSC evidence with one-click Adopt-as-target), inline Open findings, Internal links (in/outbound `web.link_edge` rollups), and per-page Backlinks; snapshot history gained a two-snapshot Compare diff (canonical narrowers only). Keyword adoption sweep: ranks add-target uses `KeywordInput`, ranks/site-keywords rows and the content-plan KeywordPicker carry Keyword Intelligence launchers, `ranks/types.ts` re-aliased onto generated OpenAPI schemas. Intent save nudges a one-click market fetch for unknown keywords.
