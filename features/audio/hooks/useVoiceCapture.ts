@@ -27,6 +27,7 @@ import {
   type GlobalRecordingApi,
 } from "@/providers/GlobalRecordingProvider";
 import type { TranscriptionResult } from "@/features/audio/types";
+import type { ChunkCompleteInfo } from "@/features/audio/recordingTypes";
 
 export interface UseVoiceCaptureOptions {
   /** Stable id for this surface. Defaults to a generated id (fine for a single
@@ -36,6 +37,10 @@ export interface UseVoiceCaptureOptions {
   label?: string;
   /** Final accumulated transcript when this recording stops + finishes. */
   onTranscript?: (finalText: string, result: TranscriptionResult) => void;
+  /** Each chunk's transcript text as it streams in (live-capture surfaces that
+   *  consume text incrementally; `onTranscript` still fires with the full
+   *  accumulated text at the end — don't append both). */
+  onChunk?: (chunkText: string, info: ChunkCompleteInfo) => void;
   /** Capture-level errors (permission denied, mic interrupted, …). */
   onError?: (message: string, code?: string) => void;
 }
@@ -127,6 +132,9 @@ export function useVoiceCapture(
     }
     await provider.start({
       context: { kind: "field", instanceId, label: optsRef.current.label },
+      onChunkComplete: (info) => {
+        optsRef.current.onChunk?.(info.text, info);
+      },
       onComplete: (result) => {
         optsRef.current.onTranscript?.(result.text ?? "", result);
       },

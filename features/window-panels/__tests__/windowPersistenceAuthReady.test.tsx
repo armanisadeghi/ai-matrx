@@ -56,7 +56,10 @@ jest.mock(
   }),
 );
 
-import { WindowPersistenceManager } from "@/features/window-panels/WindowPersistenceManager";
+// The shell (`WindowPersistenceManager`) is a next/dynamic boundary, which
+// does not resolve reliably under jsdom — render the Core directly; every
+// behavior under test (hydration gating, store side effects) lives there.
+import WindowPersistenceCore from "@/features/window-panels/WindowPersistenceCore";
 
 describe("WindowPersistenceManager auth readiness", () => {
   let container: HTMLDivElement;
@@ -91,9 +94,8 @@ describe("WindowPersistenceManager auth readiness", () => {
     await act(async () => {
       root.render(
         <Provider store={store}>
-          <WindowPersistenceManager>
-            <div>public content</div>
-          </WindowPersistenceManager>
+          <WindowPersistenceCore onValue={() => undefined} />
+          <div>public content</div>
         </Provider>,
       );
       await Promise.resolve();
@@ -176,9 +178,8 @@ describe("WindowPersistenceManager auth readiness", () => {
     await act(async () => {
       root.render(
         <Provider store={store}>
-          <WindowPersistenceManager>
-            <div>public content</div>
-          </WindowPersistenceManager>
+          <WindowPersistenceCore onValue={() => undefined} />
+          <div>public content</div>
         </Provider>,
       );
       await Promise.resolve();

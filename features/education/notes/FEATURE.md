@@ -55,10 +55,15 @@ carries the P0 `TrustEnvelope` → `ConfidenceBadge`.
 (`lineage.ts#listGeneratedFrom('note', id)`) → clickable chips. The just-created artifact links
 back; the note lists its artifacts.
 
-**Live capture.** `LiveCaptureButton` records; each transcribed chunk is appended to the
+**Live capture.** `LiveCaptureButton` records via the ONE global recorder
+(`useVoiceCapture` with `instanceId: noteId`, `onChunk`) — never its own recorder instance,
+so start-always-wins arbitration and the Audio panel session registry apply, and the heavy
+recording graph stays out of this route chunk. Each transcribed chunk is appended to the
 note's live Redux content (`updateNoteContent`), rendering in the editor as the lecturer
 speaks and autosaving through the notes middleware. Appends always target the freshest
-content, so simultaneous manual edits are never clobbered.
+content, so simultaneous manual edits are never clobbered. All recording-state reads are
+ownership-gated on the note's `instanceId`, so another surface's recording never lights
+this button.
 
 ## The `notes` converter target (owned here)
 
@@ -84,6 +89,11 @@ one-upload→kit fan-out can include a structured note, and it lands right back 
 
 ## Change log
 
+- **2026-07-26** — `LiveCaptureButton` migrated off its own `useChunkedRecordAndTranscribe`
+  instance onto the global recorder (`useVoiceCapture` + new `onChunk` callback): joins
+  start-always-wins arbitration + the Audio panel registry, drops the 971-line recording
+  graph from the education-notes chunk, and its eslint-disable for
+  `audioSystemStaticImportBan` is gone (the ban now enforces).
 - **2026-07-10** — Convergence-B: the note-local convert stack was generalized into shared
   converter primitives. `ConvertNoteDialog` → `convert/ConvertContentDialog`,
   `GeneratedArtifactsChips` → `convert/GeneratedFromChips`, and `notes/service.ts`
