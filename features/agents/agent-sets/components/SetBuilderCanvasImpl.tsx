@@ -34,7 +34,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./set-builder-canvas.css";
 import dagre from "dagre";
-import { Network, Webhook, GitFork, CircleDot, LayoutGrid, type LucideIcon } from "lucide-react";
+import { Network, Webhook, GitFork, CircleDot, LayoutGrid, PanelRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -45,6 +45,7 @@ import {
   saveSetConfig,
 } from "@/features/agents/redux/agent-sets/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
+import { AgentPeekButton } from "./AgentPeekButton";
 import { accentClasses } from "./accents";
 import { AGENT_DND_MIME } from "./AgentLibraryRail";
 import type { SetBuilderCanvasProps } from "./SetBuilderCanvas";
@@ -56,6 +57,7 @@ interface OrchestratorData {
   agentId: string;
   accent: SetAccent;
   memberCount: number;
+  onOpen: () => void;
 }
 interface MemberData {
   orchestratorId: string;
@@ -81,12 +83,29 @@ function OrchestratorNode({ data }: NodeProps) {
   return (
     <div
       className={cn(
-        "w-[260px] rounded-2xl border-2 bg-card p-4 shadow-lg",
+        "group/orch relative w-[260px] rounded-2xl border-2 bg-card p-4 shadow-lg",
         "border-transparent ring-2",
         a.ring,
       )}
     >
       <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-transparent" />
+      {/* Hover toolbar — mirrors the member card: Quick-look snapshot + open the
+          side inspector (details + system prompt). */}
+      <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/orch:opacity-100">
+        <AgentPeekButton agentId={d.agentId} />
+        <button
+          type="button"
+          aria-label="Orchestrator details"
+          title="Orchestrator details"
+          onClick={(e) => {
+            e.stopPropagation();
+            d.onOpen();
+          }}
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <PanelRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
       <div className="flex items-center gap-3">
         <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl shadow-sm", a.glyph)}>
           <Network className="h-5 w-5" />
@@ -217,7 +236,7 @@ function LayoutButton({ icon: Icon, label, onClick }: { icon: LucideIcon; label:
 
 // ─── canvas ─────────────────────────────────────────────────────────────
 
-function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: SetBuilderCanvasProps) {
+function CanvasInner({ orchestratorId, accent, members, config, onEditMember, onOpenOrchestrator }: SetBuilderCanvasProps) {
   const dispatch = useAppDispatch();
   const { screenToFlowPosition, fitView } = useReactFlow();
   const a = accentClasses(accent);
@@ -237,6 +256,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
           agentId: orchestratorId,
           accent,
           memberCount: members.length,
+          onOpen: onOpenOrchestrator,
         } as Record<string, unknown>,
       };
       const memberNodes: Node[] = members.map((m, i) => {
@@ -259,7 +279,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
       });
       return [orch, ...memberNodes];
     },
-    [members, config.orchestratorPos, accent, orchestratorId, onEditMember],
+    [members, config.orchestratorPos, accent, orchestratorId, onEditMember, onOpenOrchestrator],
   );
 
   // React Flow OWNS node state — a drag mutates only the dragged node (no

@@ -9,7 +9,7 @@
  *      dialog) used by PromptRunnerModal, AdaptiveLayout, and other pre-
  *      existing surfaces. Kept intact for backward compatibility.
  *   2. `CanvasPane` — the new modern per-pane wrapper used by
- *      `CanvasSideSheetInner`, which provides its own pane-aware header
+ *      `CanvasSideSheetImpl`, which provides its own pane-aware header
  *      and the optional split-view layout.
  *
  * If you're adding a new content type:

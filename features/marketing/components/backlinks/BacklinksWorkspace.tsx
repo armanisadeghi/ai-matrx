@@ -9,6 +9,8 @@ import {
   Loader2,
   RefreshCw,
   Save,
+  Search,
+  X,
 } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -64,6 +66,7 @@ import type {
 } from "@/features/marketing/seo/dataforseo/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
+import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 
@@ -92,15 +95,15 @@ function MetricCard({
   detail?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="rounded-lg bg-muted/40 p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
         {compactNumber(value)}
       </p>
       {detail ? (
-        <p className="mt-1 text-[10px] text-muted-foreground">{detail}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
       ) : null}
     </div>
   );
@@ -114,10 +117,10 @@ function DimensionList({
   rows: BacklinkDimensionRow[];
 }) {
   return (
-    <section className="min-w-0 rounded-lg border border-border bg-card p-3">
+    <section className="min-w-0 rounded-lg bg-muted/40 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="text-xs font-semibold">{title}</h2>
-        <span className="text-[10px] text-muted-foreground">
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <span className="text-xs text-muted-foreground">
           top {Math.min(rows.length, 8)}
         </span>
       </div>
@@ -125,9 +128,12 @@ function DimensionList({
         {rows.slice(0, 8).map((row) => (
           <div
             key={row.id}
-            className="flex min-w-0 items-center justify-between gap-3 text-[11px]"
+            className="flex min-w-0 items-center justify-between gap-3 text-xs"
           >
-            <span className="truncate" title={row.label ?? row.dimension_key}>
+            <span
+              className="truncate text-foreground"
+              title={row.label ?? row.dimension_key}
+            >
               {row.label ?? row.dimension_key}
             </span>
             <span className="shrink-0 tabular-nums text-muted-foreground">
@@ -136,9 +142,7 @@ function DimensionList({
           </div>
         ))}
         {!rows.length ? (
-          <p className="text-[11px] text-muted-foreground">
-            No stored rows yet.
-          </p>
+          <p className="text-xs text-muted-foreground">No stored rows yet.</p>
         ) : null}
       </div>
     </section>
@@ -153,7 +157,7 @@ export function BacklinksWorkspace() {
   const seoTarget = serviceTargets.find((target) => target.service === "seo");
   const table = useMarketingTableState({
     defaultSort: { id: "domain_rank", direction: "desc" },
-    defaultPageSize: 50,
+    defaultPageSize: 100,
   });
   const workspace = useBacklinkWorkspace(site.id);
   const trend = useBacklinkTrend(site.id);
@@ -270,7 +274,7 @@ export function BacklinksWorkspace() {
       filter: "text",
       cellKind: "text",
       cell: (row) => (
-        <span className="block min-w-40 max-w-64 truncate font-medium">
+        <span className="block min-w-40 max-w-64 truncate font-medium text-foreground">
           {row.source_domain ?? "—"}
         </span>
       ),
@@ -286,9 +290,27 @@ export function BacklinksWorkspace() {
           href={row.source_url}
           target="_blank"
           rel="noreferrer"
-          className="flex min-w-56 max-w-xl items-center gap-1 truncate font-mono text-[11px] text-primary"
+          className="flex min-w-56 max-w-xl items-center gap-1 truncate font-mono text-xs text-primary hover:underline"
         >
           <span className="truncate">{row.source_url}</span>
+          <ExternalLink className="h-3 w-3 shrink-0" />
+        </a>
+      ),
+    },
+    {
+      id: "target_url",
+      accessorKey: "target_url",
+      header: "Target page URL",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) => (
+        <a
+          href={row.target_url}
+          target="_blank"
+          rel="noreferrer"
+          className="flex min-w-56 max-w-xl items-center gap-1 truncate font-mono text-xs text-primary hover:underline"
+        >
+          <span className="truncate">{row.target_url}</span>
           <ExternalLink className="h-3 w-3 shrink-0" />
         </a>
       ),
@@ -300,7 +322,7 @@ export function BacklinksWorkspace() {
       filter: "text",
       cellKind: "text",
       cell: (row) => (
-        <span className="block max-w-52 truncate text-xs">
+        <span className="block max-w-52 truncate text-xs text-foreground">
           {row.anchor_text || "—"}
         </span>
       ),
@@ -323,7 +345,12 @@ export function BacklinksWorkspace() {
       header: "Follow",
       filter: "boolean",
       cell: (row) => (
-        <span className="text-xs">
+        <span
+          className={cn(
+            "text-xs font-medium",
+            row.is_dofollow ? "text-success" : "text-foreground",
+          )}
+        >
           {row.is_dofollow ? "dofollow" : "nofollow"}
         </span>
       ),
@@ -335,7 +362,9 @@ export function BacklinksWorkspace() {
       filter: "number",
       align: "right",
       cell: (row) => (
-        <span className="tabular-nums">{row.domain_rank ?? "—"}</span>
+        <span className="tabular-nums text-foreground">
+          {row.domain_rank ?? "—"}
+        </span>
       ),
     },
     {
@@ -344,7 +373,7 @@ export function BacklinksWorkspace() {
       header: "Last seen",
       filter: false,
       cell: (row) => (
-        <span className="whitespace-nowrap text-xs">
+        <span className="whitespace-nowrap text-xs text-foreground">
           {row.last_seen_at ? formatCompactDate(row.last_seen_at) : "—"}
         </span>
       ),
@@ -382,227 +411,272 @@ export function BacklinksWorkspace() {
         })
       }
     >
-    <main className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3 sm:p-4">
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-sm font-semibold">
-            <Link2 className="h-4 w-4 text-primary" /> Backlink intelligence
-          </h1>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            DataForSEO evidence stored for {site.domain}. Manual refresh follows
-            the shell&apos;s {seoTarget?.environment ?? "selected"} SEO server
-            target.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select
-            value={profile}
-            onValueChange={(value) =>
-              setProfile(value as BacklinkRefreshProfile)
-            }
-          >
-            <SelectTrigger size="sm" className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekly">Weekly core</SelectItem>
-              <SelectItem value="monthly">Monthly detail</SelectItem>
-              <SelectItem value="bootstrap">Full bootstrap</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            size="sm"
-            className="gap-1.5"
-            disabled={refreshing || !detailLimitValid}
-            onClick={() => void refresh()}
-          >
-            {refreshing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            Refresh now
-          </Button>
-        </div>
-      </section>
-
-      <section className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-3">
-        <div className="mr-auto min-w-64">
+      <main className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto bg-textured p-3 pb-40 sm:p-4 sm:pb-48">
+        <section className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+          <div className="min-w-0">
+            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Link2 className="h-4 w-4 text-primary" /> Backlink intelligence
+            </h1>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              DataForSEO evidence stored for {site.domain}. Manual refresh
+              follows the shell&apos;s {seoTarget?.environment ?? "selected"}{" "}
+              SEO server target.
+            </p>
+          </div>
           <div className="flex items-center gap-2">
-            <Switch
-              aria-label="Enable automatic backlink refresh"
-              checked={schedule.enabled}
-              onCheckedChange={(enabled) =>
-                setSchedule((current) => ({ ...current, enabled }))
+            <Select
+              value={profile}
+              onValueChange={(value) =>
+                setProfile(value as BacklinkRefreshProfile)
               }
-            />
-            <div>
-              <h2 className="text-xs font-semibold">Automatic refresh</h2>
-              <p className="text-[10px] text-muted-foreground">
-                Stored on this site; the aidream scheduler checks due sites
-                daily.
-              </p>
+            >
+              <SelectTrigger size="sm" className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="weekly">Weekly core</SelectItem>
+                <SelectItem value="monthly">Monthly detail</SelectItem>
+                <SelectItem value="bootstrap">Full bootstrap</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              disabled={refreshing || !detailLimitValid}
+              onClick={() => void refresh()}
+            >
+              {refreshing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Refresh now
+            </Button>
+          </div>
+        </section>
+
+        <section className="flex flex-wrap items-end gap-3 border-b border-border pb-3">
+          <div className="mr-auto min-w-64">
+            <div className="flex items-center gap-2">
+              <Switch
+                aria-label="Enable automatic backlink refresh"
+                checked={schedule.enabled}
+                onCheckedChange={(enabled) =>
+                  setSchedule((current) => ({ ...current, enabled }))
+                }
+              />
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">
+                  Automatic refresh
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Stored on this site; the aidream scheduler checks due sites
+                  daily.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[10px]">Cadence</Label>
-          <Select
-            value={schedule.cadence}
-            onValueChange={(cadence) =>
-              setSchedule((current) => ({
-                ...current,
-                cadence: cadence as DataForSeoCadence,
-              }))
-            }
+          <div className="space-y-1">
+            <Label className="text-xs text-foreground">Cadence</Label>
+            <Select
+              value={schedule.cadence}
+              onValueChange={(cadence) =>
+                setSchedule((current) => ({
+                  ...current,
+                  cadence: cadence as DataForSeoCadence,
+                }))
+              }
+            >
+              <SelectTrigger size="sm" className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label
+              htmlFor="backlink-detail-limit"
+              className="text-xs text-foreground"
+            >
+              Detail rows
+            </Label>
+            <Input
+              id="backlink-detail-limit"
+              type="number"
+              min={1}
+              max={1000}
+              value={schedule.detailLimit}
+              className="h-8 w-28"
+              onChange={(event) =>
+                setSchedule((current) => ({
+                  ...current,
+                  detailLimit: Number(event.target.value),
+                }))
+              }
+            />
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            disabled={!scheduleDirty || savingSchedule || !detailLimitValid}
+            onClick={() => void saveSchedule()}
           >
-            <SelectTrigger size="sm" className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="backlink-detail-limit" className="text-[10px]">
-            Detail rows
-          </Label>
-          <Input
-            id="backlink-detail-limit"
-            type="number"
-            min={1}
-            max={1000}
-            value={schedule.detailLimit}
-            className="h-8 w-28"
-            onChange={(event) =>
-              setSchedule((current) => ({
-                ...current,
-                detailLimit: Number(event.target.value),
-              }))
+            {savingSchedule ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+            Save schedule
+          </Button>
+        </section>
+
+        <section className="grid grid-cols-2 gap-2 lg:grid-cols-6">
+          <MetricCard label="Backlinks" value={summary?.total_backlinks} />
+          <MetricCard
+            label="Referring domains"
+            value={summary?.referring_domains}
+          />
+          <MetricCard label="Dofollow" value={summary?.dofollow_backlinks} />
+          <MetricCard label="Nofollow" value={summary?.nofollow_backlinks} />
+          <MetricCard label="Rank" value={summary?.rank_score} />
+          <MetricCard
+            label="Last refreshed"
+            value={null}
+            detail={
+              summary
+                ? formatCompactDate(summary.created_at)
+                : "No snapshot yet"
             }
           />
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="gap-1.5"
-          disabled={!scheduleDirty || savingSchedule || !detailLimitValid}
-          onClick={() => void saveSchedule()}
-        >
-          {savingSchedule ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Save className="h-3.5 w-3.5" />
-          )}
-          Save schedule
-        </Button>
-      </section>
+        </section>
 
-      <section className="grid grid-cols-2 gap-2 lg:grid-cols-6">
-        <MetricCard label="Backlinks" value={summary?.total_backlinks} />
-        <MetricCard
-          label="Referring domains"
-          value={summary?.referring_domains}
-        />
-        <MetricCard label="Dofollow" value={summary?.dofollow_backlinks} />
-        <MetricCard label="Nofollow" value={summary?.nofollow_backlinks} />
-        <MetricCard label="Rank" value={summary?.rank_score} />
-        <MetricCard
-          label="Last refreshed"
-          value={null}
-          detail={
-            summary ? formatCompactDate(summary.created_at) : "No snapshot yet"
-          }
-        />
-      </section>
-
-      <section className="rounded-lg border border-border bg-card p-3">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <div>
-            <h2 className="text-xs font-semibold">
+        <section className="border-b border-border pb-3">
+          <div className="mb-2">
+            <h2 className="text-sm font-semibold text-foreground">
               New vs. lost backlinks over time
             </h2>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               From the stored DataForSEO backlink timeseries — no re-fetch
               required once a weekly or bootstrap refresh has run.
             </p>
           </div>
-        </div>
-        {trend.isLoading ? (
-          <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
-            Loading trend…
+          {trend.isLoading ? (
+            <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
+              Loading trend…
+            </div>
+          ) : trend.isError ? (
+            <QueryError
+              error={trend.error}
+              onRetry={() => void trend.refetch()}
+            />
+          ) : (
+            <BacklinkTrendChart points={trend.data ?? []} />
+          )}
+        </section>
+
+        <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          <DimensionList
+            title="Referring domains"
+            rows={data?.referringDomains ?? []}
+          />
+          <DimensionList title="Anchor text" rows={data?.anchors ?? []} />
+          <DimensionList title="Linked pages" rows={data?.targetPages ?? []} />
+          <DimensionList title="Competitors" rows={data?.competitors ?? []} />
+        </section>
+
+        {receipt ? (
+          <section className="h-80 overflow-hidden rounded-lg border border-border bg-card">
+            <JsonInspector
+              data={receipt}
+              label="Exact refresh receipt"
+              defaultView="json"
+              defaultExpandDepth={3}
+              className="rounded-none"
+            />
+          </section>
+        ) : null}
+
+        <section className="flex min-h-[44rem] flex-col">
+          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 py-2">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <h2 className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground">
+                <Database className="h-4 w-4 text-primary" />
+                Stored backlink rows
+              </h2>
+              <span className="hidden h-4 w-px shrink-0 bg-border sm:block" />
+              <p className="min-w-0 truncate text-xs text-muted-foreground">
+                {(backlinks.data?.total ?? 0).toLocaleString()} total recorded
+                {detailSnapshot
+                  ? ` until ${formatCompactDate(detailSnapshot.created_at)}`
+                  : " · not collected yet"}
+              </p>
+            </div>
+            <div className="relative w-full sm:ml-auto sm:w-80">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={table.state.search}
+                onChange={(event) =>
+                  table.onStateChange({
+                    ...table.state,
+                    search: event.target.value,
+                    page: 1,
+                  })
+                }
+                placeholder="Search source, target, or anchor…"
+                className="h-9 pl-8 pr-8 text-sm"
+                style={{ fontSize: "16px" }}
+              />
+              {table.state.search ? (
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  onClick={() =>
+                    table.onStateChange({
+                      ...table.state,
+                      search: "",
+                      page: 1,
+                    })
+                  }
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
+            </div>
           </div>
-        ) : trend.isError ? (
-          <QueryError error={trend.error} onRetry={() => void trend.refetch()} />
-        ) : (
-          <BacklinkTrendChart points={trend.data ?? []} />
-        )}
-      </section>
-
-      <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-        <DimensionList
-          title="Referring domains"
-          rows={data?.referringDomains ?? []}
-        />
-        <DimensionList title="Anchor text" rows={data?.anchors ?? []} />
-        <DimensionList title="Linked pages" rows={data?.targetPages ?? []} />
-        <DimensionList title="Competitors" rows={data?.competitors ?? []} />
-      </section>
-
-      {receipt ? (
-        <section className="h-80 overflow-hidden rounded-lg border border-border bg-card">
-          <JsonInspector
-            data={receipt}
-            label="Exact refresh receipt"
-            defaultView="json"
-            defaultExpandDepth={3}
-            className="rounded-none"
+          <MatrxDataTable<BacklinkObservationRow>
+            className="min-h-0 flex-1 gap-0 [&>div:last-child]:border-t [&>div:last-child]:border-border [&>div:last-child]:bg-muted/30 [&>div:last-child]:px-3 [&>div:last-child]:py-2"
+            tableClassName="min-h-[36rem] rounded-md border border-border bg-card"
+            data={backlinks.data?.rows ?? []}
+            columns={columns}
+            getRowId={(row) => row.id}
+            isLoading={backlinks.isLoading}
+            isFetching={backlinks.isFetching}
+            query={{
+              mode: "controlled",
+              state: table.state,
+              totalItems: backlinks.data?.total ?? 0,
+              onStateChange: table.onStateChange,
+            }}
+            toolbar={{ search: false }}
+            pageSizeOptions={[25, 50, 100]}
+            emptyState={{
+              icon: <Link2 className="h-8 w-8 text-muted-foreground" />,
+              title: "No detailed backlinks stored",
+              description:
+                "Run Full bootstrap or Monthly detail to collect backlink rows.",
+            }}
+            detail={{
+              title: (row) => row.source_domain ?? row.source_url,
+              description: (row) => `${row.state} link to ${row.target_url}`,
+            }}
           />
         </section>
-      ) : null}
-
-      <section className="min-h-[30rem] rounded-lg border border-border bg-card p-2">
-        <div className="mb-2 flex items-center justify-between gap-3 px-1">
-          <div>
-            <h2 className="flex items-center gap-1.5 text-xs font-semibold">
-              <Database className="h-3.5 w-3.5" /> Stored backlink rows
-            </h2>
-            <p className="text-[10px] text-muted-foreground">
-              Latest detail snapshot
-              {detailSnapshot
-                ? ` · ${formatCompactDate(detailSnapshot.created_at)}`
-                : " · not collected yet"}
-            </p>
-          </div>
-        </div>
-        <MatrxDataTable<BacklinkObservationRow>
-          data={backlinks.data?.rows ?? []}
-          columns={columns}
-          getRowId={(row) => row.id}
-          isLoading={backlinks.isLoading}
-          isFetching={backlinks.isFetching}
-          query={{
-            mode: "controlled",
-            state: table.state,
-            totalItems: backlinks.data?.total ?? 0,
-            onStateChange: table.onStateChange,
-          }}
-          toolbar={{ searchPlaceholder: "Search source, target, or anchor…" }}
-          emptyState={{
-            icon: <Link2 className="h-8 w-8 text-muted-foreground" />,
-            title: "No detailed backlinks stored",
-            description:
-              "Run Full bootstrap or Monthly detail to collect backlink rows.",
-          }}
-          detail={{
-            title: (row) => row.source_domain ?? row.source_url,
-            description: (row) => `${row.state} link to ${row.target_url}`,
-          }}
-        />
-      </section>
-    </main>
+      </main>
     </SurfaceRuntimeProvider>
   );
 }

@@ -1,11 +1,16 @@
 "use client";
 
 /**
- * CanvasSideSheet — the global right-side canvas surface.
+ * CanvasSideSheetImpl — the HEAVY core of the global right-side canvas
+ * surface (Claude.ai-style slide-in panel). Its static graph is the whole
+ * canvas machinery: CanvasPane → renderers → materialization → content-IR.
  *
- * Modeled on the Claude.ai canvas: a slide-in panel anchored to the right
- * edge of the viewport, available on every route (mounted once via
- * `DeferredIslands` for `(a)/*` and directly in `(public)/layout.tsx`).
+ * NEVER import this module statically (the `@/…Impl` eslint ban enforces
+ * it). The only consumer is the thin front door `./CanvasSideSheet.tsx`,
+ * which dynamic({ssr:false})-imports it and mounts it ONLY once a canvas
+ * item exists — keeping this entire subtree out of the server compile and
+ * out of every route's initial chunk (it used to ride statically on every
+ * (public) page).
  *
  * Responsibilities owned here:
  *  - Slide-in container with backdrop-free overlay (does not dim the page).
@@ -15,7 +20,11 @@
  *    pane independently rendering its own canvas item.
  *  - Mobile: fullscreen overlay, drops the split (single pane only — split
  *    is desktop-only because the panes need real estate to be useful).
- *  - Listens for the global ⌘\ shortcut → toggles open/closed.
+ *
+ * NOT owned here (they must run even when this chunk was never fetched, so
+ * they live in the always-mounted front door `CanvasSideSheet.tsx`):
+ *  - `setCanvasAvailable` mount/unmount signaling.
+ *  - The global ⌘\ / Ctrl+\ toggle shortcut.
  *
  * The actual content of each pane (header chrome + body) lives in
  * `CanvasPane.tsx`, so this shell stays purely about layout / placement.
@@ -30,10 +39,8 @@ import {
   selectCanvasSplitRatio,
   selectCanvasWidth,
   closeCanvas,
-  toggleCanvas,
   setCanvasWidth,
   setCanvasSplitRatio,
-  setCanvasAvailable,
 } from "@/features/canvas/redux/canvasSlice";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -51,7 +58,7 @@ const DEFAULT_WIDTH = 768;
 const CANVAS_TOP_PANEL_ID = "canvas-top";
 const CANVAS_BOTTOM_PANEL_ID = "canvas-bottom";
 
-export function CanvasSideSheetInner() {
+export function CanvasSideSheetImpl() {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(selectCanvasIsOpen);
   const currentItem = useAppSelector(selectCurrentCanvasItem);
@@ -65,18 +72,6 @@ export function CanvasSideSheetInner() {
 
   const handleClose = useCallback(() => {
     dispatch(closeCanvas());
-  }, [dispatch]);
-
-  // The global canvas surface is mounted (here, via DeferredIslands in (core)
-  // and directly in (public)) → canvas IS available on these routes. Mark it so
-  // that blocks which gate their "Open in canvas" affordance on availability
-  // (e.g. MermaidBlock) actually show it. Without this, only the legacy
-  // AdaptiveLayout ever set availability, so the modern chat hid the button.
-  useEffect(() => {
-    dispatch(setCanvasAvailable(true));
-    return () => {
-      dispatch(setCanvasAvailable(false));
-    };
   }, [dispatch]);
 
   useEffect(() => {
@@ -104,27 +99,6 @@ export function CanvasSideSheetInner() {
       document.body.style.cursor = "";
     }
   }, [isResizing]);
-
-  // Global keyboard shortcut: ⌘\ / Ctrl+\ toggles the canvas if there's
-  // anything to show. Bound here so every authenticated + public surface
-  // gets it for free. Ignored when focus is in a text field, so users mid-
-  // typing don't get yanked into / out of the canvas accidentally.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "\\") return;
-      if (!(e.metaKey || e.ctrlKey)) return;
-      const t = e.target as HTMLElement | null;
-      const typing =
-        t?.tagName === "INPUT" ||
-        t?.tagName === "TEXTAREA" ||
-        t?.isContentEditable;
-      if (typing) return;
-      e.preventDefault();
-      dispatch(toggleCanvas());
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [dispatch]);
 
   // Hide the shell-header avatar while open — CanvasPane header replaces it.
   useEffect(() => {

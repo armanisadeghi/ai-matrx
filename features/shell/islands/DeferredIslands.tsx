@@ -17,13 +17,11 @@ import { useIdleReady } from "@/utils/idle-scheduler";
 // `app/DeferredSingletons.tsx` via `LazyMessagingIsland` so they work on
 // every authenticated route.
 
-const CanvasSideSheetInner = dynamic(
-  () =>
-    import("@/features/canvas/core/CanvasSideSheetInner").then(
-      (m) => m.CanvasSideSheetInner,
-    ),
-  { ssr: false, loading: () => null },
-);
+// CanvasSideSheet is the canvas front door (thin shell — availability flag +
+// ⌘\ shortcut). It owns the dynamic({ssr:false}) boundary for the heavy canvas
+// core itself and only fetches that chunk once a canvas item exists, so we
+// import it statically here instead of stacking a second dynamic() around it.
+import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
 
 const WindowTraySync = dynamic(
   () => import("@/features/window-panels/WindowTraySync"),
@@ -37,7 +35,7 @@ export default function DeferredIslands() {
 
   return (
     <>
-      <CanvasSideSheetInner />
+      <CanvasSideSheet />
       <WindowTraySync />
     </>
   );

@@ -42,6 +42,7 @@ import { AgentLibraryRail } from "./AgentLibraryRail";
 import SetBuilderCanvas from "./SetBuilderCanvas";
 import { SetMemberGrid } from "./SetMemberGrid";
 import { MemberInspector } from "./MemberInspector";
+import { OrchestratorInspector } from "./OrchestratorInspector";
 import { SetSettingsDialog } from "./SetSettingsDialog";
 import { accentClasses } from "./accents";
 import { DEFAULT_SET_ACCENT } from "../constants";
@@ -68,6 +69,16 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   const libraryOpen = libraryOverride ?? !isMobile;
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [orchestratorOpen, setOrchestratorOpen] = useState(false);
+  // The right-side inspector shows EITHER a member or the orchestrator, never both.
+  const openMember = (agentId: string) => {
+    setOrchestratorOpen(false);
+    setEditingId(agentId);
+  };
+  const openOrchestrator = () => {
+    setEditingId(null);
+    setOrchestratorOpen(true);
+  };
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -270,7 +281,8 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
               accent={accent}
               members={members}
               config={config}
-              onEditMember={setEditingId}
+              onEditMember={openMember}
+              onOpenOrchestrator={openOrchestrator}
             />
           ) : (
             <div className="h-full overflow-y-auto">
@@ -279,7 +291,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
                   orchestratorId={orchestratorId}
                   members={members}
                   accent={accent}
-                  onEdit={setEditingId}
+                  onEdit={openMember}
                 />
               )}
             </div>
@@ -304,6 +316,14 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
             member={editingMember}
             accent={accent}
             onClose={() => setEditingId(null)}
+          />
+        )}
+
+        {orchestratorOpen && (
+          <OrchestratorInspector
+            orchestratorId={orchestratorId}
+            accent={accent}
+            onClose={() => setOrchestratorOpen(false)}
           />
         )}
       </div>

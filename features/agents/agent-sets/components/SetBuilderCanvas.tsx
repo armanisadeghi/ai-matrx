@@ -21,6 +21,8 @@ export interface SetBuilderCanvasProps {
   members: AgentSetMember[];
   config: AgentSetConfig;
   onEditMember: (agentId: string) => void;
+  /** Open the orchestrator inspector (snapshot + details + system prompt). */
+  onOpenOrchestrator: () => void;
 }
 
 const SetBuilderCanvas = dynamic(() => import("./SetBuilderCanvasImpl"), {

@@ -22,8 +22,8 @@ export function BacklinkTrendChart({
         className="flex items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground"
         style={{ height }}
       >
-        No backlink history stored yet — run a weekly or full-bootstrap
-        refresh to collect it.
+        No backlink history stored yet — run a weekly or full-bootstrap refresh
+        to collect it.
       </div>
     );
   }
@@ -50,7 +50,8 @@ export function BacklinkTrendChart({
 
   const netValues = points.map((p) => p.net_backlinks ?? 0);
   const maxNet = Math.max(1, ...netValues.map((v) => Math.abs(v)));
-  const netYFor = (value: number) => axisY - (value / maxNet) * (halfHeight - 4);
+  const netYFor = (value: number) =>
+    axisY - (value / maxNet) * (halfHeight - 4);
   const netPath = points
     .map((p, i) => {
       const x = xFor(i);
@@ -62,10 +63,7 @@ export function BacklinkTrendChart({
   const first = points[0];
   const last = points[points.length - 1];
   const totalNew = points.reduce((sum, p) => sum + (p.new_backlinks ?? 0), 0);
-  const totalLost = points.reduce(
-    (sum, p) => sum + (p.lost_backlinks ?? 0),
-    0,
-  );
+  const totalLost = points.reduce((sum, p) => sum + (p.lost_backlinks ?? 0), 0);
 
   return (
     <div>
@@ -130,7 +128,7 @@ export function BacklinkTrendChart({
           />
         ))}
       </svg>
-      <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+      <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
         <span>{formatCompactDate(first.observed_at)}</span>
         <span className="flex items-center gap-3">
           <span className="flex items-center gap-1">
