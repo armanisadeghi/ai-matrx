@@ -7,34 +7,19 @@
  * Only requires conversationId — reads style from Redux directly.
  */
 
-import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectVariableInputStyle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type { VariablesPanelStyle } from "./variable-input-options";
-
-const AgentVariableInputForm = dynamic(() =>
-  import("./AgentVariableForm").then((m) => m.AgentVariableForm),
-);
-
-const SmartAgentVariableInputs = dynamic(() =>
-  import("../AgentVariablesInline").then((m) => m.AgentVariablesInline),
-);
-
-const WizardAgentVariableInputs = dynamic(() =>
-  import("./AgentVariablesWizard").then((m) => m.AgentVariablesWizard),
-);
-
-const AgentCompactVariableInputs = dynamic(() =>
-  import("./AgentVariablesStacked").then((m) => m.AgentVariablesStacked),
-);
-
-const AgentGuidedVariableInputs = dynamic(() =>
-  import("./AgentVariablesGuided").then((m) => m.AgentVariablesGuided),
-);
-
-const AgentVariableCardsInputs = dynamic(() =>
-  import("./AgentVariableCards").then((m) => m.AgentVariableCards),
-);
+// FRAGMENTATION LAW (code-splitting skill rule 3): these six style variants are
+// ONE small feature family, always reached beneath an existing ssr:false
+// boundary (~65 of them). Six dynamics here fragmented the chunk graph for
+// zero SSR/deferral benefit — static keeps the family one piece, built once.
+import { AgentVariableForm as AgentVariableInputForm } from "./AgentVariableForm";
+import { AgentVariablesInline as SmartAgentVariableInputs } from "../AgentVariablesInline";
+import { AgentVariablesWizard as WizardAgentVariableInputs } from "./AgentVariablesWizard";
+import { AgentVariablesStacked as AgentCompactVariableInputs } from "./AgentVariablesStacked";
+import { AgentVariablesGuided as AgentGuidedVariableInputs } from "./AgentVariablesGuided";
+import { AgentVariableCards as AgentVariableCardsInputs } from "./AgentVariableCards";
 
 interface SmartAgentVariablesProps {
   conversationId: string;

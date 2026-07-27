@@ -18,24 +18,12 @@ import {
 } from "./contextValueUtils";
 import { cn } from "@/lib/utils";
 
-const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
-  ssr: false,
-});
-
-const JsonInspector = dynamic(
-  () =>
-    import("@/components/official-candidate/json-inspector/JsonInspector").then(
-      (m) => ({ default: m.JsonInspector }),
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="rounded border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-        Loading inspector…
-      </div>
-    ),
-  },
-);
+// FRAGMENTATION LAW: this surface is always beneath an existing ssr:false
+// boundary — wrapping MarkdownStream (itself already a dynamic front door) and
+// JsonInspector in MORE dynamics was stacked-boundary fragmentation. Static
+// imports of the front doors keep exactly one boundary per heavy graph.
+import MarkdownStream from "@/components/MarkdownStream";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 
 interface ContextValueBodyProps {
   type: ContextObjectType;

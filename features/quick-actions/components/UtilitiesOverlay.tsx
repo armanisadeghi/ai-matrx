@@ -7,17 +7,17 @@ import FullScreenOverlay, {
 } from "@/components/official/FullScreenOverlay";
 import TaskApp from "@/features/tasks/components/TaskApp";
 import dynamic from "next/dynamic";
+import { NotesView } from "@/features/notes/components/NotesView";
 import { QuickChatSheet } from "./QuickChatSheet";
 import { QuickDataSheet } from "./QuickDataSheet";
 import { WindowPanelShell } from "@/features/files/components/surfaces/WindowPanelShell";
 
-const LazyNotesView = dynamic(
-  () =>
-    import("@/features/notes/components/NotesView").then((m) => ({
-      default: m.NotesView,
-    })),
-  { ssr: false },
-);
+// FRAGMENTATION LAW: UtilitiesOverlay is already behind lazyOverlay's
+// ssr:false boundary — a second dynamic under it was a stacked boundary.
+// NotesView is statically part of this overlay's one chunk.
+// (ChatHistoryWorkspace below stays dynamic: the window-path lint rule
+// deliberately blocks static imports of window-panels windows.)
+const LazyNotesView = NotesView;
 // ChatHistoryWorkspace is the frameless body shared with the floating
 // ChatHistoryWindow. It lives under window-panels/windows, so it's pulled in
 // via dynamic() — the sanctioned path that keeps the heavy chat bundle lazy

@@ -30,30 +30,17 @@ import {
   getJsonStructuralDepth,
 } from "@/utils/json/json-cleaner-utility";
 import { cn } from "@/lib/utils";
+// FRAGMENTATION LAW: the three light panes are ONE inspector surface, always
+// reached beneath an existing ssr:false boundary (~14 admin/debug windows) —
+// static keeps them one piece. Only JsonEditorPane keeps a boundary (it drags
+// the CodeMirror graph, the one genuinely heavy dep here).
+import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
+import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
+import { JsonTruncator } from "@/components/official-candidate/json-truncator/JsonTruncator";
+
 
 const PaneFallback = () => (
   <div className="p-2 text-xs text-muted-foreground">Loading…</div>
-);
-
-const RawJsonExplorer = dynamic(
-  () => import("@/components/official/json-explorer/RawJsonExplorer"),
-  { ssr: false, loading: () => <PaneFallback /> },
-);
-
-const JsonTreeViewer = dynamic(
-  () =>
-    import("@/components/official/json-explorer/JsonTreeViewer").then((m) => ({
-      default: m.JsonTreeViewer,
-    })),
-  { ssr: false, loading: () => <PaneFallback /> },
-);
-
-const JsonTruncator = dynamic(
-  () =>
-    import("@/components/official-candidate/json-truncator/JsonTruncator").then(
-      (m) => ({ default: m.JsonTruncator }),
-    ),
-  { ssr: false, loading: () => <PaneFallback /> },
 );
 
 const JsonEditorPane = dynamic(
