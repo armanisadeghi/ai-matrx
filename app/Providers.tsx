@@ -13,13 +13,13 @@
 // never import from a barrel `index.ts`. If a widget below is heavy,
 // open the widget's own file and lazy-load its heavy children there.
 
-// NOTE: the bundle-leak guard's side-effect import lives in
-// `app/DeferredSingletonWrapper.tsx` — that file has `"use client"`, which
-// is required for the guard's setTimeout to actually run on the client.
+// NOTE: the bundle-leak guard's side-effect import was moved to
+// `app/DeferredSingletons.tsx` — that file has `"use client"`, which is
+// required for the guard's setTimeout to actually run on the client.
 // A side-effect import here (in a Server Component) would only execute
 // on the server and never schedule the boot-signal macrotask in the
 // browser, leading to false-positive alarms when the lazy window-panels
-// chunk first loads. See DeferredSingletonWrapper.tsx for the live import.
+// chunk first loads. See DeferredSingletons.tsx for the live import.
 
 import React from "react";
 import StoreProvider from "@/providers/StoreProvider";
@@ -39,12 +39,7 @@ import { RecordingPill } from "@/components/global/RecordingPill";
 import { RequestRecoveryProvider } from "@/features/request-recovery/providers/RequestRecoveryProvider";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
-// DeferredSingletonWrapper is the shell/impl successor to the old
-// `./DeferredSingletons` (still on disk, unused): the thin `"use client"`
-// shell holds the client-mount + idle gates and `next/dynamic`s the full
-// singleton tree (DeferredSingletonCore), so OverlayController, messaging,
-// admin providers, etc. leave this file's static dep graph entirely.
-import DeferredSingletonWrapper from "./DeferredSingletonWrapper";
+import DeferredSingletons from "./DeferredSingletons";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
 // WindowPersistenceManager provides the React context that WindowPanel
@@ -138,7 +133,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 <RecordingPill />
                                 <RecoveryWindow />
                                 <RecoveryNudge />
-                                <DeferredSingletonWrapper />
+                                <DeferredSingletons />
                                 <ServerToggleQueryReset />
                                 <LoopbackApiAccessSync />
                                 <ExtensionBridgeSubscriber />
