@@ -109,6 +109,7 @@ import {
   RAG_SEARCH_CONTEXT_MENU_PROPS,
 } from "@/features/rag/agent-context/buildRagSearchContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ProInput } from "@/components/official/ProInput";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
@@ -161,6 +162,9 @@ const RAG_AGENT_TOOL_IDS = [
 // ===========================================================================
 
 type SourceKindFilter = "all" | "cld_file" | "note" | "code_file";
+
+/** Hits requested per Search-tab search. Emitted as the surface's `result_limit`. */
+const SEARCH_TAB_RESULT_LIMIT = 25;
 
 function useScopeControls(initialStoreId: string | null = null) {
   const stores = useDataStores();
@@ -813,7 +817,7 @@ function SearchTab({
     try {
       const r = await ragSearch({
         query: trimmed,
-        limit: 25,
+        limit: SEARCH_TAB_RESULT_LIMIT,
         rerank: scope.rerank,
         // Honor the sidebar Pipeline controls in the plain Search tab too —
         // previously HyDE / multi-query / MMR were wired only into the Agent
@@ -871,6 +875,18 @@ function SearchTab({
     [scope.storeId, scope.stores.stores],
   );
 
+  // The store list the sidebar offers, in the surface's declared shape.
+  const dataStoreEntries = useMemo(
+    () =>
+      scope.stores.stores.map((s) => ({
+        id: s.id,
+        name: s.name,
+        kind: s.kind,
+        member_count: s.memberCount,
+      })),
+    [scope.stores.stores],
+  );
+
   // Canonical `contextData` for `matrx-user/rag-search` — pure mapping of live
   // search state (query, retrieval scope, pipeline flags) + the latest results.
   const contextData = buildRagSearchContextData({
@@ -882,6 +898,12 @@ function SearchTab({
     rerank: scope.rerank,
     multiQuery: scope.multiQuery,
     useHyde: scope.useHyde,
+    expandClusters: scope.expandClusters,
+    resultLimit: SEARCH_TAB_RESULT_LIMIT,
+    activeOrganizationId: searchContext.filters?.organization_id,
+    activeScopeIds:
+      searchContext.scope_ids ?? searchContext.filters?.scope_ids ?? null,
+    availableDataStores: dataStoreEntries,
     response,
   });
 
@@ -976,6 +998,14 @@ function SearchTab({
   }
 
   return (
+    // Registers the live retrieval scope + last results for the header Agents
+    // chrome. Mounted INSIDE the Search tab (deepest provider wins) so the
+    // scope it publishes always carries the query and results on screen.
+    <SurfaceRuntimeProvider
+      surfaceName={RAG_SEARCH_SURFACE}
+      getScope={getResultsApplicationScope}
+      isEditable={false}
+    >
     <div className="flex flex-col h-full overflow-hidden">
       <header className="border-b p-3">
         <form
@@ -1205,6 +1235,7 @@ function SearchTab({
         )}
       </ScrollArea>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -2128,6 +2159,10 @@ function Stat({ label, value }: { label: string; value: number | string }) {
 function AgentChatTab({ scope }: { scope: Scope }) {
   const dispatch = useAppDispatch();
   const surfaceKey = `${RAG_SEARCH_SOURCE_FEATURE}:${RAG_AGENT_ID}`;
+  const searchContext = useRagSearchContext();
+  const activeOrganizationId = searchContext.filters?.organization_id ?? null;
+  const activeScopeIds =
+    searchContext.scope_ids ?? searchContext.filters?.scope_ids ?? null;
 
   const storeName = useMemo(
     () =>
@@ -2146,20 +2181,36 @@ function AgentChatTab({ scope }: { scope: Scope }) {
       createRagSearchScope({
         data_store_id: scope.storeId ?? undefined,
         data_store_name: storeName,
+        available_data_stores: scope.stores.stores.map((s) => ({
+          id: s.id,
+          name: s.name,
+          kind: s.kind,
+          member_count: s.memberCount,
+        })),
         source_kinds: scope.sourceKinds,
+        active_organization_id: activeOrganizationId ?? undefined,
+        active_scope_ids:
+          activeScopeIds && activeScopeIds.length > 0
+            ? activeScopeIds
+            : undefined,
         admin_bypass_acl: scope.adminBypass,
         rerank: scope.rerank,
         multi_query: scope.multiQuery,
         use_hyde: scope.useHyde,
+        expand_entity_clusters: scope.expandClusters,
       }),
     [
       scope.storeId,
       storeName,
+      scope.stores.stores,
       scope.sourceKinds,
       scope.adminBypass,
       scope.rerank,
       scope.multiQuery,
       scope.useHyde,
+      scope.expandClusters,
+      activeOrganizationId,
+      activeScopeIds,
     ],
   );
 

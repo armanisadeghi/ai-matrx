@@ -39,7 +39,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 **State** — feature-local **Zustand** store (`state/topicStore.ts` via `context/ResearchContext.tsx`), server-hydrated; not the global Redux store. Pipeline run state is the `usePipelineProgress` reducer, not persisted.
 
-**Surface agent context** (`matrx-user/research`, manifest `features/surfaces/manifests/research.manifest.ts`) — `agent-context/buildResearchContextData.ts` is the ONE pure state→scope mapper (`createResearchScope`); `RESEARCH_CONTEXT_MENU_PROPS` + optional `createResearchExtraSections(handlers)` live there too. Editable mount: the AI-mode Subject query (`ResearchInitForm`, `ProTextarea` + `EditableContextMenu`). Read-only mounts (`NonEditableContextMenu`): the assembled document (`DocumentViewer` `<article>`) and each synthesis body (`SynthesisList` `SynthesisCard`).
+**Surface agent context** (`matrx-user/research`, manifest `features/surfaces/manifests/research.manifest.ts`, `readiness: verified`) — 34 surface-specific values in six curated groups (topic identity / pipeline state / gathered material / outputs / quotas / configuration). `agent-context/buildResearchContextData.ts` is the ONE pure state→scope mapper (`createResearchScope`) and derives readiness through `readiness.ts` rather than re-deriving it, so the agent sees the same "is this done?" answer the UI shows; `RESEARCH_CONTEXT_MENU_PROPS` + optional `createResearchExtraSections(handlers)` live there too. Editable mount: the AI-mode Subject query (`ResearchInitForm`, `ProTextarea` + `EditableContextMenu`). Read-only mounts (`NonEditableContextMenu`): the assembled document (`DocumentViewer` `<article>`) and each synthesis body (`SynthesisList` `SynthesisCard`).
 
 ---
 
@@ -271,6 +271,7 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- `2026-07-27` — **`matrx-user/research` surface taken to `verified`.** The manifest was a stub (12 values, no groups, no urlPattern, no intro, never audited). It now declares 34 surface-specific values across six curated groups, and `buildResearchContextData` emits every one from the topic row + progress ledger the topic shell already holds — including the three layers an agent must not conflate: COUNTS (`pipeline_progress` + the individual `*_count` values), READINESS (`readiness` from `deriveReadiness`, `pending_ledger`, `runnable_summary`, `report_stale`, `document_stale`) and QUOTAS (`topic_quotas`, `quota_headroom`, where a zero means the next add is silently dropped). Also added: org/visibility/template/timestamps, `active_view` (the shell derives the sub-route from the pathname), sources-by-status, tag/content/document/synthesis counts, tag suggestions, outputs + search + agent config, and tone profile. Large or rarely-needed payloads (`current_synthesis_text`, `tag_suggestions`, `outputs_config`, `default_search_params`, `agent_config`, `topic_metadata`) are `autoContext: false`.
 - `2026-07-26` — **Four new source-triage columns surfaced in the UI.**
   `rs_source.scrape_worthiness`/`redundancy_group`/`entity_match_confidence`/
   `snippet_relevance` (backend-only until now) regenerated into

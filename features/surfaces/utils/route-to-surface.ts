@@ -73,6 +73,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/organizations", surface: "matrx-user/organizations" },
   { prefix: "/canvas", surface: "matrx-user/canvas" },
   { prefix: "/ai-results", surface: "matrx-user/ai-results" },
+  { prefix: "/rag/search", surface: "matrx-user/rag-search" },
   { prefix: "/research", surface: "matrx-user/research" },
   { prefix: "/sandbox", surface: "matrx-user/sandboxes" },
   { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },

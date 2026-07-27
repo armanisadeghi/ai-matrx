@@ -1,5 +1,9 @@
 import type { PlacementMode } from "@/features/context-menu-v3/types";
 import { createResearchScope } from "@/features/surfaces/manifests/research.manifest";
+import {
+  deriveReadiness,
+  runnableSummary,
+} from "@/features/research/readiness";
 import type {
   ResearchTopic,
   ResearchProgress,
@@ -80,6 +84,20 @@ export interface BuildResearchContextDataArgs {
    */
   draftTopicName?: string | null;
   draftTopicDescription?: string | null;
+  /**
+   * Which sub-route of the topic workspace is on screen — "overview",
+   * "sources", "synthesis", … The topic shell derives it from the pathname;
+   * mounts outside a topic workspace omit it.
+   */
+  activeView?: string | null;
+}
+
+/** Coerce a Supabase `Json` column to a plain object, or undefined. */
+function asObject(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return undefined;
+  const obj = value as Record<string, unknown>;
+  return Object.keys(obj).length > 0 ? obj : undefined;
 }
 
 function normalizeKeywords(
@@ -119,6 +137,7 @@ export function buildResearchContextData(
     selectionText = "",
     draftTopicName,
     draftTopicDescription,
+    activeView,
   } = args;
 
   const topicOpen = topic != null;
@@ -160,29 +179,100 @@ export function buildResearchContextData(
     document_title: title,
   };
 
+  // Readiness is derived, never re-implemented: `readiness.ts` is the ONE
+  // place that decides what "done" means, and the agent must see the same
+  // answer the UI shows.
+  const readinessMap = progress ? deriveReadiness(progress) : null;
+  const pending = progress?.pending;
+
   const scope = createResearchScope({
     // Baselines + selection
     selection: hasSelection ? selectionText : undefined,
     content: bodyText || undefined,
     context: surround,
 
-    // Topic identity & state
+    // ── Topic identity ────────────────────────────────────────────────
     topic_id: topic?.id || undefined,
     topic_name: name || undefined,
     topic_description: description || undefined,
+    organization_id: topic?.organization_id || undefined,
+    topic_visibility: topic?.visibility || undefined,
+    template_id: topic?.template_id || undefined,
+    topic_created_at: topic?.created_at || undefined,
+    topic_updated_at: topic?.updated_at || undefined,
+    active_view: activeView || undefined,
+
+    // ── Pipeline state ────────────────────────────────────────────────
     topic_status: topic?.status || undefined,
     autonomy_level: topic?.autonomy_level || undefined,
+    pipeline_progress: progress
+      ? (progress as unknown as Record<string, unknown>)
+      : undefined,
+    readiness: readinessMap
+      ? (readinessMap as unknown as Record<string, unknown>)
+      : undefined,
+    pending_ledger: pending
+      ? (pending as unknown as Record<string, unknown>)
+      : undefined,
+    runnable_summary: readinessMap
+      ? (runnableSummary(readinessMap) ?? undefined)
+      : undefined,
+    report_stale: pending?.report_stale,
+    document_stale: pending?.document_stale,
 
-    // Material counts
+    // ── Gathered material ─────────────────────────────────────────────
     keyword_list: keywordList.length > 0 ? keywordList : undefined,
+    keyword_count: progress?.total_keywords ?? undefined,
     source_count: progress?.total_sources,
     included_source_count: progress?.included_sources,
+    sources_by_status: progress?.sources_by_status,
+    content_count: progress?.total_content,
     analysis_count: progress?.total_analyses,
+    failed_analysis_count: progress?.failed_analyses,
+    tag_count: progress?.total_tags,
 
-    // Synthesis / documents the user reads
+    // ── Outputs ───────────────────────────────────────────────────────
     current_synthesis_text: synthesis || undefined,
     synthesis_documents:
       documents && documents.length > 0 ? documents : undefined,
+    document_count: progress?.total_documents,
+    keyword_synthesis_count: progress?.keyword_syntheses,
+    topic_synthesis_count: progress?.topic_syntheses,
+    tag_suggestions: asObject(topic?.tag_suggestions),
+    outputs_config: asObject(topic?.outputs),
+
+    // ── Quotas ────────────────────────────────────────────────────────
+    topic_quotas: topic
+      ? {
+          max_keywords: topic.max_keywords,
+          scrapes_per_keyword: topic.scrapes_per_keyword,
+          analyses_per_keyword: topic.analyses_per_keyword,
+          max_keyword_syntheses: topic.max_keyword_syntheses,
+          max_topic_syntheses: topic.max_topic_syntheses,
+          max_documents: topic.max_documents,
+          max_tag_consolidations: topic.max_tag_consolidations,
+          max_auto_tag_calls: topic.max_auto_tag_calls,
+          videos_per_keyword: topic.videos_per_keyword,
+        }
+      : undefined,
+    quota_headroom: pending
+      ? {
+          keyword_slots_remaining: pending.keyword_slots_remaining,
+          keyword_synthesis_slots_remaining:
+            pending.keyword_synthesis_slots_remaining,
+          topic_synthesis_slots_remaining:
+            pending.topic_synthesis_slots_remaining,
+          document_slots_remaining: pending.document_slots_remaining,
+        }
+      : undefined,
+
+    // ── Configuration ─────────────────────────────────────────────────
+    default_search_provider: topic?.default_search_provider || undefined,
+    default_search_params: asObject(topic?.default_search_params),
+    agent_config: asObject(topic?.agent_config),
+    tone_profile: topic?.tone_profile || undefined,
+    good_scrape_threshold: topic?.good_scrape_threshold,
+    topic_metadata: asObject(topic?.metadata),
   });
 
   return scope as Record<string, unknown>;
