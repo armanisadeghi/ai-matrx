@@ -108,28 +108,34 @@ soft-delete** shipped (`industry_set_active` RPC + console Archive/Restore, brow
 D89 fixed. Access doc-truth corrected (conveyance is not read-only). Final adversarial pass found
 + fixed a cross-user oracle and a service-role regression.
 
-**Open decision A — `/administration` FE layout is super-admin-only.** The DB/HTTP authorization
-for shared-knowledge is now any-admin, but `app/(admin)/layout.tsx` still hard-redirects every
-non-super-admin away from the *entire* `/administration` tree — so a senior_admin/developer still
-can't reach the console UI. Lowering that layout to any-admin is a platform-wide posture change
-affecting every admin page (not just shared-knowledge), so it was NOT flipped unilaterally.
-**Arman's call:** lower the whole admin tree to any-admin (pages needing super-admin self-gate;
-protected resources are already DB-gated), or keep it super-admin and give shared-knowledge its
-own any-admin route outside the layout.
+**Decision A — RESOLVED + DONE.** `/administration` was super-admin-only at the layout level.
+Arman's ruling: back off — any Matrx admin may enter. `app/(admin)/layout.tsx` now gates on
+`checkIsUserAdmin` (any admin); pages needing a higher bar self-gate, protected resources stay
+DB-gated. Live.
 
-**Open decision B — project/task access conveyance.** Audit finding: project membership ALREADY
-conveys full read+edit to notes, agents, research topics, and (via FK) tasks — live-verified, so
-collaboration on those works today. Gaps: `file`, `data_store`, `working_document`,
-`processed_document`, `thread` have no project/task containment edge (attached files/docs don't
-inherit project access), and `project→task→note` isn't transitive (`task→project` is an FK edge
-the reachability builder doesn't walk). Arman's directive ("projects/tasks convey everything, at
-the member's level, read+edit") authorizes registering these as `conveys_max='editor'` edges — but
-three things need his explicit ruling before touching the access spine: (1) `file→project/task`
-at **editor** means a project editor can edit/delete any attached file — confirm editor vs viewer
-per type; (2) his blanket directive conflicts with the deliberate 2026-07-16 ruling that
-`project→scope` conveys **viewer only** — keep or override; (3) `chat→project` is intentionally
-personal-by-default (attached chats stay private) — keep or override. Registering the edges is a
-reachability-closure change requiring adversarial review, not a rushed end-of-session flip.
+**Decision B — RESOLVED + DONE (the philosophy: PERSONAL vs NON-PERSONAL).** Arman: not-personal
+things (files, tasks, projects, documents, data stores, war rooms) must push access down to
+container members at their level (read+edit) with no walls inside; personal things (a user's chat
+with an agent) stay private and only convey when explicitly shared. Findings + change:
+- The platform ALREADY conveyed project/task membership → agents, apps, tasks, conversations,
+  skills, notes, research topics. The FK-containment path is gated on the item's
+  `visibility >= internal`, so a **personal** chat attached to a project does NOT convey — that
+  gate IS the personal-vs-non-personal valve, already working. Chats are out of scope, handled.
+- Gap closed (`migrations/project_task_warroom_convey_contents.sql`, live + ledgered): registered
+  `file / data_store / working_document / processed_document → project` and `→ task` as
+  **editor**-conveying container edges, plus `task→project` (transitive project→task→contents) and
+  the war-room tiles (`file/data_store/working_document/processed_document/note/task → war_room`).
+  Conversations deliberately excluded. Forward-looking (zero pre-existing edges).
+- Verified: a project editor-member gets **editor** on an attached file (viewer too), an
+  unattached file stays denied (no over-grant); shared-knowledge spine still `t,f,t,f`, matrix
+  42/42. Access doc corrected (conveyance is not read-only; edge inventory updated).
+- Left as-is per Arman: `project→scope` stays viewer (deliberate 2026-07-16 tag=read-only-share
+  ruling — scopes are a tagging/sharing surface, not project containment); chats stay personal.
+- Noted, not changed: the association/reachability path does not itself re-check item visibility
+  (the FK path does) — harmless today (files/notes default `internal`; zero personal items convey),
+  but if you ever want personal-marked files to also be shielded when dropped into a shared
+  container, that's a one-line kernel guard (`v_vis >= internal` on the reachability loop). Not
+  done because it's a restrictive kernel change you didn't ask for and there's nothing to fix yet.
 
 ## Done
 
