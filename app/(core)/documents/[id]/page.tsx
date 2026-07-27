@@ -20,6 +20,13 @@ import {
   isServiceFailure,
   type DocumentRow,
 } from "@/features/data-tables/types";
+import {
+  buildDocumentContextData,
+  DOCUMENTS_SURFACE_NAME,
+} from "@/features/data-tables/agent-context/buildDocumentsContextData";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
 
 // Univer hard-depends on `window` / `document`. Mount client-only.
 const DocumentEditor = dynamic(
@@ -123,8 +130,29 @@ export default function DocumentPage({
     );
   }
 
+  // ---- Agent-context surface (matrx-user/documents, document view) --------
+  // Plain function (React Compiler memoizes; never useCallback) — read live
+  // state at Run time. The Univer editor owns the body text, so it is
+  // deliberately not part of the emitted scope (see the manifest header).
+  const getDocumentScope = () => {
+    const captured = captureDomSelection();
+    return buildApplicationScopeFromMenuContext({
+      selectedText: captured.text,
+      selectionRange: null,
+      contextData: buildDocumentContextData({
+        document: doc,
+        canEdit,
+        isOwner,
+      }),
+    });
+  };
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={DOCUMENTS_SURFACE_NAME}
+      getScope={getDocumentScope}
+      isEditable={canEdit}
+    >
       <RouteHeader
         left={
           <>
@@ -194,6 +222,6 @@ export default function DocumentPage({
           </div>
         )}
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

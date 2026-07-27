@@ -32,6 +32,13 @@ import {
   sortDocuments,
   type DocumentSortKey,
 } from "@/features/data-tables/utils/documentsHubDisplay";
+import {
+  buildDocumentsLibraryContextData,
+  DOCUMENTS_SURFACE_NAME,
+} from "@/features/data-tables/agent-context/buildDocumentsContextData";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
 
 type HubViewMode = "cards" | "table";
 const HUB_VIEW_STORAGE_KEY = "documents-hub-view";
@@ -138,8 +145,32 @@ export default function DocumentsLandingPage() {
   const totalVisible = filteredDocuments.length;
   const showToolbar = !loading && !error && documents.length > 0;
 
+  // ---- Agent-context surface (matrx-user/documents, library view) ---------
+  // Plain function (React Compiler memoizes; never useCallback) so it reads
+  // the live list state at Run time rather than a stale closure.
+  const getLibraryScope = () => {
+    const captured = captureDomSelection();
+    return buildApplicationScopeFromMenuContext({
+      selectedText: captured.text,
+      selectionRange: null,
+      contextData: buildDocumentsLibraryContextData({
+        documents,
+        visibleDocuments: filteredDocuments,
+        searchQuery: query,
+        sortKey,
+        viewMode: view,
+        loading,
+        error,
+      }),
+    });
+  };
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={DOCUMENTS_SURFACE_NAME}
+      getScope={getLibraryScope}
+      isEditable={false}
+    >
       <RouteHeader
         left={
           <span className="px-1.5 text-sm font-medium text-foreground">
@@ -243,6 +274,6 @@ export default function DocumentsLandingPage() {
           ) : null}
         </div>
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

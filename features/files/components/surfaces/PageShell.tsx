@@ -69,10 +69,18 @@ import {
   selectAllFoldersArray,
   selectAllFoldersMap,
   selectChipFilter,
+  selectColumnFilters,
+  selectDetailsLevel,
+  selectFocusedId,
+  selectKindFilter,
   selectSearchQuery,
   selectSelection,
+  selectSortBy,
+  selectSortDir,
   selectTreeStatus,
   selectViewMode,
+  selectVisibleColumns,
+  selectVisibleUploads,
 } from "@/features/files/redux/selectors";
 import {
   attachVirtualRoot,
@@ -270,6 +278,16 @@ function PageShellDesktop({
   const searchQuery = useAppSelector(selectSearchQuery);
   const chipFilter = useAppSelector(selectChipFilter);
   const selection = useAppSelector(selectSelection);
+  // Declared surface values (`matrx-user/files`) that no other part of the
+  // shell reads — the emitter below is their only consumer.
+  const focusedId = useAppSelector(selectFocusedId);
+  const kindFilter = useAppSelector(selectKindFilter);
+  const columnFilters = useAppSelector(selectColumnFilters);
+  const sortBy = useAppSelector(selectSortBy);
+  const sortDir = useAppSelector(selectSortDir);
+  const detailsLevel = useAppSelector(selectDetailsLevel);
+  const visibleColumns = useAppSelector(selectVisibleColumns);
+  const trackedUploads = useAppSelector(selectVisibleUploads);
   const handleSearchChange = useCallback(
     (next: string) => dispatch(setSearchQuery(next)),
     [dispatch],
@@ -619,9 +637,26 @@ function PageShellDesktop({
     .map((id) => filesById[id])
     .filter((f): f is NonNullable<typeof f> => Boolean(f));
   const filesContextData = buildFilesContextData({
+    section,
+    treeStatus,
     activeFile,
     activeFolder,
     selectedFiles,
+    focusedId,
+    // The rows actually on screen for this section/folder/search — the same
+    // arrays handed to FileTable/FileGrid, so the agent sees what the user sees.
+    visibleFiles: searchScopedFiles,
+    visibleFolders: searchScopedFolders,
+    searchQuery,
+    chipFilter: effectiveFilter,
+    kindFilter,
+    columnFilters,
+    sortBy,
+    sortDir,
+    viewMode,
+    detailsLevel,
+    visibleColumns,
+    uploads: trackedUploads,
   });
   const getFilesApplicationScope = () => {
     // Read-only region: capture any text the user highlighted in the preview

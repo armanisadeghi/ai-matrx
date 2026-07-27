@@ -550,7 +550,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const filesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/files",
-  readiness: "verified",
+  readiness: "partial",
+  readinessNote:
+    "Full completeness audit done against PageShell and every declared value is emitted; remaining gaps: not yet DB-synced, no live non-matching-name binding test, no `data-surface-value` anchors on the rows, and the mobile MobileStack shell mounts no SurfaceRuntimeProvider (desktop only).",
   label: "Files",
   urlPattern: "/files/all/[...path]",
   intro: `<surface_intro>
