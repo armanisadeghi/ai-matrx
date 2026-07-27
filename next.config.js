@@ -87,11 +87,11 @@ const PROFILES = {
 const PARKABLE_GROUPS = ["admin", "core", "transitional", "public", "popup"];
 const VALID_PROFILES = new Set(Object.keys(PROFILES));
 /** @type {null | keyof typeof PROFILES} — DEFAULT when env is unset; null = "full" */
-// TEMP "core" default until the deployment-split cutover: production full
-// builds OOM, so demos are dark on aimatrx.com today. Once manage.aimatrx.com
-// and demos.aimatrx.com are verified live, pin MATRX_PROFILE=slim on the
-// ai-matrx Vercel project and flip this back to null.
-const FORCE_MATRX_PROFILE = "core";
+// null since the 2026-07-27 cutover: every Vercel project pins MATRX_PROFILE
+// via env (main=slim, manage=admin, demos=demos), so this default only
+// affects local dev/builds — where "full" keeps /demos and /administration
+// available.
+const FORCE_MATRX_PROFILE = null;
 if (FORCE_MATRX_PROFILE && !VALID_PROFILES.has(FORCE_MATRX_PROFILE)) {
     throw new Error(
         `[matrx] Invalid FORCE_MATRX_PROFILE="${FORCE_MATRX_PROFILE}". ` +
