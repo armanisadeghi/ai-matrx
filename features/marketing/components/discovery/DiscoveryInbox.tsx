@@ -304,8 +304,11 @@ export function DiscoveryInbox() {
       <div className="grid w-full gap-3">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h1 className="text-base font-semibold text-foreground">
+            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
               Discovery inbox
+              <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                {rows.length}
+              </span>
             </h1>
             <p className="text-xs text-muted-foreground">
               Everything found on this site that needs a human to say what it
@@ -314,7 +317,29 @@ export function DiscoveryInbox() {
             </p>
           </div>
           <div className="flex items-center gap-1.5">
-          {rows.length > 0 ? <CopyButtons size="icon" {...inboxCopy} /> : null}
+          {rows.length > 0 ? (
+            <CopyButtons size="icon" {...inboxCopy} json={() => rows} />
+          ) : null}
+          {rows.length > 0 ? (
+            <ExportMenu
+              label={`discovery-inbox-${site.domain}-${status}`}
+              items={[
+                jsonExportItem(() => rows, "JSON (loaded items, raw)"),
+                {
+                  id: "csv",
+                  label: "CSV (loaded items)",
+                  build: () => ({
+                    content: rowsToCsv(
+                      rows as unknown as Array<Record<string, unknown>>,
+                    ),
+                    extension: "csv",
+                    mime: "text/csv",
+                  }),
+                },
+              ]}
+            />
+          ) : null}
+          <AgentCopyGroomerLauncher config={groomerConfig} />
           <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
             {STATUS_TABS.map((tab) => (
               <button
