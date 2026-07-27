@@ -59,13 +59,14 @@ export function NumberInput({
     >
       <Button
         type="button"
+        variant="outline"
         size="sm"
         onClick={handleDecrement}
         disabled={!canDecrement}
         className={
           compact
-            ? "h-7 w-7 p-0 bg-transparent border border-border rounded-full"
-            : "h-10 w-10 p-0 bg-transparent border border-border rounded-full"
+            ? "h-7 w-7 rounded-full p-0"
+            : "h-10 w-10 rounded-full p-0"
         }
       >
         <Minus className={compact ? "w-3 h-3" : "w-4 h-4"} />
@@ -85,13 +86,14 @@ export function NumberInput({
 
       <Button
         type="button"
+        variant="outline"
         size="sm"
         onClick={handleIncrement}
         disabled={!canIncrement}
         className={
           compact
-            ? "h-7 w-7 p-0 bg-transparent border border-border rounded-full"
-            : "h-10 w-10 p-0 bg-transparent border border-border rounded-full"
+            ? "h-7 w-7 rounded-full p-0"
+            : "h-10 w-10 rounded-full p-0"
         }
       >
         <Plus className={compact ? "w-3 h-3" : "w-4 h-4"} />
