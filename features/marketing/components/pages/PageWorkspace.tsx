@@ -122,13 +122,20 @@ import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { syncPagespeed } from "@/features/marketing/pagespeed/data";
 import { syncSiteAnalytics } from "@/features/marketing/analytics/data";
+import { PageQueriesCard } from "@/features/marketing/components/pages/cards/PageQueriesCard";
+import { PageFindingsCard } from "@/features/marketing/components/pages/cards/PageFindingsCard";
+import { PageLinksCard } from "@/features/marketing/components/pages/cards/PageLinksCard";
+import { PageBacklinksCard } from "@/features/marketing/components/pages/cards/PageBacklinksCard";
 import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
 import { KeywordUsageChips } from "@/features/marketing/seo/keyword/KeywordUsageChips";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
 import {
+  seoKeywordKeys,
   usePageTopQueries,
   useResolvedKeyword,
 } from "@/features/marketing/seo/keyword/hooks";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { KeywordSuggestion } from "@/features/marketing/seo/keyword/types";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
@@ -153,6 +160,8 @@ function IntentForm({
   analyzerKeywords: KeywordSuggestion[];
 }) {
   const mutation = useUpdatePageIntent();
+  const queryClient = useQueryClient();
+  const openKeywordIntel = useOpenKeywordWindow();
   const [keyword, setKeyword] = useState(page.target_keyword ?? "");
   // The keyword never travels bare: resolve the SAVED target keyword against
   // the universal keyword plane so its condensed market data rides along in
@@ -191,15 +200,38 @@ function IntentForm({
 
   const save = async () => {
     try {
+      const savedKeyword = keyword.trim();
       await mutation.mutateAsync({
         siteId: page.site_id,
         pageId: page.id,
         expectedVersion: page.version,
-        targetKeyword: keyword.trim() || null,
+        targetKeyword: savedKeyword || null,
         desiredMetaTitle: title.trim() || null,
         desiredMetaDescription: description.trim() || null,
       });
-      toast.success("Page intent saved");
+      // Nudge: a saved target keyword should never sit dataless — offer the
+      // one-click library enrichment when the phrase is unknown. Reads the
+      // resolution CACHE the KeywordInput already populated (no new fetch).
+      const cachedResolution = queryClient.getQueryData<{
+        keyword: unknown | null;
+      }>(seoKeywordKeys.resolve(normalizeKeywordPhrase(savedKeyword)));
+      if (savedKeyword && cachedResolution && !cachedResolution.keyword) {
+        toast.success("Page intent saved", {
+          description: `“${savedKeyword}” isn't in the keyword library yet — fetch its market data now?`,
+          action: {
+            label: "Fetch data",
+            onClick: () =>
+              openKeywordIntel({
+                phrase: savedKeyword,
+                siteId: page.site_id,
+                pageId: page.id,
+                brandId: brandId ?? undefined,
+              }),
+          },
+        });
+      } else {
+        toast.success("Page intent saved");
+      }
     } catch (error) {
       toast.error("Could not save page intent", {
         description: extractErrorMessage(error),
@@ -1571,6 +1603,12 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const analyticsRows = usePageWebAnalytics(site.id, pageId);
   // Lifted so the surface scope emits the same artifact the card renders.
   const analyzer = usePageAnalyzer(pageId);
+  // The saved target keyword resolved against the keyword library — shares
+  // the react-query cache with IntentForm; feeds `target_keyword_data` into
+  // the surface scope so agents get the market data, never just the phrase.
+  const resolvedTargetKeyword = useResolvedKeyword(
+    workspace.data?.page.target_keyword ?? null,
+  );
   const openSerpAnalyzer = useOpenSerpAnalyzerWindow();
   const openSocialCards = useOpenSocialCardWindow();
   const [serpDevice, setSerpDevice] = useState<SerpDevice>("desktop");
@@ -1585,13 +1623,12 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   useEffect(() => {
     let active = true;
     const blob = markdownBlob.blob;
-    if (!blob) {
-      setMarkdownText(null);
-      return;
-    }
-    void blob.text().then((value) => {
+    // Async continuation only — never a synchronous setState in the effect
+    // body (react-hooks/set-state-in-effect).
+    void (async () => {
+      const value = blob ? await blob.text() : null;
       if (active) setMarkdownText(value);
-    });
+    })();
     return () => {
       active = false;
     };
@@ -1669,6 +1706,14 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       sitemapMemberships: sitemapMemberships.data ?? null,
       pageScore: data.score,
       failedChecks: data.failCount,
+      targetKeywordData:
+        page.target_keyword && resolvedTargetKeyword.data?.keyword
+          ? buildKeywordBrief({
+              phrase: page.target_keyword,
+              keyword: resolvedTargetKeyword.data.keyword,
+              market: resolvedTargetKeyword.data.market,
+            }).data
+          : null,
       base: getBaseValues(),
     });
 
@@ -2187,6 +2232,16 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             <FetchPageButton siteId={site.id} url={page.url} pageId={page.id} />
           </section>
         )}
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <PageQueriesCard page={page} />
+          <PageFindingsCard page={page} />
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <PageLinksCard page={page} />
+          <PageBacklinksCard page={page} />
+        </div>
 
         <SitemapMembershipsCard page={page} />
 

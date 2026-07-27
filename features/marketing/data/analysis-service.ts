@@ -283,6 +283,41 @@ export async function listSiteFindings(
   };
 }
 
+/**
+ * Open + reopened, unsuppressed findings for one canonical page — the EXACT
+ * scope behind the workspace's "Open findings" count (`getPageWorkspace` in
+ * `data/service.ts`), returned as full rows for inline display.
+ */
+export async function listPageOpenFindings(
+  siteId: string,
+  pageId: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<AnalysisPagedResult<MarketingFinding>> {
+  const abortSignal = signal ?? new AbortController().signal;
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("finding")
+    .select(
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, severity, status, suppressed, suppressed_reason, first_result_id, last_result_id, first_detected_at, last_detected_at, resolved_at",
+      { count: "exact" },
+    )
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .in("status", ["open", "reopened"])
+    .eq("suppressed", false)
+    .is("deleted_at", null)
+    .order("last_detected_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .limit(limit)
+    .abortSignal(abortSignal);
+  return {
+    rows: assertData(response.data, response.error),
+    total: response.count ?? 0,
+  };
+}
+
 export async function getFindingDetail(
   siteId: string,
   findingId: string,

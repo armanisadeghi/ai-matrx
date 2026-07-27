@@ -58,6 +58,11 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createKeywordIntelligenceScope,
+  keywordIntelligenceManifest,
+} from "@/features/surfaces/manifests/keyword-intelligence.manifest";
 import { KeywordDataChips } from "./KeywordDataChips";
 import { KeywordInput } from "./KeywordInput";
 import { KeywordRankingsTab, KeywordSerpTab } from "./KeywordRankTabs";
@@ -82,6 +87,10 @@ const TAB_LABELS: Record<KeywordIntelTab, string> = {
 
 /** Tabs that only make sense with a site binding. */
 const SITE_TABS: KeywordIntelTab[] = ["site", "rankings", "serp"];
+
+/** The window IS a surface — byte-identical to the manifest + ui_surface row. */
+const KEYWORD_INTELLIGENCE_SURFACE_NAME =
+  keywordIntelligenceManifest.surfaceName;
 
 /** The 13 intrinsic classification columns, humanized. */
 const CLASSIFICATION_LABELS: [keyof KeywordWithMarket, string][] = [
@@ -123,6 +132,9 @@ export function KeywordIntelPanel({
   const keyword = resolved.data?.keyword ?? null;
   const market = resolved.data?.market ?? null;
   const sitePerf = useKeywordSitePerformance(scope?.siteId, keyword?.id);
+  // Lifted from the Relationships tab so the surface scope always carries the
+  // edges once loaded (the tab consumes the same query result as a prop).
+  const edges = useKeywordEdges(keyword?.id);
   const volumeRefresh = useKeywordVolumeRefresh();
   const hasSite = Boolean(scope?.siteId);
 
@@ -136,6 +148,41 @@ export function KeywordIntelPanel({
     market,
     sitePerformance: sitePerf.data,
   });
+
+  // Live surface scope — built at agent-launch/menu-open time from the
+  // already-loaded query data (never fetches). The window IS a surface:
+  // user-created agents bound to `matrx-user/keyword-intelligence` receive
+  // the full dossier, condensed in `keyword_brief`.
+  const getScope = () => {
+    const classification: Record<string, string> = {};
+    if (keyword) {
+      for (const [field] of CLASSIFICATION_LABELS) {
+        const value = keyword[field];
+        if (typeof value === "string" && value) classification[field] = value;
+      }
+    }
+    return createKeywordIntelligenceScope({
+      phrase,
+      keyword_known: Boolean(keyword),
+      keyword_id: keyword?.id,
+      keyword_language: keyword?.language,
+      keyword_brief: phrase.trim() ? brief.data : undefined,
+      keyword_market: keyword?.keyword_market?.length
+        ? keyword.keyword_market.map((row) => ({ ...row }))
+        : undefined,
+      keyword_classification:
+        Object.keys(classification).length > 0 ? classification : undefined,
+      keyword_relationships: edges.data
+        ? edges.data.map((edge) => ({ ...edge }))
+        : undefined,
+      site_id: scope?.siteId ?? undefined,
+      page_id: scope?.pageId ?? undefined,
+      brand_id: scope?.brandId ?? undefined,
+      site_keyword_performance: sitePerf.data?.length
+        ? sitePerf.data.map((row) => ({ ...row }))
+        : undefined,
+    });
+  };
   const copy = webCopy({
     kind: "seo-keyword-brief",
     label: `Keyword — ${phrase || "none"}`,
@@ -164,6 +211,11 @@ export function KeywordIntelPanel({
   };
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={KEYWORD_INTELLIGENCE_SURFACE_NAME}
+      isEditable={false}
+      getScope={getScope}
+    >
     <div className="flex h-full min-h-0 flex-col">
       {/* ── Header: phrase + condensed data + actions ─────────────────────── */}
       <div className="shrink-0 border-b border-border px-3 pb-2 pt-3">
@@ -250,7 +302,7 @@ export function KeywordIntelPanel({
           />
         ) : activeTab === "relationships" ? (
           <RelationshipsTab
-            keywordId={keyword?.id ?? null}
+            edges={edges}
             known={Boolean(keyword)}
             onNavigate={navigateToKeyword}
           />
@@ -278,6 +330,7 @@ export function KeywordIntelPanel({
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -470,15 +523,16 @@ function OverviewTab({
 /* ─── Relationships ────────────────────────────────────────────────────── */
 
 function RelationshipsTab({
-  keywordId,
+  edges,
   known,
   onNavigate,
 }: {
-  keywordId: string | null;
+  /** Lifted query result — the panel owns the hook so the surface scope
+   * carries the edges. */
+  edges: ReturnType<typeof useKeywordEdges>;
   known: boolean;
   onNavigate: (phrase: string) => void;
 }) {
-  const edges = useKeywordEdges(keywordId);
   if (!known) {
     return (
       <p className="p-4 text-xs text-muted-foreground">

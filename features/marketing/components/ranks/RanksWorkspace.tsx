@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import {
+  BrainCircuit,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -62,6 +63,8 @@ import {
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { RankSparkline } from "./RankSparkline";
 import {
   humanHistory,
@@ -124,6 +127,7 @@ function AddTargetForm({
     engine?: AiAnswerEngine | null;
   }) => Promise<void>;
 }) {
+  const { site } = useMarketingSite();
   const [keyword, setKeyword] = useState("");
   const [modeId, setModeId] = useState<string>("google_national");
   const [locationName, setLocationName] = useState("");
@@ -164,14 +168,20 @@ function AddTargetForm({
         <span className="text-[11px] font-medium text-muted-foreground">
           {mode.search_type === "ai_answer" ? "Prompt to track" : "Keyword"}
         </span>
-        <Input
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="e.g. botox cost"
+        {/* The canonical keyword input — Enter still submits unless the
+            suggestion dropdown consumed the keypress. */}
+        <div
           onKeyDown={(e) => {
-            if (e.key === "Enter") void submit();
+            if (e.key === "Enter" && !e.defaultPrevented) void submit();
           }}
-        />
+        >
+          <KeywordInput
+            value={keyword}
+            onChange={setKeyword}
+            scope={{ siteId: site.id, brandId: site.brand_id }}
+            placeholder="e.g. botox cost"
+          />
+        </div>
       </div>
       <div className="grid gap-1">
         <span className="text-[11px] font-medium text-muted-foreground">Track in</span>
@@ -386,6 +396,7 @@ function HistoryDialog({
 
 export function RanksWorkspace() {
   const { site } = useMarketingSite();
+  const openKeywordWindow = useOpenKeywordWindow();
   const { items, loading, error, reload, addTarget, updateTarget, removeTarget } =
     usePortfolio(site.id);
   const [historyTarget, setHistoryTarget] = useState<RankPortfolioItem | null>(
@@ -567,6 +578,23 @@ export function RanksWorkspace() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                            aria-label="Keyword Intelligence"
+                            title="Keyword Intelligence"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openKeywordWindow({
+                                phrase: item.keyword,
+                                siteId: site.id,
+                                brandId: site.brand_id ?? undefined,
+                              });
+                            }}
+                          >
+                            <BrainCircuit className="h-3.5 w-3.5" />
+                          </Button>
                           <CopyButtons
                             size="icon"
                             label={item.keyword}

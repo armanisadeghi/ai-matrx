@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BarChart3, ExternalLink, Loader2, RefreshCw, Search } from "lucide-react";
+import { BarChart3, BrainCircuit, ExternalLink, Loader2, RefreshCw, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
@@ -39,6 +40,7 @@ import { useSiteKeywordPerformance } from "../useSiteKeywordPerformance";
 
 export function SiteKeywordPerformanceWorkspace() {
   const { site, sitePath } = useMarketingSite();
+  const openKeywordWindow = useOpenKeywordWindow();
   const table = useMarketingTableState({
     defaultSort: { id: "clicks", direction: "desc" },
     defaultPageSize: 50,
@@ -403,6 +405,27 @@ export function SiteKeywordPerformanceWorkspace() {
               search: table.state.search || undefined,
             }),
           }}
+          rowActions={(row) => (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-primary"
+              aria-label="Keyword Intelligence"
+              title="Keyword Intelligence"
+              onClick={(event) => {
+                event.stopPropagation();
+                openKeywordWindow({
+                  phrase: row.query ?? "",
+                  siteId: site.id,
+                  brandId: site.brand_id ?? undefined,
+                  tab: "site",
+                });
+              }}
+            >
+              <BrainCircuit className="h-3.5 w-3.5" />
+            </Button>
+          )}
           window={{
             title: (row) => row.query ?? "Search query",
           }}

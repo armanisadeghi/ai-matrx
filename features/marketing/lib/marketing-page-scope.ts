@@ -195,6 +195,13 @@ export function buildMarketingPageScope(input: {
   /** `v_page_score.fail_count`. */
   failedChecks?: number | null;
   /**
+   * Condensed keyword dossier for the saved target keyword
+   * (`buildKeywordBrief(...).data` — market metrics + classification), when
+   * the phrase resolved against the keyword library. Agents get the DATA,
+   * never just the phrase.
+   */
+  targetKeywordData?: Record<string, unknown> | null;
+  /**
    * Inherited site-level base values (brand/site identity + XML context) from
    * `useMarketingSiteSurfaceBase().getBaseValues()`. Spread first — the
    * page-specific values below always win on overlap (brand_id / site_id).
@@ -216,6 +223,7 @@ export function buildMarketingPageScope(input: {
     sitemapMemberships,
     pageScore,
     failedChecks,
+    targetKeywordData,
     base,
   } = input;
   const headings = snapshot ? parseSnapshotHeadings(snapshot.headings).all : [];
@@ -383,6 +391,7 @@ export function buildMarketingPageScope(input: {
     desired_title: page.meta_title_desired ?? undefined,
     desired_description: page.meta_description_desired ?? undefined,
     desired_seo_metrics: desiredMetrics ?? undefined,
+    target_keyword_data: targetKeywordData ?? undefined,
     page_intent: pageIntent,
     indexability,
     social_card: socialCard,

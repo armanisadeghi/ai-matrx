@@ -9,7 +9,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Search, X } from "lucide-react";
+import { BrainCircuit, Check, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,28 +19,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { listKeywordsWithMarket } from "@/features/marketing/seo/keyword-research/data/queries";
-import {
-  KeywordCompetitionBadge,
-  KeywordIntentChip,
-  formatSearchVolume,
-} from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
-import type {
-  KeywordMarketRow,
-  KeywordWithMarket,
-} from "@/features/marketing/seo/keyword-research/types";
+import { KeywordIntentChip } from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
+import { KeywordDataChips } from "@/features/marketing/seo/keyword/KeywordDataChips";
+import { pickKeywordMarket } from "@/features/marketing/seo/keyword/data";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { useKeywordLabels, useSiteKeywordValues } from "../data/hooks";
-
-/** US market first (location 2840), else the first fetched market row. */
-function pickerMarket(row: KeywordWithMarket): KeywordMarketRow | null {
-  return (
-    row.keyword_market.find((market) => market.location_code === 2840) ??
-    row.keyword_market[0] ??
-    null
-  );
-}
 
 export function KeywordPicker({
   siteId,
@@ -55,6 +41,7 @@ export function KeywordPicker({
   placeholder?: string;
   clearable?: boolean;
 }) {
+  const openKeywordWindow = useOpenKeywordWindow();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -140,7 +127,8 @@ export function KeywordPicker({
                     ) : (
                       <span className="w-3.5 shrink-0" />
                     )}
-                    <span className="min-w-0 flex-1">
+                    {/* div, not span — KeywordDataChips renders block content. */}
+                    <div className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5">
                         <span className="min-w-0 truncate">{keyword.phrase}</span>
                         <KeywordIntentChip
@@ -149,19 +137,13 @@ export function KeywordPicker({
                           className="shrink-0"
                         />
                       </span>
-                      <span className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                        <span className="tabular-nums">
-                          {formatSearchVolume(
-                            pickerMarket(keyword)?.search_volume,
-                          )}
-                          /mo
-                        </span>
-                        <KeywordCompetitionBadge
-                          competition={pickerMarket(keyword)?.competition}
-                          className="text-[10px]"
-                        />
-                      </span>
-                    </span>
+                      {/* Canonical condensed market chips (US-preferred market row). */}
+                      <KeywordDataChips
+                        market={pickKeywordMarket(keyword.keyword_market)}
+                        showSparkline={false}
+                        className="text-[10px]"
+                      />
+                    </div>
                     {siteValue ? (
                       <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
                         {siteValue.workflow_status ? (
@@ -188,6 +170,21 @@ export function KeywordPicker({
           </div>
         </PopoverContent>
       </Popover>
+      {value ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 shrink-0 p-0 text-muted-foreground hover:text-primary"
+          aria-label="Keyword Intelligence"
+          title="Keyword Intelligence"
+          disabled={!selectedPhrase || selectedPhrase === "…"}
+          onClick={() =>
+            openKeywordWindow({ phrase: selectedPhrase ?? "", siteId })
+          }
+        >
+          <BrainCircuit className="h-3.5 w-3.5" />
+        </Button>
+      ) : null}
       {clearable && value ? (
         <Button
           variant="ghost"

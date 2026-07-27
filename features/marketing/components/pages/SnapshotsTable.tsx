@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CameraOff } from "lucide-react";
+import { CameraOff, Columns2 } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SnapshotCompare } from "@/features/marketing/components/pages/SnapshotCompare";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSnapshots } from "@/features/marketing/data/hooks";
@@ -24,7 +28,40 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
     defaultSort: { id: "captured_at", direction: "desc" },
   });
   const snapshots = useSnapshots(site.id, pageId, table.queryState);
+  // Compare mode — pick any two snapshots; a third pick replaces the oldest
+  // selection. The diff panel renders above the table on demand.
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
+  const toggleCompare = (snapshotId: string) => {
+    setCompareIds((current) => {
+      if (current.includes(snapshotId)) {
+        return current.filter((id) => id !== snapshotId);
+      }
+      return current.length >= 2
+        ? [...current.slice(1), snapshotId]
+        : [...current, snapshotId];
+    });
+  };
+  const [compareFirst, compareSecond] = compareIds;
   const columns: MatrxColumnDef<PageSnapshot>[] = [
+    {
+      id: "compare",
+      header: "Compare",
+      filter: false,
+      sortable: false,
+      cell: (row) => (
+        <span
+          className="flex items-center justify-center"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Checkbox
+            checked={compareIds.includes(row.id)}
+            onCheckedChange={() => toggleCompare(row.id)}
+            aria-label="Select snapshot for comparison"
+          />
+        </span>
+      ),
+    },
     {
       id: "captured_at",
       accessorKey: "captured_at",
@@ -102,7 +139,18 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
       />
     );
   return (
-    <main className="h-full overflow-hidden bg-textured p-3 sm:p-4">
+    <main className="flex h-full flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
+      {showCompare && compareFirst && compareSecond ? (
+        <div className="max-h-[55%] shrink-0 overflow-y-auto">
+          <SnapshotCompare
+            pageId={pageId}
+            firstId={compareFirst}
+            secondId={compareSecond}
+            onClose={() => setShowCompare(false)}
+          />
+        </div>
+      ) : null}
+      <div className="min-h-0 flex-1">
       <MatrxDataTable<PageSnapshot>
         data={snapshots.data?.rows ?? []}
         columns={columns}
@@ -117,6 +165,23 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
         }}
         toolbar={{
           searchPlaceholder: "Search final URL or content hash…",
+          actions: (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5"
+              disabled={compareIds.length !== 2}
+              onClick={() => setShowCompare(true)}
+              title={
+                compareIds.length === 2
+                  ? "Compare the two selected snapshots"
+                  : "Select two snapshots to compare"
+              }
+            >
+              <Columns2 className="h-3.5 w-3.5" />
+              Compare ({compareIds.length}/2)
+            </Button>
+          ),
         }}
         copy={{
           label: "Snapshot",
@@ -162,6 +227,7 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
             "The page identity is stable even when no crawl has captured content for it yet.",
         }}
       />
+      </div>
     </main>
   );
 }

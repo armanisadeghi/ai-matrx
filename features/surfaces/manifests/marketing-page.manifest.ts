@@ -212,6 +212,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "page_intent",
   },
   {
+    name: "target_keyword_data",
+    label: "Target keyword data",
+    description:
+      "The condensed keyword dossier for the target keyword (buildKeywordBrief over seo.keyword + keyword_market): search volume, CPC, competition, trend, and intent classification. Empty when no target keyword is set or the phrase is not in the keyword library yet.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    sortOrder: 525,
+    group: "page_intent",
+  },
+  {
     name: "page_intent",
     label: "Page intent",
     description:
@@ -621,6 +632,7 @@ export function createMarketingPageScope(values: {
   desired_title?: string;
   desired_description?: string;
   desired_seo_metrics?: Record<string, unknown>;
+  target_keyword_data?: Record<string, unknown>;
   page_intent?: Record<string, unknown>;
   observed_title?: string;
   observed_description?: string;

@@ -5,6 +5,7 @@ import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-
 import {
   getFindingDetail,
   listFindingResults,
+  listPageOpenFindings,
   listSiteFindings,
   listSitePriorityQueue,
 } from "@/features/marketing/data/analysis-service";
@@ -17,6 +18,8 @@ const analysisKeys = {
     [...analysisKeys.site(siteId), "findings", state] as const,
   finding: (siteId: string, findingId: string) =>
     [...analysisKeys.site(siteId), "finding", findingId] as const,
+  pageOpenFindings: (siteId: string, pageId: string, limit: number) =>
+    [...analysisKeys.site(siteId), "page-open-findings", pageId, limit] as const,
   results: (
     siteId: string,
     findingId: string,
@@ -45,6 +48,19 @@ export function useSiteFindings(
     queryFn: ({ signal }) => listSiteFindings(siteId, state, signal),
     enabled: Boolean(siteId),
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Open/reopened unsuppressed findings for one page (workspace-count scope). */
+export function usePageOpenFindings(
+  siteId: string,
+  pageId: string,
+  limit: number,
+) {
+  return useQuery({
+    queryKey: analysisKeys.pageOpenFindings(siteId, pageId, limit),
+    queryFn: ({ signal }) => listPageOpenFindings(siteId, pageId, limit, signal),
+    enabled: Boolean(siteId && pageId),
   });
 }
 
