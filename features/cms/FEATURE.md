@@ -70,8 +70,8 @@ for the general contract this section instantiates.
 
 | Surface | Route(s) | Menu | Notes |
 |---|---|---|---|
-| `matrx-user/cms` | `/cms` | `NonEditableContextMenu` (page + per-card) | List/entry hub — `owned_sites_summary`, no `site_structure` |
-| `matrx-user/cms-site` | `/cms/[siteId]` | `NonEditableContextMenu` | Page-list workspace; first surface to emit `site_structure` |
+| `matrx-user/cms` | `/cms` | `NonEditableContextMenu` (page + per-card) | List/entry hub — `owned_sites_summary`, no `site_structure`. **`readiness: verified`** |
+| `matrx-user/cms-site` | `/cms/[siteId]` + all four tabs | `NonEditableContextMenu` | Site workspace; first surface to emit `site_structure`. **Inherits `matrx-user/cms`** (the layout genuinely loads the switcher's site list). **`readiness: verified`** |
 | `matrx-user/cms-page` | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer` |
 | `matrx-user/cms-component` | `/cms/[siteId]/components` | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards) | Shared header/footer editor |
 | `matrx-user/html-page` | `/cms/html-pages`, `/cms/html-pages/[pageId]` | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor` |
@@ -289,6 +289,26 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-07-27` — **`matrx-user/cms` + `matrx-user/cms-site` driven from `stub` to `verified`.**
+  Full completeness audit of `/cms` and `/cms/[siteId]` (+ Pages / Components / Collections /
+  Settings): hub 3 → 7 own values in 3 curated groups; site 9 → 36 own values in 6 curated groups,
+  now declaring `inheritsFrom: "matrx-user/cms"` (honest — `SiteLayoutClient` loads the full site
+  list for the switcher). New site values cover the whole `client_sites` row (domain, active flag,
+  timestamps, owner, global CSS, favicon, theme/navigation/footer/meta/contact/social + the
+  `site_profile` composite), the page/component inventories (`pages_summary`, `components_summary`
+  and their counts, `published_pages_count`, `pages_with_draft_count`, `home_page_id`), governance
+  (`policy_overrides`, `has_data_api_key`), the Collections tab (`collections_summary` + counts),
+  and workspace state (`current_mode`, `selected_page_id`, `settings_draft`).
+  **The `data_api_key` VALUE is deliberately never emitted** — only `has_data_api_key`.
+  **Emitters wired** (previously the manifests declared vocabulary nothing emitted at the header
+  Agents chrome): `<SurfaceRuntimeProvider>` in `app/(core)/cms/page.tsx` and in
+  `SiteLayoutClient` (new `SiteSurfaceRuntime` child — the scope builder needs a LOADED site, which
+  only exists past the layout's early returns), plus NESTED providers on the Pages, Collections, and
+  Settings tabs that re-emit the full site scope with their own tab-only extras (deepest provider
+  wins). `SiteContextValue` gained `allSites` + `currentMode`; `PageListView` gained an optional
+  `onFocusPage` so `selected_page_id` is emitted rather than declared-and-dead.
+  `pnpm check:surface-drift` (83 surfaces, 1811 values) and `pnpm type-check` both clean.
 
 - `2026-07-27` — **`cms-page` / `cms-component` / `html-page` surfaces driven from `stub` to
   `verified`.** Full completeness audit of the three manifests against the live routes: curated

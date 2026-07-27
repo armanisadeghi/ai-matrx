@@ -10,6 +10,7 @@ import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSit
 import { createCmsSiteExtraSections } from "@/features/cms/agent-context/cmsSiteExtraSections";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 export default function SiteDashboardPage() {
   const { siteId } = useParams() as { siteId: string };
@@ -24,6 +25,9 @@ export default function SiteDashboardPage() {
     currentMode,
   } = useSiteContext();
   const [error, setError] = useState<string | null>(null);
+  const [focusedPageId, setFocusedPageId] = useState<string | undefined>(
+    undefined,
+  );
 
   const buildSurfaceScope = useCmsSiteSurfaceScope({
     site,
@@ -31,6 +35,7 @@ export default function SiteDashboardPage() {
     components,
     allSites,
     currentMode,
+    selectedPageId: focusedPageId,
   });
   const siteExtraSections = createCmsSiteExtraSections({
     liveUrl: clientSiteRootUrl(site.slug),
@@ -55,6 +60,12 @@ export default function SiteDashboardPage() {
   };
 
   return (
+    // Nested `matrx-user/cms-site` runtime: only this tab knows which row the
+    // user is pointing at, so it re-emits the site scope with selected_page_id.
+    <SurfaceRuntimeProvider
+      surfaceName={CMS_SITE_CONTEXT_MENU_PROPS.surfaceName}
+      getScope={buildSurfaceScope}
+    >
     <NonEditableContextMenu
       {...CMS_SITE_CONTEXT_MENU_PROPS}
       extraSections={siteExtraSections}
@@ -70,10 +81,12 @@ export default function SiteDashboardPage() {
               router.push(`/cms/${siteId}/pages/${pageId}`)
             }
             onDeletePage={handleDeletePage}
+            onFocusPage={setFocusedPageId}
             onRefresh={refreshPages}
           />
         </div>
       </div>
     </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }

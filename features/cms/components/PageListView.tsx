@@ -43,6 +43,11 @@ interface PageListViewProps {
   onOpenPage: (pageId: string) => void;
   onDeletePage: (pageId: string) => void;
   onRefresh: () => void;
+  /**
+   * Row the user is pointing at, so the `matrx-user/cms-site` surface can emit
+   * an honest `selected_page_id` when an agent is launched from the list.
+   */
+  onFocusPage?: (pageId: string) => void;
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -72,6 +77,7 @@ export default function PageListView({
   onOpenPage,
   onDeletePage,
   onRefresh,
+  onFocusPage,
 }: PageListViewProps) {
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("sort_order");
@@ -300,6 +306,8 @@ export default function PageListView({
                       key={page.id}
                       className="border-b border-border/50 last:border-0 hover:bg-muted/20 active:bg-muted/50 cursor-pointer transition-colors select-none"
                       onClick={() => onOpenPage(page.id)}
+                      onMouseEnter={() => onFocusPage?.(page.id)}
+                      onFocus={() => onFocusPage?.(page.id)}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
