@@ -264,7 +264,25 @@ const nextConfig = {
         // still OOM at page-data with 4 workers, next levers are rootReducer
         // lazy-injection (shrinks every per-page server bundle) or building
         // off-Vercel (GH Actions + `vercel deploy --prebuilt`).
-        turbopackMemoryLimit: 42949672960,
+        // 40GiB → 30GiB (2026-07-26): the measurement below says peak RSS is
+        // 58.49 GiB on a 60 GB build machine — a ~1.5 GB margin. That is why
+        // this is marginal rather than broken: v0.4.121/122/129 went green and
+        // then EVERY build from v0.4.130 to v0.4.136 died as the graph grew,
+        // all with the same signature (SIGKILL ~8-10 min into compile, before
+        // any "Collecting page data" line — so the cpus 8→4 worker fix above
+        // does not cover this phase).
+        //
+        // This limit is Turbopack's cache-vs-GC target: higher = more retained
+        // graph, less collection, more RSS. Lowering it makes compile collect
+        // earlier and trade time for headroom. Slower is the correct trade —
+        // as the source-map note below already puts it, a build that OOMs
+        // ships nothing.
+        //
+        // If this is still not enough, do NOT keep shaving it blind: the real
+        // levers are rootReducer lazy-injection (shrinks every per-page server
+        // bundle) or building off-Vercel (GH Actions + `vercel deploy
+        // --prebuilt`), and the graph itself needs to come down.
+        turbopackMemoryLimit: 32212254720,
         cpus: 4,
         serverActions: {
             bodySizeLimit: "10mb",
