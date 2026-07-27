@@ -7,6 +7,10 @@ vision: []   # Arman's vision for this system is captured verbatim below; no sta
 
 # Shared Knowledge Resources — access cascade, issuance, discovery
 
+> **New here? Read [`shared-knowledge-and-permissive-access-HANDOFF.md`](./shared-knowledge-and-permissive-access-HANDOFF.md) first.**
+> That is the self-contained newcomer package (vision + gap analysis + architecture + next steps
+> + gotchas). THIS file is the terse status log and open-decision history it draws from.
+
 **Entry point for this work.** The per-project specs live in
 `docs/proposals/shared-knowledge-projects/` (README = master plan + contracts + status;
 `P1`–`P4` = one blind-executable brief each; `ASSIGN.md` = paste-ready prompts).
