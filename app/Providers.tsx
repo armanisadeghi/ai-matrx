@@ -52,6 +52,7 @@ import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
 // and so hydration begins as soon as the user is authenticated rather
 // than waiting on idle. Imports only metadata + local-cache helpers — none
 // of the heavy window-panel core files are pulled into this graph.
+// Needs research & testing
 import { WindowPersistenceManager } from "@/features/window-panels/WindowPersistenceManager";
 // ExtensionBridgeSubscriber bridges matrx-extend Chrome extension envelopes
 // (Broadcast channel `matrx-extension-bridge:<userId>`) into the
