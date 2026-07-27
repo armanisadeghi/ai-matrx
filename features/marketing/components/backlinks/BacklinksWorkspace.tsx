@@ -153,6 +153,7 @@ function DimensionList({
   kind,
   location,
   siteDomain,
+  anchor,
 }: {
   title: string;
   rows: BacklinkDimensionRow[];
@@ -160,11 +161,16 @@ function DimensionList({
   kind: string;
   location: string;
   siteDomain: string;
+  /** Declared surface value name this list renders — powers Locate. */
+  anchor?: string;
 }) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? rows : rows.slice(0, 8);
   return (
-    <section className="min-w-0 rounded-lg bg-muted/40 p-3">
+    <section
+      data-surface-value={anchor}
+      className="min-w-0 rounded-lg bg-muted/40 p-3"
+    >
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         <span className="flex shrink-0 items-center gap-1">
@@ -367,24 +373,28 @@ export function BacklinksWorkspace() {
   const dimensionGroups = [
     {
       id: "referring_domains",
+      anchor: "top_referring_domains",
       title: "Referring domains",
       kind: "backlink-referring-domain",
       rows: data?.referringDomains ?? [],
     },
     {
       id: "anchors",
+      anchor: "top_anchors",
       title: "Anchor text",
       kind: "backlink-anchor",
       rows: data?.anchors ?? [],
     },
     {
       id: "target_pages",
+      anchor: "top_target_pages",
       title: "Linked pages",
       kind: "backlink-target-page",
       rows: data?.targetPages ?? [],
     },
     {
       id: "competitors",
+      anchor: "top_competitors",
       title: "Competitors",
       kind: "backlink-competitor",
       rows: data?.competitors ?? [],
@@ -750,7 +760,10 @@ export function BacklinksWorkspace() {
             <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Link2 className="h-4 w-4 text-primary" /> Backlink intelligence
             </h1>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p
+              data-surface-value="seo_environment"
+              className="mt-0.5 text-xs text-muted-foreground"
+            >
               DataForSEO evidence stored for {site.domain}. Manual refresh
               follows the shell&apos;s {seoTarget?.environment ?? "selected"}{" "}
               SEO server target.
@@ -775,7 +788,11 @@ export function BacklinksWorkspace() {
                 setProfile(value as BacklinkRefreshProfile)
               }
             >
-              <SelectTrigger size="sm" className="w-36">
+              <SelectTrigger
+                data-surface-value="refresh_profile"
+                size="sm"
+                className="w-36"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -800,7 +817,10 @@ export function BacklinksWorkspace() {
           </div>
         </section>
 
-        <section className="flex flex-wrap items-end gap-3 border-b border-border pb-3">
+        <section
+          data-surface-value="refresh_schedule"
+          className="flex flex-wrap items-end gap-3 border-b border-border pb-3"
+        >
           <div className="mr-auto min-w-64">
             <div className="flex items-center gap-2">
               <Switch
@@ -879,7 +899,10 @@ export function BacklinksWorkspace() {
           </Button>
         </section>
 
-        <section className="grid grid-cols-2 gap-2 lg:grid-cols-6">
+        <section
+          data-surface-value="backlink_summary"
+          className="grid grid-cols-2 gap-2 lg:grid-cols-6"
+        >
           <MetricCard
             label="Backlinks"
             value={summary?.total_backlinks}
@@ -923,7 +946,7 @@ export function BacklinksWorkspace() {
           />
         </section>
 
-        <section className="border-b border-border pb-3">
+        <section data-surface-value="backlink_trend" className="border-b border-border pb-3">
           <div className="mb-2">
             <h2 className="text-sm font-semibold text-foreground">
               New vs. lost backlinks over time
@@ -954,6 +977,7 @@ export function BacklinksWorkspace() {
               title={group.title}
               rows={group.rows}
               kind={group.kind}
+              anchor={group.anchor}
               location={pageLocation}
               siteDomain={site.domain}
             />
@@ -961,7 +985,10 @@ export function BacklinksWorkspace() {
         </section>
 
         {receipt ? (
-          <section className="h-80 overflow-hidden rounded-lg border border-border bg-card">
+          <section
+            data-surface-value="refresh_receipt"
+            className="h-80 overflow-hidden rounded-lg border border-border bg-card"
+          >
             <JsonInspector
               data={receipt}
               label="Exact refresh receipt"
@@ -979,13 +1006,14 @@ export function BacklinksWorkspace() {
           </section>
         ) : null}
 
-        <section className="flex min-h-[44rem] flex-col">
+        <section data-surface-value="backlink_rows" className="flex min-h-[44rem] flex-col">
           <div className="flex shrink-0 flex-wrap items-center gap-2 py-2">
             <h2 className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground">
               <Database className="h-4 w-4 text-primary" />
               Backlinks
             </h2>
             <span
+              data-surface-value="backlinks_collected_at"
               className="text-xs tabular-nums text-muted-foreground"
               title={
                 detailSnapshot
@@ -995,7 +1023,10 @@ export function BacklinksWorkspace() {
             >
               {(backlinks.data?.total ?? 0).toLocaleString()}
             </span>
-            <div className="ml-auto flex min-w-0 items-center gap-1">
+            <div
+              data-surface-value="backlinks_table_state"
+              className="ml-auto flex min-w-0 items-center gap-1"
+            >
               <div className="relative w-full min-w-40 sm:w-72">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input

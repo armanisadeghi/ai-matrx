@@ -62,7 +62,10 @@ export function EntityManager({
   const rows = entities.data ?? [];
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
+    <div
+      data-surface-value="entities_summary"
+      className="flex h-full flex-col overflow-y-auto"
+    >
       <div className="mx-auto w-full max-w-3xl px-4 py-4">
         <div className="mb-3 flex items-center justify-between">
           <div>

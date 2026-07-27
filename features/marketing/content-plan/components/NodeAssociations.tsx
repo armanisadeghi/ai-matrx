@@ -107,7 +107,7 @@ export function NodeAssociations({
   }
 
   return (
-    <div className="space-y-4">
+    <div data-surface-value="selected_node_edges" className="space-y-4">
       <TopicSection
         topicEdges={topicEdges}
         onAdd={(topicId) => run({ kind: "add-topic", topicId })}

@@ -278,7 +278,10 @@ export function SiteAnalysisTable() {
         });
       }}
     >
-    <main className="h-full overflow-hidden bg-textured p-3 sm:p-4">
+    <main
+      data-surface-value="top_queue_items"
+      className="h-full overflow-hidden bg-textured p-3 sm:p-4"
+    >
       <MatrxDataTable<PriorityQueueRow>
         data={priority.data?.rows ?? []}
         columns={columns}

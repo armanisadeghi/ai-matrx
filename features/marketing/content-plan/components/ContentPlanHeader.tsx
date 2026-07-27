@@ -86,7 +86,10 @@ export function ContentPlanHeader() {
     <div className="flex w-full min-w-0 items-center gap-1.5">
       <ActiveContextLensChip className="shrink-0" />
       <Select value={siteId ?? ""} onValueChange={setSiteId}>
-        <SelectTrigger className="h-7 w-48 truncate border-none bg-transparent text-sm font-medium shadow-none sm:w-64">
+        <SelectTrigger
+          data-surface-value="site_domain"
+          className="h-7 w-48 truncate border-none bg-transparent text-sm font-medium shadow-none sm:w-64"
+        >
           <SelectValue
             placeholder={sites.isLoading ? "Loading sites…" : "Pick a site"}
           />
@@ -101,7 +104,7 @@ export function ContentPlanHeader() {
         </SelectContent>
       </Select>
 
-      <div className="ml-auto flex items-center">
+      <div data-surface-value="view" className="ml-auto flex items-center">
         {VIEW_ITEMS.map((item) => (
           <Button
             key={item.view}

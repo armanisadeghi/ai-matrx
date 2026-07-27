@@ -414,14 +414,19 @@ function AuditBody({
           </div>
         </section>
 
-        <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
+        <section
+          data-surface-value="audit_rollup"
+          className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6"
+        >
           <MetricCell
+            anchor="pages_total"
             label="Pages"
             value={rollup.totalPages}
             detail="Canonical registry"
             copy={metricCopy("Pages", rollup.totalPages, "Canonical registry")}
           />
           <MetricCell
+            anchor="pages_audited"
             label="Audited"
             value={rollup.auditedPages}
             detail="Latest capture has metrics"
@@ -433,6 +438,7 @@ function AuditBody({
             )}
           />
           <MetricCell
+            anchor="indexability_verdicts"
             label="Indexable"
             value={rollup.verdicts.indexable}
             tone="good"
@@ -466,6 +472,7 @@ function AuditBody({
             )}
           />
           <MetricCell
+            anchor="pages_uncomputed"
             label="Not yet audited"
             value={rollup.uncomputedPages}
             tone={rollup.uncomputedPages ? "warning" : "default"}
@@ -478,7 +485,7 @@ function AuditBody({
           />
         </section>
 
-        <SectionCard title="Pass rates" copy={copy}>
+        <SectionCard anchor="section_passes" title="Pass rates" copy={copy}>
           <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <PassRateBar
               label="SERP metadata"
@@ -507,14 +514,18 @@ function AuditBody({
           </div>
         </SectionCard>
 
-        <SectionCard title="Score trend">
+        <SectionCard anchor="audit_score_trend" title="Score trend">
           <div className="p-4">
             <AuditScoreTrendChart points={trendPoints} />
           </div>
         </SectionCard>
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <SectionCard title="Top issues" copy={topIssuesCopy}>
+          <SectionCard
+            anchor="top_issues"
+            title="Top issues"
+            copy={topIssuesCopy}
+          >
             {rollup.topIssues.length === 0 ? (
               <p className="flex items-center gap-2 p-4 text-xs text-success">
                 <CheckCircle className="h-4 w-4" />
@@ -534,7 +545,11 @@ function AuditBody({
             )}
           </SectionCard>
 
-          <SectionCard title="Pages needing attention" copy={worstPagesCopy}>
+          <SectionCard
+            anchor="worst_pages"
+            title="Pages needing attention"
+            copy={worstPagesCopy}
+          >
             {rollup.worstPages.length === 0 ? (
               <p className="flex items-center gap-2 p-4 text-xs text-success">
                 <CheckCircle className="h-4 w-4" />
@@ -564,7 +579,10 @@ function AuditBody({
           </p>
         ) : null}
         {rollup.nonHtmlResources > 0 ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p
+            data-surface-value="non_html_resources"
+            className="text-[11px] text-muted-foreground"
+          >
             {rollup.nonHtmlResources} known non-HTML resource
             {rollup.nonHtmlResources === 1 ? " is" : "s are"} retained in crawl
             evidence but excluded from HTML-only page findings.

@@ -283,8 +283,12 @@ export function SitemapsWorkspace() {
           </div>
         </header>
 
-        <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4">
+        <section
+          data-surface-value="sitemap_coverage"
+          className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4"
+        >
           <MetricCell
+            anchor="sitemap_counts"
             label="Sitemaps"
             value={(coverage.data?.sitemaps ?? rows.length).toLocaleString()}
             detail={`${indexes.length} index, ${urlsets.length} URL sets`}
@@ -307,6 +311,7 @@ export function SitemapsWorkspace() {
             })}
           />
           <MetricCell
+            anchor="sitemap_pages_total"
             label="Pages in sitemaps"
             value={coverage.data?.pagesInSitemaps.toLocaleString() ?? "—"}
             detail="Canonical registry entries"
@@ -321,6 +326,7 @@ export function SitemapsWorkspace() {
             })}
           />
           <MetricCell
+            anchor="sitemap_never_crawled"
             label="Never crawled"
             value={coverage.data?.neverCrawled.toLocaleString() ?? "—"}
             detail="Listed but not yet captured"
@@ -337,6 +343,7 @@ export function SitemapsWorkspace() {
             })}
           />
           <MetricCell
+            anchor="sitemaps_last_synced_at"
             label="Last synced"
             value={
               coverage.data?.lastSyncedAt
@@ -384,7 +391,10 @@ export function SitemapsWorkspace() {
             </Button>
           </div>
         ) : (
-          <section className="overflow-hidden rounded-lg border border-border bg-card">
+          <section
+            data-surface-value="sitemaps_summary"
+            className="overflow-hidden rounded-lg border border-border bg-card"
+          >
             <ul className="divide-y divide-border">
               {rows.map((sitemap) => (
                 <SitemapRow

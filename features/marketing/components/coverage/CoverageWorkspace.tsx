@@ -71,6 +71,7 @@ function CoverageTile({
   tone = "default",
   siteDomain,
   location,
+  anchor,
 }: {
   label: string;
   description: string;
@@ -79,9 +80,12 @@ function CoverageTile({
   tone?: "default" | "attention";
   siteDomain: string;
   location: string;
+  /** Declared surface value name this tile renders — powers Locate. */
+  anchor?: string;
 }) {
   return (
     <div
+      data-surface-value={anchor}
       className={cn(
         "group/tile relative min-w-0 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-muted/30",
         tone === "attention" &&
@@ -272,12 +276,16 @@ export function CoverageWorkspace() {
           </div>
         </header>
 
-        <section className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        <section
+          data-surface-value="coverage_filters"
+          className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6"
+        >
           <CoverageTile
             label="Canonical pages"
             description="Every URL any source recorded"
             value={data?.totalPages ?? null}
             href={pagesHref()}
+            anchor="total_pages"
             siteDomain={site.domain}
             location={pageLocation}
           />
@@ -286,6 +294,7 @@ export function CoverageWorkspace() {
             description={COVERAGE_FILTER_COPY.in_sitemap.description}
             value={data?.inSitemaps ?? null}
             href={pagesHref("in_sitemap")}
+            anchor="in_sitemaps"
             siteDomain={site.domain}
             location={pageLocation}
           />
@@ -294,6 +303,7 @@ export function CoverageWorkspace() {
             description={COVERAGE_FILTER_COPY.crawled.description}
             value={data?.crawled ?? null}
             href={pagesHref("crawled")}
+            anchor="crawled"
             siteDomain={site.domain}
             location={pageLocation}
           />
@@ -302,6 +312,7 @@ export function CoverageWorkspace() {
             description={COVERAGE_FILTER_COPY.never_crawled.description}
             value={data?.neverCrawled ?? null}
             href={pagesHref("never_crawled")}
+            anchor="never_crawled"
             siteDomain={site.domain}
             location={pageLocation}
           />
@@ -310,6 +321,7 @@ export function CoverageWorkspace() {
             description={COVERAGE_FILTER_COPY.sitemap_not_crawled.description}
             value={data?.sitemapNotCrawled ?? null}
             href={pagesHref("sitemap_not_crawled")}
+            anchor="sitemap_not_crawled"
             tone="attention"
             siteDomain={site.domain}
             location={pageLocation}
@@ -319,13 +331,14 @@ export function CoverageWorkspace() {
             description={COVERAGE_FILTER_COPY.crawled_no_sitemap.description}
             value={data?.crawledNoSitemap ?? null}
             href={pagesHref("crawled_no_sitemap")}
+            anchor="crawled_no_sitemap"
             tone="attention"
             siteDomain={site.domain}
             location={pageLocation}
           />
         </section>
 
-        <section className="grid gap-2">
+        <section data-surface-value="pages_by_provenance" className="grid gap-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Pages by first source
           </h2>
@@ -344,7 +357,7 @@ export function CoverageWorkspace() {
           </div>
         </section>
 
-        <section className="grid gap-2">
+        <section data-surface-value="gsc_synced" className="grid gap-2">
           <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <SearchCheck className="h-3.5 w-3.5" />
             Google Search coverage
@@ -361,6 +374,7 @@ export function CoverageWorkspace() {
                 description={COVERAGE_FILTER_COPY.in_gsc.description}
                 value={data?.inGsc ?? null}
                 href={pagesHref("in_gsc")}
+                anchor="in_gsc"
                 siteDomain={site.domain}
                 location={pageLocation}
               />
@@ -369,6 +383,7 @@ export function CoverageWorkspace() {
                 description={COVERAGE_FILTER_COPY.gsc_no_sitemap.description}
                 value={data?.gscNoSitemap ?? null}
                 href={pagesHref("gsc_no_sitemap")}
+                anchor="gsc_no_sitemap"
                 tone="attention"
                 siteDomain={site.domain}
                 location={pageLocation}
@@ -378,6 +393,7 @@ export function CoverageWorkspace() {
                 description={COVERAGE_FILTER_COPY.sitemap_no_gsc.description}
                 value={data?.sitemapNoGsc ?? null}
                 href={pagesHref("sitemap_no_gsc")}
+                anchor="sitemap_no_gsc"
                 tone="attention"
                 siteDomain={site.domain}
                 location={pageLocation}

@@ -131,7 +131,7 @@ export function PlanTree({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-full flex-col">
+      <div data-surface-value="plan_tree" className="flex h-full flex-col">
         <RootDropStrip onAddRoot={() => onAddChild(null)} />
         <div className="min-h-0 flex-1 overflow-y-auto">
           {rows.length === 0 ? (
