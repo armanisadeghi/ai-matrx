@@ -16,7 +16,7 @@
  * checks before delegating.
  */
 
-import React, { Suspense } from "react";
+import React, { Suspense, lazy } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ComparisonArtifact from "./renderers/ComparisonArtifact";
 import FlashcardsArtifact from "./renderers/FlashcardsArtifact";
@@ -26,12 +26,12 @@ import ResourcesArtifact from "./renderers/ResourcesArtifact";
 import ProgressArtifact from "./renderers/ProgressArtifact";
 import TroubleshootingArtifact from "./renderers/TroubleshootingArtifact";
 import RecipeArtifact from "./renderers/RecipeArtifact";
-import DiagramArtifact from "./renderers/DiagramArtifact";
+
 import DecisionTreeArtifact from "./renderers/DecisionTreeArtifact";
 import PresentationArtifact from "./renderers/PresentationArtifact";
 import MathProblemArtifact from "./renderers/MathProblemArtifact";
 import QuizArtifact from "./renderers/QuizArtifact";
-import MermaidArtifact from "./renderers/MermaidArtifact";
+
 import SvgArtifact from "./renderers/SvgArtifact";
 import ChartArtifact from "./renderers/ChartArtifact";
 import MapArtifact from "./renderers/MapArtifact";
@@ -40,13 +40,13 @@ import DiffArtifact from "./renderers/DiffArtifact";
 import QuestionnaireArtifact from "./renderers/QuestionnaireArtifact";
 import TasksArtifact from "./renderers/TasksArtifact";
 import HtmlArtifact from "./renderers/HtmlArtifact";
-import ReactArtifact from "./renderers/ReactArtifact";
+
 import TableArtifact from "./renderers/TableArtifact";
 import TranscriptArtifact from "./renderers/TranscriptArtifact";
 import StructuredInfoArtifact from "./renderers/StructuredInfoArtifact";
 import TreeArtifact from "./renderers/TreeArtifact";
 import IframeArtifact from "./renderers/IframeArtifact";
-import CodeArtifact from "./renderers/CodeArtifact";
+
 import ImageArtifact from "./renderers/ImageArtifact";
 import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
 
@@ -102,12 +102,14 @@ const RENDERERS: Record<
   progress: ProgressArtifact,
   troubleshooting: TroubleshootingArtifact,
   recipe: RecipeArtifact,
-  diagram: DiagramArtifact,
+  // heavy engine — stays behind its own boundary (runtime tiering; in-gate, so React.lazy is the build-cheap form)
+  diagram: lazy(() => import("./renderers/DiagramArtifact")),
   "decision-tree": DecisionTreeArtifact,
   presentation: PresentationArtifact,
   math_problem: MathProblemArtifact,
   quiz: QuizArtifact,
-  mermaid: MermaidArtifact,
+  // heavy engine — stays behind its own boundary (runtime tiering; in-gate, so React.lazy is the build-cheap form)
+  mermaid: lazy(() => import("./renderers/MermaidArtifact")),
   svg: SvgArtifact,
   chart: ChartArtifact,
   map: MapArtifact,
@@ -116,13 +118,15 @@ const RENDERERS: Record<
   questionnaire: QuestionnaireArtifact,
   tasks: TasksArtifact,
   html: HtmlArtifact,
-  react: ReactArtifact,
+  // heavy engine — stays behind its own boundary (runtime tiering; in-gate, so React.lazy is the build-cheap form)
+  react: lazy(() => import("./renderers/ReactArtifact")),
   table: TableArtifact,
   transcript: TranscriptArtifact,
   structured_info: StructuredInfoArtifact,
   tree: TreeArtifact,
   iframe: IframeArtifact,
-  code: CodeArtifact,
+  // heavy engine — stays behind its own boundary (runtime tiering; in-gate, so React.lazy is the build-cheap form)
+  code: lazy(() => import("./renderers/CodeArtifact")),
   image: ImageArtifact,
 };
 

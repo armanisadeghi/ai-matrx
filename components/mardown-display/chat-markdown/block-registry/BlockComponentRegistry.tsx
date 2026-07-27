@@ -1,6 +1,85 @@
 "use client";
 
 import React, { Suspense, lazy } from "react";
+// FRAGMENTATION LAW (tiered): the light block components are ONE piece of the
+// markdown engine, compiled & fetched once behind the MarkdownStream edge —
+// static imports, not 80 chunk groups. The genuinely heavy engines keep their
+// lazy boundaries so a chat message never downloads an editor/diagram engine
+// it isn't using: CodeBlock/ReactCodeBlock/HtmlInlinePreview/StreamingDiff/
+// SearchReplace (syntax-highlighter), MatrxFileBlock (Univer/previewers),
+// InteractiveDiagramBlock (reactflow), MermaidBlock (mermaid).
+import ThinkingVisualization from "../../blocks/thinking-reasoning/ThinkingVisualization";
+import ReasoningVisualization from "../../blocks/thinking-reasoning/ReasoningVisualization";
+import ConsolidatedReasoningVisualization from "../../blocks/thinking-reasoning/ConsolidatedReasoningVisualization";
+import ImageBlock from "../../blocks/images/ImageBlock";
+import TranscriptBlock from "../../blocks/transcripts/TranscriptBlock";
+import TasksBlock from "../../blocks/tasks/TasksBlock";
+import StructuredPlanBlock from "../../blocks/plan/StructuredPlanBlock";
+import FlashcardsBlock from "../../blocks/flashcards/FlashcardsBlock";
+import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoPromptOptionsBlock";
+import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
+import KeywordClassificationBatchBlock from "../../blocks/keyword-research/KeywordClassificationBatchBlock";
+import MultipleChoiceQuiz from "../../blocks/quiz/MultipleChoiceQuiz";
+import Slideshow from "../../blocks/presentations/Slideshow";
+import RecipeViewer from "../../blocks/cooking-recipes/cookingRecipeDisplay";
+import TimelineBlock from "../../blocks/timeline/TimelineBlock";
+import ResearchBlock from "../../blocks/research/ResearchBlock";
+import ResourceCollectionBlock from "../../blocks/resources/ResourceCollectionBlock";
+import ProgressTrackerBlock from "../../blocks/progress/ProgressTrackerBlock";
+import ComparisonTableBlock from "../../blocks/comparison/ComparisonTableBlock";
+import TroubleshootingBlock from "../../blocks/troubleshooting/TroubleshootingBlock";
+import DecisionTreeBlock from "../../blocks/decision-tree/DecisionTreeBlock";
+import SvgBlock from "../../blocks/svg/SvgBlock";
+import ChartBlock from "../../blocks/chart/ChartBlock";
+import ItemPresentationBlock from "@/features/item-presentation/ItemPresentationBlock";
+import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
+import SchemaProposalBlock from "@/features/agents/components/schema-proposal/SchemaProposalBlock";
+import MathProblemBlock from "../../blocks/math/MathProblemBlock";
+import QuestionnaireRenderer from "../../blocks/questionnaire/QuestionnaireRenderer";
+import MarkdownTable from "../../tables/MarkdownTable";
+import { StreamingTableRenderer as StreamingTableRenderer } from "../../blocks/table/StreamingTableRenderer";
+import InlineDecisionBlock from "../../blocks/inline-decision/InlineDecisionBlock";
+import ArtifactBlock from "../../blocks/artifact/ArtifactBlock";
+import ArtifactRefBlock from "../../blocks/artifact/ArtifactRefBlock";
+import EditorErrorBlock from "../../blocks/editor-resources/EditorErrorBlock";
+import EditorCodeSnippetBlock from "../../blocks/editor-resources/EditorCodeSnippetBlock";
+import AudioCitationBlock from "../../blocks/audio/AudioCitationBlock";
+import YamlBlock from "../../blocks/yaml/YamlBlock";
+import XmlBlock from "../../blocks/xml/XmlBlock";
+import CsvBlock from "../../blocks/csv/CsvBlock";
+import { JsonBlock as JsonBlock } from "../../blocks/json/JsonBlock";
+import TomlBlock from "../../blocks/toml/TomlBlock";
+import TreeBlock from "../../blocks/tree/TreeBlock";
+import MarkdownPreviewBlock from "../../blocks/markdown-preview/MarkdownPreviewBlock";
+import AudioOutputBlock from "../../blocks/audio/AudioOutputBlock";
+import { UnifiedImageBlockRenderer as UnifiedImageBlockRenderer } from "@/features/files/blocks/image/UnifiedImageBlockRenderer";
+import { YouTubeEmbed as YouTubeEmbedBlock } from "@/features/files/blocks/youtube/YouTubeEmbed";
+import SearchResultsBlock from "../../blocks/data-events/SearchResultsBlock";
+import SearchErrorBlock from "../../blocks/data-events/SearchErrorBlock";
+import FunctionResultBlock from "../../blocks/data-events/FunctionResultBlock";
+import WorkflowStepBlock from "../../blocks/data-events/WorkflowStepBlock";
+import CategorizationResultBlock from "../../blocks/data-events/CategorizationResultBlock";
+import FetchResultsBlock from "../../blocks/data-events/FetchResultsBlock";
+import { PodcastCompleteBlock as PodcastCompleteBlockLazy } from "../../blocks/data-events/PodcastBlock";
+import { PodcastStageBlock as PodcastStageBlockLazy } from "../../blocks/data-events/PodcastBlock";
+import ScrapeBatchCompleteBlock from "../../blocks/data-events/ScrapeBatchCompleteBlock";
+import StructuredInputWarningBlock from "../../blocks/data-events/StructuredInputWarningBlock";
+import DisplayQuestionnaireBlock from "../../blocks/data-events/DisplayQuestionnaireBlock";
+import UnknownDataEventBlock from "../../blocks/data-events/UnknownDataEventBlock";
+import ValueStoreStoredBlock from "../../blocks/data-events/ValueStoreStoredBlock";
+import ContextGroomedBlock from "../../blocks/data-events/ContextGroomedBlock";
+import QuizLoadingVisualization from "../../blocks/quiz/QuizLoadingVisualization";
+import PresentationLoadingVisualization from "../../blocks/presentations/PresentationLoadingVisualization";
+import RecipeLoadingVisualization from "../../blocks/cooking-recipes/RecipeLoadingVisualization";
+import TimelineLoadingVisualization from "../../blocks/timeline/TimelineLoadingVisualization";
+import ResearchLoadingVisualization from "../../blocks/research/ResearchLoadingVisualization";
+import ResourcesLoadingVisualization from "../../blocks/resources/ResourcesLoadingVisualization";
+import ProgressLoadingVisualization from "../../blocks/progress/ProgressLoadingVisualization";
+import ComparisonLoadingVisualization from "../../blocks/comparison/ComparisonLoadingVisualization";
+import TroubleshootingLoadingVisualization from "../../blocks/troubleshooting/TroubleshootingLoadingVisualization";
+import DecisionTreeLoadingVisualization from "../../blocks/decision-tree/DecisionTreeLoadingVisualization";
+import DiagramLoadingVisualization from "../../blocks/diagram/DiagramLoadingVisualization";
+import MathProblemLoadingVisualization from "../../blocks/math/MathProblemLoadingVisualization";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../BasicMarkdownContent";
 
@@ -23,91 +102,13 @@ const ReactCodeBlock = lazy(
 import { QuestionnaireProvider } from "../../blocks/questionnaire/QuestionnaireContext";
 
 // Lazy load heavier/less common block components
-const ThinkingVisualization = lazy(
-  () => import("../../blocks/thinking-reasoning/ThinkingVisualization"),
-);
-const ReasoningVisualization = lazy(
-  () => import("../../blocks/thinking-reasoning/ReasoningVisualization"),
-);
-const ConsolidatedReasoningVisualization = lazy(
-  () =>
-    import("../../blocks/thinking-reasoning/ConsolidatedReasoningVisualization"),
-);
-const ImageBlock = lazy(() => import("../../blocks/images/ImageBlock"));
 const MatrxFileBlock = lazy(
   () => import("../../blocks/matrx-file/MatrxFileBlock"),
-);
-const TranscriptBlock = lazy(
-  () => import("../../blocks/transcripts/TranscriptBlock"),
-);
-const TasksBlock = lazy(() => import("../../blocks/tasks/TasksBlock"));
-const StructuredPlanBlock = lazy(
-  () => import("../../blocks/plan/StructuredPlanBlock"),
-);
-const FlashcardsBlock = lazy(
-  () => import("../../blocks/flashcards/FlashcardsBlock"),
-);
-const VideoPromptOptionsBlock = lazy(
-  () => import("../../blocks/video-prompt-options/VideoPromptOptionsBlock"),
-);
-const KeywordResearchBlock = lazy(
-  () => import("../../blocks/keyword-research/KeywordResearchBlock"),
-);
-const KeywordClassificationBatchBlock = lazy(
-  () => import("../../blocks/keyword-research/KeywordClassificationBatchBlock"),
-);
-const MultipleChoiceQuiz = lazy(
-  () => import("../../blocks/quiz/MultipleChoiceQuiz"),
-);
-const Slideshow = lazy(() => import("../../blocks/presentations/Slideshow"));
-const RecipeViewer = lazy(
-  () => import("../../blocks/cooking-recipes/cookingRecipeDisplay"),
-);
-const TimelineBlock = lazy(() => import("../../blocks/timeline/TimelineBlock"));
-const ResearchBlock = lazy(() => import("../../blocks/research/ResearchBlock"));
-const ResourceCollectionBlock = lazy(
-  () => import("../../blocks/resources/ResourceCollectionBlock"),
-);
-const ProgressTrackerBlock = lazy(
-  () => import("../../blocks/progress/ProgressTrackerBlock"),
-);
-const ComparisonTableBlock = lazy(
-  () => import("../../blocks/comparison/ComparisonTableBlock"),
-);
-const TroubleshootingBlock = lazy(
-  () => import("../../blocks/troubleshooting/TroubleshootingBlock"),
-);
-const DecisionTreeBlock = lazy(
-  () => import("../../blocks/decision-tree/DecisionTreeBlock"),
 );
 const InteractiveDiagramBlock = lazy(
   () => import("../../blocks/diagram/InteractiveDiagramBlock"),
 );
 const MermaidBlock = lazy(() => import("../../blocks/mermaid/MermaidBlock"));
-const SvgBlock = lazy(() => import("../../blocks/svg/SvgBlock"));
-const ChartBlock = lazy(() => import("../../blocks/chart/ChartBlock"));
-const ItemPresentationBlock = lazy(
-  () => import("@/features/item-presentation/ItemPresentationBlock"),
-);
-const MatrxEnvelopeBlock = lazy(
-  () => import("@/features/matrx-envelope/MatrxEnvelopeBlock"),
-);
-const SchemaProposalBlock = lazy(
-  () =>
-    import("@/features/agents/components/schema-proposal/SchemaProposalBlock"),
-);
-const MathProblemBlock = lazy(
-  () => import("../../blocks/math/MathProblemBlock"),
-);
-const QuestionnaireRenderer = lazy(
-  () => import("../../blocks/questionnaire/QuestionnaireRenderer"),
-);
-const MarkdownTable = lazy(() => import("../../tables/MarkdownTable"));
-const StreamingTableRenderer = lazy(() =>
-  import("../../blocks/table/StreamingTableRenderer").then((m) => ({
-    default: m.StreamingTableRenderer,
-  })),
-);
 const StreamingDiffBlock = lazy(() =>
   import("../diff-blocks/StreamingDiffBlock").then((m) => ({
     default: m.StreamingDiffBlock,
@@ -118,134 +119,7 @@ const SearchReplaceBlock = lazy(() =>
     default: m.SearchReplaceBlock,
   })),
 );
-const InlineDecisionBlock = lazy(
-  () => import("../../blocks/inline-decision/InlineDecisionBlock"),
-);
-const ArtifactBlock = lazy(() => import("../../blocks/artifact/ArtifactBlock"));
-const ArtifactRefBlock = lazy(
-  () => import("../../blocks/artifact/ArtifactRefBlock"),
-);
-const EditorErrorBlock = lazy(
-  () => import("../../blocks/editor-resources/EditorErrorBlock"),
-);
-const EditorCodeSnippetBlock = lazy(
-  () => import("../../blocks/editor-resources/EditorCodeSnippetBlock"),
-);
-const AudioCitationBlock = lazy(
-  () => import("../../blocks/audio/AudioCitationBlock"),
-);
-const YamlBlock = lazy(() => import("../../blocks/yaml/YamlBlock"));
-const XmlBlock = lazy(() => import("../../blocks/xml/XmlBlock"));
-const CsvBlock = lazy(() => import("../../blocks/csv/CsvBlock"));
-const JsonBlock = lazy(() =>
-  import("../../blocks/json/JsonBlock").then((m) => ({
-    default: m.JsonBlock,
-  })),
-);
-const TomlBlock = lazy(() => import("../../blocks/toml/TomlBlock"));
-const TreeBlock = lazy(() => import("../../blocks/tree/TreeBlock"));
-const MarkdownPreviewBlock = lazy(
-  () => import("../../blocks/markdown-preview/MarkdownPreviewBlock"),
-);
-const AudioOutputBlock = lazy(
-  () => import("../../blocks/audio/AudioOutputBlock"),
-);
-const UnifiedImageBlockRenderer = lazy(() =>
-  import("@/features/files/blocks/image/UnifiedImageBlockRenderer").then(
-    (m) => ({ default: m.UnifiedImageBlockRenderer }),
-  ),
-);
-const YouTubeEmbedBlock = lazy(() =>
-  import("@/features/files/blocks/youtube/YouTubeEmbed").then((m) => ({
-    default: m.YouTubeEmbed,
-  })),
-);
-const SearchResultsBlock = lazy(
-  () => import("../../blocks/data-events/SearchResultsBlock"),
-);
-const SearchErrorBlock = lazy(
-  () => import("../../blocks/data-events/SearchErrorBlock"),
-);
-const FunctionResultBlock = lazy(
-  () => import("../../blocks/data-events/FunctionResultBlock"),
-);
-const WorkflowStepBlock = lazy(
-  () => import("../../blocks/data-events/WorkflowStepBlock"),
-);
-const CategorizationResultBlock = lazy(
-  () => import("../../blocks/data-events/CategorizationResultBlock"),
-);
-const FetchResultsBlock = lazy(
-  () => import("../../blocks/data-events/FetchResultsBlock"),
-);
-const PodcastCompleteBlockLazy = lazy(() =>
-  import("../../blocks/data-events/PodcastBlock").then((m) => ({
-    default: m.PodcastCompleteBlock,
-  })),
-);
-const PodcastStageBlockLazy = lazy(() =>
-  import("../../blocks/data-events/PodcastBlock").then((m) => ({
-    default: m.PodcastStageBlock,
-  })),
-);
-const ScrapeBatchCompleteBlock = lazy(
-  () => import("../../blocks/data-events/ScrapeBatchCompleteBlock"),
-);
-const StructuredInputWarningBlock = lazy(
-  () => import("../../blocks/data-events/StructuredInputWarningBlock"),
-);
-const DisplayQuestionnaireBlock = lazy(
-  () => import("../../blocks/data-events/DisplayQuestionnaireBlock"),
-);
-const UnknownDataEventBlock = lazy(
-  () => import("../../blocks/data-events/UnknownDataEventBlock"),
-);
-const ValueStoreStoredBlock = lazy(
-  () => import("../../blocks/data-events/ValueStoreStoredBlock"),
-);
-const ContextGroomedBlock = lazy(
-  () => import("../../blocks/data-events/ContextGroomedBlock"),
-);
-
 // Lazy load loading visualizations (lightweight but rarely all needed at once)
-const QuizLoadingVisualization = lazy(
-  () => import("../../blocks/quiz/QuizLoadingVisualization"),
-);
-const PresentationLoadingVisualization = lazy(
-  () => import("../../blocks/presentations/PresentationLoadingVisualization"),
-);
-const RecipeLoadingVisualization = lazy(
-  () => import("../../blocks/cooking-recipes/RecipeLoadingVisualization"),
-);
-const TimelineLoadingVisualization = lazy(
-  () => import("../../blocks/timeline/TimelineLoadingVisualization"),
-);
-const ResearchLoadingVisualization = lazy(
-  () => import("../../blocks/research/ResearchLoadingVisualization"),
-);
-const ResourcesLoadingVisualization = lazy(
-  () => import("../../blocks/resources/ResourcesLoadingVisualization"),
-);
-const ProgressLoadingVisualization = lazy(
-  () => import("../../blocks/progress/ProgressLoadingVisualization"),
-);
-const ComparisonLoadingVisualization = lazy(
-  () => import("../../blocks/comparison/ComparisonLoadingVisualization"),
-);
-const TroubleshootingLoadingVisualization = lazy(
-  () =>
-    import("../../blocks/troubleshooting/TroubleshootingLoadingVisualization"),
-);
-const DecisionTreeLoadingVisualization = lazy(
-  () => import("../../blocks/decision-tree/DecisionTreeLoadingVisualization"),
-);
-const DiagramLoadingVisualization = lazy(
-  () => import("../../blocks/diagram/DiagramLoadingVisualization"),
-);
-const MathProblemLoadingVisualization = lazy(
-  () => import("../../blocks/math/MathProblemLoadingVisualization"),
-);
-
 // Note: Parsers are loaded dynamically within BlockRenderer.tsx when needed
 // They cannot be lazy-loaded here as they are not React components
 
