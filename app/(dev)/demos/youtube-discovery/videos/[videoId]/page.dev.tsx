@@ -1,4 +1,4 @@
-import { YouTubeVideoPreviewPage } from "@/features/research/youtube-discovery/YouTubeVideoPreviewPage";
+import { redirect } from "next/navigation";
 
 export default async function YouTubeDiscoveryVideoPage({
   params,
@@ -6,5 +6,7 @@ export default async function YouTubeDiscoveryVideoPage({
   params: Promise<{ videoId: string }>;
 }) {
   const { videoId } = await params;
-  return <YouTubeVideoPreviewPage videoId={videoId} />;
+  redirect(
+    `/marketing/discovery/youtube/videos/${encodeURIComponent(videoId)}`,
+  );
 }

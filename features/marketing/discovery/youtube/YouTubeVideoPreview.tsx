@@ -13,6 +13,7 @@ import {
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button } from "@/components/ui/button";
 import { youTubeEmbedUrl, youTubeWatchUrl } from "@/lib/media/youtube";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatYouTubeCount } from "./formatters";
 import type { YouTubeVideoCandidate } from "./types";
 
@@ -132,13 +133,20 @@ export function YouTubeVideoPreviewDialog({
         <YouTubeVideoPreviewContent
           video={video}
           action={
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="rounded-xl border-border dark:border-white/10"
-            >
-              Close
-            </Button>
+            <div className="flex shrink-0 flex-wrap justify-end gap-2">
+              <Button asChild variant="outline" className="rounded-xl">
+                <Link href={marketingRoutes.youtubeVideo(video.video_id)}>
+                  Open full page
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="rounded-xl border-border dark:border-white/10"
+              >
+                Close
+              </Button>
+            </div>
           }
         />
       </div>
@@ -159,7 +167,7 @@ export function YouTubeVideoPreviewSurface({
           variant="ghost"
           className="mb-4 rounded-xl text-muted-foreground"
         >
-          <Link href="/demos/youtube-discovery">
+          <Link href={marketingRoutes.youtubeDiscovery()}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to YouTube discovery
           </Link>

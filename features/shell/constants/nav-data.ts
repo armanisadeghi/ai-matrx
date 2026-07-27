@@ -1220,6 +1220,16 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "YouTube Discovery",
+        href: "/marketing/discovery/youtube",
+        iconName: "Youtube",
+        description:
+          "Find videos and compare creator authority, engagement, and research value",
+        color: "green",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "SEO Tools",
         href: "/marketing/tools",
         iconName: "Wrench",

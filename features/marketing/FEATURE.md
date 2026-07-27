@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-07-25
+**Last updated:** 2026-07-26
 
 ## The feature is multi-pillar — websites are ONE pillar
 
@@ -10,15 +10,16 @@ Marketing owns five peer pillars, declared ONCE in
 `features/marketing/lib/marketing-nav.ts` (`MARKETING_PILLARS`) and rendered by
 the `/marketing` hub, `/marketing/tools`, and the shell nav:
 
-| Pillar | Lives at |
-|---|---|
-| Brands & Websites | `/marketing/brands`, `/marketing/sites` (+ `features/marketing/**`) |
-| Content Planning | `/marketing/content-plan` (`features/marketing/content-plan/`) |
-| Search & Keywords | `/marketing/keyword-research` (`features/marketing/seo/keyword-research/`) |
-| SEO Tools | `/marketing/tools` → the PUBLIC analyzers on `/seo/*` (`features/marketing/seo/`) |
-| Data & Operations | `/marketing/connections`, `/marketing/batches`, `/marketing/cost` |
+| Pillar                       | Lives at                                                                          |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| Brands & Websites            | `/marketing/brands`, `/marketing/sites` (+ `features/marketing/**`)               |
+| Content Planning             | `/marketing/content-plan` (`features/marketing/content-plan/`)                    |
+| Discovery, Search & Keywords | `/marketing/discovery/youtube`, `/marketing/keyword-research`                     |
+| SEO Tools                    | `/marketing/tools` → the PUBLIC analyzers on `/seo/*` (`features/marketing/seo/`) |
+| Data & Operations            | `/marketing/connections`, `/marketing/batches`, `/marketing/cost`                 |
 
 **Rules:**
+
 - **No marketing surface gets a root-level route.** Content planning and keyword
   research were mounted at `/content-plan` and `/seo/keyword-research`; both moved
   under `/marketing/*` on 2026-07-25 (permanent redirects in `next.config.js`).
@@ -62,6 +63,9 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
 - `/marketing` — the hub: a list view of every pillar (`features/marketing/components/MarketingHub.tsx` over `MARKETING_PILLARS`).
 - `/marketing/content-plan` — editorial plan tree; see `features/marketing/content-plan/FEATURE.md`.
 - `/marketing/keyword-research` — keyword research workbench (`features/marketing/seo/keyword-research/`).
+- `/marketing/discovery/youtube` — authenticated public-video discovery and
+  expertise comparison (`features/marketing/discovery/youtube/`); direct
+  previews live at `/marketing/discovery/youtube/videos/[videoId]`.
 - `/marketing/tools` — in-app index of the public analyzers, which stay on `/seo/*` in the `(public)` group (`features/marketing/seo/public-tools/`, `serp/`, `social/`).
 - `/marketing/admin` — feature resource map.
 - `features/marketing/lib/route-metadata.ts` — one route classifier supplies every Marketing leaf with a specific tab title, description, social-card metadata, and a unique green favicon badge; client-only legacy redirects are covered at the parent layout.
@@ -229,7 +233,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   nav entry — `/marketing/cost` was already in `MarketingWorkspaceNav`. Not
   exercised in a live browser this pass (no dev server per task rules); the
   route is deploy-gated like every other 2026-07-23+ SEO route (`as unknown
-  as keyof paths` cast pending the OpenAPI type sync).
+as keyof paths` cast pending the OpenAPI type sync).
 
 - 2026-07-23 — Claude (WS-15): D74/DEF-15 CLOSED — the External Links unchecked-status
   notice from 2026-07-20 is resolved, and it was never actually a scraper gap: the
@@ -321,3 +325,9 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 - 2026-07-25 — Claude: annihilated the "CanonicalGscSync failed unexpectedly" class. `lib/api/errors.ts` gained `describeBackendFailure`/`unwrapUpstreamError`/`isGenericUserMessage` (unwraps a nested upstream payload, promotes the deepest specific sentence, keeps code/request-id/chain); `crawler/direct-client.ts` now throws `BackendApiError` through it on BOTH the HTTP and in-stream error paths and captures the real cause as the Error Inspector `message`. Google connection health is derived (`credential_present`/`credential_stable`/`health` from `credential_item_id` + `vault_secret_key`, parity with aidream's resolver precondition) and explained in the new `google/health.ts`; the connections hub shows the exact reason + a per-connection Diagnostics block + Reconnect, and the GSC card blocks Sync with the reason up front and renders the full failure (cause, code, request id, service chain) after a failure. aidream's `resolve_connection_credential` now stamps `needs_attention` + `last_error` on every credential failure and self-heals on success (deploy pending). Root cause of the incident: connection `7223fed4…` sat `status='connected'` with no vault credential from 2026-07-19 until a reconnect at 02:39 on 2026-07-25, after which the same sync succeeded.
 - 2026-07-25 — Codex: extended the one canonical Google popup connection with `youtube.readonly`, owned-channel discovery, first-class `youtube_channel` inventory rows, and visible per-account YouTube channel counts/names. No browser token store, Next.js OAuth route, or YouTube-specific credential system was added.
 - 2026-07-26 — Claude: killed the rank-check error/spinner class on `/marketing/.../ranks`. Backend: matrx-seo's Brave adapter was a recreated, unpaced Brave client (fresh instance per run, `min_interval_seconds=0`, 3 fast retries → raw 429 surfaced to users); it now rides matrx_scraper's shared process-wide Brave rate limiter in aidream (standalone gets internal adaptive pacing tuned from `x-ratelimit-limit`), retries 6x honoring Retry-After — a rate limit queues, never errors. Frontend: `useRunRankCheck` captures in-band stream `error` events and always forces a terminal done/error state after the stream ends (rows previously spun forever because `result.error` stays null on in-band failures), surfacing failures as a toast.
+- 2026-07-26 — Codex: promoted YouTube Discovery from the dev demo route
+  into its permanent Marketing home at `/marketing/discovery/youtube`, moved
+  the full feature to `features/marketing/discovery/youtube`, registered it in
+  the hub, shell nav, admin map, route builders, and metadata, and retained the
+  old demo URLs as redirects. Modal previews and direct video pages now share
+  one preview component and link to each other.

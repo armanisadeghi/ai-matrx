@@ -20,6 +20,10 @@ export const marketingRoutes = {
   contentPlan: () => "/marketing/content-plan",
   /** Keyword research workbench (was `/seo/keyword-research`, moved 2026-07-25). */
   keywordResearch: () => "/marketing/keyword-research",
+  /** Public-video discovery and expertise comparison through YouTube Data API v3. */
+  youtubeDiscovery: () => "/marketing/discovery/youtube",
+  youtubeVideo: (videoId: string) =>
+    `/marketing/discovery/youtube/videos/${encodeURIComponent(videoId)}`,
   /** In-app index of the PUBLIC SEO utilities (they live under `/seo/*`). */
   tools: () => "/marketing/tools",
   batches: () => "/marketing/batches",

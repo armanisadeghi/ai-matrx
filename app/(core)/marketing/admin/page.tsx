@@ -44,6 +44,14 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/discovery/youtube",
+      label: "YouTube Discovery",
+      description:
+        "Public-video search, expertise comparison, modal preview, and durable direct-preview routes.",
+      filePath: "app/(core)/marketing/discovery/youtube/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/tools",
       label: "SEO Tools index",
       description:
@@ -332,8 +340,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       overlayId: "serpAnalyzerWindow",
-      description:
-        "Search Appearance (MetadataAnalyzer) in a floating window.",
+      description: "Search Appearance (MetadataAnalyzer) in a floating window.",
     },
     {
       overlayId: "socialCardAnalyzerWindow",

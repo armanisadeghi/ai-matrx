@@ -1,5 +1,5 @@
-import { YouTubeDiscoveryDemo } from "@/features/research/youtube-discovery/YouTubeDiscoveryDemo";
+import { redirect } from "next/navigation";
 
 export default function YouTubeDiscoveryDemoPage() {
-  return <YouTubeDiscoveryDemo />;
+  redirect("/marketing/discovery/youtube");
 }

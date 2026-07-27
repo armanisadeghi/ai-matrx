@@ -124,9 +124,9 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
   },
   {
     key: "search",
-    label: "Search & Keywords",
+    label: "Discovery, Search & Keywords",
     description:
-      "How the market searches and where you rank — research, live market data, and rank tracking.",
+      "Find expert source material, understand how the market searches, and track where you rank.",
     iconName: "Search",
     entries: [
       {
@@ -135,6 +135,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Map keyword relationships with AI research and live market volume data.",
         iconName: "Search",
+      },
+      {
+        label: "YouTube Discovery",
+        href: marketingRoutes.youtubeDiscovery(),
+        description:
+          "Find videos and compare creator authority, engagement, and research value.",
+        iconName: "Youtube",
       },
     ],
   },
@@ -183,4 +190,3 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     ],
   },
 ];
-

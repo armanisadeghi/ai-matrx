@@ -1,17 +1,23 @@
 # YouTube Discovery
 
+**Status:** live
+
+**Route:** `/marketing/discovery/youtube`
+
 ## Purpose
 
-YouTube Discovery is the user-facing exploration surface for finding strong
-video sources before they are added to a research project. It uses the same
-enriched YouTube Data API primitive as the automated research pipeline.
+YouTube Discovery is Marketing's user-facing exploration surface for finding
+strong video sources before they are added to a research project. It uses the
+same enriched YouTube Data API primitive as the automated research pipeline.
 
 ## Entry points
 
-- UI: `YouTubeDiscoveryDemo.tsx`
+- UI: `YouTubeDiscovery.tsx`
 - API client: `service.ts`
 - API types and defaults: `types.ts`
-- Demo route: `/demos/youtube-discovery` in full-profile builds
+- Canonical route: `/marketing/discovery/youtube`
+- Direct preview: `/marketing/discovery/youtube/videos/[videoId]`
+- Compatibility redirects: `/demos/youtube-discovery/**`
 - Server route: `POST /api/research/youtube/search`
 
 ## Invariants
@@ -31,18 +37,24 @@ enriched YouTube Data API primitive as the automated research pipeline.
 - Every surface is theme-aware while preserving the established dark design.
 - Result actions can copy the canonical YouTube link, and previews can copy the
   displayed description text.
-- Video previews use the shared privacy-enhanced YouTube embed primitive.
+- Modal and direct-page previews share `YouTubeVideoPreviewContent`, use the
+  privacy-enhanced YouTube embed primitive, and link between discovery and the
+  durable direct route.
 - This surface is transient discovery. Persisting selected videos into research
   remains a separate research action.
 
-## Current demo scope
+## Current scope
 
-The demo proves the complete discovery experience: search, sort, filter,
+The surface provides the complete discovery experience: search, sort, filter,
 paginate, compare authority signals, preview, and open a result on YouTube. It
 does not yet add a selected video to a research project.
 
 ## Changelog
 
+- **2026-07-26** — Moved the complete feature from
+  `features/research/youtube-discovery` to its permanent Marketing home,
+  registered the canonical routes and navigation, retained legacy redirects,
+  and consolidated modal/direct preview rendering.
 - **2026-07-25** — Added light-theme parity, default channel diversity, exact
   under-10/under-20 duration controls, permanently unfiltered discovery, and
   copy actions for links and preview descriptions.

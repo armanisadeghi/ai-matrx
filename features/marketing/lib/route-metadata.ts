@@ -51,6 +51,12 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Plan every URL a site should have — pillars, clusters, briefs, keywords.",
     letter: "Cp",
   },
+  "/marketing/discovery/youtube": {
+    titlePrefix: "YouTube Discovery",
+    description:
+      "Find public videos and compare creator authority, engagement, and research value.",
+    letter: "Yt",
+  },
   "/marketing/keyword-research": {
     titlePrefix: "Keyword Research",
     description:
@@ -194,6 +200,20 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       titlePrefix: "Batch Detail",
       description: "Inspect a marketing batch and its execution items.",
       letter: "Ba",
+    });
+  }
+
+  if (
+    segments[1] === "discovery" &&
+    segments[2] === "youtube" &&
+    segments[3] === "videos" &&
+    segments[4]
+  ) {
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "YouTube Video",
+      description:
+        "Preview a discovered YouTube video and inspect its research signals.",
+      letter: "Yv",
     });
   }
 

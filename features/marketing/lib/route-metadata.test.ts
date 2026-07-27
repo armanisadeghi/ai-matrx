@@ -11,6 +11,8 @@ const ROUTES = [
   ["/marketing/connections", "Cn"],
   ["/marketing/connections/google", "Gg"],
   ["/marketing/cost", "Co"],
+  ["/marketing/discovery/youtube", "Yt"],
+  ["/marketing/discovery/youtube/videos/video-1", "Yv"],
   ["/marketing/sites", "St"],
   ["/marketing/sites/new", "Ns"],
   ["/marketing/sites/site-1", "Ls"],
