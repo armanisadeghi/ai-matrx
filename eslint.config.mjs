@@ -624,6 +624,31 @@ const heavyImplStaticImportBan = [
 // route/server chunk: the exact build-time-leak class that ballooned the build
 // 15→24min for the context menu. The Impl file carries a justified one-line
 // eslint-disable. `import type {...}` and dynamic `import()` are unaffected.
+// React.lazy is banned repo-wide (code-splitting doctrine rule 3): it SSRs by
+// default, so every lazy target still compiles into the server pass of any
+// route whose static graph reaches the call site — the "worse than not
+// splitting" pattern (235 sites swept 2026-07-27). Use
+// next/dynamic({ ssr: false, loading }) instead. Two deliberate exceptions
+// carry a justified inline disable on their import line:
+// BlockComponentRegistry.tsx (fully behind the MarkdownStream ssr:false gate;
+// excluded from conversion by Arman) and BlockFallback.tsx (its Suspense
+// fallback renders the block's raw code during chunk load — runtime data a
+// static `loading` component cannot show).
+const reactLazyBan = [
+    {
+        selector:
+            "ImportDeclaration[source.value='react'] ImportSpecifier[imported.name='lazy']",
+        message:
+            "React.lazy is banned — it SSRs by default, compiling the lazy target into the server pass (the 'worse than not splitting' pattern). Use next/dynamic({ ssr: false, loading }) instead. See the code-splitting skill.",
+    },
+    {
+        selector:
+            "MemberExpression[object.name='React'][property.name='lazy']",
+        message:
+            "React.lazy is banned — it SSRs by default, compiling the lazy target into the server pass. Use next/dynamic({ ssr: false, loading }) instead. See the code-splitting skill.",
+    },
+];
+
 const reactFlowStaticImportBan = [
     {
         selector:
@@ -857,6 +882,8 @@ export default [
                 ...contextMenuV3StaticImportBan,
                 // Heavy "*Impl" cores must be reached via their dynamic wrapper, never imported statically.
                 ...heavyImplStaticImportBan,
+                // React.lazy is banned — next/dynamic({ssr:false}) only (two justified inline-disable exceptions).
+                ...reactLazyBan,
                 // React Flow is a heavy browser-only canvas — only the Agent Set builder Impl may import it.
                 ...reactFlowStaticImportBan,
                 ...audioSystemStaticImportBan,

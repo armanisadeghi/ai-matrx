@@ -32,7 +32,7 @@ So `dynamic()` itself saves nothing. The **`ssr:false`** earns benefit #2; the *
 
 2. **Never stack `ssr:false` boundaries down one render path.** One boundary covers everything beneath it. A second one close below = a sequential **waterfall** (load chunk A → only then discover & fetch chunk B), a fragmented chunk graph, and **zero** extra benefit. See the warning baked into [lazyOverlay.tsx](features/overlays/boundary/lazyOverlay.tsx).
 
-3. **`next/dynamic` ≠ `React.lazy`. Always use `next/dynamic`.** Only `next/dynamic` supports `ssr:false`, a built-in `loading`, and named-export handling. `React.lazy` SSRs by default, needs your own `<Suspense>`, and **cannot** keep browser-only code off the server. `React.lazy` / `lazy(` in this repo is tech debt — replace it when you touch it.
+3. **`next/dynamic` ≠ `React.lazy`. Always use `next/dynamic`.** Only `next/dynamic` supports `ssr:false`, a built-in `loading`, and named-export handling. `React.lazy` SSRs by default, needs your own `<Suspense>`, and **cannot** keep browser-only code off the server. `React.lazy` / `lazy(` is lint-banned repo-wide (`reactLazyBan`, swept 2026-07-27) — the only two exceptions carry justified inline disables (see the anti-pattern table).
 
 4. **A dynamic import without a condition does nothing (benefit #3).** If you `dynamic()` something and then always render it, you paid the split cost for no deferral. Gate it (modal open, tab, route, `useIdleReady`, feature flag) — or, if it genuinely must always be live, keep it only for the `ssr:false` reason (benefit #2) and say so.
 
@@ -102,7 +102,7 @@ For a set of components that **always render together** (app-shell singletons, a
 |---|---|---|
 | **Stacked `ssr:false` on one path** | [MessageItem.tsx:7](features/chat/components/response/MessageItem.tsx#L7) `dynamic(AssistantMessage)` → which renders `MarkdownStream` (itself `dynamic ssr:false`) | Two boundaries, one render path → extra waterfall. `AssistantMessage` also renders for **every** assistant message, so benefit #3 ≈ 0. Fix: import `AssistantMessage` statically; the `MarkdownStream` boundary beneath already does the heavy split. |
 | **Dynamic but unconditional** | same file — `AssistantMessage` always renders when `role !== "user"` | Chunk fetches on every chat open regardless. Split cost, no deferral. |
-| **`React.lazy` instead of `next/dynamic`** | [organizations/peek/registry.ts](features/organizations/peek/registry.ts), several `features/settings/tabs/*` | No `ssr:false`, no `loading`, manual Suspense. Use `next/dynamic`. |
+| **`React.lazy` instead of `next/dynamic`** | swept repo-wide 2026-07-27 (235 sites); now lint-banned (`reactLazyBan` in `eslint.config.mjs`) | No `ssr:false`, no `loading`, manual Suspense — and the target still compiles into the server pass. Two justified inline-disable exceptions: `BlockComponentRegistry.tsx` (fully in-gate; conversion deferred by Arman) and `BlockFallback.tsx` (Suspense fallback shows the block's raw code — runtime data `loading` can't render). |
 | **`dynamic({ssr:false})` in a Server Component** | guarded against in [app/Providers.tsx](app/Providers.tsx) | Build error. Push the dynamic import into a `"use client"` child. |
 | **Bare `dynamic()` for an overlay/window** | — | Bypasses `loading`/error/timeout. Use `lazyOverlay`. |
 | **Static thunk/service import in a shell-reachable action module** | navActions.ts, fixed 2026-07 (rule 6) | Multiplied the 420-module war-room engine across ~630 route entries (+2.5 min build). `await import()` in the handler body. |
