@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
+import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import {
   getOrMintSignedUrl,
   invalidateSignedUrl,
@@ -569,7 +570,34 @@ export function InlineMediaRef({
   const resolvedUrl = useFileSrc(source);
   // Routes <audio>/<video> to the user's chosen output device (setSinkId) and
   // re-applies on device change. No-op on Safari. Forwards to mediaElementRef.
-  const sinkRef = useOutputSinkRef(mediaElementRef);
+  const outputSinkRef = useOutputSinkRef(mediaElementRef);
+  // Join the unified media system (Media panel + one-live-playback lock): the
+  // session registers while the element actually plays (driven by real
+  // play/pause events below); a SILENT element (muted/volume 0) registers but
+  // never claims the lock, so muted autoplay previews can't cut a read-aloud.
+  const sessionElRef = useRef<HTMLMediaElement | null>(null);
+  const [isMediaPlaying, setIsMediaPlaying] = useState(false);
+  const sinkRef = (node: HTMLVideoElement | HTMLAudioElement | null) => {
+    sessionElRef.current = node;
+    outputSinkRef(node);
+  };
+  useMediaElementPlaybackSession({
+    elementRef: sessionElRef,
+    isPlaying: isMediaPlaying,
+    source: "file-media",
+    label: alt || "Media file",
+    trackKey:
+      source && source.kind === "file_id"
+        ? source.fileId
+        : typeof ref === "string"
+          ? ref
+          : undefined,
+  });
+  const mediaSessionEvents = {
+    onPlay: () => setIsMediaPlaying(true),
+    onPause: () => setIsMediaPlaying(false),
+    onEnded: () => setIsMediaPlaying(false),
+  };
   const sourceFileId =
     source && source.kind === "file_id" ? source.fileId : null;
 
@@ -743,6 +771,7 @@ export function InlineMediaRef({
         }
         onError={handleLoadError as React.ReactEventHandler<HTMLVideoElement>}
         crossOrigin={crossOrigin}
+        {...mediaSessionEvents}
         {...interactiveProps}
       />
     );
@@ -758,6 +787,7 @@ export function InlineMediaRef({
         loop={loop}
         muted={muted}
         preload={preload}
+        {...mediaSessionEvents}
         onLoadedData={
           onLoad as React.ReactEventHandler<HTMLAudioElement> | undefined
         }

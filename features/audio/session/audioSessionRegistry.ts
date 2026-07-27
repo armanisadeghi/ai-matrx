@@ -31,6 +31,7 @@ import {
 import type {
   AudioSession,
   AudioSessionControls,
+  AudioSessionMedium,
   AudioSessionPatch,
   AudioSessionSource,
   AudioSnapshot,
@@ -238,12 +239,14 @@ export function beginPlaybackSession(input: {
  */
 export function beginRecordingSession(input: {
   source?: AudioSessionSource;
+  medium?: AudioSessionMedium;
   label: string;
   controls?: AudioSessionControls;
 }): PlaybackSessionHandle {
   const id = registerSession({
     direction: "recording",
     source: input.source ?? "recording",
+    medium: input.medium,
     label: input.label,
     status: "active",
   });

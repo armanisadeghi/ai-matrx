@@ -70,6 +70,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { VideoSharePopover } from "./VideoSharePopover";
 import { useVideoActions } from "./useVideoActions";
 import { useUnifiedVideoUrl } from "./useUnifiedVideoUrl";
+import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import type { VideoBlock } from "../types";
 import type { MediaExtraAction } from "../actions";
 
@@ -148,6 +149,28 @@ export const UnifiedVideoBlockRenderer: React.FC<
   const fileId = block.origin === "matrx" ? block.fileId : null;
 
   const actions = useVideoActions({ block, currentSrc: src, fileId });
+
+  // Unified media system: playing video registers in the Media panel and
+  // claims the one-live-playback lock (inline player + lightbox each track
+  // their own element; only whichever is actually playing holds a session).
+  const inlineVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [inlinePlaying, setInlinePlaying] = useState(false);
+  useMediaElementPlaybackSession({
+    elementRef: inlineVideoRef,
+    isPlaying: inlinePlaying,
+    source: "file-media",
+    label: "Video",
+    trackKey: fileId ?? src ?? undefined,
+  });
+  const lightboxVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [lightboxPlaying, setLightboxPlaying] = useState(false);
+  useMediaElementPlaybackSession({
+    elementRef: lightboxVideoRef,
+    isPlaying: lightboxPlaying,
+    source: "file-media",
+    label: "Video (fullscreen)",
+    trackKey: fileId ?? src ?? undefined,
+  });
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -266,12 +289,16 @@ export const UnifiedVideoBlockRenderer: React.FC<
 
             {src && (
               <video
+                ref={inlineVideoRef}
                 src={src}
                 poster={posterUrl ?? undefined}
                 controls
                 playsInline
                 preload="metadata"
                 className="block max-w-full h-auto max-h-[28rem] rounded-lg min-h-[200px] min-w-[280px] bg-black"
+                onPlay={() => setInlinePlaying(true)}
+                onPause={() => setInlinePlaying(false)}
+                onEnded={() => setInlinePlaying(false)}
                 onError={() => {
                   // Owned files never just "expire" — re-mint before giving up.
                   void reportLoadError(src);
@@ -473,12 +500,16 @@ export const UnifiedVideoBlockRenderer: React.FC<
             onClick={(e) => e.stopPropagation()}
           >
             <video
+              ref={lightboxVideoRef}
               src={src}
               poster={posterUrl ?? undefined}
               controls
               autoPlay
               playsInline
               className="max-w-full max-h-[85dvh] rounded-lg bg-black"
+              onPlay={() => setLightboxPlaying(true)}
+              onPause={() => setLightboxPlaying(false)}
+              onEnded={() => setLightboxPlaying(false)}
             />
             <button
               onClick={() => setIsExpanded(false)}

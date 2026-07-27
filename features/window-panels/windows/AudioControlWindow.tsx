@@ -49,6 +49,7 @@ import {
   StopCircle,
   Volume2,
   X,
+  Film,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -266,6 +267,7 @@ function NowPlaying({
       <div className="rounded-lg border border-border bg-card px-2.5 py-2">
         <div className="flex items-center gap-2">
           <SpeakerActivity active={isActive} />
+          {currentPlayback && <MediumIcon session={currentPlayback} />}
           <span className="min-w-0 flex-1 truncate text-xs text-foreground">
             {currentPlayback
               ? sessionTitle(currentPlayback)
@@ -407,7 +409,8 @@ function HistoryList({
               className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                  <MediumIcon session={item} />
                   {sessionTitle(item)}
                 </p>
                 {item.status === "error" && item.error && (
@@ -755,6 +758,17 @@ function formatElapsed(totalSeconds: number): string {
   return `${mins.toString().padStart(2, "0")}:${secs
     .toString()
     .padStart(2, "0")}`;
+}
+
+/** Small chip marking a VIDEO session in the shared (audio-styled) lists. */
+function MediumIcon({ session }: { session: AudioSession }) {
+  if (session.medium !== "video") return null;
+  return (
+    <Film
+      className="h-3 w-3 shrink-0 text-muted-foreground"
+      aria-label="Video"
+    />
+  );
 }
 
 function sessionTitle(session: AudioSession): string {

@@ -309,6 +309,7 @@ async function startEngine(args: EngineArgs): Promise<CaptureRecordingHandle> {
 
   session = beginRecordingSession({
     source: "media-capture",
+    medium: args.kind === "video" ? "video" : "audio",
     label: args.label,
     controls: {
       pause: () => controller.pause(),

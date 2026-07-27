@@ -387,7 +387,9 @@ export function FilePreview({
       body = <SvgPreview url={url} fileName={file.fileName} fileId={fileId} />;
       break;
     case "video":
-      body = <VideoPreview url={url} mimeType={file.mimeType} />;
+      body = (
+        <VideoPreview url={url} mimeType={file.mimeType} label={file.fileName} />
+      );
       break;
     case "audio":
       body = (
