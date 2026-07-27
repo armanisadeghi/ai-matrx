@@ -7,6 +7,9 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
+import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import { CostModeButtons } from "@/features/marketing/components/operations/CostModeButtons";
 import { SeoSpendPanel } from "@/features/marketing/components/operations/SeoSpendPanel";
 import {
@@ -117,8 +120,42 @@ export function WorkspaceCostWorkspace() {
     table.onStateChange({ ...table.state, page: 1, anyOf: value });
   };
 
+  // Surface scope — assembled at trigger time from the loaded rollup query.
+  // The provider-spend view owns its own data, so cost rows are omitted while
+  // it is open rather than handing over a stale runtime table.
+  const costRows = costs.data?.rows ?? [];
+  const getHubScope = () =>
+    createMarketingScope({
+      hub_view: "cost",
+      cost_view: view,
+      list_query: marketingListQuery(table.state),
+      ...(view === "runtime"
+        ? {
+            cost_rollup_mode: displayMode,
+            ...(typeof costs.data?.total === "number"
+              ? { cost_rollups_total: costs.data.total }
+              : {}),
+            ...(costRows.length > 0
+              ? {
+                  cost_rollups: costRows.map((row) => ({
+                    mode: row.mode,
+                    label: row.label,
+                    detail: row.detail,
+                    site_id: row.site_id,
+                    client_org_id: row.client_org_id,
+                    cost_usd: row.cost,
+                  })),
+                }
+              : {}),
+          }
+        : {}),
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing"
+      getScope={getHubScope}
+    >
       <RouteHeader
         left={
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
@@ -221,6 +258,6 @@ export function WorkspaceCostWorkspace() {
           />
         )}
       </main>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

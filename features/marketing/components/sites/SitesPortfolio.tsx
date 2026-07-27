@@ -24,6 +24,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
+import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   useDeleteSite,
@@ -112,8 +113,31 @@ export function SitesPortfolio() {
   // view, so brand_count and portfolio_summary are honestly omitted.
   const getHubScope = () =>
     createMarketingScope({
+      hub_view: "sites",
+      list_query: marketingListQuery(table.state),
       ...(typeof siteCount.data === "number"
         ? { site_count: siteCount.data }
+        : {}),
+      ...(typeof sites.data?.total === "number"
+        ? { sites_total: sites.data.total }
+        : {}),
+      ...(listRows.length > 0
+        ? {
+            visible_sites: listRows.map((row) => ({
+              site_id: row.id,
+              brand_id: row.brand_id,
+              name: row.name,
+              domain: row.domain,
+              root_url: row.root_url,
+              description: row.description,
+              status: row.status,
+              visibility: row.visibility,
+              initialized: Boolean(row.initialized_at),
+              health_score: row.health_score,
+              scored_pages: row.scored_pages,
+              updated_at: row.updated_at,
+            })),
+          }
         : {}),
     });
 

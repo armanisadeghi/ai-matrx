@@ -5,6 +5,8 @@ import { ArrowRight, Gauge, Globe2, SearchCheck } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { Badge } from "@/components/ui/badge";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
@@ -39,8 +41,42 @@ export function MarketingConnectionsCatalog() {
     siteHasActiveBingBinding(site.integrations),
   ).length;
 
+  // Surface scope — the same connection picture the cards render, assembled at
+  // trigger time. `loading` / `unavailable` ride along so an agent can never
+  // read a failed inventory call as "nothing is connected".
+  const getHubScope = () =>
+    createMarketingScope({
+      hub_view: "connections",
+      connection_status: {
+        google: {
+          loading: inventory.isLoading,
+          unavailable: inventory.isError,
+          connected_accounts: connectedAccounts.length,
+          search_console_properties_available:
+            searchConsoleProperties.length,
+          search_console_sites_configured: searchConsoleSites.length,
+          pagespeed_sites_enabled: pageSpeedSites.length,
+        },
+        bing: {
+          loading: bingInventory.isLoading,
+          unavailable: bingInventory.isError,
+          connected_accounts: bingConnectedAccounts.length,
+          discovered_properties: bingDiscoveredSites,
+          sites_bound: bingBoundSites,
+        },
+        sites: {
+          loading: sites.isLoading,
+          unavailable: sites.isError,
+          total: sites.data?.length ?? null,
+        },
+      },
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing"
+      getScope={getHubScope}
+    >
       <RouteHeader
         left={
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
@@ -179,7 +215,7 @@ export function MarketingConnectionsCatalog() {
           </Link>
         </div>
       </main>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 

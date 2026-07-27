@@ -21,6 +21,7 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSitePagesScope } from "@/features/surfaces/manifests/marketing-site-pages.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
@@ -366,25 +367,43 @@ export function PagesTable() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-site-pages"
-      getScope={() =>
-        createMarketingSitePagesScope({
+      getScope={() => {
+        const rows = pages.data?.rows;
+        const query = marketingListQuery(table.state);
+        return createMarketingSitePagesScope({
           ...getBaseValues(),
+          list_query: query,
+          registry_view: {
+            coverage_filter: coverage,
+            pages_total: pages.data?.total ?? null,
+            visible_page_count: rows?.length ?? null,
+            query,
+          },
           pages_total: pages.data?.total,
+          visible_page_count: rows?.length,
           coverage_filter: coverage ?? undefined,
-          visible_pages: pages.data?.rows.map((row) => ({
+          visible_pages: rows?.map((row) => ({
+            page_id: row.id,
             url: row.url,
+            path: row.path,
             title: row.observed_title,
+            status: row.status,
+            provenance: row.provenance,
             serp_ok: row.serp_ok,
             social_ok: row.social_ok,
             indexability_verdict: row.indexability_verdict,
+            health_score: row.health_score,
             sitemap_count: row.sitemap_count,
             word_count: row.word_count,
+            http_status_last: row.http_status_last,
+            in_gsc: row.in_gsc,
             gsc_clicks_28d: row.gsc_clicks_28d,
             gsc_impressions_28d: row.gsc_impressions_28d,
             gsc_position_28d: row.gsc_position_28d,
+            last_seen: row.last_seen,
           })),
-        })
-      }
+        });
+      }}
     >
     <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured p-3 sm:p-4">
       <CoverageChips />

@@ -25,6 +25,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
+import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useBrands, useDeleteBrand } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -121,11 +122,31 @@ export function BrandsPortfolio() {
   // is honestly omitted.
   const getHubScope = () =>
     createMarketingScope({
+      hub_view: "brands",
+      list_query: marketingListQuery(table.state),
       ...(typeof brands.data?.total === "number"
         ? { brand_count: brands.data.total }
         : {}),
       ...(listRows.length > 0
         ? {
+            visible_brands: listRows.map((row) => ({
+              brand_id: row.id,
+              name: row.name,
+              industry: row.industry,
+              description: row.description,
+              status: row.status,
+              sites: row.sites.map((site) => ({
+                site_id: site.id,
+                domain: site.domain,
+                name: site.name,
+                initialized: Boolean(site.initialized_at),
+              })),
+              social_count: row.social_count,
+              asset_count: row.asset_count,
+              fact_count: row.fact_count,
+              pending_review: row.pending_discovered,
+              updated_at: row.updated_at,
+            })),
             portfolio_summary: listRows.map((row) => ({
               brand_id: row.id,
               brand: row.name,

@@ -10,6 +10,24 @@
 
 import Link from "next/link";
 import {
+  BadgeDollarSign,
+  CalendarDays,
+  ChartNoAxesColumn,
+  FileBarChart,
+  Mail,
+  MapPin,
+  Megaphone,
+  PenLine,
+  Radar,
+  Send,
+  Share2,
+  MessageSquareQuote,
+  Swords,
+  Target,
+  TrendingUp,
+  Users,
+  Workflow,
+  Video,
   FileSearch,
   Boxes,
   Braces,
@@ -28,15 +46,39 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import type {
   MarketingNavEntry,
   MarketingNavPillar,
 } from "@/features/marketing/lib/marketing-nav";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
+import { marketingPillarMap } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import { cn } from "@/lib/utils";
 
 // Explicit map, not `import * as Icons` — a namespace import pulls the entire
 // lucide set into this client chunk.
 const ICONS: Readonly<Record<string, LucideIcon>> = {
+  BadgeDollarSign,
+  CalendarDays,
+  ChartNoAxesColumn,
+  FileBarChart,
+  Mail,
+  MapPin,
+  Megaphone,
+  PenLine,
+  Radar,
+  Send,
+  Share2,
+  MessageSquareQuote,
+  Swords,
+  Target,
+  TrendingUp,
+  Users,
+  Workflow,
+  // lucide dropped brand icons (see reference_lucide_brand_icons) — the nav
+  // still declares "Youtube"; Video is the domain-correct stand-in.
+  Youtube: Video,
   FileSearch,
   Boxes,
   Braces,
@@ -58,26 +100,35 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
 }
 
 function EntryCard({ entry }: { entry: MarketingNavEntry }) {
+  // Coming-soon entries are real reserved routes, so they stay clickable —
+  // the dashed border is the honesty signal, not a disabled state.
+  const comingSoon = entry.status === "coming-soon";
   return (
     <Link
       href={entry.href}
       target={entry.external ? "_blank" : undefined}
       rel={entry.external ? "noopener noreferrer" : undefined}
       className={cn(
-        "group flex min-w-0 items-start gap-2.5 rounded-md border border-border",
-        "bg-card p-2.5 transition-colors hover:border-primary/50 hover:bg-accent",
+        "group flex min-w-0 items-start gap-2.5 rounded-md border p-2.5 transition-colors",
+        comingSoon
+          ? "border-dashed border-border bg-muted/20 hover:border-primary/40 hover:bg-accent/50"
+          : "border-border bg-card hover:border-primary/50 hover:bg-accent",
       )}
     >
       <NavIcon
         name={entry.iconName}
-        className="mt-0.5 size-4 shrink-0 text-muted-foreground group-hover:text-primary"
+        className={cn(
+          "mt-0.5 size-4 shrink-0 group-hover:text-primary",
+          comingSoon ? "text-muted-foreground/50" : "text-muted-foreground",
+        )}
       />
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+        <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-foreground">
           <span className="truncate">{entry.label}</span>
           {entry.external ? (
             <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
           ) : null}
+          {comingSoon ? <ComingSoonBadge /> : null}
         </span>
         <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
           {entry.description}
@@ -116,14 +167,24 @@ export function MarketingHub({
   pillars: readonly MarketingNavPillar[];
 }) {
   return (
-    <div className="h-full overflow-y-auto bg-textured">
-      {/* Scrolls behind the transparent glass header; the first pillar clears
-          it via pt-[var(--shell-header-h)] rather than a height subtraction. */}
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 p-3 pt-[calc(var(--shell-header-h)+0.75rem)]">
-        {pillars.map((pillar) => (
-          <PillarSection key={pillar.key} pillar={pillar} />
-        ))}
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing"
+      getScope={() =>
+        createMarketingScope({
+          hub_view: "map",
+          hub_pillars: marketingPillarMap(pillars),
+        })
+      }
+    >
+      <div className="h-full overflow-y-auto bg-textured">
+        {/* Scrolls behind the transparent glass header; the first pillar clears
+            it via pt-[var(--shell-header-h)] rather than a height subtraction. */}
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 p-3 pt-[calc(var(--shell-header-h)+0.75rem)]">
+          {pillars.map((pillar) => (
+            <PillarSection key={pillar.key} pillar={pillar} />
+          ))}
+        </div>
       </div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }
