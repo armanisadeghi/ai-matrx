@@ -219,11 +219,13 @@ function AuditBody({
   sitePath,
   trendPoints,
   siteDomain,
+  siteId,
 }: {
   rollup: SiteAuditRollup;
   sitePath: string;
   trendPoints: AuditTrendPoint[];
   siteDomain: string;
+  siteId: string;
 }) {
   const pagePath = (pageId: string) => `${sitePath}/pages/${pageId}`;
   const pageLocation = webLocation(`Site audit — ${siteDomain}`);
@@ -291,9 +293,114 @@ function AuditBody({
     }),
   };
 
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "summary",
+      title: "Audit summary",
+      description: "Page counts, verdicts, and pass rates.",
+      build: (level) =>
+        level === "brief"
+          ? {
+              total_pages: rollup.totalPages,
+              audited_pages: rollup.auditedPages,
+              verdicts: rollup.verdicts,
+            }
+          : { ...rollup, topIssues: undefined, worstPages: undefined },
+      levelLabels: { full: "Raw", compact: "Raw", brief: "Counts only" },
+    },
+    {
+      id: "trend",
+      title: "Score trend",
+      description: `${trendPoints.length} stored capture days.`,
+      cuttable: true,
+      levelLabels: {
+        full: `All ${trendPoints.length}`,
+        compact: "Last 30",
+        brief: "Latest only",
+      },
+      build: (level) =>
+        level === "full"
+          ? trendPoints
+          : level === "compact"
+            ? trendPoints.slice(-30)
+            : trendPoints.slice(-1),
+    },
+    {
+      id: "top_issues",
+      title: "Top issues",
+      description: `${rollup.topIssues.length} rolled-up issues (already capped at the top 14 by severity/count).`,
+      cuttable: true,
+      levelLabels: { full: "All (raw)", compact: "Top 8", brief: "Top 3" },
+      build: (level) =>
+        level === "full"
+          ? rollup.topIssues
+          : rollup.topIssues.slice(0, level === "compact" ? 8 : 3),
+    },
+    {
+      id: "worst_pages",
+      title: "Pages needing attention",
+      description: `${rollup.worstPages.length} worst-ranked pages (already capped at the top 10).`,
+      cuttable: true,
+      levelLabels: { full: "All (raw)", compact: "Top 5", brief: "Top 3" },
+      build: (level) =>
+        level === "full"
+          ? rollup.worstPages
+          : rollup.worstPages.slice(0, level === "compact" ? 5 : 3),
+    },
+  ];
+
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
+  const pageAgentPayload = (): AgentPayloadInput => ({
+    kind: "marketing-audit-page",
+    location: pageLocation,
+    description: `The full site-audit rollup dashboard for ${siteDomain}.`,
+    data: pageFullData(),
+    summary: humanAuditSnapshot(rollup),
+    attributes: { site_id: siteId, domain: siteDomain },
+  });
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Site audit — ${siteDomain}`,
+    kind: "marketing-audit-page",
+    location: pageLocation,
+    description: `The full site-audit rollup dashboard for ${siteDomain}.`,
+    attributes: { domain: siteDomain },
+    summary: humanAuditSnapshot(rollup),
+    sections: groomerSections(),
+  });
+
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
+        <section className="flex items-center justify-between gap-3">
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-sm font-semibold text-foreground">
+              Site audit
+            </h1>
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {rollup.auditedPages.toLocaleString()} / {rollup.totalPages.toLocaleString()} audited
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CopyButtons
+              size="icon"
+              label={`Site audit (${siteDomain})`}
+              human={() => humanAuditSnapshot(rollup)}
+              json={pageFullData}
+              agent={pageAgentPayload}
+            />
+            <AgentCopyGroomerLauncher config={groomerConfig} />
+          </div>
+        </section>
+
         <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
           <MetricCell
             label="Pages"
@@ -459,6 +566,8 @@ export function AuditWorkspace() {
         rollup={rollup.data}
         sitePath={sitePath}
         trendPoints={trend.data ?? []}
+        siteDomain={site.domain}
+        siteId={site.id}
       />
     </SurfaceRuntimeProvider>
   );
