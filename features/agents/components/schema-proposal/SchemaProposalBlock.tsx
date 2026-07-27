@@ -15,8 +15,7 @@
  * The picker + write live in ApplySchemaDialog.
  */
 
-import React, { Suspense, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
+import React, { lazy, Suspense, useMemo, useState } from "react";
 import nextDynamic from "next/dynamic";
 import { ChevronDown, ChevronRight, FileJson, Shapes, Wand2 } from "lucide-react";
 
@@ -25,10 +24,11 @@ import { Button } from "@/components/ui/button";
 import type { OutputSchema } from "@/features/agents/types/json-schema";
 import { ApplySchemaDialog } from "./ApplySchemaDialog";
 
-const JsonBlock = dynamic(() =>
+const JsonBlock = lazy(() =>
   import("@/components/mardown-display/blocks/json/JsonBlock").then((m) => ({
     default: m.JsonBlock,
-  })), { ssr: false, loading: () => null });
+  })),
+);
 
 // Heavy on purpose (ajv + the content-ir converter/planner) — fetched only
 // after the user clicks "Create a Shape" (the conditional render below is the

@@ -24,14 +24,15 @@
 
 "use client";
 
-import React, { forwardRef,
+import React, {
+  forwardRef,
   useCallback,
   useImperativeHandle,
   useRef,
   useState,
-  
-  Suspense } from "react";
-import dynamic from "next/dynamic";
+  lazy,
+  Suspense,
+} from "react";
 import { Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -84,7 +85,9 @@ const iconSizeMap = {
 } as const;
 
 // ── Lazy-loaded core — zero cost until first engagement ───────────────────────
-const MicrophoneIconButtonCore = dynamic(() => import("./MicrophoneIconButtonCore"), { ssr: false, loading: () => null });
+const MicrophoneIconButtonCore = lazy(
+  () => import("./MicrophoneIconButtonCore"),
+);
 
 // ── Pure-CSS loading state shown while the chunk is fetching ─────────────────
 function MicLoadingFallback({

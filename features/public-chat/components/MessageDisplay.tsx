@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useRef,
+import React, {
+  useRef,
   useEffect,
   useState,
   useMemo,
-  
-  Suspense } from "react";
-import dynamic from "next/dynamic";
+  lazy,
+  Suspense,
+} from "react";
 import {
   Copy,
   Check,
@@ -99,9 +100,13 @@ class MessageErrorBoundary extends React.Component<
 // LAZY LOADED COMPONENTS (Heavy dependencies - only load when needed)
 // ============================================================================
 
-const FullScreenMarkdownEditor = dynamic(() =>
-    import("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor"), { ssr: false, loading: () => null });
-const PublicMessageOptionsMenu = dynamic(() => import("./PublicMessageOptionsMenu"), { ssr: false, loading: () => null });
+const FullScreenMarkdownEditor = lazy(
+  () =>
+    import("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor"),
+);
+const PublicMessageOptionsMenu = lazy(
+  () => import("./PublicMessageOptionsMenu"),
+);
 
 // ============================================================================
 // STREAMING CONTENT BLOCKS

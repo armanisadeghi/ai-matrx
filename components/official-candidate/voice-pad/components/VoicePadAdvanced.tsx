@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense, useState, useCallback } from "react";
-import dynamic from "next/dynamic";
+import React, { lazy, Suspense, useState, useCallback } from "react";
 import { Mic } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -18,7 +17,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { VoicePadHistorySidebar } from "./VoicePadHistorySidebar";
 
-const VoicePadExpanded = dynamic(() => import("./VoicePadExpanded"), { ssr: false, loading: () => <ExpandedLoadingFallback /> });
+const VoicePadExpanded = lazy(() => import("./VoicePadExpanded"));
 import { VoicePadFooterLeft, VoicePadFooterRight } from "./VoicePadExpanded";
 
 const OVERLAY_ID = "voicePadAdvanced" as const;

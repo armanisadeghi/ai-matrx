@@ -6,9 +6,9 @@ import React, {
   useRef,
   useEffect,
   forwardRef,
+  lazy,
   Suspense,
 } from "react";
-import dynamic from "next/dynamic";
 import {
   ArrowUp,
   Loader2,
@@ -46,10 +46,7 @@ import type { PublicResource, PublicResourceType } from "../types/content";
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
 import type { AIModel } from "@/features/ai-models/redux/modelRegistrySlice";
 
-const PdfOptimizePrompt = dynamic(() => import("./PdfOptimizePrompt"), {
-  ssr: false,
-  loading: () => <Loader2 className="h-4 w-4 animate-spin mt-1" />,
-});
+const PdfOptimizePrompt = lazy(() => import("./PdfOptimizePrompt"));
 
 // ============================================================================
 // TEXT INPUT COMPONENT

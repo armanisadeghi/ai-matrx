@@ -1,5 +1,4 @@
 import { Suspense, lazy } from 'react';
-import dynamic from "next/dynamic";
 import { Loader2 } from 'lucide-react';
 
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -9,7 +8,7 @@ export const metadata = createRouteMetadata("/demos/api-tests/block-processing",
   description: "Interactive demo: Api Tests Block Processing. AI Matrx demo route.",
 });
 
-const BlockProcessingClient = dynamic(() => import('./BlockProcessingClient'), { ssr: false, loading: () => null });
+const BlockProcessingClient = lazy(() => import('./BlockProcessingClient'));
 
 export default function BlockProcessingPage() {
     return (

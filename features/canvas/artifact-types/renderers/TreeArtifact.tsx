@@ -1,11 +1,12 @@
 "use client";
 
-import React, { Suspense } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { type ArtifactRendererProps } from "../artifact-renderers";
 
-const TreeBlock = dynamic(() => import("@/components/mardown-display/blocks/tree/TreeBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const TreeBlock = lazy(
+  () => import("@/components/mardown-display/blocks/tree/TreeBlock"),
+);
 
 /**
  * Unified renderer for `tree` artifacts — a hierarchy is durable structured

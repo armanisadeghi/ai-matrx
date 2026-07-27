@@ -8,8 +8,7 @@
 
 "use client";
 
-import React, { useState, useCallback, Suspense } from "react";
-import dynamic from "next/dynamic";
+import React, { useState, useCallback, lazy, Suspense } from "react";
 import {
   PlayTapButton,
   PauseTapButton,
@@ -24,10 +23,7 @@ export interface SpeakerGroupProps {
   disabled?: boolean;
 }
 
-const SpeakerGroupCore = dynamic(() => import("./SpeakerGroupCore"), {
-  ssr: false,
-  loading: () => <StaticShell clickable={false} />,
-});
+const SpeakerGroupCore = lazy(() => import("./SpeakerGroupCore"));
 
 function StaticShell({
   onClick,

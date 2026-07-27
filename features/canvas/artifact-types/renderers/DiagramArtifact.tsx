@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import {
@@ -10,7 +9,9 @@ import {
   artifactDedupKey,
 } from "../artifact-renderers";
 
-const InteractiveDiagramBlock = dynamic(() => import("@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const InteractiveDiagramBlock = lazy(
+  () => import("@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock"),
+);
 
 /**
  * Unified renderer for `diagram` artifacts — the ONE renderer used by chat,

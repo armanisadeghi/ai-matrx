@@ -9,12 +9,13 @@
 // chat-artifact table's "Open in window" action, which passes the table id
 // through overlay data.
 
-import React, { Suspense } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 
-const UserTableViewer = dynamic(() => import("@/components/user-generated-table-data/UserTableViewer"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const UserTableViewer = lazy(
+  () => import("@/components/user-generated-table-data/UserTableViewer"),
+);
 
 export interface UserTableWindowProps {
   isOpen: boolean;

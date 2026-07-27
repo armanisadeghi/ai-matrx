@@ -26,8 +26,7 @@
  * it). That keeps dialog ownership in one place per message bubble.
  */
 
-import React, { useRef, useState,  Suspense, useCallback } from "react";
-import dynamic from "next/dynamic";
+import React, { useRef, useState, lazy, Suspense, useCallback } from "react";
 import { Copy, Check, Edit, Send, MoreHorizontal } from "lucide-react";
 import {
   TapTargetButtonForGroup,
@@ -86,10 +85,11 @@ function serializeSaveError(error: unknown): {
   };
 }
 
-const MessageOptionsMenu = dynamic(() =>
+const MessageOptionsMenu = lazy(() =>
   import("../message-options/MessageOptionsMenu").then((m) => ({
     default: m.MessageOptionsMenu,
-  })), { ssr: false, loading: () => null });
+  })),
+);
 
 export interface UserActionBarProps {
   /** Flat-text rendering of the user's message. */

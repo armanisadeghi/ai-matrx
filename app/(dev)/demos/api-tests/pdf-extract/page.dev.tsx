@@ -1,6 +1,5 @@
 // Server Component shell — renders instantly.
 import { Suspense, lazy } from 'react';
-import dynamic from "next/dynamic";
 import { Loader2 } from 'lucide-react';
 
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -10,7 +9,7 @@ export const metadata = createRouteMetadata("/demos/api-tests/pdf-extract", {
   description: "Interactive demo: Api Tests Pdf Extract. AI Matrx demo route.",
 });
 
-const PdfExtractClient = dynamic(() => import('./PdfExtractClient'), { ssr: false, loading: () => null });
+const PdfExtractClient = lazy(() => import('./PdfExtractClient'));
 
 export default function PdfExtractPage() {
     return (

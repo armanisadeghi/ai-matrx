@@ -1,12 +1,15 @@
 "use client";
 
-import React, { Suspense } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import type { ArtifactRendererProps } from "../artifact-renderers";
 
-const ReactCodeBlock = dynamic(() => import("@/features/dynamic-react/ReactCodeBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
-const CodeBlock = dynamic(() => import("@/features/code-editor/components/code-block/CodeBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const ReactCodeBlock = lazy(
+  () => import("@/features/dynamic-react/ReactCodeBlock"),
+);
+const CodeBlock = lazy(
+  () => import("@/features/code-editor/components/code-block/CodeBlock"),
+);
 
 /**
  * Unified renderer for `react` artifacts — a live React component from a

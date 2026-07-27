@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import {
   type ArtifactRendererProps,
@@ -11,7 +10,9 @@ import {
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { SlideshowState } from "@/components/mardown-display/blocks/presentations/Slideshow";
 
-const Slideshow = dynamic(() => import("@/components/mardown-display/blocks/presentations/Slideshow"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const Slideshow = lazy(
+  () => import("@/components/mardown-display/blocks/presentations/Slideshow"),
+);
 
 /** Theme default matching the legacy presentation cases (BlockRenderer / ArtifactBlock). */
 const DEFAULT_THEME = { primaryColor: "#2563eb", secondaryColor: "#1e40af" };

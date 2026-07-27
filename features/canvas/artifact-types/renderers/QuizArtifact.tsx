@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { safeJsonParse } from "@/components/mardown-display/chat-markdown/block-registry/json-parse-utils";
 import {
@@ -13,7 +12,9 @@ import {
 // Default export at components/mardown-display/blocks/quiz/MultipleChoiceQuiz.tsx
 // Props: quizData, taskId?, conversationId?, messageId?, blockIndex?, sessionId?,
 //        enableAutoSave?, autoSaveInterval?, showCanvasButton?, className?
-const MultipleChoiceQuiz = dynamic(() => import("@/components/mardown-display/blocks/quiz/MultipleChoiceQuiz"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const MultipleChoiceQuiz = lazy(
+  () => import("@/components/mardown-display/blocks/quiz/MultipleChoiceQuiz"),
+);
 
 /**
  * Unified renderer for `quiz` (canvasType "quiz") artifacts.

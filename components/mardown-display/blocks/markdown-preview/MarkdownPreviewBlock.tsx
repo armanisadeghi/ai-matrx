@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState,  Suspense } from "react";
-import dynamic from "next/dynamic";
+import React, { useState, lazy, Suspense } from "react";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check, Eye, Code2, FileText } from "lucide-react";
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 
-const CodeBlock = dynamic(() => import("@/features/code-editor/components/code-block/CodeBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const CodeBlock = lazy(
+  () => import("@/features/code-editor/components/code-block/CodeBlock"),
+);
 
 interface MarkdownPreviewBlockProps {
   content: string;

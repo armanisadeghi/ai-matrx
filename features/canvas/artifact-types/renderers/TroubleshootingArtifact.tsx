@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseTroubleshootingMarkdown } from "@/components/mardown-display/blocks/troubleshooting/parseTroubleshootingMarkdown";
 import {
@@ -12,7 +11,9 @@ import {
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { TroubleshootingState } from "@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock";
 
-const TroubleshootingBlock = dynamic(() => import("@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const TroubleshootingBlock = lazy(
+  () => import("@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock"),
+);
 
 /**
  * Unified renderer for `troubleshooting` artifacts — the ONE renderer used by

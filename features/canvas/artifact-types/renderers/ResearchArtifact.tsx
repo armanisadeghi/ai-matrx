@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseResearchMarkdown } from "@/components/mardown-display/blocks/research/parseResearchMarkdown";
 import {
@@ -10,7 +9,9 @@ import {
   artifactDedupKey,
 } from "../artifact-renderers";
 
-const ResearchBlock = dynamic(() => import("@/components/mardown-display/blocks/research/ResearchBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const ResearchBlock = lazy(
+  () => import("@/components/mardown-display/blocks/research/ResearchBlock"),
+);
 
 /**
  * Unified renderer for `research` artifacts — the ONE renderer used by chat,

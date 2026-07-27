@@ -15,13 +15,15 @@
  * `AssistantActionBar` / `UserActionBar`.
  */
 
-import React, { useCallback,
+import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  Suspense } from "react";
-import dynamic from "next/dynamic";
+  Suspense,
+  lazy,
+} from "react";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import {
   CopyTapButton,
@@ -47,7 +49,7 @@ import {
   type ContentActionsOptions,
 } from "./contentActionRegistry";
 
-const AdvancedMenu = dynamic(() => import("@/components/official/AdvancedMenu"), { ssr: false, loading: () => null });
+const AdvancedMenu = lazy(() => import("@/components/official/AdvancedMenu"));
 
 export interface ContentActionBarProps {
   /** Markdown body the actions operate on. */

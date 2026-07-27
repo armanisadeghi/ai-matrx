@@ -1,5 +1,4 @@
 import { Suspense, lazy } from 'react';
-import dynamic from "next/dynamic";
 import { Loader2 } from 'lucide-react';
 
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -9,7 +8,7 @@ export const metadata = createRouteMetadata("/demos/api-tests/matrx-ai/conversat
   description: "Interactive demo: Api Tests Matrx Ai Conversation Demo. AI Matrx demo route.",
 });
 
-const ConversationDemoClient = dynamic(() => import('./ConversationDemoClient'), { ssr: false, loading: () => null });
+const ConversationDemoClient = lazy(() => import('./ConversationDemoClient'));
 
 export default function ConversationDemoPage() {
   return (

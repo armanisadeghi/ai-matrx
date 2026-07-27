@@ -1,6 +1,5 @@
 "use client";
-import { useState, useRef, useEffect,  Suspense } from "react";
-import dynamic from "next/dynamic";
+import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { copyToClipboard } from "./markdown-copy-utils";
 import useOnClickOutside from "@/hooks/useOnClickOutside";
 import {
@@ -15,7 +14,9 @@ import { FcGoogle } from "react-icons/fc";
 import { FaMicrosoft } from "react-icons/fa";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
-const HtmlPreviewModal = dynamic(() => import("@/features/html-pages/components/HtmlPreviewModal"), { ssr: false, loading: () => <SuspenseLoader /> });
+const HtmlPreviewModal = lazy(
+  () => import("@/features/html-pages/components/HtmlPreviewModal"),
+);
 
 /**
  * Simple Copy Button Component

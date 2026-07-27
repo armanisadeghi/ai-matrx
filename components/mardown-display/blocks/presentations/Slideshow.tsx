@@ -1,6 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef,  Suspense } from "react";
-import dynamic from "next/dynamic";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,7 +24,7 @@ import { SlideView, type SlideData, type SlideTheme, type SlideVariant } from ".
 import { deckFontFamily, PRESET_LIST, presetTheme, resolveDeckTheme } from "./presets";
 
 // Lazy load PresentationExportMenu to avoid loading GoogleAPIProvider on initial render
-const PresentationExportMenu = dynamic(() => import("./PresentationExportMenu"), { ssr: false, loading: () => <div className="h-7 w-7" /> });
+const PresentationExportMenu = lazy(() => import("./PresentationExportMenu"));
 
 export interface PresentationData {
   slides: SlideData[];

@@ -16,13 +16,14 @@
  * Edit & Resubmit (a user-message-only flow) is hidden.
  */
 
-import React, { useState,
+import React, {
+  useState,
   useRef,
   useCallback,
-  
+  lazy,
   Suspense,
-  useMemo } from "react";
-import dynamic from "next/dynamic";
+  useMemo,
+} from "react";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import {
   ThumbsUpTapButton,
@@ -53,6 +54,7 @@ import {
   selectShowAssistantMessageOptions,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { EditHistoryDialog } from "../message-options/EditHistoryDialog";
 import { extractErrorMessage } from "@/utils/errors";
@@ -110,10 +112,11 @@ function serializeSaveError(error: unknown): {
   };
 }
 
-const MessageOptionsMenu = dynamic(() =>
+const MessageOptionsMenu = lazy(() =>
   import("../message-options/MessageOptionsMenu").then((m) => ({
     default: m.MessageOptionsMenu,
-  })), { ssr: false, loading: () => null });
+  })),
+);
 
 export interface AssistantActionBarProps {
   /** Server `cx_message.id`. */

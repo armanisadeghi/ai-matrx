@@ -1,9 +1,8 @@
 // Server Component shell — renders instantly.
 import { Suspense, lazy } from 'react';
-import dynamic from "next/dynamic";
 import { Loader2 } from 'lucide-react';
 
-const DirectChatClient = dynamic(() => import('./DirectChatClient'), { ssr: false, loading: () => null });
+const DirectChatClient = lazy(() => import('./DirectChatClient'));
 
 export default function DirectChatTestPage() {
     return (

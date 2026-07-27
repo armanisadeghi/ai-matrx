@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseRecipeMarkdown } from "@/components/mardown-display/blocks/cooking-recipes/parseRecipeMarkdown";
 import {
@@ -12,7 +11,9 @@ import {
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { RecipeState } from "@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay";
 
-const RecipeViewer = dynamic(() => import("@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const RecipeViewer = lazy(
+  () => import("@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay"),
+);
 
 /**
  * Unified renderer for `recipe` (cooking_recipe) artifacts — the ONE renderer

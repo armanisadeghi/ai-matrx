@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseTimelineMarkdown } from "@/components/mardown-display/blocks/timeline/parseTimelineMarkdown";
 import {
@@ -10,7 +9,9 @@ import {
   artifactDedupKey,
 } from "../artifact-renderers";
 
-const TimelineBlock = dynamic(() => import("@/components/mardown-display/blocks/timeline/TimelineBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const TimelineBlock = lazy(
+  () => import("@/components/mardown-display/blocks/timeline/TimelineBlock"),
+);
 
 /**
  * Unified renderer for `timeline` artifacts — the ONE renderer used by chat,

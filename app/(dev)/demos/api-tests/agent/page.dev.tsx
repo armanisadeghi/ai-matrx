@@ -1,6 +1,5 @@
 // Server Component shell — renders instantly.
 import { Suspense, lazy } from 'react';
-import dynamic from "next/dynamic";
 import { Loader2 } from 'lucide-react';
 
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -10,7 +9,7 @@ export const metadata = createRouteMetadata("/demos/api-tests/agent", {
   description: "Interactive demo: Api Tests Agent. AI Matrx demo route.",
 });
 
-const AgentTestClient = dynamic(() => import('./AgentTestClient'), { ssr: false, loading: () => null });
+const AgentTestClient = lazy(() => import('./AgentTestClient'));
 
 export default function AgentTestPage() {
     return (

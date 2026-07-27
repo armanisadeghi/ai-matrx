@@ -20,7 +20,6 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import dynamic from "next/dynamic";
 import { Mic } from "lucide-react";
 import { useVoiceCapture } from "@/features/audio/hooks/useVoiceCapture";
 import { cn } from "@/lib/utils";
@@ -69,7 +68,7 @@ const iconSizeMap = {
   lg: "h-5 w-5",
 } as const;
 
-// Default export required by dynamic(, { ssr: false, loading: () => null })
+// Default export required by React.lazy()
 const MicrophoneIconButtonCore = forwardRef<
   MicrophoneIconButtonCoreHandle,
   MicrophoneIconButtonCoreProps

@@ -12,8 +12,7 @@
  * workbench (the chat block's "Save as default" writes user preferences).
  */
 
-import React, { Suspense,  useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 
 import {
   Check,
@@ -81,7 +80,9 @@ import {
 } from "@/components/mermaid/types";
 import type { MermaidBlockData } from "@/types/python-generated/stream-events";
 
-const CodeBlock = dynamic(() => import("@/features/code-editor/components/code-block/CodeBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const CodeBlock = lazy(
+  () => import("@/features/code-editor/components/code-block/CodeBlock"),
+);
 
 const THEME_CHOICES: MermaidThemePreference[] = [
   "auto",

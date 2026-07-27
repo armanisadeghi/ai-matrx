@@ -9,15 +9,15 @@
 // table is actually readable. Opened from the inline table's "Open in window"
 // action, which passes the table markdown through overlay data.
 
-import React, { Suspense } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 
-const StreamingTableRenderer = dynamic(() =>
+const StreamingTableRenderer = lazy(() =>
   import("@/components/mardown-display/blocks/table/StreamingTableRenderer").then(
     (m) => ({ default: m.StreamingTableRenderer }),
-  ), { ssr: false, loading: () => <MatrxMiniLoader /> });
+  ),
+);
 
 export interface TableViewerWindowProps {
   isOpen: boolean;

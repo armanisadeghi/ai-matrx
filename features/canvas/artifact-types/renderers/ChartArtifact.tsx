@@ -1,11 +1,12 @@
 "use client";
 
-import React, { Suspense } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { type ArtifactRendererProps } from "../artifact-renderers";
 
-const ChartBlock = dynamic(() => import("@/components/mardown-display/blocks/chart/ChartBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
+const ChartBlock = lazy(
+  () => import("@/components/mardown-display/blocks/chart/ChartBlock"),
+);
 
 /**
  * Unified renderer for `chart` artifacts — a data visualization (JSON spec →
