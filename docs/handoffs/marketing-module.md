@@ -124,6 +124,7 @@ to end clean structured setup for this major feature 'marketing'."**
 | Public `/marketing/tools` index of the 5 public analyzers | `app/(core)/marketing/tools/page.tsx` |
 | Guest landing on ANY `/marketing/*` URL, no login wall | `app/(core)/marketing/layout.tsx` server branch → `MarketingLanding` |
 | Landing registered on `/features` | `MODULE_LANDING_DIRECTORY` |
+| Landing sub-areas GENERATED from the same source | `listMarketingLandingAreas()` — status derived from whether a pillar has any live entry; href prefers a built surface |
 | Admin map covers all 16 reserved routes | `app/(core)/marketing/admin/page.tsx` |
 
 **Deployed:** everything in §2.1 through the "Done" line of the first commit is
@@ -133,29 +134,18 @@ committed on `main` — **check `git log` and Vercel to confirm it deployed**; s
 
 ### 2.2 Partial — started, specifically unfinished
 
-1. **`MarketingLanding`'s `SUB_AREAS` is hand-written.**
-   `features/auth/components/module-landing/landings/MarketingLanding.tsx` lists
-   the pillars as prose with `status: "Live" | "Coming soon"`. It is the ONE
-   surface that does **not** read `MARKETING_PILLARS`, because `ModuleLanding`'s
-   `ModuleSubArea` shape carries marketing copy (`items: string[]`) that the nav
-   model has no field for. **This is a real drift risk I am handing you.** Fix by
-   either deriving `subAreas` from `MARKETING_PILLARS` (adding a `marketingItems`
-   field to the nav entry type) or adding a check to `scripts/check-doctrine.ts`
-   that fails when a landing sub-area claims `Live` for a pillar whose entries
-   are all coming-soon.
-
-2. **`/marketing/tools` and `/seo` (the public hub page) are two indexes of the
+1. **`/marketing/tools` and `/seo` (the public hub page) are two indexes of the
    same five analyzers.** `app/(public)/seo/page.tsx` has its own hand-written
    list. Collapse `(public)/seo/page.tsx` onto `MARKETING_PUBLIC_TOOLS` from
    `marketing-nav.ts`.
 
-3. **Rank tracking exists per-site, not cross-site.**
+2. **Rank tracking exists per-site, not cross-site.**
    `features/marketing/components/ranks/` + the per-site route are live under a
    brand. `/marketing/ranks` (the cross-brand hub) is reserved. Building it is
    mostly aggregation over data that already exists — the cheapest reserved
    route to ship, and a good first task.
 
-4. **No surface manifests for the reserved routes.** Live Marketing surfaces are
+3. **No surface manifests for the reserved routes.** Live Marketing surfaces are
    registered in `features/surfaces/manifests/` so agents know what page they are
    on. Reserved routes have none. Correct for now (nothing to declare), but the
    surface manifest is part of "done" for each one — see
@@ -219,10 +209,13 @@ marketing-nav.ts  (MARKETING_PILLARS)
    ├── app/(core)/marketing/page.tsx      → MarketingHub.tsx      (the hub)
    ├── app/(core)/marketing/tools/page.tsx→ MarketingHub.tsx      (public tools)
    ├── features/shell/constants/nav-data.ts → marketingNavChildren() (sidebar)
-   └── features/marketing/lib/route-metadata.ts → RESERVED_ROUTES  (titles/OG)
+   ├── features/marketing/lib/route-metadata.ts → RESERVED_ROUTES  (titles/OG)
+   └── .../module-landing/landings/MarketingLanding.tsx → listMarketingLandingAreas()
 ```
 
-**Adding a surface = one edit here.** It then appears in all four places.
+**Adding a surface = one edit here.** It then appears in all five places, and a
+pillar's public status cannot be overstated: `listMarketingLandingAreas()`
+derives "Live" vs "Coming soon" from whether any entry is actually built.
 
 ### 3.2 Route layout
 
@@ -287,24 +280,20 @@ Check `pnpm dev:status` first — several servers usually run already.
 1. **Re-run `pnpm type-check` and confirm production deployed.** Both were
    affected by concurrent sessions (§2.4.1, §5.1). Do this before anything else.
 
-2. **Close the landing drift risk (§2.2.1).** Small, and it protects the whole
-   single-source design. Either derive `subAreas` from `MARKETING_PILLARS` or add
-   the doctrine check.
-
-3. **Collapse the duplicate tool index (§2.2.2).** Point
+2. **Collapse the duplicate tool index (§2.2.1).** Point
    `app/(public)/seo/page.tsx` at `MARKETING_PUBLIC_TOOLS`.
 
-4. **Ship `/marketing/ranks` (cross-site rank tracking).** The cheapest reserved
+3. **Ship `/marketing/ranks` (cross-site rank tracking).** The cheapest reserved
    route — the data already exists per-site under a brand. Aggregate it, delete
    `marketing.rank-tracking` from the registry, drop `status` from its nav entry.
    This is the reference implementation for "how we ship a reserved route."
 
-5. **Then `/marketing/campaigns`.** It is the highest-leverage reserved surface
+4. **Then `/marketing/campaigns`.** It is the highest-leverage reserved surface
    because every other channel (social, email, ads, outreach) reports into it —
    building the campaign entity first prevents four incompatible designs. Needs a
    migration; ask Arman before designing the schema.
 
-6. **`/marketing/analytics` and `/marketing/reports`.** Both read from providers
+5. **`/marketing/analytics` and `/marketing/reports`.** Both read from providers
    already bound in `/marketing/connections` (GSC, GA4, Bing) — no new
    integrations, mostly aggregation and layout. `reports` is the agency
    deliverable and probably the highest perceived value per hour of work.

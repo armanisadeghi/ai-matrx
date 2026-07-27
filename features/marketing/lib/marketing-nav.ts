@@ -45,6 +45,18 @@ export interface MarketingNavPillar {
   description: string;
   iconName: string;
   entries: readonly MarketingNavEntry[];
+  /**
+   * Marketing-page copy: the 4 short bullets shown for this pillar on the
+   * public landing. Lives HERE, not in the landing file, so the landing can
+   * never claim a capability the pillar does not have. Landing status is
+   * DERIVED from `entries` — a pillar whose entries are all reserved renders
+   * "Coming soon" automatically and cannot be talked up by hand.
+   */
+  landingItems?: readonly string[];
+  /** Rare override when "Live"/"Coming soon" is the wrong word (e.g. BYO keys). */
+  landingStatus?: "Bring your own";
+  /** Where the landing card links. Defaults to the pillar's first entry. */
+  landingHref?: string;
 }
 
 /** Every entry across every pillar, flattened. */
@@ -55,6 +67,43 @@ export function listMarketingEntries(): readonly MarketingNavEntry[] {
 /** The reserved-but-unbuilt surfaces. Drives the roadmap section + audits. */
 export function listMarketingComingSoon(): readonly MarketingNavEntry[] {
   return listMarketingEntries().filter((e) => e.status === "coming-soon");
+}
+
+/** True when at least one surface in the pillar is actually built. */
+export function pillarHasLiveEntry(pillar: MarketingNavPillar): boolean {
+  return pillar.entries.some((e) => e.status !== "coming-soon");
+}
+
+/**
+ * The public landing's sub-area cards, derived from the same pillars the hub
+ * and the sidebar render. Pillars without `landingItems` are omitted — the
+ * landing is curated, but it can only ever be a SUBSET of what really exists.
+ */
+export function listMarketingLandingAreas(): {
+  title: string;
+  status: "Live" | "Coming soon" | "Bring your own";
+  href: string;
+  items: string[];
+}[] {
+  return MARKETING_PILLARS.filter((p) => p.landingItems?.length).map(
+    (pillar) => {
+      // A card labelled "Live" must land somewhere that actually works, so the
+      // default href prefers a built surface over a reserved one.
+      const target =
+        pillar.entries.find((e) => e.status !== "coming-soon") ??
+        pillar.entries[0];
+      return {
+        title: pillar.label,
+        status:
+          pillar.landingStatus ??
+          (pillarHasLiveEntry(pillar)
+            ? ("Live" as const)
+            : ("Coming soon" as const)),
+        href: pillar.landingHref ?? target?.href ?? "/marketing",
+        items: [...(pillar.landingItems ?? [])],
+      };
+    },
+  );
 }
 
 /**
@@ -111,6 +160,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description:
       "The properties you market — brand identity, sites, canonical pages, crawls, and audits.",
     iconName: "Landmark",
+    landingItems: [
+      "Brand cockpit + assets",
+      "Crawls + canonical pages",
+      "Audit + coverage",
+      "Links + backlinks",
+    ],
     entries: [
       {
         label: "Brands",
@@ -143,6 +198,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description:
       "What you intend to publish and promote — plans, campaigns, calendar, and who it is for.",
     iconName: "ListTree",
+    landingItems: [
+      "Content plan tree",
+      "Briefs + keywords",
+      "Campaigns + calendar",
+      "Audience + personas",
+    ],
     entries: [
       {
         label: "Content Plan",
@@ -186,6 +247,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description:
       "Find expert source material, understand how the market searches, and track where you appear.",
     iconName: "Search",
+    landingItems: [
+      "Keyword research",
+      "YouTube discovery",
+      "Cross-site rank tracking",
+      "AI visibility",
+    ],
     entries: [
       {
         label: "Keyword Research",
@@ -227,6 +294,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description:
       "Where the work actually ships — drafts, social, email, paid, and outreach.",
     iconName: "Megaphone",
+    landingItems: [
+      "Content studio",
+      "Social publishing",
+      "Email marketing",
+      "Paid ads + outreach",
+    ],
     entries: [
       {
         label: "Content Studio",
@@ -281,6 +354,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description:
       "Who else is winning the space, and what is being said about you.",
     iconName: "Radar",
+    landingItems: [
+      "Competitor tracking",
+      "Share of voice",
+      "Content + keyword gaps",
+      "Brand monitoring",
+    ],
     entries: [
       {
         label: "Competitors",
@@ -308,6 +387,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description:
       "What it did and what it cost — traffic, conversion, attribution, and client-ready reporting.",
     iconName: "ChartNoAxesColumn",
+    landingItems: [
+      "Cost attribution",
+      "Cross-channel analytics",
+      "Client-ready reports",
+      "Batch operations",
+    ],
     entries: [
       {
         label: "Analytics",
@@ -341,6 +426,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description:
       "Focused analyzers that work on any URL — no site setup required.",
     iconName: "Wrench",
+    landingItems: [
+      "Meta title + description",
+      "Page audit",
+      "Social preview",
+      "Structured data + robots",
+    ],
     entries: [
       {
         label: "All SEO Tools",
@@ -360,6 +451,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description:
       "The plumbing — provider connections, batch runs, and automation.",
     iconName: "Plug",
+    landingItems: [
+      "Google Search Console",
+      "GA4 + PageSpeed",
+      "Bing Webmaster",
+      "DataForSEO",
+    ],
+    landingStatus: "Bring your own",
     entries: [
       {
         label: "Data Connections",

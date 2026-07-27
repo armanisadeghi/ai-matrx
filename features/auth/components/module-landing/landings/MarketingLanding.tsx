@@ -10,8 +10,8 @@ import {
   ModuleLanding,
   type ModuleCapability,
   type ModuleStep,
-  type ModuleSubArea,
 } from "@/features/auth/components/module-landing/ModuleLanding";
+import { listMarketingLandingAreas } from "@/features/marketing/lib/marketing-nav";
 
 const CAPABILITIES: ModuleCapability[] = [
   {
@@ -73,99 +73,6 @@ const STEPS: ModuleStep[] = [
   },
 ];
 
-// Mirrors features/marketing/lib/marketing-nav.ts. Keep the two honest with
-// each other: nothing here may claim "Live" that the hub marks coming soon.
-const SUB_AREAS: ModuleSubArea[] = [
-  {
-    title: "Brands & Websites",
-    status: "Live",
-    href: "/marketing/brands",
-    items: [
-      "Brand cockpit + assets",
-      "Crawls + canonical pages",
-      "Audit + coverage",
-      "Links + backlinks",
-    ],
-  },
-  {
-    title: "Strategy & Planning",
-    status: "Live",
-    href: "/marketing/content-plan",
-    items: [
-      "Content plan tree",
-      "Briefs + keywords",
-      "Campaigns (soon)",
-      "Calendar + personas (soon)",
-    ],
-  },
-  {
-    title: "Discovery, Search & Visibility",
-    status: "Live",
-    href: "/marketing/keyword-research",
-    items: [
-      "Keyword research",
-      "YouTube discovery",
-      "Cross-site rank tracking (soon)",
-      "AI visibility (soon)",
-    ],
-  },
-  {
-    title: "Content & Channels",
-    status: "Coming soon",
-    href: "/marketing/content-studio",
-    items: [
-      "Content studio",
-      "Social publishing",
-      "Email marketing",
-      "Paid ads + outreach",
-    ],
-  },
-  {
-    title: "Market Intelligence",
-    status: "Coming soon",
-    href: "/marketing/competitors",
-    items: [
-      "Competitor tracking",
-      "Share of voice",
-      "Content + keyword gaps",
-      "Brand monitoring",
-    ],
-  },
-  {
-    title: "Measurement",
-    status: "Live",
-    href: "/marketing/cost",
-    items: [
-      "Cost attribution",
-      "Batch operations",
-      "Cross-channel analytics (soon)",
-      "Client reports (soon)",
-    ],
-  },
-  {
-    title: "SEO Tools",
-    status: "Live",
-    href: "/seo",
-    items: [
-      "Meta title + description",
-      "Page audit",
-      "Social preview",
-      "Structured data + robots",
-    ],
-  },
-  {
-    title: "Data Connections",
-    status: "Bring your own",
-    href: "/marketing/connections",
-    items: [
-      "Google Search Console",
-      "GA4 + PageSpeed",
-      "Bing Webmaster",
-      "DataForSEO",
-    ],
-  },
-];
-
 export default function MarketingLanding() {
   return (
     <ModuleLanding
@@ -186,7 +93,9 @@ export default function MarketingLanding() {
       steps={STEPS}
       subAreasHeading="Every surface in the Marketing module"
       subAreasDescription="What is live today, and exactly what is reserved and on the way. Reserved URLs already exist — they will not move when the feature ships."
-      subAreas={SUB_AREAS}
+      // DERIVED from MARKETING_PILLARS — this page cannot claim a pillar is
+      // live when every surface in it is still reserved.
+      subAreas={listMarketingLandingAreas()}
       finalCtaHeading="Stop stitching six tools together"
       finalCtaDescription="Crawler, page registry, content plan, keyword intelligence, and cost attribution in one platform. Free to start, no credit card."
       relatedModules={["/chat", "/agents", "/knowledge"]}
