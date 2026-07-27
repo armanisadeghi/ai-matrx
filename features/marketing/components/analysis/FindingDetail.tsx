@@ -25,6 +25,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingFindingsScope } from "@/features/surfaces/manifests/marketing-findings.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import { tableViewState } from "@/features/marketing/lib/scopes/table-view-values";
 import {
   formatCompactDate,
   formatDate,
@@ -40,6 +41,24 @@ import {
   webCopy,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+
+/** Immutable result evidence → the shape the surface declares. */
+function projectResult(
+  result: MarketingAnalysisResult,
+): Record<string, unknown> {
+  return {
+    id: result.id,
+    computed_at: result.computed_at,
+    status: result.status,
+    severity: result.severity,
+    score: result.score,
+    issue_count: result.issue_count,
+    confidence: result.confidence,
+    provider_id: result.provider_id,
+    provider_version: result.provider_version,
+    run_id: result.run_id,
+  };
+}
 
 function compactId(value: string | null) {
   return value ? value.slice(0, 12) : "—";
@@ -282,8 +301,9 @@ export function FindingDetail({ findingId }: { findingId: string }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-findings"
-      getScope={() =>
-        createMarketingFindingsScope({
+      getScope={() => {
+        const liveResults = results.data?.rows ?? [];
+        return createMarketingFindingsScope({
           ...getBaseValues(),
           finding_id: finding.id,
           finding_summary: {
@@ -295,12 +315,42 @@ export function FindingDetail({ findingId }: { findingId: string }) {
             subject_type: finding.subject_type,
             subject_id: finding.subject_id,
             page_url: data.page?.url ?? null,
+            page_path: data.page?.path ?? null,
             suppressed: finding.suppressed,
+            suppressed_reason: finding.suppressed_reason,
+            resolved_at: finding.resolved_at,
             first_detected_at: finding.first_detected_at,
             last_detected_at: finding.last_detected_at,
+            first_result_id: finding.first_result_id,
+            last_result_id: finding.last_result_id,
           },
-        })
-      }
+          finding_item: data.item
+            ? {
+                key: data.item.key,
+                label: data.item.label,
+                description: data.item.description,
+                category: data.item.category,
+                subcategory: data.item.subcategory,
+                weight: data.item.weight,
+              }
+            : undefined,
+          finding_page: data.page
+            ? { id: data.page.id, path: data.page.path, url: data.page.url }
+            : undefined,
+          latest_result: data.lastResult
+            ? projectResult(data.lastResult)
+            : undefined,
+          first_result: data.firstResult
+            ? projectResult(data.firstResult)
+            : undefined,
+          result_history:
+            liveResults.length > 0
+              ? liveResults.map(projectResult)
+              : undefined,
+          result_total: results.data?.total,
+          result_view_state: tableViewState(table.state),
+        });
+      }}
     >
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <section className="shrink-0 overflow-hidden rounded-lg border border-border bg-card">

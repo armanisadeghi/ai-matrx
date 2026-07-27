@@ -26,6 +26,13 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createMarketingFindingsScope } from "@/features/surfaces/manifests/marketing-findings.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import {
+  countRowsBy,
+  tableFilterValues,
+  tablePagination,
+  tableSortLabel,
+  tableViewState,
+} from "@/features/marketing/lib/scopes/table-view-values";
+import {
   formatCompactDate,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
@@ -78,21 +85,6 @@ export function FindingsTable() {
     defaultSort: { id: "last_detected_at", direction: "desc" },
   });
   const findings = useSiteFindings(site.id, table.queryState);
-
-  const buildActiveFilters = (): Record<string, unknown> | undefined => {
-    const current = table.state;
-    const filters: Record<string, unknown> = {};
-    if (current.search) filters.search = current.search;
-    if (current.anyOf) filters.any_of = current.anyOf;
-    for (const [column, filter] of Object.entries(current.columnFilters)) {
-      if (!filter) continue;
-      filters[column] =
-        filter.kind === "number"
-          ? { min: filter.min ?? null, max: filter.max ?? null }
-          : filter.value;
-    }
-    return Object.keys(filters).length > 0 ? filters : undefined;
-  };
   const columns: MatrxColumnDef<FindingListRow>[] = [
     {
       id: "item_key",
@@ -263,13 +255,24 @@ export function FindingsTable() {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-findings"
-      getScope={() =>
-        createMarketingFindingsScope({
+      getScope={() => {
+        const liveRows = findings.data?.rows ?? [];
+        return createMarketingFindingsScope({
           ...getBaseValues(),
           findings_total: findings.data?.total,
-          active_filters: buildActiveFilters(),
-        })
-      }
+          findings_rows:
+            liveRows.length > 0
+              ? liveRows.map(projectFindingRow)
+              : undefined,
+          findings_rows_loaded: findings.data ? liveRows.length : undefined,
+          findings_severity_counts: countRowsBy(liveRows, (row) => row.severity),
+          findings_status_counts: countRowsBy(liveRows, (row) => row.status),
+          active_filters: tableFilterValues(table.state),
+          findings_sort: tableSortLabel(table.state),
+          findings_pagination: tablePagination(table.state),
+          findings_view_state: tableViewState(table.state),
+        });
+      }}
     >
     <main className="h-full overflow-hidden bg-textured p-3 sm:p-4">
       <MatrxDataTable<FindingListRow>

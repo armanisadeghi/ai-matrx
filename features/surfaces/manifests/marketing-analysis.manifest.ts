@@ -10,19 +10,38 @@
  * register (the view deliberately has no finding id). Inherits the brand +
  * site context backbone from `matrx-user/marketing-site`.
  *
- * Runtime emitter: features/marketing/lib/scopes/marketing-analysis-scope.ts —
- * being built in parallel.
+ * Runtime emitter: `SiteAnalysisTable` mounts the nested
+ * `SurfaceRuntimeProvider` and spreads `useMarketingSiteSurfaceBase()`'s base
+ * values into `createMarketingAnalysisScope` at trigger time.
  */
 
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
+const groups: SurfaceValueGroup[] = [
+  {
+    key: "priority_queue",
+    label: "Priority queue",
+    sortOrder: 100,
+    description:
+      "The ranked open findings the queue is showing, and the aggregate shape of what matches.",
+  },
+  {
+    key: "queue_view",
+    label: "Queue view",
+    sortOrder: 200,
+    description:
+      "How the user is slicing the queue right now: search, filters, sort, and pagination.",
+  },
+];
+
 const surfaceSpecific: SurfaceValue[] = [
-  // ── Observed evidence (400-499) ───────────────────────────────────────
+  // ── Priority queue ────────────────────────────────────────────────────
   {
     name: "top_queue_items",
     label: "Top priority items",
@@ -32,29 +51,123 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 1500,
     autoContext: false,
-    sortOrder: 400,
+    sortOrder: 300,
+    group: "priority_queue",
   },
-
-  // ── Workspace signals (600-649) ───────────────────────────────────────
   {
     name: "queue_total",
     label: "Queue total",
     description:
-      "Total number of open, non-suppressed prioritized items matching the current filters. Zero when analysis has found nothing (or has not run); empty during initial load.",
+      "Total number of open, non-suppressed prioritized items matching the current filters (not just the visible page). Zero when analysis has found nothing (or has not run); empty during initial load.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 5,
-    sortOrder: 600,
+    sortOrder: 310,
+    group: "priority_queue",
+  },
+  {
+    name: "queue_rows_loaded",
+    label: "Loaded rows",
+    description:
+      "How many queue rows the current table page actually holds — the size of top_queue_items. Empty during initial load; zero when nothing matches.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 320,
+    group: "priority_queue",
+  },
+  {
+    name: "queue_severity_counts",
+    label: "Severity breakdown",
+    description:
+      "Count of loaded queue rows per severity (e.g. { critical: 2, warning: 9 }) — a shape read of the visible page, not of the whole register. Empty when no rows are loaded.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 90,
+    sortOrder: 330,
+    group: "priority_queue",
+  },
+  {
+    name: "queue_category_counts",
+    label: "Category breakdown",
+    description:
+      "Count of loaded queue rows per analysis category (e.g. { metadata: 6, links: 3 }) — the visible page only. Empty when no rows are loaded.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 340,
+    group: "priority_queue",
+  },
+  {
+    name: "queue_summary",
+    label: "Queue summary",
+    description:
+      "Composite roll-up of the queue as displayed: { total_matching, rows_loaded, by_severity, by_category }. Mirrors the individual queue values as one object (completeness law). Empty during initial load.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 350,
+    group: "priority_queue",
+  },
+
+  // ── Queue view ────────────────────────────────────────────────────────
+  {
+    name: "active_filters",
+    label: "Active queue filters",
+    description:
+      "The queue's current search and per-column filter state (free text, severity, item, category, subcategory, priority range) as the URL carries it. Empty when the user is on the unfiltered default view.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 250,
+    autoContext: false,
+    sortOrder: 400,
+    group: "queue_view",
+  },
+  {
+    name: "queue_sort",
+    label: "Active sort",
+    description:
+      'The column and direction the queue is sorted by, as "<column> <asc|desc>" (default "priority desc"). Empty during initial load.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 20,
+    autoContext: false,
+    sortOrder: 410,
+    group: "queue_view",
+  },
+  {
+    name: "queue_pagination",
+    label: "Pagination",
+    description:
+      "Which slice of the queue is on screen: { page, page_size }. Empty during initial load. Read it before claiming the user has seen an item — everything outside this page is unseen.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 40,
+    autoContext: false,
+    sortOrder: 420,
+    group: "queue_view",
+  },
+  {
+    name: "queue_view_state",
+    label: "Queue view state",
+    description:
+      "Composite of the whole table view: { search, any_of, filters, sort, page, page_size }. Mirrors the individual queue-view values as one object (completeness law). Empty during initial load.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 350,
+    autoContext: false,
+    sortOrder: 430,
+    group: "queue_view",
   },
 ];
 
 export const marketingAnalysisManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-analysis",
-  readiness: "partial",
-  readinessNote: "Values emitted; no groups",
+  readiness: "verified",
   label: "Marketing Analysis Queue",
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/analysis",
   inheritsFrom: "matrx-user/marketing-site",
+  groups,
   intro: `<surface_intro>
 You are on the analysis priority queue of a managed website: open, non-suppressed findings ranked by weight × severity × confidence, each row naming the analysis item, its category, severity, and the affected page. Read the inherited brand_context and site_context first for the client and site framing; top_queue_items carries the loaded rows when bound.
 The user comes here to triage: decide which detected problems deserve attention first and route them into the findings register for lifecycle work. Priority scores and severities are computed by the analysis pipeline and stored — trust them as given rather than re-scoring items yourself.
@@ -106,6 +219,14 @@ export function createMarketingAnalysisScope(values: {
   // surface-specific optional
   top_queue_items?: Array<Record<string, unknown>>;
   queue_total?: number;
+  queue_rows_loaded?: number;
+  queue_severity_counts?: Record<string, number>;
+  queue_category_counts?: Record<string, number>;
+  queue_summary?: Record<string, unknown>;
+  active_filters?: Record<string, unknown>;
+  queue_sort?: string;
+  queue_pagination?: Record<string, unknown>;
+  queue_view_state?: Record<string, unknown>;
   // baseline
   selection?: string;
   context?: Record<string, unknown>;

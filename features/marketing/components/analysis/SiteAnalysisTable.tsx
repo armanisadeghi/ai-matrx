@@ -21,6 +21,13 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingAnalysisScope } from "@/features/surfaces/manifests/marketing-analysis.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import {
+  countRowsBy,
+  tableFilterValues,
+  tablePagination,
+  tableSortLabel,
+  tableViewState,
+} from "@/features/marketing/lib/scopes/table-view-values";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useSitePriorityQueue } from "@/features/marketing/data/analysis-hooks";
 import type { PriorityQueueRow } from "@/features/marketing/data/analysis-types";
@@ -233,13 +240,32 @@ export function SiteAnalysisTable() {
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-analysis"
       getScope={() => {
-        const rows = priority.data?.rows ?? [];
+        const liveRows = priority.data?.rows ?? [];
+        const liveTotal = priority.data?.total;
+        const bySeverity = countRowsBy(liveRows, (row) => row.severity);
+        const byCategory = countRowsBy(liveRows, (row) => row.category);
+        const loaded = priority.data ? liveRows.length : undefined;
         return createMarketingAnalysisScope({
           ...getBaseValues(),
-          queue_total: priority.data?.total,
+          queue_total: liveTotal,
+          queue_rows_loaded: loaded,
+          queue_severity_counts: bySeverity,
+          queue_category_counts: byCategory,
+          queue_summary: priority.data
+            ? {
+                total_matching: liveTotal ?? 0,
+                rows_loaded: liveRows.length,
+                by_severity: bySeverity ?? {},
+                by_category: byCategory ?? {},
+              }
+            : undefined,
+          active_filters: tableFilterValues(table.state),
+          queue_sort: tableSortLabel(table.state),
+          queue_pagination: tablePagination(table.state),
+          queue_view_state: tableViewState(table.state),
           top_queue_items:
-            rows.length > 0
-              ? rows.slice(0, 10).map((row) => ({
+            liveRows.length > 0
+              ? liveRows.slice(0, 10).map((row) => ({
                   item_key: row.item_key,
                   category: row.category,
                   subcategory: row.subcategory,
