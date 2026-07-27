@@ -3,6 +3,7 @@
 // Client test UI lazy-loads after hydration.
 
 import { Suspense, lazy } from 'react';
+import dynamic from "next/dynamic";
 import { Loader2 } from 'lucide-react';
 
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -12,7 +13,7 @@ export const metadata = createRouteMetadata("/demos/api-tests/tool-testing", {
   description: "Interactive demo: Api Tests Tool Testing. AI Matrx demo route.",
 });
 
-const ToolTestingClient = lazy(() => import('./ToolTestingClient'));
+const ToolTestingClient = dynamic(() => import('./ToolTestingClient'), { ssr: false, loading: () => null });
 
 export default function ToolTestingPage() {
     return (

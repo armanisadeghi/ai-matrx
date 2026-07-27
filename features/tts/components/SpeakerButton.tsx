@@ -10,7 +10,8 @@
 
 'use client';
 
-import React, { useState, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useCallback, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { Volume2TapButton } from '@/components/icons/tap-buttons';
 import type { SpeakerVariant } from '../types';
 
@@ -22,7 +23,10 @@ export interface SpeakerButtonProps {
   disabled?: boolean;
 }
 
-const SpeakerButtonCore = lazy(() => import('./SpeakerButtonCore'));
+const SpeakerButtonCore = dynamic(() => import('./SpeakerButtonCore'), {
+  ssr: false,
+  loading: () => <Volume2TapButton disabled ariaLabel="Loading…" />,
+});
 
 export function SpeakerButton({
   text,

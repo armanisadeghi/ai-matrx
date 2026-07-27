@@ -1,12 +1,13 @@
 "use client";
 
-import React, { lazy, Suspense } from "react";
+import React, { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { Bug } from "lucide-react";
 
 // Lazy load FeedbackButton - only loads when user is authenticated
-const FeedbackButton = lazy(() => import("@/features/feedback/FeedbackButton"));
+const FeedbackButton = dynamic(() => import("@/features/feedback/FeedbackButton"), { ssr: false, loading: () => <FeedbackButtonPlaceholder /> });
 
 /**
  * Public Header Feedback - Conditionally renders for authenticated users

@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense,  useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -31,8 +32,8 @@ import { selectUser, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
 import { useChatContext } from "../context/DEPRECATED-ChatContext";
 
-const AdminMenu = lazy(() => import("@/components/matrx/AdminMenu"));
-const FeedbackButton = lazy(() => import("@/features/feedback/FeedbackButton"));
+const AdminMenu = dynamic(() => import("@/components/matrx/AdminMenu"), { ssr: false, loading: () => null });
+const FeedbackButton = dynamic(() => import("@/features/feedback/FeedbackButton"), { ssr: false, loading: () => null });
 
 // ============================================================================
 // TYPES

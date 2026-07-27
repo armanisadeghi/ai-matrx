@@ -1,12 +1,11 @@
 "use client";
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
+import dynamic from "next/dynamic";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { type ArtifactRendererProps } from "../artifact-renderers";
 
-const TranscriptBlock = lazy(
-  () => import("@/components/mardown-display/blocks/transcripts/TranscriptBlock"),
-);
+const TranscriptBlock = dynamic(() => import("@/components/mardown-display/blocks/transcripts/TranscriptBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
 
 /**
  * Unified renderer for `transcript` artifacts — a transcript is durable content,

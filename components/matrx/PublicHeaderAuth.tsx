@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, lazy, useEffect, useState } from 'react';
+import dynamic from "next/dynamic";
 import { useRouter } from 'next/navigation';
 import { LayoutDashboard, LogIn } from 'lucide-react';
 import { useSelector } from 'react-redux';
@@ -10,7 +11,7 @@ import { selectUser, selectDisplayName, selectProfilePhoto, selectIsSuperAdmin }
 import { cn } from '@/lib/utils';
 
 // Lazy load AdminMenu - only loads when user is admin
-const AdminMenu = lazy(() => import('./AdminMenu'));
+const AdminMenu = dynamic(() => import('./AdminMenu'), { ssr: false, loading: () => <div className="w-16 h-7" /> });
 
 /**
  * Public Header Auth - Redux-powered

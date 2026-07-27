@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
+import dynamic from "next/dynamic";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import {
   type ArtifactRendererProps,
@@ -10,18 +11,14 @@ import {
 // Canvas mode: the full editable workbench — default export, props: source, metadata?
 // Path confirmed from CanvasBody's `mermaid` case:
 //   `import("@/components/mermaid/workbench/MermaidWorkbench")`
-const MermaidWorkbench = lazy(
-  () => import("@/components/mermaid/workbench/MermaidWorkbench"),
-);
+const MermaidWorkbench = dynamic(() => import("@/components/mermaid/workbench/MermaidWorkbench"), { ssr: false, loading: () => <MatrxMiniLoader /> });
 
 // Inline / artifact mode: the in-chat block — default export, props:
 //   content?, serverData?, metadata?, isStreamActive?, conversationId?,
 //   messageId?, blockIndex?, taskId?, artifactId?
 // Path confirmed from BlockRenderer's `mermaid` case:
 //   `BlockComponents.MermaidBlock` → components/mardown-display/blocks/mermaid/MermaidBlock.tsx
-const MermaidBlock = lazy(
-  () => import("@/components/mardown-display/blocks/mermaid/MermaidBlock"),
-);
+const MermaidBlock = dynamic(() => import("@/components/mardown-display/blocks/mermaid/MermaidBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
 
 /**
  * Unified renderer for `mermaid` (canvasType "mermaid") artifacts.

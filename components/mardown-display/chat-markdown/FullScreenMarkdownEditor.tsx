@@ -1,15 +1,14 @@
 "use client";
-import React, {
-  useState,
+import React, { useState,
   useEffect,
   useRef,
   useCallback,
-  lazy,
+  
   Suspense,
   Component,
   ErrorInfo,
-  ReactNode,
-} from "react";
+  ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
@@ -55,7 +54,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
 
-const MarkdownAnalyzer = lazy(() => import("./analyzer/MarkdownAnalyzer"));
+const MarkdownAnalyzer = dynamic(() => import("./analyzer/MarkdownAnalyzer"), { ssr: false, loading: () => <SuspenseLoader /> });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

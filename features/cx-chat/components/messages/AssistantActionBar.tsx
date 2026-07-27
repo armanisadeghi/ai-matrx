@@ -1,13 +1,12 @@
 "use client";
 
-import React, {
-  useState,
+import React, { useState,
   useRef,
   useEffect,
   useId,
-  lazy,
-  Suspense,
-} from "react";
+  
+  Suspense } from "react";
+import dynamic from "next/dynamic";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -28,9 +27,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { messageActionsActions } from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 
-const ConversationMessageOptionsMenu = lazy(
-  () => import("./MessageOptionsMenu"),
-);
+const ConversationMessageOptionsMenu = dynamic(() => import("./MessageOptionsMenu"), { ssr: false, loading: () => null });
 
 export interface AssistantActionBarProps {
   content: string;

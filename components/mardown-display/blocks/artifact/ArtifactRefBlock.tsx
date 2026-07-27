@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { AlertTriangle } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
@@ -8,7 +9,7 @@ import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ArtifactBlock from "./ArtifactBlock";
 
-const MermaidBlock = lazy(() => import("../mermaid/MermaidBlock"));
+const MermaidBlock = dynamic(() => import("../mermaid/MermaidBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
 
 interface ArtifactRefServerData {
   artifact_id?: string;

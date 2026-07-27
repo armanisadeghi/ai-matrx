@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo, useState } from "react";
+import React, { Suspense,  useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import {
@@ -36,10 +37,8 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 const FC_SET_SYSTEM = "fc_set";
 
 // Read-only fallback for not-yet-materialized streams (no canonical set linked).
-const FlashcardsBlock = lazy(
-  () =>
-    import("@/components/mardown-display/blocks/flashcards/FlashcardsBlock"),
-);
+const FlashcardsBlock = dynamic(() =>
+    import("@/components/mardown-display/blocks/flashcards/FlashcardsBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
 
 interface CanvasFlashcardsViewProps {
   /** canvas_items.id — canonical source when present. */

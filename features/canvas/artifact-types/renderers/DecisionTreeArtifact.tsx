@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo } from "react";
+import React, { Suspense,  useMemo } from "react";
+import dynamic from "next/dynamic";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseDecisionTreeJSON } from "@/components/mardown-display/blocks/decision-tree/parseDecisionTreeJSON";
 import {
@@ -11,9 +12,7 @@ import {
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { DecisionTreeState } from "@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock";
 
-const DecisionTreeBlock = lazy(
-  () => import("@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock"),
-);
+const DecisionTreeBlock = dynamic(() => import("@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
 
 /**
  * Unified renderer for `decision-tree` artifacts — the ONE renderer used by

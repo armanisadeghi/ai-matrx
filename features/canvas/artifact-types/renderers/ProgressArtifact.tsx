@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo } from "react";
+import React, { Suspense,  useMemo } from "react";
+import dynamic from "next/dynamic";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseProgressMarkdown } from "@/components/mardown-display/blocks/progress/parseProgressMarkdown";
 import {
@@ -11,9 +12,7 @@ import {
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { ProgressTrackerState } from "@/components/mardown-display/blocks/progress/ProgressTrackerBlock";
 
-const ProgressTrackerBlock = lazy(
-  () => import("@/components/mardown-display/blocks/progress/ProgressTrackerBlock"),
-);
+const ProgressTrackerBlock = dynamic(() => import("@/components/mardown-display/blocks/progress/ProgressTrackerBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
 
 /**
  * Unified renderer for `progress` (progress_tracker) artifacts — the ONE

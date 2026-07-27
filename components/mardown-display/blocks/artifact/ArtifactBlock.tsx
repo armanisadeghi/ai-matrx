@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo } from "react";
+import React, { Suspense,  useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Copy, Maximize2, Unlink } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
@@ -23,9 +24,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
 // Lazy load block renderers — only the ones that accept raw content strings
-const CodeBlock = lazy(
-  () => import("@/features/code-editor/components/code-block/CodeBlock"),
-);
+const CodeBlock = dynamic(() => import("@/features/code-editor/components/code-block/CodeBlock"), { ssr: false, loading: () => <MatrxMiniLoader /> });
 
 interface ArtifactBlockProps {
   content: string;

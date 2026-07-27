@@ -6,7 +6,7 @@
 //   2. No nested `TooltipProvider` — the global provider is mounted in
 //      `app/Providers.tsx` (delayDuration=200). Rendering a second provider
 //      here just remounts every Tooltip on sidebar toggles.
-//   3. No `lazy()` for individual lucide icons — the package is already
+//   3. No `dynamic(, { ssr: false, loading: () => null })` for individual lucide icons — the package is already
 //      loaded eagerly for the always-rendered icons; lazy-wrapping a single
 //      icon adds Suspense overhead without bundle savings.
 //
@@ -20,6 +20,7 @@
 // not to wrap children in `dynamic()` from inside this client component.
 //
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";

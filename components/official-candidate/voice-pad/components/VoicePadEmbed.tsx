@@ -6,7 +6,8 @@
  * picker and composable inside other hosts.
  */
 
-import React, { lazy, Suspense } from "react";
+import React, { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { Mic, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
@@ -17,7 +18,7 @@ import {
   VoicePadFooterRight,
 } from "./VoicePadExpanded";
 
-const VoicePadExpanded = lazy(() => import("./VoicePadExpanded"));
+const VoicePadExpanded = dynamic(() => import("./VoicePadExpanded"), { ssr: false, loading: () => <ExpandedLoadingFallback /> });
 
 function ExpandedLoadingFallback() {
   return (
