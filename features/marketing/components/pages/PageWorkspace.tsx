@@ -120,7 +120,11 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const draftContent = usePageContent(site.id, pageId);
   const findingsRows = usePageOpenFindings(site.id, pageId, 10);
   const topQueries = usePageTopQueries(pageId);
-  const outboundLinks = usePageOutboundLinks(site.id, pageId);
+  const outboundLinks = usePageOutboundLinks(
+    site.id,
+    pageId,
+    workspace.data?.page.latest_snapshot_id,
+  );
   const inboundLinks = usePageInboundLinks(
     site.id,
     pageId,
@@ -763,10 +767,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
 
         <PageTasksCard page={page} />
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <PageLinksCard page={page} />
-          <PageBacklinksCard page={page} />
-        </div>
+        <PageLinksCard page={page} />
+
+        <PageBacklinksCard page={page} />
 
         <SitemapMembershipsCard page={page} />
 

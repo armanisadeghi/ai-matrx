@@ -24,6 +24,8 @@ import {
   authenticatedWebDb,
   requireAuthenticatedSupabaseSession,
 } from "@/utils/supabase/webDb";
+import { isJsonRecord } from "@/features/marketing/types";
+import type { Json } from "@/types/database.types";
 
 export const LINK_ROW_CAP = 500;
 export const BACKLINK_ROW_CAP = 300;
@@ -31,9 +33,9 @@ export const BACKLINK_ROW_CAP = 300;
 // Static select strings (a computed/union string defeats the PostgREST
 // query-string type parser — same rule as inspection-queries.ts).
 const OUTBOUND_LINK_SELECT =
-  "id, site_id, snapshot_id, source_page_id, target_page_id, target_url, is_internal, rel, anchor_text, http_status, position, created_at, target_page:page!link_edge_target_page_id_fkey(url)";
+  "id, site_id, snapshot_id, source_page_id, target_page_id, target_url, is_internal, rel, anchor_text, http_status, position, created_at, target_page:page!link_edge_target_page_id_fkey(id, url, desired_values)";
 const INBOUND_LINK_SELECT =
-  "id, site_id, snapshot_id, source_page_id, target_page_id, target_url, is_internal, rel, anchor_text, http_status, position, created_at, source_page:page!link_edge_source_page_id_fkey(url)";
+  "id, site_id, snapshot_id, source_page_id, target_page_id, target_url, is_internal, rel, anchor_text, http_status, position, created_at, source_page:page!link_edge_source_page_id_fkey(url, latest_snapshot_id)";
 
 export type OutboundLinkEdge = {
   id: string;
@@ -48,7 +50,11 @@ export type OutboundLinkEdge = {
   http_status: number | null;
   position: number | null;
   created_at: string;
-  target_page: { url: string } | null;
+  target_page: {
+    id: string;
+    url: string;
+    desired_values: Json;
+  } | null;
 };
 
 export type InboundLinkEdge = {
@@ -64,7 +70,7 @@ export type InboundLinkEdge = {
   http_status: number | null;
   position: number | null;
   created_at: string;
-  source_page: { url: string } | null;
+  source_page: { url: string; latest_snapshot_id: string | null } | null;
 };
 
 /**
@@ -74,11 +80,11 @@ export type InboundLinkEdge = {
 export async function listOutboundLinkEdges(
   siteId: string,
   pageId: string,
+  latestSnapshotId: string | null | undefined,
   signal?: AbortSignal,
 ): Promise<OutboundLinkEdge[]> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
+  const db = await authenticatedWebDb(supabase);
+  let query = db
     .from("link_edge")
     .select(OUTBOUND_LINK_SELECT)
     .eq("site_id", siteId)
@@ -86,9 +92,51 @@ export async function listOutboundLinkEdges(
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
-    .limit(LINK_ROW_CAP)
-    .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error);
+    .limit(LINK_ROW_CAP);
+  if (latestSnapshotId) {
+    query = query.eq("snapshot_id", latestSnapshotId);
+  }
+  const response = await query.abortSignal(
+    signal ?? new AbortController().signal,
+  );
+  const rows = assertData(response.data, response.error);
+
+  // Some crawler runs have not backfilled target_page_id yet. Resolve those
+  // exact same-site target URLs here so source pages still receive the target
+  // page's accepted-anchor policy. This remains a direct RLS-filtered read.
+  const unresolvedUrls = [
+    ...new Set(
+      rows
+        .filter((row) => row.is_internal && row.target_page === null)
+        .map((row) => row.target_url),
+    ),
+  ];
+  const resolvedByUrl = new Map<
+    string,
+    { id: string; url: string; desired_values: Json }
+  >();
+  for (let index = 0; index < unresolvedUrls.length; index += 100) {
+    const pageResponse = await db
+      .from("page")
+      .select("id, url, desired_values")
+      .eq("site_id", siteId)
+      .in("url", unresolvedUrls.slice(index, index + 100))
+      .is("deleted_at", null)
+      .abortSignal(signal ?? new AbortController().signal);
+    for (const page of assertData(pageResponse.data, pageResponse.error)) {
+      resolvedByUrl.set(page.url, page);
+    }
+  }
+
+  return rows.map((row) => {
+    const targetPage =
+      row.target_page ?? resolvedByUrl.get(row.target_url) ?? null;
+    return {
+      ...row,
+      target_page_id: row.target_page_id ?? targetPage?.id ?? null,
+      target_page: targetPage,
+    };
+  });
 }
 
 /**
@@ -127,6 +175,14 @@ export async function listInboundLinkEdges(
     if (seen.has(row.id)) continue;
     // A page linking to itself is navigation noise, not an inbound link.
     if (row.source_page_id === pageId) continue;
+    // A canonical page's current link picture comes only from its latest
+    // accepted snapshot. Historical edges must not inflate compliance.
+    if (
+      !row.source_page?.latest_snapshot_id ||
+      row.snapshot_id !== row.source_page.latest_snapshot_id
+    ) {
+      continue;
+    }
     seen.add(row.id);
     merged.push(row);
   }
@@ -152,6 +208,279 @@ export interface LinkPartnerRollup {
   /** Any observed http_status >= 400 on the edge. */
   isBroken: boolean;
   worstHttpStatus: number | null;
+}
+
+export type AnchorComplianceStatus =
+  | "acceptable"
+  | "unacceptable"
+  | "untracked";
+
+/** One current link edge, projected into the anchor-text reporting model. */
+export interface AnchorLinkOccurrence {
+  edgeId: string;
+  anchorText: string | null;
+  partnerUrl: string;
+  partnerPageId: string | null;
+  /**
+   * The target page's accepted anchors. An empty list means that page has not
+   * configured an anchor policy, so the occurrence is reported as untracked.
+   */
+  acceptedAnchors: string[];
+}
+
+export interface AnchorPartnerRollup {
+  url: string;
+  pageId: string | null;
+  linkCount: number;
+  acceptableLinks: number;
+  unacceptableLinks: number;
+  untrackedLinks: number;
+  acceptedAnchors: string[];
+}
+
+export interface AnchorTextRollup {
+  key: string;
+  anchorText: string | null;
+  label: string;
+  linkCount: number;
+  pageCount: number;
+  acceptableLinks: number;
+  unacceptableLinks: number;
+  untrackedLinks: number;
+  pages: AnchorPartnerRollup[];
+}
+
+export interface AnchorComplianceSummary {
+  totalLinks: number;
+  trackedLinks: number;
+  acceptableLinks: number;
+  unacceptableLinks: number;
+  untrackedLinks: number;
+  acceptablePercent: number | null;
+  unacceptablePercent: number | null;
+}
+
+export interface AnchorTextReport {
+  groups: AnchorTextRollup[];
+  summary: AnchorComplianceSummary;
+}
+
+/**
+ * Normalize an anchor for exact policy matching: trim, collapse whitespace,
+ * and compare case-insensitively. The authored spelling remains unchanged for
+ * display.
+ */
+export function normalizeAnchorText(value: string | null | undefined): string {
+  return (value ?? "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+/** Trim, collapse whitespace, remove blanks, and dedupe case-insensitively. */
+export function sanitizeAcceptedAnchorTexts(values: string[]): string[] {
+  const unique = new Map<string, string>();
+  for (const value of values) {
+    const display = value.trim().replace(/\s+/g, " ");
+    const normalized = normalizeAnchorText(display);
+    if (normalized && !unique.has(normalized)) unique.set(normalized, display);
+  }
+  return [...unique.values()];
+}
+
+/** Safely read the accepted-anchor slice from a page's desired_values JSON. */
+export function acceptedAnchorTextsFromDesiredValues(value: Json): string[] {
+  if (!isJsonRecord(value)) return [];
+  const raw = value.accepted_anchor_texts;
+  if (!Array.isArray(raw)) return [];
+  return sanitizeAcceptedAnchorTexts(
+    raw.filter((item): item is string => typeof item === "string"),
+  );
+}
+
+export function anchorComplianceStatus(
+  anchorText: string | null,
+  acceptedAnchors: string[],
+): AnchorComplianceStatus {
+  if (acceptedAnchors.length === 0) return "untracked";
+  const normalized = normalizeAnchorText(anchorText);
+  return acceptedAnchors.some(
+    (accepted) => normalizeAnchorText(accepted) === normalized,
+  )
+    ? "acceptable"
+    : "unacceptable";
+}
+
+function addCompliance(
+  target: {
+    acceptableLinks: number;
+    unacceptableLinks: number;
+    untrackedLinks: number;
+  },
+  status: AnchorComplianceStatus,
+): void {
+  if (status === "acceptable") target.acceptableLinks += 1;
+  else if (status === "unacceptable") target.unacceptableLinks += 1;
+  else target.untrackedLinks += 1;
+}
+
+/**
+ * Build the shared folding-tree model and percentage report for either link
+ * direction. Callers only project direction-specific partner data.
+ */
+export function buildAnchorTextReport(
+  occurrences: AnchorLinkOccurrence[],
+): AnchorTextReport {
+  const byAnchor = new Map<
+    string,
+    Omit<AnchorTextRollup, "pages" | "pageCount"> & {
+      pagesByUrl: Map<string, AnchorPartnerRollup>;
+    }
+  >();
+  const summary: AnchorComplianceSummary = {
+    totalLinks: occurrences.length,
+    trackedLinks: 0,
+    acceptableLinks: 0,
+    unacceptableLinks: 0,
+    untrackedLinks: 0,
+    acceptablePercent: null,
+    unacceptablePercent: null,
+  };
+
+  for (const occurrence of occurrences) {
+    const key = normalizeAnchorText(occurrence.anchorText);
+    const display = occurrence.anchorText?.trim().replace(/\s+/g, " ") || null;
+    const status = anchorComplianceStatus(
+      occurrence.anchorText,
+      occurrence.acceptedAnchors,
+    );
+    addCompliance(summary, status);
+    if (status !== "untracked") summary.trackedLinks += 1;
+
+    let group = byAnchor.get(key);
+    if (!group) {
+      group = {
+        key,
+        anchorText: display,
+        label: display ?? "(No anchor text)",
+        linkCount: 0,
+        acceptableLinks: 0,
+        unacceptableLinks: 0,
+        untrackedLinks: 0,
+        pagesByUrl: new Map(),
+      };
+      byAnchor.set(key, group);
+    }
+    group.linkCount += 1;
+    addCompliance(group, status);
+
+    let partner = group.pagesByUrl.get(occurrence.partnerUrl);
+    if (!partner) {
+      partner = {
+        url: occurrence.partnerUrl,
+        pageId: occurrence.partnerPageId,
+        linkCount: 0,
+        acceptableLinks: 0,
+        unacceptableLinks: 0,
+        untrackedLinks: 0,
+        acceptedAnchors: [],
+      };
+      group.pagesByUrl.set(occurrence.partnerUrl, partner);
+    }
+    partner.linkCount += 1;
+    partner.pageId ??= occurrence.partnerPageId;
+    addCompliance(partner, status);
+    partner.acceptedAnchors = sanitizeAcceptedAnchorTexts([
+      ...partner.acceptedAnchors,
+      ...occurrence.acceptedAnchors,
+    ]);
+  }
+
+  if (summary.trackedLinks > 0) {
+    summary.acceptablePercent =
+      (summary.acceptableLinks / summary.trackedLinks) * 100;
+    summary.unacceptablePercent =
+      (summary.unacceptableLinks / summary.trackedLinks) * 100;
+  }
+
+  const groups = [...byAnchor.values()]
+    .map(
+      ({ pagesByUrl, ...group }): AnchorTextRollup => ({
+        ...group,
+        pageCount: pagesByUrl.size,
+        pages: [...pagesByUrl.values()].sort(
+          (a, b) =>
+            b.unacceptableLinks - a.unacceptableLinks ||
+            b.linkCount - a.linkCount ||
+            a.url.localeCompare(b.url),
+        ),
+      }),
+    )
+    .sort(
+      (a, b) =>
+        b.unacceptableLinks - a.unacceptableLinks ||
+        b.linkCount - a.linkCount ||
+        a.label.localeCompare(b.label),
+    );
+
+  return { groups, summary };
+}
+
+/** Current inbound edges, evaluated against this destination page's policy. */
+export function buildInboundAnchorTextReport(
+  rows: InboundLinkEdge[],
+  acceptedAnchors: string[],
+): AnchorTextReport {
+  return buildAnchorTextReport(
+    rows.map((row) => ({
+      edgeId: row.id,
+      anchorText: row.anchor_text,
+      partnerUrl: row.source_page?.url ?? row.source_page_id,
+      partnerPageId: row.source_page_id,
+      acceptedAnchors,
+    })),
+  );
+}
+
+/** Current outbound edges, evaluated against each internal target's policy. */
+export function buildOutboundAnchorTextReport(
+  rows: OutboundLinkEdge[],
+): AnchorTextReport {
+  return buildAnchorTextReport(
+    rows.map((row) => ({
+      edgeId: row.id,
+      anchorText: row.anchor_text,
+      partnerUrl: row.target_page?.url ?? row.target_url,
+      partnerPageId: row.target_page_id,
+      acceptedAnchors:
+        row.is_internal && row.target_page
+          ? acceptedAnchorTextsFromDesiredValues(row.target_page.desired_values)
+          : [],
+    })),
+  );
+}
+
+/** Collapse an anchor-grouped report back to per-page compliance for URL view. */
+export function anchorComplianceByPartner(
+  report: AnchorTextReport,
+): Map<string, AnchorPartnerRollup> {
+  const byUrl = new Map<string, AnchorPartnerRollup>();
+  for (const group of report.groups) {
+    for (const page of group.pages) {
+      const existing = byUrl.get(page.url);
+      if (!existing) {
+        byUrl.set(page.url, { ...page });
+        continue;
+      }
+      existing.linkCount += page.linkCount;
+      existing.acceptableLinks += page.acceptableLinks;
+      existing.unacceptableLinks += page.unacceptableLinks;
+      existing.untrackedLinks += page.untrackedLinks;
+      existing.pageId ??= page.pageId;
+      existing.acceptedAnchors = sanitizeAcceptedAnchorTexts([
+        ...existing.acceptedAnchors,
+        ...page.acceptedAnchors,
+      ]);
+    }
+  }
+  return byUrl;
 }
 
 function isNofollowRel(rel: string | null): boolean {
@@ -369,11 +698,20 @@ function maxNullable(a: number | null, b: number | null): number | null {
   return Math.max(a, b);
 }
 
-export function usePageOutboundLinks(siteId: string, pageId: string) {
+export function usePageOutboundLinks(
+  siteId: string,
+  pageId: string,
+  latestSnapshotId?: string | null,
+) {
   return useQuery({
-    queryKey: [...marketingKeys.page(siteId, pageId), "links-out"] as const,
-    queryFn: ({ signal }) => listOutboundLinkEdges(siteId, pageId, signal),
-    enabled: Boolean(siteId && pageId),
+    queryKey: [
+      ...marketingKeys.page(siteId, pageId),
+      "links-out",
+      latestSnapshotId ?? null,
+    ] as const,
+    queryFn: ({ signal }) =>
+      listOutboundLinkEdges(siteId, pageId, latestSnapshotId, signal),
+    enabled: Boolean(siteId && pageId && latestSnapshotId),
   });
 }
 

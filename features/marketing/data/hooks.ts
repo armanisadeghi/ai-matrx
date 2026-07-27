@@ -263,6 +263,13 @@ export function useUpdatePageDesiredValues() {
       void queryClient.invalidateQueries({
         queryKey: marketingKeys.page(page.site_id, page.id),
       });
+      // Any page may currently link to this one. Mark every cached outbound
+      // report for the site stale so a newly-saved accepted-anchor policy is
+      // visible when the user returns to a source page.
+      void queryClient.invalidateQueries({
+        queryKey: marketingKeys.site(page.site_id),
+        predicate: (query) => query.queryKey.includes("links-out"),
+      });
     },
   });
 }

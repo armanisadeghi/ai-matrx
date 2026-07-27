@@ -510,6 +510,11 @@ export interface PageDesiredValues {
   social_card?: { og_title?: string; og_description?: string };
   indexability?: { canonical_url?: string; meta_robots?: string };
   headings?: { outline?: DesiredHeadingEntry[]; notes?: string };
+  /**
+   * Exact anchor phrases that are acceptable when another internal page links
+   * to this page. Matching is case-insensitive with collapsed whitespace.
+   */
+  accepted_anchor_texts?: string[];
   structured_data_notes?: string;
   image_plan?: DesiredImagePlanEntry[];
   /** Desired alt text for EXISTING crawled images, keyed by the image `src`
