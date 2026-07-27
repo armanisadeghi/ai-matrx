@@ -1,13 +1,11 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { buildHeaders, resolveBaseUrl } from "@/lib/python-client";
+import { postNdjson } from "@/lib/python-client";
 import {
-  parseHttpError,
   parsePersistedBackendError,
   parseStreamError,
   type BackendApiError,
 } from "@/lib/api/errors";
-import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type { TypedStreamEvent } from "@/lib/api/types";
 
 /**
@@ -98,22 +96,12 @@ export async function syncPagespeed(
   strategy: "mobile" | "desktop" = "mobile",
   callbacks: PagespeedSyncCallbacks = {},
 ): Promise<PagespeedSyncResult> {
-  const { headers } = await buildHeaders({ signal: callbacks.signal }, true);
-  const response = await fetch(
-    `${resolveBaseUrl()}/seo/pages/${pageId}/pagespeed/sync`,
-    {
-      method: "POST",
-      headers: { ...headers, Accept: "application/x-ndjson" },
-      body: JSON.stringify({ strategy }),
-      signal: callbacks.signal,
-    },
-  );
-  if (!response.ok) {
-    throw await parseHttpError(response);
-  }
   let runId: string | null = null;
-  const { events } = parseNdjsonStream(response, callbacks.signal);
-  for await (const event of events) {
+  for await (const event of postNdjson(
+    `/seo/pages/${encodeURIComponent(pageId)}/pagespeed/sync`,
+    { strategy },
+    { signal: callbacks.signal },
+  )) {
     callbacks.onEvent?.(event);
     if (event.event === "data") {
       const data = event.data as { kind?: unknown; run_id?: unknown };

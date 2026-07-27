@@ -9,8 +9,9 @@
  *
  * Import `toast` from HERE instead of "sonner". The API is identical —
  * `error` and `warning` additionally feed `captureError` (source
- * "user-toast", tiered orange: already handled + shown). Success/info/etc.
- * pass straight through.
+ * "user-toast"). A user seeing the failure is not evidence that it is minor,
+ * so error toasts stay red unless a specific downgrade rule says otherwise.
+ * Success/info/etc. pass straight through.
  *
  * Migration is opportunistic (boy-scout rule): when you touch a file that
  * imports toast from "sonner", switch it to `@/lib/toast`.

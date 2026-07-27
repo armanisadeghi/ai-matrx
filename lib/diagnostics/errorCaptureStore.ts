@@ -96,7 +96,11 @@ export type CapturedErrorSource =
    * before any write runs — this firing means a real defect got past it.
    */
   | "org-resolution"
-  /** A user-facing `toast.error(...)` — already handled + shown to the user. */
+  /**
+   * A user-facing `toast.error(...)`. Showing a failure to the user describes
+   * handling, not severity; these stay red unless a specific downgrade rule
+   * proves that exact toast is expected noise.
+   */
   | "user-toast"
   /**
    * The marketing crawler/scraper boundary (features/marketing/crawler):

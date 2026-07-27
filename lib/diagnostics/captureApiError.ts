@@ -21,6 +21,8 @@ interface ApiErrorContext {
   method: string;
   /** Endpoint path (e.g. "/ai/agents/{id}"). */
   path: string;
+  /** Client-generated request id, available even when no response arrives. */
+  requestId?: string;
 }
 
 /**
@@ -53,7 +55,7 @@ export function captureApiError(
     const userMessage =
       typeof sd.user_message === "string" ? sd.user_message : undefined;
     const requestId =
-      typeof sd.request_id === "string" ? sd.request_id : undefined;
+      typeof sd.request_id === "string" ? sd.request_id : ctx.requestId;
     const structuredDetail = sd.details ?? sd.detail;
 
     captureError({
@@ -72,12 +74,18 @@ export function captureApiError(
           ? safeStringify(structuredDetail)
           : undefined,
       // AbortError → name lets the seed downgrade rule silence cancellations.
-      name: error.type === "abort_error" ? "AbortError" : undefined,
+      name:
+        error.type === "abort_error" ? "AbortError" : error.name,
+      stack: error.stack,
       raw: {
         type: error.type,
+        name: error.name,
+        stack: error.stack,
+        thrown: error.raw,
         backendErrorType: backendType,
         backendCode,
         status: error.status,
+        requestId,
         url: ctx.url,
         method: ctx.method,
         path: ctx.path,

@@ -44,6 +44,7 @@ import {
   capturePythonClientError,
   relationPathFromUrl,
 } from "@/lib/diagnostics/capturePythonClientError";
+import { captureStreamEvent } from "@/lib/diagnostics/captureStreamError";
 import {
   expandCompactEvent,
   isCompactEvent,
@@ -377,8 +378,9 @@ function failClient(
   method: string,
   path: string,
   url: string,
+  requestId?: string,
 ): never {
-  captureClientError(err, method, path, url);
+  captureClientError(err, method, path, url, requestId);
   throw err;
 }
 
@@ -387,11 +389,13 @@ function captureClientError(
   method: string,
   path: string,
   url: string,
+  requestId?: string,
 ): void {
   capturePythonClientError(err, {
     url,
     method,
     path: relationPathFromUrl(path),
+    requestId,
   });
 }
 
@@ -416,12 +420,14 @@ export async function requestRaw(
     "requestRaw",
     method,
   );
+  let requestId: string | undefined;
   try {
-    const { headers: authHeaders } = await buildHeaders(opts, false);
+    const built = await buildHeaders(opts, false);
+    requestId = built.requestId;
     const response = await fetch(url, {
       ...init,
       headers: {
-        ...authHeaders,
+        ...built.headers,
         ...init.headers,
       },
       signal: opts.signal ?? init.signal,
@@ -440,7 +446,7 @@ export async function requestRaw(
     }
     return response;
   } catch (err) {
-    failClient(err, method, path, url);
+    failClient(err, method, path, url, requestId);
   }
 }
 
@@ -530,18 +536,21 @@ export async function* postNdjson<B = unknown>(
     "POST",
   );
   let stream: NonNullable<Response["body"]>;
+  let requestId: string | undefined;
   try {
-    const { headers } = await buildHeaders(opts, true);
+    const built = await buildHeaders(opts, true);
+    requestId = built.requestId;
     const response = await fetch(url, {
       method: "POST",
-      headers,
+      headers: built.headers,
       body: JSON.stringify(body),
       signal: opts.signal,
     });
     if (!response.ok || !response.body) throw await parseHttpError(response);
+    requestId = response.headers.get("x-request-id") ?? requestId;
     stream = response.body;
   } catch (err) {
-    failClient(err, "POST", path, url);
+    failClient(err, "POST", path, url, requestId);
   }
   const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "";
@@ -556,7 +565,10 @@ export async function* postNdjson<B = unknown>(
         buffer = buffer.slice(nl + 1);
         if (line.length > 0) {
           const evt = parseNdjsonLine(line);
-          if (evt) yield evt;
+          if (evt) {
+            captureStreamEvent(evt, { requestId });
+            yield evt;
+          }
         }
         nl = buffer.indexOf("\n");
       }
@@ -564,8 +576,13 @@ export async function* postNdjson<B = unknown>(
     const tail = buffer.trim();
     if (tail.length > 0) {
       const evt = parseNdjsonLine(tail);
-      if (evt) yield evt;
+      if (evt) {
+        captureStreamEvent(evt, { requestId });
+        yield evt;
+      }
     }
+  } catch (err) {
+    failClient(err, "POST", path, url, requestId);
   } finally {
     reader.releaseLock();
   }

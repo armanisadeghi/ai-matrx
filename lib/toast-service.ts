@@ -95,9 +95,9 @@ class ToastService {
     public error(error?: unknown, moduleKey?: string, options?: ToastOptions) {
         const message = error instanceof Error ? error.message :
                         typeof error === "string" ? error : this.getDefaultMessage("error", moduleKey);
-        // Every user-facing error toast is captured (source "user-toast",
-        // tiered orange by default — already handled + shown). This is also the
-        // seam for the future "surface certain errors to end users" feature.
+        // Every user-facing error toast is captured. Showing a failure to the
+        // user does not make it minor; source "user-toast" stays red unless a
+        // specific downgrade rule proves that exact toast is expected noise.
         try {
             captureError({
                 source: "user-toast",

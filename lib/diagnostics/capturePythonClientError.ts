@@ -18,6 +18,8 @@ interface PythonClientErrorContext {
   method: string;
   /** Endpoint path without query string (e.g. "/rag/library"). */
   path: string;
+  /** Client-generated request id, available even if fetch gets no response. */
+  requestId?: string;
 }
 
 /** Strip query params so list polling dedupes on the route, not the offset. */
@@ -55,6 +57,9 @@ function normalizePythonClientError(err: unknown): ApiCallError {
         message: err.detail || err.message,
         status,
         serverDetail: err.toJSON(),
+        name: err.name,
+        stack: err.stack,
+        raw: serializeThrown(err),
       };
     }
 
@@ -63,16 +68,43 @@ function normalizePythonClientError(err: unknown): ApiCallError {
       message: err.detail || err.message,
       status,
       serverDetail: err.toJSON(),
+      name: err.name,
+      stack: err.stack,
+      raw: serializeThrown(err),
     };
   }
 
   if (err instanceof DOMException && err.name === "AbortError") {
-    return { type: "abort_error", message: err.message || "Request aborted" };
+    return {
+      type: "abort_error",
+      message: err.message || "Request aborted",
+      name: err.name,
+      stack: err.stack,
+      raw: serializeThrown(err),
+    };
   }
 
   if (err instanceof Error) {
-    return { type: "network_error", message: err.message };
+    return {
+      type: "network_error",
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      raw: serializeThrown(err),
+    };
   }
 
-  return { type: "unknown", message: String(err) };
+  return { type: "unknown", message: String(err), raw: err };
+}
+
+/** Preserve non-enumerable Error fields plus custom enumerable properties. */
+function serializeThrown(err: Error): Record<string, unknown> {
+  const serialized: Record<string, unknown> = {
+    name: err.name,
+    message: err.message,
+    stack: err.stack,
+  };
+  if ("cause" in err) serialized.cause = err.cause;
+  Object.assign(serialized, err);
+  return serialized;
 }

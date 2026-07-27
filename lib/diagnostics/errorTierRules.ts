@@ -172,16 +172,6 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
-    id: "user-toast-handled",
-    tier: "orange",
-    reason:
-      "A toast.error is already handled and shown to the user — minor by nature, not an unhandled error.",
-    addedAt: "2026-06-29",
-    match: {
-      source: "user-toast",
-    },
-  },
-  {
     id: "tool-error-normal-operation",
     tier: "yellow",
     reason:

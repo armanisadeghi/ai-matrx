@@ -358,6 +358,12 @@ export interface ApiCallError {
   status?: number;
   /** Raw error detail from the server (e.g. HTTPValidationError.detail) */
   serverDetail?: unknown;
+  /** Original exception identity for diagnostics (network failures, etc.). */
+  name?: string;
+  /** Original exception stack. */
+  stack?: string;
+  /** JSON-safe dump of the original thrown value. */
+  raw?: unknown;
 }
 
 export interface ApiCallResult<T = unknown> {
