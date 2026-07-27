@@ -24,7 +24,9 @@ One job: keep heavy **client** code out of the server render and out of the init
 
 So `dynamic()` itself saves nothing. The **`ssr:false`** earns benefit #2; the **condition you render it behind** earns benefit #3. Name which one you're after before you write it.
 
-## The five rules
+**Build time is a fourth, separate axis — and conditions are INVISIBLE to it.** The bundler creates chunks by static analysis alone; a render condition, click gate, `useEffect` check, or `loading:` fallback changes nothing about the build. What the build pays for a module ≈ **size × compilation passes × route entries whose static graph reaches it** (~1,000 entries in this app; statically-reachable = server AND client pass; behind `ssr:false` = client only). An `import()` boundary cuts entries to zero and passes to one — that is the entire build win. Conditions only move the browser *fetch*.
+
+## The six rules
 
 1. **A Server Component cannot use `dynamic({ ssr: false })`.** Next.js throws. A server file stays a thin static shell; the heavy widget *below* it owns its own splitting inside a `"use client"` child. See the prose contract in [app/Providers.tsx](app/Providers.tsx) — it documents exactly this.
 
@@ -35,6 +37,8 @@ So `dynamic()` itself saves nothing. The **`ssr:false`** earns benefit #2; the *
 4. **A dynamic import without a condition does nothing (benefit #3).** If you `dynamic()` something and then always render it, you paid the split cost for no deferral. Gate it (modal open, tab, route, `useIdleReady`, feature flag) — or, if it genuinely must always be live, keep it only for the `ssr:false` reason (benefit #2) and say so.
 
 5. **`loading` and an error boundary are not optional for user-triggered chunks.** A bare `dynamic()` whose chunk stalls or fails renders **nothing**, silently. For overlays/windows that's solved for you — see Method B. Elsewhere, at minimum pass `loading: () => …` (use `() => null` only when nothing-until-ready is correct).
+
+6. **A click handler's machinery loads at click time when the handler module is shell-reachable.** An action registry statically imported by the sidebar/shell (e.g. [navActions.ts](features/shell/navigation/navActions.ts)) is in EVERY route entry's static graph — its imports are multiplied across all of them. Thunks and services go `await import()` **inside the handler body**; only ids, router, toast, and redux hooks stay static. One static thunk edge there once dragged the 420-module war-room engine into ~630 entries; deferring it cut the prod build **2.5 min** (2026-07). The file's BUILD-GRAPH LAW header is the contract.
 
 ## Two ways to do it
 
@@ -83,6 +87,15 @@ Real exemplars:
 
 **Pick B when:** the component is heavy AND used in 2+ places, OR it's a singleton host, OR it must stay off the server render everywhere. **Pick A** for a one-off conditional reveal.
 
+### Method C — render-all bundle (wrapper → core)
+
+For a set of components that **always render together** (app-shell singletons, a provider group), do NOT give each its own `dynamic()` — that's N boundaries, N fetches, N chunk-graph entries for zero deferral. Package them: a thin `"use client"` wrapper holds every gate (client-only mount, `useIdleReady`) and **ONE** `dynamic(() => import("./XCore"), { ssr: false })`; the core statically imports and directly renders everything. Measured: converting the deferred-singletons tree from ~10 sibling dynamics to one wrapper→core cut the build **30–40 s** (2026-07).
+
+- Exemplar: [DeferredSingletonWrapper.tsx](app/DeferredSingletonWrapper.tsx) → `DeferredSingletonCore.tsx` — the split contract is documented in the wrapper's header (incl. why the bundle-leak guard's side-effect import must stay in the shell).
+- **Provider variant** (the component wraps `{children}` / owns a context): the shell keeps the context object, hook, value type, and an **inert default**, and renders the provider element IMMEDIATELY — children mount at once and never remount. The core is a null-rendering sibling *inside* the provider that publishes the live value up via `onValue`. Exemplar: [WindowPersistenceManager.tsx](features/window-panels/WindowPersistenceManager.tsx) → `WindowPersistenceCore.tsx`.
+
+**B vs C in one line:** Method B (id → chunk, like `lazyOverlay`'s 110 windows) is for things rendered **selectively** — split per item so each loads alone. Method C is for things rendered **all together** — one boundary for the whole set. Applying B's per-item splitting to an always-rendered set is pure cost.
+
 ## What NOT to do — verified anti-patterns
 
 | Anti-pattern | Where | Why it's wrong |
@@ -92,6 +105,8 @@ Real exemplars:
 | **`React.lazy` instead of `next/dynamic`** | [organizations/peek/registry.ts](features/organizations/peek/registry.ts), several `features/settings/tabs/*` | No `ssr:false`, no `loading`, manual Suspense. Use `next/dynamic`. |
 | **`dynamic({ssr:false})` in a Server Component** | guarded against in [app/Providers.tsx](app/Providers.tsx) | Build error. Push the dynamic import into a `"use client"` child. |
 | **Bare `dynamic()` for an overlay/window** | — | Bypasses `loading`/error/timeout. Use `lazyOverlay`. |
+| **Static thunk/service import in a shell-reachable action module** | navActions.ts, fixed 2026-07 (rule 6) | Multiplied the 420-module war-room engine across ~630 route entries (+2.5 min build). `await import()` in the handler body. |
+| **N sibling `dynamic()`s for an always-rendered set** | old `DeferredSingletons.tsx`, replaced 2026-07 | 10 boundaries for components that all mount anyway = 10 fetches, no deferral. Method C: one wrapper→core (−30–40 s build). |
 
 ## Build-time bloat — the recurring leak: hunt it, then guard it
 
@@ -101,7 +116,9 @@ Real exemplars:
 
 **Rank a find by blast radius:** (1) a **Server Component** (no top `"use client"`) importing client-heavy code — worst, pulls it into the RSC/server graph; (2) a **root/shared shell** imported by many routes (`app/**/layout.tsx`, `app/Providers*.tsx`, `providers/**`, shell components); (3) a route `page.tsx` importing a heavy widget statically; (4) a **barrel** (`index.ts`) re-exporting a heavy module — every importer drags it.
 
-**Hunt method (offload the sweep, verify the gold yourself):** list heavy deps (editors/monaco/codemirror/tiptap, reactflow/xyflow, recharts/d3, pdfjs, three, mermaid, syntax highlighters, livekit, emoji/color pickers) + heavy internal components (the context menu, code workspace, workbook, canvas/artifacts) → ripgrep their static import sites → classify each by the blast-radius list → flag any whose module is dynamically imported elsewhere. Give an `Explore` subagent that spec and ask for a ranked `file:line` treasure map; then verify the top finds yourself before fixing.
+**The 2026-07 audit's headline: the big leaks are FIRST-PARTY graphs, not npm packages.** Heavy npm deps were well-contained; what multiplied across entries was our own code — an action registry's thunk import (rule 6), eager registries that statically import everything they register (surfaces manifests, content-ir `system-kinds`, tools registries, `rootReducer`), providers dragging feature graphs, and parser/util files that import React components. Hunt those with the same priority as monaco.
+
+**Hunt method (offload the sweep, verify the gold yourself):** list heavy deps (editors/monaco/codemirror/tiptap, reactflow/xyflow, recharts/d3, pdfjs, three, mermaid, syntax highlighters, livekit, emoji/color pickers) + heavy internal graphs (the context menu, code workspace, workbook, canvas/artifacts, markdown block registry, execution engine, nav/action registries, the provider stack) → ripgrep their static import sites → classify each by the blast-radius list → flag any whose module is dynamically imported elsewhere. Give an `Explore` subagent that spec and ask for a ranked `file:line` treasure map with per-leak **entry counts** (routes whose static graph reaches it — that's the multiplier); then verify the top finds yourself before fixing.
 
 **Guard it so it can't silently come back (the platform move).** Patching the 5 sites is the artifact; making the class extinct is the platform. For each heavy client component, add an eslint `no-restricted-syntax` ban on its STATIC value import that still allows `import type` + dynamic `import()`. Reference implementation: `canonicalMenuStaticImportBan` in [eslint.config.mjs](eslint.config.mjs):
 
@@ -119,5 +136,7 @@ Now there are two loud layers — the lint guard (fails at commit/CI) and this d
 - [ ] **Is there already an `ssr:false` boundary above me on this path?** If yes, import statically — don't stack.
 - [ ] **Server Component?** Then no `ssr:false` here — move it into a client child.
 - [ ] **Many callsites / a singleton / a heavy core?** Use Method B (`*Impl` + wrapper + type in the shell), not a `dynamic()` at every site.
+- [ ] **A set that always renders together?** ONE wrapper→core boundary (Method C), never N sibling `dynamic()`s.
+- [ ] **Handler in a shell-reachable action module?** Its machinery is `await import()`ed inside the handler body (rule 6).
 - [ ] **`React.lazy`?** Replace with `next/dynamic`.
 - [ ] **User-triggered?** Has a `loading` fallback (overlays/windows → `lazyOverlay`, which adds error + timeout too).
