@@ -1,5 +1,12 @@
-import { lazy } from "react";
+import dynamic from "next/dynamic";
 import { getCoordinatorConfig } from "../markdown-coordinator";
+
+// Views are code-split with next/dynamic({ ssr: false }) — never React.lazy
+// (code-splitting doctrine rule 3): lazy SSRs by default, which compiled every
+// view graph into the server pass of the applet-runner routes that reach this
+// registry via DirectMarkdownRenderer. Consumers render these without their
+// own Suspense, so `loading: () => null` preserves the render-nothing-while-
+// loading behavior they already had.
 
 export type ViewId =
     | "candidateProfile"
@@ -18,20 +25,20 @@ export type ViewId =
     | "keywordHierarchy";
 
 export const viewComponents = {
-    candidateProfileView: lazy(() => import("./view-components/CandidateProfileView")),
-    candidateProfileCollapsibleView: lazy(() => import("./view-components/CandidateProfileWithCollapseView")),
-    modernCandidateProfileView: lazy(() => import("./view-components/ModernCandidateProfileView")),
-    modernOneColumnCandidateProfileView: lazy(() => import("./view-components/ModernOneColumnProfile")),
-    appSuggestionsView: lazy(() => import("./view-components/AppSuggestionsView")),
-    dynamicView: lazy(() => import("./view-components/DynamicView")),
-    keyPointsView: lazy(() => import("./view-components/KeyPointsView")),
-    introOutroListView: lazy(() => import("./view-components/IntroOutroListView")),
-    keyPointsNestedListView: lazy(() => import("./view-components/KeyPointsNestedListView")),
-    travelGuideView: lazy(() => import("./view-components/TravelGuideView")),
-    astRendererView: lazy(() => import("./view-components/AstRendererView")),
-    modernAstRendererView: lazy(() => import("./view-components/ModernAstRenderer")),
-    modernKeywordAnalyzerView: lazy(() => import("./view-components/ModernKeywordAnalyzerView")),
-    keywordHierarchyView: lazy(() => import("./view-components/LsiKeywordView")),
+    candidateProfileView: dynamic(() => import("./view-components/CandidateProfileView"), { ssr: false, loading: () => null }),
+    candidateProfileCollapsibleView: dynamic(() => import("./view-components/CandidateProfileWithCollapseView"), { ssr: false, loading: () => null }),
+    modernCandidateProfileView: dynamic(() => import("./view-components/ModernCandidateProfileView"), { ssr: false, loading: () => null }),
+    modernOneColumnCandidateProfileView: dynamic(() => import("./view-components/ModernOneColumnProfile"), { ssr: false, loading: () => null }),
+    appSuggestionsView: dynamic(() => import("./view-components/AppSuggestionsView"), { ssr: false, loading: () => null }),
+    dynamicView: dynamic(() => import("./view-components/DynamicView"), { ssr: false, loading: () => null }),
+    keyPointsView: dynamic(() => import("./view-components/KeyPointsView"), { ssr: false, loading: () => null }),
+    introOutroListView: dynamic(() => import("./view-components/IntroOutroListView"), { ssr: false, loading: () => null }),
+    keyPointsNestedListView: dynamic(() => import("./view-components/KeyPointsNestedListView"), { ssr: false, loading: () => null }),
+    travelGuideView: dynamic(() => import("./view-components/TravelGuideView"), { ssr: false, loading: () => null }),
+    astRendererView: dynamic(() => import("./view-components/AstRendererView"), { ssr: false, loading: () => null }),
+    modernAstRendererView: dynamic(() => import("./view-components/ModernAstRenderer"), { ssr: false, loading: () => null }),
+    modernKeywordAnalyzerView: dynamic(() => import("./view-components/ModernKeywordAnalyzerView"), { ssr: false, loading: () => null }),
+    keywordHierarchyView: dynamic(() => import("./view-components/LsiKeywordView"), { ssr: false, loading: () => null }),
 };
 
 export interface ViewExtractor {
