@@ -14,12 +14,12 @@ import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { entityScopesKey } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { EntityType } from "@/features/scopes/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
 export interface SetEntityScopesArgs {
-  entityType: EntityType;
+  entityType: EntityTypeToken;
   entityId: string;
   scopeIds: string[];
   /** Optional org id — used to patch the cached `projects[].scope_ids` array. */

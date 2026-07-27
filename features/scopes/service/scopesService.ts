@@ -62,6 +62,7 @@ import type {
   TaskBucketLevel,
   TaskNode,
 } from "@/features/scopes/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 // One denormalized scope row for tags: which entity, which scope, plus the
 // scope's name and its type's singular label (sidebar grouping).
@@ -131,10 +132,9 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<DatasetTableTemplate[]>> {
     try {
       requireUserId();
-      const { data, error } = await supabase.rpc(
-        "list_udt_dataset_templates",
-        { p_org_id: organizationId },
-      );
+      const { data, error } = await supabase.rpc("list_udt_dataset_templates", {
+        p_org_id: organizationId,
+      });
       if (error) return err(...mapPgErrorPair(error));
       return ok((Array.isArray(data) ? data : []) as DatasetTableTemplate[]);
     } catch (e) {
@@ -772,7 +772,7 @@ export const scopesService = {
   // ──────────────────────────────────────────────────────────────────
 
   async getEntityScopes(
-    entityType: EntityType,
+    entityType: EntityTypeToken,
     entityId: string,
   ): Promise<ScopesRpcResult<{ scope_ids: string[] }>> {
     try {
@@ -900,7 +900,7 @@ export const scopesService = {
   // ──────────────────────────────────────────────────────────────────
 
   async setEntityScopes(
-    entityType: EntityType,
+    entityType: EntityTypeToken,
     entityId: string,
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ scope_ids: string[] }>> {

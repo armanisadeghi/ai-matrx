@@ -21,7 +21,7 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
 import type { Scope } from "@/features/agents/redux/shared/scope";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { ContentSource } from "@/features/rich-document/types";
-import type { EntityType } from "@/features/scopes/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import type { ResourceType } from "@/utils/permissions/types";
 import type { SelectionRange } from "./utils/selection-tracking";
 
@@ -144,8 +144,8 @@ export interface ContextMenuContextData {
  * fragments — Attach/Share simply won't render, which is correct.
  */
 export interface ContextMenuEntityRef {
-  /** Entity type for context-assignment (`ctx_scope_assignments.entity_type`). */
-  type: EntityType;
+  /** Registered source entity for context-assignment association edges. */
+  type: EntityTypeToken;
   id: string;
   title: string;
   /** Resource type for the sharing system. Omit to hide Share. */

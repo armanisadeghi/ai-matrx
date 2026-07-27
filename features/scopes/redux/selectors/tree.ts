@@ -10,13 +10,13 @@ import type {
   OrgNode,
   OrphanBucket,
   ProjectNode,
-  EntityType,
   ScopeNode,
   ScopeTypeNode,
   TaskBucketEntry,
   TaskBucketLevel,
   TaskNode,
 } from "@/features/scopes/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 const empty: never[] = [];
 const EMPTY_LABEL_MAP: Record<string, string> = {};
@@ -246,20 +246,16 @@ const EMPTY_ENTITY_SCOPES: EntityScopesEntry = {
 export const makeSelectEntityScopes = () =>
   createSelector(
     (state: RootState) => state.scopesTree.entityScopesByKey,
-    (
-      _: RootState,
-      args: { entityType: EntityType; entityId: string },
-    ) => `${args.entityType}:${args.entityId}`,
+    (_: RootState, args: { entityType: EntityTypeToken; entityId: string }) =>
+      `${args.entityType}:${args.entityId}`,
     (byKey, key): EntityScopesEntry => byKey[key] ?? EMPTY_ENTITY_SCOPES,
   );
 
 export const makeSelectEntityScopeIds = () =>
   createSelector(
     (state: RootState) => state.scopesTree.entityScopesByKey,
-    (
-      _: RootState,
-      args: { entityType: EntityType; entityId: string },
-    ) => `${args.entityType}:${args.entityId}`,
+    (_: RootState, args: { entityType: EntityTypeToken; entityId: string }) =>
+      `${args.entityType}:${args.entityId}`,
     (byKey, key): string[] => byKey[key]?.scope_ids ?? empty,
   );
 
@@ -285,7 +281,7 @@ export const makeSelectEntityIdsMatchingScopes = () =>
     (
       _: RootState,
       args: {
-        entityType: EntityType;
+        entityType: EntityTypeToken;
         scopeIds: readonly string[];
         matchAll: boolean;
       },

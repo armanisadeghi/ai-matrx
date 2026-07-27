@@ -43,6 +43,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   marketingKeys,
@@ -118,6 +122,7 @@ export function SiteOverview() {
   const [stepEventsSeen, setStepEventsSeen] = useState(false);
   const stepEventsSeenRef = useRef(false);
   const [showProgress, setShowProgress] = useState(false);
+  const [identityEditing, setIdentityEditing] = useState(false);
   const autoInitStarted = useRef(false);
   const brandId = site.brand_id;
 
@@ -367,115 +372,144 @@ export function SiteOverview() {
     });
   };
 
+  const getOverviewApplicationScope = () => {
+    const selection =
+      typeof window === "undefined" ? null : window.getSelection();
+    return buildApplicationScopeFromMenuContext({
+      selectedText: selection ? selection.toString() : "",
+      selectionRange: null,
+      contextData: getOverviewScope(),
+    });
+  };
+
+  const siteEntity: ContextMenuEntityRef = {
+    type: "web_site",
+    id: site.id,
+    title: site.name,
+    resourceType: "web_site",
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-site"
       getScope={getOverviewScope}
     >
-      <main className="h-full overflow-y-auto bg-textured">
-        <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-3.5 px-3 pb-24 pt-3 sm:gap-4 sm:px-5 sm:pb-32 sm:pt-4">
-          <SiteHero
-            site={site}
-            sitePath={sitePath}
-            heroFileId={hero.data?.file_id ?? null}
-            heroLoading={hero.isLoading || initBusy}
-            onRecapture={() => void runInitialize()}
-            recaptureBusy={initBusy}
-            copy={<CopyButtons size="icon" {...siteCopy} />}
-            metrics={metrics}
-            statuses={statuses}
-          />
-
-          {!site.initialized_at ? (
-            <InitializeCard
-              phase={initPhase}
-              error={initError}
-              onInitialize={() => void runInitialize()}
-              steps={initSteps}
-              stepEventsSeen={stepEventsSeen}
-              showProgress={showProgress}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        surfaceName="matrx-user/marketing-site"
+        getApplicationScope={getOverviewApplicationScope}
+        contentSource={{ type: "raw" }}
+        entity={siteEntity}
+        suppressed={identityEditing}
+      >
+        <main className="h-full overflow-y-auto bg-textured">
+          <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-3.5 px-3 pb-24 pt-3 sm:gap-4 sm:px-5 sm:pb-32 sm:pt-4">
+            <SiteHero
+              site={site}
+              sitePath={sitePath}
+              heroFileId={hero.data?.file_id ?? null}
+              heroLoading={hero.isLoading || initBusy}
+              onRecapture={() => void runInitialize()}
+              recaptureBusy={initBusy}
+              copy={<CopyButtons size="icon" {...siteCopy} />}
+              metrics={metrics}
+              statuses={statuses}
+              editing={identityEditing}
+              onEditingChange={setIdentityEditing}
+              getSiteScope={getOverviewScope}
             />
-          ) : showProgress ? (
-            <section className="rounded-lg border border-border bg-card px-3 py-2.5">
-              <InitializeProgress
+
+            {!site.initialized_at ? (
+              <InitializeCard
+                phase={initPhase}
+                error={initError}
+                onInitialize={() => void runInitialize()}
                 steps={initSteps}
-                running={initBusy}
-                indeterminate={!stepEventsSeen}
+                stepEventsSeen={stepEventsSeen}
+                showProgress={showProgress}
               />
-            </section>
-          ) : null}
+            ) : showProgress ? (
+              <section className="rounded-lg border border-border bg-card px-3 py-2.5">
+                <InitializeProgress
+                  steps={initSteps}
+                  running={initBusy}
+                  indeterminate={!stepEventsSeen}
+                />
+              </section>
+            ) : null}
 
-          {init.stepErrors.length ? (
-            <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
-              <div className="flex items-center gap-2">
-                <TriangleAlert className="h-4 w-4 text-destructive" />
-                <h2 className="text-sm font-semibold text-foreground">
-                  Initialization issues — {init.stepErrors.length} step
-                  {init.stepErrors.length === 1 ? "" : "s"} failed
-                </h2>
-                <span className="ml-auto">
-                  <CopyButtons size="icon" {...initIssuesCopy} />
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  disabled={initBusy}
-                  onClick={() => void runInitialize()}
-                >
-                  Retry initialization
-                </Button>
-              </div>
-              <ul className="mt-2 space-y-2">
-                {init.stepErrors.map((stepError) => (
-                  <li key={stepError.step} className="text-xs leading-5">
-                    <span className="font-semibold capitalize text-foreground">
-                      {stepError.step}
-                    </span>
-                    {stepError.errorType ? (
-                      <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
-                        {stepError.errorType}
+            {init.stepErrors.length ? (
+              <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+                <div className="flex items-center gap-2">
+                  <TriangleAlert className="h-4 w-4 text-destructive" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Initialization issues — {init.stepErrors.length} step
+                    {init.stepErrors.length === 1 ? "" : "s"} failed
+                  </h2>
+                  <span className="ml-auto">
+                    <CopyButtons size="icon" {...initIssuesCopy} />
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    disabled={initBusy}
+                    onClick={() => void runInitialize()}
+                  >
+                    Retry initialization
+                  </Button>
+                </div>
+                <ul className="mt-2 space-y-2">
+                  {init.stepErrors.map((stepError) => (
+                    <li key={stepError.step} className="text-xs leading-5">
+                      <span className="font-semibold capitalize text-foreground">
+                        {stepError.step}
                       </span>
-                    ) : null}
-                    <p className="break-words text-muted-foreground">
-                      {stepError.message}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+                      {stepError.errorType ? (
+                        <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                          {stepError.errorType}
+                        </span>
+                      ) : null}
+                      <p className="break-words text-muted-foreground">
+                        {stepError.message}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-          <KpiGrid
-            metrics={metrics}
-            pendingDiscovered={pendingDiscovered.data ?? 0}
-            sitePath={sitePath}
-          />
-
-          <div className="grid gap-3.5 sm:gap-4 lg:grid-cols-2">
-            <AttentionCard
+            <KpiGrid
               metrics={metrics}
               pendingDiscovered={pendingDiscovered.data ?? 0}
-              statuses={statuses}
               sitePath={sitePath}
             />
-            <QuickWorkCard sitePath={sitePath} />
+
+            <div className="grid gap-3.5 sm:gap-4 lg:grid-cols-2">
+              <AttentionCard
+                metrics={metrics}
+                pendingDiscovered={pendingDiscovered.data ?? 0}
+                statuses={statuses}
+                sitePath={sitePath}
+              />
+              <QuickWorkCard sitePath={sitePath} />
+            </div>
+
+            <WorkspaceDirectory metrics={metrics} sitePath={sitePath} />
+
+            <ConnectionsStrip
+              statuses={statuses}
+              sitePath={sitePath}
+              initializedAt={site.initialized_at}
+              copy={<CopyButtons size="icon" {...connectionsCopy} />}
+              onReinitialize={
+                site.initialized_at ? () => void runInitialize() : undefined
+              }
+              reinitializeBusy={initBusy}
+            />
           </div>
-
-          <WorkspaceDirectory metrics={metrics} sitePath={sitePath} />
-
-          <ConnectionsStrip
-            statuses={statuses}
-            sitePath={sitePath}
-            initializedAt={site.initialized_at}
-            copy={<CopyButtons size="icon" {...connectionsCopy} />}
-            onReinitialize={
-              site.initialized_at ? () => void runInitialize() : undefined
-            }
-            reinitializeBusy={initBusy}
-          />
-        </div>
-      </main>
+        </main>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
@@ -490,6 +524,9 @@ function SiteHero({
   copy,
   metrics,
   statuses,
+  editing,
+  onEditingChange,
+  getSiteScope,
 }: {
   site: MarketingSite;
   sitePath: string;
@@ -501,8 +538,10 @@ function SiteHero({
   copy?: React.ReactNode;
   metrics: SiteOverviewMetrics;
   statuses: SiteConnectionStatus[];
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
+  getSiteScope: () => ReturnType<typeof createMarketingSiteScope>;
 }) {
-  const [editing, setEditing] = useState(false);
   const attentionCount = statuses.filter(
     (status) => status.state === "attention",
   ).length;
@@ -560,7 +599,11 @@ function SiteHero({
 
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-3.5 p-4 sm:p-5 lg:p-6">
           {editing ? (
-            <IdentityEditor site={site} onDone={() => setEditing(false)} />
+            <IdentityEditor
+              site={site}
+              onDone={() => onEditingChange(false)}
+              getSiteScope={getSiteScope}
+            />
           ) : (
             <>
               <div className="flex items-start gap-3">
@@ -572,7 +615,7 @@ function SiteHero({
                     </h1>
                     <button
                       type="button"
-                      onClick={() => setEditing(true)}
+                      onClick={() => onEditingChange(true)}
                       className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       aria-label="Edit site identity"
                     >
@@ -840,9 +883,7 @@ function AttentionCard({
         count: null,
         label: `${status.name}: ${status.detail}`,
         href:
-          status.key === "initialized"
-            ? sitePath
-            : `${sitePath}/integrations`,
+          status.key === "initialized" ? sitePath : `${sitePath}/integrations`,
         icon: <Plug className="h-3.5 w-3.5" />,
       })),
   ];
@@ -1125,15 +1166,60 @@ function ConnectionsStrip({
 function IdentityEditor({
   site,
   onDone,
+  getSiteScope,
 }: {
   site: MarketingSite;
   onDone: () => void;
+  getSiteScope: () => ReturnType<typeof createMarketingSiteScope>;
 }) {
   const mutation = useUpdateSiteIdentity();
   const [name, setName] = useState(site.name);
   const [description, setDescription] = useState(site.description ?? "");
   const [logoUrl, setLogoUrl] = useState(site.logo_url ?? "");
   const [faviconUrl, setFaviconUrl] = useState(site.favicon_url ?? "");
+  const nameRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const logoUrlRef = useRef<HTMLInputElement>(null);
+  const faviconUrlRef = useRef<HTMLInputElement>(null);
+
+  const siteEntity: ContextMenuEntityRef = {
+    type: "web_site",
+    id: site.id,
+    title: site.name,
+    resourceType: "web_site",
+  };
+
+  const getFieldApplicationScope = (
+    element: HTMLInputElement | HTMLTextAreaElement | null,
+    content: string,
+    field: "name" | "description" | "logo_url" | "favicon_url",
+  ) => {
+    const start = element?.selectionStart ?? 0;
+    const end = element?.selectionEnd ?? start;
+    return buildApplicationScopeFromMenuContext({
+      selectedText: content.slice(start, end),
+      selectionRange: element
+        ? {
+            type: "editable",
+            element,
+            start,
+            end,
+            range: null,
+            containerElement: null,
+          }
+        : null,
+      contextData: {
+        ...getSiteScope(),
+        content,
+        context: {
+          entity_type: "web_site",
+          entity_id: site.id,
+          field,
+          mode: "identity-edit",
+        },
+      },
+    });
+  };
 
   const save = async () => {
     try {
@@ -1162,47 +1248,135 @@ function IdentityEditor({
         <Label htmlFor="site-name" className="text-xs">
           Name
         </Label>
-        <Input
-          id="site-name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
+        <EditableContextMenu
+          sourceFeature="marketing"
+          surfaceName="matrx-user/marketing-site"
+          getApplicationScope={() =>
+            getFieldApplicationScope(nameRef.current, name, "name")
+          }
+          contentSource={{ type: "raw" }}
+          entity={siteEntity}
+          placementMode={{ "content-block": "hide" }}
+          onTextReplace={setName}
+          onTextInsertBefore={(text) =>
+            setName((current) => `${text}${current}`)
+          }
+          onTextInsertAfter={(text) =>
+            setName((current) => `${current}${text}`)
+          }
+          onSave={() => void save()}
+        >
+          <Input
+            ref={nameRef}
+            id="site-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </EditableContextMenu>
       </div>
       <div className="space-y-1">
         <Label htmlFor="site-description" className="text-xs">
           Description
         </Label>
-        <Textarea
-          id="site-description"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          minHeight={64}
-          maxHeight={140}
-          placeholder="What this company does, in a sentence or two"
-        />
+        <EditableContextMenu
+          sourceFeature="marketing"
+          surfaceName="matrx-user/marketing-site"
+          getApplicationScope={() =>
+            getFieldApplicationScope(
+              descriptionRef.current,
+              description,
+              "description",
+            )
+          }
+          contentSource={{ type: "raw" }}
+          entity={siteEntity}
+          getTextarea={() => descriptionRef.current}
+          onTextReplace={setDescription}
+          onTextInsertBefore={(text) =>
+            setDescription((current) => `${text}${current}`)
+          }
+          onTextInsertAfter={(text) =>
+            setDescription((current) => `${current}${text}`)
+          }
+          onSave={() => void save()}
+        >
+          <Textarea
+            ref={descriptionRef}
+            id="site-description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            minHeight={64}
+            maxHeight={140}
+            placeholder="What this company does, in a sentence or two"
+          />
+        </EditableContextMenu>
       </div>
       <div className="grid gap-2.5 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor="site-logo" className="text-xs">
             Logo URL
           </Label>
-          <Input
-            id="site-logo"
-            value={logoUrl}
-            onChange={(event) => setLogoUrl(event.target.value)}
-            placeholder="https://…/logo.png"
-          />
+          <EditableContextMenu
+            sourceFeature="marketing"
+            surfaceName="matrx-user/marketing-site"
+            getApplicationScope={() =>
+              getFieldApplicationScope(logoUrlRef.current, logoUrl, "logo_url")
+            }
+            contentSource={{ type: "raw" }}
+            entity={siteEntity}
+            placementMode={{ "content-block": "hide" }}
+            onTextReplace={setLogoUrl}
+            onTextInsertBefore={(text) =>
+              setLogoUrl((current) => `${text}${current}`)
+            }
+            onTextInsertAfter={(text) =>
+              setLogoUrl((current) => `${current}${text}`)
+            }
+            onSave={() => void save()}
+          >
+            <Input
+              ref={logoUrlRef}
+              id="site-logo"
+              value={logoUrl}
+              onChange={(event) => setLogoUrl(event.target.value)}
+              placeholder="https://…/logo.png"
+            />
+          </EditableContextMenu>
         </div>
         <div className="space-y-1">
           <Label htmlFor="site-favicon" className="text-xs">
             Favicon URL
           </Label>
-          <Input
-            id="site-favicon"
-            value={faviconUrl}
-            onChange={(event) => setFaviconUrl(event.target.value)}
-            placeholder="https://…/favicon.ico"
-          />
+          <EditableContextMenu
+            sourceFeature="marketing"
+            surfaceName="matrx-user/marketing-site"
+            getApplicationScope={() =>
+              getFieldApplicationScope(
+                faviconUrlRef.current,
+                faviconUrl,
+                "favicon_url",
+              )
+            }
+            contentSource={{ type: "raw" }}
+            entity={siteEntity}
+            placementMode={{ "content-block": "hide" }}
+            onTextReplace={setFaviconUrl}
+            onTextInsertBefore={(text) =>
+              setFaviconUrl((current) => `${text}${current}`)
+            }
+            onTextInsertAfter={(text) =>
+              setFaviconUrl((current) => `${current}${text}`)
+            }
+            onSave={() => void save()}
+          >
+            <Input
+              ref={faviconUrlRef}
+              id="site-favicon"
+              value={faviconUrl}
+              onChange={(event) => setFaviconUrl(event.target.value)}
+              placeholder="https://…/favicon.ico"
+            />
+          </EditableContextMenu>
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-1">

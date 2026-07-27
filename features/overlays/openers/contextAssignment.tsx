@@ -15,12 +15,12 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { EntityType } from "@/features/scopes/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 const OVERLAY_ID = "contextAssignment" as const;
 
 export interface ContextAssignmentSubjectInput {
-  entityType: EntityType;
+  entityType: EntityTypeToken;
   entityId: string;
   title: string;
 }

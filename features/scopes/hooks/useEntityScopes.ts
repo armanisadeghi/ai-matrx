@@ -18,13 +18,11 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { ensureEntityScopes } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { setEntityScopes as setEntityScopesThunk } from "@/features/scopes/redux/thunks/setEntityScopes";
-import type {
-  EntityScopesEntry,
-  EntityType,
-} from "@/features/scopes/types";
+import type { EntityScopesEntry } from "@/features/scopes/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 export interface UseEntityScopesArgs {
-  entityType: EntityType;
+  entityType: EntityTypeToken;
   entityId: string | null;
   /** Pass the org id so the project tree gets patched on `setScopes`. */
   organizationId?: string | null;

@@ -87,11 +87,8 @@ import { ClearContextButton } from "@/features/scopes/components/active-context/
 import { ContextSelectionSummary } from "./ContextSelectionSummary";
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 import { useOpenScopeEditWindow } from "@/features/overlays/openers/scopeEditWindow";
-import type {
-  OrgNode,
-  ScopeTypeNode,
-  EntityType,
-} from "@/features/scopes/types";
+import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 /** Sentinel org value: no org filter — show / span every organization.
  *  Default for assignment mode unless a `defaultOrganizationId` is passed. */
@@ -100,8 +97,8 @@ export const ALL_ORGS = "__all_orgs__";
 /* ── public contract ─────────────────────────────────────────────────────── */
 
 export interface ContextAssignmentSubject {
-  /** Canonical entity type ("file", "note", "agent", …). */
-  entityType: EntityType;
+  /** Canonical registered entity token ("file", "note", "web_site", …). */
+  entityType: EntityTypeToken;
   entityId: string;
   title: string;
   subtitle?: string;
