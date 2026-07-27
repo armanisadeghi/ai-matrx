@@ -5,10 +5,13 @@ repos: [matrx-frontend, aidream]
 vision: [features/content-ir/FEATURE.md, features/content-ir/docs/SHAPE_SYSTEM.md]
 ---
 
-# Kind authoring access — who may edit a shape
+# Kind authoring access + slug identity — who may edit a shape, and who owns its name
 
-Agent-authored kinds were born editable by exactly one account. The lockout is fixed
-and guarded; this doc covers the vision it violated, what is verified, and what remains.
+Two incidents, one root theme: **the kind registry trusted its writers and had no
+backstop.** Agent-authored kinds were born editable by exactly one account, and any user
+could mint a kind whose slug already belonged to a platform kind — which crashed the
+whole registry. Both are fixed and guarded at the DB. This doc covers the vision they
+violated, what is verified, and what remains.
 
 ## Vision — Arman's words
 
@@ -38,6 +41,21 @@ make the class impossible** — not "grant Arman access to this row."
    nine tool calls failed) with: *"confirm if your fix addresses this as well."* It
    surfaced an unrelated defect in the `tasks` tool, which was then explicitly promoted:
    *"Yes. Please fix that bug. it's critical."*
+5. **Then the duplicate-slug incident**, which sets the bar for the whole area:
+
+   > "an agent was asked to create a new kind, and it named it the same as an existing
+   > one, and no one complained. The agent did it without saying anything. The system
+   > saved it. And even the database didn't reject duplicates. But then, of course, it
+   > crashed the system and caused all kinds of problems."
+
+   > "when I did this, I was doing it as a user. and that's a problem because that means
+   > that a user can create a kind that has the same name as a system one, and that will
+   > crash the system... So that can't be."
+
+   Note what he counted as failures: the agent didn't warn, **the system saved it**, and
+   **the database didn't reject it**. Three layers, each of which should independently
+   have stopped it. "A user can break the system" is the unacceptable part — not the
+   agent's mistake, which will always recur.
 
 ### The why behind the decisions
 
@@ -51,6 +69,16 @@ make the class impossible** — not "grant Arman access to this row."
 - **No new admin override was added.** Super admins already win on system-org rows via
   `has_access_for_base`. Widening that branch to all orgs would have been a new security
   policy — Arman's call, not an agent's. Fixing the *data* removed the need.
+- **Slugs went GLOBAL rather than being namespaced per org.** The slug is *already* a
+  global token everywhere it is consumed: `__kind` on the wire, fence languages and XML
+  tags in `kind_surface` (whose token index is globally unique), and the slug-keyed
+  render registry. Per-org slugs were never coherent with that — the "tenancy" the old
+  index implied did not exist anywhere downstream. Zero live duplicates existed, so the
+  global index applied with no cleanup.
+- **The registry stopped throwing on bad data.** A duplicate is a data defect, but taking
+  down every kind for every user is a far worse outcome than rendering the first row and
+  screaming. This matches the per-kind resilience the same function already applied to
+  malformed kinds.
 
 ## Current state
 
@@ -69,6 +97,18 @@ make the class impossible** — not "grant Arman access to this row."
 - **UI corrected** — `features/content-ir/studio/components/ShapeOwnerEditor.tsx` no
   longer offers "Personal" (it would now hard-fail at the CHECK) and its fallback
   default is `internal`.
+- **Duplicate kind slugs are impossible** — `migrations/kind_definition_global_slug_unique.sql`
+  (applied + ledgered; the per-org `kind_definition_org_kind_key` constraint dropped as
+  subsumed). Verified by attempting the exact user-vs-platform collision — a second live
+  `flashcard_set` in another org — and catching `unique_violation`, with the platform row
+  intact afterwards.
+- **The registry survives a duplicate** — `features/content-ir/registry/schema-source-kind-tables.ts`.
+  The warm tier's `throw` (which sat outside the per-kind try/catch and killed the entire
+  load) is now keep-oldest + `captureError`; the cold tier's `.maybeSingle()` (PGRST116 on
+  two rows) is `.order("created_at").limit(2)` with the same scream.
+- **`kind_create` checks globally** — the collision filter no longer narrows to "my org or
+  my rows", and its error names whether the owner is you or another org. Shipped in the
+  aidream release cut immediately after `786131b46`.
 - **`tasks` tool FK crash** — `/Users/armanisadeghi/code/aidream/aidream/tools/agent_tasks_tool.py`.
   Write actions now await the idempotent `ensure_conversation_exists` first; ephemeral
   runs (`store=False`) get a plain sentence instead of a DB write; a surviving FK
@@ -156,6 +196,11 @@ role grant → `platform.reachability` containers → **`internal` + org access 
    the full list.
 5. **Decide whether kind writers should be able to set `public` at all** from the owner
    editor. Today a shape owner can publish to the shared library with no review step.
+6. **Audit the other slug-shaped global identifiers for the same per-org hole.**
+   `kind_surface.token` is already globally unique; `skill.definition`, `tool.definition`,
+   and content-block `block_id` were NOT checked and are consumed by name the same way.
+   The query pattern is `select <name>, count(*) ... group by 1 having count(*) > 1`
+   against each, plus reading its unique indexes for an `organization_id` prefix.
 
 ## Gotchas
 
@@ -177,6 +222,37 @@ role grant → `platform.reachability` containers → **`internal` + org access 
 - **`chat.agent_task` inherits the conversation's persistence.** If the conversation is
   ephemeral there is no parent row and there never will be — a tasklist write is
   impossible, not delayed. The tool now says so instead of retrying.
+- **A kind slug is a global name, not a per-tenant one.** Never re-scope a slug check to
+  an org — that is precisely the bug that let a user shadow a platform kind.
+- **Never let a registry-load path throw on one bad row.** Both tiers of
+  `schema-source-kind-tables.ts` degrade per-row and scream. A throw there is not
+  "strict", it is an outage: the warm load backs every render in the app.
+- **aidream's release script blocks on the SHARED migration ledger.** An unapplied
+  matrx-frontend migration fails an aidream release with an unrelated-looking error at
+  `scripts/release.sh:217`. Apply + ledger your FE migration first. It also rewrites the
+  derived `db/MIGRATIONS_STATUS.md`; a stale copy of that report can name a live object
+  as MISSING — re-run `python db/detect_applied.py --check` before believing it, then
+  `git checkout --` the file so the tree is clean for the version commit.
 - **aidream is on a fast-moving `main` with parallel agent sessions.** `origin/main` moved
   ~30 releases during this work. Always `git log origin/main` and compare `/health/version`
   to the SHA you expect before concluding your change is (or is not) live.
+
+## Decisions needed
+
+**Can two organizations own a shape with the same name?**
+
+A kind's slug (`flashcard_set`, `seo_meta_tags`) is now unique across the entire
+platform — if one org takes a name, no other org can use it. This was forced: the slug is
+the token that appears in agent output (`__kind`), in fence languages, and in the render
+registry, none of which carry an organization, so two rows with one slug made rendering
+ambiguous and crashed the registry. Global uniqueness is the only shape that matches how
+the name is actually consumed today.
+
+The cost is real: a second customer can never create their own "product_card" shape,
+they must call it something else, and the good short names go to whoever asks first.
+
+**Decide:** keep globally-unique slugs (nothing more to build), or commit to namespaced
+slugs — every consumer resolving `org-slug/kind-slug`, the wire format carrying the
+namespace, and a rule for which namespace an ambiguous bare token means. That is a
+substantial change across both repos and the stream format, and it should not be started
+without your explicit direction.

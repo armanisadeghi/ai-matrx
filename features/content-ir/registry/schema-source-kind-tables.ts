@@ -38,6 +38,35 @@ export class KindTablesError extends Error {
   }
 }
 
+/**
+ * A kind slug resolved to more than one live row. The slug is a GLOBAL
+ * identifier — `__kind` in a stream, a fence language, a `kind_surface` token —
+ * so two rows sharing one is never a tenancy nuance, it is a data defect that
+ * makes render routing ambiguous. Loud, never silent: the recovery keeps the
+ * first row so the rest of the registry survives, and this scream is how the
+ * offending row gets found and removed.
+ */
+function reportDuplicateKindSlug(kind: string, ignoredId: string): void {
+  const message = `Duplicate kind slug "${kind}" — ignoring definition ${ignoredId}.`;
+  void import("@/lib/diagnostics/errorCaptureStore")
+    .then(({ captureError }) =>
+      captureError({
+        source: "data-shape",
+        schema: "content_ir",
+        relation: "kind_definition",
+        message,
+        hint:
+          "Kind slugs are globally unique (kind_definition_global_slug_unique). " +
+          "Soft-delete or rename the duplicate.",
+        callSite: "reconstructKindRegistry",
+      }),
+    )
+    .catch(() => {
+      /* diagnostics must never break a registry load */
+    });
+  console.error(`[content_ir] ${message}`);
+}
+
 /** Minimal projections the pure reconstruction needs (decoupled from full Row). */
 export interface KindDefProjection {
   id: string;
@@ -121,7 +150,14 @@ export function reconstructKindRegistry(
   const entries: BlockSchemaEntry[] = [];
   for (const d of defs) {
     if (schemas[d.kind]) {
-      throw new KindTablesError(`duplicate kind slug "${d.kind}".`);
+      // A duplicate slug is a DATA defect (the DB now blocks it — see
+      // `migrations/kind_definition_global_slug_unique.sql`), never a reason to
+      // take down the ENTIRE registry. This line used to throw, so one
+      // colliding row — e.g. a user creating `flashcard_set` in their own org
+      // while the platform row exists — killed the warm load for that user and
+      // every kind stopped rendering. Keep the first row, scream, carry on.
+      reportDuplicateKindSlug(d.kind, d.id);
+      continue;
     }
     // Per-kind resilience (loud recovery): a single malformed kind — e.g. a
     // ref field whose edge is missing (a dangling child), or corrupt `data` —
@@ -220,17 +256,27 @@ export async function getKindSchemaAndMetaBySlugFromTables(
 ): Promise<KindSchemaAndMeta | null> {
   const supabase = await getSupabase();
 
-  const { data: def, error: defErr } = await supabase
+  // `.limit(2)` + manual pick, NOT `.maybeSingle()`: a duplicated slug made
+  // PostgREST return PGRST116 ("multiple rows"), which threw and broke this
+  // kind for every user who could see both rows. The DB now prevents the
+  // duplicate; this stays defensive-and-loud so a future one degrades to "the
+  // first row renders" instead of an exception.
+  const { data: defs, error: defErr } = await supabase
     .schema("content_ir")
     .from("kind_definition")
     .select("id, kind, label, data, metadata")
     .eq("kind", kind)
     .is("deleted_at", null)
-    .maybeSingle();
+    .order("created_at", { ascending: true })
+    .limit(2);
   if (defErr) {
     throw new KindTablesError(`Failed to fetch kind "${kind}": ${defErr.message}`);
   }
+  const def = defs?.[0];
   if (!def) return null;
+  if (defs && defs.length > 1) {
+    reportDuplicateKindSlug(kind, defs[1].id);
+  }
 
   const { data: edgeRows, error: edgeErr } = await supabase
     .schema("content_ir")
