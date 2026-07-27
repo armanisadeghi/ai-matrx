@@ -100,7 +100,10 @@ function PassRateBar({
       </div>
       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div
-          className={cn("h-full rounded-full transition-all duration-300", tone)}
+          className={cn(
+            "h-full rounded-full transition-all duration-300",
+            tone,
+          )}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -158,7 +161,11 @@ function IssueRow({
             description: `One rolled-up audit issue (${meta.label}) shared across ${issue.count} page(s).`,
             data: issue,
             summary: humanIssueRow(issue),
-            attributes: { section: issue.section, severity: issue.severity, count: issue.count },
+            attributes: {
+              section: issue.section,
+              severity: issue.severity,
+              count: issue.count,
+            },
           })}
         />
       </span>
@@ -206,7 +213,11 @@ function WorstPageRow({
             description: "One page ranked worst by audit error/warning count.",
             data: page,
             summary: humanWorstPageRow(page),
-            attributes: { page_id: page.pageId, errors: page.errorCount, warnings: page.warningCount },
+            attributes: {
+              page_id: page.pageId,
+              errors: page.errorCount,
+              warnings: page.warningCount,
+            },
           })}
         />
       </span>
@@ -239,21 +250,21 @@ function AuditBody({
     lines: [
       ["Pages", rollup.totalPages],
       ["Audited", rollup.auditedPages],
+      ["Non-HTML resources", rollup.nonHtmlResources],
       ["Indexable", rollup.verdicts.indexable],
       ["Needs review", rollup.verdicts.check],
       ["Blocked", rollup.verdicts.blocked],
-      ...rollup.topIssues.map(
-        (issue): [string, string] => [
-          `${SECTION_META[issue.section].label} ×${issue.count}`,
-          issue.message,
-        ],
-      ),
+      ...rollup.topIssues.map((issue): [string, string] => [
+        `${SECTION_META[issue.section].label} ×${issue.count}`,
+        issue.message,
+      ]),
     ],
   });
 
   const metricCopy = (label: string, value: number, detail?: string) => ({
     label: `${label} (audit)`,
-    human: () => `${label}: ${value.toLocaleString()} (${siteDomain})${detail ? ` — ${detail}` : ""}`,
+    human: () =>
+      `${label}: ${value.toLocaleString()} (${siteDomain})${detail ? ` — ${detail}` : ""}`,
     agent: () => ({
       kind: "web-audit-metric",
       location: pageLocation,
@@ -303,6 +314,7 @@ function AuditBody({
           ? {
               total_pages: rollup.totalPages,
               audited_pages: rollup.auditedPages,
+              non_html_resources: rollup.nonHtmlResources,
               verdicts: rollup.verdicts,
             }
           : { ...rollup, topIssues: undefined, worstPages: undefined },
@@ -386,7 +398,8 @@ function AuditBody({
               Site audit
             </h1>
             <span className="text-xs tabular-nums text-muted-foreground">
-              {rollup.auditedPages.toLocaleString()} / {rollup.totalPages.toLocaleString()} audited
+              {rollup.auditedPages.toLocaleString()} /{" "}
+              {rollup.totalPages.toLocaleString()} audited
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -413,35 +426,55 @@ function AuditBody({
             value={rollup.auditedPages}
             detail="Latest capture has metrics"
             tone={rollup.auditedPages > 0 ? "good" : "warning"}
-            copy={metricCopy("Audited", rollup.auditedPages, "Latest capture has metrics")}
+            copy={metricCopy(
+              "Audited",
+              rollup.auditedPages,
+              "Latest capture has metrics",
+            )}
           />
           <MetricCell
             label="Indexable"
             value={rollup.verdicts.indexable}
             tone="good"
             detail="Verdict: indexable"
-            copy={metricCopy("Indexable", rollup.verdicts.indexable, "Verdict: indexable")}
+            copy={metricCopy(
+              "Indexable",
+              rollup.verdicts.indexable,
+              "Verdict: indexable",
+            )}
           />
           <MetricCell
             label="Needs review"
             value={rollup.verdicts.check}
             tone={rollup.verdicts.check ? "warning" : "default"}
             detail="Verdict: check"
-            copy={metricCopy("Needs review", rollup.verdicts.check, "Verdict: check")}
+            copy={metricCopy(
+              "Needs review",
+              rollup.verdicts.check,
+              "Verdict: check",
+            )}
           />
           <MetricCell
             label="Blocked"
             value={rollup.verdicts.blocked}
             tone={rollup.verdicts.blocked ? "bad" : "default"}
             detail="Errors or noindex"
-            copy={metricCopy("Blocked", rollup.verdicts.blocked, "Errors or noindex")}
+            copy={metricCopy(
+              "Blocked",
+              rollup.verdicts.blocked,
+              "Errors or noindex",
+            )}
           />
           <MetricCell
             label="Not yet audited"
             value={rollup.uncomputedPages}
             tone={rollup.uncomputedPages ? "warning" : "default"}
             detail="Never crawled / pre-stamping"
-            copy={metricCopy("Not yet audited", rollup.uncomputedPages, "Never crawled / pre-stamping")}
+            copy={metricCopy(
+              "Not yet audited",
+              rollup.uncomputedPages,
+              "Never crawled / pre-stamping",
+            )}
           />
         </section>
 
@@ -528,6 +561,13 @@ function AuditBody({
             {rollup.uncomputedPages === 1 ? " has" : "s have"} no stored metrics
             yet — they gain full audit coverage on their next crawl or fetch
             (URL quality is already included for every page).
+          </p>
+        ) : null}
+        {rollup.nonHtmlResources > 0 ? (
+          <p className="text-[11px] text-muted-foreground">
+            {rollup.nonHtmlResources} known non-HTML resource
+            {rollup.nonHtmlResources === 1 ? " is" : "s are"} retained in crawl
+            evidence but excluded from HTML-only page findings.
           </p>
         ) : null}
       </div>

@@ -527,7 +527,7 @@ export async function listBrandOptions(
 
 /** Every `web.page` column — ONE list so selects can never drift per call site. */
 export const PAGE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, latest_snapshot_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, latest_snapshot_id";
 
 /** Every `web.snapshot` column — ONE list so selects can never drift per call site. */
 export const SNAPSHOT_COLUMNS =
@@ -2549,6 +2549,7 @@ export async function fetchSiteAuditRows(
     url: string;
     path: string | null;
     latest_snapshot_id: string | null;
+    content_type_last: string | null;
   }[] = [];
   for (let offset = 0; ; offset += AUDIT_PAGE_SIZE) {
     if (offset >= AUDIT_PAGE_CAP) {
@@ -2558,7 +2559,7 @@ export async function fetchSiteAuditRows(
     }
     const response = await db
       .from("page")
-      .select("id, url, path, latest_snapshot_id")
+      .select("id, url, path, latest_snapshot_id, content_type_last")
       .eq("site_id", siteId)
       .is("deleted_at", null)
       .order("id", { ascending: true })
@@ -2600,6 +2601,7 @@ export async function fetchSiteAuditRows(
       id: page.id,
       url: page.url,
       path: page.path,
+      contentTypeLast: page.content_type_last,
       seo_metrics: metrics?.seo_metrics ?? null,
       audit_metrics: metrics?.audit_metrics ?? null,
     };
@@ -2622,7 +2624,12 @@ export async function fetchSiteAuditTrendRows(
   signal?: AbortSignal,
 ): Promise<AuditTrendSourceRow[]> {
   const db = await authenticatedWebDb(supabase);
-  const pages: { id: string; url: string; path: string | null }[] = [];
+  const pages: {
+    id: string;
+    url: string;
+    path: string | null;
+    content_type_last: string | null;
+  }[] = [];
   for (let offset = 0; ; offset += AUDIT_PAGE_SIZE) {
     if (offset >= AUDIT_PAGE_CAP) {
       throw new Error(
@@ -2631,7 +2638,7 @@ export async function fetchSiteAuditTrendRows(
     }
     const response = await db
       .from("page")
-      .select("id, url, path")
+      .select("id, url, path, content_type_last")
       .eq("site_id", siteId)
       .is("deleted_at", null)
       .order("id", { ascending: true })
@@ -2666,6 +2673,7 @@ export async function fetchSiteAuditTrendRows(
         id: page.id,
         url: page.url,
         path: page.path,
+        contentTypeLast: page.content_type_last,
         seo_metrics: snapshot.seo_metrics,
         audit_metrics: snapshot.audit_metrics,
         capturedDay: snapshot.captured_at.slice(0, 10),

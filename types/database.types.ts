@@ -32488,6 +32488,10 @@ export type Database = {
         Args: { p_topic_id: string }
         Returns: Json
       }
+      research_youtube_quota_status: {
+        Args: { p_daily_cap?: number }
+        Returns: Json
+      }
       reset_daily_guest_counters: { Args: never; Returns: undefined }
       resolve_feedback_item: {
         Args: {
@@ -36787,6 +36791,7 @@ export type Database = {
           updated_at: string | null
           updated_by: string | null
           version: number
+          videos_per_keyword: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
@@ -36819,6 +36824,7 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           version?: number
+          videos_per_keyword?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
@@ -36851,6 +36857,7 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           version?: number
+          videos_per_keyword?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
@@ -36862,6 +36869,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      youtube_quota_day: {
+        Row: {
+          calls: number
+          day: string
+          units_used: number
+          updated_at: string
+        }
+        Insert: {
+          calls?: number
+          day: string
+          units_used?: number
+          updated_at?: string
+        }
+        Update: {
+          calls?: number
+          day?: string
+          units_used?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -36900,7 +36928,14 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      youtube_quota_spend: {
+        Args: { p_daily_cap?: number; p_units: number }
+        Returns: {
+          granted: boolean
+          units_remaining: number
+          units_used: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -47014,6 +47049,7 @@ export type Database = {
       }
       page: {
         Row: {
+          content_type_last: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -47039,6 +47075,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          content_type_last?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -47064,6 +47101,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          content_type_last?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -48072,6 +48110,8 @@ export type Database = {
       }
       v_page_list: {
         Row: {
+          backlink_count: number | null
+          backlink_referring_domains: number | null
           first_seen: string | null
           gsc_clicks_28d: number | null
           gsc_impressions_28d: number | null

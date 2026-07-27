@@ -139,6 +139,7 @@ status                      active | missing | gone
 first_seen
 last_seen
 http_status_last
+content_type_last            html | md | pdf | json | xml | txt | image | other
 target_keyword
 meta_title_desired
 meta_description_desired
@@ -147,6 +148,9 @@ latest_snapshot_id
 
 Unique: `(site_id, url_hash)`. `latest_snapshot_id` is maintained by the
 application and defines the current accepted observed content.
+`content_type_last` is response-driven: HTML documents remain fully eligible
+for page auditing regardless of URL shape, while known non-HTML resources stay
+in crawl evidence without receiving HTML-only findings.
 
 ### `web.page_evidence` — token `web_page_evidence`
 

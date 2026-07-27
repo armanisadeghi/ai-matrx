@@ -44,6 +44,7 @@ export function humanAuditSnapshot(rollup: SiteAuditRollup): string {
   return [
     `Site audit rollup:`,
     `- Pages: ${rollup.totalPages} (${rollup.auditedPages} audited, ${rollup.uncomputedPages} not yet audited)`,
+    `- Non-HTML resources excluded from page findings: ${rollup.nonHtmlResources}`,
     `- Indexable: ${rollup.verdicts.indexable} · Needs review: ${rollup.verdicts.check} · Blocked: ${rollup.verdicts.blocked}`,
     `- Pass rates: SERP ${rollup.passes.serp}/${rollup.auditedPages}, Social ${rollup.passes.social}/${rollup.auditedPages}, Headings ${rollup.passes.headings}/${rollup.auditedPages}, URL ${rollup.passes.url}/${rollup.totalPages}`,
     rollup.topIssues.length

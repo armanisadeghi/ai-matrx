@@ -28,7 +28,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "audit_rollup",
     label: "Site audit rollup",
     description:
-      "The full deterministic audit rollup (SiteAuditRollup): total/audited/uncomputed page counts, indexability verdict counts, per-section pass counts (serp/social/headings/url), top issues with sample pages, and worst pages. Pure aggregation of stored per-snapshot metrics. Empty during initial load.",
+      "The full deterministic audit rollup (SiteAuditRollup): total/audited/uncomputed page counts, the count of known non-HTML resources excluded from page findings, indexability verdict counts, per-section pass counts (serp/social/headings/url), top issues with sample pages, and worst pages. Pure aggregation of stored per-snapshot metrics. Empty during initial load.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 2500,
@@ -60,6 +60,7 @@ You are on the site audit dashboard of a managed website: a site-wide rollup of 
 Every metric here is DETERMINISTIC and STORED: the scraper (and its byte-identical client twin) stamps seo_metrics and audit_metrics on each snapshot at capture time, and this view only aggregates those stored values — it never recomputes them. You must do the same: trust the provided counts, verdicts, and pass rates exactly as given, and never re-derive a metric (no re-counting characters, re-judging indexability, or re-scoring a page yourself).
 The user comes here to decide what to fix first across the whole site. Your job is prioritization and remediation planning from the evidence — turning top issues and worst pages into an ordered work plan — not re-auditing.
 Uncomputed pages are pages with no stored metrics yet (never crawled or pre-stamping); treat them as unknown, never as passing or failing.
+Known non-HTML resources are retained as crawl evidence and reported in nonHtmlResources, but are not pages eligible for HTML-only findings. An unusual URL that returned HTML remains a normal audited page.
 </surface_intro>`,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
