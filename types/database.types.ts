@@ -44006,6 +44006,7 @@ export type Database = {
       credential_items: {
         Row: {
           access_mode: string
+          browser_fill_enabled: boolean
           created_at: string
           created_by: string | null
           definition_key: string
@@ -44015,6 +44016,9 @@ export type Database = {
           display_name: string
           id: string
           lifecycle: Json
+          login_urls: string[]
+          non_secret_fields: Json
+          notes: string | null
           organization_id: string | null
           provider_key: string | null
           source: string
@@ -44022,10 +44026,12 @@ export type Database = {
           tags: string[]
           updated_at: string
           updated_by: string | null
+          uri_match_mode: string
           user_id: string | null
         }
         Insert: {
           access_mode?: string
+          browser_fill_enabled?: boolean
           created_at?: string
           created_by?: string | null
           definition_key?: string
@@ -44035,6 +44041,9 @@ export type Database = {
           display_name: string
           id?: string
           lifecycle?: Json
+          login_urls?: string[]
+          non_secret_fields?: Json
+          notes?: string | null
           organization_id?: string | null
           provider_key?: string | null
           source?: string
@@ -44042,10 +44051,12 @@ export type Database = {
           tags?: string[]
           updated_at?: string
           updated_by?: string | null
+          uri_match_mode?: string
           user_id?: string | null
         }
         Update: {
           access_mode?: string
+          browser_fill_enabled?: boolean
           created_at?: string
           created_by?: string | null
           definition_key?: string
@@ -44055,6 +44066,9 @@ export type Database = {
           display_name?: string
           id?: string
           lifecycle?: Json
+          login_urls?: string[]
+          non_secret_fields?: Json
+          notes?: string | null
           organization_id?: string | null
           provider_key?: string | null
           source?: string
@@ -44062,6 +44076,7 @@ export type Database = {
           tags?: string[]
           updated_at?: string
           updated_by?: string | null
+          uri_match_mode?: string
           user_id?: string | null
         }
         Relationships: []
