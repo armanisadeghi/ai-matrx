@@ -12,10 +12,8 @@
  *   - Grouped sections: Core, Image/Video, TTS, Feature Flags
  */
 
-import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,96 +35,7 @@ import type {
   ControlDefinition,
 } from "@/lib/redux/slices/agent-settings/types";
 import { buildSettingsRows } from "@/lib/redux/slices/agent-settings/settings-catalogue";
-
-// ── NumberInput ───────────────────────────────────────────────────────────────
-// Mirrors the existing ModelSettings NumberInput exactly:
-// - Text-based, no browser spinner
-// - Commits only on blur; selects all text on focus for quick replacement
-
-interface NumberInputProps {
-  value: number;
-  onChange: (val: number) => void;
-  onSliderChange?: (val: number) => void;
-  min?: number;
-  max?: number;
-  step?: number;
-  isInteger?: boolean;
-  disabled?: boolean;
-  withSlider?: boolean;
-}
-
-function NumberInput({
-  value,
-  onChange,
-  onSliderChange,
-  min,
-  max,
-  step = 1,
-  isInteger = false,
-  disabled = false,
-  withSlider = false,
-}: NumberInputProps) {
-  const [draft, setDraft] = useState<string>(() => String(value));
-
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
-
-  const commit = (raw: string) => {
-    if (raw === "" || raw === "-") return;
-    const parsed = isInteger ? parseInt(raw, 10) : parseFloat(raw);
-    if (!isNaN(parsed)) onChange(parsed);
-    else setDraft(String(value));
-  };
-
-  if (withSlider) {
-    return (
-      <div className="flex items-center gap-2">
-        <Slider
-          min={min}
-          max={max}
-          step={step}
-          value={[value]}
-          onValueChange={(val) => {
-            onSliderChange?.(val[0]);
-            setDraft(String(val[0]));
-          }}
-          disabled={disabled}
-          className="flex-1"
-        />
-        <Input
-          type="text"
-          inputMode="decimal"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={(e) => commit(e.target.value)}
-          onFocus={(e) => e.target.select()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-          }}
-          disabled={disabled}
-          className="w-20 h-7 px-2 text-xs"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <Input
-      type="text"
-      inputMode="decimal"
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={(e) => commit(e.target.value)}
-      onFocus={(e) => e.target.select()}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-      }}
-      disabled={disabled}
-      className="h-7 px-2 text-xs w-full"
-    />
-  );
-}
+import { NumberInput } from "@/features/agents/components/settings-management/controls/NumberInput";
 
 // ── ControlRow ────────────────────────────────────────────────────────────────
 
@@ -351,24 +260,11 @@ export function LLMParamsGrid({ agentId }: LLMParamsGridProps) {
     selectNormalizedControls(state, agentId),
   );
 
-  // Track which fields are explicitly enabled (have a value set)
-  const [enabled, setEnabled] = useState<Set<string>>(() => {
-    const s = new Set<string>();
-    Object.entries(effectiveSettings ?? {}).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) s.add(k);
-    });
-    return s;
-  });
-
-  // Keep enabled set in sync when effective settings change from outside
-  useEffect(() => {
-    if (!effectiveSettings) return;
-    const s = new Set<string>();
-    Object.entries(effectiveSettings).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) s.add(k);
-    });
-    setEnabled(s);
-  }, [effectiveSettings]);
+  const enabled = new Set(
+    Object.entries(effectiveSettings ?? {})
+      .filter(([, value]) => value !== null && value !== undefined)
+      .map(([key]) => key),
+  );
 
   if (!normalizedControls) {
     return (
@@ -384,9 +280,7 @@ export function LLMParamsGrid({ agentId }: LLMParamsGridProps) {
   >;
 
   const handleToggle = (key: keyof AgentSettings, on: boolean) => {
-    const newEnabled = new Set(enabled);
     if (on) {
-      newEnabled.add(key as string);
       // Set to default when enabling
       const control = controls[key as string];
       if (control) {
@@ -408,7 +302,6 @@ export function LLMParamsGrid({ agentId }: LLMParamsGridProps) {
         );
       }
     } else {
-      newEnabled.delete(key as string);
       // Remove the key from settings
       const updated = { ...effectiveSettings };
       delete (updated as Record<string, unknown>)[key as string];
@@ -419,7 +312,6 @@ export function LLMParamsGrid({ agentId }: LLMParamsGridProps) {
         }),
       );
     }
-    setEnabled(newEnabled);
   };
 
   const handleChange = (key: keyof AgentSettings, value: unknown) => {

@@ -435,8 +435,13 @@ export function useModelControls(
     else if (typeof value.default === "boolean") {
       controlDef.type = "boolean";
     }
-    // Infer number types from min/max
-    else if (value.min !== undefined || value.max !== undefined) {
+    // Infer number types only for legacy controls that omitted an explicit
+    // type. Catalog type declarations are authoritative even when a control,
+    // such as max_output_tokens, deliberately has no default.
+    else if (
+      value.type === undefined &&
+      (value.min !== undefined || value.max !== undefined)
+    ) {
       // Check if it's an integer or float based on default
       if (value.default && Number.isInteger(value.default as number)) {
         controlDef.type = "integer";

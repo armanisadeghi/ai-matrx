@@ -7,7 +7,7 @@
  * last committed value.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 
@@ -34,11 +34,14 @@ export function NumberInput({
   disabled = false,
   withSlider = false,
 }: NumberInputProps) {
-  const [draft, setDraft] = useState<string>(() => String(value));
-
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
+  const [draftState, setDraftState] = useState(() => ({
+    sourceValue: value,
+    text: String(value),
+  }));
+  const draft =
+    draftState.sourceValue === value ? draftState.text : String(value);
+  const setDraft = (text: string) => setDraftState({ sourceValue: value, text });
+  const sliderStep = isInteger ? Math.max(1, Math.trunc(step)) : step;
 
   const commit = (raw: string) => {
     if (raw === "" || raw === "-") return;
@@ -53,11 +56,12 @@ export function NumberInput({
         <Slider
           min={min}
           max={max}
-          step={step}
+          step={sliderStep}
           value={[value]}
           onValueChange={(val) => {
-            onSliderChange?.(val[0]);
-            setDraft(String(val[0]));
+            const nextValue = isInteger ? Math.trunc(val[0]) : val[0];
+            onSliderChange?.(nextValue);
+            setDraft(String(nextValue));
           }}
           disabled={disabled}
         />

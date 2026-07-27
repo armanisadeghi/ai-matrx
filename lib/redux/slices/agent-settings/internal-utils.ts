@@ -171,8 +171,14 @@ export function parseModelControls(
     else if (typeof rawControl.default === "boolean") {
       controlDef.type = "boolean";
     }
-    // Infer integer vs number from min/max presence
-    else if (rawControl.min !== undefined || rawControl.max !== undefined) {
+    // Infer integer vs number only for legacy controls that omitted an explicit
+    // type. The live catalog declares max_output_tokens as integer with no
+    // default; overwriting that declaration from its absent default made the
+    // slider use a 0.01 step and persist decimal token counts.
+    else if (
+      rawControl.type === undefined &&
+      (rawControl.min !== undefined || rawControl.max !== undefined)
+    ) {
       controlDef.type =
         rawControl.default !== undefined && Number.isInteger(rawControl.default)
           ? "integer"
