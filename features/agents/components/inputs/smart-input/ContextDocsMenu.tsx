@@ -255,7 +255,7 @@ export function ContextDocsMenuBody({
         Context
       </div>
       <div className="px-2 pb-2">
-        <ActiveContextTree />
+        <ActiveContextTree conversationId={conversationId} />
       </div>
     </>
   );

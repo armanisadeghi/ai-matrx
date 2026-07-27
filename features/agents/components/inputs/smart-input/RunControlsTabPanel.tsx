@@ -341,7 +341,7 @@ export function RunControlsTabPanel({
         <div className={cn(scrollClass, "p-2")}>
           {/* THE canonical compact Surface-A picker — same component as the
               chat header's lens chip. */}
-          <ActiveContextTree maxHeight={420} />
+          <ActiveContextTree conversationId={conversationId} maxHeight={420} />
         </div>
       )}
       {activeTab === "document" && (
