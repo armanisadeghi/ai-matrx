@@ -70,10 +70,12 @@ function sidemenuStubAliases() {
 // from features/ components/ lib/ etc., never another group's app/(x) path.
 // ((dev) helper imports are the tolerated exception — (dev) is never parked.)
 //
-// Two ways to set the profile:
-//   1. Code override below (wins over env) — flip for a ship without
-//      touching Vercel env. Set null to defer to env / default.
-//   2. Env: MATRX_PROFILE=slim|admin|demos|user|core|full pnpm build
+// Profile precedence — ENV WINS. Each Vercel project pins its own
+// MATRX_PROFILE env var (main=slim-at-cutover, manage=admin, demos=demos);
+// a code-side force must never override the satellites or all three
+// projects would build the same slice. FORCE_MATRX_PROFILE below is the
+// DEFAULT used only when the env var is unset/invalid (local builds, and
+// the main project until its env is pinned).
 const PROFILES = {
     full: { includeDev: true, park: [] },
     core: { includeDev: false, park: [] },
@@ -84,11 +86,11 @@ const PROFILES = {
 };
 const PARKABLE_GROUPS = ["admin", "core", "transitional", "public", "popup"];
 const VALID_PROFILES = new Set(Object.keys(PROFILES));
-/** @type {null | keyof typeof PROFILES} — null = use env / default */
-// TEMP "core" until the deployment-split cutover: production full builds OOM,
-// so demos are dark on aimatrx.com today. Once manage.aimatrx.com and
-// demos.aimatrx.com are verified live, flip this to null and set
-// MATRX_PROFILE=slim on the ai-matrx Vercel project.
+/** @type {null | keyof typeof PROFILES} — DEFAULT when env is unset; null = "full" */
+// TEMP "core" default until the deployment-split cutover: production full
+// builds OOM, so demos are dark on aimatrx.com today. Once manage.aimatrx.com
+// and demos.aimatrx.com are verified live, pin MATRX_PROFILE=slim on the
+// ai-matrx Vercel project and flip this back to null.
 const FORCE_MATRX_PROFILE = "core";
 if (FORCE_MATRX_PROFILE && !VALID_PROFILES.has(FORCE_MATRX_PROFILE)) {
     throw new Error(
@@ -100,14 +102,13 @@ const rawProfile = (process.env.MATRX_PROFILE || "").trim().toLowerCase();
 if (rawProfile && !VALID_PROFILES.has(rawProfile)) {
     console.warn(
         `[matrx] Unknown MATRX_PROFILE="${process.env.MATRX_PROFILE}". ` +
-            `Valid values: ${[...VALID_PROFILES].join(" | ")}. Falling back to "full".`,
+            `Valid values: ${[...VALID_PROFILES].join(" | ")}. Falling back to ` +
+            `${FORCE_MATRX_PROFILE || "full"}.`,
     );
 }
-const MATRX_PROFILE = FORCE_MATRX_PROFILE
-    ? FORCE_MATRX_PROFILE
-    : VALID_PROFILES.has(rawProfile)
-      ? rawProfile
-      : "full";
+const MATRX_PROFILE = VALID_PROFILES.has(rawProfile)
+    ? rawProfile
+    : FORCE_MATRX_PROFILE || "full";
 const INCLUDE_DEV = PROFILES[MATRX_PROFILE].includeDev;
 const PARK_SET = new Set(PROFILES[MATRX_PROFILE].park);
 
