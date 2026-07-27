@@ -423,8 +423,13 @@ export async function ensurePermission(): Promise<MediaPermissionState> {
 
       // Prompt (or confirm a deny) via the singleton. Acquire unlocks labels;
       // release returns the hold so the mic light clears on the keepalive.
+      // NOTE: a FAILED acquire has already decremented its own refcount inside
+      // the manager — releasing again in `finally` would unbalance the count
+      // and steal a live recording's hold. Only release what was acquired.
+      let acquired = false;
       try {
         await acquireMicStream();
+        acquired = true;
         setPermissionState("granted");
         await listDevices();
         return "granted";
@@ -447,7 +452,7 @@ export async function ensurePermission(): Promise<MediaPermissionState> {
         );
         return m.permissionState;
       } finally {
-        releaseMicStream();
+        if (acquired) releaseMicStream();
       }
     } finally {
       m.ensuring = null;

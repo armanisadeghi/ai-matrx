@@ -322,11 +322,33 @@ export interface StartCaptureOptions {
   padAfterSec?: number;
 }
 
+let captureStarting = false;
+
 export async function startContinuousCapture(
   opts: StartCaptureOptions = {},
 ): Promise<void> {
-  if (store.capturePath) return; // already capturing
+  // `store.capturePath` is only set at the END of this function, several
+  // awaits away — without the `captureStarting` latch a second call in that
+  // window acquires a SECOND mic hold that only one stop() ever releases
+  // (mic light on until refresh).
+  if (store.capturePath || captureStarting) return; // already capturing/starting
+  captureStarting = true;
+  try {
+    await startContinuousCaptureInner(opts);
+  } catch (err) {
+    // A throw between the mic acquire and the end of setup (worklet load,
+    // script-processor creation) must not strand the mic hold — hardStop is
+    // idempotent and releases only what was actually taken.
+    hardStopCapture();
+    throw err;
+  } finally {
+    captureStarting = false;
+  }
+}
 
+async function startContinuousCaptureInner(
+  opts: StartCaptureOptions,
+): Promise<void> {
   claimCapture({
     id: CAPTURE_ID,
     label: "FastFire drill",

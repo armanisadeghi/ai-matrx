@@ -130,9 +130,14 @@ export function useSimpleRecorder({
     releaseCapture(captureId);
   }, [captureId]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount. `disposedRef` also guards the start path: an unmount
+  // while `acquireMicStream()` is still awaiting would otherwise resolve into
+  // a hold nothing ever releases (mic light on until refresh).
+  const disposedRef = useRef(false);
   useEffect(() => {
+    disposedRef.current = false;
     return () => {
+      disposedRef.current = true;
       cleanup();
     };
   }, [cleanup]);
@@ -163,6 +168,12 @@ export function useSimpleRecorder({
         autoGainControl: true,
         sampleRate: 16000, // Optimal for Whisper (will be downsampled to 16KHz anyway)
       });
+      if (disposedRef.current) {
+        // Unmounted while gUM was pending — release the ownerless hold now.
+        releaseMicStream();
+        releaseCapture(captureId);
+        return;
+      }
       micHeldRef.current = true;
 
       streamRef.current = stream;

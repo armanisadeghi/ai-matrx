@@ -34,6 +34,9 @@ export function useAudioRecorder() {
   // Keys for which we currently hold a singleton ref — so release is balanced
   // exactly once per acquire across stop / unmount.
   const heldKeysRef = useRef<Set<string>>(new Set());
+  // Guards the acquire await: an unmount mid-getUserMedia would otherwise
+  // resolve into a mic hold the unmount cleanup already missed.
+  const disposedRef = useRef(false);
   // Stable id under which this hook holds the app-wide capture lock. The hook
   // multiplexes several keys onto ONE shared mic, so it presents to the lock as
   // a SINGLE holder: claimed while any key is active, released when all stop.
@@ -89,7 +92,9 @@ export function useAudioRecorder() {
   // Release EVERY outstanding hold on unmount — the whole-session
   // mic-indicator-leak guard the old hook was missing entirely.
   useEffect(() => {
+    disposedRef.current = false;
     return () => {
+      disposedRef.current = true;
       if (animationFrameRef.current !== undefined) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -128,6 +133,11 @@ export function useAudioRecorder() {
         }
         // Shared mic stream (chosen device + warm grant). Never stopped here.
         const stream = await acquireMicStream({ channelCount: 1 });
+        if (disposedRef.current) {
+          // Unmounted while gUM was pending — release the ownerless hold.
+          releaseMicStream();
+          return;
+        }
         heldKeysRef.current.add(key);
 
         // Shared AudioContext for the level meter — never closed, only resumed.

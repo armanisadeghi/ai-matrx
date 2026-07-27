@@ -123,6 +123,16 @@ export function useChunkedRecordAndTranscribe({
   // Whether we hold a ref on the shared mic stream — keeps acquire/release
   // balanced exactly once across the cleanup / stop / pagehide paths.
   const micHeldRef = useRef(false);
+  // Mic-leak guards (2026-07-26 audit):
+  // - acquireGenRef: bumped by cleanup()/stopRecording() so a start/resume
+  //   whose `await acquireMicStream()` straddles a teardown releases the
+  //   just-acquired hold instead of leaking it (mic light until refresh).
+  // - startingRef: re-entrancy latch — `isRecording` React state flips only
+  //   AFTER the gUM await, so a second start() inside that window used to
+  //   acquire a second hold that the single boolean micHeldRef could never
+  //   release. A concurrent start is always a caller bug: no-op loudly.
+  const acquireGenRef = useRef(0);
+  const startingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const accumulatedRef = useRef("");
   const pendingRef = useRef(0);
@@ -199,6 +209,9 @@ export function useChunkedRecordAndTranscribe({
   }, []);
 
   const cleanup = useCallback(() => {
+    // Invalidate any start/resume still awaiting getUserMedia (unmount or
+    // error teardown mid-acquire) — its post-await check releases the hold.
+    acquireGenRef.current += 1;
     if (rotationTimerRef.current) {
       clearTimeout(rotationTimerRef.current);
       rotationTimerRef.current = null;
@@ -702,6 +715,15 @@ export function useChunkedRecordAndTranscribe({
   }, [scheduleNextRotation]);
 
   const startRecording = useCallback(async () => {
+    if (startingRef.current || micHeldRef.current) {
+      console.warn(
+        "[useChunkedRecordAndTranscribe] startRecording ignored — a start is " +
+          "already in flight or the mic is already held (re-entrant call).",
+      );
+      return;
+    }
+    startingRef.current = true;
+    const gen = acquireGenRef.current;
     try {
       isStoppingRef.current = false;
       accumulatedRef.current = "";
@@ -717,6 +739,13 @@ export function useChunkedRecordAndTranscribe({
       // Shared mic manager: reuses a warm grant so mobile doesn't re-prompt
       // on every recording. Released (not hard-stopped) on teardown.
       const stream = await acquireMicStream(CAPTURE_CONSTRAINTS);
+      if (gen !== acquireGenRef.current) {
+        // Torn down (cleanup/stop/unmount) while gUM was pending — this hold
+        // has no owner anymore. Release it NOW or the mic light stays on
+        // until refresh.
+        releaseMicStream();
+        return;
+      }
       micHeldRef.current = true;
       streamRef.current = stream;
 
@@ -783,6 +812,8 @@ export function useChunkedRecordAndTranscribe({
       const sol = getErrorSolution(err);
       onErrorRef.current?.(sol.message, sol.code);
       cleanup();
+    } finally {
+      startingRef.current = false;
     }
   }, [
     cleanup,
@@ -794,6 +825,9 @@ export function useChunkedRecordAndTranscribe({
 
   const stopRecording = useCallback(() => {
     isStoppingRef.current = true;
+    // Invalidate any start/resume still awaiting getUserMedia — its post-await
+    // check releases the fresh hold instead of leaking it.
+    acquireGenRef.current += 1;
 
     if (rotationTimerRef.current) {
       clearTimeout(rotationTimerRef.current);
@@ -904,8 +938,22 @@ export function useChunkedRecordAndTranscribe({
     // returns the same warm stream; after it, a fresh `getUserMedia` — both
     // re-prompt-free on a granted origin. A new stream object means we must
     // rebuild the analyser source (the old one was disconnected on pause).
+    if (startingRef.current || micHeldRef.current) {
+      console.warn(
+        "[useChunkedRecordAndTranscribe] resumeRecording ignored — an acquire " +
+          "is already in flight or the mic is already held.",
+      );
+      return;
+    }
+    startingRef.current = true;
+    const gen = acquireGenRef.current;
     try {
       const stream = await acquireMicStream(CAPTURE_CONSTRAINTS);
+      if (gen !== acquireGenRef.current) {
+        // Torn down while gUM was pending — release the ownerless hold.
+        releaseMicStream();
+        return;
+      }
       micHeldRef.current = true;
       streamRef.current = stream;
 
@@ -932,6 +980,8 @@ export function useChunkedRecordAndTranscribe({
       const sol = getErrorSolution(err);
       onErrorRef.current?.(sol.message, sol.code);
       cleanup();
+    } finally {
+      startingRef.current = false;
     }
   }, [createRecorder, startAudioAnalysis, startDurationTimer, cleanup]);
 

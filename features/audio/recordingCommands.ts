@@ -40,31 +40,54 @@ let pendingStart: PendingStart | null = null;
 let warmHold = false;
 
 function releaseWarmHold(): void {
+  if (warmSafetyTimer) {
+    clearTimeout(warmSafetyTimer);
+    warmSafetyTimer = null;
+  }
   if (!warmHold) return;
   warmHold = false;
   releaseMicStream();
 }
 
+/** Never hold the warm mic forever if the engine fails to mount (chunk load
+ *  failure, host unmounted) — the mic light would stay on with no recording. */
+const WARM_HOLD_SAFETY_MS = 20_000;
+let warmSafetyTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * Acquire the shared mic stream in the current (user-gesture) tick so the
  * permission prompt / OS grant races the engine chunk download. The engine's
- * own `acquireMicStream` coalesces onto this warm stream. Released once the
- * start is flushed to the engine (the engine holds its own reference) or the
- * pending start is abandoned. Failures are ignored here — the engine surfaces
- * permission errors through its normal `onError` path.
+ * own `acquireMicStream` coalesces onto this warm stream.
+ *
+ * Hold accounting: `acquireMicStream()` increments the refcount SYNCHRONOUSLY,
+ * so `releaseWarmHold()` is always the one matched release — including while
+ * the acquisition is still in flight (the manager parks the fresh stream in
+ * keepalive when it resolves with zero holders). Do NOT release again in the
+ * promise callbacks; that unbalances the refcount and steals the engine's own
+ * hold, killing a live recording seconds in.
  */
 function warmMicForPendingStart(): void {
   if (warmHold) return;
   warmHold = true;
-  acquireMicStream()
-    .then(() => {
-      // If the pending start was abandoned while we were acquiring, drop the
-      // hold immediately (keepalive clears the mic light shortly after).
-      if (!warmHold) releaseMicStream();
-    })
-    .catch(() => {
-      warmHold = false;
-    });
+  acquireMicStream().catch(() => {
+    // Acquisition failed — the manager already decremented internally; this
+    // warm hold no longer exists. The engine surfaces the permission error
+    // through its normal onError path when the queued start flushes.
+    warmHold = false;
+  });
+  if (warmSafetyTimer) clearTimeout(warmSafetyTimer);
+  warmSafetyTimer = setTimeout(() => {
+    warmSafetyTimer = null;
+    if (!warmHold || impl) return;
+    console.error(
+      "[recordingCommands] queued start abandoned — the recording engine " +
+        "never registered within 20s of activation (Impl chunk failed to " +
+        "load?). Releasing the warm mic hold so the mic light turns off.",
+    );
+    pendingStart?.resolve();
+    pendingStart = null;
+    releaseWarmHold();
+  }, WARM_HOLD_SAFETY_MS);
 }
 
 /** Called by the engine on mount. Flushes any queued start. */

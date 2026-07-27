@@ -357,6 +357,7 @@ function MicLevelMeter({ disabled }: { disabled: boolean }) {
   const [testing, setTesting] = useState(false);
   const [level, setLevel] = useState(0);
   const heldRef = useRef(false);
+  const disposedRef = useRef(false);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -399,6 +400,11 @@ function MicLevelMeter({ disabled }: { disabled: boolean }) {
         return;
       }
       const stream = await acquireMicStream();
+      if (disposedRef.current) {
+        // Unmounted while gUM was pending — release the ownerless hold now.
+        releaseMicStream();
+        return;
+      }
       heldRef.current = true;
       const source = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
@@ -437,7 +443,14 @@ function MicLevelMeter({ disabled }: { disabled: boolean }) {
   }, []);
 
   // Always release on unmount — the whole-session mic-indicator-leak guard.
-  useEffect(() => stop, [stop]);
+  // disposedRef additionally covers an unmount racing the gUM await in start().
+  useEffect(() => {
+    disposedRef.current = false;
+    return () => {
+      disposedRef.current = true;
+      stop();
+    };
+  }, [stop]);
 
   return (
     <div className="flex items-center gap-3">
