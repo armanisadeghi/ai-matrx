@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Check } from "lucide-react";
+import { Braces, Copy, Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,12 @@ export interface CopyButtonsProps {
    * a prebuilt string, or a builder fn returning either.
    */
   agent: Resolvable<AgentPayloadInput | string>;
+  /**
+   * When set, renders a third "Copy JSON" button that copies this value as
+   * pretty-printed JSON. Pass the raw record/rows — any surface showing
+   * structured data should offer it.
+   */
+  json?: Resolvable<unknown>;
   /** Used in toasts and tooltips, e.g. "Sandbox sbx-123" or "All sandboxes". */
   label: string;
   /**
@@ -79,15 +85,18 @@ async function writeClipboard(text: string): Promise<void> {
 export function CopyButtons({
   human,
   agent,
+  json,
   label,
   size = "icon",
   disabled = false,
   stopPropagation = true,
   className,
 }: CopyButtonsProps) {
-  const [copied, setCopied] = React.useState<"human" | "agent" | null>(null);
+  const [copied, setCopied] = React.useState<"human" | "agent" | "json" | null>(
+    null,
+  );
 
-  const flash = (which: "human" | "agent") => {
+  const flash = (which: "human" | "agent" | "json") => {
     setCopied(which);
     setTimeout(() => setCopied(null), 1500);
   };
@@ -105,6 +114,12 @@ export function CopyButtons({
     await writeClipboard(text);
     flash("agent");
     toast.success(`${label} copied for AI agent`);
+  };
+
+  const handleJson = async () => {
+    await writeClipboard(JSON.stringify(resolve(json), null, 2));
+    flash("json");
+    toast.success(`${label} copied as JSON`);
   };
 
   const isText = size === "sm";
@@ -138,6 +153,24 @@ export function CopyButtons({
         )}
         {isText && <span className="ml-1">Copy</span>}
       </Button>
+      {json !== undefined ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size={isText ? "sm" : "icon"}
+          className={buttonCls}
+          disabled={disabled}
+          onClick={handleJson}
+          title={`Copy ${label} as JSON`}
+        >
+          {copied === "json" ? (
+            <Check className={iconCls} />
+          ) : (
+            <Braces className={iconCls} />
+          )}
+          {isText && <span className="ml-1">JSON</span>}
+        </Button>
+      ) : null}
       <Button
         type="button"
         variant="ghost"

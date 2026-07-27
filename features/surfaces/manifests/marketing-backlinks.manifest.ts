@@ -55,6 +55,49 @@ const surfaceSpecific: SurfaceValue[] = [
     autoContext: false,
     sortOrder: 420,
   },
+  {
+    name: "top_target_pages",
+    label: "Top linked pages",
+    description:
+      "The top pages on this site that backlinks point at, each with its backlink count. Populated once the workspace has loaded; empty when no dimension snapshot has been collected yet.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 1200,
+    autoContext: false,
+    sortOrder: 430,
+  },
+  {
+    name: "top_competitors",
+    label: "Competitor domains",
+    description:
+      "Competitor domains the provider reports as sharing this site's link neighborhood, each with overlap counts. Often empty — collection depends on the refresh profile.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 800,
+    autoContext: false,
+    sortOrder: 440,
+  },
+  {
+    name: "backlink_trend",
+    label: "New vs. lost trend",
+    description:
+      "The stored new/lost/net backlink timeseries (one entry per provider-reported period, with running totals when available). Populated once a weekly or bootstrap refresh has stored timeseries rows.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 2500,
+    autoContext: false,
+    sortOrder: 450,
+  },
+  {
+    name: "backlinks_table_state",
+    label: "Backlinks table state",
+    description:
+      "What the user currently sees in the backlink rows table: total recorded rows, loaded row count, page, and active search. The rows themselves are not included — this is the viewing state.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 460,
+  },
 ];
 
 export const marketingBacklinksManifest: SurfaceManifest = {
@@ -108,6 +151,10 @@ export function createMarketingBacklinksScope(values: {
   backlink_summary?: Record<string, unknown>;
   top_referring_domains?: Array<Record<string, unknown>>;
   top_anchors?: Array<Record<string, unknown>>;
+  top_target_pages?: Array<Record<string, unknown>>;
+  top_competitors?: Array<Record<string, unknown>>;
+  backlink_trend?: Array<Record<string, unknown>>;
+  backlinks_table_state?: Record<string, unknown>;
   // inherited optionals
   brand_name?: string;
   brand_context?: string;

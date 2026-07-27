@@ -19,12 +19,15 @@ import {
 import {
   CREDENTIAL_ITEM_COLUMNS,
   VAULT_FIELD_COLUMNS,
+  normalizeNonSecretFields,
   normalizeWireField,
   normalizeWireItem,
   toPrincipalIn,
   type CredentialDefinition,
   type CredentialItemMaskedRow,
   type VaultAccessMode,
+  type VaultAssignRequest,
+  type VaultAssignResponse,
   type VaultAuditEntry,
   type VaultCapabilities,
   type VaultField,
@@ -32,6 +35,7 @@ import {
   type VaultFieldMaskedRow,
   type VaultFieldMetadataRequest,
   type VaultFieldWire,
+  type VaultGrant,
   type VaultGrantee,
   type VaultImportEnvRequest,
   type VaultItem,
@@ -40,6 +44,8 @@ import {
   type VaultItemWire,
   type VaultPrincipal,
   type VaultRevealResponse,
+  type VaultScope,
+  type VaultTransferResponse,
 } from "./types";
 
 // ── aidream /api/vault client ─────────────────────────────────────────────
@@ -204,10 +210,18 @@ export function rotateVaultItem(
   }).then(normalizeWireItem);
 }
 
-export function shareVaultItem(
+/**
+ * Organization access-mode flip ONLY (`all_members` ↔ `restricted`).
+ *
+ * This is the legacy REPLACE-the-whole-set path: it deletes and recreates
+ * every grant, and drops all grantees when `all_members` is sent. Personal
+ * sharing MUST use the per-recipient operations below — that is what stops a
+ * share edit from silently revoking someone it never loaded.
+ */
+export function setVaultAccessMode(
   itemId: string,
   accessMode: VaultAccessMode,
-  grantees: VaultGrantee[],
+  grantees: VaultGrantee[] = [],
 ): Promise<VaultItem> {
   return vaultFetch<VaultItemWire>(`/items/${encodeURIComponent(itemId)}/share`, {
     method: "PUT",
@@ -215,6 +229,48 @@ export function shareVaultItem(
   }).then(normalizeWireItem);
 }
 
+// ── Grants: one recipient at a time ───────────────────────────────────────
+
+/** Current recipients. The share panel MUST load these before rendering. */
+export function fetchVaultGrants(itemId: string): Promise<VaultGrant[]> {
+  return vaultFetch<{ grants: VaultGrant[]; count: number }>(
+    `/items/${encodeURIComponent(itemId)}/grants`,
+  ).then((r) => r.grants);
+}
+
+/** Share with ONE person by exact email. Others are untouched. */
+export function addVaultGrant(
+  itemId: string,
+  body: { recipient_email: string; can_use?: boolean; can_manage?: boolean },
+): Promise<VaultGrant> {
+  return vaultFetch<VaultGrant>(`/items/${encodeURIComponent(itemId)}/grants`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateVaultGrant(
+  itemId: string,
+  grantId: string,
+  body: { can_use?: boolean; can_manage?: boolean },
+): Promise<VaultGrant> {
+  return vaultFetch<VaultGrant>(
+    `/items/${encodeURIComponent(itemId)}/grants/${encodeURIComponent(grantId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  );
+}
+
+/** Revoke ONE recipient — immediate for list, reveal, and execution. */
+export function removeVaultGrant(itemId: string, grantId: string): Promise<void> {
+  return vaultFetch<void>(
+    `/items/${encodeURIComponent(itemId)}/grants/${encodeURIComponent(grantId)}`,
+    { method: "DELETE" },
+  );
+}
+
+// ── Ownership transfer + assignment ───────────────────────────────────────
+
+/** Move between the actor's OWN scopes (personal ↔ organization). */
 export function transferVaultItem(
   itemId: string,
   to: VaultPrincipal,
@@ -223,6 +279,35 @@ export function transferVaultItem(
     method: "POST",
     body: JSON.stringify({ to_principal: toPrincipalIn(to) }),
   }).then(normalizeWireItem);
+}
+
+/**
+ * Give ownership to ANOTHER user by exact email. The sender loses ALL future
+ * access and every existing grant is cleared, so the response is a
+ * confirmation rather than a usable item.
+ */
+export function giveVaultItemOwnership(
+  itemId: string,
+  recipientEmail: string,
+): Promise<VaultTransferResponse> {
+  return vaultFetch<VaultTransferResponse>(
+    `/items/${encodeURIComponent(itemId)}/transfer`,
+    { method: "POST", body: JSON.stringify({ recipient_email: recipientEmail }) },
+  );
+}
+
+/**
+ * Create an item ALREADY OWNED by someone else. With `generate_field_key` the
+ * server generates that value and never returns it — the response carries
+ * identity and confirmation only.
+ */
+export function assignVaultItem(
+  body: VaultAssignRequest,
+): Promise<VaultAssignResponse> {
+  return vaultFetch<VaultAssignResponse>("/items/assign", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export function forkVaultItem(
@@ -290,16 +375,31 @@ function deriveCapabilities(
       can_manage: false,
     };
   }
-  // Personal item visible without ownership: super-admin read.
-  return { can_use: true, can_edit: false, can_reveal: false, can_manage: false };
+  // Someone else's PERSONAL item that is visible to me: either it was shared
+  // with me (grant) or I am a super-admin. `can_manage` stays false either
+  // way — only the owner may share, transfer, or delete.
+  const canManageGrant = opts.manageGrantItemIds.has(item.id);
+  return {
+    can_use: true,
+    can_edit: canManageGrant,
+    can_reveal: canManageGrant,
+    can_manage: false,
+  };
 }
 
 /**
- * Masked item list for a declared view — the canonical FE list path
- * (direct Supabase; scope declared explicitly per THE VIEW LAW).
+ * Masked item list for a declared SCOPE — the canonical FE list path
+ * (direct Supabase).
+ *
+ * THE VIEW LAW: every scope declares its own filter; none of them is a bare
+ * RLS-filtered read. `mine` filters on ownership, `organization` on the org,
+ * and `shared` starts from the user's OWN grant rows (readable via the
+ * `user_secret_grants_self_read` policy) and then fetches exactly those item
+ * ids. So when access widens, a personal vault cannot suddenly fill with
+ * other people's rows.
  */
 export async function fetchVaultItems(
-  principal: VaultPrincipal,
+  scope: VaultScope,
   opts?: { orgAdmin?: boolean },
 ): Promise<VaultItem[]> {
   const supabase = createClient();
@@ -309,6 +409,25 @@ export async function fetchVaultItems(
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not signed in");
 
+  let sharedItemIds: string[] | null = null;
+  if (scope.kind === "shared") {
+    const { data: myGrants, error: myGrantsError } = await supabase
+      .schema("users")
+      .from("user_secret_grants")
+      .select("credential_item_id, can_use")
+      .eq("user_id", user.id)
+      .not("credential_item_id", "is", null);
+    if (myGrantsError) throw new Error(myGrantsError.message);
+    sharedItemIds = Array.from(
+      new Set(
+        (myGrants ?? [])
+          .filter((g) => g.can_use && g.credential_item_id)
+          .map((g) => g.credential_item_id as string),
+      ),
+    );
+    if (sharedItemIds.length === 0) return [];
+  }
+
   let itemsQuery = supabase
     .schema("users")
     .from("credential_items")
@@ -316,10 +435,14 @@ export async function fetchVaultItems(
     .is("deleted_at", null)
     .order("display_name", { ascending: true })
     .order("id", { ascending: true });
-  itemsQuery =
-    principal.type === "organization"
-      ? itemsQuery.eq("organization_id", principal.organizationId)
-      : itemsQuery.eq("user_id", user.id);
+  if (scope.kind === "organization") {
+    itemsQuery = itemsQuery.eq("organization_id", scope.organizationId);
+  } else if (scope.kind === "shared") {
+    // Items I was granted — deliberately EXCLUDING my own, which live in Mine.
+    itemsQuery = itemsQuery.in("id", sharedItemIds ?? []).neq("user_id", user.id);
+  } else {
+    itemsQuery = itemsQuery.eq("user_id", user.id);
+  }
 
   const { data: itemRows, error: itemsError } = await itemsQuery;
   if (itemsError) throw new Error(itemsError.message);
@@ -337,9 +460,11 @@ export async function fetchVaultItems(
     .order("field_key", { ascending: true });
   if (fieldsError) throw new Error(fieldsError.message);
 
-  // Own manage-grants refine org capabilities (self-read RLS policy).
+  // My own grants refine capabilities for rows I don't own (self-read policy).
   let manageGrantItemIds = new Set<string>();
-  if (principal.type === "organization" && !opts?.orgAdmin) {
+  const needsGrantRefine =
+    scope.kind === "shared" || (scope.kind === "organization" && !opts?.orgAdmin);
+  if (needsGrantRefine) {
     const { data: grantRows, error: grantsError } = await supabase
       .schema("users")
       .from("user_secret_grants")
@@ -376,6 +501,11 @@ export async function fetchVaultItems(
     source: item.source,
     access_mode: item.access_mode,
     lifecycle: (item.lifecycle ?? {}) as Record<string, unknown>,
+    login_urls: item.login_urls ?? [],
+    uri_match_mode: item.uri_match_mode ?? "host",
+    notes: item.notes,
+    non_secret_fields: normalizeNonSecretFields(item.non_secret_fields),
+    browser_fill_enabled: item.browser_fill_enabled ?? false,
     created_at: item.created_at,
     updated_at: item.updated_at,
     fields: fieldsByItem.get(item.id) ?? [],

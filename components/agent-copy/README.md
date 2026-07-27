@@ -6,14 +6,26 @@ legacy `execCommand` fallback), success toasts, and the AI payload envelope so
 no page reimplements them.
 
 **Pieces:**
-- `CopyButtons` — the two-button pair. `size`: `"xs"` (h-5, dense list items /
+- `CopyButtons` — the button pair/triple. `size`: `"xs"` (h-5, dense list items /
   metric cards / per-field), `"icon"` (h-7, rows/cards), `"sm"` (icon + text,
   headers). Stops click propagation by default (`stopPropagation={false}` to opt out).
+  **Pass `json`** (raw record/rows) wherever the data is structured — it adds a
+  third "Copy JSON" button. A scalar (one metric) doesn't need it.
 - `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
   JSON dump).
+- `ExportMenu` + `export.ts` (`jsonExportItem` / `csvExportItem` /
+  `textExportItem`, `rowsToCsv`) — the **Download** dropdown. **Every data
+  surface offers export, not just clipboard copy** — a list/table gets JSON +
+  CSV; a page gets its data JSON. `MatrxDataTable` toolbars get it free via the
+  `copy` config; `rowsToCsvFromColumns` (tableCopy.ts) builds view-shaped CSV.
 - `AgentCopyGroomerLauncher` + `AgentCopyGroomerWindow` (+ `groomer-types.ts`)
   — the **page-level** "Copy for AI": a WindowPanel where the user grooms the
-  whole-page payload before copying. See "Whole-page copy" below.
+  whole-page payload before copying (its footer also exports payload .md / data
+  .json). See "Whole-page copy" below.
+
+**Truncated lists must offer the rest.** A "top 8" list with no way to see all
+N is a defect — add a `show all N / top 8` toggle (scrollable when expanded);
+copy/export always operate on ALL rows, never just the visible slice.
 
 > Forward-looking: the **Copy for AI** button is the seam where these become
 > "connect this data to an agent" actions. The infrastructure already exists in

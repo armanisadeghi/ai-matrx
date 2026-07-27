@@ -3388,6 +3388,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/items/{item_id}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Grants
+         * @description Current recipients of a shared item. Requires can_manage — the share
+         *     panel MUST load this before rendering so an edit can never silently drop
+         *     a recipient it never knew about.
+         */
+        get: operations["list_grants_vault_items__item_id__grants_get"];
+        put?: never;
+        /**
+         * Add Grant
+         * @description Share with ONE recipient by exact email. Other recipients untouched.
+         */
+        post: operations["add_grant_vault_items__item_id__grants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/grants/{grant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Grant
+         * @description Revoke ONE recipient — immediate for list, reveal, and execution.
+         */
+        delete: operations["remove_grant_vault_items__item_id__grants__grant_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Grant */
+        patch: operations["update_grant_vault_items__item_id__grants__grant_id__patch"];
+        trace?: never;
+    };
+    "/vault/shared-with-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shared With Me
+         * @description Items other people shared TO the actor.
+         */
+        get: operations["shared_with_me_vault_shared_with_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assign To Recipient
+         * @description **Create for someone.** The item is born owned by the recipient. With
+         *     `generate_field_key` the server generates that value and NEVER returns it
+         *     — the creator gets identity and confirmation only.
+         */
+        post: operations["assign_to_recipient_vault_items_assign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/items/{item_id}/transfer": {
         parameters: {
             query?: never;
@@ -3397,8 +3486,77 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Transfer */
+        /**
+         * Transfer
+         * @description Move ownership. `recipient_email` gives the item to ANOTHER user (the
+         *     sender loses all access, grants are cleared); `to_principal` moves it
+         *     between the actor's own scopes (personal ↔ organization).
+         */
         post: operations["transfer_vault_items__item_id__transfer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/browser-login/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browser Login Matches
+         * @description Safe candidates for the tab the extension is ACTUALLY on. Item ids and
+         *     titles only — nothing is decrypted. Requires a real user JWT.
+         */
+        post: operations["browser_login_matches_vault_browser_login_matches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/browser-login/{item_id}/materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browser Login Materialize
+         * @description Transient username/password for ONE fill on the CURRENT tab.
+         *
+         *     Re-runs the SAME matcher the discovery call used, so advertisement and
+         *     enforcement cannot drift; refusals are audited. `no-store`.
+         */
+        post: operations["browser_login_materialize_vault_browser_login__item_id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/browser-login/{item_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browser Login Result
+         * @description Record the fill outcome (safe status enum only).
+         */
+        post: operations["browser_login_result_vault_browser_login__item_id__result_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19166,6 +19324,102 @@ export interface components {
             /** Expires At */
             expires_at: number;
         };
+        /** BrowserLoginMatch */
+        BrowserLoginMatch: {
+            /** Item Id */
+            item_id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Definition Key
+             * @default website_login
+             */
+            definition_key?: string;
+            /** Host */
+            host: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BrowserLoginMatchesRequest
+         * @description The extension sends the URL of the tab it is ACTUALLY on — never an
+         *     agent-supplied URL.
+         */
+        BrowserLoginMatchesRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Page Url */
+            page_url: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** BrowserLoginMatchesResponse */
+        BrowserLoginMatchesResponse: {
+            /** Matches */
+            matches: components["schemas"]["BrowserLoginMatch"][];
+            /** Count */
+            count: number;
+        };
+        /** BrowserLoginMaterializeRequest */
+        BrowserLoginMaterializeRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Page Url */
+            page_url: string;
+            /** Tool Invocation Id */
+            tool_invocation_id?: string | null;
+            /** Client Build */
+            client_build?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BrowserLoginMaterializeResponse
+         * @description TRANSIENT credential payload — ``Cache-Control: no-store``. It enters
+         *     the extension's service-worker memory for one fill and is never persisted,
+         *     logged, or returned to the model.
+         */
+        BrowserLoginMaterializeResponse: {
+            /** Item Id */
+            item_id: string;
+            /** Origin */
+            origin: string;
+            /** Username */
+            username?: string | null;
+            /** Password */
+            password: string;
+        };
+        /**
+         * BrowserLoginResultRequest
+         * @description What the fill achieved. The safe status enum only — never a value.
+         */
+        BrowserLoginResultRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "authenticated" | "needs_mfa" | "captcha_or_takeover" | "credentials_rejected" | "selection_required" | "no_matching_login" | "unsafe_destination" | "unknown";
+            /** Page Url */
+            page_url?: string | null;
+            /** Tool Invocation Id */
+            tool_invocation_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** BudgetRejectionRow */
         BudgetRejectionRow: {
             /** Run Id */
@@ -28925,6 +29179,22 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * NonSecretFieldIn
+         * @description One PLAINTEXT custom field. Never encrypted — the UI labels the whole
+         *     section 'Not encrypted' and tells the user not to put secrets here.
+         */
+        NonSecretFieldIn: {
+            /**
+             * Key
+             * @description stable lowercase-snake identity within the item
+             */
+            key: string;
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+        };
+        /**
          * NormException
          * @description A manual collapse/normalization rule (app_log_norm_exception row).
          */
@@ -37526,6 +37796,82 @@ export interface components {
             /** Default */
             default?: unknown;
         };
+        /**
+         * VaultAssignRequest
+         * @description **Create for someone**: the item is born owned by the recipient.
+         *
+         *     Set ``generate_field_key`` (normally ``"password"``) to have the SERVER
+         *     generate that value — it is stored on the recipient's item and never
+         *     returned to the creator.
+         */
+        VaultAssignRequest: {
+            /** Login Urls */
+            login_urls?: string[] | null;
+            /** Uri Match Mode */
+            uri_match_mode?: ("host" | "exact" | "never") | null;
+            /** Notes */
+            notes?: string | null;
+            /** Non Secret Fields */
+            non_secret_fields?: components["schemas"]["NonSecretFieldIn"][] | null;
+            /** Browser Fill Enabled */
+            browser_fill_enabled?: boolean | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Recipient Email */
+            recipient_email: string;
+            /** Display Name */
+            display_name: string;
+            /** Fields */
+            fields?: components["schemas"]["FieldIn"][];
+            /**
+             * Definition Key
+             * @default website_login
+             */
+            definition_key?: string;
+            /**
+             * Definition Version
+             * @default 1
+             */
+            definition_version?: number;
+            /** Provider Key */
+            provider_key?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Tags */
+            tags?: string[];
+            /** Generate Field Key */
+            generate_field_key?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * VaultAssignResponse
+         * @description Safe identity + confirmation ONLY. A generated password never appears
+         *     here, not even as a hint.
+         */
+        VaultAssignResponse: {
+            /** Id */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /** Definition Key */
+            definition_key: string;
+            /** Assigned To */
+            assigned_to?: {
+                [key: string]: string;
+            };
+            /**
+             * Generated
+             * @default false
+             */
+            generated?: boolean;
+        } & {
+            [key: string]: unknown;
+        };
         /** VaultAuditEntry */
         VaultAuditEntry: {
             /** Id */
@@ -37695,6 +38041,86 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * VaultGrantAddRequest
+         * @description Grant ONE recipient by EXACT email — no directory search, no
+         *     autocomplete, and no partial matching.
+         */
+        VaultGrantAddRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Recipient Email */
+            recipient_email: string;
+            /**
+             * Can Use
+             * @default true
+             */
+            can_use?: boolean;
+            /**
+             * Can Manage
+             * @default false
+             */
+            can_manage?: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultGrantListResponse */
+        VaultGrantListResponse: {
+            /** Grants */
+            grants: components["schemas"]["VaultGrantOut"][];
+            /** Count */
+            count: number;
+        };
+        /**
+         * VaultGrantOut
+         * @description One recipient of a shared item. Safe identity only.
+         */
+        VaultGrantOut: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /**
+             * Email
+             * @default
+             */
+            email?: string;
+            /**
+             * Can Use
+             * @default true
+             */
+            can_use?: boolean;
+            /**
+             * Can Manage
+             * @default false
+             */
+            can_manage?: boolean;
+            /** Granted By */
+            granted_by?: string | null;
+            /** Created At */
+            created_at: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VaultGrantUpdateRequest */
+        VaultGrantUpdateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Can Use */
+            can_use?: boolean | null;
+            /** Can Manage */
+            can_manage?: boolean | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** VaultImportEnvRequest */
         VaultImportEnvRequest: {
             /** Organization Id */
@@ -37716,6 +38142,16 @@ export interface components {
         };
         /** VaultItemCreateRequest */
         VaultItemCreateRequest: {
+            /** Login Urls */
+            login_urls?: string[] | null;
+            /** Uri Match Mode */
+            uri_match_mode?: ("host" | "exact" | "never") | null;
+            /** Notes */
+            notes?: string | null;
+            /** Non Secret Fields */
+            non_secret_fields?: components["schemas"]["NonSecretFieldIn"][] | null;
+            /** Browser Fill Enabled */
+            browser_fill_enabled?: boolean | null;
             /** Organization Id */
             organization_id?: string | null;
             /** Project Id */
@@ -37803,6 +38239,24 @@ export interface components {
             lifecycle?: {
                 [key: string]: unknown;
             };
+            /** Login Urls */
+            login_urls?: string[];
+            /**
+             * Uri Match Mode
+             * @default host
+             */
+            uri_match_mode?: string;
+            /** Notes */
+            notes?: string | null;
+            /** Non Secret Fields */
+            non_secret_fields?: {
+                [key: string]: string;
+            }[];
+            /**
+             * Browser Fill Enabled
+             * @default false
+             */
+            browser_fill_enabled?: boolean;
             /** Created At */
             created_at: string;
             /** Updated At */
@@ -37815,6 +38269,16 @@ export interface components {
         };
         /** VaultItemUpdateRequest */
         VaultItemUpdateRequest: {
+            /** Login Urls */
+            login_urls?: string[] | null;
+            /** Uri Match Mode */
+            uri_match_mode?: ("host" | "exact" | "never") | null;
+            /** Notes */
+            notes?: string | null;
+            /** Non Secret Fields */
+            non_secret_fields?: components["schemas"]["NonSecretFieldIn"][] | null;
+            /** Browser Fill Enabled */
+            browser_fill_enabled?: boolean | null;
             /** Organization Id */
             organization_id?: string | null;
             /** Project Id */
@@ -37835,6 +38299,11 @@ export interface components {
             lifecycle?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Clear Notes
+             * @default false
+             */
+            clear_notes?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -37933,7 +38402,11 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** VaultTransferRequest */
+        /**
+         * VaultTransferRequest
+         * @description Move ownership. Exactly one destination: another user by exact email
+         *     (``recipient_email``) or a principal scope (personal ↔ organization).
+         */
         VaultTransferRequest: {
             /** Organization Id */
             organization_id?: string | null;
@@ -37941,7 +38414,26 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
-            to_principal: components["schemas"]["PrincipalIn"];
+            to_principal?: components["schemas"]["PrincipalIn"] | null;
+            /** Recipient Email */
+            recipient_email?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * VaultTransferResponse
+         * @description The sender loses ALL access on success, so this carries confirmation
+         *     rather than a usable item.
+         */
+        VaultTransferResponse: {
+            /** Id */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /** Transferred To */
+            transferred_to?: {
+                [key: string]: string;
+            };
         } & {
             [key: string]: unknown;
         };
@@ -45046,6 +45538,191 @@ export interface operations {
             };
         };
     };
+    list_grants_vault_items__item_id__grants_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultGrantListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_grant_vault_items__item_id__grants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultGrantAddRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultGrantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_grant_vault_items__item_id__grants__grant_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_grant_vault_items__item_id__grants__grant_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultGrantUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultGrantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shared_with_me_vault_shared_with_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultItemListResponse"];
+                };
+            };
+        };
+    };
+    assign_to_recipient_vault_items_assign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultAssignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultAssignResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     transfer_vault_items__item_id__transfer_post: {
         parameters: {
             query?: never;
@@ -45067,8 +45744,109 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VaultItemOut"];
+                    "application/json": components["schemas"]["VaultItemOut"] | components["schemas"]["VaultTransferResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_login_matches_vault_browser_login_matches_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserLoginMatchesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserLoginMatchesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_login_materialize_vault_browser_login__item_id__materialize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserLoginMaterializeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserLoginMaterializeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_login_result_vault_browser_login__item_id__result_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserLoginResultRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

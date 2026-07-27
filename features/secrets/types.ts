@@ -64,9 +64,33 @@ export type VaultItem = Pick<
   description: string | null;
   tags: string[];
   lifecycle: Record<string, unknown>;
+  /** PLAINTEXT destination metadata (never encrypted; RLS-protected). */
+  login_urls: string[];
+  uri_match_mode: string;
+  notes: string | null;
+  non_secret_fields: NonSecretField[];
+  browser_fill_enabled: boolean;
   fields: VaultField[];
   capabilities: VaultCapabilities;
 };
+
+/** One user-authored PLAINTEXT custom field. Never a secret — the UI labels
+ *  the whole section "Not encrypted". */
+export interface NonSecretField {
+  key: string;
+  label: string;
+  value: string;
+}
+
+export function normalizeNonSecretFields(raw: unknown): NonSecretField[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const e = entry as Record<string, unknown>;
+    if (typeof e.key !== "string" || typeof e.label !== "string") return [];
+    return [{ key: e.key, label: e.label, value: String(e.value ?? "") }];
+  });
+}
 
 export function normalizeWireField(wire: VaultFieldWire): VaultField {
   return {
@@ -96,6 +120,11 @@ export function normalizeWireItem(wire: VaultItemWire): VaultItem {
     description: wire.description ?? null,
     tags: wire.tags ?? [],
     lifecycle: wire.lifecycle ?? {},
+    login_urls: wire.login_urls ?? [],
+    uri_match_mode: wire.uri_match_mode ?? "host",
+    notes: wire.notes ?? null,
+    non_secret_fields: normalizeNonSecretFields(wire.non_secret_fields),
+    browser_fill_enabled: wire.browser_fill_enabled ?? false,
     fields: (wire.fields ?? []).map(normalizeWireField),
     capabilities: wire.capabilities ?? {
       can_use: false,
@@ -115,6 +144,33 @@ export type VaultGrantee = ApiSchemas["GranteeIn"];
 export type VaultRevealResponse = ApiSchemas["VaultRevealResponse"];
 export type VaultShareRequest = ApiSchemas["VaultShareRequest"];
 export type VaultAuditEntry = ApiSchemas["VaultAuditEntry"];
+export type VaultGrant = ApiSchemas["VaultGrantOut"];
+export type VaultGrantAddRequest = ApiSchemas["VaultGrantAddRequest"];
+export type VaultAssignRequest = ApiSchemas["VaultAssignRequest"];
+export type VaultAssignResponse = ApiSchemas["VaultAssignResponse"];
+export type VaultTransferResponse = ApiSchemas["VaultTransferResponse"];
+
+/** URL matching rule for browser fill. `host` = same host, any path;
+ *  `exact` = same host AND path; `never` = this item is never auto-filled. */
+export type UriMatchMode = "host" | "exact" | "never";
+
+export const URI_MATCH_MODE_LABELS: Record<UriMatchMode, string> = {
+  host: "Any page on this site",
+  exact: "Only this exact URL",
+  never: "Never fill automatically",
+};
+
+/** The destination-first login definition (ratified 2026-07-26). */
+export const WEBSITE_LOGIN_DEFINITION_KEY = "website_login";
+
+/** Encrypted field keys that historically hold a destination URL. These items
+ *  cannot browser-match until the URL is promoted into plaintext `login_urls`
+ *  — an explicit, warned declassification the user performs. */
+export const PROMOTABLE_URL_FIELD_KEYS = [
+  "site_url",
+  "panel_url",
+  "portal_url",
+] as const;
 
 export type VaultHandling = VaultFieldIn["handling"];
 export type VaultAccessMode = VaultShareRequest["access_mode"];
@@ -131,14 +187,42 @@ export function toPrincipalIn(principal: VaultPrincipal): VaultPrincipalIn {
     : { type: "user" };
 }
 
+/**
+ * The list scope the user is looking at. Each is a DELIBERATE query, never a
+ * bare RLS-filtered read (THE VIEW LAW): `mine` filters on ownership,
+ * `shared` starts from the user's own grant rows, `organization` filters on
+ * the org. Widening access must never silently flood a scope.
+ */
+export type VaultScope =
+  | { kind: "mine" }
+  | { kind: "shared" }
+  | { kind: "organization"; organizationId: string };
+
+export const VAULT_SCOPE_LABELS = {
+  mine: "Mine",
+  shared: "Shared with me",
+  organization: "Organization",
+} as const;
+
+/** The owning principal a scope writes to. "Shared with me" owns nothing —
+ *  creating from that scope is meaningless, so the UI hides create there. */
+export function scopeToPrincipal(scope: VaultScope): VaultPrincipal | null {
+  if (scope.kind === "mine") return { type: "user" };
+  if (scope.kind === "organization") {
+    return { type: "organization", organizationId: scope.organizationId };
+  }
+  return null;
+}
+
 // ── Direct-Supabase masked rows (explicit column lists — see service) ─────
 
 type CredentialItemsRow = Database["users"]["Tables"]["credential_items"]["Row"];
 type UserSecretsRow = Database["users"]["Tables"]["user_secrets"]["Row"];
 
-/** Masked item metadata columns the browser may select. NEVER `select *`. */
+/** Masked item metadata columns the browser may select. NEVER `select *`.
+ *  The destination-login columns are plaintext BY DESIGN and safe to list. */
 export const CREDENTIAL_ITEM_COLUMNS =
-  "id, user_id, organization_id, definition_key, definition_version, provider_key, display_name, description, tags, status, source, access_mode, lifecycle, created_at, updated_at" as const;
+  "id, user_id, organization_id, definition_key, definition_version, provider_key, display_name, description, tags, status, source, access_mode, lifecycle, login_urls, uri_match_mode, notes, non_secret_fields, browser_fill_enabled, created_at, updated_at" as const;
 
 /** Masked field columns. `value_encrypted` is UNREADABLE by client roles —
  *  never select it, never `select *` on `users.user_secrets`. */
@@ -160,6 +244,11 @@ export type CredentialItemMaskedRow = Pick<
   | "source"
   | "access_mode"
   | "lifecycle"
+  | "login_urls"
+  | "uri_match_mode"
+  | "notes"
+  | "non_secret_fields"
+  | "browser_fill_enabled"
   | "created_at"
   | "updated_at"
 >;

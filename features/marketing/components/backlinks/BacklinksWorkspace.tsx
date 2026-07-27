@@ -16,6 +16,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import type {
   AgentCopyGroomerConfig,
@@ -154,11 +156,13 @@ function DimensionList({
 }: {
   title: string;
   rows: BacklinkDimensionRow[];
-  /** Stable slug for agent payloads, e.g. "backlink-referring-domains". */
+  /** Stable slug for agent payloads, e.g. "backlink-referring-domain". */
   kind: string;
   location: string;
   siteDomain: string;
 }) {
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? rows : rows.slice(0, 8);
   return (
     <section className="min-w-0 rounded-lg bg-muted/40 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -169,22 +173,38 @@ function DimensionList({
             label={`${title} (all ${rows.length})`}
             disabled={!rows.length}
             human={() => humanDimensionList(title, rows)}
+            json={() => rows}
             agent={() => ({
               kind: `${kind}-list`,
               location,
               description: `All stored "${title}" backlink dimension rows for ${siteDomain}.`,
               data: rows,
               summary: humanDimensionList(title, rows),
-              attributes: { count: rows.length, shown: Math.min(rows.length, 8) },
+              attributes: { count: rows.length, shown: visible.length },
             })}
           />
-          <span className="text-xs text-muted-foreground">
-            top {Math.min(rows.length, 8)}
-          </span>
+          {rows.length > 8 ? (
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              onClick={() => setShowAll((current) => !current)}
+            >
+              {showAll ? "top 8" : `all ${rows.length}`}
+            </button>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              {rows.length ? `all ${rows.length}` : "empty"}
+            </span>
+          )}
         </span>
       </div>
-      <div className="space-y-1.5">
-        {rows.slice(0, 8).map((row) => (
+      <div
+        className={cn(
+          "space-y-1.5",
+          showAll && "max-h-64 overflow-y-auto pr-1",
+        )}
+      >
+        {visible.map((row) => (
           <div
             key={row.id}
             className="group/dim flex min-w-0 items-center justify-between gap-2 text-xs"
@@ -201,6 +221,7 @@ function DimensionList({
                 className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/dim:opacity-100"
                 label={row.label ?? row.dimension_key}
                 human={() => humanDimensionRow(row)}
+                json={() => row}
                 agent={() => ({
                   kind,
                   location,
@@ -463,7 +484,7 @@ export function BacklinksWorkspace() {
       ),
       {
         id: "backlink_rows",
-        title: "Stored backlink rows",
+        title: "Backlink rows",
         description: `${tableRows.length} loaded of ${(backlinks.data?.total ?? 0).toLocaleString()} recorded (current table page + filters).`,
         cuttable: true,
         levelLabels: {
@@ -515,22 +536,23 @@ export function BacklinksWorkspace() {
     sections: groomerSections(),
   });
 
-  const pageAgentPayload = (): AgentPayloadInput => {
-    const sections = groomerSections();
+  const pageFullData = (): Record<string, unknown> => {
     const full: Record<string, unknown> = {};
-    for (const section of sections) {
+    for (const section of groomerSections()) {
       const value = section.build("full");
       if (value !== null && value !== undefined) full[section.id] = value;
     }
-    return {
-      kind: "marketing-backlinks-page",
-      location: pageLocation,
-      description: `The full backlink intelligence workspace for ${site.domain}.`,
-      data: full,
-      summary: humanSummarySnapshot(summary, site.domain),
-      attributes: { site_id: site.id, domain: site.domain },
-    };
+    return full;
   };
+
+  const pageAgentPayload = (): AgentPayloadInput => ({
+    kind: "marketing-backlinks-page",
+    location: pageLocation,
+    description: `The full backlink intelligence workspace for ${site.domain}.`,
+    data: pageFullData(),
+    summary: humanSummarySnapshot(summary, site.domain),
+    attributes: { site_id: site.id, domain: site.domain },
+  });
   const columns: MatrxColumnDef<BacklinkObservationRow>[] = [
     {
       id: "source_domain",
@@ -673,6 +695,21 @@ export function BacklinksWorkspace() {
             anchor: row.label ?? row.dimension_key,
             backlinks: row.backlinks,
           })),
+          top_target_pages: data?.targetPages
+            .slice(0, 15)
+            .map((row) => projectDimensionRow(row)),
+          top_competitors: data?.competitors
+            .slice(0, 15)
+            .map((row) => projectDimensionRow(row)),
+          backlink_trend: (trend.data ?? []).slice(-30).map((point) => ({
+            ...point,
+          })),
+          backlinks_table_state: {
+            total_recorded: backlinks.data?.total ?? 0,
+            loaded_rows: backlinks.data?.rows.length ?? 0,
+            page: table.state.page,
+            search: table.state.search || null,
+          },
         })
       }
     >
@@ -693,7 +730,12 @@ export function BacklinksWorkspace() {
               size="icon"
               label={`Backlinks page (${site.domain})`}
               human={pageHuman}
+              json={pageFullData}
               agent={pageAgentPayload}
+            />
+            <ExportMenu
+              label={`backlinks-page-${site.domain}`}
+              items={[jsonExportItem(pageFullData, "Page data (.json)")]}
             />
             <AgentCopyGroomerLauncher config={groomerConfig} />
             <Select
@@ -907,56 +949,105 @@ export function BacklinksWorkspace() {
         ) : null}
 
         <section className="flex min-h-[44rem] flex-col">
-          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 py-2">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <h2 className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground">
-                <Database className="h-4 w-4 text-primary" />
-                Stored backlink rows
-              </h2>
-              <span className="hidden h-4 w-px shrink-0 bg-border sm:block" />
-              <p className="min-w-0 truncate text-xs text-muted-foreground">
-                {(backlinks.data?.total ?? 0).toLocaleString()} total recorded
-                {detailSnapshot
-                  ? ` until ${formatCompactDate(detailSnapshot.created_at)}`
-                  : " · not collected yet"}
-              </p>
-            </div>
-            <div className="relative w-full sm:ml-auto sm:w-80">
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={table.state.search}
-                onChange={(event) =>
-                  table.onStateChange({
-                    ...table.state,
-                    search: event.target.value,
-                    page: 1,
-                  })
-                }
-                placeholder="Search source, target, or anchor…"
-                className="h-9 pl-8 pr-8 text-sm"
-                style={{ fontSize: "16px" }}
-              />
-              {table.state.search ? (
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-                  onClick={() =>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 py-2">
+            <h2 className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Database className="h-4 w-4 text-primary" />
+              Backlinks
+            </h2>
+            <span
+              className="text-xs tabular-nums text-muted-foreground"
+              title={
+                detailSnapshot
+                  ? `Collected until ${formatCompactDate(detailSnapshot.created_at)}`
+                  : "Not collected yet"
+              }
+            >
+              {(backlinks.data?.total ?? 0).toLocaleString()}
+            </span>
+            <div className="ml-auto flex min-w-0 items-center gap-1">
+              <div className="relative w-full min-w-40 sm:w-72">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={table.state.search}
+                  onChange={(event) =>
                     table.onStateChange({
                       ...table.state,
-                      search: "",
+                      search: event.target.value,
                       page: 1,
                     })
                   }
-                  aria-label="Clear search"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
+                  placeholder="Search source, target, or anchor…"
+                  className="h-8 pl-8 pr-8 text-sm"
+                  style={{ fontSize: "16px" }}
+                />
+                {table.state.search ? (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                    onClick={() =>
+                      table.onStateChange({
+                        ...table.state,
+                        search: "",
+                        page: 1,
+                      })
+                    }
+                    aria-label="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </div>
+              <CopyButtons
+                size="icon"
+                label="Backlinks (loaded rows)"
+                human={() =>
+                  (backlinks.data?.rows ?? [])
+                    .map(humanBacklinkRow)
+                    .join("\n\n")
+                }
+                json={() =>
+                  (backlinks.data?.rows ?? []).map(projectBacklinkRow)
+                }
+                agent={() => ({
+                  kind: "backlinks",
+                  location: pageLocation,
+                  description: `The currently loaded backlink rows for ${site.domain} (server-paged view).`,
+                  data: backlinks.data?.rows ?? [],
+                  attributes: {
+                    loaded_rows: backlinks.data?.rows.length ?? 0,
+                    total_recorded: backlinks.data?.total ?? 0,
+                    page: table.state.page,
+                    search: table.state.search || undefined,
+                  },
+                })}
+              />
+              <ExportMenu
+                label={`backlinks-${site.domain}`}
+                items={[
+                  jsonExportItem(
+                    () => backlinks.data?.rows ?? [],
+                    "JSON (loaded rows, raw)",
+                  ),
+                  {
+                    id: "csv",
+                    label: "CSV (loaded rows)",
+                    build: () => ({
+                      content: rowsToCsv(
+                        (backlinks.data?.rows ?? []).map(
+                          projectBacklinkRow,
+                        ) as unknown as Array<Record<string, unknown>>,
+                      ),
+                      extension: "csv",
+                      mime: "text/csv",
+                    }),
+                  },
+                ]}
+              />
             </div>
           </div>
           <MatrxDataTable<BacklinkObservationRow>
-            className="min-h-0 flex-1 gap-0 [&>div:last-child]:border-t [&>div:last-child]:border-border [&>div:last-child]:bg-muted/30 [&>div:last-child]:px-3 [&>div:last-child]:py-2"
-            tableClassName="min-h-[36rem] rounded-md border border-border bg-card"
+            className="min-h-0 flex-1 gap-0 overflow-hidden rounded-md border border-border bg-card [&>div:last-child]:border-t [&>div:last-child]:border-border [&>div:last-child]:bg-muted/30 [&>div:last-child]:px-3 [&>div:last-child]:py-2"
+            tableClassName="min-h-[36rem] rounded-none border-0"
             data={backlinks.data?.rows ?? []}
             columns={columns}
             getRowId={(row) => row.id}
@@ -971,7 +1062,8 @@ export function BacklinksWorkspace() {
             toolbar={{ search: false }}
             copy={{
               label: "Backlink",
-              listLabel: "Stored backlinks view",
+              listLabel: "Backlinks view",
+              showToolbar: false,
               location: pageLocation,
               rowKind: "backlink",
               listKind: "backlinks",

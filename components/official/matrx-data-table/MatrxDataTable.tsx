@@ -15,6 +15,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import GenericTablePagination from "@/components/generic-table/GenericTablePagination";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem } from "@/components/agent-copy/export";
 import { cn } from "@/lib/utils";
 import { ColumnHeaderCell } from "./ColumnHeaderCell";
 import { DataRowInspector } from "./DataRowInspector";
@@ -35,6 +37,7 @@ import {
   buildRowAgentInput,
   buildViewAgentInput,
   buildViewHuman,
+  rowsToCsvFromColumns,
 } from "./tableCopy";
 import {
   nextQueryState,
@@ -464,19 +467,45 @@ export function MatrxDataTable<T>({
               </Button>
             ) : null}
             {showToolbarCopy && copy ? (
-              <CopyButtons
-                size="icon"
-                label={copy.listLabel ?? `${copy.label} view`}
-                human={() => buildViewHuman(copy, processed, visibleColumns)}
-                agent={() =>
-                  buildViewAgentInput(copy, processed, data, {
-                    search: searchValue,
-                    anyOf: anyOfValue,
-                    filterCount: activeFilterCount,
-                    sort: sort ? `${sort.id}:${sort.direction}` : null,
-                  })
-                }
-              />
+              <>
+                <CopyButtons
+                  size="icon"
+                  label={copy.listLabel ?? `${copy.label} view`}
+                  human={() => buildViewHuman(copy, processed, visibleColumns)}
+                  json={() =>
+                    processed.map((r) => (copy.agentRow ? copy.agentRow(r) : r))
+                  }
+                  agent={() =>
+                    buildViewAgentInput(copy, processed, data, {
+                      search: searchValue,
+                      anyOf: anyOfValue,
+                      filterCount: activeFilterCount,
+                      sort: sort ? `${sort.id}:${sort.direction}` : null,
+                    })
+                  }
+                />
+                <ExportMenu
+                  label={copy.listLabel ?? `${copy.label} view`}
+                  items={[
+                    jsonExportItem(
+                      () =>
+                        processed.map((r) =>
+                          copy.agentRow ? copy.agentRow(r) : r,
+                        ),
+                      "JSON (rows, raw)",
+                    ),
+                    {
+                      id: "csv",
+                      label: "CSV (current view)",
+                      build: () => ({
+                        content: rowsToCsvFromColumns(processed, visibleColumns),
+                        extension: "csv",
+                        mime: "text/csv",
+                      }),
+                    },
+                  ]}
+                />
+              </>
             ) : null}
             {toolbar?.actions}
           </div>
@@ -690,6 +719,11 @@ export function MatrxDataTable<T>({
                               size="icon"
                               label={copy.label}
                               human={() => copy.humanRow(displayRow)}
+                              json={() =>
+                                copy.agentRow
+                                  ? copy.agentRow(displayRow)
+                                  : displayRow
+                              }
                               agent={() => buildRowAgentInput(copy, displayRow)}
                             />
                           ) : null}
@@ -753,6 +787,9 @@ export function MatrxDataTable<T>({
                   size="icon"
                   label={copy.label}
                   human={() => copy.humanRow(selectedRow)}
+                  json={() =>
+                    copy.agentRow ? copy.agentRow(selectedRow) : selectedRow
+                  }
                   agent={() => buildRowAgentInput(copy, selectedRow)}
                 />
               ) : null}
@@ -802,6 +839,9 @@ export function MatrxDataTable<T>({
                 size="icon"
                 label={copy.label}
                 human={() => copy.humanRow(windowRow)}
+                json={() =>
+                  copy.agentRow ? copy.agentRow(windowRow) : windowRow
+                }
                 agent={() => buildRowAgentInput(copy, windowRow)}
               />
             ) : undefined

@@ -14,32 +14,43 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
   addVaultField,
+  addVaultGrant,
+  assignVaultItem,
   createVaultItem,
   deleteVaultField,
   deleteVaultItem,
   fetchCredentialDefinitions,
   fetchVaultAudit,
+  fetchVaultGrants,
   fetchVaultItems,
   forkVaultItem,
+  giveVaultItemOwnership,
   importVaultEnv,
+  removeVaultGrant,
   rotateVaultItem,
-  shareVaultItem,
+  setVaultAccessMode,
   transferVaultItem,
   updateVaultFieldMetadata,
   updateVaultFieldValue,
+  updateVaultGrant,
   updateVaultItem,
 } from "./vault-service";
+import { toPrincipalIn } from "./types";
 import type {
   CredentialDefinition,
   VaultAccessMode,
+  VaultAssignRequest,
+  VaultAssignResponse,
   VaultAuditEntry,
   VaultFieldIn,
   VaultFieldMetadataRequest,
-  VaultGrantee,
+  VaultGrant,
   VaultItem,
   VaultItemCreateRequest,
   VaultItemUpdateRequest,
   VaultPrincipal,
+  VaultScope,
+  VaultTransferResponse,
 } from "./types";
 
 // ── Catalog definitions ───────────────────────────────────────────────────
@@ -89,55 +100,72 @@ export interface VaultActions {
     body: VaultFieldMetadataRequest,
   ) => Promise<void>;
   rotate: (itemId: string, values: Record<string, string>) => Promise<void>;
-  share: (
+  /** Organization access-mode flip only — personal sharing uses the grant ops. */
+  setAccessMode: (itemId: string, accessMode: VaultAccessMode) => Promise<void>;
+  addGrant: (
     itemId: string,
-    accessMode: VaultAccessMode,
-    grantees: VaultGrantee[],
-  ) => Promise<void>;
+    body: { recipient_email: string; can_use?: boolean; can_manage?: boolean },
+  ) => Promise<VaultGrant>;
+  updateGrant: (
+    itemId: string,
+    grantId: string,
+    body: { can_use?: boolean; can_manage?: boolean },
+  ) => Promise<VaultGrant>;
+  removeGrant: (itemId: string, grantId: string) => Promise<void>;
+  /** Hand the item to ANOTHER user — the sender loses all access. */
+  giveOwnership: (
+    itemId: string,
+    recipientEmail: string,
+  ) => Promise<VaultTransferResponse>;
+  /** Create an item already owned by someone else. */
+  assign: (body: VaultAssignRequest) => Promise<VaultAssignResponse>;
   transfer: (itemId: string, to: VaultPrincipal) => Promise<void>;
   fork: (itemId: string, to: VaultPrincipal) => Promise<void>;
 }
 
 export function useVault(
-  principal: VaultPrincipal,
+  scope: VaultScope,
   opts?: { orgAdmin?: boolean },
 ) {
   const orgAdmin = opts?.orgAdmin ?? false;
+  // Primitive deps so the effect doesn't re-run on every object identity.
+  const scopeKind = scope.kind;
   const organizationId =
-    principal.type === "organization" ? principal.organizationId : null;
+    scope.kind === "organization" ? scope.organizationId : null;
+  // The principal a create/import writes to. "Shared with me" owns nothing.
+  const principal: VaultPrincipal | null = organizationId
+    ? { type: "organization", organizationId }
+    : scopeKind === "mine"
+      ? { type: "user" }
+      : null;
 
   const [items, setItems] = useState<VaultItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const currentScope = useCallback((): VaultScope => {
+    if (organizationId) return { kind: "organization", organizationId };
+    return scopeKind === "shared" ? { kind: "shared" } : { kind: "mine" };
+  }, [organizationId, scopeKind]);
+
   // Post-mutation refresh (event-handler-invoked, so sync setState is fine).
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      const rows = await fetchVaultItems(
-        organizationId
-          ? { type: "organization", organizationId }
-          : { type: "user" },
-        { orgAdmin },
-      );
+      const rows = await fetchVaultItems(currentScope(), { orgAdmin });
       setItems(rows);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [organizationId, orgAdmin]);
+  }, [currentScope, orgAdmin]);
 
   // Initial load — setState only inside async callbacks (lint doctrine).
   useEffect(() => {
     let active = true;
-    fetchVaultItems(
-      organizationId
-        ? { type: "organization", organizationId }
-        : { type: "user" },
-      { orgAdmin },
-    )
+    fetchVaultItems(currentScope(), { orgAdmin })
       .then((rows) => {
         if (!active) return;
         setItems(rows);
@@ -153,7 +181,7 @@ export function useVault(
     return () => {
       active = false;
     };
-  }, [organizationId, orgAdmin]);
+  }, [currentScope, orgAdmin]);
 
   const run = useCallback(
     async <T,>(success: string | null, op: () => Promise<T>): Promise<T> => {
@@ -179,11 +207,13 @@ export function useVault(
       run(`Saved ${body.display_name}`, () => createVaultItem(body)),
     importEnv: (envText, inject) =>
       run(null, async () => {
+        if (!principal) {
+          throw new Error(
+            "Choose Mine or an organization before importing — items shared with you are owned by someone else",
+          );
+        }
         const resp = await importVaultEnv({
-          principal:
-            principal.type === "organization"
-              ? { type: "organization", organization_id: principal.organizationId }
-              : { type: "user" },
+          principal: toPrincipalIn(principal),
           env_text: envText,
           inject_into_sandbox: inject,
         });
@@ -227,10 +257,26 @@ export function useVault(
       run("Credential rotated", async () => {
         await rotateVaultItem(itemId, values);
       }),
-    share: (itemId, accessMode, grantees) =>
+    setAccessMode: (itemId, accessMode) =>
       run("Access updated", async () => {
-        await shareVaultItem(itemId, accessMode, grantees);
+        await setVaultAccessMode(itemId, accessMode);
       }),
+    addGrant: (itemId, body) =>
+      run(`Shared with ${body.recipient_email}`, () =>
+        addVaultGrant(itemId, body),
+      ),
+    updateGrant: (itemId, grantId, body) =>
+      run("Access updated", () => updateVaultGrant(itemId, grantId, body)),
+    removeGrant: (itemId, grantId) =>
+      run("Access revoked", async () => {
+        await removeVaultGrant(itemId, grantId);
+      }),
+    giveOwnership: (itemId, recipientEmail) =>
+      run(`Ownership given to ${recipientEmail}`, () =>
+        giveVaultItemOwnership(itemId, recipientEmail),
+      ),
+    assign: (body) =>
+      run(`Created for ${body.recipient_email}`, () => assignVaultItem(body)),
     transfer: (itemId, to) =>
       run(
         to.type === "organization"
@@ -247,6 +293,61 @@ export function useVault(
   };
 
   return { items, loading, busy, error, refresh, actions };
+}
+
+// ── Grants (via aidream — the access list is owner information) ───────────
+
+/**
+ * The item's CURRENT recipients, loaded before the share UI renders.
+ *
+ * This load is the whole point: the old panel initialized empty and saved a
+ * replacement set, so opening Share and pressing Save silently revoked every
+ * recipient it had never seen.
+ */
+export function useVaultGrants(itemId: string, enabled = true) {
+  const [grants, setGrants] = useState<VaultGrant[]>([]);
+  const [loading, setLoading] = useState(enabled);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    if (!enabled) return;
+    try {
+      setGrants(await fetchVaultGrants(itemId));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [itemId, enabled]);
+
+  // setState only inside async callbacks (lint doctrine: no sync setState in
+  // an effect). The disabled case resolves immediately rather than branching
+  // before the async boundary.
+  useEffect(() => {
+    let active = true;
+    const load = enabled
+      ? fetchVaultGrants(itemId)
+      : Promise.resolve<VaultGrant[]>([]);
+    load
+      .then((rows) => {
+        if (!active) return;
+        setGrants(rows);
+        setError(null);
+      })
+      .catch((e: unknown) => {
+        if (!active) return;
+        setError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [itemId, enabled]);
+
+  return { grants, loading, error, reload };
 }
 
 // ── Audit trail (via aidream — the audit table has no client RLS read) ────

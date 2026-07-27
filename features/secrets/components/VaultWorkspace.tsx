@@ -42,6 +42,7 @@ import {
   type CredentialFamily,
   type VaultItem,
   type VaultPrincipal,
+  type VaultScope,
 } from "../types";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
@@ -56,7 +57,19 @@ export interface VaultWorkspaceProps {
 
 export function VaultWorkspace({ principal, canManage }: VaultWorkspaceProps) {
   const orgAdmin = principal.type === "organization" ? Boolean(canManage) : true;
-  const vault = useVault(principal, { orgAdmin });
+  // The personal surface offers Mine / Shared with me; the organization
+  // surface is always its own scope (an org page showing another person's
+  // shared personal items would be a category error).
+  const [personalScope, setPersonalScope] = useState<"mine" | "shared">("mine");
+  const scope: VaultScope =
+    principal.type === "organization"
+      ? { kind: "organization", organizationId: principal.organizationId }
+      : personalScope === "shared"
+        ? { kind: "shared" }
+        : { kind: "mine" };
+  const isShared = scope.kind === "shared";
+
+  const vault = useVault(scope, { orgAdmin });
   const { definitions } = useVaultDefinitions();
 
   const defsByKey = useMemo(
@@ -69,6 +82,9 @@ export function VaultWorkspace({ principal, canManage }: VaultWorkspaceProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Creating is meaningless in "Shared with me" — those items are owned by
+  // someone else.
+  const canCreate = orgAdmin && !isShared;
 
   const familiesPresent = useMemo(() => {
     const present = new Set<CredentialFamily>();
@@ -119,6 +135,35 @@ export function VaultWorkspace({ principal, canManage }: VaultWorkspaceProps) {
         </div>
       )}
 
+      {/* Scope — a deliberate destination, never a silent widening */}
+      {principal.type === "user" && (
+        <div
+          role="tablist"
+          aria-label="Vault scope"
+          className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5"
+        >
+          {(["mine", "shared"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={personalScope === value}
+              onClick={() => {
+                setPersonalScope(value);
+                setSelectedId(null);
+              }}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                personalScope === value
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {value === "mine" ? "Mine" : "Shared with me"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1 basis-48">
@@ -149,7 +194,7 @@ export function VaultWorkspace({ principal, canManage }: VaultWorkspaceProps) {
             </SelectContent>
           </Select>
         )}
-        {orgAdmin && (
+        {canCreate && (
           <>
             <Button
               variant="outline"
@@ -185,13 +230,19 @@ export function VaultWorkspace({ principal, canManage }: VaultWorkspaceProps) {
         <div className="rounded-lg border border-dashed border-border p-8 text-center">
           <KeyRound className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
           <p className="text-sm font-medium">
-            {vault.items.length === 0 ? "No credentials yet" : "No matches"}
+            {vault.items.length === 0
+              ? isShared
+                ? "Nothing shared with you yet"
+                : "No credentials yet"
+              : "No matches"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {vault.items.length === 0
-              ? orgAdmin
-                ? "Create one from the catalog or import a .env file."
-                : "An organization admin can add shared credentials here."
+              ? isShared
+                ? "When someone shares a login with you, it appears here."
+                : canCreate
+                  ? "Create one from the catalog or import a .env file."
+                  : "An organization admin can add shared credentials here."
               : "Adjust the search or family filter."}
           </p>
         </div>
@@ -245,6 +296,7 @@ export function VaultWorkspace({ principal, canManage }: VaultWorkspaceProps) {
         definitions={definitions}
         busy={vault.busy}
         onCreate={vault.actions.createItem}
+        onAssign={vault.actions.assign}
       />
 
       {/* Bulk .env import */}

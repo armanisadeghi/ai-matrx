@@ -71,6 +71,31 @@ export function buildViewAgentInput<T>(
   };
 }
 
+/** CSV of the current view (visible columns × rows), for ExportMenu. */
+export function rowsToCsvFromColumns<T>(
+  rows: T[],
+  columns: MatrxColumnDef<T>[],
+): string {
+  const cols = columns.filter((c) => c.filter !== false || c.accessorKey);
+  const escape = (value: string) =>
+    /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  const lines = [
+    cols
+      .map((c) =>
+        escape(typeof c.header === "string" ? c.header : columnId(c)),
+      )
+      .join(","),
+  ];
+  for (const row of rows) {
+    lines.push(
+      cols
+        .map((c) => escape(stringifyCellValue(getCellValue(row, c))))
+        .join(","),
+    );
+  }
+  return lines.join("\n");
+}
+
 export function buildViewHuman<T>(
   config: MatrxDataTableCopyConfig<T>,
   visible: T[],

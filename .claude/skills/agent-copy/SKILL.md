@@ -31,6 +31,13 @@ Source + full docs: [`components/agent-copy/README.md`](../../../components/agen
 - **Copy exists at EVERY granularity** — field/entry, item, row, list, record,
   page. Never display data the user can't copy. Dense surfaces hide the pair
   until hover (`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`).
+- **Three flavors where data is structured:** human, **JSON** (pass `json` to
+  CopyButtons), and Copy-for-AI. Scalars skip JSON.
+- **Every data surface offers EXPORT** (`ExportMenu` + `export.ts`): lists and
+  tables get JSON + CSV downloads; pages get their data JSON. Copy without
+  export is half the job.
+- **Truncated lists must offer the rest** — a "top 8" with no show-all toggle
+  is a defect; copy/export always cover ALL rows, not the visible slice.
 - **`AgentCopyGroomerLauncher`** — the page-level "Copy for AI". Opens a
   WindowPanel where the user grooms the whole-page payload: sections with
   `full/compact/brief/off` dials, Everything/Balanced/Minimal presets, live
@@ -79,9 +86,16 @@ at click time, not render.
 ### Tables: use the built-in config, never hand-wire rows
 
 `MatrxDataTable` takes a `copy` config (`rowKind`/`listKind`/`humanRow`/…) and
-delivers ALL of: per-row pairs, toolbar this-view pair, a record pair in the
-row-window header, and per-field hover pairs in `DataRowInspector` (side panel
-+ window). Also pass `window={{ title }}` so rows open the record window.
+delivers ALL of: per-row copy+JSON+AI, toolbar this-view triple + ExportMenu
+(JSON + CSV of the current view), a record pair in the row-window header, and
+per-field hover pairs in `DataRowInspector` (side panel + window). Also pass
+`window={{ title }}` so rows open the record window.
+**Page already has its own header row above the table?** Set
+`copy.showToolbar: false` and put the view copy + ExportMenu IN that row —
+otherwise the table renders a near-empty toolbar row holding only copy icons
+(the exact mess Arman flagged on backlinks). Table titles are user words
+("Backlinks"), never internal ("Stored backlink rows"); counts are a subtle
+muted `tabular-nums` beside the title, never a sentence pushing the search.
 `JsonInspector` takes `agentCopy` for raw-JSON surfaces. Reference wiring for a
 full page (cards + dimension lists + table + groomer):
 `features/marketing/components/backlinks/BacklinksWorkspace.tsx`.

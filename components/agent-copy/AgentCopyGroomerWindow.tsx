@@ -21,6 +21,11 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import {
+  jsonExportItem,
+  textExportItem,
+} from "@/components/agent-copy/export";
 import {
   applyGroomerPreset,
   defaultGroomerSelections,
@@ -118,7 +123,7 @@ export function AgentCopyGroomerWindow({
     return out;
   }, [selections, config.sections]);
 
-  const payload = useMemo(() => {
+  const assembled = useMemo(() => {
     const data: Record<string, unknown> = {};
     const includedIds: string[] = [];
     for (const section of config.sections) {
@@ -128,19 +133,25 @@ export function AgentCopyGroomerWindow({
         includedIds.push(section.id);
       }
     }
-    return buildAgentPayload({
-      kind: config.kind,
-      location: config.location,
-      description: config.description,
-      data,
-      summary: config.summary,
-      attributes: {
-        ...config.attributes,
-        sections: includedIds.join(","),
-      },
-      context: config.context,
-    });
-  }, [built, config]);
+    return { data, includedIds };
+  }, [built, config.sections]);
+
+  const payload = useMemo(
+    () =>
+      buildAgentPayload({
+        kind: config.kind,
+        location: config.location,
+        description: config.description,
+        data: assembled.data,
+        summary: config.summary,
+        attributes: {
+          ...config.attributes,
+          sections: assembled.includedIds.join(","),
+        },
+        context: config.context,
+      }),
+    [assembled, config],
+  );
 
   const includedCount = config.sections.filter((section) => {
     const entry = built[section.id];
@@ -185,14 +196,27 @@ export function AgentCopyGroomerWindow({
         </span>
       }
       footerRight={
-        <Button size="sm" className="gap-1.5" onClick={() => void handleCopy()}>
-          {copied ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <CopyForAiIcon className="h-3.5 w-3.5" />
-          )}
-          Copy for AI
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <ExportMenu
+            label={config.label}
+            items={[
+              textExportItem(() => payload, "Agent payload (.md)", "md"),
+              jsonExportItem(() => assembled.data, "Selected data (.json)"),
+            ]}
+          />
+          <Button
+            size="sm"
+            className="gap-1.5"
+            onClick={() => void handleCopy()}
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : (
+              <CopyForAiIcon className="h-3.5 w-3.5" />
+            )}
+            Copy for AI
+          </Button>
+        </div>
       }
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

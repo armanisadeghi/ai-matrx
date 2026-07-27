@@ -18,6 +18,7 @@ import {
   Eye,
   EyeOff,
   GitFork,
+  Globe,
   History,
   Loader2,
   Lock,
@@ -26,6 +27,7 @@ import {
   RotateCcw,
   Settings2,
   Trash2,
+  UserPlus,
   Users,
   X,
 } from "lucide-react";
@@ -51,16 +53,23 @@ import {
 } from "@/features/organizations/hooks";
 import { searchUserByEmail } from "@/features/organizations/userSearch";
 
-import { useTransientSecret, useVaultAudit, type VaultActions } from "../vault-hooks";
+import {
+  useTransientSecret,
+  useVaultAudit,
+  useVaultGrants,
+  type VaultActions,
+} from "../vault-hooks";
 import { resolveVaultFields, revealVaultField } from "../vault-service";
 import {
   FIELD_KEY_RE,
   HANDLING_LABELS,
+  PROMOTABLE_URL_FIELD_KEYS,
+  URI_MATCH_MODE_LABELS,
   VALID_KEY_RE,
   type CredentialDefinition,
+  type UriMatchMode,
   type VaultAccessMode,
   type VaultField,
-  type VaultGrantee,
   type VaultHandling,
   type VaultItem,
   type VaultPrincipal,
@@ -75,7 +84,16 @@ interface VaultItemDetailProps {
   onClose: () => void;
 }
 
-type Panel = "none" | "share" | "transfer" | "fork" | "rotate" | "add-field" | "audit";
+type Panel =
+  | "none"
+  | "share"
+  | "give"
+  | "transfer"
+  | "fork"
+  | "rotate"
+  | "add-field"
+  | "audit"
+  | "destination";
 
 export function VaultItemDetail({
   item,
@@ -174,7 +192,10 @@ export function VaultItemDetail({
         )}
       </div>
 
-      {/* Fields */}
+      {/* Destination — where this login is used, and whether Matrx may fill it */}
+      <DestinationSection item={item} busy={busy} actions={actions} caps={caps} />
+
+      {/* Login — the encrypted fields */}
       <div className="space-y-2">
         {item.fields.map((field) => (
           <FieldRow
@@ -192,6 +213,14 @@ export function VaultItemDetail({
           </p>
         )}
       </div>
+
+      {/* Notes and other details — deliberately plaintext, loudly labelled */}
+      <NotEncryptedSection
+        item={item}
+        busy={busy}
+        actions={actions}
+        canEdit={caps.can_edit === true}
+      />
 
       {/* Action bar */}
       <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
@@ -228,7 +257,16 @@ export function VaultItemDetail({
             current={panel}
             setPanel={setPanel}
             icon={ArrowLeftRight}
-            label="Transfer"
+            label="Move scope"
+          />
+        )}
+        {caps.can_manage && item.user_id && (
+          <ActionToggle
+            panel="give"
+            current={panel}
+            setPanel={setPanel}
+            icon={UserPlus}
+            label="Give ownership"
           />
         )}
         {caps.can_use && (
@@ -282,12 +320,16 @@ export function VaultItemDetail({
         />
       )}
       {panel === "share" && (
-        <SharePanel
+        <SharePanel item={item} busy={busy} actions={actions} />
+      )}
+      {panel === "give" && (
+        <GiveOwnershipPanel
           item={item}
           busy={busy}
-          onShare={async (mode, userIds) => {
-            await actions.share(item.id, mode, userIds);
+          onGive={actions.giveOwnership}
+          onDone={() => {
             setPanel("none");
+            onClose();
           }}
         />
       )}
@@ -879,196 +921,626 @@ function RotatePanel({
   );
 }
 
-// ── Share (grants) ────────────────────────────────────────────────────────
+// ── Destination (plaintext URLs + browser fill) ───────────────────────────
 
-interface GranteeDraft {
-  userId: string;
-  label: string;
-  canManage: boolean;
-}
-
-function SharePanel({
+/**
+ * Where this login lives and whether Matrx Extend may fill it.
+ *
+ * These URLs are PLAINTEXT metadata by design — the browser matcher has to
+ * see them, and a value nobody can read cannot be matched against a page.
+ * The server re-checks every match before it decrypts anything.
+ */
+function DestinationSection({
   item,
   busy,
-  onShare,
+  actions,
+  caps,
 }: {
   item: VaultItem;
   busy: boolean;
-  onShare: (mode: VaultAccessMode, grantees: VaultGrantee[]) => Promise<void>;
+  actions: VaultActions;
+  caps: VaultItem["capabilities"];
 }) {
-  const isOrg = Boolean(item.organization_id);
-  const { members } = useOrganizationMembers(item.organization_id ?? undefined);
-  const [mode, setMode] = useState<VaultAccessMode>(
-    item.access_mode === "restricted" ? "restricted" : "all_members",
+  const [adding, setAdding] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
+  const [promoting, setPromoting] = useState<string | null>(null);
+
+  // Definitions that predate destination-login keep their URL in an ENCRYPTED
+  // field, which the matcher can never see. Offer a one-click promotion
+  // instead of asking the user to retype it — with the declassification said
+  // out loud.
+  const promotable = item.fields.filter(
+    (f) =>
+      (PROMOTABLE_URL_FIELD_KEYS as readonly string[]).includes(f.field_key) &&
+      f.is_active &&
+      f.handling !== "sealed",
   );
-  const [grantees, setGrantees] = useState<GranteeDraft[]>([]);
-  const [email, setEmail] = useState("");
-  const [looking, setLooking] = useState(false);
 
-  const toggleGrantee = (userId: string, label: string, on: boolean) =>
-    setGrantees((current) =>
-      on
-        ? current.some((g) => g.userId === userId)
-          ? current
-          : [...current, { userId, label, canManage: false }]
-        : current.filter((g) => g.userId !== userId),
-    );
-
-  const setCanManage = (userId: string, canManage: boolean) =>
-    setGrantees((current) =>
-      current.map((g) => (g.userId === userId ? { ...g, canManage } : g)),
-    );
-
-  const toWire = (): VaultGrantee[] =>
-    grantees.map((g) => ({
-      user_id: g.userId,
-      can_use: true,
-      can_manage: g.canManage,
-    }));
-
-  const addByEmail = async () => {
-    const trimmed = email.trim();
+  const addUrl = async (value: string) => {
+    const trimmed = value.trim();
     if (!trimmed) return;
-    setLooking(true);
+    await actions.updateItem(item.id, {
+      login_urls: [...item.login_urls, trimmed],
+    });
+    setUrlDraft("");
+    setAdding(false);
+  };
+
+  const removeUrl = async (url: string) => {
+    await actions.updateItem(item.id, {
+      login_urls: item.login_urls.filter((u) => u !== url),
+    });
+  };
+
+  const promote = async (field: VaultField) => {
+    setPromoting(field.id);
     try {
-      const result = await searchUserByEmail(trimmed);
-      if (!result.exists) {
-        toast.error(`No account found for ${trimmed}`);
+      const values = await resolveVaultFields([
+        { item_id: item.id, field_key: field.field_key },
+      ]);
+      const url = values[`${item.id}/${field.field_key}`];
+      if (!url) {
+        toast.error("Could not read that field's value");
         return;
       }
-      toggleGrantee(result.id, result.email, true);
-      setEmail("");
+      if (item.login_urls.includes(url)) {
+        toast.info("That URL is already a login URL");
+        return;
+      }
+      await actions.updateItem(item.id, {
+        login_urls: [...item.login_urls, url],
+      });
+      toast.success("Login URL added — this item can now be matched in the browser");
     } finally {
-      setLooking(false);
+      setPromoting(null);
     }
   };
 
+  const hasDestination = item.login_urls.length > 0;
+  if (!hasDestination && !caps.can_edit && promotable.length === 0) return null;
+
   return (
-    <div className="space-y-3 rounded-md bg-muted/40 p-3">
-      {isOrg ? (
-        <>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Who can use this credential?</Label>
-            <Select value={mode} onValueChange={(v) => setMode(v as VaultAccessMode)}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_members">All organization members</SelectItem>
-                <SelectItem value="restricted">Only selected members</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {mode === "restricted" && (
-            <div className="grid gap-1.5 sm:grid-cols-2">
-              {members.map((member) => {
-                const label =
-                  member.user?.displayName || member.user?.email || member.userId;
-                const draft = grantees.find((g) => g.userId === member.userId);
-                return (
-                  <div
-                    key={member.userId}
-                    className="flex items-center gap-2 rounded border border-border bg-background p-2 text-xs"
-                  >
-                    <Checkbox
-                      checked={Boolean(draft)}
-                      onCheckedChange={(checked) =>
-                        toggleGrantee(member.userId, label, checked === true)
-                      }
-                    />
-                    <span className="min-w-0 flex-1 truncate">{label}</span>
-                    {draft && (
-                      <label className="flex shrink-0 items-center gap-1 text-muted-foreground">
-                        <Checkbox
-                          checked={draft.canManage}
-                          onCheckedChange={(checked) =>
-                            setCanManage(member.userId, checked === true)
-                          }
-                        />
-                        Can manage
-                      </label>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Organization admins always retain full access. Saving replaces the
-            current grant set.
-          </p>
-        </>
+    <div className="space-y-2 rounded-md border border-border bg-card p-3">
+      <div className="flex items-center gap-2">
+        <Globe className="h-3.5 w-3.5 text-primary" />
+        <p className="text-xs font-semibold">Destination</p>
+      </div>
+
+      {hasDestination ? (
+        <ul className="space-y-1">
+          {item.login_urls.map((url) => (
+            <li
+              key={url}
+              className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs"
+            >
+              <span className="min-w-0 flex-1 truncate font-mono">{url}</span>
+              {caps.can_edit && (
+                <button
+                  type="button"
+                  className="shrink-0 text-muted-foreground hover:text-destructive"
+                  disabled={busy}
+                  onClick={() => void removeUrl(url)}
+                  aria-label={`Remove ${url}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
       ) : (
+        <p className="text-xs text-muted-foreground">
+          No login URL yet. Without one, Matrx can never fill this login in a
+          browser.
+        </p>
+      )}
+
+      {caps.can_edit && (
         <>
-          <Label className="text-xs">Grant use of this credential by email</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void addByEmail();
+          {adding ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={urlDraft}
+                onChange={(e) => setUrlDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void addUrl(urlDraft);
+                  }
+                }}
+                placeholder="https://example.com/login"
+                className="h-7 text-xs"
+                autoFocus
+              />
+              <Button
+                size="sm"
+                className="h-7"
+                disabled={busy || !urlDraft.trim()}
+                onClick={() => void addUrl(urlDraft)}
+              >
+                Add
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7"
+                onClick={() => {
+                  setAdding(false);
+                  setUrlDraft("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={() => setAdding(true)}
+              disabled={busy}
+            >
+              <Plus className="mr-1.5 h-3 w-3" />
+              Add login URL
+            </Button>
+          )}
+
+          {promotable.map((field) => (
+            <div
+              key={field.id}
+              className="rounded border border-dashed border-border p-2 text-xs"
+            >
+              <p className="text-muted-foreground">
+                This item stores its address in the encrypted field{" "}
+                <span className="font-mono">{field.field_key}</span>, which the
+                browser matcher cannot read. Use it as a login URL to make it
+                fillable — the address becomes visible, unencrypted metadata.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-1.5 h-7"
+                disabled={busy || promoting === field.id}
+                onClick={() => void promote(field)}
+              >
+                {promoting === field.id ? (
+                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                ) : (
+                  <Globe className="mr-1.5 h-3 w-3" />
+                )}
+                Use as login URL
+              </Button>
+            </div>
+          ))}
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-xs">When it matches</Label>
+              <Select
+                value={item.uri_match_mode}
+                onValueChange={(v) =>
+                  void actions.updateItem(item.id, { uri_match_mode: v as UriMatchMode })
                 }
+              >
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(URI_MATCH_MODE_LABELS) as UriMatchMode[]).map(
+                    (mode) => (
+                      <SelectItem key={mode} value={mode}>
+                        {URI_MATCH_MODE_LABELS[mode]}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex items-end gap-2 pb-1">
+              <Switch
+                checked={item.browser_fill_enabled}
+                disabled={busy || !hasDestination}
+                onCheckedChange={(checked) =>
+                  void actions.updateItem(item.id, {
+                    browser_fill_enabled: checked,
+                  })
+                }
+              />
+              <span className="text-xs">
+                Let Matrx fill this login in the browser
+              </span>
+            </label>
+          </div>
+          {!hasDestination && (
+            <p className="text-xs text-muted-foreground">
+              Add a login URL to enable browser fill.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Not encrypted (plaintext notes + custom fields) ───────────────────────
+
+/**
+ * The deliberately-plaintext section. It is visually separate and labelled
+ * loudly because the one failure mode that matters here is a user typing a
+ * password into "notes" and believing it is protected.
+ */
+function NotEncryptedSection({
+  item,
+  busy,
+  actions,
+  canEdit,
+}: {
+  item: VaultItem;
+  busy: boolean;
+  actions: VaultActions;
+  canEdit: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(item.notes ?? "");
+
+  const hasContent = Boolean(item.notes) || item.non_secret_fields.length > 0;
+  if (!hasContent && !canEdit) return null;
+
+  return (
+    <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+      <div className="flex items-center gap-2">
+        <p className="text-xs font-semibold">Notes and other details</p>
+        <Badge variant="outline" className="border-amber-500/40 text-[10px]">
+          Not encrypted
+        </Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Do not put passwords, tokens, recovery codes, or other secrets here.
+      </p>
+
+      {item.non_secret_fields.length > 0 && (
+        <dl className="space-y-1">
+          {item.non_secret_fields.map((entry) => (
+            <div
+              key={entry.key}
+              className="flex items-baseline gap-2 rounded border border-border bg-background px-2 py-1 text-xs"
+            >
+              <dt className="shrink-0 text-muted-foreground">{entry.label}</dt>
+              <dd className="min-w-0 flex-1 truncate">{entry.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {editing ? (
+        <div className="space-y-1.5">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={4}
+            className="w-full rounded border border-border bg-background p-2 text-xs"
+            placeholder="Anything that is not a secret — account numbers, support contacts, reminders."
+          />
+          <div className="flex justify-end gap-1.5">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7"
+              onClick={() => {
+                setDraft(item.notes ?? "");
+                setEditing(false);
               }}
-              placeholder="teammate@company.com"
-              className="h-8 text-xs"
-            />
-            <Button size="sm" variant="outline" disabled={looking || !email.trim()} onClick={() => void addByEmail()}>
-              {looking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="h-7"
+              disabled={busy}
+              onClick={async () => {
+                const next = draft.trim();
+                await actions.updateItem(
+                  item.id,
+                  next ? { notes: next } : { clear_notes: true },
+                );
+                setEditing(false);
+              }}
+            >
+              Save notes
             </Button>
           </div>
-          {grantees.length > 0 && (
-            <div className="space-y-1.5">
-              {grantees.map((entry) => (
+        </div>
+      ) : (
+        <>
+          {item.notes ? (
+            <p className="whitespace-pre-wrap rounded border border-border bg-background p-2 text-xs">
+              {item.notes}
+            </p>
+          ) : (
+            canEdit && (
+              <p className="text-xs text-muted-foreground">No notes yet.</p>
+            )
+          )}
+          {canEdit && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={() => {
+                setDraft(item.notes ?? "");
+                setEditing(true);
+              }}
+            >
+              <Pencil className="mr-1.5 h-3 w-3" />
+              {item.notes ? "Edit notes" : "Add notes"}
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Share (grants) ────────────────────────────────────────────────────────
+
+/**
+ * The access list. It LOADS the current recipients first and then mutates ONE
+ * grant at a time — adding, changing, or revoking a person never touches
+ * anybody else. (The previous panel initialized empty and saved a replacement
+ * set, so pressing Save silently revoked every recipient it had not seen.)
+ */
+function SharePanel({
+  item,
+  busy,
+  actions,
+}: {
+  item: VaultItem;
+  busy: boolean;
+  actions: VaultActions;
+}) {
+  const isOrg = Boolean(item.organization_id);
+  const { grants, loading, error, reload } = useVaultGrants(item.id);
+  const [mode, setMode] = useState<VaultAccessMode>(
+    item.access_mode === "restricted" ? "restricted" : "all_members",
+  );
+  const [email, setEmail] = useState("");
+  const [canManage, setCanManage] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  const addRecipient = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    await actions.addGrant(item.id, {
+      recipient_email: trimmed,
+      can_use: true,
+      can_manage: canManage,
+    });
+    setEmail("");
+    setCanManage(false);
+    await reload();
+  };
+
+  const showRecipients = !isOrg || mode === "restricted";
+
+  return (
+    <div className="space-y-3 rounded-md bg-muted/40 p-3">
+      {isOrg && (
+        <div className="space-y-1.5">
+          <Label className="text-xs">Who can use this credential?</Label>
+          <Select
+            value={mode}
+            onValueChange={(v) => {
+              const next = v as VaultAccessMode;
+              setMode(next);
+              void actions.setAccessMode(item.id, next);
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all_members">All organization members</SelectItem>
+              <SelectItem value="restricted">Only selected members</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Organization admins always retain full access.
+            {mode === "all_members" &&
+              " Switching to all members clears the individual list below."}
+          </p>
+        </div>
+      )}
+
+      {showRecipients && (
+        <>
+          <div className="space-y-1.5">
+            <Label className="text-xs" htmlFor={`share-email-${item.id}`}>
+              Share with a person by their exact email
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id={`share-email-${item.id}`}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void addRecipient();
+                  }
+                }}
+                placeholder="teammate@company.com"
+                className="h-8 text-xs"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy || !email.trim()}
+                onClick={() => void addRecipient()}
+              >
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Share"}
+              </Button>
+            </div>
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Checkbox
+                checked={canManage}
+                onCheckedChange={(checked) => setCanManage(checked === true)}
+              />
+              Let them reveal and edit values
+            </label>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">People with access</Label>
+            {loading ? (
+              <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading current access…
+              </div>
+            ) : error ? (
+              <p className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                {error}
+              </p>
+            ) : grants.length === 0 ? (
+              <p className="rounded border border-dashed border-border p-2 text-xs text-muted-foreground">
+                Only you. Add someone above to share this credential.
+              </p>
+            ) : (
+              grants.map((grant) => (
                 <div
-                  key={entry.userId}
+                  key={grant.id}
                   className="flex items-center gap-2 rounded border border-border bg-background p-2 text-xs"
                 >
-                  <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {grant.email || grant.user_id}
+                  </span>
                   <label className="flex shrink-0 items-center gap-1 text-muted-foreground">
                     <Checkbox
-                      checked={entry.canManage}
-                      onCheckedChange={(checked) =>
-                        setCanManage(entry.userId, checked === true)
-                      }
+                      checked={Boolean(grant.can_manage)}
+                      disabled={busy || pendingId === grant.id}
+                      onCheckedChange={async (checked) => {
+                        setPendingId(grant.id);
+                        try {
+                          await actions.updateGrant(item.id, grant.id, {
+                            can_manage: checked === true,
+                          });
+                          await reload();
+                        } finally {
+                          setPendingId(null);
+                        }
+                      }}
                     />
-                    Can manage
+                    Can reveal &amp; edit
                   </label>
                   <button
                     type="button"
-                    onClick={() => toggleGrantee(entry.userId, entry.label, false)}
-                    aria-label={`Remove ${entry.label}`}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                    disabled={busy || pendingId === grant.id}
+                    onClick={async () => {
+                      setPendingId(grant.id);
+                      try {
+                        await actions.removeGrant(item.id, grant.id);
+                        await reload();
+                      } finally {
+                        setPendingId(null);
+                      }
+                    }}
+                    aria-label={`Revoke access for ${grant.email || grant.user_id}`}
                   >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
+
           <p className="text-xs text-muted-foreground">
-            Recipients can use the values in executions without revealing them.
-            Saving replaces the current grant set; save with no recipients to
-            revoke all grants.
+            Everyone here can use this login with agents and autofill, and sees
+            the username. Only people with &ldquo;Can reveal &amp; edit&rdquo;
+            can show the password. Revoking takes effect immediately. Changes
+            save as you make them — one person at a time, never the whole list.
           </p>
         </>
       )}
+    </div>
+  );
+}
+
+// ── Give ownership (cross-user transfer) ──────────────────────────────────
+
+/**
+ * Handing the item to another person. This is NOT sharing: the sender loses
+ * all future access, and the product says so plainly rather than implying the
+ * recipient can be un-told a password they may already have seen.
+ */
+function GiveOwnershipPanel({
+  item,
+  busy,
+  onGive,
+  onDone,
+}: {
+  item: VaultItem;
+  busy: boolean;
+  onGive: (itemId: string, email: string) => Promise<unknown>;
+  onDone: () => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <div className="space-y-3 rounded-md bg-muted/40 p-3">
+      <div className="space-y-1.5">
+        <Label className="text-xs" htmlFor={`give-email-${item.id}`}>
+          Give ownership to (exact email)
+        </Label>
+        <Input
+          id={`give-email-${item.id}`}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="teammate@company.com"
+          className="h-8 text-xs"
+        />
+      </div>
+      <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2 text-xs">
+        <p className="font-medium text-foreground">
+          You will lose access to this credential.
+        </p>
+        <p className="mt-1 text-muted-foreground">
+          It moves to their vault, everyone you shared it with loses access, and
+          you will not be able to view, reveal, or use it again. If you have
+          already seen the password, transferring cannot un-see it — rotate the
+          password afterwards if that matters.
+        </p>
+      </div>
       <div className="flex justify-end">
         <Button
           size="sm"
-          disabled={busy || (isOrg && mode === "restricted" && grantees.length === 0)}
-          onClick={() =>
-            void onShare(
-              isOrg ? mode : "restricted",
-              isOrg && mode === "all_members" ? [] : toWire(),
-            )
-          }
+          variant="destructive"
+          disabled={busy || !email.trim()}
+          onClick={() => setConfirming(true)}
         >
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-          Save access
+          {busy ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowLeftRight className="mr-2 h-4 w-4" />
+          )}
+          Give ownership
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title="Give ownership away?"
+        description={`${item.display_name} moves to ${email.trim()}. You will lose all access immediately and every existing share is revoked.`}
+        confirmLabel="Give ownership"
+        variant="destructive"
+        onConfirm={async () => {
+          await onGive(item.id, email.trim());
+          setConfirming(false);
+          onDone();
+        }}
+      />
     </div>
   );
 }
