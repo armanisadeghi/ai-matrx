@@ -1,5 +1,5 @@
 /**
- * Peek registry — catalogue key → lazy peek component.
+ * Peek registry — catalogue key → code-split peek component.
  *
  * Each kind's peek lives in ./kinds/<Kind>Peek.tsx with a `default` export of
  * `ComponentType<PeekProps>`. Register it here (one line) and it lights up the
@@ -8,34 +8,43 @@
  *
  * Keyed by catalogue key (e.g. 'agent', 'file', 'note') — the same key the
  * resource page uses.
+ *
+ * Entries use `next/dynamic({ ssr: false })`, never `React.lazy` (code-splitting
+ * doctrine rule 3): lazy SSRs by default, which compiled every peek's feature
+ * graph (agents, files, notes, canvas, …) into the server pass of each org
+ * route that statically reaches this registry via ResourcePeekHost.
+ * `loading: () => null` matches the previous `<Suspense fallback={null}>` UX.
  */
 
-import { lazy, type ComponentType, type LazyExoticComponent } from "react";
+import type { ComponentType } from "react";
+import dynamic from "next/dynamic";
 import type { PeekProps } from "./types";
 
-export const PEEK_REGISTRY: Record<
-  string,
-  LazyExoticComponent<ComponentType<PeekProps>>
-> = {
-  agent: lazy(() => import("./kinds/AgentPeek")),
-  file: lazy(() => import("./kinds/FilePeek")),
-  note: lazy(() => import("./kinds/NotePeek")),
-  agent_app: lazy(() => import("./kinds/AgentAppPeek")),
-  skill: lazy(() => import("./kinds/SkillPeek")),
-  workflow: lazy(() => import("./kinds/WorkflowPeek")),
-  content_template: lazy(() => import("./kinds/ContentTemplatePeek")),
-  conversation: lazy(() => import("./kinds/ConversationPeek")),
-  flashcard: lazy(() => import("./kinds/FlashcardPeek")),
-  canvas: lazy(() => import("./kinds/CanvasPeek")),
-  task: lazy(() => import("./kinds/TaskPeek")),
-  dataset: lazy(() => import("./kinds/DatasetPeek")),
-  transcript: lazy(() => import("./kinds/TranscriptPeek")),
-  agent_shortcut: lazy(() => import("./kinds/ShortcutPeek")),
-  picklist: lazy(() => import("./kinds/ListPeek")),
-  workbook: lazy(() => import("./kinds/WorkbookPeek")),
-  quiz: lazy(() => import("./kinds/QuizPeek")),
-  sandbox: lazy(() => import("./kinds/SandboxPeek")),
-  project: lazy(() => import("./kinds/ProjectPeek")),
+const peek = (
+  loader: () => Promise<{ default: ComponentType<PeekProps> }>,
+): ComponentType<PeekProps> =>
+  dynamic(loader, { ssr: false, loading: () => null });
+
+export const PEEK_REGISTRY: Record<string, ComponentType<PeekProps>> = {
+  agent: peek(() => import("./kinds/AgentPeek")),
+  file: peek(() => import("./kinds/FilePeek")),
+  note: peek(() => import("./kinds/NotePeek")),
+  agent_app: peek(() => import("./kinds/AgentAppPeek")),
+  skill: peek(() => import("./kinds/SkillPeek")),
+  workflow: peek(() => import("./kinds/WorkflowPeek")),
+  content_template: peek(() => import("./kinds/ContentTemplatePeek")),
+  conversation: peek(() => import("./kinds/ConversationPeek")),
+  flashcard: peek(() => import("./kinds/FlashcardPeek")),
+  canvas: peek(() => import("./kinds/CanvasPeek")),
+  task: peek(() => import("./kinds/TaskPeek")),
+  dataset: peek(() => import("./kinds/DatasetPeek")),
+  transcript: peek(() => import("./kinds/TranscriptPeek")),
+  agent_shortcut: peek(() => import("./kinds/ShortcutPeek")),
+  picklist: peek(() => import("./kinds/ListPeek")),
+  workbook: peek(() => import("./kinds/WorkbookPeek")),
+  quiz: peek(() => import("./kinds/QuizPeek")),
+  sandbox: peek(() => import("./kinds/SandboxPeek")),
+  project: peek(() => import("./kinds/ProjectPeek")),
   // Add new kinds here as their peek components land.
 };
 

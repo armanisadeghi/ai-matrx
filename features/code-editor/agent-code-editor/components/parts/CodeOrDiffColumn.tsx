@@ -41,14 +41,10 @@ import type { CodeEditorState } from "../../types";
 import type { ParseResult } from "../../utils/parseCodeEdits";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 
-// Monaco is heavy; dynamic-load client-only.
-const SmallCodeEditor = dynamic(
-  () =>
-    import(
-      "@/features/code-editor/components/code-block/SmallCodeEditor"
-    ).then((m) => m.default),
-  { ssr: false },
-);
+// Monaco is heavy — but SmallCodeEditor is now its own dynamic shell
+// (front door), so a plain static import IS the split. A second dynamic()
+// here would stack boundaries (code-splitting skill, rule 2).
+import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 

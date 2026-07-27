@@ -9,7 +9,14 @@ export type SortDirection = "asc" | "desc";
 
 /** Cell value type for typed inline editors (Supabase-style popovers for non-strings). */
 export type CellEditType =
-  "string" | "number" | "boolean" | "select" | "date" | false;
+  | "string"
+  | "number"
+  | "boolean"
+  | "select"
+  /** Free-text multi-value chips (string[] cells: tags, labels, aliases). */
+  | "tags"
+  | "date"
+  | false;
 
 export interface MatrxColumnDef<T> {
   /** Stable id used for sort/filter state. Defaults to `accessorKey` when set. */
@@ -35,7 +42,10 @@ export interface MatrxColumnDef<T> {
    * small popover (Supabase-style). Edits stay local until Save on the dirty pill.
    */
   editable?: CellEditType;
-  /** Options when `editable === "select"`. */
+  /**
+   * Options when `editable === "select"`. Also used by `"tags"` as the
+   * suggestion list (existing values), while still allowing new entries.
+   */
   editOptions?: Array<{ value: string; label: string }>;
   /**
    * Built-in cell kinds. `"uuid"` / `"fk"` use MatrxUuidCell (short + copy +

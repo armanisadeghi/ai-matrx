@@ -1,9 +1,15 @@
-// app/(core)/agents/all/page.tsx
+// app/(core)/agents/classic/page.tsx
+//
+// The PREVIOUS agents gallery, kept reachable during the cutover to the new
+// /agents/all list. Linked only from the dismissible notice on /agents/all.
+//
+// TEMPORARY — delete this route together with ClassicViewNotice and the
+// `display.agentsClassicNoticeDismissed` preference once the grace period ends
+// (~mid-August 2026). Nothing new should link here.
 //
 // Authenticated Agents gallery. The marketing landing lives one URL up at
 // `/agents` — guests are bounced there server-side instead of seeing a
-// compact in-place card. One canonical guest entry point per surface; no
-// icons or other non-serializable JSX cross the server→client boundary.
+// compact in-place card.
 
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
@@ -13,7 +19,7 @@ import { AgentsGrid } from "@/features/agents/components/agent-listings/AgentsGr
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
 
-export default async function AgentsGalleryPage() {
+export default async function AgentsClassicGalleryPage() {
   const { isAuthenticated } = await getServerAuth();
 
   if (!isAuthenticated) {

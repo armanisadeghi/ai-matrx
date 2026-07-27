@@ -23,6 +23,7 @@
  * runtime bypass guard (`reportAudioBypassViolation`).
  */
 
+import { activateAudio } from "@/features/audio/activation";
 import {
   claimPlayback,
   releasePlayback,
@@ -91,11 +92,17 @@ function prune(): void {
 // ─── Imperative API ────────────────────────────────────────────────────────
 
 export function registerSession(input: RegisterSessionInput): string {
+  // ANY session = audio/video engagement. This is the registry-level activation
+  // chokepoint: producers that never touch the queue/captureLock (raw <video>
+  // players via useMediaElementPlaybackSession) still mount the lazy audio
+  // system here so the panel mirror + lock arbiter exist. Idempotent latch.
+  activateAudio();
   const id = nextId(input.direction === "recording" ? "rec" : "pb");
   const session: AudioSession = {
     id,
     direction: input.direction,
     source: input.source,
+    medium: input.medium,
     label: input.label,
     text: input.text,
     status: input.status ?? "loading",

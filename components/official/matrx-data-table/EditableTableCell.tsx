@@ -196,6 +196,17 @@ function TypedEditor({
     );
   }
 
+  if (editType === "tags") {
+    return (
+      <TagsEditor
+        value={Array.isArray(value) ? value.map(String) : []}
+        suggestions={editOptions}
+        onCommit={onCommit}
+        onCancel={onCancel}
+      />
+    );
+  }
+
   if (editType === "select") {
     return (
       <Select
@@ -227,6 +238,107 @@ function TypedEditor({
         if (e.target.value) onCommit(e.target.value);
       }}
     />
+  );
+}
+
+/**
+ * Chips + free text. Existing values are offered as suggestions but never
+ * enforced — a tag vocabulary that cannot grow from the row it describes stops
+ * being used.
+ */
+function TagsEditor({
+  value,
+  suggestions,
+  onCommit,
+  onCancel,
+}: {
+  value: string[];
+  suggestions: Array<{ value: string; label: string }>;
+  onCommit: (next: unknown) => void;
+  onCancel: () => void;
+}) {
+  const [tags, setTags] = useState<string[]>(value);
+  const [draft, setDraft] = useState("");
+
+  const add = (raw: string) => {
+    const next = raw.trim();
+    if (!next || tags.includes(next)) return;
+    setTags([...tags, next]);
+    setDraft("");
+  };
+
+  const matches = suggestions
+    .filter(
+      (s) =>
+        !tags.includes(s.value) &&
+        s.value !== "__none__" &&
+        (!draft || s.label.toLowerCase().includes(draft.trim().toLowerCase())),
+    )
+    .slice(0, 6);
+
+  return (
+    <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-wrap gap-1">
+        {tags.length === 0 && (
+          <span className="text-xs text-muted-foreground">No tags</span>
+        )}
+        {tags.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => setTags(tags.filter((t) => t !== tag))}
+            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] hover:border-destructive hover:text-destructive"
+            title={`Remove ${tag}`}
+          >
+            {tag}
+            <X className="h-2.5 w-2.5" />
+          </button>
+        ))}
+      </div>
+
+      <Input
+        autoFocus
+        value={draft}
+        placeholder="Add tag, press Enter"
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            add(draft);
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            onCancel();
+          } else if (e.key === "Backspace" && !draft && tags.length > 0) {
+            setTags(tags.slice(0, -1));
+          }
+        }}
+        className="h-8 text-xs"
+      />
+
+      {matches.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {matches.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => add(s.value)}
+              className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:border-primary hover:text-primary"
+            >
+              + {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex justify-end gap-1 pt-1">
+        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onCancel}>
+          <X className="h-3.5 w-3.5" />
+        </Button>
+        <Button size="sm" className="h-7 px-2" onClick={() => onCommit(tags)}>
+          <Check className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
   );
 }
 

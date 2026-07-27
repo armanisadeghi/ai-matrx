@@ -2,64 +2,162 @@
 
 // features/agents/browse/components/AgentBrowseRows.tsx
 //
-// The dense list view — maximum names per screen, for the user who knows what
-// they're looking for. Built on the canonical ItemRow, so it gets inline
-// rename, the hover-revealed kebab, and right-click for free, all driven by
-// the SAME menu config the table and cards use.
+// The dense view — maximum agents per screen for someone who knows what they
+// are looking for and wants to scan, not browse.
+//
+// Reworked from the first pass, which just dropped `ItemRow` into a 3-column
+// grid: names truncated at ~20 characters, there was no category or timestamp,
+// nothing was aligned column-to-column, and the favorite star occupied the
+// leading slot on every row whether or not the agent was starred — so the
+// names did not line up either.
+//
+// Now it is a real dense list: one row per agent, full width, with aligned
+// zones — star | name | category | tags | updated | kebab. It reads like a
+// table without table chrome, which is the point of a compact view.
 
-import { Star, Archive } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { ItemRow } from "@/components/official/item/ItemRow";
+import { Star, Archive, MoreVertical } from "lucide-react";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { relativeTime } from "../columns";
 import type { AgentBrowseRow } from "../types";
 
 interface Props {
   rows: AgentBrowseRow[];
   density: "compact" | "comfortable";
+  showOwner: boolean;
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
-  onRename: (row: AgentBrowseRow, next: string) => Promise<void>;
+  onToggleFavorite: (row: AgentBrowseRow) => void;
+  onOpenRow: (row: AgentBrowseRow) => void;
 }
 
-export function AgentBrowseRows({ rows, density, menuFor, onRename }: Props) {
-  const router = useRouter();
+export function AgentBrowseRows({
+  rows,
+  density,
+  showOwner,
+  menuFor,
+  onToggleFavorite,
+  onOpenRow,
+}: Props) {
+  const compact = density === "compact";
 
   return (
-    <div className="grid grid-cols-1 gap-0.5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
       {rows.map((row) => (
-        <ItemRow
+        <div
           key={row.id}
-          label={row.name}
-          size={density === "compact" ? "sm" : "md"}
-          href={`/agents/${row.id}/run`}
-          onOpen={() => router.push(`/agents/${row.id}/run`)}
-          secondaryLabel={row.category ?? undefined}
-          leading={
+          role="button"
+          tabIndex={0}
+          onClick={() => onOpenRow(row)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onOpenRow(row);
+            }
+          }}
+          onAuxClick={(e) => {
+            // Middle-click opens in a new tab, matching the table and cards.
+            if (e.button === 1) window.open(`/agents/${row.id}/run`, "_blank");
+          }}
+          className={cn(
+            "group flex w-full cursor-pointer items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50",
+            compact ? "h-8" : "h-10",
+          )}
+        >
+          {/* Star always occupies its slot so every name starts on the same
+              x-position — an outlined star for non-favorites, not empty space. */}
+          <button
+            type="button"
+            aria-label={
+              row.is_favorite ? "Remove from favorites" : "Add to favorites"
+            }
+            disabled={!row.is_owner}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(row);
+            }}
+            className="shrink-0 rounded p-0.5 text-muted-foreground/40 hover:text-amber-500 disabled:hover:text-muted-foreground/40"
+          >
             <Star
               className={cn(
                 "h-3.5 w-3.5",
-                row.is_favorite
-                  ? "fill-amber-400 text-amber-500"
-                  : "text-transparent",
+                row.is_favorite && "fill-amber-400 text-amber-500",
               )}
             />
-          }
-          trailing={
-            row.is_archived ? (
-              <Badge variant="outline" className="text-[10px] py-0">
-                <Archive className="h-2.5 w-2.5" />
+          </button>
+
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate font-medium",
+              compact ? "text-xs" : "text-sm",
+            )}
+            title={row.name}
+          >
+            {row.name}
+          </span>
+
+          {row.is_archived && (
+            <Archive className="h-3 w-3 shrink-0 text-muted-foreground" />
+          )}
+
+          {/* Fixed-width zones from here right, so the columns line up down the
+              list even though this is not a table. Each drops out on smaller
+              widths rather than crushing the name. */}
+          <span className="hidden w-40 shrink-0 truncate text-xs text-muted-foreground lg:block">
+            {row.category ?? ""}
+          </span>
+
+          <span className="hidden w-44 shrink-0 items-center gap-1 overflow-hidden xl:flex">
+            {row.tags?.slice(0, 2).map((tag) => (
+              <Badge
+                key={tag}
+                variant="outline"
+                className="max-w-[76px] shrink-0 truncate py-0 text-[10px] font-normal"
+                title={tag}
+              >
+                {tag}
               </Badge>
-            ) : undefined
-          }
-          menu={menuFor(row)}
-          rename={
-            row.is_owner
-              ? { onCommit: (next) => onRename(row, next), emptyFallback: row.name }
-              : undefined
-          }
-        />
+            ))}
+            {(row.tags?.length ?? 0) > 2 && (
+              <span className="text-[10px] text-muted-foreground">
+                +{(row.tags?.length ?? 0) - 2}
+              </span>
+            )}
+          </span>
+
+          {showOwner && (
+            <span className="hidden w-48 shrink-0 truncate text-xs text-muted-foreground xl:block">
+              {row.owner_email ?? ""}
+            </span>
+          )}
+
+          <span
+            className="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted-foreground sm:block"
+            title={new Date(row.updated_at).toLocaleString()}
+          >
+            {relativeTime(row.updated_at)}
+          </span>
+
+          <ItemMenu config={menuFor(row)} align="end">
+            <button
+              type="button"
+              aria-label={`Actions for ${row.name}`}
+              onClick={(e) => e.stopPropagation()}
+              // Reserved space, revealed on hover/focus — the row never
+              // reflows when the kebab appears.
+              className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          </ItemMenu>
+        </div>
       ))}
+      {rows.length === 0 && (
+        <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+          No agents match this scope and filter combination.
+        </p>
+      )}
     </div>
   );
 }

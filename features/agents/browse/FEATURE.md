@@ -1,9 +1,10 @@
 # Agents Browse — the canonical feature-entry list
 
-**Status:** live at `/agents/browse`, iteration 2. Proving ground for the list shell every feature will adopt.
-**Owner surface:** `app/(core)/agents/browse/page.tsx` → `features/agents/browse/`
+**Status:** THE agents list, live at `/agents/all` (round 3). Proving ground for the list shell every feature will adopt.
+**Owner surface:** `app/(core)/agents/all/page.tsx` → `features/agents/browse/`
+**Cutover:** the previous gallery moved to `/agents/classic`, reachable only from the dismissible `ClassicViewNotice`. `/agents/browse` redirects here. **Delete the notice, its `display.agentsClassicNoticeDismissed` preference, and `/agents/classic` together (~mid-Aug 2026).**
 
-`/agents/all` is untouched and still the production gallery. This is a **new route beside it**, deliberately, so the shape can be iterated on without breaking a page 372 agents live in. When the shape settles, this becomes the reusable shell and `/agents/all` is retired into it.
+The folder is still named `browse/` (its implementation namespace); the ROUTE is `/agents/all`.
 
 ---
 

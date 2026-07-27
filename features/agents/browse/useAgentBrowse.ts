@@ -41,6 +41,8 @@ export interface UseAgentBrowseResult {
   error: string | null;
 
   setScope: (scope: BrowseScope) => void;
+  /** Replace the whole column-filter bag (the table emits it wholesale). */
+  setFilters: (filters: BrowseQuery["filters"]) => void;
   setSearch: (search: string) => void;
   setDeep: (deep: boolean) => void;
   patchQuery: (patch: Partial<BrowseQuery>) => void;
@@ -135,10 +137,8 @@ export function useAgentBrowse(
   const countsKey = JSON.stringify({
     search: debouncedSearch,
     deep: query.deep,
-    fav: query.favorites,
     archived: query.archived,
-    categories: query.categories,
-    tags: query.tags,
+    filters: query.filters,
     refreshToken,
   });
 
@@ -201,6 +201,10 @@ export function useAgentBrowse(
     (scope: BrowseScope) => patchQuery({ scope }),
     [patchQuery],
   );
+  const setFilters = useCallback(
+    (filters: BrowseQuery["filters"]) => patchQuery({ filters }),
+    [patchQuery],
+  );
   const setSearch = useCallback(
     (search: string) => patchQuery({ search }),
     [patchQuery],
@@ -217,10 +221,8 @@ export function useAgentBrowse(
     () =>
       setQuery((prev) => ({
         ...prev,
-        favorites: DEFAULT_BROWSE_QUERY.favorites,
         archived: DEFAULT_BROWSE_QUERY.archived,
-        categories: [],
-        tags: [],
+        filters: {},
         page: 1,
       })),
     [],
@@ -248,6 +250,7 @@ export function useAgentBrowse(
     isFetching,
     error,
     setScope,
+    setFilters,
     setSearch,
     setDeep,
     patchQuery,

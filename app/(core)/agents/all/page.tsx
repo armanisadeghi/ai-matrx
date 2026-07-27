@@ -17,7 +17,7 @@ import { AgentBrowsePage } from "@/features/agents/browse/components/AgentBrowse
  * store "succeeded", then immediately re-fetches and shows a skeleton over
  * data it already had).
  */
-export default async function AgentsBrowseRoute() {
+export default async function AgentsListRoute() {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) redirect("/agents");
 

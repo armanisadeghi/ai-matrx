@@ -3,15 +3,16 @@
 // features/agents/browse/components/BrowseFilterPanel.tsx
 //
 // Filters & Sort, in the shape /agents/all established (popover, sections,
-// radio groups, chips with search) — built on the now-shared primitives in
+// radio groups, chips with search) — built on the shared primitives in
 // components/official/filter-panel/ and driven by SERVER-computed facets.
 //
-// Every control here maps to an agx_list_scoped parameter, so a filter applies
-// to all 2,000 rows, not to the 25 currently on screen.
+// It writes into the SAME `query.filters` bag the column headers write to, so
+// selecting "Business & Productivity" here and from the Category header are
+// literally the same query. One filter model, two entry points.
 //
 // The badge counts only filters the user actually applied. /agents/all's badge
-// read "1" on a untouched page because it counted the sort and the active tab
-// as filters — a permanent lie that trained people to ignore the number.
+// read "1" on an untouched page because it counted the sort and the active tab
+// — a permanent lie that trained people to ignore the number.
 
 import { useState } from "react";
 import { useScrollFade } from "@/components/official/scroll-fade/useScrollFade";
@@ -30,29 +31,29 @@ import {
 } from "@/components/official/filter-panel/parts";
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
+import { BROWSE_COLUMNS } from "../columns";
 import {
   countActiveFilters,
   type ArchivedFilter,
   type BrowseFacets,
+  type BrowseFilters,
   type BrowseQuery,
-  type FavoritesFilter,
 } from "../types";
 
-type SortKey = `${ListViewPrefs["sort"]}-${ListViewPrefs["direction"]}`;
+type SortKey = `${string}-${ListViewPrefs["direction"]}`;
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+/** Sort options are derived from the columns, so a new column is instantly
+ *  sortable from the panel too — no second list to keep in step. */
+const EXTRA_SORTS: { value: SortKey; label: string }[] = [
   { value: "updated-desc", label: "Recently updated" },
   { value: "created-desc", label: "Recently created" },
-  { value: "name-asc", label: "Name (A–Z)" },
-  { value: "name-desc", label: "Name (Z–A)" },
-  { value: "category-asc", label: "Category (A–Z)" },
 ];
 
-const FAV_OPTIONS: { value: FavoritesFilter; label: string }[] = [
+const FAV_OPTIONS = [
   { value: "all", label: "All" },
   { value: "only", label: "Favorites only" },
   { value: "exclude", label: "Not favorites" },
-];
+] as const;
 
 const ARCH_OPTIONS: { value: ArchivedFilter; label: string }[] = [
   { value: "active", label: "Active only" },
@@ -63,23 +64,25 @@ const ARCH_OPTIONS: { value: ArchivedFilter; label: string }[] = [
 interface Props {
   query: BrowseQuery;
   facets: BrowseFacets;
-  sort: ListViewPrefs["sort"];
+  sort: string;
   direction: ListViewPrefs["direction"];
   favoritesFirst: boolean;
   onPatchQuery: (patch: Partial<BrowseQuery>) => void;
-  onSortChange: (
-    sort: ListViewPrefs["sort"],
-    direction: ListViewPrefs["direction"],
-  ) => void;
+  onSortChange: (sort: string, direction: ListViewPrefs["direction"]) => void;
   onFavoritesFirstChange: (next: boolean) => void;
   onResetFilters: () => void;
 }
 
+const NONE_LABEL: Record<string, string> = {
+  category: "Uncategorized",
+  tag: "Untagged",
+};
+
 function toOptions(
-  values: { value: string; count: number }[],
+  values: { value: string; count: number }[] | undefined,
   noneLabel: string,
 ): FacetOption[] {
-  return values.map((v) => ({
+  return (values ?? []).map((v) => ({
     value: v.value,
     label: v.value === NONE_SENTINEL ? noneLabel : v.value,
     count: v.count,
@@ -103,8 +106,43 @@ export function BrowseFilterPanel({
   const scrollFade = useScrollFade();
   const activeCount = countActiveFilters(query);
   const sortKey = `${sort}-${direction}` as SortKey;
+
+  const sortOptions: { value: SortKey; label: string }[] = [
+    ...EXTRA_SORTS,
+    ...BROWSE_COLUMNS.filter((c) => c.id !== "updated" && c.id !== "created")
+      .flatMap((c) => [
+        { value: `${c.id}-asc` as SortKey, label: `${c.label} (A→Z)` },
+        { value: `${c.id}-desc` as SortKey, label: `${c.label} (Z→A)` },
+      ])
+      .slice(0, 12),
+  ];
   const sortLabel =
-    SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Custom";
+    sortOptions.find((o) => o.value === sortKey)?.label ?? "Custom";
+
+  /** Read/write one entry of the shared filter bag. */
+  const setSelect = (id: string, values: string[]) => {
+    const next: BrowseFilters = { ...query.filters };
+    if (values.length === 0) delete next[id];
+    else next[id] = { kind: "select", values };
+    onPatchQuery({ filters: next });
+  };
+  const selectedOf = (id: string): string[] => {
+    const f = query.filters[id];
+    return f && f.kind === "select" ? f.values : [];
+  };
+
+  const favValue: (typeof FAV_OPTIONS)[number]["value"] = (() => {
+    const f = query.filters.favorite;
+    if (!f || f.kind !== "boolean") return "all";
+    return f.value ? "only" : "exclude";
+  })();
+
+  const setFav = (v: (typeof FAV_OPTIONS)[number]["value"]) => {
+    const next: BrowseFilters = { ...query.filters };
+    if (v === "all") delete next.favorite;
+    else next.favorite = { kind: "boolean", value: v === "only" };
+    onPatchQuery({ filters: next });
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -167,13 +205,13 @@ export function BrowseFilterPanel({
             <RadioSelect<SortKey>
               value={sortKey}
               onChange={(v) => {
-                const [nextSort, nextDir] = v.split("-") as [
-                  ListViewPrefs["sort"],
-                  ListViewPrefs["direction"],
-                ];
-                onSortChange(nextSort, nextDir);
+                const idx = v.lastIndexOf("-");
+                onSortChange(
+                  v.slice(0, idx),
+                  v.slice(idx + 1) as ListViewPrefs["direction"],
+                );
               }}
-              options={SORT_OPTIONS}
+              options={sortOptions}
             />
             <button
               type="button"
@@ -203,14 +241,14 @@ export function BrowseFilterPanel({
             </button>
           </FilterSection>
 
-          <FilterSection label="Favorites" active={query.favorites !== "all"}>
-            <RadioSelect<FavoritesFilter>
-              value={query.favorites}
-              onChange={(v) => onPatchQuery({ favorites: v })}
+          <FilterSection label="Favorites" active={favValue !== "all"}>
+            <RadioSelect
+              value={favValue}
+              onChange={setFav}
               options={FAV_OPTIONS.map((o) =>
                 o.value === "only"
                   ? { ...o, hint: String(facets.favoriteCount) }
-                  : o,
+                  : { ...o },
               )}
             />
           </FilterSection>
@@ -227,30 +265,44 @@ export function BrowseFilterPanel({
             />
           </FilterSection>
 
-          {facets.categories.length > 0 && (
+          {(facets.byKind.category?.length ?? 0) > 0 && (
             <FilterSection
-              label={`Categories (${facets.categories.length})`}
-              active={query.categories.length > 0}
+              label={`Categories (${facets.byKind.category!.length})`}
+              active={selectedOf("category").length > 0}
             >
               <FacetChips
-                options={toOptions(facets.categories, "Uncategorized")}
-                selected={query.categories}
-                onChange={(v) => onPatchQuery({ categories: v })}
+                options={toOptions(facets.byKind.category, NONE_LABEL.category!)}
+                selected={selectedOf("category")}
+                onChange={(v) => setSelect("category", v)}
                 searchPlaceholder="Find category…"
               />
             </FilterSection>
           )}
 
-          {facets.tags.length > 0 && (
+          {(facets.byKind.tag?.length ?? 0) > 0 && (
             <FilterSection
-              label={`Tags (${facets.tags.length})`}
-              active={query.tags.length > 0}
+              label={`Tags (${facets.byKind.tag!.length})`}
+              active={selectedOf("tags").length > 0}
             >
               <FacetChips
-                options={toOptions(facets.tags, "Untagged")}
-                selected={query.tags}
-                onChange={(v) => onPatchQuery({ tags: v })}
+                options={toOptions(facets.byKind.tag, NONE_LABEL.tag!)}
+                selected={selectedOf("tags")}
+                onChange={(v) => setSelect("tags", v)}
                 searchPlaceholder="Find tag…"
+              />
+            </FilterSection>
+          )}
+
+          {(facets.byKind.visibility?.length ?? 0) > 1 && (
+            <FilterSection
+              label="Visibility"
+              active={selectedOf("visibility").length > 0}
+            >
+              <FacetChips
+                options={toOptions(facets.byKind.visibility, "None")}
+                selected={selectedOf("visibility")}
+                onChange={(v) => setSelect("visibility", v)}
+                searchPlaceholder="Find…"
               />
             </FilterSection>
           )}

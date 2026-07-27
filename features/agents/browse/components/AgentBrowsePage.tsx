@@ -13,6 +13,8 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Plus, Network, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
@@ -24,7 +26,10 @@ import { AgentBrowseTable } from "./AgentBrowseTable";
 import { AgentBrowseCards } from "./AgentBrowseCards";
 import { AgentBrowseRows } from "./AgentBrowseRows";
 import { AddToSetDialog } from "./AddToSetDialog";
+import { ClassicViewNotice } from "./ClassicViewNotice";
 import { DEFAULT_HIDDEN_COLUMNS } from "../columns";
+import { saveAgentRowEdits } from "../service";
+import type { AgentBrowseRow, AgentRowEdit } from "../types";
 
 // Heavy, conditional, and only ever needed after a user action — the two rules
 // that make a dynamic import worth its cost.
@@ -51,9 +56,10 @@ const SURFACE_KEY = "agents-browse";
 // Bump `version` whenever BROWSE_COLUMNS gains or loses a column, so existing
 // users get the new default column set instead of silently keeping every new
 // column switched on.
-const SURFACE_DEFAULTS = { version: 2, hiddenColumns: DEFAULT_HIDDEN_COLUMNS };
+const SURFACE_DEFAULTS = { version: 3, hiddenColumns: DEFAULT_HIDDEN_COLUMNS };
 
 export function AgentBrowsePage() {
+  const router = useRouter();
   const { prefs, setPrefs, reset } = useListViewPrefs(
     SURFACE_KEY,
     SURFACE_DEFAULTS,
@@ -76,6 +82,26 @@ export function AgentBrowsePage() {
   // every row has the same owner. Offering them there is pure noise.
   const showSharedColumns = browse.query.scope.kind !== "mine";
 
+  const openRow = (row: AgentBrowseRow) => router.push(`/agents/${row.id}/run`);
+
+  /**
+   * Commit the table's pending inline edits. Each row is one UPDATE; the local
+   * row is patched so the list reflects the change without a refetch flash,
+   * and a failure re-throws so the table keeps the draft and toasts.
+   */
+  const saveEdits = async (edits: Record<string, AgentRowEdit>) => {
+    const entries = Object.entries(edits);
+    await Promise.all(
+      entries.map(async ([agentId, edit]) => {
+        await saveAgentRowEdits(agentId, edit);
+        browse.patchRow(agentId, edit as Partial<AgentBrowseRow>);
+      }),
+    );
+    toast.success(
+      entries.length === 1 ? "Agent updated" : `${entries.length} agents updated`,
+    );
+  };
+
   const newAgentButton = (
     <Button asChild size="sm">
       <Link href="/agents/new">
@@ -94,6 +120,7 @@ export function AgentBrowsePage() {
         below scrolls behind the glass.
       */}
       <div className="shrink-0 space-y-2 px-3 pt-[calc(var(--shell-header-h)+0.5rem)] pb-2">
+        <ClassicViewNotice />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <BrowseScopeTabs
             scope={browse.query.scope}
@@ -144,12 +171,17 @@ export function AgentBrowsePage() {
             pageSize={prefs.pageSize}
             sort={prefs.sort}
             direction={prefs.direction}
+            filters={browse.query.filters}
+            facets={browse.facets}
             isLoading={browse.isLoading}
             isFetching={browse.isFetching}
             density={prefs.density}
             showSharedColumns={showSharedColumns}
             hiddenColumns={prefs.hiddenColumns}
             menuFor={actions.menuFor}
+            onOpenRow={openRow}
+            onToggleFavorite={actions.toggleFavorite}
+            onSaveEdits={saveEdits}
             emptyAction={newAgentButton}
             onQueryChange={(next) => {
               if (
@@ -162,6 +194,12 @@ export function AgentBrowsePage() {
                   direction: next.direction,
                   pageSize: next.pageSize,
                 });
+              }
+              if (
+                JSON.stringify(next.filters) !==
+                JSON.stringify(browse.query.filters)
+              ) {
+                browse.setFilters(next.filters);
               }
               browse.setPage(next.page);
             }}
@@ -178,8 +216,10 @@ export function AgentBrowsePage() {
           <AgentBrowseRows
             rows={browse.rows}
             density={prefs.density}
+            showOwner={showSharedColumns}
             menuFor={actions.menuFor}
-            onRename={actions.renameTo}
+            onToggleFavorite={actions.toggleFavorite}
+            onOpenRow={openRow}
           />
         )}
 

@@ -53,13 +53,20 @@ export type AudioSessionSource =
   | "voice-agent" // xAI realtime voice agent
   | "recording" // mic capture (transcription, voice message, etc.)
   | "media-capture" // Capture Studio video/audio recording (features/media-capture)
+  | "file-media" // file-system media players (InlineMediaRef, previews, blocks)
   | "other";
+
+/** What kind of media a session carries — lets the panel render video rows
+ *  distinctly. Absent means "audio" (every producer predating video support). */
+export type AudioSessionMedium = "audio" | "video";
 
 /** One audio activity — serializable; mirrored into Redux. */
 export interface AudioSession {
   id: string;
   direction: AudioDirection;
   source: AudioSessionSource;
+  /** Media kind; absent = audio. Video sessions get distinct panel chrome. */
+  medium?: AudioSessionMedium;
   /** Short human label for the row (e.g. "Assistant reply", "Voice message"). */
   label: string;
   /** Optional text preview / replay payload for TTS sessions. */
@@ -108,6 +115,7 @@ export interface AudioSnapshot {
 export interface RegisterSessionInput {
   direction: AudioDirection;
   source: AudioSessionSource;
+  medium?: AudioSessionMedium;
   label: string;
   text?: string;
   status?: AudioSessionStatus;

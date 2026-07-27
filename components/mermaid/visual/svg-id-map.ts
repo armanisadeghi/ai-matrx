@@ -15,8 +15,13 @@ export interface SvgHit {
   element: SVGGraphicsElement;
 }
 
-const NODE_ID_RE = /^flowchart-(.+)-\d+$/;
-const EDGE_ID_RE = /^L[-_]([^_]+)[-_](.+?)[-_]\d+$/;
+// Node ids: mermaid ≤11.4 emitted `flowchart-<nodeId>-<n>`; current v11 prefixes
+// the render id we pass to mermaid.render (runtime.ts `mmd-<n>`), giving
+// `mmd-<n>-flowchart-<nodeId>-<idx>`. Accept both via an optional lazy prefix.
+const NODE_ID_RE = /^(?:.*?-)?flowchart-(.+)-\d+$/;
+// Edge ids: `L_<from>_<to>_<n>` (or `L-…`), possibly carrying the same render-id
+// prefix (`mmd-<n>_L_…`). Anchor on the `L` segment, not on string start.
+const EDGE_ID_RE = /(?:^|[-_])L[-_]([^_]+)[-_](.+?)[-_]\d+$/;
 
 export function extractNodeId(domId: string): string | null {
   return NODE_ID_RE.exec(domId)?.[1] ?? null;

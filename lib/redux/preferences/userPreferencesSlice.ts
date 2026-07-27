@@ -28,6 +28,11 @@ import type {
 
 // Define types for each module's preferences
 export interface DisplayPreferences {
+  /**
+   * TEMPORARY (agents cutover, remove ~mid-Aug 2026 with /agents/classic and
+   * ClassicViewNotice). Per-user so a dismissal on a laptop carries to a phone.
+   */
+  agentsClassicNoticeDismissed?: boolean;
   darkMode: boolean;
   theme: string;
   dashboardLayout: string;
@@ -385,7 +390,14 @@ export interface ListViewPrefs {
   /** "table" is the canonical default for every list surface. */
   view: "table" | "cards" | "rows";
   density: "compact" | "comfortable";
-  sort: "updated" | "created" | "name" | "category";
+  /**
+   * Column id to order by. Deliberately a free string, not a closed union:
+   * every column a surface declares is sortable (app policy), so the valid set
+   * is the surface's column registry, not a list duplicated here. The server
+   * whitelists it and falls back rather than erroring, so a stale stored value
+   * can never break a page.
+   */
+  sort: string;
   direction: "asc" | "desc";
   /**
    * Pin favorites above every other row, in EVERY sort. On by default: what

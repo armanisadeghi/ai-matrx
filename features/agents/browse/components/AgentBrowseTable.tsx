@@ -3,48 +3,101 @@
 // features/agents/browse/components/AgentBrowseTable.tsx
 //
 // The default view. Built on the canonical MatrxDataTable (sticky header,
-// zebra) in CONTROLLED mode: the table owns none of the querying, so sort and
-// pagination are real server operations over the WHOLE result set — not a
-// re-sort of whatever page happened to load. That distinction is the entire
-// bug in /transcripts' bespoke table.
+// zebra, inline edit + save pill) in CONTROLLED mode: the table owns none of
+// the querying, so sort, filter and pagination are real server operations over
+// the WHOLE result set — never a re-sort of the loaded page.
 //
-// Columns come from ../columns.tsx and are user-selectable. Filtering lives in
-// the page toolbar (server-backed), so no column renders its own filter
-// control — a per-column filter here could only ever filter the current page.
+// Three behaviours worth stating plainly:
+//   * EVERY column sorts and filters (app policy). The controlled
+//     `columnFilters` state maps 1:1 onto `agx_list_scoped(p_filters)`, and
+//     finite-valued columns get real options with counts from the facets RPC.
+//   * The WHOLE ROW is clickable and shows a pointer cursor. Interactive cells
+//     (favorite star, the actions kebab, an open inline editor) stop
+//     propagation so they never trigger navigation.
+//   * Name / Description / Category / Tags edit in place. Edits stay local
+//     until the floating Save pill commits them.
 
-import { MoreHorizontal } from "lucide-react";
+import { MoreVertical, Star } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type {
+  ColumnFiltersState,
+  MatrxColumnDef,
+} from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { cn } from "@/lib/utils";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import { BROWSE_COLUMNS, relativeTime } from "../columns";
-import type { AgentBrowseRow } from "../types";
+import type {
+  AgentBrowseRow,
+  AgentRowEdit,
+  BrowseFacets,
+  BrowseFilters,
+} from "../types";
 
 interface Props {
   rows: AgentBrowseRow[];
   total: number;
   page: number;
   pageSize: number;
-  sort: "updated" | "created" | "name" | "category";
+  sort: string;
   direction: "asc" | "desc";
+  filters: BrowseFilters;
+  facets: BrowseFacets;
   isLoading: boolean;
   isFetching: boolean;
   density: "compact" | "comfortable";
   showSharedColumns: boolean;
   hiddenColumns: string[];
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
+  onOpenRow: (row: AgentBrowseRow) => void;
+  onToggleFavorite: (row: AgentBrowseRow) => void;
+  onSaveEdits: (edits: Record<string, AgentRowEdit>) => Promise<void>;
   onQueryChange: (next: {
     page: number;
     pageSize: number;
-    sort: Props["sort"];
+    sort: string;
     direction: "asc" | "desc";
+    filters: BrowseFilters;
   }) => void;
   emptyAction?: React.ReactNode;
 }
 
-const SERVER_SORTABLE = new Set(["updated", "created", "name", "category"]);
+const NONE_LABEL: Record<string, string> = {
+  category: "Uncategorized",
+  tags: "Untagged",
+  organization_name: "No organization",
+  owner_email: "No owner",
+};
+
+/** Our filter bag → the table's controlled `columnFilters` shape. */
+function toTableFilters(filters: BrowseFilters): ColumnFiltersState {
+  const out: ColumnFiltersState = {};
+  for (const [id, f] of Object.entries(filters)) {
+    if (f.kind === "text") out[id] = { kind: "text", value: f.value };
+    else if (f.kind === "select")
+      out[id] = { kind: "select", value: f.values[0] ?? "", values: f.values };
+    else out[id] = { kind: "boolean", value: f.value };
+  }
+  return out;
+}
+
+/** The table's `columnFilters` → our bag. Empty entries drop out entirely. */
+function fromTableFilters(state: ColumnFiltersState): BrowseFilters {
+  const out: BrowseFilters = {};
+  for (const [id, f] of Object.entries(state)) {
+    if (!f) continue;
+    if (f.kind === "text") {
+      if (f.value?.trim()) out[id] = { kind: "text", value: f.value.trim() };
+    } else if (f.kind === "select") {
+      const values = f.values?.length ? f.values : f.value ? [f.value] : [];
+      if (values.length > 0) out[id] = { kind: "select", values };
+    } else if (f.kind === "boolean") {
+      out[id] = { kind: "boolean", value: f.value };
+    }
+  }
+  return out;
+}
 
 export function AgentBrowseTable({
   rows,
@@ -53,12 +106,17 @@ export function AgentBrowseTable({
   pageSize,
   sort,
   direction,
+  filters,
+  facets,
   isLoading,
   isFetching,
   density,
   showSharedColumns,
   hiddenColumns,
   menuFor,
+  onOpenRow,
+  onToggleFavorite,
+  onSaveEdits,
   onQueryChange,
   emptyAction,
 }: Props) {
@@ -66,20 +124,67 @@ export function AgentBrowseTable({
     (spec) =>
       (showSharedColumns || !spec.scopedToShared) &&
       !hiddenColumns.includes(spec.id),
-  ).map((spec) => ({
-    ...spec.column,
-    // Only the four keys the RPC can order by are clickable-to-sort. A header
-    // that sorts one page and calls it "sorted by Name" is worse than a header
-    // that does not sort at all.
-    sortable: SERVER_SORTABLE.has(spec.id)
-      ? spec.column.sortable !== false
-      : false,
-  }));
+  ).map((spec) => {
+    const facetValues = spec.facet ? facets.byKind[spec.facet] : undefined;
+    return {
+      ...spec.column,
+      // Every column sorts — the RPC's ORDER BY whitelist covers all of them.
+      sortable: true,
+      // Finite value sets get real options WITH counts, so the user picks from
+      // what exists instead of guessing at a text box.
+      filterOptions: facetValues?.map((v) => ({
+        value: v.value,
+        label:
+          v.value === "__none__"
+            ? (NONE_LABEL[spec.id] ?? "None")
+            : `${v.value} (${v.count})`,
+      })),
+      editOptions:
+        spec.column.editable === "select" || spec.column.editable === "tags"
+          ? facetValues
+              ?.filter((v) => v.value !== "__none__")
+              .map((v) => ({ value: v.value, label: v.value }))
+          : undefined,
+    };
+  });
+
+  // Favorite gets its own leading cell (not a decoration inside Name), so the
+  // star can be clicked without opening the row AND Name still sorts purely
+  // alphabetically.
+  const favoriteColumn: MatrxColumnDef<AgentBrowseRow> = {
+    id: "favorite_toggle",
+    header: "",
+    sortable: false,
+    filter: false,
+    width: 36,
+    align: "center",
+    cell: (row) => (
+      <button
+        type="button"
+        aria-label={
+          row.is_favorite ? "Remove from favorites" : "Add to favorites"
+        }
+        disabled={!row.is_owner}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleFavorite(row);
+        }}
+        className="rounded p-0.5 text-muted-foreground hover:text-amber-500 disabled:opacity-30"
+      >
+        <Star
+          className={cn(
+            "h-3.5 w-3.5",
+            row.is_favorite && "fill-amber-400 text-amber-500",
+          )}
+        />
+      </button>
+    ),
+  };
 
   return (
     <MatrxDataTable<AgentBrowseRow>
       data={rows}
-      columns={columns}
+      columns={[favoriteColumn, ...columns]}
       getRowId={(row) => row.id}
       isLoading={isLoading}
       isFetching={isFetching}
@@ -94,25 +199,33 @@ export function AgentBrowseTable({
           pageSize,
           search: "",
           anyOf: "",
-          columnFilters: {},
+          columnFilters: toTableFilters(filters),
           sort: { id: sort, direction },
         },
         onStateChange: (next) => {
-          const nextSortId =
-            next.sort && SERVER_SORTABLE.has(next.sort.id) ? next.sort.id : sort;
           onQueryChange({
             page: next.page,
             pageSize: next.pageSize,
-            sort: nextSortId as Props["sort"],
+            sort: next.sort?.id ?? sort,
             direction: next.sort?.direction ?? direction,
+            filters: fromTableFilters(next.columnFilters),
           });
         },
       }}
-      // The page owns search and every filter; a second search box inside the
-      // table would be two affordances fighting over one query.
+      // The page owns the search box; a second one inside the table would be
+      // two affordances fighting over one query.
       toolbar={{ search: false }}
+      // Row click navigates. The side panel and row-window are off because the
+      // "…" menu already carries Quick look and every other record action.
       detail={{ enabled: false }}
       window={{ enabled: false }}
+      onRowOpen={onOpenRow}
+      edit={{
+        enabled: true,
+        onSave: async (edits) => {
+          await onSaveEdits(edits as Record<string, AgentRowEdit>);
+        },
+      }}
       rowActions={(row) => (
         <ItemMenu config={menuFor(row)} align="end">
           <button
@@ -121,14 +234,14 @@ export function AgentBrowseTable({
             className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
             onClick={(e) => e.stopPropagation()}
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreVertical className="h-4 w-4" />
           </button>
         </ItemMenu>
       )}
       copy={{
         label: "Agent",
         listLabel: "Agents",
-        location: "/agents/browse",
+        location: "/agents",
         rowKind: "agent",
         listKind: "agent-list",
         humanRow: (row) =>

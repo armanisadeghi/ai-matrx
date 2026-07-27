@@ -232,11 +232,12 @@ Rules + stages: [`lib/coming-soon/FEATURE.md`](./lib/coming-soon/FEATURE.md).
 
 ## Feature entry lists — the canonical shell
 
-`/agents/browse` ([`features/agents/browse/FEATURE.md`](./features/agents/browse/FEATURE.md)) is the proving ground for the list page every feature should have: table-first with ONE `…` menu carrying every record action, plus card and dense views, and **Mine / My Orgs / Shared / Public** scopes with true server counts. Building or fixing a feature's list page? Read it first and consume its primitives rather than starting a fifth variant:
+`/agents/all` ([`features/agents/browse/FEATURE.md`](./features/agents/browse/FEATURE.md)) is the proving ground for the list page every feature should have: table-first with ONE `…` menu carrying every record action, plus card and dense views, and **Mine / My Orgs / Shared / Public** scopes with true server counts. Building or fixing a feature's list page? Read it first and consume its primitives rather than starting a fifth variant:
 
 - **View style persistence** → `useListViewPrefs` ([`lib/list-views/FEATURE.md`](./lib/list-views/FEATURE.md)). Style persists (view, density, sort, page size, columns); query never does (search, filters, page, scope). Four hand-rolled `localStorage` copies are pending migration onto it.
 - **Row actions** → one `ItemMenuConfig` builder per entity (`components/official/item/`), consumed identically by table, cards, rows, and right-click. Three divergent hard-coded action lists for one entity is the defect this kills.
-- **Table** → `MatrxDataTable` in **controlled** mode when paging server-side. A column filter the server can't serve is `filter: false`, never a control that silently filters one page.
+- **Table** → `MatrxDataTable` in **controlled** mode when paging server-side. **Every column sorts AND filters — no exceptions**, and finite value sets get real options with counts. A filter the server can't serve must not render at all; a control that silently filters one page is worse than none.
+- **Full-row click** opens the record (pointer cursor); interactive cells stop propagation. Fields the user can see and easily change (name, description, category, tags) edit **inline**.
 
 ## Agent Review Queue — anything you build that Arman must see
 

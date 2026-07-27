@@ -274,6 +274,14 @@ export async function acquireMicStream(
       m.stream = stream;
       attachTrackHealth(stream);
       watchPageLifecycle();
+      // Every holder released while gUM was in flight → nobody owns this
+      // fresh stream. Without this, the manager would sit "active" with zero
+      // holders and zero timers FOREVER (mic light on until refresh). Park it
+      // in the keepalive window instead so it stops like any last release.
+      if (m.refCount === 0) {
+        armKeepaliveStop();
+        return stream;
+      }
       setState("active");
       return stream;
     } catch (err) {
@@ -294,14 +302,33 @@ export async function acquireMicStream(
  * stream is kept warm for the keepalive window, then actually stopped.
  */
 export function releaseMicStream(): void {
-  m.refCount = Math.max(0, m.refCount - 1);
+  if (m.refCount === 0) {
+    // LOUD: an unbalanced release is never harmless — it either means a leak
+    // elsewhere went uncounted, or (worse) it will steal the hold of the NEXT
+    // acquirer, killing a live recording seconds in. Scream, don't floor.
+    console.error(
+      "[micStream] releaseMicStream() with zero holders — unbalanced release. " +
+        "Some caller released twice (or released a hold it never acquired).",
+    );
+    return;
+  }
+  m.refCount -= 1;
   if (m.refCount > 0) return;
 
   if (!m.stream) {
-    setState("idle");
+    // Nothing live yet. If an acquisition is still in flight, its resolution
+    // sees refCount === 0 and parks the fresh stream in keepalive → stop.
+    setState(m.inFlight ? "keepalive" : "idle");
     return;
   }
 
+  armKeepaliveStop();
+}
+
+/** Park the stream in the keepalive window; hard-stop when it elapses with no
+ *  holders. The single exit used by both the normal last-release path and the
+ *  released-while-acquiring path. */
+function armKeepaliveStop(): void {
   clearReleaseTimer();
   setState("keepalive");
   m.releaseTimer = setTimeout(() => {
