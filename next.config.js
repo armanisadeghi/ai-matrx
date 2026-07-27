@@ -251,10 +251,21 @@ const nextConfig = {
         // MEMORY (measured 2026-07-26, experiment fleet v0.4.93-99):
         // - turbopackMemoryLimit alone (45GiB): compile SUCCEEDED in 19.4min where
         //   baseline OOM'd; then died when 29 page-data workers spawned on top.
-        // - cpus: 8 caps those workers (default = cores-1 = 29 on Vercel Turbo).
+        // - cpus caps those workers (default = cores-1 = 29 on Vercel Turbo).
         // 40GiB (not 45) leaves ~20GB headroom for the worker phase.
+        //
+        // cpus 8 → 4 (2026-07-27): after the graph-splitting campaign, compile
+        // passes reliably (21.9 → 15.7 min) but v0.4.124/125/126/128/130 all
+        // SIGKILL'd with a confirmed OOM 6-10s into "Collecting page data using
+        // 8 workers" (5 red / 2 green at that line). Worker COUNT is the direct
+        // multiplier on that phase's peak concurrent memory (heap flags are
+        // stripped from these workers — vercel/next.js#95745), so halving the
+        // pool halves the peak; the phase itself costs only ~1-2 min. If builds
+        // still OOM at page-data with 4 workers, next levers are rootReducer
+        // lazy-injection (shrinks every per-page server bundle) or building
+        // off-Vercel (GH Actions + `vercel deploy --prebuilt`).
         turbopackMemoryLimit: 42949672960,
-        cpus: 8,
+        cpus: 4,
         serverActions: {
             bodySizeLimit: "10mb",
         },
