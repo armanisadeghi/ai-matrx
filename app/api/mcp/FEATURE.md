@@ -151,7 +151,9 @@ MCP registration is in `app/api/mcp/[transport]/route.ts`. REST
 1. Agent calls MCP `feedback({description: ...})`, compatibility tool `submit_feedback`, or REST `{action:"submit", description:...}`.
 2. Transport layer: `withMcpAuth` (MCP) or `validateAgentApiKey` (REST) checks the bearer token / query token against `AGENT_API_KEY`. Mismatch → 401 and nothing else runs.
 3. `submitFeedback(undefined, agentName?, input)` inserts into `users.user_feedback` with `status:'new'`, the shared agent service account as the valid FK owner, and optional legacy identity only in metadata.
-4. Returns `{success:true,data:UserFeedback}`. Its `data.id` drives later item actions; no ID is needed before this point.
+4. The preferred tool returns the new `id` at the top level (and the full item
+   in `data`); compatibility responses retain `{success:true,data:UserFeedback}`.
+   That returned ID drives later item actions—none is needed before submission.
 
 ### (b) Triage → decision → resolve lifecycle
 

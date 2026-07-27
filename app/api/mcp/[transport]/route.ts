@@ -268,14 +268,21 @@ const handler = createMcpHandler(
         work_priority,
       }) => {
         if (action === "report") {
+          const result = await submitFeedback(undefined, agent_name, {
+            feedback_type: feedback_type ?? "bug",
+            description: requireValue(description, "description"),
+            route,
+            priority,
+            image_urls: screenshot_urls,
+          });
           return asMcpText(
-            await submitFeedback(undefined, agent_name, {
-              feedback_type: feedback_type ?? "bug",
-              description: requireValue(description, "description"),
-              route,
-              priority,
-              image_urls: screenshot_urls,
-            }),
+            result.success && result.data
+              ? {
+                  ...result,
+                  id: result.data.id,
+                  next: "Use feedback action get, update, comment, triage, resolve, or decision with this id.",
+                }
+              : result,
           );
         }
         if (action === "list" || action === "search") {
