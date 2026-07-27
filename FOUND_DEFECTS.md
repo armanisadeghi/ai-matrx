@@ -13,6 +13,19 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D106 — research context builder loses settings on save; token budget is the wrong affordance (2026-07-26)
+
+Owner-reported after live testing. Four related failures in the research context/setup save path (`features/research/` — the context builder + topic setup surfaces; start at `hooks/useContextBuilder.ts`, `components/resources/ResourcePicker.tsx`, and whatever writes the topic's `agent_config` / report-type selection).
+
+1. **`on_demand` vs `inject` is not respected.** The per-resource delivery mode is chosen in the picker but is not honored on save/reload — the round-trip drops it.
+2. **The chosen agent is lost.** Selected on setup, gone when you come back.
+3. **The report type initially selected is lost.** Same round-trip.
+4. **The token-budget number is the wrong affordance and should be replaced.** Owner is running Gemini 3.6, which handles very long context well for this thematic work, so a precise token count is noise. Replace it with a green/yellow/red indicator plus warnings — the user needs "is this fine / getting heavy / too much", not a number.
+
+Items 1-3 look like ONE bug class: the save shape and the load shape have drifted, so fields written by the UI are not read back (or are not written at all). Diff what the picker/setup form builds against what the loader reads before fixing them individually.
+
+Owner's framing: these are real but not blocking — the core scoring/triage work is "significantly better" — so this was deliberately deferred to keep momentum, not silently dropped.
+
 ### D105 — files default to `internal` (org-readable): 11,003 rows. Product call, Arman (2026-07-26)
 
 `files.files.visibility` and `files.folders.visibility` both `DEFAULT 'internal'::platform.visibility`, so **every upload that doesn't pass an explicit visibility is readable by everyone in the owning org**. Live counts (non-deleted): `internal` 11,003 · `personal` 10,463 · `public` 1,238 · `link` 1.
