@@ -356,6 +356,27 @@ export async function shareWithOrg(
 }
 
 /**
+ * Ensure an organization has the requested resource grant.
+ *
+ * The canonical sharing RPC deliberately reports an existing grant instead of
+ * inserting a duplicate. Composition workflows need idempotent "ensure"
+ * semantics, so centralize that translation here instead of teaching each
+ * caller the RPC's duplicate response string.
+ */
+export async function ensureSharedWithOrg(
+  options: ShareWithOrgOptions,
+): Promise<ShareActionResult> {
+  const result = await shareWithOrg(options);
+  if (!result.success && result.error === "Organization already has access") {
+    return {
+      success: true,
+      message: "Organization already has access",
+    };
+  }
+  return result;
+}
+
+/**
  * Make a resource readable by unauthenticated users.
  * Sets is_public = true on the resource row. RPC validates ownership.
  * The permissions table is NOT written to — is_public on the resource row is the source of truth.

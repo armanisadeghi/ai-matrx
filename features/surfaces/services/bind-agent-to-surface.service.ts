@@ -29,8 +29,9 @@ import {
   type ValueMappingMap,
 } from "@/features/surfaces/types";
 import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mappings";
-import type { Json } from "@/types/database.types";
+import type { Json, Tables } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/client";
+import { ensureSharedWithOrg } from "@/utils/permissions/service";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -224,23 +225,92 @@ export async function bindAgentToSurface(
     throw new Error(`Unknown surface: ${surfaceName}`);
   }
 
+  const bindingTier = tierFromScope(scope);
+  let agentCard: Pick<
+    Tables<{ schema: "agent" }, "card">,
+    "agent_type" | "card_visibility" | "organization_id"
+  > | null = null;
+
+  if (bindingTier === "global" || bindingTier === "org") {
+    const sb = createClient();
+    const { data: card, error: cardError } = await sb
+      .schema("agent")
+      .from("card")
+      .select("agent_type, card_visibility, organization_id")
+      .eq("id", agentId)
+      .maybeSingle();
+    if (cardError) throw cardError;
+    agentCard = card;
+    if (!agentCard) {
+      throw new Error(`Agent not found or inaccessible: ${agentId}`);
+    }
+  }
+
   // GLOBAL binding + non-public agent = a broken promise: menu_surface
   // inner-joins agent.card, so users outside the agent's visibility never
   // receive the edge — the "global" binding is invisible to exactly the
   // audience it claims. Scream so the binder finds out at bind time, not
   // from a user report.
-  if (tierFromScope(scope) === "global") {
-    const sb = createClient();
-    const { data: card } = await sb
-      .schema("agent")
-      .from("card")
-      .select("card_visibility")
-      .eq("id", agentId)
-      .maybeSingle();
-    if (card && card.card_visibility !== "public") {
+  if (bindingTier === "global") {
+    if (agentCard && agentCard.card_visibility !== "public") {
       console.error(
         "[bind-agent-to-surface] GLOBAL binding on a non-public agent — other users will NOT see it (agent.card visibility gates the menu_surface join). Make the agent public, or bind at a narrower tier.",
-        { agentId, surfaceName, cardVisibility: card.card_visibility },
+        {
+          agentId,
+          surfaceName,
+          cardVisibility: agentCard.card_visibility,
+        },
+      );
+    }
+  }
+
+  // An org-tier binding promises availability to every member, while
+  // menu_surface deliberately joins the RLS-safe agent.card. Make that promise
+  // true through the existing permissions primitive before writing the edge.
+  // Public/builtin agents and internal agents already homed in the target org
+  // need no redundant explicit grant.
+  if (
+    bindingTier === "org" &&
+    scope.organizationId &&
+    agentCard &&
+    agentCard.agent_type !== "builtin" &&
+    agentCard.card_visibility !== "public" &&
+    !(
+      agentCard.organization_id === scope.organizationId &&
+      (agentCard.card_visibility === "internal" ||
+        agentCard.card_visibility === "link")
+    )
+  ) {
+    const organizationId = scope.organizationId;
+    const grants = await Promise.all(
+      (["agent", "agent_card"] as const).map((resourceType) =>
+        ensureSharedWithOrg({
+          resourceType,
+          resourceId: agentId,
+          organizationId,
+          permissionLevel: "viewer",
+        }),
+      ),
+    );
+    const failedGrant = grants.find((grant) => !grant.success);
+    if (failedGrant) {
+      throw new Error(
+        failedGrant.error ||
+          "Could not grant the organization access to this agent",
+      );
+    }
+    if (
+      grants.some((grant) =>
+        grant.message?.toLowerCase().includes("pending"),
+      )
+    ) {
+      console.warn(
+        "[bind-agent-to-surface] organization grant is pending approval — members cannot run the agent until the grant is approved",
+        {
+          agentId,
+          surfaceName,
+          organizationId: scope.organizationId,
+        },
       );
     }
   }
@@ -249,7 +319,7 @@ export async function bindAgentToSurface(
   // typed payload (Edge Payload System, kind `surface_binding`), validated by
   // the DB trigger against platform.edge_payload_kind on every write.
   const metadata: Json = {
-    tier: tierFromScope(scope),
+    tier: bindingTier,
     user_id: scope.userId ?? null,
     project_id: scope.projectId ?? null,
     task_id: scope.taskId ?? null,
@@ -515,8 +585,10 @@ export async function fetchSurfaceBindingLayers(
       .filter((r) => r.organizationId !== null)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     for (const row of orgRows) {
+      const organizationId = row.organizationId;
+      if (!organizationId) continue;
       layers.push({
-        name: `binding:${prefix}org:${row.organizationId!.slice(0, 8)}`,
+        name: `binding:${prefix}org:${organizationId.slice(0, 8)}`,
         mappings: row.valueMappings,
       });
     }
