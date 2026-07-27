@@ -15,6 +15,14 @@ import { PAGE_PROVENANCES } from "@/features/marketing/data/service";
 import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem } from "@/components/agent-copy/export";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import { humanCoverageTile } from "@/features/marketing/components/coverage/format";
 import {
   formatCompactDate,
   LoadingSurface,
@@ -41,45 +49,65 @@ function CoverageTile({
   value,
   href,
   tone = "default",
+  siteDomain,
+  location,
 }: {
   label: string;
   description: string;
   value: number | null;
   href: string;
   tone?: "default" | "attention";
+  siteDomain: string;
+  location: string;
 }) {
   return (
-    <Link
-      href={href}
+    <div
       className={cn(
-        "group min-w-0 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-muted/30",
+        "group/tile relative min-w-0 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-muted/30",
         tone === "attention" &&
           value !== null &&
           value > 0 &&
           "border-amber-500/40 bg-amber-500/5",
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
+      <Link href={href} className="block">
+        <div className="flex items-start justify-between gap-2 pr-5">
+          <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
+          <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/tile:opacity-100" />
+        </div>
+        <p
+          className={cn(
+            "mt-0.5 text-xl font-semibold tabular-nums text-foreground",
+            tone === "attention" &&
+              value !== null &&
+              value > 0 &&
+              "text-amber-600 dark:text-amber-400",
+          )}
+        >
+          {value === null ? "—" : value.toLocaleString()}
         </p>
-        <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+        <p className="truncate text-[11px] text-muted-foreground">
+          {description}
+        </p>
+      </Link>
+      <div className="absolute right-1.5 top-1.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/tile:opacity-100">
+        <CopyButtons
+          size="xs"
+          label={label}
+          human={() => humanCoverageTile(label, value, description, siteDomain)}
+          agent={() => ({
+            kind: "coverage-tile",
+            location,
+            description: `The "${label}" page-coverage tile for ${siteDomain}.`,
+            data: { metric: label, value: value ?? null, description },
+            summary: humanCoverageTile(label, value, description, siteDomain),
+            attributes: { metric: label },
+          })}
+        />
       </div>
-      <p
-        className={cn(
-          "mt-0.5 text-xl font-semibold tabular-nums text-foreground",
-          tone === "attention" &&
-            value !== null &&
-            value > 0 &&
-            "text-amber-600 dark:text-amber-400",
-        )}
-      >
-        {value === null ? "—" : value.toLocaleString()}
-      </p>
-      <p className="truncate text-[11px] text-muted-foreground">
-        {description}
-      </p>
-    </Link>
+    </div>
   );
 }
 
@@ -142,6 +170,27 @@ export function CoverageWorkspace() {
       [COVERAGE_FILTER_COPY.sitemap_no_gsc.label, data?.sitemapNoGsc ?? null],
     ],
     attributes: { site_id: site.id },
+  });
+
+  const pageLocation = `Marketing — Coverage for ${site.domain}`;
+
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "matrix",
+      title: "Coverage matrix",
+      description: "Sitemap/crawl/GSC agreement counts for the canonical page registry.",
+      build: () => (data ? { ...data, gsc_synced_at: site.gsc_synced_at } : null),
+    },
+  ];
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Coverage — ${site.domain}`,
+    kind: "marketing-coverage-page",
+    location: pageLocation,
+    description: `The full page-coverage matrix for ${site.domain}.`,
+    attributes: { site_id: site.id, domain: site.domain },
+    summary: matrixCopy.human(),
+    sections: groomerSections(),
   });
 
   return (
