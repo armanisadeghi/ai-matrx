@@ -26,6 +26,18 @@ Items 1-3 look like ONE bug class: the save shape and the load shape have drifte
 
 Owner's framing: these are real but not blocking — the core scoring/triage work is "significantly better" — so this was deliberately deferred to keep momentum, not silently dropped.
 
+### D106b — five more surfaces still claim "Only you" from data that can't support it (2026-07-26)
+
+Same class as the files fix (`22e8d79ea`) and the `PermissionsList` fix: a surface reads one signal — a `visibility` value or an empty grant list — and renders a privacy guarantee. None of them can see container conveyance via `platform.reachability`, so each can be wrong the moment the record is attached to a scope, project, or data store.
+
+- `features/secrets/components/VaultItemDetail.tsx:1406` — "Only you. Add someone above to share this credential." **Highest stakes** (credentials); verify whether vault items convey through any container before trusting or rewording.
+- `features/canvas/social/CanvasShareSheet.tsx:373` — "Only you can view".
+- `features/structured-lists/StructuredListManagerV2.tsx:139` — `private` hint "Only you".
+- `features/content-ir/studio/components/ShapeOwnerEditor.tsx:40` — "Only you and explicitly granted people."
+- `features/education/data/features.ts:236` — user-facing marketing copy: "Only you, until you explicitly share a link or publish a resource. Sharing is always an action you take, never a default." That is a **promise to users**, and it is false wherever a table defaults to `internal` (see D105). Resolve with D105.
+
+Fix per surface: either call `public.entity_access_summary(type,id)` (the honest answer, one entity at a time — see `features/sharing/FEATURE.md`) or reword to state only what the surface actually knows ("No one has been granted access here"). Do NOT bulk-rewrite blind: each feature's conveyance needs checking first.
+
 ### D105 — files default to `internal` (org-readable): 11,003 rows. Product call, Arman (2026-07-26)
 
 `files.files.visibility` and `files.folders.visibility` both `DEFAULT 'internal'::platform.visibility`, so **every upload that doesn't pass an explicit visibility is readable by everyone in the owning org**. Live counts (non-deleted): `internal` 11,003 · `personal` 10,463 · `public` 1,238 · `link` 1.

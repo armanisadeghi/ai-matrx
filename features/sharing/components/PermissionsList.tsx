@@ -85,7 +85,13 @@ export function PermissionsList({
       <div className="text-center py-6 text-muted-foreground">
         <Lock className="w-10 h-10 mx-auto mb-1.5 opacity-20" />
         <p className="text-sm">Not shared with anyone</p>
-        <p className="text-xs mt-0.5">Only you can access this resource</p>
+        {/*
+         * This list only knows about DIRECT grants. It cannot see visibility,
+         * org membership, or access conveyed through a container — so "only you
+         * can access this" would be a claim it has no basis for. State what is
+         * actually known: no one has been granted access here.
+         */}
+        <p className="text-xs mt-0.5">No one has been granted access here</p>
       </div>
     );
   }
