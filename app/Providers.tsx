@@ -38,15 +38,19 @@ import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 import { TranscriptsProvider } from "@/features/transcripts/context/TranscriptsContext";
 // disaster
 import { AudioRecoveryProvider } from "@/features/audio/providers/AudioRecoveryProvider";
-// disaster
-import { GlobalRecordingProvider } from "@/providers/GlobalRecordingProvider";
+// TEMP (Step 2 of audio consolidation): the recording engine is mounted
+// statically here for functional parity while the AudioSystemHost lands in
+// Step 4, which moves it behind the activation-gated dynamic boundary.
+// The old GlobalRecordingProvider context wrapper is gone — useGlobalRecording
+// is context-free (Redux state + command proxy).
+import { GlobalRecordingEngine } from "@/providers/GlobalRecordingEngine";
 import { RequestRecoveryProvider } from "@/features/request-recovery/providers/RequestRecoveryProvider";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
 
 // disaster - REPLACED WITH DeferredSingletonWrapper
 // import DeferredSingletons from "./DeferredSingletons";
-import { DeferredSingletonWrapper } from "./DeferredSingletonWrapper";
+import DeferredSingletonWrapper from "./DeferredSingletonWrapper";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
 // WindowPersistenceManager provides the React context that WindowPanel
@@ -139,7 +143,8 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 applied to the singleton before the first
                                 recording. Renders nothing; effects only. */}
                               <AudioDeviceProvider />
-                              <GlobalRecordingProvider>
+                              <GlobalRecordingEngine />
+                              <React.Fragment>
                                 {children}
                                 <RecoveryWindow />
                                 <RecoveryNudge />
@@ -230,7 +235,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                     import { openFilePreview } from
                                       "@/features/files/components/preview/openFilePreview";
                                     openFilePreview(fileId); */}
-                              </GlobalRecordingProvider>
+                              </React.Fragment>
                             </RequestRecoveryProvider>
                           </AudioRecoveryProvider>
                         </TranscriptsProvider>
