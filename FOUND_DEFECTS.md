@@ -13,6 +13,16 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D109 — frontend release gates are globally disabled by environment (2026-07-27)
+
+Both `scripts/release.sh` runs for the feedback MCP printed
+`TEMP_SKIP_RELEASE_CHECKS=true` and silently forced `--no-migrate --no-gates`,
+skipping migration, protocol, attribution, and advisory quality gates. The
+feedback release was independently type-checked/tested and its live migration
+verified, but future releases may not be. Find and remove the persistent flag
+at its source; if an emergency bypass is still needed, make it explicit per
+invocation so routine releases cannot inherit it invisibly.
+
 ### D106 — research context builder loses settings on save; token budget is the wrong affordance (2026-07-26)
 
 Owner-reported after live testing. Four related failures in the research context/setup save path (`features/research/` — the context builder + topic setup surfaces; start at `hooks/useContextBuilder.ts`, `components/resources/ResourcePicker.tsx`, and whatever writes the topic's `agent_config` / report-type selection).
