@@ -11,7 +11,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
 import { toast } from "@/lib/toast";
 import {
   Check,
@@ -122,6 +124,47 @@ export function SuggestionsManager() {
   };
 
   const hasHeavy = heavyHitters.length > 0;
+
+  // Surface scope (matrx-user/knowledge) — the suggestion-queue half of the
+  // Knowledge surface. Built at TRIGGER time from live state, never on mount.
+  // The extraction and graph halves live on their own routes and emit
+  // disjoint values.
+  const getSurfaceScope = useCallback(
+    () =>
+      createKnowledgeScope({
+        suggestions_total: total,
+        suggestions_pending_count: pendingCount,
+        suggestions_deferred_count: deferredCount,
+        suggestions_starred_count: starredCount,
+        suggestions_low_quality_count: lowQualityTotal,
+        suggestions_query: query as unknown as Record<string, unknown>,
+        suggestions_rows: [...rows, ...heavyHitters] as unknown as Array<
+          Record<string, unknown>
+        >,
+        suggestions_stats: stats as unknown as Array<Record<string, unknown>>,
+        focused_suggestion_id: expandedId ?? undefined,
+        focused_suggestion: expandedId
+          ? ([...rows, ...heavyHitters, ...lowQuality].find(
+              (row) => row.id === expandedId,
+            ) as unknown as Record<string, unknown> | undefined)
+          : undefined,
+        suggestions_selected_ids: [...selected],
+      }),
+    [
+      total,
+      pendingCount,
+      deferredCount,
+      starredCount,
+      lowQualityTotal,
+      query,
+      rows,
+      heavyHitters,
+      lowQuality,
+      stats,
+      expandedId,
+      selected,
+    ],
+  );
 
   // Low-quality (<50%) suggestions are pulled out of the main table and parked
   // in this collapsed, muted footer. The user can still see them and clear them
@@ -279,137 +322,143 @@ export function SuggestionsManager() {
   }
 
   return (
-    <SourcePreviewProvider value={{ openPreview }}>
-      <div className="flex h-full min-h-0 flex-col">
-        {/* Summary strip */}
-        <div className="flex items-center gap-3 border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            {pendingCount} pending
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Clock className="h-3 w-3 text-amber-500" />
-            {deferredCount} deferred
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Star className="h-3 w-3 text-amber-500" />
-            {starredCount} starred
-          </span>
-          <button
-            type="button"
-            onClick={refresh}
-            className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground transition-colors"
-          >
-            <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
-            Refresh
-          </button>
-        </div>
-
-        <SuggestionsFilterBar
-          query={query}
-          patchQuery={patchQuery}
-          rows={rows}
-        />
-
-        {/* Bulk action bar */}
-        {selected.size > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-primary/5 px-3 py-1.5 text-[11px]">
-            <span className="font-medium text-foreground">
-              {selected.size} selected
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/knowledge"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
+      <SourcePreviewProvider value={{ openPreview }}>
+        <div className="flex h-full min-h-0 flex-col">
+          {/* Summary strip */}
+          <div className="flex items-center gap-3 border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              {pendingCount} pending
             </span>
-            <BulkButton
-              icon={<Check className="h-3 w-3" />}
-              label="Accept"
-              className="text-success hover:bg-success/10"
-              onClick={() =>
-                void runBulk("Accepted", (id) =>
-                  accept(id).catch((e) => {
-                    throw new Error(extractErrorMessage(e));
-                  }),
-                )
-              }
-            />
-            <BulkButton
-              icon={<Clock className="h-3 w-3" />}
-              label="Defer"
-              className="text-muted-foreground hover:bg-accent"
-              onClick={() => void runBulk("Deferred", (id) => defer(id))}
-            />
-            <BulkButton
-              icon={<X className="h-3 w-3" />}
-              label="Reject"
-              className="text-destructive hover:bg-destructive/10"
-              onClick={() => void runBulk("Rejected", (id) => reject(id))}
-            />
-            <BulkButton
-              icon={<Star className="h-3 w-3" />}
-              label="Star"
-              className="text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-              onClick={() => void runBulk("Starred", (id) => star(id, true))}
-            />
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3 w-3 text-amber-500" />
+              {deferredCount} deferred
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Star className="h-3 w-3 text-amber-500" />
+              {starredCount} starred
+            </span>
             <button
               type="button"
-              onClick={clearSelection}
-              className="ml-1 rounded px-2 py-0.5 text-muted-foreground hover:bg-accent transition-colors"
+              onClick={refresh}
+              className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground transition-colors"
             >
-              Clear
+              <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
+              Refresh
             </button>
           </div>
-        ) : null}
 
-        {/* Scroll body — heavy hitters lead; the table owns the vertical scroll so
+          <SuggestionsFilterBar
+            query={query}
+            patchQuery={patchQuery}
+            rows={rows}
+          />
+
+          {/* Bulk action bar */}
+          {selected.size > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-primary/5 px-3 py-1.5 text-[11px]">
+              <span className="font-medium text-foreground">
+                {selected.size} selected
+              </span>
+              <BulkButton
+                icon={<Check className="h-3 w-3" />}
+                label="Accept"
+                className="text-success hover:bg-success/10"
+                onClick={() =>
+                  void runBulk("Accepted", (id) =>
+                    accept(id).catch((e) => {
+                      throw new Error(extractErrorMessage(e));
+                    }),
+                  )
+                }
+              />
+              <BulkButton
+                icon={<Clock className="h-3 w-3" />}
+                label="Defer"
+                className="text-muted-foreground hover:bg-accent"
+                onClick={() => void runBulk("Deferred", (id) => defer(id))}
+              />
+              <BulkButton
+                icon={<X className="h-3 w-3" />}
+                label="Reject"
+                className="text-destructive hover:bg-destructive/10"
+                onClick={() => void runBulk("Rejected", (id) => reject(id))}
+              />
+              <BulkButton
+                icon={<Star className="h-3 w-3" />}
+                label="Star"
+                className="text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                onClick={() => void runBulk("Starred", (id) => star(id, true))}
+              />
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="ml-1 rounded px-2 py-0.5 text-muted-foreground hover:bg-accent transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          ) : null}
+
+          {/* Scroll body — heavy hitters lead; the table owns the vertical scroll so
           its header stays sticky. On mobile everything shares one scroll area. */}
-        {isMobile ? (
-          <div className="flex-1 min-h-0 overflow-auto">
-            {heavySection}
-            {mainArea}
-            {lowQualitySection}
-          </div>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col">
-            {hasHeavy ? (
-              <div className="max-h-[45%] shrink-0 overflow-y-auto">
-                {heavySection}
-              </div>
-            ) : null}
-            <div className="min-h-0 flex-1 overflow-auto">{mainArea}</div>
-            {lowQualitySection}
-          </div>
-        )}
+          {isMobile ? (
+            <div className="flex-1 min-h-0 overflow-auto">
+              {heavySection}
+              {mainArea}
+              {lowQualitySection}
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col">
+              {hasHeavy ? (
+                <div className="max-h-[45%] shrink-0 overflow-y-auto">
+                  {heavySection}
+                </div>
+              ) : null}
+              <div className="min-h-0 flex-1 overflow-auto">{mainArea}</div>
+              {lowQualitySection}
+            </div>
+          )}
 
-        {/* Pagination footer */}
-        <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground pb-safe">
-          <span className="tabular-nums">
-            {from}–{to} of {total}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              disabled={!hasPrev}
-              onClick={() => patchQuery({ page: page - 1 })}
-              className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-              Prev
-            </button>
-            <button
-              type="button"
-              disabled={!hasNext}
-              onClick={() => patchQuery({ page: page + 1 })}
-              className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
-            >
-              Next
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+          {/* Pagination footer */}
+          <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground pb-safe">
+            <span className="tabular-nums">
+              {from}–{to} of {total}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={!hasPrev}
+                onClick={() => patchQuery({ page: page - 1 })}
+                className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Prev
+              </button>
+              <button
+                type="button"
+                disabled={!hasNext}
+                onClick={() => patchQuery({ page: page + 1 })}
+                className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
+              >
+                Next
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      <SourcePreviewPanel
-        target={target}
-        onClose={closePreview}
-        position="right"
-      />
-    </SourcePreviewProvider>
+        <SourcePreviewPanel
+          target={target}
+          onClose={closePreview}
+          position="right"
+        />
+      </SourcePreviewProvider>
+    </SurfaceRuntimeProvider>
   );
 }
 

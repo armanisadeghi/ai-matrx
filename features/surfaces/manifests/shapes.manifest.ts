@@ -178,17 +178,6 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 150,
   },
   {
-    name: "kind_family",
-    label: "Kind family",
-    description:
-      "The `metadata.family` classifier. Generated contract families (agent_io / tool_io / action_io / workflow_io) are filtered out of the studio list. Empty when unset.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 15,
-    group: "kind_identity",
-    sortOrder: 160,
-  },
-  {
     name: "kind_title_key",
     label: "Instance title key",
     description:
@@ -308,7 +297,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "activation_component_platforms",
     label: "Component platforms",
     description:
-      "Platforms that have an active output component bound to this kind (e.g. [\"web\"]). Empty array when none is bound.",
+      'Platforms that have an active output component bound to this kind (e.g. ["web"]). Empty array when none is bound.',
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 40,
@@ -582,7 +571,6 @@ export function createShapesScope(values: {
   kind_version?: number;
   kind_visibility?: string;
   kind_is_active?: boolean;
-  kind_family?: string;
   kind_title_key?: string;
   kind_loading_component?: string;
   kind_owned_by_viewer?: boolean;

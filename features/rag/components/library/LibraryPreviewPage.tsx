@@ -21,7 +21,20 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import {
+  buildRagViewerContextData,
+  type RagViewerActivePage,
+} from "@/features/rag/agent-context/buildRagViewerContextData";
 import { BookMarked, GitFork, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -127,6 +140,50 @@ export function LibraryPreviewPage({
     setActivePageIndex(Math.max(0, pageNumber - 1));
   }, []);
 
+  // The page-text pane owns the per-page fetch, but the ACTIVE PAGE TEXT is
+  // this route's most valuable agent context — so the pane lifts its loaded
+  // page here. A ref (not state) on purpose: the surface scope is built at Run
+  // time, so nothing needs to re-render when the page settles.
+  const activePageRef = useRef<RagViewerActivePage | null>(null);
+  const handleActivePageLoaded = useCallback(
+    (loaded: RagViewerActivePage | null) => {
+      activePageRef.current = loaded;
+    },
+    [],
+  );
+
+  // Live surface scope for the header Agents chrome.
+  const getScope = useCallback(
+    () =>
+      buildRagViewerContextData({
+        documentId,
+        doc,
+        docLoading,
+        docError,
+        activePageNumber: activePageIndex + 1,
+        activePage: activePageRef.current,
+        searchQuery: search.activeQuery,
+        searchHits: search.hits,
+        searchSummary: search.summary,
+        provenanceLabel,
+        selectionText:
+          typeof window !== "undefined"
+            ? (window.getSelection()?.toString() ?? "")
+            : "",
+      }),
+    [
+      documentId,
+      doc,
+      docLoading,
+      docError,
+      activePageIndex,
+      search.activeQuery,
+      search.hits,
+      search.summary,
+      provenanceLabel,
+    ],
+  );
+
   // Run the search, then land on the first page that contains the term so
   // highlights are visible immediately (unless the current page already
   // matched). Driven by the returned page list — no reactive effect needed.
@@ -182,7 +239,14 @@ export function LibraryPreviewPage({
     }
   };
 
+  // Emit the surface scope ONLY when this is the real /rag/viewer/[id] route.
+  // Embedded hosts (the /files Knowledge tab, the chat drawer) own their own
+  // surface; a provider here would out-depth theirs and make the header Agents
+  // chrome claim the user is standing on the viewer when they are not.
+  const Frame = embedded ? EmbeddedFrame : SurfaceFrame;
+
   return (
+    <Frame getScope={getScope}>
     <div className="relative flex flex-col bg-background h-full">
       {!embedded && (
         <EntityModeHeader
@@ -319,6 +383,7 @@ export function LibraryPreviewPage({
               totalPages={doc?.pagesPersisted ?? 0}
               onPageChange={setActivePageIndex}
               query={search.activeQuery}
+              onActivePageLoaded={handleActivePageLoaded}
             />
           </div>
         )}
@@ -349,7 +414,34 @@ export function LibraryPreviewPage({
         </MatrxDynamicPanelHost>
       )}
     </div>
+    </Frame>
   );
+}
+
+/** Canonical `ui_surface.name` the standalone viewer route emits. */
+const RAG_VIEWER_SURFACE = "matrx-user/rag-viewer";
+
+interface SurfaceFrameProps {
+  getScope: () => SurfaceScopePayload;
+  children: ReactNode;
+}
+
+/** Standalone `/rag/viewer/[id]` — registers the live surface scope. */
+function SurfaceFrame({ getScope, children }: SurfaceFrameProps) {
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={RAG_VIEWER_SURFACE}
+      getScope={getScope}
+      isEditable={false}
+    >
+      {children}
+    </SurfaceRuntimeProvider>
+  );
+}
+
+/** Embedded host — render through untouched, emitting no surface of our own. */
+function EmbeddedFrame({ children }: SurfaceFrameProps) {
+  return <>{children}</>;
 }
 
 // ---------------------------------------------------------------------------
@@ -457,6 +549,7 @@ function PageContent({
   totalPages,
   onPageChange,
   query,
+  onActivePageLoaded,
 }: {
   documentId: string;
   pageIndex: number;
@@ -464,6 +557,10 @@ function PageContent({
   onPageChange: (idx: number) => void;
   /** Active search term — literal matches are highlighted in the page text. */
   query: string;
+  /** Lift the loaded page + the cleaned/raw choice to the route so the
+   *  `matrx-user/rag-viewer` surface can emit the text the user is reading.
+   *  Optional so embedded hosts that don't emit a scope stay unchanged. */
+  onActivePageLoaded?: (page: RagViewerActivePage | null) => void;
 }) {
   const [page, setPage] = useState<ApiFullPage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -503,6 +600,14 @@ function PageContent({
     if (!page) return "";
     return tab === "cleaned" ? page.cleaned_text || "" : page.raw_text || "";
   }, [page, tab]);
+
+  // Report the page the user is actually reading (and in which view) to the
+  // route's surface emitter. Fires on load, on page change, and on the
+  // cleaned↔raw toggle, so the emitted `page_text` is never a stale page.
+  useEffect(() => {
+    if (!onActivePageLoaded) return;
+    onActivePageLoaded(page ? { page, view: tab } : null);
+  }, [page, tab, onActivePageLoaded]);
 
   // The Cleaned/Raw tabs show one OR the other — never both. Compare opens the
   // canonical diff so the user sees what the LLM cleanup changed. raw=baseline,

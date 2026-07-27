@@ -32,6 +32,11 @@ import { RegistryTab } from "@/features/tool-registry/tools-admin/components/Reg
 import { Network } from "lucide-react";
 import { SourceKindBadge } from "./source-kind-badge";
 import type { Database, Json } from "@/types/database.types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_TOOL_REGISTRY_SURFACE_NAME,
+  createAdminToolRegistryScope,
+} from "@/features/surfaces/manifests/admin-tool-registry.manifest";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -299,7 +304,76 @@ export function ToolViewPage({ tool }: Props) {
   const hasAnnotations =
     annotationList !== undefined && annotationList.length > 0;
 
+  // Surface emitter — open-tool half of `matrx-admin/tool-registry`. Built at
+  // trigger time. SECURITY: definition metadata only. Executor bindings and
+  // per-surface tool defaults load inside RegistryTab and never reach here, so
+  // they are deliberately not declared on the manifest. No MCP endpoint URLs,
+  // auth strategies, OAuth ids, or vault credentials are read or emitted.
+  const getSurfaceScope = () => {
+    const params =
+      tool.parameters &&
+      typeof tool.parameters === "object" &&
+      !Array.isArray(tool.parameters)
+        ? (tool.parameters as Record<string, unknown>)
+        : null;
+    const paramProps =
+      params && typeof params.properties === "object" && params.properties
+        ? (params.properties as Record<string, unknown>)
+        : params;
+    return createAdminToolRegistryScope({
+      registry_section: "tool_detail",
+      tool_id: tool.id,
+      tool_name: tool.name,
+      tool_description: tool.description || undefined,
+      tool_category: tool.category || undefined,
+      tool_group: tool.tool_group || undefined,
+      tool_tags: tool.tags ?? undefined,
+      tool_summary: {
+        id: tool.id,
+        name: tool.name,
+        description: tool.description ?? null,
+        category: tool.category ?? null,
+        tool_group: tool.tool_group ?? null,
+        tier: tool.tier ?? null,
+        source_kind: tool.source_kind ?? null,
+        version: tool.version ?? null,
+        semver: tool.semver ?? null,
+        is_active: isActive,
+        admin_only: tool.admin_only ?? null,
+        tags: tool.tags ?? null,
+      },
+      tool_parameters_schema: tool.parameters ?? undefined,
+      tool_parameter_names: paramProps ? Object.keys(paramProps) : undefined,
+      tool_output_schema: hasOutputSchema
+        ? (tool.output_schema ?? undefined)
+        : undefined,
+      tool_has_output_schema: Boolean(hasOutputSchema),
+      tool_annotations: hasAnnotations ? annotationList : undefined,
+      tool_source_kind: tool.source_kind || undefined,
+      tool_managed_by_server_id: tool.managed_by_server_id || undefined,
+      tool_tier: tool.tier || undefined,
+      tool_version: tool.version ?? undefined,
+      tool_semver: tool.semver || undefined,
+      tool_is_active: isActive,
+      tool_admin_only: tool.admin_only ?? undefined,
+      tool_gating: tool.gating ?? undefined,
+      tool_exemptions: {
+        dedupe_exempt: tool.dedupe_exempt ?? null,
+        validation_exempt: tool.validation_exempt ?? null,
+        max_client_wait_seconds: tool.max_client_wait_seconds ?? null,
+      },
+      tool_visibility: tool.visibility || undefined,
+      tool_updated_at: tool.updated_at || undefined,
+      selection: window.getSelection()?.toString() || undefined,
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_TOOL_REGISTRY_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-border">
@@ -471,5 +545,6 @@ export function ToolViewPage({ tool }: Props) {
         </Tabs>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

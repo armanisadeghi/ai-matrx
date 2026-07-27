@@ -67,6 +67,11 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
+
+/** Canonical `ui_surface.name` this page emits. */
+const RAG_DATA_STORES_SURFACE = "matrx-user/rag-data-stores";
 
 // THE one canonical file picker. Lazy — WindowPanel must never be parsed in
 // a route/boot bundle (features/window-panels FEATURE.md → Bundle invariant).
@@ -86,6 +91,45 @@ export function DataStoresPage() {
 
   const list = useDataStores();
   const detail = useDataStoreDetail(storeId);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+
+  // WHY the caller can read a 'granted' store — "via <industry>", "Available
+  // to everyone", or "Subscribed" (org-audience grant). Hoisted from the
+  // detail panel so the surface emitter and the panel share ONE fetch; the
+  // hook no-ops (null id) for stores that aren't grant-conveyed.
+  const grantedStoreId =
+    detail.store?.access === "granted" ? (detail.store?.id ?? null) : null;
+  const { label: grantProvenanceLabel } = useStoreProvenance(grantedStoreId);
+
+  // Live surface scope for the header Agents chrome. Built at Run time from
+  // refs the hooks already hold — never on mount.
+  const getScope = useCallback(
+    () =>
+      buildRagDataStoresContextData({
+        stores: list.stores,
+        listLoading: list.loading,
+        listError: list.error,
+        store: detail.store,
+        selectedStoreId: storeId,
+        members: detail.members,
+        provenanceLabel: grantProvenanceLabel,
+        isSuperAdmin,
+        selectionText:
+          typeof window !== "undefined"
+            ? (window.getSelection()?.toString() ?? "")
+            : "",
+      }),
+    [
+      list.stores,
+      list.loading,
+      list.error,
+      detail.store,
+      detail.members,
+      storeId,
+      grantProvenanceLabel,
+      isSuperAdmin,
+    ],
+  );
 
   const select = useCallback(
     (id: string | null) => {
@@ -99,7 +143,11 @@ export function DataStoresPage() {
   );
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={RAG_DATA_STORES_SURFACE}
+      getScope={getScope}
+      isEditable={false}
+    >
       <RagHubHeader
         right={
           <span className="text-xs text-muted-foreground tabular-nums px-2">
@@ -162,6 +210,7 @@ export function DataStoresPage() {
           <StoreDetailPanel
             storeId={storeId}
             detail={detail}
+            grantProvenanceLabel={grantProvenanceLabel}
             onDeleted={() => {
               select(null);
               list.refresh();
@@ -170,7 +219,7 @@ export function DataStoresPage() {
         )}
       </section>
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -324,10 +373,16 @@ function CreateStoreInline({ onCreated }: { onCreated: (id: string) => void }) {
 function StoreDetailPanel({
   storeId,
   detail,
+  grantProvenanceLabel,
   onDeleted,
 }: {
   storeId: string;
   detail: ReturnType<typeof useDataStoreDetail>;
+  /** WHY the caller can read a 'granted' store — "via <industry>", "Available
+   *  to everyone", or "Subscribed" (org-audience grant). Resolved once by
+   *  `DataStoresPage` (which also feeds it to the surface emitter) so the
+   *  provenance fetch happens exactly once per store. */
+  grantProvenanceLabel: string | null;
   onDeleted: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -337,13 +392,6 @@ function StoreDetailPanel({
   const [dropPending, setDropPending] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-
-  // WHY the caller can read a 'granted' store — "via <industry>", "Available
-  // to everyone", or "Subscribed" (org-audience grant). Only fetched when the
-  // store is actually grant-conveyed.
-  const grantedStoreId =
-    detail.store?.access === "granted" ? (detail.store?.id ?? null) : null;
-  const { label: grantProvenanceLabel } = useStoreProvenance(grantedStoreId);
 
   // Rich members — server-enriched view of what's actually in the store
   // (file name, size, processing status, page/chunk counts). Replaces

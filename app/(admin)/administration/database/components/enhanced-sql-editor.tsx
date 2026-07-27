@@ -33,6 +33,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_DATABASE_SURFACE_NAME,
+  createAdminDatabaseScope,
+} from "@/features/surfaces/manifests/admin-database.manifest";
 import { QueryHistoryButton } from "@/components/admin/query-history/query-history-button";
 import { saveQuery } from "@/components/admin/query-history/query-storage";
 import { toast } from "@/lib/toast";
@@ -205,7 +210,47 @@ export const EnhancedSQLEditor = ({
       ? `Template Variables (${activeReplacements} active)`
       : "Template Variables";
 
+  // Surface emitter — SQL-workbench half of `matrx-admin/database`. Built at
+  // trigger time from live editor state. NO credentials ever enter this scope:
+  // only the admin's own SQL, the result of their own run, and timings. The
+  // result payloads are `autoContext: false` in the manifest so live DB rows
+  // reach an agent only through a deliberate binding.
+  const getSurfaceScope = () => {
+    const rows = Array.isArray(queryResult)
+      ? (queryResult as Record<string, unknown>[])
+      : null;
+    const firstRow = rows?.[0];
+    return createAdminDatabaseScope({
+      console_section: "sql_workbench",
+      default_schema: DEFAULT_DATABASE_SCHEMA,
+      sql_query: sqlQuery || undefined,
+      sql_query_length: sqlQuery.length,
+      use_cache: useCache,
+      query_history: queryHistory.map((h) => ({
+        query: h.query,
+        timestamp: h.timestamp.toISOString(),
+      })),
+      is_query_running: loading,
+      query_row_count: rows ? rows.length : undefined,
+      query_result_columns:
+        firstRow && typeof firstRow === "object"
+          ? Object.keys(firstRow)
+          : undefined,
+      query_result_sample: rows ? rows.slice(0, 5) : undefined,
+      query_result_json: queryResult ?? undefined,
+      query_execution_ms: executionTime ?? undefined,
+      query_error: error || undefined,
+      query_timed_out: isTimeout,
+      selection: window.getSelection()?.toString() || undefined,
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_DATABASE_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <Card
       className={`w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm rounded-xl flex flex-col overflow-hidden gap-0 py-0 ${className ?? ""}`}
     >
@@ -594,5 +639,6 @@ export const EnhancedSQLEditor = ({
         allowDelete={true}
       />
     </Card>
+    </SurfaceRuntimeProvider>
   );
 };

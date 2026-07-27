@@ -11,7 +11,7 @@
  * useTransition with a per-row busy state.
  */
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Blocks,
@@ -33,6 +33,8 @@ import {
   partitionShapes,
   type ShapeListEntry,
 } from "@/features/content-ir/studio/studio-catalog";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import {
   SHAPES_NEW_HREF,
   shapeDetailHref,
@@ -152,9 +154,10 @@ export default function ShapesListClient() {
   const [reloadKey, setReloadKey] = useState(0);
   // Keyed by reloadKey so a refresh derives "loading" instead of a
   // synchronous reset-in-effect (react-hooks/set-state-in-effect).
-  const [loaded, setLoaded] = useState<{ key: number; value: ListState } | null>(
-    null,
-  );
+  const [loaded, setLoaded] = useState<{
+    key: number;
+    value: ListState;
+  } | null>(null);
   const state: ListState =
     loaded && loaded.key === reloadKey ? loaded.value : { status: "loading" };
 
@@ -189,123 +192,149 @@ export default function ShapesListClient() {
     });
   };
 
+  // Surface scope (matrx-user/shapes) — the catalog half. Built at TRIGGER
+  // time; the detail tabs emit the per-kind values on their own routes.
+  const getSurfaceScope = useCallback(() => {
+    if (state.status !== "ready") {
+      return createShapesScope({
+        studio_tab: "list",
+        shape_search_query: query || undefined,
+      });
+    }
+    const visible = state.entries.filter((entry) => matches(entry, query));
+    const { mine, platform } = partitionShapes(visible, currentUserId);
+    return createShapesScope({
+      studio_tab: "list",
+      shape_count: visible.length,
+      my_shapes: mine as unknown as Array<Record<string, unknown>>,
+      platform_shapes: platform as unknown as Array<Record<string, unknown>>,
+      shape_search_query: query || undefined,
+    });
+  }, [state, query, currentUserId]);
+
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
-      {/* Toolbar */}
-      <div className="mb-4 mt-3 flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search shapes"
-            className="h-9 pl-8 text-base sm:text-sm"
-          />
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 gap-1.5 px-2.5"
-          onClick={() => setReloadKey((k) => k + 1)}
-          title="Refresh — pick up shapes the agent just created"
-        >
-          <RefreshCw
-            className={cn(
-              "h-3.5 w-3.5",
-              state.status === "loading" && "animate-spin",
-            )}
-          />
-          <span className="hidden sm:inline text-xs">Refresh</span>
-        </Button>
-      </div>
-
-      {state.status === "loading" && <SectionSkeleton />}
-
-      {state.status === "error" && (
-        <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-700 dark:text-red-300">
-          <CircleAlert className="h-4 w-4 shrink-0" />
-          {state.message}
-        </div>
-      )}
-
-      {state.status === "ready" &&
-        (() => {
-          const filtered = state.entries.filter((e) => matches(e, query));
-          const { mine, platform } = partitionShapes(filtered, currentUserId);
-          return (
-            <div className="space-y-6">
-              {/* Your shapes */}
-              <section>
-                <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Shapes className="h-3.5 w-3.5" />
-                  Your shapes
-                </h2>
-                {mine.length === 0 ? (
-                  <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-8 text-center">
-                    <Shapes className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                    <p className="mt-2 text-sm font-medium text-foreground">
-                      {query
-                        ? "No shapes match your search."
-                        : "You have no shapes yet."}
-                    </p>
-                    {!query && (
-                      <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-                        Design one with the agent — describe your data and get a
-                        completely customized component for it.
-                      </p>
-                    )}
-                    {!query && (
-                      <Button
-                        size="sm"
-                        className="mt-3 h-8"
-                        onClick={() => navigate(SHAPES_NEW_HREF)}
-                      >
-                        {busyHref === SHAPES_NEW_HREF ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Plus className="h-3.5 w-3.5" />
-                        )}
-                        New Shape
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="overflow-hidden rounded-md border border-border bg-card">
-                    {mine.map((entry) => (
-                      <ShapeRow
-                        key={entry.id}
-                        entry={entry}
-                        busyHref={busyHref}
-                        onOpen={() => navigate(shapeDetailHref(entry.kind))}
-                        onTest={() => navigate(shapeTestHref(entry.kind))}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Platform library — visually secondary */}
-              {platform.length > 0 && (
-                <section className="opacity-90">
-                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Platform shapes
-                  </h2>
-                  <div className="overflow-hidden rounded-md border border-border/70 bg-card/70">
-                    {platform.map((entry) => (
-                      <ShapeRow
-                        key={entry.id}
-                        entry={entry}
-                        busyHref={busyHref}
-                        onOpen={() => navigate(shapeDetailHref(entry.kind))}
-                        onTest={() => navigate(shapeTestHref(entry.kind))}
-                      />
-                    ))}
-                  </div>
-                </section>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/shapes"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
+      <div className="mx-auto max-w-4xl px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
+        {/* Toolbar */}
+        <div className="mb-4 mt-3 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search shapes"
+              className="h-9 pl-8 text-base sm:text-sm"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5 px-2.5"
+            onClick={() => setReloadKey((k) => k + 1)}
+            title="Refresh — pick up shapes the agent just created"
+          >
+            <RefreshCw
+              className={cn(
+                "h-3.5 w-3.5",
+                state.status === "loading" && "animate-spin",
               )}
-            </div>
-          );
-        })()}
-    </div>
+            />
+            <span className="hidden sm:inline text-xs">Refresh</span>
+          </Button>
+        </div>
+
+        {state.status === "loading" && <SectionSkeleton />}
+
+        {state.status === "error" && (
+          <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+            <CircleAlert className="h-4 w-4 shrink-0" />
+            {state.message}
+          </div>
+        )}
+
+        {state.status === "ready" &&
+          (() => {
+            const filtered = state.entries.filter((e) => matches(e, query));
+            const { mine, platform } = partitionShapes(filtered, currentUserId);
+            return (
+              <div className="space-y-6">
+                {/* Your shapes */}
+                <section>
+                  <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Shapes className="h-3.5 w-3.5" />
+                    Your shapes
+                  </h2>
+                  {mine.length === 0 ? (
+                    <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-8 text-center">
+                      <Shapes className="mx-auto h-8 w-8 text-muted-foreground/50" />
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {query
+                          ? "No shapes match your search."
+                          : "You have no shapes yet."}
+                      </p>
+                      {!query && (
+                        <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+                          Design one with the agent — describe your data and get
+                          a completely customized component for it.
+                        </p>
+                      )}
+                      {!query && (
+                        <Button
+                          size="sm"
+                          className="mt-3 h-8"
+                          onClick={() => navigate(SHAPES_NEW_HREF)}
+                        >
+                          {busyHref === SHAPES_NEW_HREF ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Plus className="h-3.5 w-3.5" />
+                          )}
+                          New Shape
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="overflow-hidden rounded-md border border-border bg-card">
+                      {mine.map((entry) => (
+                        <ShapeRow
+                          key={entry.id}
+                          entry={entry}
+                          busyHref={busyHref}
+                          onOpen={() => navigate(shapeDetailHref(entry.kind))}
+                          onTest={() => navigate(shapeTestHref(entry.kind))}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                {/* Platform library — visually secondary */}
+                {platform.length > 0 && (
+                  <section className="opacity-90">
+                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Platform shapes
+                    </h2>
+                    <div className="overflow-hidden rounded-md border border-border/70 bg-card/70">
+                      {platform.map((entry) => (
+                        <ShapeRow
+                          key={entry.id}
+                          entry={entry}
+                          busyHref={busyHref}
+                          onOpen={() => navigate(shapeDetailHref(entry.kind))}
+                          onTest={() => navigate(shapeTestHref(entry.kind))}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            );
+          })()}
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

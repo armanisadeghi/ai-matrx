@@ -6,6 +6,7 @@
 import { notFound } from "next/navigation";
 import { getShapeDetail } from "@/features/content-ir/studio/shape-detail-server";
 import ShapeDetailHeader from "@/features/content-ir/studio/components/ShapeDetailHeader";
+import ShapeSurfaceRuntime from "@/features/content-ir/studio/components/ShapeSurfaceRuntime";
 import ShapeInstancesTabLoader from "@/features/content-ir/studio/components/ShapeInstancesTabLoader";
 
 interface PageProps {
@@ -26,13 +27,29 @@ export default async function ShapeInstancesPage({ params }: PageProps) {
       />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mx-auto mt-3 max-w-6xl">
-          <ShapeInstancesTabLoader
+          <ShapeSurfaceRuntime
+            studioTab="instances"
             kind={detail.kind}
             label={detail.label}
             kindDefinitionId={detail.id}
-            currentVersion={detail.version}
+            kindVersion={detail.version}
+            visibility={detail.visibility}
+            isActive={detail.isActive}
             titleKey={detail.titleKey}
-          />
+            loadingComponent={detail.loadingComponent}
+            isOwnedByViewer={detail.isOwnedByViewer}
+            updatedAt={detail.updatedAt}
+            fieldData={detail.fieldData}
+            emittedJsonSchema={detail.emittedJsonSchema}
+          >
+            <ShapeInstancesTabLoader
+              kind={detail.kind}
+              label={detail.label}
+              kindDefinitionId={detail.id}
+              currentVersion={detail.version}
+              titleKey={detail.titleKey}
+            />
+          </ShapeSurfaceRuntime>
         </div>
       </div>
     </>

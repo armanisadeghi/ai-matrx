@@ -3,7 +3,7 @@
 // Preview tab body — the shape's canonical examples rendered through the REAL
 // production kind route (shared engine, same one the admin page uses).
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { FlaskConical } from "lucide-react";
 import Link from "next/link";
 import KindExamplePreview from "@/features/content-ir/studio/components/KindExamplePreview";
@@ -11,6 +11,9 @@ import ShapeOwnerEditor from "@/features/content-ir/studio/components/ShapeOwner
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import type { Json } from "@/types/database.types";
+import type { ShapeActivationVerdict } from "@/features/content-ir/studio/shape-authoring-service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 
 interface ShapePreviewTabProps {
   kind: string;
@@ -22,6 +25,12 @@ interface ShapePreviewTabProps {
   emittedJsonSchema: Json | null;
   isActive: boolean;
   isOwnedByViewer: boolean;
+  /** Definition version — surface value only (display lives in the header). */
+  kindVersion: number;
+  /** ISO timestamp of the definition's last update — surface value only. */
+  updatedAt: string;
+  /** Authored `StoredFieldElement[]` (null for Python-owned kinds). */
+  fieldData: Json | null;
 }
 
 export default function ShapePreviewTab({
@@ -34,11 +43,82 @@ export default function ShapePreviewTab({
   emittedJsonSchema,
   isActive,
   isOwnedByViewer,
+  kindVersion,
+  updatedAt,
+  fieldData,
 }: ShapePreviewTabProps) {
   const [examplesRevision, setExamplesRevision] = useState(0);
   const examples = useKindExamples(kindDefinitionId, examplesRevision);
+  // The dual-gate verdict is fetched ONCE, inside ShapeActivationControl
+  // (owner-only). It publishes here so the Shape Studio surface can emit it
+  // without a second RPC; stays null for non-owners, which is honest — the
+  // activation_* values simply are not available to them.
+  const [activationVerdict, setActivationVerdict] =
+    useState<ShapeActivationVerdict | null>(null);
+
+  // Surface scope (matrx-user/shapes) — built at TRIGGER time from live state.
+  const getSurfaceScope = useCallback(
+    () =>
+      createShapesScope({
+        studio_tab: "preview",
+        kind_slug: kind,
+        kind_label: label,
+        kind_definition_id: kindDefinitionId,
+        kind_version: kindVersion,
+        kind_visibility: visibility,
+        kind_is_active: isActive,
+        kind_title_key: titleKey ?? undefined,
+        kind_loading_component: loadingComponent ?? undefined,
+        kind_owned_by_viewer: isOwnedByViewer,
+        kind_updated_at: updatedAt,
+        kind_field_data: Array.isArray(fieldData) ? fieldData : undefined,
+        kind_emitted_json_schema:
+          (emittedJsonSchema as Record<string, unknown> | null) ?? undefined,
+        kind_examples:
+          examples.status === "ready"
+            ? (examples.rows as unknown as Array<Record<string, unknown>>)
+            : undefined,
+        kind_example_count:
+          examples.status === "ready" ? examples.rows.length : undefined,
+        canonical_example_present:
+          examples.status === "ready"
+            ? examples.rows.some((row) => row.isCanonical)
+            : undefined,
+        activation_would_activate: activationVerdict?.wouldActivate,
+        activation_structural_ok: activationVerdict?.structuralOk,
+        activation_render_ok: activationVerdict?.renderOk,
+        activation_render_leg_applicable:
+          activationVerdict?.renderLegApplicable,
+        activation_component_platforms: activationVerdict?.componentPlatforms,
+        activation_reasons: activationVerdict?.reasons,
+        kind_activation: activationVerdict
+          ? (activationVerdict as unknown as Record<string, unknown>)
+          : undefined,
+      }),
+    [
+      kind,
+      label,
+      kindDefinitionId,
+      kindVersion,
+      visibility,
+      isActive,
+      titleKey,
+      loadingComponent,
+      isOwnedByViewer,
+      updatedAt,
+      fieldData,
+      emittedJsonSchema,
+      examples,
+      activationVerdict,
+    ],
+  );
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/shapes"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
       {isOwnedByViewer && (
         <ShapeOwnerEditor
           kind={kind}
@@ -53,6 +133,7 @@ export default function ShapePreviewTab({
           onExamplesChanged={() =>
             setExamplesRevision((revision) => revision + 1)
           }
+          onActivationVerdict={setActivationVerdict}
         />
       )}
       <KindExamplePreview
@@ -78,6 +159,6 @@ export default function ShapePreviewTab({
           </div>
         }
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

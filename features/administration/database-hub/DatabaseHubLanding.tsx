@@ -27,7 +27,13 @@ import {
   databaseToolPages,
   type DatabaseToolPage,
   type DatabaseToolSection,
+  DEFAULT_DATABASE_SCHEMA,
 } from "./database-tools";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_DATABASE_SURFACE_NAME,
+  createAdminDatabaseScope,
+} from "@/features/surfaces/manifests/admin-database.manifest";
 
 const SECTION_ICONS: Record<DatabaseToolSection, React.ReactNode> = {
   legacy: <Database className="h-5 w-5" />,
@@ -100,7 +106,27 @@ export function DatabaseHubLanding() {
   const totalTools = databaseToolPages.length;
   const dupCount = databaseToolPages.filter((p) => p.isDuplicate).length;
 
+  // Surface emitter — hub half of `matrx-admin/database`. Built at trigger
+  // time. No credentials of any kind enter this scope.
+  const getSurfaceScope = () =>
+    createAdminDatabaseScope({
+      console_section: "hub",
+      default_schema: DEFAULT_DATABASE_SCHEMA,
+      database_tool_pages: databaseToolPages.map((p) => ({
+        title: databaseToolLabel(p),
+        href: p.path,
+        section: p.section,
+      })),
+      database_tool_count: totalTools,
+      selection: window.getSelection()?.toString() || undefined,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_DATABASE_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="h-full w-full overflow-auto bg-textured">
       <div className="w-full max-w-[1400px] mx-auto py-6 px-4 sm:px-6">
         <div className="mb-6">
@@ -154,5 +180,6 @@ export function DatabaseHubLanding() {
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

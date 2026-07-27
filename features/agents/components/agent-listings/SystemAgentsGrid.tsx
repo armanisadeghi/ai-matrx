@@ -27,6 +27,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_SYSTEM_AGENTS_SURFACE_NAME,
+  createAdminSystemAgentsScope,
+} from "@/features/surfaces/manifests/admin-system-agents.manifest";
 
 const ADMIN_BASE_PATH = "/administration/agents/system-agents/agents";
 const NEW_HREF = "/administration/agents/system-agents/agents/new";
@@ -129,8 +134,35 @@ export function SystemAgentsGrid() {
     }
   };
 
+  // Surface emitter — assembled at trigger time from live state, never on
+  // mount. Roster values only; the open-agent half of the surface is emitted
+  // by SystemAgentSurfaceEmitter on the [id] detail routes.
+  const getSurfaceScope = () =>
+    createAdminSystemAgentsScope({
+      roster_agent_ids: agents.map((a) => a.id),
+      roster_count: agents.length,
+      roster_agents: agents.map((a) => ({
+        id: a.id,
+        name: a.name,
+        description: a.description ?? null,
+        category: a.category ?? null,
+        tags: a.tags ?? null,
+        model_id: a.modelId ?? null,
+        is_active: a.isActive ?? null,
+        is_archived: a.isArchived ?? null,
+        updated_at: a.updatedAt ?? null,
+      })),
+      roster_filtered_agent_ids: filtered.map((a) => a.id),
+      roster_search_query: search || undefined,
+      selection: window.getSelection()?.toString() || undefined,
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SYSTEM_AGENTS_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
       <div className="mb-4 flex items-center gap-2">
         <div className="flex-1 relative">
           <div className="flex items-center gap-3 p-1 pl-3 rounded-full border border-border bg-card">
@@ -247,6 +279,6 @@ export function SystemAgentsGrid() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

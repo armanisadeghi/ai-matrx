@@ -48,6 +48,8 @@ import {
   type KindInstanceListEntry,
 } from "@/features/content-ir/studio/instance-service";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import { getKindInputContractBySlug } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
 
@@ -176,7 +178,38 @@ export default function ShapeInstancesTab({
   const entries = list.status === "ready" ? list.entries : [];
   const selected = entries.find((e) => e.id === selectedId) ?? null;
   const selectedData = selected ? instanceDataAsRecord(selected.data) : null;
-  const selectedStale = selected !== null && selected.kindVersion < currentVersion;
+  const selectedStale =
+    selected !== null && selected.kindVersion < currentVersion;
+
+  // Surface scope (matrx-user/shapes) — the Instances tab nests DEEPER than the
+  // route-level ShapeSurfaceRuntime, so it wins while mounted and must carry the
+  // kind identity forward alongside the instance values. Built at TRIGGER time.
+  const getSurfaceScope = useCallback(
+    () =>
+      createShapesScope({
+        studio_tab: "instances",
+        kind_slug: kind,
+        kind_label: label,
+        kind_definition_id: kindDefinitionId,
+        kind_version: currentVersion,
+        kind_title_key: titleKey ?? undefined,
+        kind_instances: entries as unknown as Array<Record<string, unknown>>,
+        kind_instance_count: entries.length,
+        focused_instance_id: selected?.id,
+        focused_instance: selected
+          ? (selected as unknown as Record<string, unknown>)
+          : undefined,
+      }),
+    [
+      kind,
+      label,
+      kindDefinitionId,
+      currentVersion,
+      titleKey,
+      entries,
+      selected,
+    ],
+  );
 
   function select(id: string): void {
     setSelectedId(id);
@@ -187,7 +220,11 @@ export default function ShapeInstancesTab({
   async function handleEditSubmit(value: unknown): Promise<void> {
     if (!selected || !isRecordValue(value)) return;
     try {
-      const result = await updateKindInstance({ id: selected.id, value, titleKey });
+      const result = await updateKindInstance({
+        id: selected.id,
+        value,
+        titleKey,
+      });
       await reload();
       setEditing(false);
       if (isValidatorDrift(result)) {
@@ -345,189 +382,195 @@ export default function ShapeInstancesTab({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_1fr]">
-      {/* Instance list */}
-      <section className="min-w-0">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">
-            My instances
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {entries.length}
-          </span>
-          <button
-            type="button"
-            onClick={() => void reload()}
-            className="ml-auto flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            aria-label="Refresh"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
-          {flatKeys && (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/shapes"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
+      <div className="grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_1fr]">
+        {/* Instance list */}
+        <section className="min-w-0">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              My instances
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {entries.length}
+            </span>
             <button
               type="button"
-              onClick={() => void handleViewAsTable()}
-              disabled={converting}
-              className="flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-              title="Create a one-time dataset snapshot of these instances"
+              onClick={() => void reload()}
+              className="ml-auto flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              aria-label="Refresh"
             >
-              {converting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Table2 className="h-3.5 w-3.5" />
-              )}
-              View as table
+              <RefreshCw className="h-3.5 w-3.5" />
             </button>
-          )}
-        </div>
-        <ul className="space-y-1">
-          {entries.map((entry) => {
-            const stale = entry.kindVersion < currentVersion;
-            const active = entry.id === selectedId;
-            return (
-              <li key={entry.id}>
-                <button
-                  type="button"
-                  onClick={() => select(entry.id)}
-                  className={`flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors ${
-                    active
-                      ? "border-primary/50 bg-accent"
-                      : "border-border bg-card hover:bg-accent"
-                  }`}
-                >
-                  <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${statusDotClass(entry.validationStatus)}`}
-                    title={`Validation: ${entry.validationStatus}`}
-                  />
-                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                    {entry.title ?? `Untitled (${entry.id.slice(0, 8)})`}
-                  </span>
-                  {stale && (
-                    <span
-                      className="shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200"
-                      title={`Pinned to v${entry.kindVersion}; the kind is at v${currentVersion}`}
-                    >
-                      v{entry.kindVersion}
-                    </span>
-                  )}
-                  <span className="shrink-0 text-[11px] text-muted-foreground">
-                    {formatUpdated(entry.updatedAt)}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      {/* Detail */}
-      <section className="min-w-0">
-        {selected === null ? (
-          <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              Pick an instance — it renders here through your shape&apos;s real
-              component.
-            </p>
+            {flatKeys && (
+              <button
+                type="button"
+                onClick={() => void handleViewAsTable()}
+                disabled={converting}
+                className="flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                title="Create a one-time dataset snapshot of these instances"
+              >
+                {converting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Table2 className="h-3.5 w-3.5" />
+                )}
+                View as table
+              </button>
+            )}
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">
-                {selected.title ?? `Untitled (${selected.id.slice(0, 8)})`}
-              </span>
-              <span
-                className={`h-2 w-2 rounded-full ${statusDotClass(selected.validationStatus)}`}
-                title={`Validation: ${selected.validationStatus}`}
-              />
-              <span className="text-[11px] text-muted-foreground">
-                v{selected.kindVersion}
-                {selectedStale ? ` of ${currentVersion}` : ""}
-              </span>
-              <div className="ml-auto flex items-center gap-1.5">
-                {selectedStale && (
+          <ul className="space-y-1">
+            {entries.map((entry) => {
+              const stale = entry.kindVersion < currentVersion;
+              const active = entry.id === selectedId;
+              return (
+                <li key={entry.id}>
                   <button
                     type="button"
-                    onClick={() => void handleRepin()}
-                    disabled={repinning}
-                    className="flex h-7 items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:text-amber-200"
-                    title={`Revalidate against v${currentVersion} and repin (refused if the data does not validate)`}
+                    onClick={() => select(entry.id)}
+                    className={`flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors ${
+                      active
+                        ? "border-primary/50 bg-accent"
+                        : "border-border bg-card hover:bg-accent"
+                    }`}
                   >
-                    {repinning ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <ArrowUpCircle className="h-3.5 w-3.5" />
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${statusDotClass(entry.validationStatus)}`}
+                      title={`Validation: ${entry.validationStatus}`}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                      {entry.title ?? `Untitled (${entry.id.slice(0, 8)})`}
+                    </span>
+                    {stale && (
+                      <span
+                        className="shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200"
+                        title={`Pinned to v${entry.kindVersion}; the kind is at v${currentVersion}`}
+                      >
+                        v{entry.kindVersion}
+                      </span>
                     )}
-                    Repin to v{currentVersion}
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {formatUpdated(entry.updatedAt)}
+                    </span>
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditing((e) => !e);
-                    setVerdictWarning(null);
-                  }}
-                  className="flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent"
-                >
-                  {editing ? (
-                    <X className="h-3.5 w-3.5" />
-                  ) : (
-                    <Pencil className="h-3.5 w-3.5" />
-                  )}
-                  {editing ? "Cancel" : "Edit"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPendingDeleteId(selected.id)}
-                  className="flex h-7 items-center gap-1.5 rounded-md border border-red-500/30 px-2 text-xs text-red-700 transition-colors hover:bg-red-500/10 dark:text-red-300"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete
-                </button>
-              </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        {/* Detail */}
+        <section className="min-w-0">
+          {selected === null ? (
+            <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-10 text-center">
+              <p className="text-sm text-muted-foreground">
+                Pick an instance — it renders here through your shape&apos;s
+                real component.
+              </p>
             </div>
-
-            {verdictWarning && (
-              <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
-                <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                {verdictWarning}
-              </div>
-            )}
-
-            {editing && selectedData !== null ? (
-              <div className="rounded-md border border-border bg-card p-3">
-                <KindInputForm
-                  kind={kind}
-                  initialValue={selectedData}
-                  submitLabel="Save changes"
-                  onSubmit={handleEditSubmit}
-                  onCancel={() => setEditing(false)}
+          ) : (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">
+                  {selected.title ?? `Untitled (${selected.id.slice(0, 8)})`}
+                </span>
+                <span
+                  className={`h-2 w-2 rounded-full ${statusDotClass(selected.validationStatus)}`}
+                  title={`Validation: ${selected.validationStatus}`}
                 />
+                <span className="text-[11px] text-muted-foreground">
+                  v{selected.kindVersion}
+                  {selectedStale ? ` of ${currentVersion}` : ""}
+                </span>
+                <div className="ml-auto flex items-center gap-1.5">
+                  {selectedStale && (
+                    <button
+                      type="button"
+                      onClick={() => void handleRepin()}
+                      disabled={repinning}
+                      className="flex h-7 items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:text-amber-200"
+                      title={`Revalidate against v${currentVersion} and repin (refused if the data does not validate)`}
+                    >
+                      {repinning ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ArrowUpCircle className="h-3.5 w-3.5" />
+                      )}
+                      Repin to v{currentVersion}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing((e) => !e);
+                      setVerdictWarning(null);
+                    }}
+                    className="flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent"
+                  >
+                    {editing ? (
+                      <X className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pencil className="h-3.5 w-3.5" />
+                    )}
+                    {editing ? "Cancel" : "Edit"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingDeleteId(selected.id)}
+                    className="flex h-7 items-center gap-1.5 rounded-md border border-red-500/30 px-2 text-xs text-red-700 transition-colors hover:bg-red-500/10 dark:text-red-300"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </button>
+                </div>
               </div>
-            ) : selectedData !== null ? (
-              <KindInstanceRender kind={kind} value={selectedData} />
-            ) : (
-              <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
-                <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                This instance&apos;s stored data is not a JSON object — it
-                cannot be rendered or edited here.
-              </div>
-            )}
-          </div>
-        )}
-      </section>
 
-      <ConfirmDialog
-        open={pendingDeleteId !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingDeleteId(null);
-        }}
-        title="Delete this instance?"
-        description="Soft delete — the row is tombstoned and recoverable by an admin, but it disappears from your list."
-        variant="destructive"
-        confirmLabel="Delete"
-        busy={deleting}
-        onConfirm={handleDelete}
-      />
-    </div>
+              {verdictWarning && (
+                <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
+                  <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {verdictWarning}
+                </div>
+              )}
+
+              {editing && selectedData !== null ? (
+                <div className="rounded-md border border-border bg-card p-3">
+                  <KindInputForm
+                    kind={kind}
+                    initialValue={selectedData}
+                    submitLabel="Save changes"
+                    onSubmit={handleEditSubmit}
+                    onCancel={() => setEditing(false)}
+                  />
+                </div>
+              ) : selectedData !== null ? (
+                <KindInstanceRender kind={kind} value={selectedData} />
+              ) : (
+                <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
+                  <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  This instance&apos;s stored data is not a JSON object — it
+                  cannot be rendered or edited here.
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        <ConfirmDialog
+          open={pendingDeleteId !== null}
+          onOpenChange={(open) => {
+            if (!open) setPendingDeleteId(null);
+          }}
+          title="Delete this instance?"
+          description="Soft delete — the row is tombstoned and recoverable by an admin, but it disappears from your list."
+          variant="destructive"
+          confirmLabel="Delete"
+          busy={deleting}
+          onConfirm={handleDelete}
+        />
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

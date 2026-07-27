@@ -128,6 +128,12 @@ import { scopesManifest } from "./scopes.manifest";
 import { contextItemsManifest } from "./context-items.manifest";
 import { chatVoiceManifest } from "./chat-voice.manifest";
 import { transcriptScribeLiveManifest } from "./transcript-scribe-live.manifest";
+import { adminSystemAgentsManifest } from "./admin-system-agents.manifest";
+import { adminDatabaseManifest } from "./admin-database.manifest";
+import { adminAiModelsManifest } from "./admin-ai-models.manifest";
+import { adminToolRegistryManifest } from "./admin-tool-registry.manifest";
+import { knowledgeManifest } from "./knowledge.manifest";
+import { shapesManifest } from "./shapes.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -243,6 +249,12 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   contextItemsManifest,
   chatVoiceManifest,
   transcriptScribeLiveManifest,
+  adminSystemAgentsManifest,
+  adminDatabaseManifest,
+  adminAiModelsManifest,
+  adminToolRegistryManifest,
+  knowledgeManifest,
+  shapesManifest,
 ];
 
 // ---------------------------------------------------------------------------

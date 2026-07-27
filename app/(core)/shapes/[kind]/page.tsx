@@ -34,6 +34,9 @@ export default async function ShapePreviewPage({ params }: PageProps) {
             emittedJsonSchema={detail.emittedJsonSchema}
             isActive={detail.isActive}
             isOwnedByViewer={detail.isOwnedByViewer}
+            kindVersion={detail.version}
+            updatedAt={detail.updatedAt}
+            fieldData={detail.fieldData}
           />
         </div>
       </div>

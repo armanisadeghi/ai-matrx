@@ -10,7 +10,7 @@
  * loads this whole tab via `next/dynamic({ ssr: false })`.
  */
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { Check, CircleAlert, Copy, Eye, Loader2, Save } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -26,6 +26,8 @@ import {
   saveKindInstance,
 } from "@/features/content-ir/studio/instance-service";
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 
 interface ShapeTestTabProps {
   kind: string;
@@ -41,7 +43,12 @@ interface ShapeTestTabProps {
 type SaveState =
   | { status: "idle" }
   | { status: "saving" }
-  | { status: "saved"; instanceId: string; pinnedVersion: number; versionBumped: boolean }
+  | {
+      status: "saved";
+      instanceId: string;
+      pinnedVersion: number;
+      versionBumped: boolean;
+    }
   | { status: "drift"; message: string }
   | { status: "error"; message: string };
 
@@ -117,115 +124,143 @@ export default function ShapeTestTab({
     }
   }
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {/* The form */}
-      <section className="rounded-md border border-border bg-card p-3">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">
-            Fill in your {label}
-          </span>
-        </div>
-        <KindInputForm
-          kind={kind}
-          submitLabel="Render"
-          onSubmit={(value) => {
-            setInstance(value);
-            setRenderKey((k) => k + 1);
-            setSaveState({ status: "idle" });
-          }}
-        />
-      </section>
+  // Surface scope (matrx-user/shapes) — the Test tab nests DEEPER than the
+  // route-level ShapeSurfaceRuntime, so it wins while mounted and carries the
+  // kind identity forward alongside the live draft. Built at TRIGGER time.
+  const getSurfaceScope = useCallback(
+    () =>
+      createShapesScope({
+        studio_tab: "test",
+        kind_slug: kind,
+        kind_label: label,
+        kind_definition_id: kindDefinitionId,
+        kind_version: kindVersion,
+        kind_title_key: titleKey ?? undefined,
+        test_draft_instance: isRecordValue(instance) ? instance : undefined,
+        test_save_state: saveState as unknown as Record<string, unknown>,
+      }),
+    [kind, label, kindDefinitionId, kindVersion, titleKey, instance, saveState],
+  );
 
-      {/* The live render */}
-      <section className="min-w-0">
-        <div className="mb-2 flex items-center gap-2">
-          <Eye className="h-3.5 w-3.5 text-primary" />
-          <span className="text-sm font-semibold text-foreground">
-            Live render
-          </span>
-          {instance !== null && (
-            <>
-              <span className="flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                <Check className="h-3 w-3" />
-                valid instance
-              </span>
-              <button
-                type="button"
-                onClick={() => void copyInstance()}
-                className="ml-auto flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                Copy JSON
-              </button>
-              {saveState.status === "saved" ? (
-                <Link
-                  href={`${shapeInstancesHref(kind)}?i=${saveState.instanceId}`}
-                  className="flex h-7 items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-300"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                  View in Instances
-                </Link>
-              ) : (
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/shapes"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* The form */}
+        <section className="rounded-md border border-border bg-card p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              Fill in your {label}
+            </span>
+          </div>
+          <KindInputForm
+            kind={kind}
+            submitLabel="Render"
+            onSubmit={(value) => {
+              setInstance(value);
+              setRenderKey((k) => k + 1);
+              setSaveState({ status: "idle" });
+            }}
+          />
+        </section>
+
+        {/* The live render */}
+        <section className="min-w-0">
+          <div className="mb-2 flex items-center gap-2">
+            <Eye className="h-3.5 w-3.5 text-primary" />
+            <span className="text-sm font-semibold text-foreground">
+              Live render
+            </span>
+            {instance !== null && (
+              <>
+                <span className="flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                  <Check className="h-3 w-3" />
+                  valid instance
+                </span>
                 <button
                   type="button"
-                  onClick={() => void saveInstance()}
-                  disabled={saveState.status === "saving"}
-                  className="flex h-7 items-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => void copyInstance()}
+                  className="ml-auto flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent"
                 >
-                  {saveState.status === "saving" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5" />
-                  )}
-                  Save
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy JSON
                 </button>
-              )}
-            </>
+                {saveState.status === "saved" ? (
+                  <Link
+                    href={`${shapeInstancesHref(kind)}?i=${saveState.instanceId}`}
+                    className="flex h-7 items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-300"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    View in Instances
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void saveInstance()}
+                    disabled={saveState.status === "saving"}
+                    className="flex h-7 items-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {saveState.status === "saving" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    Save
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+          {saveState.status === "saved" && saveState.versionBumped && (
+            <div className="mb-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+              <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                This shape was updated to v{saveState.pinnedVersion} since you
+                opened this page — the instance was saved against v
+                {saveState.pinnedVersion}.
+              </span>
+            </div>
           )}
-        </div>
-        {saveState.status === "saved" && saveState.versionBumped && (
-          <div className="mb-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-            <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              This shape was updated to v{saveState.pinnedVersion} since you
-              opened this page — the instance was saved against v
-              {saveState.pinnedVersion}.
-            </span>
-          </div>
-        )}
-        {(saveState.status === "drift" || saveState.status === "error") && (
-          <div className="mb-2 flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
-            <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              {saveState.status === "drift" && (
-                <strong className="font-semibold">Validator drift: </strong>
-              )}
-              {saveState.message}
-            </span>
-          </div>
-        )}
-        {instance === null ? (
-          <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              Submit the form — your shape renders here, exactly as it will in
-              chat and everywhere else.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <KindInstanceRender key={renderKey} kind={kind} value={instance} />
-            <details className="rounded-md border border-border bg-card">
-              <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
-                Instance JSON
-              </summary>
-              <pre className="max-h-[24rem] overflow-auto border-t border-border p-3 font-mono text-[11px] text-foreground">
-                {JSON.stringify(instance, null, 2)}
-              </pre>
-            </details>
-          </div>
-        )}
-      </section>
-    </div>
+          {(saveState.status === "drift" || saveState.status === "error") && (
+            <div className="mb-2 flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
+              <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                {saveState.status === "drift" && (
+                  <strong className="font-semibold">Validator drift: </strong>
+                )}
+                {saveState.message}
+              </span>
+            </div>
+          )}
+          {instance === null ? (
+            <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-10 text-center">
+              <p className="text-sm text-muted-foreground">
+                Submit the form — your shape renders here, exactly as it will in
+                chat and everywhere else.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <KindInstanceRender
+                key={renderKey}
+                kind={kind}
+                value={instance}
+              />
+              <details className="rounded-md border border-border bg-card">
+                <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+                  Instance JSON
+                </summary>
+                <pre className="max-h-[24rem] overflow-auto border-t border-border p-3 font-mono text-[11px] text-foreground">
+                  {JSON.stringify(instance, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
+        </section>
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

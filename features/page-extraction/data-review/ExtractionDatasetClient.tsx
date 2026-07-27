@@ -104,6 +104,8 @@ import { ExtractionCellDisplay } from "./ExtractionCellDisplay";
 import { deleteResultRows, duplicateJob } from "./data";
 import { cellToString } from "./export";
 import { EXTRACTION_ENTITY_TYPE, EXTRACTIONS_ROUTE } from "./constants";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
 
 const PAGE_SIZES = [50, 100, 250, 1000] as const;
 
@@ -323,6 +325,58 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     [sorted, visibleColumns],
   );
 
+  // ── Surface scope (matrx-user/knowledge) ───────────────────────────────────
+  // Built at TRIGGER time from live state — never on mount. The extraction
+  // half of the Knowledge surface; the graph and suggestion halves live on
+  // their own routes and emit disjoint values.
+  const getSurfaceScope = useCallback(
+    () =>
+      createKnowledgeScope({
+        extraction_job_id: jobId,
+        extraction_job_name: job?.name ?? undefined,
+        extraction_job_status: job
+          ? job.archived_at
+            ? "archived"
+            : job.is_saved
+              ? "saved"
+              : "unsaved"
+          : undefined,
+        extraction_run_id: selectedRunId ?? undefined,
+        extraction_job:
+          (job as unknown as Record<string, unknown>) ?? undefined,
+        extraction_row_count: sorted.length,
+        extraction_columns: orderedColumns.map((c) => ({
+          key: c.key,
+          label: c.label,
+          hidden: hidden.has(c.key),
+        })),
+        extraction_rows: exportRows,
+        extraction_selected_row_ids: [...selected],
+        extraction_query: query || undefined,
+        extraction_sort: sortKey
+          ? { key: sortKey, direction: sortDir }
+          : undefined,
+        extraction_page: { pageIndex, pageSize },
+        extraction_merge_duplicates: merge,
+      }),
+    [
+      jobId,
+      job,
+      selectedRunId,
+      sorted,
+      orderedColumns,
+      hidden,
+      exportRows,
+      selected,
+      query,
+      sortKey,
+      sortDir,
+      pageIndex,
+      pageSize,
+      merge,
+    ],
+  );
+
   // ── Actions ────────────────────────────────────────────────────────────────
   const toggleSort = useCallback(
     (key: string) => {
@@ -431,7 +485,11 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/knowledge"
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
       <PageHeader>
         <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
           <ChevronLeftTapButton
@@ -897,7 +955,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
           onConfirm={runConfirmed}
         />
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 

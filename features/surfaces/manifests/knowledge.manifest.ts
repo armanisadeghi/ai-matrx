@@ -135,9 +135,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "extraction_job_status",
-    label: "Extraction job status",
+    label: "Extraction dataset standing",
     description:
-      "Lifecycle status of the extraction job as stored on the job row (e.g. queued / running / complete / failed). Empty when no job is loaded.",
+      "Lifecycle standing of the extraction dataset, derived from the job row: `archived` when it has been archived, else `saved` or `unsaved`. Empty when no job is loaded.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 12,

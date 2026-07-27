@@ -21,7 +21,12 @@
  *     polling so the user actually notices "embedding → ready"
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
+
+/** Canonical `ui_surface.name` this page emits. */
+const RAG_LIBRARY_SURFACE = "matrx-user/rag-library";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -392,8 +397,45 @@ export function LibraryPage() {
     [summary],
   );
 
+  // Live surface scope for the header Agents chrome. Built at Run time from
+  // the state the page already holds — never on mount.
+  const getScope = useCallback(
+    () =>
+      buildRagLibraryContextData({
+        view: "library",
+        summary,
+        documents: finalDocs,
+        totalMatches: finalTotal,
+        searchQuery: debouncedSearch,
+        statusFilter,
+        listLoading: finalLoading,
+        listError: finalError,
+        selectedDocumentId: selectedDocId,
+        jobs: runner.jobs,
+        selectionText:
+          typeof window !== "undefined"
+            ? (window.getSelection()?.toString() ?? "")
+            : "",
+      }),
+    [
+      summary,
+      finalDocs,
+      finalTotal,
+      debouncedSearch,
+      statusFilter,
+      finalLoading,
+      finalError,
+      selectedDocId,
+      runner.jobs,
+    ],
+  );
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={RAG_LIBRARY_SURFACE}
+      getScope={getScope}
+      isEditable={false}
+    >
       <RagHubHeader
         right={
           <>
@@ -769,7 +811,7 @@ export function LibraryPage() {
         </DialogContent>
       </Dialog>
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 

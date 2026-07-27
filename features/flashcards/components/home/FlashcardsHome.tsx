@@ -48,6 +48,11 @@ import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { StudyStreakRow } from "@/features/education/study/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationFlashcardsScope,
+  type FlashcardSetSummary,
+} from "@/features/surfaces/manifests/education-flashcards.manifest";
 
 const EDU_BASE = "/education/flashcards";
 const FAST_FIRE_BASE = "/education/fastfire";
@@ -352,6 +357,35 @@ export function FlashcardsHome() {
   );
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-flashcards"
+      // Scope is assembled at TRIGGER time from the live render values, so the
+      // agent always sees the filters the learner has applied right now.
+      getScope={() =>
+        createEducationFlashcardsScope({
+          sets_loaded: sets !== null && !error,
+          folders: folders.map((f) => ({ id: f.id, name: f.name })),
+          visibility_filter: visibility,
+          selected_folder_ids: [...folderIds],
+          ...(sets !== null && !error
+            ? {
+                set_count: sets.length,
+                all_sets: sets.map((s) => toSetSummary(s, foldersBySet)),
+                visible_sets: visible.map((s) => toSetSummary(s, foldersBySet)),
+                visible_set_ids: visible.map((s) => s.id),
+              }
+            : {}),
+          ...(error ? { load_error: error } : {}),
+          ...(q ? { search_query: q } : {}),
+          ...(streak
+            ? {
+                study_streak_days: streak.current_streak,
+                longest_streak_days: streak.longest_streak,
+              }
+            : {}),
+        })
+      }
+    >
     <div className="min-h-full w-full bg-textured">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-5 sm:py-6">
         {/* Header */}
@@ -570,5 +604,23 @@ export function FlashcardsHome() {
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
+}
+
+/** Map a loaded set row + its folder edges into the surface's set summary. */
+function toSetSummary(
+  set: FcSetRow,
+  foldersBySet: Record<string, string[]>,
+): FlashcardSetSummary {
+  return {
+    id: set.id,
+    name: set.name,
+    topic: set.topic,
+    lesson: set.lesson,
+    description: set.description,
+    visibility: set.visibility,
+    updated_at: set.updated_at,
+    folder_ids: foldersBySet[set.id] ?? [],
+  };
 }

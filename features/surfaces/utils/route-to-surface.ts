@@ -52,6 +52,9 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/smart-code-editor", surface: "matrx-user/smart-code-editor" },
   { prefix: "/markdown-editor", surface: "matrx-user/markdown-editor" },
   { prefix: "/markdown-studio", surface: "matrx-user/markdown-studio" },
+  { prefix: "/knowledge", surface: "matrx-user/knowledge" },
+  { prefix: "/suggestions", surface: "matrx-user/knowledge" },
+  { prefix: "/shapes", surface: "matrx-user/shapes" },
   { prefix: "/notes", surface: "matrx-user/notes" },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
@@ -80,6 +83,11 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/canvas", surface: "matrx-user/canvas" },
   { prefix: "/ai-results", surface: "matrx-user/ai-results" },
   { prefix: "/rag/search", surface: "matrx-user/rag-search" },
+  { prefix: "/rag/library-catalog", surface: "matrx-user/rag-library" },
+  { prefix: "/rag/library", surface: "matrx-user/rag-library" },
+  { prefix: "/rag/data-stores", surface: "matrx-user/rag-data-stores" },
+  { prefix: "/rag/viewer", surface: "matrx-user/rag-viewer" },
+  { prefix: "/rag", surface: "matrx-user/rag-library" },
   { prefix: "/research", surface: "matrx-user/research" },
   { prefix: "/sandbox", surface: "matrx-user/sandboxes" },
   { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },
@@ -118,6 +126,19 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/pdf-widgets", surface: "matrx-user/pdf-extractor" },
 
   // Admin routes — prefer matrx-admin/* when on the admin section.
+  // Specific admin surfaces BEFORE the /administration catch-all.
+  {
+    prefix: "/administration/agents/mcp-tools",
+    surface: "matrx-admin/tool-registry",
+  },
+  {
+    prefix: "/administration/ai/ai-models",
+    surface: "matrx-admin/ai-models",
+  },
+  { prefix: "/administration/database", surface: "matrx-admin/database" },
+  // TODO(admin wave): this catch-all attributes EVERY other admin route to
+  // system-agents. Narrow it to /administration/agents/system-agents once the
+  // remaining ~29 matrx-admin surfaces have manifests.
   { prefix: "/administration", surface: "matrx-admin/system-agents" },
   { prefix: "/admin", surface: "matrx-admin/system-agents" },
 ] as const;

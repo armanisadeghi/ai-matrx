@@ -21,6 +21,7 @@ import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
 import { KIND_LOADING_COMPONENTS } from "@/features/content-ir/react/loading/kind-loading-registry";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import ShapeActivationControl from "@/features/content-ir/studio/components/ShapeActivationControl";
+import type { ShapeActivationVerdict } from "@/features/content-ir/studio/shape-authoring-service";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
 import KindContentBlockGenerator from "@/features/content-ir/studio/components/KindContentBlockGenerator";
 import { ownerUpsertKindContentBlock } from "@/features/content-ir/studio/kind-content-block-service";
@@ -63,6 +64,9 @@ interface ShapeOwnerEditorProps {
   isActive: boolean;
   examples: ExamplesState;
   onExamplesChanged: () => void;
+  /** Forwarded from the activation control so the Shape Studio surface
+   *  emitter can publish the live dual-gate verdict without a second RPC. */
+  onActivationVerdict?: (verdict: ShapeActivationVerdict | null) => void;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -86,6 +90,7 @@ export default function ShapeOwnerEditor({
   isActive,
   examples,
   onExamplesChanged,
+  onActivationVerdict,
 }: ShapeOwnerEditorProps) {
   const router = useRouter();
   const [label, setLabel] = useState(initialLabel);
@@ -165,6 +170,7 @@ export default function ShapeOwnerEditor({
           kindDefinitionId={kindDefinitionId}
           isActive={isActive}
           onActivationChanged={() => router.refresh()}
+          onVerdict={onActivationVerdict}
         />
       </div>
 

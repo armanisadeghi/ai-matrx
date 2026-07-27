@@ -23,7 +23,7 @@
  * can never disagree about what activatable means.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleAlert, Loader2, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -42,6 +42,13 @@ interface ShapeActivationControlProps {
   isActive: boolean;
   /** Re-fetch the definition after a successful flip. */
   onActivationChanged: () => void;
+  /**
+   * Publish the freshly-evaluated dual-gate verdict upward. This control is
+   * the ONLY place the verdict is fetched, so the `matrx-user/shapes` surface
+   * emitter on the Preview route reads it from here rather than issuing a
+   * duplicate RPC. Optional — the control works without it.
+   */
+  onVerdict?: (verdict: ShapeActivationVerdict | null) => void;
 }
 
 export default function ShapeActivationControl({
@@ -49,20 +56,30 @@ export default function ShapeActivationControl({
   kindDefinitionId,
   isActive,
   onActivationChanged,
+  onVerdict,
 }: ShapeActivationControlProps) {
   const [verdict, setVerdict] = useState<ShapeActivationVerdict | null>(null);
   const [loadingVerdict, setLoadingVerdict] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Ref-held so a caller passing an inline callback cannot re-trigger the
+  // verdict fetch on every render.
+  const onVerdictRef = useRef(onVerdict);
+  useEffect(() => {
+    onVerdictRef.current = onVerdict;
+  });
 
   const refreshVerdict = useCallback(async () => {
     setLoadingVerdict(true);
     try {
-      setVerdict(await evaluateShapeActivation(supabase, kindDefinitionId));
+      const next = await evaluateShapeActivation(supabase, kindDefinitionId);
+      setVerdict(next);
+      onVerdictRef.current?.(next);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
+      onVerdictRef.current?.(null);
       captureError({
         source: "content-ir",
         message: `Shape activation verdict failed for "${kind}": ${message}`,

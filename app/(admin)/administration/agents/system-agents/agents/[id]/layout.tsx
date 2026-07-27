@@ -1,6 +1,7 @@
 import { getAgent } from "@/lib/agents/data";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { AgentHydratorServer } from "@/features/agents/route/AgentHydratorServer";
+import { SystemAgentSurfaceEmitter } from "@/features/agents/components/admin/SystemAgentSurfaceEmitter";
 
 export async function generateMetadata({
   params,
@@ -34,7 +35,7 @@ export default async function AdminSystemAgentDetailLayout({
   const isPersonalAgent = agent.agentType !== "builtin";
 
   return (
-    <>
+    <SystemAgentSurfaceEmitter agentId={id}>
       <AgentHydratorServer agentId={id} />
       {isPersonalAgent ? (
         <div className="flex h-full flex-col overflow-hidden bg-amber-500/10">
@@ -49,6 +50,6 @@ export default async function AdminSystemAgentDetailLayout({
       ) : (
         <div className="h-full overflow-hidden">{children}</div>
       )}
-    </>
+    </SystemAgentSurfaceEmitter>
   );
 }

@@ -47,6 +47,11 @@ import {
   EntitlementChip,
   entitlementLabel,
 } from "@/features/rag/components/library-catalog/EntitlementChip";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
+
+/** Canonical `ui_surface.name` this page emits — the catalog half. */
+const RAG_LIBRARY_SURFACE = "matrx-user/rag-library";
 
 export function LibraryCatalogPage() {
   const router = useRouter();
@@ -84,8 +89,31 @@ export function LibraryCatalogPage() {
 
   const selected = catalog.items.find((it) => it.id === storeId) ?? null;
 
+  // Live surface scope for the header Agents chrome — the catalog half of
+  // `matrx-user/rag-library`. Built at Run time, never on mount.
+  const getScope = useCallback(
+    () =>
+      buildRagLibraryContextData({
+        view: "catalog",
+        catalogItems: catalog.items,
+        catalogVisible: items,
+        catalogQuery: query,
+        catalogEntitledOnly: entitledOnly,
+        catalogSelectedId: storeId,
+        selectionText:
+          typeof window !== "undefined"
+            ? (window.getSelection()?.toString() ?? "")
+            : "",
+      }),
+    [catalog.items, items, query, entitledOnly, storeId],
+  );
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={RAG_LIBRARY_SURFACE}
+      getScope={getScope}
+      isEditable={false}
+    >
       <RagHubHeader
         right={
           <span className="px-2 text-xs tabular-nums text-muted-foreground">
@@ -189,7 +217,7 @@ export function LibraryCatalogPage() {
           )}
         </section>
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 

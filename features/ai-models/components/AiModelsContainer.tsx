@@ -18,6 +18,11 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AI_MODELS_SURFACE_NAME,
+  createAdminAiModelsScope,
+} from "@/features/surfaces/manifests/admin-ai-models.manifest";
 
 export default function AiModelsContainer() {
   const [models, setModels] = useState<AiModel[]>([]);
@@ -129,7 +134,102 @@ export default function AiModelsContainer() {
     }
   };
 
+  // Surface emitter — `matrx-admin/ai-models`. Built at trigger time from live
+  // state. SECURITY: public registry facts only. Serving-vendor identity,
+  // endpoint base URLs, `auth_ref`, `byok_secret_key` and real-dollar pricing
+  // are admin-secret and are deliberately NOT read or emitted here.
+  const getSurfaceScope = () => {
+    const capabilities =
+      selectedModel?.capabilities &&
+      typeof selectedModel.capabilities === "object" &&
+      !Array.isArray(selectedModel.capabilities)
+        ? (selectedModel.capabilities as Record<string, unknown>)
+        : null;
+    return createAdminAiModelsScope({
+      model_ids: models.map((m) => m.id),
+      model_count: models.length,
+      deprecated_model_count: deprecatedCount,
+      models_summary: models.map((m) => ({
+        id: m.id,
+        name: m.name ?? null,
+        common_name: m.common_name ?? null,
+        maker: m.maker ?? null,
+        context_window: m.context_window ?? null,
+        max_tokens: m.max_tokens ?? null,
+        is_deprecated: m.is_deprecated ?? null,
+        is_primary: m.is_primary ?? null,
+        is_premium: m.is_premium ?? null,
+        cost_rating: m.cost_rating ?? null,
+        speed_rating: m.speed_rating ?? null,
+      })),
+      provider_names: providers.map((p) => p.name).filter(Boolean),
+      provider_count: providers.length,
+      active_tab_label: activeTab?.label ?? "",
+      is_creating_model: isNewModel,
+      search_query: activeTab?.q || undefined,
+      active_filters:
+        activeTab?.filters && Object.keys(activeTab.filters).length > 0
+          ? (activeTab.filters as Record<string, unknown>)
+          : undefined,
+      sort_state: activeTab?.sort
+        ? { sort: activeTab.sort, dir: activeTab.dir ?? "asc" }
+        : undefined,
+      model_id: selectedModel?.id,
+      model_name: selectedModel?.name || undefined,
+      model_common_name: selectedModel?.common_name || undefined,
+      model_maker: selectedModel?.maker || undefined,
+      model_description: selectedModel?.description || undefined,
+      model_release_date: selectedModel?.release_date || undefined,
+      model_summary: selectedModel
+        ? {
+            id: selectedModel.id,
+            name: selectedModel.name ?? null,
+            common_name: selectedModel.common_name ?? null,
+            maker: selectedModel.maker ?? null,
+            description: selectedModel.description ?? null,
+            context_window: selectedModel.context_window ?? null,
+            max_tokens: selectedModel.max_tokens ?? null,
+            cost_rating: selectedModel.cost_rating ?? null,
+            speed_rating: selectedModel.speed_rating ?? null,
+            is_deprecated: selectedModel.is_deprecated ?? null,
+            is_primary: selectedModel.is_primary ?? null,
+            is_premium: selectedModel.is_premium ?? null,
+            release_date: selectedModel.release_date ?? null,
+          }
+        : undefined,
+      model_capabilities: capabilities ?? undefined,
+      model_capability_keys: capabilities
+        ? Object.entries(capabilities)
+            .filter(([, v]) => v !== false && v !== null && v !== undefined)
+            .map(([k]) => k)
+        : undefined,
+      model_context_window: selectedModel?.context_window ?? undefined,
+      model_max_tokens: selectedModel?.max_tokens ?? undefined,
+      model_cost_rating: selectedModel?.cost_rating ?? undefined,
+      model_speed_rating: selectedModel?.speed_rating ?? undefined,
+      model_is_deprecated: selectedModel?.is_deprecated ?? undefined,
+      model_is_primary: selectedModel?.is_primary ?? undefined,
+      model_is_premium: selectedModel?.is_premium ?? undefined,
+      model_visibility: selectedModel?.visibility ?? undefined,
+      model_fallback_ids: selectedModel
+        ? {
+            mid_fallback_id: selectedModel.mid_fallback_id ?? null,
+            guest_fallback_id: selectedModel.guest_fallback_id ?? null,
+            retry_fallback_id: selectedModel.retry_fallback_id ?? null,
+            retry_max_attempts: selectedModel.retry_max_attempts ?? null,
+          }
+        : undefined,
+      model_updated_at: selectedModel?.updated_at || undefined,
+      selection: window.getSelection()?.toString() || undefined,
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AI_MODELS_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="flex flex-col h-full min-h-0">
       {/* Tab bar + audit button */}
       <div className="flex items-center shrink-0 bg-card">
@@ -283,5 +383,6 @@ export default function AiModelsContainer() {
         />
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

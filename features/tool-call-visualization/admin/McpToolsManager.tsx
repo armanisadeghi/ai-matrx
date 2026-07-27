@@ -76,6 +76,11 @@ import {
 import { ExternalLink } from "lucide-react";
 
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_TOOL_REGISTRY_SURFACE_NAME,
+  createAdminToolRegistryScope,
+} from "@/features/surfaces/manifests/admin-tool-registry.manifest";
 
 type Tool = Omit<
   DatabaseTool,
@@ -1033,7 +1038,48 @@ export function McpToolsManager() {
     });
   };
 
+  // Surface emitter — catalogue half of `matrx-admin/tool-registry`. Built at
+  // trigger time from live state. SECURITY: tool definition metadata only; no
+  // MCP endpoint URLs, auth strategies, OAuth ids, or vault credentials are
+  // read or emitted here.
+  const getSurfaceScope = () =>
+    createAdminToolRegistryScope({
+      registry_section: "catalogue",
+      tool_ids: tools.map((t) => t.id),
+      tool_count: tools.length,
+      tools_summary: tools.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description ?? null,
+        category: t.category ?? null,
+        tool_group: t.tool_group ?? null,
+        tier: t.tier ?? null,
+        source_kind: t.source_kind ?? null,
+        version: t.version ?? null,
+        is_active: t.is_active ?? null,
+        admin_only: t.admin_only ?? null,
+        tags: t.tags ?? null,
+        param_count: paramCount(t),
+      })),
+      filtered_tool_ids: filteredTools.map((t) => t.id),
+      tool_categories: categories.filter((c) => c !== "all"),
+      search_query: searchQuery || undefined,
+      category_filter:
+        selectedCategory !== "all" ? selectedCategory : undefined,
+      source_kind_filter:
+        selectedSourceKind !== "all" ? selectedSourceKind : undefined,
+      status_filter: selectedStatus,
+      tag_filter: selectedTag !== "all" ? selectedTag : undefined,
+      sort_state: { key: sortKey, dir: sortDir },
+      selection: window.getSelection()?.toString() || undefined,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_TOOL_REGISTRY_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex-shrink-0 space-y-3 px-4 py-3 border-b border-border">
         {/* Toolbar — row 1: search + actions */}
@@ -1588,6 +1634,7 @@ export function McpToolsManager() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

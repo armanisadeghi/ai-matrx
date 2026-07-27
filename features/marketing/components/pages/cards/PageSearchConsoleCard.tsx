@@ -7,11 +7,12 @@
  * every stored query reaching this canonical page, strongest first, the
  * page's target keyword pinned + highlighted when it appears.
  *
- * Data comes straight from `seo.search_performance_daily` via the canonical
- * keyword primitive (`usePageSearchTotals` / `usePageQueryStats`) — totals
- * from the `dimension_profile='page'` rows (the true page numbers; query
- * rows undercount because Google withholds anonymized queries), the
- * breakdown from the `query_page` rows.
+ * Data comes from two stored sources:
+ * - Page totals → `web.gsc_page_stat` (what the scraper GSC sync writes;
+ *   same table as the KPI strip and v_page_list).
+ * - Per-query breakdown → `seo.search_performance_daily` query_page rows
+ *   when that pipeline has run for the site; otherwise the query table is
+ *   honestly empty.
  */
 
 import { useState } from "react";
@@ -73,9 +74,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     GSC_RANGES.find((entry) => entry.key === range)?.label ?? range;
   const targetNormalized = normalizeKeywordPhrase(page.target_keyword ?? "");
   const rows = orderWithTarget(queries.data?.stats ?? [], targetNormalized);
-  const truncated = Boolean(
-    totals.data?.truncated || queries.data?.truncated,
-  );
+  const truncated = Boolean(totals.data?.truncated || queries.data?.truncated);
   const isLoading = totals.isLoading || queries.isLoading;
   const isError = totals.isError || queries.isError;
   const hasAnyData = Boolean(
@@ -163,9 +162,8 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     body = (
       <p className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
         <Unplug className="h-4 w-4 shrink-0" />
-        Google Search Console has never been synced for this site — connect
-        and run a sync from site integrations to see real search performance
-        here.
+        Google Search Console has never been synced for this site — connect and
+        run a sync from site integrations to see real search performance here.
       </p>
     );
   } else {
