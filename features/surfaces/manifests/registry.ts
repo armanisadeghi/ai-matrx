@@ -97,6 +97,7 @@ import { quickNoteSaveManifest } from "./quick-note-save.manifest";
 import { filePreviewManifest } from "./file-preview.manifest";
 import { imageViewerManifest } from "./image-viewer.manifest";
 import { imageUploaderManifest } from "./image-uploader.manifest";
+import { imagesManifest } from "./images.manifest";
 import { galleryManifest } from "./gallery.manifest";
 import { shareManifest } from "./share.manifest";
 import { feedbackManifest } from "./feedback.manifest";
@@ -194,6 +195,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   filePreviewManifest,
   imageViewerManifest,
   imageUploaderManifest,
+  imagesManifest,
   galleryManifest,
   shareManifest,
   feedbackManifest,

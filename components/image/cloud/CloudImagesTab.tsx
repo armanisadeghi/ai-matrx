@@ -100,6 +100,9 @@ import { CloudImageList } from "@/components/image/cloud/CloudImageList";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
 import { CloudFileMetadataSheet } from "@/features/image-manager/components/CloudFileMetadataSheet";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildImagesScope } from "@/features/image-manager/lib/images-surface-scope";
+import { IMAGES_SURFACE_NAME } from "@/features/surfaces/manifests/images.manifest";
 import { toast } from "@/lib/toast";
 
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -373,7 +376,36 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   const isLoading = treeStatus === "loading" || treeStatus === "idle";
   const imageCountLabel = `${imageFiles.length} image${imageFiles.length !== 1 ? "s" : ""}`;
 
+  // Total non-deleted images in the whole library, ignoring search/filters —
+  // the denominator behind `visible_image_count` on the surface.
+  const totalImageCount = useMemo(
+    () =>
+      allFiles.filter(
+        (file) =>
+          !file.deletedAt && isImageMime(resolveMime(file.mimeType, file.fileName)),
+      ).length,
+    [allFiles],
+  );
+
+  // Surface emitter — assembled at trigger time from live render values.
+  const getImagesScope = () =>
+    buildImagesScope({
+      visibleImages: imageFiles,
+      totalImageCount,
+      selectedImages: selectedBulkFiles,
+      searchQuery: query,
+      recentsOnly: showRecentsOnly,
+      viewMode,
+      selectionMode,
+      treeStatus,
+      bulkOperation: bulkBusy,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={IMAGES_SURFACE_NAME}
+      getScope={getImagesScope}
+    >
     <TooltipProvider delayDuration={300}>
       <div className="h-full flex flex-col">
         <div className="border-b border-border px-3 md:px-4 py-2.5 md:pr-14 flex items-center gap-2 md:gap-3 flex-wrap">
@@ -678,6 +710,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
         </BottomSheet>
       </div>
     </TooltipProvider>
+    </SurfaceRuntimeProvider>
   );
 }
 

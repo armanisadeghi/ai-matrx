@@ -53,6 +53,9 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/notes", surface: "matrx-user/notes" },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
+  // Only the my-cloud tab renders real image rows; the other /images
+  // routes are static explainers/stubs and deliberately map to nothing.
+  { prefix: "/images/my-cloud", surface: "matrx-user/images" },
   { prefix: "/files", surface: "matrx-user/files" },
   { prefix: "/projects", surface: "matrx-user/projects" },
   { prefix: "/lists", surface: "matrx-user/lists" },
