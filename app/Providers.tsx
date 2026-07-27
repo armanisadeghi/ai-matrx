@@ -32,6 +32,7 @@ import { PersistentComponentProvider } from "@/providers/persistance/PersistentC
 import { SelectedImagesProvider } from "@/components/image/context/SelectedImagesProvider";
 import { UniformHeightProvider } from "@/features/applet/runner/layouts/core/UniformHeightWrapper";
 import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
+// disaster
 import { TranscriptsProvider } from "@/features/transcripts/context/TranscriptsContext";
 import { AudioRecoveryProvider } from "@/features/audio/providers/AudioRecoveryProvider";
 import { GlobalRecordingProvider } from "@/providers/GlobalRecordingProvider";
@@ -39,7 +40,7 @@ import { RecordingPill } from "@/components/global/RecordingPill";
 import { RequestRecoveryProvider } from "@/features/request-recovery/providers/RequestRecoveryProvider";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
-import DeferredSingletons from "./DeferredSingletons";
+// import DeferredSingletons from "./DeferredSingletons";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
 // WindowPersistenceManager provides the React context that WindowPanel
@@ -80,6 +81,7 @@ import { AudioOutputHost } from "@/providers/AudioOutputHost";
 import { AudioPlaybackHost } from "@/features/audio/playback/AudioPlaybackHost";
 import { AudioSessionHost } from "@/features/audio/session/AudioSessionHost";
 import { AudioDeviceProvider } from "@/providers/AudioDeviceProvider";
+import DeferredSingletonWrapper from "./DeferredSingletonWrapper";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
 // imported by `build-tool-injection.ts` (the CLIENT-side consumer) — NOT here.
@@ -134,7 +136,8 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 <RecordingPill />
                                 <RecoveryWindow />
                                 <RecoveryNudge />
-                                <DeferredSingletons />
+                                {/* <DeferredSingletons /> */}
+                                <DeferredSingletonWrapper />
                                 <ServerToggleQueryReset />
                                 <LoopbackApiAccessSync />
                                 <ExtensionBridgeSubscriber />

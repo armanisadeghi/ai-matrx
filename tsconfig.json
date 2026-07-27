@@ -87,7 +87,11 @@
     "packages/**/*.ts",
     "packages/**/*.tsx",
     ".next-agent-537ef9ed8b65/types/**/*.ts",
-    ".next-agent-537ef9ed8b65/dev/types/**/*.ts"
+    ".next-agent-537ef9ed8b65/dev/types/**/*.ts",
+    ".next-bt-old/types/**/*.ts",
+    ".next-bt-old/dev/types/**/*.ts",
+    ".next-bt-new/types/**/*.ts",
+    ".next-bt-new/dev/types/**/*.ts"
   ],
   "exclude": [
     ".next*/**",
