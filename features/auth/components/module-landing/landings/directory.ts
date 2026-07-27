@@ -19,6 +19,7 @@ import {
   Aperture,
   FileSpreadsheet,
   Network,
+  Megaphone,
 } from "lucide-react";
 
 /**
@@ -201,6 +202,15 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: Aperture,
     teaser:
       "Browse, generate, edit, annotate, convert — every image tool in one place.",
+    group: "Build & Run",
+  },
+
+  {
+    label: "Marketing",
+    href: "/marketing",
+    icon: Megaphone,
+    teaser:
+      "Brand-first marketing: your own crawler, canonical page registry, content planner, and search intelligence.",
     group: "Build & Run",
   },
 

@@ -6881,6 +6881,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/topics/{topic_id}/keywords/{keyword_id}/find-videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Find Keyword Videos
+         * @description Deliberately spend one shared YouTube search on ONE keyword.
+         *
+         *     Additive: it never re-runs the web search and never rewrites
+         *     `last_searched_at`. A refused reservation is a 429 with the real reason, so
+         *     the user learns the limit is reached rather than seeing an empty result.
+         */
+        post: operations["find_keyword_videos_research_topics__topic_id__keywords__keyword_id__find_videos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/topics/{topic_id}/keywords/reorder": {
         parameters: {
             query?: never;
@@ -27081,8 +27105,17 @@ export interface components {
              * @default 0
              */
             fetched_phrases?: number;
+            /** Rejected Phrases */
+            rejected_phrases?: components["schemas"]["KeywordVolumeRejectedPhrase"][];
             /** Batches */
             batches?: components["schemas"]["KeywordVolumeBatchReceipt"][];
+        };
+        /** KeywordVolumeRejectedPhrase */
+        KeywordVolumeRejectedPhrase: {
+            /** Phrase */
+            phrase: string;
+            /** Reason */
+            reason: string;
         };
         /** KgCostSummaryResponse */
         KgCostSummaryResponse: {
@@ -51686,6 +51719,38 @@ export interface operations {
         };
     };
     delete_keyword_research_topics__topic_id__keywords__keyword_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+                keyword_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    find_keyword_videos_research_topics__topic_id__keywords__keyword_id__find_videos_post: {
         parameters: {
             query?: never;
             header?: never;

@@ -35,7 +35,7 @@ import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
-import { createPdfExtractorScope } from "@/features/surfaces/manifests/pdf-extractor.manifest";
+import { buildPdfExtractorScope } from "@/features/pdf-extractor/lib/pdf-extractor-scope";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -376,7 +376,7 @@ function AiActionsPanel({
         ? doc.sourceId
         : "";
 
-    return createPdfExtractorScope({
+    return buildPdfExtractorScope({
       full_document_text: fullText,
       current_page_text: currentPageText,
       page_range_text: pageRangeText,
@@ -390,8 +390,6 @@ function AiActionsPanel({
       page_numbers: pageNumbers || undefined,
       scope_kind: scope,
       using_clean_text: usingClean,
-      selection: activeScopeText,
-      content: fullText,
     });
   };
 

@@ -2,10 +2,10 @@ import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
 import type { FeatureAdminMap } from "@/features/admin/types/featureAdminMap";
 
 const MARKETING_ADMIN_MAP: FeatureAdminMap = {
-  name: "Marketing Sites",
+  name: "Marketing",
   slug: "marketing",
   description:
-    "Site-rooted marketing operations: managed websites, canonical page identity, immutable crawl sessions and snapshots, per-run URL outcomes, and durable crawler events. Persisted data is read directly from Supabase by the browser.",
+    "The Marketing module: brands and websites (crawler, canonical page registry, immutable snapshots, audits), strategy and planning, discovery and search visibility, channels, market intelligence, and measurement. Structure is declared ONCE in features/marketing/lib/marketing-nav.ts. Persisted data is read directly from Supabase by the browser.",
   docs: [
     { label: "Marketing FEATURE.md", href: "/features/marketing/FEATURE.md" },
     {
@@ -50,6 +50,134 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
         "Public-video search, expertise comparison, modal preview, and durable direct-preview routes.",
       filePath: "app/(core)/marketing/discovery/youtube/page.tsx",
       status: "Live",
+    },
+    {
+      url: "/marketing/campaigns",
+      label: "Campaigns",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/campaigns/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/calendar",
+      label: "Calendar",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/calendar/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/audience",
+      label: "Audience & Personas",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/audience/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/local",
+      label: "Local & Listings",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/local/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/ranks",
+      label: "Rank Tracking",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/ranks/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/ai-visibility",
+      label: "AI Visibility",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/ai-visibility/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/content-studio",
+      label: "Content Studio",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/content-studio/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/social",
+      label: "Social",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/social/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/email",
+      label: "Email",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/email/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/ads",
+      label: "Paid Ads",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/ads/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/outreach",
+      label: "Outreach",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/outreach/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/competitors",
+      label: "Competitors",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/competitors/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/monitoring",
+      label: "Brand Monitoring",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/monitoring/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/analytics",
+      label: "Analytics",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/analytics/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/reports",
+      label: "Reports",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/reports/page.tsx",
+      status: "Coming soon",
+    },
+    {
+      url: "/marketing/automations",
+      label: "Automations",
+      description:
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+      filePath: "app/(core)/marketing/automations/page.tsx",
+      status: "Coming soon",
     },
     {
       url: "/marketing/tools",

@@ -28,6 +28,30 @@ export const marketingRoutes = {
   tools: () => "/marketing/tools",
   batches: () => "/marketing/batches",
   cost: () => "/marketing/cost",
+
+  // ── Reserved routes ────────────────────────────────────────────────────
+  // These render <MarketingComingSoon> today. They are REAL routes, declared
+  // here and in `marketing-nav.ts` with a `marketing.*` id in
+  // `lib/coming-soon/registry.ts`, so the intended shape of the platform is
+  // visible to users and to the next agent. When one ships, delete its
+  // registry row and drop `status: "coming-soon"` from its nav entry — the
+  // href never changes.
+  campaigns: () => "/marketing/campaigns",
+  calendar: () => "/marketing/calendar",
+  audience: () => "/marketing/audience",
+  local: () => "/marketing/local",
+  ranks: () => "/marketing/ranks",
+  aiVisibility: () => "/marketing/ai-visibility",
+  contentStudio: () => "/marketing/content-studio",
+  social: () => "/marketing/social",
+  email: () => "/marketing/email",
+  ads: () => "/marketing/ads",
+  outreach: () => "/marketing/outreach",
+  competitors: () => "/marketing/competitors",
+  monitoring: () => "/marketing/monitoring",
+  analytics: () => "/marketing/analytics",
+  reports: () => "/marketing/reports",
+  automations: () => "/marketing/automations",
   brand: (brandId: string) => `/marketing/brands/${brandId}`,
   sites: () => "/marketing/sites",
   /** Pass a brandId to pre-bind the new site to that brand (`?brand=`). */

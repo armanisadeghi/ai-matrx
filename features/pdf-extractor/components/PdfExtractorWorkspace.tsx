@@ -54,7 +54,7 @@ import { ManipulationPanel } from "./ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { CopyPagesOverlay } from "./CopyPagesOverlay";
-import { createPdfExtractorScope } from "@/features/surfaces/manifests/pdf-extractor.manifest";
+import { buildPdfExtractorScope } from "@/features/pdf-extractor/lib/pdf-extractor-scope";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import { useFile } from "@/features/files/handler/hooks/useFile";
@@ -204,7 +204,7 @@ export function PdfExtractorFloatingWorkspace({
           },
           runtime: {
             surfaceName: PDF_EXTRACTOR_SURFACE,
-            applicationScope: createPdfExtractorScope({
+            applicationScope: buildPdfExtractorScope({
               full_document_text: docText,
               active_scope_text: docText,
               selected_text: "",
@@ -220,8 +220,6 @@ export function PdfExtractorFloatingWorkspace({
               current_page: 0,
               scope_kind: "full",
               using_clean_text: !!doc?.cleanContent,
-              selection: docText,
-              content: docText,
             }),
           },
         });
@@ -877,7 +875,7 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
         },
         runtime: {
           surfaceName: PDF_EXTRACTOR_SURFACE,
-          applicationScope: createPdfExtractorScope({
+          applicationScope: buildPdfExtractorScope({
             full_document_text: docText,
             active_scope_text: docText,
             selected_text: "",
@@ -893,8 +891,6 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
             current_page: 0,
             scope_kind: "full",
             using_clean_text: usingClean,
-            selection: docText,
-            content: docText,
           }),
         },
       });

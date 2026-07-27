@@ -20,6 +20,7 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * an action therefore never breaks a surface — it only upgrades the ones that
  * opt in. Add the next action's id to this union and register its handler.
  */
+import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
 import type { ShellNavPanelActionId } from "./nav-window-panels";
 import { SHAPES_ROUTE_BASE } from "@/features/content-ir/studio/constants";
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
@@ -109,6 +110,49 @@ export interface ShellNavChild {
    * "Add X" that navigates to `/x/new` with no overlay handler).
    */
   actionItem?: boolean;
+}
+
+/**
+ * The Marketing module's sidebar children, derived from `MARKETING_PILLARS`
+ * so the shell menu and the `/marketing` hub can never disagree. Pillars
+ * become flyout subgroups; reserved (coming-soon) surfaces are included on
+ * purpose — they are real routes, and showing them is how a user learns where
+ * the module is going. `navHidden` entries (the inlined public analyzers,
+ * which already have their own "SEO Tools" destination) stay off the menu.
+ */
+function marketingNavChildren(): ShellNavChild[] {
+  const hub: ShellNavChild = {
+    label: "Marketing Hub",
+    href: "/marketing",
+    iconName: "TrendingUp",
+    exact: true,
+    group: "Overview",
+    description: "Every marketing surface in one map",
+    color: "green",
+    profileMenu: true,
+    dashboard: true,
+  };
+  const fromPillars = MARKETING_PILLARS.flatMap((pillar) =>
+    pillar.entries
+      .filter((entry) => !entry.navHidden)
+      .map((entry): ShellNavChild => ({
+        label: entry.label,
+        href: entry.href,
+        iconName: entry.iconName,
+        group: pillar.label,
+        description:
+          entry.status === "coming-soon"
+            ? `Coming soon — ${entry.description}`
+            : entry.description,
+        color: "green",
+        external: entry.external,
+        // Reserved surfaces stay off the dashboard and profile menu until they
+        // do something; the sidebar and hub are where the roadmap belongs.
+        profileMenu: entry.status !== "coming-soon",
+        dashboard: entry.status !== "coming-soon",
+      })),
+  );
+  return [hub, ...fromPillars];
 }
 
 export interface ShellNavItem {
@@ -1184,107 +1228,13 @@ export const primaryNavItems: ShellNavItem[] = [
     profileMenu: false,
     dashboard: false,
     description:
-      "Brands and websites, content planning, keywords and search, SEO tools, and operations",
+      "Brands and websites, planning, search and visibility, channels, intelligence, and measurement",
     color: "green",
-    // Mirrors the pillars in features/marketing/lib/marketing-nav.ts. Keep the
-    // two in sync — websites are ONE pillar here, not the whole feature.
-    children: [
-      {
-        label: "Marketing Hub",
-        href: "/marketing",
-        iconName: "TrendingUp",
-        description: "Every marketing surface in one map",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Brands",
-        href: "/marketing/brands",
-        iconName: "Landmark",
-        description: "Manage brand identity, properties, assets, and facts",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Websites",
-        href: "/marketing/sites",
-        iconName: "Globe",
-        description: "Manage sites, canonical pages, crawls, and findings",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Content Plan",
-        href: "/marketing/content-plan",
-        iconName: "ListTree",
-        description:
-          "Plan every URL a site should have — pillars, clusters, briefs, keywords",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Keyword Research",
-        href: "/marketing/keyword-research",
-        iconName: "Search",
-        description:
-          "Map keyword relationships with AI research and live market data",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "YouTube Discovery",
-        href: "/marketing/discovery/youtube",
-        iconName: "Youtube",
-        description:
-          "Find videos and compare creator authority, engagement, and research value",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "SEO Tools",
-        href: "/marketing/tools",
-        iconName: "Wrench",
-        description:
-          "Metadata, page audit, social preview, structured data, robots tester",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Data Connections",
-        href: "/marketing/connections",
-        iconName: "Plug",
-        description:
-          "Connect Google and other sources, then bind them to sites",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Batch Operations",
-        href: "/marketing/batches",
-        iconName: "Boxes",
-        description: "Monitor cross-site analysis and vision batches",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Marketing Cost",
-        href: "/marketing/cost",
-        iconName: "CircleDollarSign",
-        description: "Review cost across sites and client organizations",
-        color: "green",
-        profileMenu: true,
-        dashboard: true,
-      },
-    ],
+    // GENERATED from features/marketing/lib/marketing-nav.ts — the ONE
+    // declaration of this module's shape. Never hand-edit these children; add
+    // the surface to MARKETING_PILLARS and it appears here, on the /marketing
+    // hub, and in the route metadata together.
+    children: marketingNavChildren(),
   },
   {
     label: "Games",

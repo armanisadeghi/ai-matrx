@@ -78,7 +78,7 @@ import { selectRunProgress } from "@/features/page-extraction/redux/selectors";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { createPdfExtractorScope } from "@/features/surfaces/manifests/pdf-extractor.manifest";
+import { buildPdfExtractorScope } from "@/features/pdf-extractor/lib/pdf-extractor-scope";
 
 interface PdfStudioShellProps {
   initialDocumentId?: string;
@@ -660,7 +660,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   // Widgets tab defaults (full doc as active scope; current page always filled).
   const getPdfExtractorScope = () => {
     if (!activeDoc) {
-      return createPdfExtractorScope({
+      return buildPdfExtractorScope({
         full_document_text: "",
         current_page_text: "",
         active_scope_text: "",
@@ -670,6 +670,13 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         current_page: 0,
         scope_kind: "full",
         using_clean_text: false,
+        visible_panes: visiblePanesArray,
+        sidebar_view: sidebarView,
+        find_query: findQuery,
+        library_document_count: docsState.docs.length,
+        library_document_names: docsState.docs.map((d) => d.name),
+        pipeline_running: pipelineRunning || aiCleanRunning,
+        pipeline_status: liveStatus ?? "",
       });
     }
     const fullText = activeDoc.cleanContent ?? activeDoc.content ?? "";
@@ -694,7 +701,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
           ? String(pages[0]!.pageNumber)
           : `${pages[0]!.pageNumber}-${pages[pages.length - 1]!.pageNumber}`;
 
-    return createPdfExtractorScope({
+    return buildPdfExtractorScope({
       full_document_text: fullText,
       current_page_text: currentPageText,
       active_scope_text: fullText,
@@ -706,9 +713,23 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       page_numbers: pageNumbers || undefined,
       scope_kind: "full",
       using_clean_text: usingClean,
-      selection: fullText,
-      content: fullText,
       selected_text: window.getSelection()?.toString().trim() ?? "",
+      raw_document_text: activeDoc.content ?? "",
+      page_texts: pages.map((p) => ({
+        page_number: p.pageNumber,
+        text: usingClean ? p.cleanedText || p.rawText : p.rawText,
+        cleaned: usingClean && !!p.cleanedText,
+      })),
+      visible_panes: visiblePanesArray,
+      sidebar_view: sidebarView,
+      find_query: findQuery,
+      library_document_count: docsState.docs.length,
+      library_document_names: docsState.docs.map((d) => d.name),
+      pipeline_running:
+        pipelineRunning ||
+        aiCleanRunning ||
+        extractionRunProgress.status === "running",
+      pipeline_status: activeProcessingStatus?.status ?? liveStatus ?? "",
     });
   };
 

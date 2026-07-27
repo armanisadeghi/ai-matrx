@@ -4,6 +4,7 @@ import {
   getCrawlReport,
   isCrawlReportKey,
 } from "@/features/marketing/lib/crawl-reports";
+import { listMarketingComingSoon } from "@/features/marketing/lib/marketing-nav";
 
 interface MarketingRouteIdentity {
   titlePrefix?: string;
@@ -17,7 +18,44 @@ const MARKETING_ROOT: MarketingRouteIdentity = {
   letter: "Mk",
 };
 
+/**
+ * Reserved (coming-soon) routes get real metadata too — they are indexable
+ * URLs, not stubs. Identity is derived from the ONE nav declaration so a new
+ * reserved surface can never ship with a generic title. See marketing-nav.ts.
+ */
+const RESERVED_LETTERS: Readonly<Record<string, string>> = {
+  "/marketing/ads": "Ad",
+  "/marketing/ai-visibility": "Ai",
+  "/marketing/analytics": "An",
+  "/marketing/audience": "Au",
+  "/marketing/automations": "At",
+  "/marketing/calendar": "Cl",
+  "/marketing/campaigns": "Cm",
+  "/marketing/competitors": "Cp",
+  "/marketing/content-studio": "Cs",
+  "/marketing/email": "Em",
+  "/marketing/local": "Lo",
+  "/marketing/monitoring": "Mo",
+  "/marketing/outreach": "Ou",
+  "/marketing/ranks": "Rk",
+  "/marketing/reports": "Rp",
+  "/marketing/social": "So",
+};
+
+const RESERVED_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> =
+  Object.fromEntries(
+    listMarketingComingSoon().map((entry) => [
+      entry.href,
+      {
+        titlePrefix: entry.label,
+        description: entry.description,
+        letter: RESERVED_LETTERS[entry.href] ?? "Mk",
+      },
+    ]),
+  );
+
 const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
+  ...RESERVED_ROUTES,
   "/marketing": MARKETING_ROOT,
   "/marketing/admin": {
     titlePrefix: "Admin",

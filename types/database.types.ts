@@ -20081,6 +20081,7 @@ export type Database = {
         Returns: boolean
       }
       my_orgs: { Args: never; Returns: string[] }
+      org_readable: { Args: { p_org: string }; Returns: boolean }
       personal_org_id: { Args: { p_user_id: string }; Returns: string }
       runnable_agent_fields: {
         Args: { p_agent_id: string }
@@ -27872,6 +27873,7 @@ export type Database = {
         Args: { p_as_system?: boolean; p_version_id: string }
         Returns: string
       }
+      agx_escape_regex: { Args: { p: string }; Returns: string }
       agx_get_access_level: {
         Args: { p_agent_id: string }
         Returns: {
@@ -28318,6 +28320,21 @@ export type Database = {
           updated_at: string
           user_id: string
         }[]
+      }
+      agx_search_score: {
+        Args: {
+          p_agent_type: string
+          p_category: string
+          p_deep_hit?: boolean
+          p_description: string
+          p_id: string
+          p_model_id: string
+          p_name: string
+          p_owner_email: string
+          p_query: string
+          p_tags: string[]
+        }
+        Returns: number
       }
       agx_since_bucket: { Args: { p_bucket: string }; Returns: string }
       agx_sync_linked_agents: {

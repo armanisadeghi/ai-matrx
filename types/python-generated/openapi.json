@@ -17941,6 +17941,56 @@
         }
       }
     },
+    "/research/topics/{topic_id}/keywords/{keyword_id}/find-videos": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Find Keyword Videos",
+        "description": "Deliberately spend one shared YouTube search on ONE keyword.\n\nAdditive: it never re-runs the web search and never rewrites\n`last_searched_at`. A refused reservation is a 429 with the real reason, so\nthe user learns the limit is reached rather than seeing an empty result.",
+        "operationId": "find_keyword_videos_research_topics__topic_id__keywords__keyword_id__find_videos_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          },
+          {
+            "name": "keyword_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Keyword Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/research/topics/{topic_id}/keywords/reorder": {
       "patch": {
         "tags": [
@@ -74475,6 +74525,13 @@
             "title": "Fetched Phrases",
             "default": 0
           },
+          "rejected_phrases": {
+            "items": {
+              "$ref": "#/components/schemas/KeywordVolumeRejectedPhrase"
+            },
+            "type": "array",
+            "title": "Rejected Phrases"
+          },
           "batches": {
             "items": {
               "$ref": "#/components/schemas/KeywordVolumeBatchReceipt"
@@ -74486,6 +74543,25 @@
         "additionalProperties": false,
         "type": "object",
         "title": "KeywordVolumeRefreshResult"
+      },
+      "KeywordVolumeRejectedPhrase": {
+        "properties": {
+          "phrase": {
+            "type": "string",
+            "title": "Phrase"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "phrase",
+          "reason"
+        ],
+        "title": "KeywordVolumeRejectedPhrase"
       },
       "KgCostSummaryResponse": {
         "properties": {

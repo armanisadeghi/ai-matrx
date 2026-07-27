@@ -1572,7 +1572,13 @@ export interface KeywordVolumeRefreshResult {
   requested_phrases?: number;
   skipped_fresh?: number;
   fetched_phrases?: number;
+  rejected_phrases?: KeywordVolumeRejectedPhrase[];
   batches?: KeywordVolumeBatchReceipt[];
+}
+
+export interface KeywordVolumeRejectedPhrase {
+  phrase: string;
+  reason: string;
 }
 
 export interface KeywordResearchResult {

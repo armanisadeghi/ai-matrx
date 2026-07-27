@@ -32,8 +32,27 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+/**
+ * Canonical sections of the extractor studio, in the order the page reads:
+ * which document → what text → where the user is → what else is open →
+ * what the pipeline is doing.
+ *
+ * Children (`extractor-chunker`, `analysis-studio`, `scanner`) must NOT
+ * declare these keys — inherited values auto-collapse into
+ * `inherited:matrx-user/pdf-extractor`.
+ */
+const groups: SurfaceValueGroup[] = [
+  { key: "pdf_document", label: "Document identity", sortOrder: 100 },
+  { key: "pdf_text", label: "Document text", sortOrder: 200 },
+  { key: "pdf_reader", label: "Reader state", sortOrder: 300 },
+  { key: "pdf_library", label: "Open library", sortOrder: 400 },
+  { key: "pdf_pipeline", label: "Processing pipeline", sortOrder: 500 },
+  { key: "pdf_legacy", label: "Legacy aliases", sortOrder: 800 },
+];
 
 /**
  * Values the PDF Extractor surface emits. The chunked-run child re-exports
@@ -57,6 +76,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 12000,
+    group: "pdf_text",
     sortOrder: 200,
   },
   {
@@ -67,6 +87,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 2000,
+    group: "pdf_text",
     sortOrder: 210,
   },
   {
@@ -77,6 +98,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5000,
+    group: "pdf_text",
     sortOrder: 220,
   },
   {
@@ -87,6 +109,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 200,
+    group: "pdf_text",
     sortOrder: 230,
   },
   {
@@ -97,6 +120,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 4000,
+    group: "pdf_text",
     sortOrder: 240,
   },
 
@@ -109,6 +133,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 80,
+    group: "pdf_document",
     sortOrder: 300,
   },
   {
@@ -119,6 +144,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 36,
+    group: "pdf_document",
     sortOrder: 310,
   },
   {
@@ -129,6 +155,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
+    group: "pdf_document",
     sortOrder: 320,
   },
   {
@@ -139,6 +166,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "number",
     alwaysAvailable: true,
     typicalCharCount: 5,
+    group: "pdf_document",
     sortOrder: 330,
   },
 
@@ -151,6 +179,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "number",
     alwaysAvailable: true,
     typicalCharCount: 4,
+    group: "pdf_reader",
     sortOrder: 400,
   },
   {
@@ -161,6 +190,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 16,
+    group: "pdf_reader",
     sortOrder: 410,
   },
   {
@@ -171,6 +201,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 10,
+    group: "pdf_reader",
     sortOrder: 420,
   },
   {
@@ -181,15 +212,163 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "boolean",
     alwaysAvailable: true,
     typicalCharCount: 5,
+    group: "pdf_reader",
     sortOrder: 430,
+  },
+  {
+    name: "raw_document_text",
+    label: "Raw document text",
+    description:
+      "The document's raw (pre-AI-cleanup) extracted body. Empty when the document only ever had cleaned text. Large — bindable but kept out of automatic context; prefer `full_document_text` unless you specifically need OCR-faithful characters.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 14000,
+    autoContext: false,
+    group: "pdf_text",
+    sortOrder: 250,
+  },
+  {
+    name: "page_texts",
+    label: "Per-page text rows",
+    description:
+      "Every loaded page as `{ page_number, text, cleaned }`, in page order. Empty array when page rows have not loaded. Large — bindable only; use `current_page_text` / `full_document_text` for normal runs.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 14000,
+    autoContext: false,
+    group: "pdf_text",
+    sortOrder: 260,
+  },
+
+  // ── Natural composites (COMPLETENESS LAW) ────────────────────────────
+  {
+    name: "document_summary",
+    label: "Document summary",
+    description:
+      "Composite identity object for the open document: `{ filename, file_id, processed_document_id, total_pages, using_clean_text }`. One binding for everything an agent needs to name and re-fetch this document. Always populated when the surface emits (fields may be empty when no document is open).",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 220,
+    group: "pdf_document",
+    sortOrder: 340,
+  },
+  {
+    name: "active_scope",
+    label: "Active scope summary",
+    description:
+      "Composite of what the user is about to run on: `{ kind, page_numbers, char_count }`. Pairs with `active_scope_text` so an agent can reason about the scope without re-deriving it. Always populated when the surface emits.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 90,
+    group: "pdf_reader",
+    sortOrder: 440,
+  },
+
+  // ── Reader / workspace view state (450-499) ──────────────────────────
+  {
+    name: "visible_panes",
+    label: "Visible reader panes",
+    description:
+      'Which reader panes the user has open, e.g. `["pdf","clean","extractions"]`. Empty array when no document is open. Lets an agent know whether the user is looking at the PDF, the cleaned text, or extraction output.',
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 40,
+    group: "pdf_reader",
+    sortOrder: 450,
+  },
+  {
+    name: "sidebar_view",
+    label: "Sidebar view",
+    description:
+      'Which sidebar list the user has selected in the studio (e.g. "documents", "pages"). Empty when unknown or on surfaces without a sidebar.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 12,
+    group: "pdf_reader",
+    sortOrder: 460,
+  },
+  {
+    name: "find_query",
+    label: "In-document search query",
+    description:
+      "Text currently typed into the studio's in-document find field. Empty when the user is not searching. Strong signal of what the user is actually hunting for.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 30,
+    group: "pdf_reader",
+    sortOrder: 470,
+  },
+
+  // ── Open library (500-549) ───────────────────────────────────────────
+  {
+    name: "library_document_count",
+    label: "Documents in library",
+    description:
+      "How many processed documents are listed in the studio sidebar for this user. Zero when the list is empty or still loading.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    group: "pdf_library",
+    sortOrder: 500,
+  },
+  {
+    name: "library_document_names",
+    label: "Library document names",
+    description:
+      "Display names of the documents in the studio sidebar, in list order. Empty array when nothing has loaded. Bindable only — noisy for automatic context.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 800,
+    autoContext: false,
+    group: "pdf_library",
+    sortOrder: 510,
+  },
+
+  // ── Pipeline state (600-649) ─────────────────────────────────────────
+  {
+    name: "pipeline_running",
+    label: "Pipeline running",
+    description:
+      "True while an extraction / AI-clean / chunk-extraction job is in flight for the open document. False when the studio is idle.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    group: "pdf_pipeline",
+    sortOrder: 600,
+  },
+  {
+    name: "pipeline_status",
+    label: "Pipeline status",
+    description:
+      'Human-readable status of the active document\'s post-extraction pipeline (e.g. "cleaning", "embedding", "completed"). Empty when nothing is running and no status has been reported.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 24,
+    group: "pdf_pipeline",
+    sortOrder: 610,
   },
 ];
 
 export const pdfExtractorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/pdf-extractor",
-  readiness: "partial",
-  readinessNote: "Evidence sources + emitter live; no groups, completeness not audited",
+  readiness: "verified",
   label: "PDF Extractor",
+  urlPattern: "/tools/pdf-extractor/[documentId]",
+  intro: `<surface_intro>
+The PDF Extractor studio is where a user reads and works a single processed PDF:
+the source PDF pane, the raw OCR text, the AI-cleaned text, and extraction output,
+side by side, with a sidebar of their other processed documents.
+
+Read the values in this order: \`document_summary\` says WHICH document is open,
+\`active_scope\` + \`scope_kind\` say WHAT the user pointed the agent at, and
+\`active_scope_text\` is that content. \`full_document_text\` and
+\`current_page_text\` are always available regardless of the user's pick, so an
+agent can be locked to one of them. \`using_clean_text\` tells you whether the text
+you got is AI-cleaned or raw OCR — expect OCR artifacts when it is false.
+Reader state (\`current_page\`, \`visible_panes\`, \`find_query\`) tells you what the
+user is actually looking at right now.
+</surface_intro>`,
+  groups,
   evidenceSources: [
     {
       kind: "processed_document",
@@ -220,6 +399,8 @@ export const pdfExtractorManifest: SurfaceManifest = {
         valueType: "string",
         alwaysAvailable: true,
         typicalCharCount: 4000,
+        autoContext: false,
+        group: "pdf_legacy",
         sortOrder: 9100,
       },
       {
@@ -230,6 +411,8 @@ export const pdfExtractorManifest: SurfaceManifest = {
         valueType: "string",
         alwaysAvailable: true,
         typicalCharCount: 12000,
+        autoContext: false,
+        group: "pdf_legacy",
         sortOrder: 9110,
       },
       {
@@ -240,6 +423,8 @@ export const pdfExtractorManifest: SurfaceManifest = {
         valueType: "string",
         alwaysAvailable: false,
         typicalCharCount: 0,
+        autoContext: false,
+        group: "pdf_legacy",
         sortOrder: 9200,
       },
       {
@@ -250,6 +435,8 @@ export const pdfExtractorManifest: SurfaceManifest = {
         valueType: "string",
         alwaysAvailable: false,
         typicalCharCount: 0,
+        autoContext: false,
+        group: "pdf_legacy",
         sortOrder: 9210,
       },
       {
@@ -259,11 +446,16 @@ export const pdfExtractorManifest: SurfaceManifest = {
         valueType: "object",
         alwaysAvailable: false,
         typicalCharCount: 1000,
+        autoContext: false,
+        group: "pdf_legacy",
         sortOrder: 9999,
       },
     ],
   ),
 };
+
+/** The four scopes the extractor's picker can point an agent at. */
+export type PdfExtractorScopeKind = "full" | "current" | "range" | "selection";
 
 /** Convenience accessor — the chunked-run surface inherits these values verbatim. */
 export function getPdfExtractorSurfaceSpecificValues(): readonly SurfaceValue[] {
@@ -292,15 +484,40 @@ export function createPdfExtractorScope(values: {
   file_id: string;
   total_pages: number;
   current_page: number;
-  scope_kind: "full" | "current" | "range" | "selection";
+  scope_kind: PdfExtractorScopeKind;
   using_clean_text: boolean;
+  document_summary: {
+    filename: string;
+    file_id: string;
+    processed_document_id: string;
+    total_pages: number;
+    using_clean_text: boolean;
+  };
+  active_scope: {
+    kind: "full" | "current" | "range" | "selection";
+    page_numbers: string;
+    char_count: number;
+  };
+  selection: string;
+  content: string;
   // alwaysAvailable: false → optional
   page_range_text?: string;
   selected_text?: string;
   processed_document_id?: string;
   page_numbers?: string;
-  selection?: string;
-  content?: string;
+  raw_document_text?: string;
+  page_texts?: Array<{
+    page_number: number;
+    text: string;
+    cleaned: boolean;
+  }>;
+  visible_panes?: string[];
+  sidebar_view?: string;
+  find_query?: string;
+  library_document_count?: number;
+  library_document_names?: string[];
+  pipeline_running?: boolean;
+  pipeline_status?: string;
   text_before?: string;
   text_after?: string;
   context?: Record<string, unknown>;

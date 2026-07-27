@@ -24,6 +24,18 @@ export interface MarketingNavEntry {
   iconName: string;
   /** Opens a public (unauthenticated) utility outside the app shell. */
   external?: boolean;
+  /**
+   * `"coming-soon"` entries are REAL reserved routes rendering
+   * `<MarketingComingSoon>`, not dead links. Each one MUST have a matching
+   * `marketing.*` row in `lib/coming-soon/registry.ts` (`comingSoonId`) —
+   * see that FEATURE.md: a promise we show a user is tracked like a defect.
+   * Omitted means live.
+   */
+  status?: "coming-soon";
+  /** Registry id in `lib/coming-soon/registry.ts`. Required when coming-soon. */
+  comingSoonId?: string;
+  /** Hidden from the shell sidebar (still on the hub). Keeps the menu sane. */
+  navHidden?: boolean;
 }
 
 export interface MarketingNavPillar {
@@ -33,6 +45,16 @@ export interface MarketingNavPillar {
   description: string;
   iconName: string;
   entries: readonly MarketingNavEntry[];
+}
+
+/** Every entry across every pillar, flattened. */
+export function listMarketingEntries(): readonly MarketingNavEntry[] {
+  return MARKETING_PILLARS.flatMap((pillar) => pillar.entries);
+}
+
+/** The reserved-but-unbuilt surfaces. Drives the roadmap section + audits. */
+export function listMarketingComingSoon(): readonly MarketingNavEntry[] {
+  return listMarketingEntries().filter((e) => e.status === "coming-soon");
 }
 
 /**
@@ -104,13 +126,22 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
           "Every site across brands — canonical pages, crawls, findings, and audits.",
         iconName: "Globe",
       },
+      {
+        label: "Local & Listings",
+        href: marketingRoutes.local(),
+        description:
+          "Google Business Profiles, directory listings, reviews, and map-pack rank.",
+        iconName: "MapPin",
+        status: "coming-soon",
+        comingSoonId: "marketing.local",
+      },
     ],
   },
   {
     key: "planning",
-    label: "Content Planning",
+    label: "Strategy & Planning",
     description:
-      "What you intend to publish — pillars, clusters, briefs, and the keywords behind each URL.",
+      "What you intend to publish and promote — plans, campaigns, calendar, and who it is for.",
     iconName: "ListTree",
     entries: [
       {
@@ -120,13 +151,40 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
           "Plan every URL a site should have — pillars, clusters, briefs, owners.",
         iconName: "ListTree",
       },
+      {
+        label: "Campaigns",
+        href: marketingRoutes.campaigns(),
+        description:
+          "The container above channels — goal, budget, timeline, assets, and shared attribution.",
+        iconName: "Target",
+        status: "coming-soon",
+        comingSoonId: "marketing.campaigns",
+      },
+      {
+        label: "Calendar",
+        href: marketingRoutes.calendar(),
+        description:
+          "One publishing timeline across content, social, email, and paid.",
+        iconName: "CalendarDays",
+        status: "coming-soon",
+        comingSoonId: "marketing.calendar",
+      },
+      {
+        label: "Audience & Personas",
+        href: marketingRoutes.audience(),
+        description:
+          "Segments, ICPs, and personas that every brief, campaign, and agent reads from.",
+        iconName: "Users",
+        status: "coming-soon",
+        comingSoonId: "marketing.audience",
+      },
     ],
   },
   {
     key: "search",
-    label: "Discovery, Search & Keywords",
+    label: "Discovery, Search & Visibility",
     description:
-      "Find expert source material, understand how the market searches, and track where you rank.",
+      "Find expert source material, understand how the market searches, and track where you appear.",
     iconName: "Search",
     entries: [
       {
@@ -143,6 +201,138 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
           "Find videos and compare creator authority, engagement, and research value.",
         iconName: "Youtube",
       },
+      {
+        label: "Rank Tracking",
+        href: marketingRoutes.ranks(),
+        description:
+          "Cross-site, cross-brand rank movement in one place — today ranks live per site.",
+        iconName: "TrendingUp",
+        status: "coming-soon",
+        comingSoonId: "marketing.rank-tracking",
+      },
+      {
+        label: "AI Visibility",
+        href: marketingRoutes.aiVisibility(),
+        description:
+          "Whether AI assistants cite you — prompt-set monitoring, share of answer, source gaps.",
+        iconName: "MessageSquareQuote",
+        status: "coming-soon",
+        comingSoonId: "marketing.ai-visibility",
+      },
+    ],
+  },
+  {
+    key: "channels",
+    label: "Content & Channels",
+    description:
+      "Where the work actually ships — drafts, social, email, paid, and outreach.",
+    iconName: "Megaphone",
+    entries: [
+      {
+        label: "Content Studio",
+        href: marketingRoutes.contentStudio(),
+        description:
+          "Brief to draft to review to published — the production lane between Content Plan and the CMS.",
+        iconName: "PenLine",
+        status: "coming-soon",
+        comingSoonId: "marketing.content-studio",
+      },
+      {
+        label: "Social",
+        href: marketingRoutes.social(),
+        description:
+          "Connected accounts, scheduled posts, and one engagement inbox across networks.",
+        iconName: "Share2",
+        status: "coming-soon",
+        comingSoonId: "marketing.social",
+      },
+      {
+        label: "Email",
+        href: marketingRoutes.email(),
+        description:
+          "Lists, broadcasts, lifecycle automation, and deliverability health.",
+        iconName: "Mail",
+        status: "coming-soon",
+        comingSoonId: "marketing.email",
+      },
+      {
+        label: "Paid Ads",
+        href: marketingRoutes.ads(),
+        description:
+          "Google, Meta, and LinkedIn spend with creative, keyword, and ROAS rollups.",
+        iconName: "BadgeDollarSign",
+        status: "coming-soon",
+        comingSoonId: "marketing.ads",
+      },
+      {
+        label: "Outreach",
+        href: marketingRoutes.outreach(),
+        description:
+          "Link and PR prospecting, sequenced contact, and earned-placement tracking.",
+        iconName: "Send",
+        status: "coming-soon",
+        comingSoonId: "marketing.outreach",
+      },
+    ],
+  },
+  {
+    key: "intelligence",
+    label: "Market Intelligence",
+    description:
+      "Who else is winning the space, and what is being said about you.",
+    iconName: "Radar",
+    entries: [
+      {
+        label: "Competitors",
+        href: marketingRoutes.competitors(),
+        description:
+          "Tracked rivals, share of voice, keyword and content gaps, and their movement.",
+        iconName: "Swords",
+        status: "coming-soon",
+        comingSoonId: "marketing.competitors",
+      },
+      {
+        label: "Brand Monitoring",
+        href: marketingRoutes.monitoring(),
+        description:
+          "Mentions, reviews, and sentiment across the web with alerting.",
+        iconName: "Radar",
+        status: "coming-soon",
+        comingSoonId: "marketing.monitoring",
+      },
+    ],
+  },
+  {
+    key: "measurement",
+    label: "Measurement",
+    description:
+      "What it did and what it cost — traffic, conversion, attribution, and client-ready reporting.",
+    iconName: "ChartNoAxesColumn",
+    entries: [
+      {
+        label: "Analytics",
+        href: marketingRoutes.analytics(),
+        description:
+          "Cross-channel traffic, conversion, and attribution over connected data sources.",
+        iconName: "ChartNoAxesColumn",
+        status: "coming-soon",
+        comingSoonId: "marketing.analytics",
+      },
+      {
+        label: "Reports",
+        href: marketingRoutes.reports(),
+        description:
+          "Scheduled, branded, client-ready reports assembled from live marketing data.",
+        iconName: "FileBarChart",
+        status: "coming-soon",
+        comingSoonId: "marketing.reports",
+      },
+      {
+        label: "Cost",
+        href: marketingRoutes.cost(),
+        description: "Review marketing cost across sites and organizations.",
+        iconName: "CircleDollarSign",
+      },
     ],
   },
   {
@@ -158,14 +348,17 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description: "The full analyzer suite in one index.",
         iconName: "Wrench",
       },
-      ...MARKETING_PUBLIC_TOOLS.slice(0, 3),
+      ...MARKETING_PUBLIC_TOOLS.slice(0, 3).map((tool) => ({
+        ...tool,
+        navHidden: true,
+      })),
     ],
   },
   {
     key: "operations",
     label: "Data & Operations",
     description:
-      "The plumbing — provider connections, batch runs, and what it all costs.",
+      "The plumbing — provider connections, batch runs, and automation.",
     iconName: "Plug",
     entries: [
       {
@@ -182,10 +375,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         iconName: "Boxes",
       },
       {
-        label: "Cost",
-        href: marketingRoutes.cost(),
-        description: "Review marketing cost across sites and organizations.",
-        iconName: "CircleDollarSign",
+        label: "Automations",
+        href: marketingRoutes.automations(),
+        description:
+          "Trigger-based marketing workflows — on crawl finding, on rank drop, on mention.",
+        iconName: "Workflow",
+        status: "coming-soon",
+        comingSoonId: "marketing.automations",
       },
     ],
   },
