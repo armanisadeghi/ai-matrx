@@ -136,6 +136,7 @@ function ContextLensMenuRow({ conversationId }: { conversationId: string }) {
   return (
     <div className="flex w-full border-t border-border px-2 py-1.5">
       <ContextLensBar
+        conversationId={conversationId}
         className="h-7 w-full max-w-full"
         previewOpen={previewOpen}
         onOpenPreview={() =>

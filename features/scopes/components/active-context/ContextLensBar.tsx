@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { ActiveContextLensChip } from "./ActiveContextLensChip";
 
 export interface ContextLensBarProps {
+  conversationId: string;
   /** Opens the "what the agent receives" preview panel. */
   onOpenPreview?: () => void;
   /** True while the preview panel is open — keeps the eye zone lit. */
@@ -36,6 +37,7 @@ export interface ContextLensBarProps {
 }
 
 export function ContextLensBar({
+  conversationId,
   onOpenPreview,
   previewOpen = false,
   align = "start",
@@ -74,6 +76,7 @@ export function ContextLensBar({
         </TooltipContent>
       </Tooltip>
       <ActiveContextLensChip
+        conversationId={conversationId}
         align={align}
         className="h-5 rounded-full border-0 bg-transparent px-1.5 text-xs hover:bg-muted/60 group-hover:bg-primary/5"
       />

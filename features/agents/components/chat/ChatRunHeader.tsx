@@ -87,7 +87,10 @@ export function ChatRunHeader({
         </div>
         {/* Working context — Lens Chip → ActiveContextTree. Sets
             appContextSlice; Clear lives in the tree footer. */}
-        <ActiveContextLensChip className="shrink-0" />
+        <ActiveContextLensChip
+          conversationId={conversationId}
+          className="shrink-0"
+        />
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {/* Canvas — the unified live workspace, one click away at the top. */}

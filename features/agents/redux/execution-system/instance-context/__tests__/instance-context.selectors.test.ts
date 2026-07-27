@@ -17,7 +17,9 @@ import {
 } from "../instance-context.selectors";
 import type { RootState } from "@/lib/redux/store";
 
-function entry(partial: Partial<InstanceContextEntry> & { key: string; value: unknown }): InstanceContextEntry {
+function entry(
+  partial: Partial<InstanceContextEntry> & { key: string; value: unknown },
+): InstanceContextEntry {
   return {
     slotMatched: false,
     type: "text",
@@ -37,17 +39,30 @@ function stateWith(entries: InstanceContextEntry[]): RootState {
 describe("toWireContextValue", () => {
   it("wraps string values into rich form carrying label + type", () => {
     const wire = toWireContextValue(
-      entry({ key: "active_file", value: "line one", type: "text", label: "Active File" }),
+      entry({
+        key: "active_file",
+        value: "line one",
+        type: "text",
+        label: "Active File",
+      }),
     );
-    expect(wire).toEqual({ content: "line one", type: "text", label: "Active File" });
+    expect(wire).toEqual({
+      content: "line one",
+      type: "text",
+      label: "Active File",
+    });
   });
 
   it("wraps number and boolean primitives", () => {
     expect(
-      toWireContextValue(entry({ key: "n", value: 42, type: "text", label: "Count" })),
+      toWireContextValue(
+        entry({ key: "n", value: 42, type: "text", label: "Count" }),
+      ),
     ).toEqual({ content: 42, type: "text", label: "Count" });
     expect(
-      toWireContextValue(entry({ key: "b", value: true, type: "text", label: "Flag" })),
+      toWireContextValue(
+        entry({ key: "b", value: true, type: "text", label: "Flag" }),
+      ),
     ).toEqual({ content: true, type: "text", label: "Flag" });
   });
 
@@ -71,6 +86,30 @@ describe("toWireContextValue", () => {
     expect(toWireContextValue(entry({ key: "doc", value: rich }))).toBe(rich);
   });
 
+  it("keeps an explicitly attached scope cell as a lazy source pointer", () => {
+    const pointer = {
+      content: null,
+      type: "text",
+      label: "All Green — General Brand Profile",
+      persist: "never",
+      source: {
+        kind: "ctx_item",
+        id: "item-1",
+        scope_id: "scope-1",
+        scope_type_id: "type-1",
+        item_key: "general_brand_profile",
+      },
+    };
+    expect(
+      toWireContextValue(
+        entry({
+          key: "attached_scope_item_scope-1_item-1",
+          value: pointer,
+        }),
+      ),
+    ).toBe(pointer);
+  });
+
   it("passes raw JSON dicts / arrays / null through untouched", () => {
     const raw = { a: 1, nested: { b: 2 } };
     expect(toWireContextValue(entry({ key: "j", value: raw }))).toBe(raw);
@@ -89,7 +128,12 @@ describe("selectContextPayload", () => {
   it("builds the payload with primitives wrapped and dicts passed through", () => {
     const rich = { content: "body", mutable: true };
     const state = stateWith([
-      entry({ key: "title", value: "Q3 Report", type: "text", label: "Report Title" }),
+      entry({
+        key: "title",
+        value: "Q3 Report",
+        type: "text",
+        label: "Report Title",
+      }),
       entry({ key: "doc", value: rich }),
     ]);
     expect(selectContextPayload("conv-1")(state)).toEqual({

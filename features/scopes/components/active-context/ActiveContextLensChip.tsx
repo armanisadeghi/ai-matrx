@@ -30,11 +30,13 @@ import { LensChip, type LensChipNode } from "./LensChip";
 export interface ActiveContextLensChipProps {
   align?: "start" | "center" | "end";
   className?: string;
+  conversationId?: string;
 }
 
 export function ActiveContextLensChip({
   align = "start",
   className,
+  conversationId,
 }: ActiveContextLensChipProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -61,8 +63,8 @@ export function ActiveContextLensChip({
     });
   }
 
-  const allTypes = organizations.flatMap((organization) =>
-    organization.scope_types,
+  const allTypes = organizations.flatMap(
+    (organization) => organization.scope_types,
   );
   const typesWithScopes = new Set<string>();
   for (const scopeId of scopeIds) {
@@ -90,7 +92,11 @@ export function ActiveContextLensChip({
   // Keep the tree mounted while open so selection ↔ Redux stays live; remount
   // on every parent render was dropping in-flight expand/lazy-load state.
   const picker = open ? (
-    <ActiveContextTree maxHeight={isMobile ? 420 : 320} className="w-[320px]" />
+    <ActiveContextTree
+      conversationId={conversationId}
+      maxHeight={isMobile ? 420 : 320}
+      className="w-[320px]"
+    />
   ) : null;
 
   const trigger = (

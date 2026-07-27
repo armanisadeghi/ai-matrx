@@ -67,13 +67,7 @@ interface QuicksetPanelProps {
  * up in a single vertical rail (also used by SettingsRow / SurfaceSimulator
  * in quickset mode — keep in sync with QUICKSET_ROW_GRID there).
  */
-function Row({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid min-h-8 grid-cols-[9rem_minmax(0,1fr)] items-center gap-2">
       <span className="truncate text-xs text-foreground" title={label}>
@@ -171,7 +165,9 @@ export function QuicksetPanel({
   const dispatch = useAppDispatch();
   const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
   const showVariables = useAppSelector(selectShowVariablePanel(conversationId));
-  const workingDocument = useAppSelector(selectWorkingDocEnabled(conversationId));
+  const workingDocument = useAppSelector(
+    selectWorkingDocEnabled(conversationId),
+  );
   const scratch = useAppSelector(
     selectWorkingDocEnabled(conversationId, "scratch"),
   );
@@ -193,7 +189,9 @@ export function QuicksetPanel({
   const agentReady = useAppSelector((state) =>
     agentId ? selectAgentReadyForCustomExecution(state, agentId) : true,
   );
-  const surfaceTools = useAppSelector(selectInstanceClientTools(conversationId));
+  const surfaceTools = useAppSelector(
+    selectInstanceClientTools(conversationId),
+  );
   const sandboxBinding = useAppSelector((state) => {
     const conversation = state.conversations.byConversationId[conversationId];
     const surfaceBinding = conversation?.sourceFeature
@@ -222,7 +220,9 @@ export function QuicksetPanel({
     }
   }, [agentId, agentReady, dispatch]);
 
-  const catalogNames = new Map((toolCatalog ?? []).map((tool) => [tool.id, tool.name]));
+  const catalogNames = new Map(
+    (toolCatalog ?? []).map((tool) => [tool.id, tool.name]),
+  );
   const agentTools = [
     ...(Array.isArray(agentToolIds)
       ? agentToolIds.map((id) => catalogNames.get(id) ?? id)
@@ -262,7 +262,7 @@ export function QuicksetPanel({
 
       <div className="space-y-1.5">
         <Row label="Active Context">
-          <ActiveContextLensChip align="end" />
+          <ActiveContextLensChip conversationId={conversationId} align="end" />
         </Row>
         <ToggleRow
           label="Working Document"
@@ -290,7 +290,10 @@ export function QuicksetPanel({
 
       <div className="space-y-1.5">
         <Row label="Model">
-          <QuickRunModelSelect conversationId={conversationId} className="w-full" />
+          <QuickRunModelSelect
+            conversationId={conversationId}
+            className="w-full"
+          />
         </Row>
         <PickerRow
           label="Agent Tools"
@@ -302,11 +305,16 @@ export function QuicksetPanel({
           label="Surface Tools"
           summary={`${surfaceTools.length} available`}
         >
-          <SimpleList items={surfaceTools} empty="No surface tools are active." />
+          <SimpleList
+            items={surfaceTools}
+            empty="No surface tools are active."
+          />
         </PickerRow>
         <PickerRow
           label="Add Tools"
-          summary={addedTools.length ? `${addedTools.length} added` : "Choose tools"}
+          summary={
+            addedTools.length ? `${addedTools.length} added` : "Choose tools"
+          }
         >
           <div className="h-[26rem]">
             <RunToolPicker conversationId={conversationId} />
@@ -317,10 +325,7 @@ export function QuicksetPanel({
       <Separator />
 
       <div className="space-y-1.5">
-        <PickerRow
-          label="Skills"
-          summary={`${addedSkills.length} skills`}
-        >
+        <PickerRow label="Skills" summary={`${addedSkills.length} skills`}>
           <div className="h-[26rem]">
             <RunSkillPicker conversationId={conversationId} />
           </div>
@@ -341,7 +346,9 @@ export function QuicksetPanel({
         summary={
           sandboxBinding?.name ??
           sandboxBinding?.proxyUrl.match(/\/sandboxes\/([^/]+)/)?.[1] ??
-          (sandboxBinding ? sandboxBinding.rowId.slice(0, 8) : "No sandbox bound")
+          (sandboxBinding
+            ? sandboxBinding.rowId.slice(0, 8)
+            : "No sandbox bound")
         }
       >
         <SandboxPanel conversationId={conversationId} />
