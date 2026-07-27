@@ -120,6 +120,34 @@ describe("clampRectToViewport", () => {
     });
   });
 
+  describe("degenerate viewport measurements", () => {
+    // A hidden/embedded pane or pre-layout read reports innerWidth 0.
+    // Clamping against it used to collapse ANY rect to
+    // {x:-48, y:0, width:120, height:80} — the invisible-restore bug.
+    it("keeps real geometry untouched at a 0x0 viewport", () => {
+      const rect = { x: 240, y: 160, width: 720, height: 480 };
+      const out = clampRectToViewport(rect, { width: 0, height: 0 });
+      expect(out).toEqual(rect);
+    });
+
+    it("keeps geometry untouched at a negative viewport", () => {
+      const rect = { x: 10, y: 20, width: 300, height: 200 };
+      const out = clampRectToViewport(rect, { width: -1, height: 600 });
+      expect(out).toEqual(rect);
+    });
+
+    it("still sanitises non-finite rect values at a 0x0 viewport", () => {
+      const out = clampRectToViewport(
+        { x: Number.NaN, y: 20, width: 0, height: Number.NaN },
+        { width: 0, height: 0 },
+      );
+      expect(out.x).toBe(0);
+      expect(out.y).toBe(20);
+      expect(out.width).toBeGreaterThan(0);
+      expect(out.height).toBeGreaterThan(0);
+    });
+  });
+
   describe("handles tiny viewports gracefully", () => {
     it("doesn't produce negative dimensions at 100x100", () => {
       const out = clampRectToViewport(

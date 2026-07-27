@@ -30,9 +30,17 @@ const VIEWPORT_PADDING = 8;
 const FALLBACK_W = 480;
 const FALLBACK_H = 360;
 
+let warnedDegenerateViewport = false;
+
 /**
  * Clamp a rect into the current viewport. Pure — caller passes both the
  * rect and the viewport so this works in tests without DOM globals.
+ *
+ * A zero/negative viewport is a degenerate MEASUREMENT (hidden or embedded
+ * pane, pre-layout read, headless run) — never a real screen. Clamping
+ * against it collapses any rect to `{x:-48, y:0, width:120, height:80}` and
+ * that garbage then gets rendered and persisted, so instead we keep the
+ * caller's geometry (sanitising only non-finite values) and scream once.
  *
  * @param rect      Stored rect from DB / LS.
  * @param viewport  { width, height } in CSS pixels.
@@ -41,6 +49,33 @@ export function clampRectToViewport(
   rect: WindowRectLike,
   viewport: { width: number; height: number },
 ): WindowRectLike {
+  if (
+    !Number.isFinite(viewport.width) ||
+    !Number.isFinite(viewport.height) ||
+    viewport.width <= 0 ||
+    viewport.height <= 0
+  ) {
+    if (!warnedDegenerateViewport) {
+      warnedDegenerateViewport = true;
+      console.warn(
+        "[window-panels] clampRectToViewport received a degenerate viewport",
+        viewport,
+        "— skipping clamp so real window geometry is not destroyed.",
+      );
+    }
+    return {
+      x: Number.isFinite(rect.x) ? rect.x : 0,
+      y: Number.isFinite(rect.y) ? rect.y : 0,
+      width:
+        Number.isFinite(rect.width) && rect.width > 0
+          ? rect.width
+          : FALLBACK_W,
+      height:
+        Number.isFinite(rect.height) && rect.height > 0
+          ? rect.height
+          : FALLBACK_H,
+    };
+  }
   const maxW = Math.max(120, viewport.width - VIEWPORT_PADDING * 2);
   const maxH = Math.max(80, viewport.height - VIEWPORT_PADDING * 2);
 
