@@ -26,8 +26,6 @@ import LazyMessagingIsland from "@/features/shell/islands/LazyMessagingIsland";
 import KgNewSuggestionNotifier from "@/features/kg-suggestions/components/KgNewSuggestionNotifier";
 import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptureIndicator";
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
-import { installGlobalErrorCapture } from "@/lib/diagnostics/globalErrorCapture";
-import { installErrorPersistence } from "@/lib/diagnostics/persistCapturedErrors";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
 import { resolveBaseUrl } from "@/lib/python-client";
@@ -41,16 +39,9 @@ export default function DeferredSingletonCore() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
 
-  // Install the global error listeners (window 'error', unhandledrejection,
-  // console.error) once, for EVERY user. Capture is in-memory and cheap; the
-  // Error Inspector UI is admin-gated. Idempotent — repeat mounts are no-ops.
-  useEffect(() => {
-    installGlobalErrorCapture();
-    // Persist red-tier captures to public.system_error (canonical sink) — self
-    // gates to production + authenticated; deduped + throttled. See
-    // lib/diagnostics/persistCapturedErrors.ts.
-    installErrorPersistence();
-  }, []);
+  // NOTE: global error capture + persistence install live in the WRAPPER
+  // (DeferredSingletonWrapper.tsx), not here — they must be running during
+  // the boot window, before this deferred core has loaded.
 
   // Pre-warm the scope tree (features/scopes) on idle. This is the ONLY
   // boot-time fetch in the scope/context system. `ensureScopeTree` is

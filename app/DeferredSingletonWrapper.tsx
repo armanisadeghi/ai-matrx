@@ -29,6 +29,8 @@ import "@/features/window-panels/utils/lazy-bundle-guard";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useIdleReady } from "@/utils/idle-scheduler";
+import { installGlobalErrorCapture } from "@/lib/diagnostics/globalErrorCapture";
+import { installErrorPersistence } from "@/lib/diagnostics/persistCapturedErrors";
 
 const DeferredSingletonCore = dynamic(
   () => import("./DeferredSingletonCore"),
@@ -39,7 +41,20 @@ export default function DeferredSingletonWrapper() {
   const [mounted, setMounted] = useState(false);
   const ready = useIdleReady();
 
+  // Install the global error listeners (window 'error', unhandledrejection,
+  // console.error) on FIRST client mount — before the idle gate — so errors
+  // are captured as early as the client tree exists. This must live in the
+  // shell, not the deferred core: the core doesn't mount until page-idle,
+  // and boot-window errors are exactly the ones worth catching. Both
+  // installs are idempotent; the modules are lightweight (store + filters)
+  // and were already in the boot static graph under the old
+  // `DeferredSingletons.tsx`.
   useEffect(() => {
+    installGlobalErrorCapture();
+    // Persist red-tier captures to public.system_error (canonical sink) —
+    // self-gates to production + authenticated; deduped + throttled. See
+    // lib/diagnostics/persistCapturedErrors.ts.
+    installErrorPersistence();
     setMounted(true);
   }, []);
 
