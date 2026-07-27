@@ -37,6 +37,7 @@ app/_public_build_excluded/
 app/_core_build_excluded/
 app/_transitional_build_excluded/
 app/_popup_build_excluded/
+app/_*_build_excluded.stale-*/
 
 # production
 /build

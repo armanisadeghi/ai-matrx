@@ -123,6 +123,19 @@ const PARK_SET = new Set(PROFILES[MATRX_PROFILE].park);
 function syncRouteGroupPark(exclude, liveName, parkedName) {
     const live = path.join(__dirname, "app", liveName);
     const parked = path.join(__dirname, "app", parkedName);
+    // Interrupted-run recovery: an aborted build can leave the parked copy
+    // behind while git recreates the live path (both exist). The live path is
+    // the source of truth; the stale park is quarantined — LOUDLY, never
+    // deleted, in case it holds edits made while parked.
+    if (fs.existsSync(live) && fs.existsSync(parked)) {
+        const quarantine = `${parked}.stale-${Date.now()}`;
+        fs.renameSync(parked, quarantine);
+        console.warn(
+            `[matrx] ⚠ STALE PARK: app/${liveName} and app/${parkedName} both existed ` +
+                `(interrupted earlier run). Kept the live path; quarantined the park at ` +
+                `${path.basename(quarantine)} — inspect/delete it manually.`,
+        );
+    }
     if (exclude) {
         if (fs.existsSync(live)) {
             fs.renameSync(live, parked);
