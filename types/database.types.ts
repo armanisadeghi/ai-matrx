@@ -28227,7 +28227,8 @@ export type Database = {
           p_search?: string
         }
         Returns: {
-          org_id: string
+          label: string
+          narrow_id: string
           scope: string
           total: number
         }[]

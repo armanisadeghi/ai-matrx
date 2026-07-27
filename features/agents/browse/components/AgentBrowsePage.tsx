@@ -29,7 +29,7 @@ import { AddToSetDialog } from "./AddToSetDialog";
 import { ClassicViewNotice } from "./ClassicViewNotice";
 import { DEFAULT_HIDDEN_COLUMNS } from "../columns";
 import { saveAgentRowEdits } from "../service";
-import type { AgentBrowseRow, AgentRowEdit } from "../types";
+import { AGENT_LIST_SCOPES, type AgentBrowseRow, type AgentRowEdit } from "../types";
 
 // Heavy, conditional, and only ever needed after a user action — the two rules
 // that make a dynamic import worth its cost.
@@ -124,6 +124,7 @@ export function AgentBrowsePage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <BrowseScopeTabs
             scope={browse.query.scope}
+            scopes={AGENT_LIST_SCOPES}
             counts={browse.counts}
             onChange={browse.setScope}
           />

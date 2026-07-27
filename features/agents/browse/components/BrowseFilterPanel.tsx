@@ -32,13 +32,13 @@ import {
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { BROWSE_COLUMNS } from "../columns";
+import { countActiveFilters, type BrowseFilters, type BrowseQuery } from "../types";
 import {
-  countActiveFilters,
+  facetCount,
+  facetValues,
   type ArchivedFilter,
-  type BrowseFacets,
-  type BrowseFilters,
-  type BrowseQuery,
-} from "../types";
+  type EntityFacets,
+} from "@/lib/entity-list/types";
 
 type SortKey = `${string}-${ListViewPrefs["direction"]}`;
 
@@ -63,7 +63,7 @@ const ARCH_OPTIONS: { value: ArchivedFilter; label: string }[] = [
 
 interface Props {
   query: BrowseQuery;
-  facets: BrowseFacets;
+  facets: EntityFacets;
   sort: string;
   direction: ListViewPrefs["direction"];
   favoritesFirst: boolean;
@@ -247,7 +247,7 @@ export function BrowseFilterPanel({
               onChange={setFav}
               options={FAV_OPTIONS.map((o) =>
                 o.value === "only"
-                  ? { ...o, hint: String(facets.favoriteCount) }
+                  ? { ...o, hint: String(facetCount(facets, "favorite", "only")) }
                   : { ...o },
               )}
             />
@@ -259,19 +259,19 @@ export function BrowseFilterPanel({
               onChange={(v) => onPatchQuery({ archived: v })}
               options={ARCH_OPTIONS.map((o) =>
                 o.value === "archived"
-                  ? { ...o, hint: String(facets.archivedCount) }
+                  ? { ...o, hint: String(facetCount(facets, "archived", "archived")) }
                   : o,
               )}
             />
           </FilterSection>
 
-          {(facets.byKind.category?.length ?? 0) > 0 && (
+          {facetValues(facets, "category").length > 0 && (
             <FilterSection
-              label={`Categories (${facets.byKind.category!.length})`}
+              label={`Categories (${facetValues(facets, "category").length})`}
               active={selectedOf("category").length > 0}
             >
               <FacetChips
-                options={toOptions(facets.byKind.category, NONE_LABEL.category!)}
+                options={toOptions(facetValues(facets, "category"), NONE_LABEL.category!)}
                 selected={selectedOf("category")}
                 onChange={(v) => setSelect("category", v)}
                 searchPlaceholder="Find category…"
@@ -279,13 +279,13 @@ export function BrowseFilterPanel({
             </FilterSection>
           )}
 
-          {(facets.byKind.tag?.length ?? 0) > 0 && (
+          {facetValues(facets, "tag").length > 0 && (
             <FilterSection
-              label={`Tags (${facets.byKind.tag!.length})`}
+              label={`Tags (${facetValues(facets, "tag").length})`}
               active={selectedOf("tags").length > 0}
             >
               <FacetChips
-                options={toOptions(facets.byKind.tag, NONE_LABEL.tag!)}
+                options={toOptions(facetValues(facets, "tag"), NONE_LABEL.tag!)}
                 selected={selectedOf("tags")}
                 onChange={(v) => setSelect("tags", v)}
                 searchPlaceholder="Find tag…"
@@ -293,13 +293,13 @@ export function BrowseFilterPanel({
             </FilterSection>
           )}
 
-          {(facets.byKind.visibility?.length ?? 0) > 1 && (
+          {facetValues(facets, "visibility").length > 1 && (
             <FilterSection
               label="Visibility"
               active={selectedOf("visibility").length > 0}
             >
               <FacetChips
-                options={toOptions(facets.byKind.visibility, "None")}
+                options={toOptions(facetValues(facets, "visibility"), "None")}
                 selected={selectedOf("visibility")}
                 onChange={(v) => setSelect("visibility", v)}
                 searchPlaceholder="Find…"

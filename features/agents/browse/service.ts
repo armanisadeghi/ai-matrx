@@ -22,7 +22,7 @@ import type {
   BrowseQuery,
   BrowseScopeCounts,
 } from "./types";
-import { EMPTY_FACETS, EMPTY_SCOPE_COUNTS } from "./types";
+import { EMPTY_SCOPE_COUNTS, scopeOrgId } from "./types";
 
 export interface AgentBrowsePage {
   rows: AgentBrowseRow[];
@@ -57,7 +57,7 @@ export async function fetchAgentBrowsePage(
 ): Promise<AgentBrowsePage> {
   const { data, error } = await supabase.rpc("agx_list_scoped", {
     p_scope: query.scope.kind,
-    p_org_id: query.scope.organizationId ?? undefined,
+    p_org_id: scopeOrgId(query.scope) ?? undefined,
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_sort: opts.sort,
@@ -89,21 +89,24 @@ export async function fetchBrowseScopeCounts(
 
   if (error) throw pgError(error);
 
-  const counts: BrowseScopeCounts = { ...EMPTY_SCOPE_COUNTS, byOrg: {} };
+  const counts: BrowseScopeCounts = { byKind: {}, narrow: {} };
   for (const row of data ?? []) {
     const total = Number(row.total ?? 0);
-    if (row.org_id) {
-      counts.byOrg[row.org_id] = total;
+    const kind = row.scope;
+    if (kind !== "mine" && kind !== "orgs" && kind !== "shared" && kind !== "public") {
       continue;
     }
-    if (
-      row.scope === "mine" ||
-      row.scope === "orgs" ||
-      row.scope === "shared" ||
-      row.scope === "public"
-    ) {
-      counts[row.scope] = total;
+    // A narrow_id means "one org/industry inside this scope"; no id means the
+    // scope's own blended total.
+    if (row.narrow_id) {
+      (counts.narrow[kind] ??= []).push({
+        id: row.narrow_id,
+        label: row.label ?? "Unnamed",
+        count: total,
+      });
+      continue;
     }
+    counts.byKind[kind] = total;
   }
   return counts;
 }
@@ -119,7 +122,7 @@ export async function fetchBrowseFacets(
 ): Promise<BrowseFacets> {
   const { data, error } = await supabase.rpc("agx_list_facets", {
     p_scope: query.scope.kind,
-    p_org_id: query.scope.organizationId ?? undefined,
+    p_org_id: scopeOrgId(query.scope) ?? undefined,
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_archived: query.archived,
@@ -127,21 +130,14 @@ export async function fetchBrowseFacets(
 
   if (error) throw pgError(error);
 
+  // favorite / archived are facets like any other — `facetCount(facets,
+  // "favorite", "only")` reads them. No bespoke top-level count fields.
   const byKind: BrowseFacets["byKind"] = {};
-  let favoriteCount = 0;
-  let archivedCount = 0;
-
   for (const row of data ?? []) {
-    const count = Number(row.total ?? 0);
-    if (row.kind === "favorite") {
-      favoriteCount = count;
-      continue;
-    }
-    if (row.kind === "archived") {
-      archivedCount = count;
-      continue;
-    }
-    (byKind[row.kind] ??= []).push({ value: row.value, count });
+    (byKind[row.kind] ??= []).push({
+      value: row.value,
+      count: Number(row.total ?? 0),
+    });
   }
 
   // Most-used first: the useful end of a 773-entry tag list is the top of it.
@@ -149,7 +145,7 @@ export async function fetchBrowseFacets(
     values.sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
   }
 
-  return { byKind, favoriteCount, archivedCount };
+  return { byKind };
 }
 
 /**
@@ -182,5 +178,3 @@ export async function saveAgentRowEdits(
 
   if (error) throw pgError(error);
 }
-
-export { EMPTY_FACETS };

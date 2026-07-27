@@ -125,7 +125,7 @@ export function AgentBrowseTable({
       (showSharedColumns || !spec.scopedToShared) &&
       !hiddenColumns.includes(spec.id),
   ).map((spec) => {
-    const facetValues = spec.facet ? facets.byKind[spec.facet] : undefined;
+    const facetOptions = spec.facet ? facets.byKind[spec.facet] : undefined;
     return {
       ...spec.column,
       cell:
@@ -137,7 +137,7 @@ export function AgentBrowseTable({
       // Finite value sets get real options WITH counts, so the user picks from
       // what exists instead of guessing at a text box. Columns that declare
       // their own fixed options (the date buckets) keep them.
-      filterOptions: spec.column.filterOptions ?? facetValues?.map((v) => ({
+      filterOptions: spec.column.filterOptions ?? facetOptions?.map((v) => ({
         value: v.value,
         label:
           v.value === "__none__"
@@ -146,7 +146,7 @@ export function AgentBrowseTable({
       })),
       editOptions:
         spec.column.editable === "select" || spec.column.editable === "tags"
-          ? facetValues
+          ? facetOptions
               ?.filter((v) => v.value !== "__none__")
               .map((v) => ({ value: v.value, label: v.value }))
           : undefined,

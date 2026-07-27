@@ -12,7 +12,7 @@
 import { User, Users2, Building2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
-import type { ListScope } from "@/lib/list-scope/types";
+import { scopeKey, type ListScope } from "@/lib/list-scope/types";
 import { cn } from "@/lib/utils";
 
 export interface ListScopeSwitcherProps {
@@ -21,10 +21,6 @@ export interface ListScopeSwitcherProps {
   /** Provide only if this surface has a shared-with-me source wired up. */
   onShared?: () => void;
   className?: string;
-}
-
-function scopeKey(scope: ListScope): string {
-  return scope.kind === "org" ? `org:${scope.organizationId}` : scope.kind;
 }
 
 export function ListScopeSwitcher({
@@ -79,7 +75,7 @@ export function ListScopeSwitcher({
       )}
 
       {nonPersonalOrgs.map((org) => {
-        const key = `org:${org.id}`;
+        const key = `orgs:${org.id}`;
         return (
           <button
             key={org.id}
@@ -87,7 +83,7 @@ export function ListScopeSwitcher({
             role="tab"
             aria-selected={activeKey === key}
             className={cn(baseChip, activeKey === key ? activeChip : inactiveChip)}
-            onClick={() => onChange({ kind: "org", organizationId: org.id })}
+            onClick={() => onChange({ kind: "orgs", organizationId: org.id })}
             title={org.name}
           >
             <Building2 className="h-3.5 w-3.5" />

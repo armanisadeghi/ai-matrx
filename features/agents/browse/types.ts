@@ -1,110 +1,34 @@
 // features/agents/browse/types.ts
 //
-// The canonical feature-entry list, proven on agents first.
-// See ./FEATURE.md for what this is and what becomes reusable.
+// What is genuinely AGENT-specific about the canonical entity list.
+//
+// The query/filter/facet/count shapes now live in lib/entity-list/types.ts and
+// the scope vocabulary in lib/list-scope/types.ts — this file is what remains
+// when you take the feature out, and it is deliberately small: a row type
+// derived from the RPC, an edit payload, and this surface's declared scopes.
+//
+// See ./FEATURE.md, and docs/handoffs/canonical-entity-list-extraction.md for
+// the extraction in progress.
 
 import type { Database } from "@/types/database.types";
+import type { ListScopeKind } from "@/lib/list-scope/types";
 
 /** One row, exactly as agx_list_scoped returns it. Never hand-mirrored. */
 export type AgentBrowseRow =
   Database["public"]["Functions"]["agx_list_scoped"]["Returns"][number];
 
 /**
- * The four canonical destinations of THE VIEW LAW. Each is a distinct
- * question, never an RLS-shaped blur:
- *   mine   — what did I make?
- *   orgs   — what does my team have?
- *   shared — what did someone hand me?
- *   public — what has the platform published?
+ * Which of the fixed five scopes this surface supports. Agents has no industry
+ * corpus yet, so it declares four — the tab bar renders exactly these, in this
+ * order. Adding "industry" here is the whole UI change once agents grows an
+ * industry grant table.
  */
-export type BrowseScopeKind = "mine" | "orgs" | "shared" | "public";
-
-export interface BrowseScope {
-  kind: BrowseScopeKind;
-  /** Only meaningful for `orgs`. null = all my non-personal orgs blended. */
-  organizationId: string | null;
-}
-
-export const DEFAULT_BROWSE_SCOPE: BrowseScope = {
-  kind: "mine",
-  organizationId: null,
-};
-
-export type ArchivedFilter = "active" | "archived" | "all";
-
-/**
- * ONE filter vocabulary, shared by the column headers and the Filters panel.
- * Serialized straight into `agx_list_scoped(p_filters)` — so a filter set from
- * a column header and the same filter set from the panel are the same query,
- * and neither can drift into "filters only the current page".
- */
-export type BrowseFilterValue =
-  | { kind: "text"; value: string }
-  | { kind: "select"; values: string[] }
-  | { kind: "boolean"; value: boolean };
-
-export type BrowseFilters = Record<string, BrowseFilterValue>;
-
-/** Query half of list state — never persisted, always starts clean. */
-export interface BrowseQuery {
-  scope: BrowseScope;
-  search: string;
-  /** Reach into prompt content. Opt-in — it is a full jsonb scan server-side. */
-  deep: boolean;
-  /**
-   * Kept separate from `filters` because it carries a DEFAULT ("active only")
-   * rather than being absent-means-unfiltered like every other column.
-   */
-  archived: ArchivedFilter;
-  filters: BrowseFilters;
-  page: number;
-}
-
-export const DEFAULT_BROWSE_QUERY: BrowseQuery = {
-  scope: DEFAULT_BROWSE_SCOPE,
-  search: "",
-  deep: false,
-  archived: "active",
-  filters: {},
-  page: 1,
-};
-
-/** How many things are narrowing the list right now (badge on Filters). */
-export function countActiveFilters(query: BrowseQuery): number {
-  return Object.keys(query.filters).length + (query.archived !== "active" ? 1 : 0);
-}
-
-/** Server-computed filter options for the current scope + search. */
-export interface BrowseFacets {
-  /** facet kind → values with counts, most-used first. */
-  byKind: Record<string, { value: string; count: number }[]>;
-  favoriteCount: number;
-  archivedCount: number;
-}
-
-export const EMPTY_FACETS: BrowseFacets = {
-  byKind: {},
-  favoriteCount: 0,
-  archivedCount: 0,
-};
-
-/** True totals from agx_list_scope_counts, per tab + per org chip. */
-export interface BrowseScopeCounts {
-  mine: number;
-  orgs: number;
-  shared: number;
-  public: number;
-  /** organizationId → count, for the My Orgs dropdown. */
-  byOrg: Record<string, number>;
-}
-
-export const EMPTY_SCOPE_COUNTS: BrowseScopeCounts = {
-  mine: 0,
-  orgs: 0,
-  shared: 0,
-  public: 0,
-  byOrg: {},
-};
+export const AGENT_LIST_SCOPES: ListScopeKind[] = [
+  "mine",
+  "orgs",
+  "shared",
+  "public",
+];
 
 /** Fields the table can write back inline. */
 export interface AgentRowEdit {
@@ -113,3 +37,32 @@ export interface AgentRowEdit {
   category?: string | null;
   tags?: string[];
 }
+
+// ── Re-exports ──────────────────────────────────────────────────────────────
+// Kept so this feature's modules import from one place while the extraction is
+// in flight. These are the GENERIC types — do not add feature-specific fields
+// to them here; extend lib/entity-list instead.
+export type {
+  ArchivedFilter,
+  EntityFacets as BrowseFacets,
+  EntityFilters as BrowseFilters,
+  EntityFilterValue as BrowseFilterValue,
+  EntityListQuery as BrowseQuery,
+  EntityScopeCounts as BrowseScopeCounts,
+} from "@/lib/entity-list/types";
+
+export {
+  countActiveFilters,
+  DEFAULT_ENTITY_LIST_QUERY as DEFAULT_BROWSE_QUERY,
+  EMPTY_FACETS,
+  EMPTY_SCOPE_COUNTS,
+  NONE_VALUE,
+} from "@/lib/entity-list/types";
+
+export type { ListScope as BrowseScope } from "@/lib/list-scope/types";
+export {
+  DEFAULT_LIST_SCOPE as DEFAULT_BROWSE_SCOPE,
+  makeScope,
+  scopeKey,
+  scopeOrgId,
+} from "@/lib/list-scope/types";
