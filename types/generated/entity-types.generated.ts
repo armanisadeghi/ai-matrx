@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 306 active entity tokens. A token here is FK-valid for
+// 307 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -325,6 +325,7 @@ export type EntityTypeToken =
   | "web_gsc_page_stat"
   | "web_link_edge"
   | "web_page"
+  | "web_page_content"
   | "web_page_evidence"
   | "web_page_sitemap"
   | "web_property"
@@ -546,6 +547,7 @@ export type ComponentEntityToken =
   | "web_gsc_page_stat"
   | "web_link_edge"
   | "web_page"
+  | "web_page_content"
   | "web_page_evidence"
   | "web_page_sitemap"
   | "web_property"
@@ -828,6 +830,7 @@ export type ScopeableEntityToken =
   | "web_gsc_page_stat"
   | "web_link_edge"
   | "web_page"
+  | "web_page_content"
   | "web_page_evidence"
   | "web_page_sitemap"
   | "web_property"
@@ -1164,7 +1167,8 @@ export const ENTITY_TYPE_METADATA = {
   "web_finding": { token: "web_finding", schema: "web", table: "finding", label: "Finding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_gsc_page_stat": { token: "web_gsc_page_stat", schema: "web", table: "gsc_page_stat", label: "GSC Page Stat", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_link_edge": { token: "web_link_edge", schema: "web", table: "link_edge", label: "Link Edge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "web_page": { token: "web_page", schema: "web", table: "page", label: "Canonical Page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_page": { token: "web_page", schema: "web", table: "page", label: "Canonical Page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "url", contentRole: "source", referenceCategory: null },
+  "web_page_content": { token: "web_page_content", schema: "web", table: "page_content", label: "Page Draft Content", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_page_evidence": { token: "web_page_evidence", schema: "web", table: "page_evidence", label: "Web Page Evidence", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_page_sitemap": { token: "web_page_sitemap", schema: "web", table: "page_sitemap", label: "Page Sitemap Membership", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_property": { token: "web_property", schema: "web", table: "property", label: "Brand Property", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_name", contentRole: null, referenceCategory: null },
@@ -1475,6 +1479,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_gsc_page_stat",
   "web_link_edge",
   "web_page",
+  "web_page_content",
   "web_page_evidence",
   "web_page_sitemap",
   "web_property",

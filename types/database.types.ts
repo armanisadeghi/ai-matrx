@@ -47053,6 +47053,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          desired_values: Json
           first_seen: string
           http_status_last: number | null
           id: string
@@ -47079,6 +47080,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          desired_values?: Json
           first_seen?: string
           http_status_last?: number | null
           id?: string
@@ -47105,6 +47107,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          desired_values?: Json
           first_seen?: string
           http_status_last?: number | null
           id?: string
@@ -47129,6 +47132,73 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "page_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_content: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string | null
+          page_id: string
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          page_id: string
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          page_id?: string
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_content_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: true
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_content_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: true
+            referencedRelation: "v_page_list"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "page_content_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "site"
