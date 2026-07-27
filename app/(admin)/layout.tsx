@@ -21,7 +21,7 @@ import { createClient } from "@/utils/supabase/server";
 import { mapUserData } from "@/utils/userDataMapper";
 import {
   getAdminStatus,
-  checkIsSuperAdmin,
+  checkIsUserAdmin,
   type AdminLevel,
 } from "@/utils/supabase/userSessionData";
 import type { BaseReduxState } from "@/types/reduxTypes";
@@ -53,10 +53,14 @@ export default async function AdminLayout({
     return redirect(`/login?redirectTo=${encodeURIComponent(fullPath)}`);
   }
 
-  // Highest-bar gate: only Super Admin can enter the admin route tree by
-  // default. Selective lowering happens per-page if/when needed.
-  const isSuperAdmin = await checkIsSuperAdmin(supabase, user.id);
-  if (!isSuperAdmin) {
+  // Gate: ANY Matrx admin (developer / senior_admin / super_admin) may enter
+  // the admin route tree (Arman's 2026-07-23 directive — stop forcing people to
+  // super_admin just to reach admin surfaces). Pages that genuinely need a
+  // higher bar self-gate with `selectAdminLevel` / the super-admin RPC family;
+  // protected resources (admins table, etc.) are DB-gated regardless. The real
+  // authorization always lives at the data layer, never this redirect.
+  const isAdmin = await checkIsUserAdmin(supabase, user.id);
+  if (!isAdmin) {
     return redirect("/dashboard");
   }
 
