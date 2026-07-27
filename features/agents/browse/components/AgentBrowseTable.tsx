@@ -128,6 +128,10 @@ export function AgentBrowseTable({
     const facetValues = spec.facet ? facets.byKind[spec.facet] : undefined;
     return {
       ...spec.column,
+      cell:
+        spec.id === "favorite"
+          ? (row: AgentBrowseRow) => favoriteCell(row)
+          : spec.column.cell,
       // Every column sorts — the RPC's ORDER BY whitelist covers all of them.
       sortable: true,
       // Finite value sets get real options WITH counts, so the user picks from
@@ -149,43 +153,32 @@ export function AgentBrowseTable({
     };
   });
 
-  // Favorite gets its own leading cell (not a decoration inside Name), so the
-  // star can be clicked without opening the row AND Name still sorts purely
-  // alphabetically.
-  const favoriteColumn: MatrxColumnDef<AgentBrowseRow> = {
-    id: "favorite_toggle",
-    header: "",
-    sortable: false,
-    filter: false,
-    width: 36,
-    align: "center",
-    cell: (row) => (
-      <button
-        type="button"
-        aria-label={
-          row.is_favorite ? "Remove from favorites" : "Add to favorites"
-        }
-        disabled={!row.is_owner}
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite(row);
-        }}
-        className="rounded p-0.5 text-muted-foreground hover:text-amber-500 disabled:opacity-30"
-      >
-        <Star
-          className={cn(
-            "h-3.5 w-3.5",
-            row.is_favorite && "fill-amber-400 text-amber-500",
-          )}
-        />
-      </button>
-    ),
-  };
+  // ONE star: clickable, sortable, filterable. A separate read-only "Fav"
+  // column beside an interactive star would show the same bit twice.
+  const favoriteCell = (row: AgentBrowseRow) => (
+    <button
+      type="button"
+      aria-label={row.is_favorite ? "Remove from favorites" : "Add to favorites"}
+      disabled={!row.is_owner}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggleFavorite(row);
+      }}
+      className="rounded p-0.5 text-muted-foreground/40 hover:text-amber-500 disabled:hover:text-muted-foreground/40"
+    >
+      <Star
+        className={cn(
+          "h-3.5 w-3.5",
+          row.is_favorite && "fill-amber-400 text-amber-500",
+        )}
+      />
+    </button>
+  );
 
   return (
     <MatrxDataTable<AgentBrowseRow>
       data={rows}
-      columns={[favoriteColumn, ...columns]}
+      columns={columns}
       getRowId={(row) => row.id}
       isLoading={isLoading}
       isFetching={isFetching}

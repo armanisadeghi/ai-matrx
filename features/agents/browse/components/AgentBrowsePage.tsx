@@ -56,7 +56,7 @@ const SURFACE_KEY = "agents-browse";
 // Bump `version` whenever BROWSE_COLUMNS gains or loses a column, so existing
 // users get the new default column set instead of silently keeping every new
 // column switched on.
-const SURFACE_DEFAULTS = { version: 3, hiddenColumns: DEFAULT_HIDDEN_COLUMNS };
+const SURFACE_DEFAULTS = { version: 4, hiddenColumns: DEFAULT_HIDDEN_COLUMNS };
 
 export function AgentBrowsePage() {
   const router = useRouter();

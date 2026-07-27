@@ -80,6 +80,23 @@ function timeCell(iso: string | null) {
 
 export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
   {
+    id: "favorite",
+    label: "Favorite",
+    facet: "favorite",
+    locked: true,
+    column: {
+      id: "favorite",
+      accessorKey: "is_favorite",
+      header: "",
+      filter: "boolean",
+      width: 40,
+      align: "center",
+      // The interactive star is injected by AgentBrowseTable, which owns the
+      // toggle handler. Declared here so it sorts and filters like any other
+      // column — clickable and sortable are not competing requirements.
+    },
+  },
+  {
     id: "name",
     label: "Name",
     locked: true,
@@ -180,26 +197,6 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     },
   },
   {
-    id: "favorite",
-    label: "Favorite",
-    facet: "favorite",
-    defaultHidden: true,
-    column: {
-      id: "favorite",
-      accessorKey: "is_favorite",
-      header: "Fav",
-      filter: "boolean",
-      width: 64,
-      align: "center",
-      cell: (row) =>
-        row.is_favorite ? (
-          <Star className="mx-auto h-3.5 w-3.5 fill-amber-400 text-amber-500" />
-        ) : (
-          <Muted>—</Muted>
-        ),
-    },
-  },
-  {
     id: "organization_name",
     label: "Organization",
     scopedToShared: true,
@@ -290,7 +287,6 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
   {
     id: "version",
     label: "Version",
-    defaultHidden: true,
     facet: "version",
     column: {
       id: "version",
