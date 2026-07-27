@@ -9,7 +9,7 @@ describe("shouldInheritActiveScope", () => {
     expect(shouldInheritActiveScope("personal", true)).toBe(true);
   });
 
-  it.each(["public", "shared"] as const)(
+  it.each(["public", "link", "internal"] as const)(
     "inherits the active app scope for %s uploads by default",
     (visibility) => {
       expect(shouldInheritActiveScope(visibility)).toBe(true);

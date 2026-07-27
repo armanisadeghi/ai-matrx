@@ -25,7 +25,25 @@ import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
 // 1. Enums (backend contract — copied verbatim from cld_files_frontend.md §7)
 // ---------------------------------------------------------------------------
 
-export type Visibility = "public" | "personal" | "shared";
+/**
+ * THE canonical `platform.visibility` enum, in enum order:
+ * `personal < internal < link < public`. Identical on the server
+ * (`matrx_utils.visibility.VisibilityLiteral`) and in the DB. One vocabulary,
+ * no per-domain dialect.
+ *
+ * Two bugs are fossilized here; do not reintroduce either.
+ *
+ * 1. `internal` was folded into `personal` on read until 2026-07-26, so a file
+ *    readable by an entire organization was labelled "Only you" everywhere.
+ *    Never collapse a level to shrink this union — they are different facts.
+ *
+ * 2. This domain used to call `link` "shared". That is NOT a synonym: `shared`
+ *    was RETIRED from the DB enum on 2026-07-21, and the server's legacy map
+ *    reconciles it to `personal`. So the old code read `link` as `"shared"`
+ *    and, on any write-back, silently DOWNGRADED the file to `personal`.
+ *    Never send `shared` or `private` to the server.
+ */
+export type Visibility = "personal" | "internal" | "link" | "public";
 export type PermissionLevel = "read" | "write" | "admin";
 export type ResourceType = "file" | "folder";
 /**
@@ -505,8 +523,11 @@ export type DetailsLevel = "compact" | "extended";
 export type ModifiedFilter = "any" | "today" | "week" | "month";
 /** Size preset filter — buckets familiar to users. */
 export type SizeFilter = "any" | "small" | "medium" | "large" | "huge";
-/** Access (visibility) filter. */
-export type AccessFilter = "any" | "personal" | "shared" | "public";
+/**
+ * Access (visibility) filter. One option per `Visibility` level plus "any" —
+ * a level with no option is a level whose rows can never be filtered to.
+ */
+export type AccessFilter = "any" | Visibility;
 /**
  * Type filter — multi-select set of file categories (CODE, DOCUMENT, IMAGE,
  * VIDEO, …). Empty array = "any type". Modeled as `string[]` (not the

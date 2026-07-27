@@ -35,7 +35,13 @@
 export type MediaKind = "image" | "video" | "audio" | "document" | "youtube";
 export type MediaOrigin = "matrx" | "external";
 export type MediaStatus = "complete" | "streaming" | "error";
-export type MediaVisibility = "public" | "personal" | "shared";
+/**
+ * THE canonical `platform.visibility` enum — identical to
+ * `features/files/types.ts#Visibility`, the DB, and the server. This used to
+ * be its own dialect (`public | personal | shared`), which is how `internal`
+ * and `link` rows got mis-bucketed on the way to URL resolution.
+ */
+export type MediaVisibility = "personal" | "internal" | "link" | "public";
 
 // ─── Cross-cutting base (every block carries these) ─────────────────────────
 
@@ -92,9 +98,9 @@ interface MatrxOriginFields {
   fileId: string;
   /**
    * cld_files.visibility — drives URL resolution:
-   *   "public"  — prefer cdnUrl; permanent URL, never re-minted
-   *   "private" — must use signedUrl; re-minted lazily on next access when expired
-   *   "shared"  — same minting rules as private
+   *   "public"   — prefer cdnUrl; permanent URL, never re-minted
+   *   everything else ("personal" / "internal" / "link") — must use
+   *   signedUrl; re-minted lazily on next access when expired
    */
   visibility: MediaVisibility;
 

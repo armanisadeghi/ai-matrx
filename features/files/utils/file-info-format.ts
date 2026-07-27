@@ -25,10 +25,14 @@ function visibilityLabel(visibility: CloudFile["visibility"]): string {
   switch (visibility) {
     case "public":
       return "Public — anyone with a link";
-    case "shared":
-      return "Shared — specific grantees + share links";
+    case "link":
+      return "Anyone with the link";
+    case "internal":
+      return "Organization — readable by everyone in the owning org";
     default:
-      return "Private — only you";
+      // NOT "only you": a personal file can still be reached through any
+      // container it is attached to. Only `entity_access_summary` knows.
+      return "Personal — not published or directly shared";
   }
 }
 

@@ -16,6 +16,7 @@
 
 import { useCallback, useState } from "react";
 import {
+  Building2,
   Copy,
   Edit2,
   FolderInput,
@@ -59,6 +60,7 @@ import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialo
 import { openFolderPicker } from "@/features/files/components/pickers/CloudFilesPickerHost";
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
 import { setClipboard } from "@/features/files/utils/clipboard";
+import type { Visibility } from "@/features/files/types";
 
 export interface FolderContextMenuProps {
   folderId: string;
@@ -153,7 +155,7 @@ export function FolderContextMenu({
   }, [folderId, onNewFolderInside]);
 
   const handleVisibility = useCallback(
-    async (visibility: "personal" | "shared" | "public") => {
+    async (visibility: Visibility) => {
       try {
         await actions.setVisibility(visibility);
       } catch {
@@ -291,10 +293,14 @@ export function FolderContextMenu({
                   Private
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => void handleVisibility("shared")}
+                  onClick={() => void handleVisibility("internal")}
                 >
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Organization
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void handleVisibility("link")}>
                   <Users className="mr-2 h-4 w-4" />
-                  Shared
+                  Anyone with the link
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => void handleVisibility("public")}

@@ -20,13 +20,13 @@
 
 "use client";
 
-import { Globe, Lock, Boxes, Users } from "lucide-react";
+import { Globe, Lock, Boxes, Building2, Link2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Visibility } from "@/features/files/types";
 
 export interface AccessBadgeProps {
   visibility: Visibility;
-  /** Number of distinct grantees (only meaningful when visibility === "shared"). */
+  /** Distinct direct grantees, independent of the visibility level. */
   memberCount?: number;
   /**
    * Scopes this resource is attached to, from the bulk row-scope store that
@@ -70,8 +70,25 @@ function describe(
       title: "Anyone with the link can view this.",
     };
   }
-  if (visibility === "shared") {
-    const count = Math.max(memberCount ?? 0, 1);
+  if (visibility === "internal") {
+    return {
+      Icon: Building2,
+      label: "Organization",
+      title:
+        "Readable by everyone in the owning organization. Open File info for the full picture.",
+    };
+  }
+  if (visibility === "link") {
+    return {
+      Icon: Link2,
+      label: "Link",
+      title: "Anyone holding a share link can view this.",
+    };
+  }
+  // Direct grants are a separate axis from visibility: a `personal` file can
+  // still be granted to specific people. Report them when we know of any.
+  if ((memberCount ?? 0) > 0) {
+    const count = memberCount ?? 0;
     return {
       Icon: Users,
       label: count === 1 ? "1 member" : `${count} members`,

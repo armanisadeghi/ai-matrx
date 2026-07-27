@@ -550,9 +550,9 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                 <Lock className="mr-2 h-4 w-4" /> Private
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => void handleBulkVisibility("shared")}
+                onClick={() => void handleBulkVisibility("link")}
               >
-                <Users className="mr-2 h-4 w-4" /> Shared
+                <Users className="mr-2 h-4 w-4" /> Anyone with the link
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => void handleBulkVisibility("public")}

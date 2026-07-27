@@ -852,7 +852,8 @@ interface AccessFilterPickerProps {
 const ACCESS_OPTIONS: ReadonlyArray<{ value: AccessFilter; label: string }> = [
   { value: "any", label: "Any" },
   { value: "personal", label: "Personal" },
-  { value: "shared", label: "Shared" },
+  { value: "internal", label: "Organization" },
+  { value: "link", label: "Link" },
   { value: "public", label: "Public" },
 ];
 

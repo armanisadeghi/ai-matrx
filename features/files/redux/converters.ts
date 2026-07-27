@@ -33,19 +33,21 @@ import type { ShareLink as CanonicalShareLink } from "@/utils/permissions/shareL
 // ---------------------------------------------------------------------------
 
 /**
- * Map a DB / RPC visibility value to the file domain's `Visibility` shape.
+ * Narrow a DB / RPC visibility value to `Visibility`. This is a VALIDATION,
+ * not a translation — the client speaks the same `platform.visibility`
+ * vocabulary as the DB and the server, so every canonical label passes through
+ * untouched.
  *
- * The 2026 restructure switched `files.files`/`files.folders.visibility` to the
- * canonical `platform.visibility` enum (`personal < internal < link < public`),
- * where the old free-text `'shared'` value is now `'link'`. The file domain
- * still speaks `public | private | shared`, so translate at the read boundary:
- *   - `'link'`     → `'shared'` (the new name for the old shared value)
- *   - `'public'`   → `'public'`
- *   - everything else (`'private'`, `'internal'`, unknown) → `'private'`
+ * The legacy spellings are reconciled the same way the server does it
+ * (`matrx_utils.visibility.LEGACY_VISIBILITY_MAP`): `shared` and `private`
+ * both mean `personal`. They were retired from the enum on 2026-07-21 and
+ * should no longer appear in any row; they are handled here only so an old
+ * cached payload cannot land as an unknown value.
  */
 function toVisibility(raw: string | null | undefined): Visibility {
   if (raw === "public") return "public";
-  if (raw === "link" || raw === "shared") return "shared";
+  if (raw === "link") return "link";
+  if (raw === "internal") return "internal";
   return "personal";
 }
 

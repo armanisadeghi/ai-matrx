@@ -8,7 +8,7 @@
 
 "use client";
 
-import { Globe, Lock, Users } from "lucide-react";
+import { Building2, Globe, Lock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   formatFileSize,
@@ -32,14 +32,17 @@ export interface FileMetaProps {
 
 const VISIBILITY_ICONS: Record<Visibility, typeof Lock> = {
   personal: Lock,
+  internal: Building2,
   public: Globe,
-  shared: Users,
+  link: Users,
 };
 
 const VISIBILITY_LABELS: Record<Visibility, string> = {
   personal: "Personal",
+  // Readable by everyone in the owning org — never label this like "Personal".
+  internal: "Organization",
   public: "Public",
-  shared: "Shared",
+  link: "Link",
 };
 
 export function FileMeta({

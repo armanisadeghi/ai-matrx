@@ -61,8 +61,10 @@ export function fromCldFilesRow(row: CloudFileReadRow): MatrxImageBlock {
       row.visibility === "public"
         ? "public"
         : row.visibility === "link"
-          ? "shared"
-          : "personal",
+          ? "link"
+          : row.visibility === "internal"
+            ? "internal"
+            : "personal",
     parentFileId: row.parent_file_id ?? null,
     derivationKind: row.derivation_kind ?? null,
 

@@ -380,7 +380,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
           <DropdownMenuItem onClick={() => void handleVisibility("personal")}>
             <Lock className="mr-2 h-4 w-4" /> Private
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void handleVisibility("shared")}>
+          <DropdownMenuItem onClick={() => void handleVisibility("link")}>
             <Users className="mr-2 h-4 w-4" /> Shared
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => void handleVisibility("public")}>

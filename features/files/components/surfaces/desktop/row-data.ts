@@ -22,6 +22,7 @@ import type {
   SortBy,
   SortDirection,
   TypeFilter,
+  Visibility,
 } from "@/features/files/types";
 import {
   compareNodes,
@@ -193,11 +194,8 @@ export function buildRows({
       if (!mime.startsWith("image/")) return false;
     }
     if (section === "shared") {
-      const perms = permissionsByResourceId[file.id];
-      const hasGrants = perms && perms.length > 0;
-      const isPublic = file.visibility === "public";
-      const isShared = file.visibility === "shared";
-      if (!(hasGrants || isPublic || isShared)) return false;
+      if (!isSharedResource(file.id, file.visibility, permissionsByResourceId))
+        return false;
     }
     if (!matchesQuery(file.fileName) && !idMatchesQuery(file, q)) return false;
     if (!matchesNameFilter(file.fileName)) return false;
@@ -257,11 +255,10 @@ export function buildRows({
       return false;
     if (section === "photos") return false; // photos view never shows folders
     if (section === "shared") {
-      const perms = permissionsByResourceId[folder.id];
-      const hasGrants = perms && perms.length > 0;
-      const isPublic = folder.visibility === "public";
-      const isShared = folder.visibility === "shared";
-      if (!(hasGrants || isPublic || isShared)) return false;
+      if (
+        !isSharedResource(folder.id, folder.visibility, permissionsByResourceId)
+      )
+        return false;
     }
     if (!matchesQuery(folder.folderName) && !idMatchesQuery(folder, q))
       return false;
@@ -390,12 +387,24 @@ export function memberCountForResource(
   return unique.size;
 }
 
+/**
+ * "Reaches somebody other than the owner." `internal` counts: it means the
+ * whole owning organization can read the row, which is emphatically not
+ * private. Treating it as unshared is what produced "Only you" labels on
+ * org-readable files.
+ */
 export function isSharedResource(
   resourceId: string,
-  visibility: "public" | "personal" | "shared",
+  visibility: Visibility,
   permissionsByResourceId: Record<string, CloudFilePermission[]>,
 ): boolean {
-  if (visibility === "shared" || visibility === "public") return true;
+  if (
+    visibility === "link" ||
+    visibility === "public" ||
+    visibility === "internal"
+  ) {
+    return true;
+  }
   const perms = permissionsByResourceId[resourceId];
   return !!perms && perms.length > 0;
 }

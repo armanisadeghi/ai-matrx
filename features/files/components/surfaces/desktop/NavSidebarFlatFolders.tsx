@@ -75,7 +75,7 @@ export function NavSidebarFlatFolders() {
         const isOpen = expanded[folder.id] === true;
         const isActive = activeFolderId === folder.id;
         const isShared =
-          folder.visibility === "shared" || folder.visibility === "public";
+          folder.visibility === "link" || folder.visibility === "public";
         return (
           <li key={folder.id}>
             <DroppableSidebarFolder
@@ -201,7 +201,7 @@ function NestedFolderList({
         if (!folder) return null;
         const isActive = activeFolderId === folder.id;
         const isShared =
-          folder.visibility === "shared" || folder.visibility === "public";
+          folder.visibility === "link" || folder.visibility === "public";
         return (
           <li key={folder.id}>
             <DroppableNestedFolder

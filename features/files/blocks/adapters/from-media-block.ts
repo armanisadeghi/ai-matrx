@@ -147,13 +147,14 @@ type WireVisibility =
   | "private";
 
 function pickVisibility(v?: WireVisibility | null): MediaVisibility {
-  // `link` is the enum value that carries the old "shared" meaning.
   if (v === "public") return "public";
-  if (v === "link" || v === "shared") return "shared";
-  // Default unknown/null/`internal`/`private` to `personal` — matches the
-  // `dbRowToCloudFile` and `from-cld-files-row.ts` defaults so a matrx
-  // block arriving with a missing visibility doesn't get accidentally
-  // promoted to public.
+  if (v === "link") return "link";
+  if (v === "internal") return "internal";
+  // The retired spellings both reconcile to `personal`, exactly as the server
+  // does (matrx_utils.visibility.LEGACY_VISIBILITY_MAP). Unknown/null also
+  // lands here so a block with a missing visibility is never promoted to
+  // public — that would suppress signed-URL refresh and the media would die
+  // at expiry.
   return "personal";
 }
 

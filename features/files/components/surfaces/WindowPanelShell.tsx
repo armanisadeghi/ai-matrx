@@ -485,7 +485,7 @@ function SharedTab() {
   return (
     <FlatFilesTab
       emptyMessage="Nothing has been shared with you yet."
-      filter={(f) => !f.deletedAt && f.visibility === "shared"}
+      filter={(f) => !f.deletedAt && f.visibility === "link"}
     />
   );
 }

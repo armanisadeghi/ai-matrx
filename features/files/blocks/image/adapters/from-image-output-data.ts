@@ -29,6 +29,7 @@ import type {
   MatrxImageBlock,
   ExternalImageBlock,
 } from "../types";
+import type { MediaVisibility } from "@/features/files/blocks/types";
 import { extractFileIdFromUrl } from "../helpers/extract-file-id-from-url";
 import { parseFilenameFromUrl } from "../helpers/parse-filename-from-url";
 import { parseSignedUrlExpiry } from "../helpers/parse-signed-url-expiry";
@@ -57,9 +58,14 @@ function metaNumber(
 
 function metaVisibility(
   metadata: Record<string, unknown> | null | undefined,
-): "public" | "personal" | "shared" {
+): MediaVisibility {
   const value = metaString(metadata, "visibility");
-  if (value === "public" || value === "personal" || value === "shared")
+  if (
+    value === "public" ||
+    value === "personal" ||
+    value === "internal" ||
+    value === "link"
+  )
     return value;
   // `metadata` is an untyped passthrough of the cld_files row, so it carries
   // RAW `platform.visibility` labels (personal < internal < link < public), not
@@ -68,8 +74,7 @@ function metaVisibility(
   // (the column DEFAULT and the most common value in files.files) fell through
   // to the `public` default below, which tells the UI the image has a permanent
   // CDN URL and suppresses signed-URL refresh: the image dies at expiry.
-  if (value === "link") return "shared";
-  if (value === "internal" || value === "private") return "personal";
+  if (value === "shared" || value === "private") return "personal";
   // Default assumption: AI-generated images are stored with `visibility: "public"`
   // in cld_files (see the example row in UNIFIED_IMAGE_BLOCK.md). When Python
   // doesn't tell us AT ALL, public is the safer fallback because it never tries

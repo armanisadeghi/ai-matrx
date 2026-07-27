@@ -131,7 +131,8 @@ const SIZE_VALUES = new Set<SizeFilter>([
 const ACCESS_VALUES = new Set<AccessFilter>([
   "any",
   "personal",
-  "shared",
+  "internal",
+  "link",
   "public",
 ]);
 const RAG_VALUES = new Set<RagStatus>([

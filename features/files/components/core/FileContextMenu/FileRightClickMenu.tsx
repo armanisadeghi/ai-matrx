@@ -148,7 +148,7 @@ export function FileRightClickMenu({
               id: "vis-shared",
               label: "Shared",
               icon: Users,
-              onSelect: () => void a.setVisibility("shared"),
+              onSelect: () => void a.setVisibility("link"),
             },
             {
               kind: "item",

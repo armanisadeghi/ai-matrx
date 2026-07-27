@@ -174,7 +174,7 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
           title="Visibility"
           description="Who can find this file by default. Share links and explicit grantees below still work regardless of this setting."
         >
-          <div className="grid grid-cols-3 gap-2 p-3">
+          <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-4">
             <VisibilityOption
               icon={<Lock className="h-3.5 w-3.5" />}
               label="Private"
@@ -185,13 +185,22 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
               onClick={() => void handleSetVisibility("personal")}
             />
             <VisibilityOption
-              icon={<Users className="h-3.5 w-3.5" />}
-              label="Shared"
-              description="Specific people + share links"
-              active={file.visibility === "shared"}
-              busy={busyVisibility === "shared"}
+              icon={<Building2 className="h-3.5 w-3.5" />}
+              label="Organization"
+              description="Everyone in the owning org"
+              active={file.visibility === "internal"}
+              busy={busyVisibility === "internal"}
               disabled={!isOwner || busyVisibility !== null}
-              onClick={() => void handleSetVisibility("shared")}
+              onClick={() => void handleSetVisibility("internal")}
+            />
+            <VisibilityOption
+              icon={<Link2 className="h-3.5 w-3.5" />}
+              label="Link"
+              description="Anyone holding a share link"
+              active={file.visibility === "link"}
+              busy={busyVisibility === "link"}
+              disabled={!isOwner || busyVisibility !== null}
+              onClick={() => void handleSetVisibility("link")}
             />
             <VisibilityOption
               icon={<Globe className="h-3.5 w-3.5" />}
@@ -355,18 +364,28 @@ function VisibilityChip({ visibility }: { visibility: Visibility }) {
       </span>
     );
   }
-  if (visibility === "shared") {
+  if (visibility === "link") {
     return (
       <span className="inline-flex items-center gap-1.5 rounded bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
         <Users className="h-3 w-3" />
-        Shared — specific grantees + links
+        Anyone with the link
+      </span>
+    );
+  }
+  if (visibility === "internal") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-400">
+        <Building2 className="h-3 w-3" />
+        Organization — everyone in the owning org
       </span>
     );
   }
   return (
+    // NOT "only you" — containers can still convey access. The Info tab's
+    // access summary is the authority on who can actually reach this.
     <span className="inline-flex items-center gap-1.5 rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/80">
       <Lock className="h-3 w-3" />
-      Private — only you
+      Personal — not published or directly shared
     </span>
   );
 }
