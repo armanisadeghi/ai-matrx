@@ -60,11 +60,22 @@ narrow**, never one chip per org/industry — a user belongs to a personal org +
 companies and may attach several industries, so a chip-per-entity tab bar has
 unbounded width and offers no blended view.
 
+**Narrowing options come from the COUNTS QUERY, never from a Redux slice.**
+`agx_list_scope_counts` returns `(scope, narrow_id, label, total)` — names and
+counts together. This is load-bearing, not tidiness: the tabs originally read
+org names from the organizations slice, which is hydrated by
+`fetchFullContext` — a thunk that only runs on tasks / org-settings surfaces.
+On `/agents/all` that slice was empty, so the My Orgs dropdown silently never
+rendered for anyone. A tab bar must be self-sufficient from its own query.
+
 > `components/official/ListScopeSwitcher.tsx` still implements the older
-> chip-per-org shape and knows nothing about Industry or Public. The worked
-> implementation of this model is `features/agents/browse/components/BrowseScopeTabs.tsx`
-> (live at `/agents/all`). ListScopeSwitcher should absorb that shape rather
-> than the two diverging further.
+> chip-per-org shape, knows nothing about Industry or Public, **and still reads
+> org names from `selectAllOrgs` — so it carries the same latent
+> empty-dropdown bug on any route that has not hydrated that slice.** The
+> worked implementation of this model is
+> `features/agents/browse/components/BrowseScopeTabs.tsx` (live at
+> `/agents/all`). ListScopeSwitcher should absorb that shape rather than the
+> two diverging further.
 
 ## The primitive
 
@@ -125,6 +136,11 @@ Invariants the template carries, all of them learned the hard way:
 
 ## Change log
 
+- 2026-07-27 — `ListScope` migrated to the five-scope union (`org` → `orgs`
+  with a nullable id; adds `industry`, `public`), plus `scopeKey` / `makeScope`
+  / `scopeOrgId` / `scopeIndustryId` helpers. `applyListScope` now throws with
+  a specific reason for every scope a single `.eq()` cannot express. Scope
+  counts carry labels.
 - 2026-07-26 — Scope vocabulary ratified as a fixed FIVE (adds Industry and
   Public). Industry documented as opt-in subscription (`iam.org_industries`)
   over curator-published content attached by grant row. Scoped-list RPC

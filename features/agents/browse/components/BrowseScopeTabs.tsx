@@ -15,10 +15,14 @@
 // user belongs to a personal org + N companies and may attach several
 // industries. A chip-per-entity tab bar has unbounded width and offers no
 // blended view, so it answers "which team?" before "what does my team have?".
+//
+// The narrowing options (names AND counts) come from the counts query, never
+// from a Redux slice. Reading org names from the organizations slice meant
+// depending on `fetchFullContext`, which only runs on tasks/org-settings
+// surfaces — so on /agents/all the slice was empty and this dropdown silently
+// never rendered at all.
 
 import { User, Building2, Users2, Globe, Factory, ChevronDown, Check } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,12 +77,6 @@ const SCOPE_META: Record<
   public: { label: "Public", icon: Globe, title: "Published platform-wide" },
 };
 
-/** Scopes that narrow via a dropdown rather than being a single destination. */
-const NARROWABLE: Partial<Record<ListScopeKind, "byOrg" | "byIndustry">> = {
-  orgs: "byOrg",
-  industry: "byIndustry",
-};
-
 function CountPill({ n, active }: { n: number; active: boolean }) {
   return (
     <span
@@ -93,16 +91,6 @@ function CountPill({ n, active }: { n: number; active: boolean }) {
 }
 
 export function BrowseScopeTabs({ scope, scopes, counts, onChange }: Props) {
-  const orgs = useAppSelector(selectAllOrgs);
-  // Personal org is excluded on purpose: its contents ARE "Mine". Surfacing it
-  // again under My Orgs would double-count the same rows in two tabs.
-  const teamOrgs = orgs.filter((o) => !o.is_personal);
-
-  const narrowOptions = (kind: ListScopeKind) =>
-    kind === "orgs"
-      ? teamOrgs.map((o) => ({ id: o.id, name: o.name }))
-      : /* industry options arrive when a feature wires the scope */ [];
-
   return (
     <div
       className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1"
@@ -112,8 +100,9 @@ export function BrowseScopeTabs({ scope, scopes, counts, onChange }: Props) {
       {scopes.map((kind) => {
         const meta = SCOPE_META[kind];
         const Icon = meta.icon;
-        const narrowKey = NARROWABLE[kind];
-        const options = narrowKey ? narrowOptions(kind) : [];
+        // The server decides what a scope narrows to; personal orgs are
+        // already excluded there (their content IS "Mine").
+        const options = counts.narrow[kind] ?? [];
         const active = scope.kind === kind;
 
         // The id this tab is currently narrowed to, if any. Read through the
@@ -125,13 +114,11 @@ export function BrowseScopeTabs({ scope, scopes, counts, onChange }: Props) {
             : kind === "industry"
               ? scopeIndustryId(scope)
               : null;
-        const narrowedName = narrowedId
-          ? options.find((o) => o.id === narrowedId)?.name
+        const narrowed = narrowedId
+          ? options.find((o) => o.id === narrowedId)
           : undefined;
 
-        const count = narrowedId
-          ? (counts[narrowKey!]?.[narrowedId] ?? 0)
-          : (counts.byKind[kind] ?? 0);
+        const count = narrowed?.count ?? counts.byKind[kind] ?? 0;
 
         const tab = (
           <button
@@ -147,7 +134,7 @@ export function BrowseScopeTabs({ scope, scopes, counts, onChange }: Props) {
             onClick={() => onChange(makeScope(kind))}
           >
             <Icon className="h-3.5 w-3.5" />
-            {narrowedName ?? meta.label}
+            {narrowed?.label ?? meta.label}
             <CountPill n={count} active={active} />
           </button>
         );
@@ -208,10 +195,10 @@ export function BrowseScopeTabs({ scope, scopes, counts, onChange }: Props) {
                       ) : (
                         <span className="w-3.5 shrink-0" />
                       )}
-                      <span className="truncate">{opt.name}</span>
+                      <span className="truncate">{opt.label}</span>
                     </span>
                     <span className="text-xs tabular-nums text-muted-foreground">
-                      {counts[narrowKey!]?.[opt.id] ?? 0}
+                      {opt.count}
                     </span>
                   </DropdownMenuItem>
                 ))}
