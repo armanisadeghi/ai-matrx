@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useTranscriptsContext } from "../context/TranscriptsContext";
+import { useTranscripts } from "../hooks/useTranscripts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -43,7 +43,7 @@ export function TranscriptsSidebar({
     updateTranscript,
     scope,
     setScope,
-  } = useTranscriptsContext();
+  } = useTranscripts();
   const toast = useToastManager("transcripts");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);

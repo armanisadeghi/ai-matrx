@@ -12,7 +12,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AlertTriangle, Loader2 } from 'lucide-react';
-import { useTranscriptsContext } from '../context/TranscriptsContext';
+import { useTranscripts } from "../hooks/useTranscripts";
 import { useToastManager } from '@/hooks/useToastManager';
 import type { Transcript } from '../types';
 
@@ -27,7 +27,7 @@ export function DeleteTranscriptDialog({
     onClose,
     transcript,
 }: DeleteTranscriptDialogProps) {
-    const { deleteTranscript } = useTranscriptsContext();
+    const { deleteTranscript } = useTranscripts();
     const toast = useToastManager('transcripts');
     const [isDeleting, setIsDeleting] = useState(false);
 

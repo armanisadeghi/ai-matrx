@@ -6,7 +6,7 @@
  * live outside React state — the caller wants the moment-of-click value, not
  * a stale snapshot from the last render.
  *
- * Reads the active transcript from `TranscriptsContext`; live playback state
+ * Reads the active transcript from the transcripts slice; live playback state
  * (`isPlaying`, `playbackSpeed`, current time) is read directly off the
  * `<audio>` element at call time. The actual scope shape is produced by the
  * pure `buildTranscriptsContextData` so this hook and any demo share one shape.
@@ -15,7 +15,7 @@
 import { useCallback } from "react";
 import type { RefObject } from "react";
 
-import { useTranscriptsContext } from "@/features/transcripts/context/TranscriptsContext";
+import { useTranscripts } from "@/features/transcripts/hooks/useTranscripts";
 import { buildTranscriptsContextData } from "@/features/transcripts/agent-context/buildTranscriptsContextData";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
@@ -71,7 +71,7 @@ export function useTranscriptsSurfaceScope(
     isEditingContent = false,
     contentContainerRef,
   } = params;
-  const { activeTranscript } = useTranscriptsContext();
+  const { activeTranscript } = useTranscripts();
 
   return useCallback(() => {
     const audio = audioRef.current;

@@ -28,7 +28,7 @@ import {
   Mic,
 } from "lucide-react";
 import { useAudioTranscription } from "@/features/audio/hooks/useAudioTranscription";
-import { useTranscriptsContext } from "../context/TranscriptsContext";
+import { useTranscripts } from "../hooks/useTranscripts";
 import { useToastManager } from "@/hooks/useToastManager";
 import {
   FileUploadWithStorage,
@@ -68,7 +68,7 @@ export function CreateTranscriptModal({
   isOpen,
   onClose,
 }: CreateTranscriptModalProps) {
-  const { createTranscript, refreshTranscripts } = useTranscriptsContext();
+  const { createTranscript, refreshTranscripts } = useTranscripts();
   const {
     transcribe,
     isTranscribing,

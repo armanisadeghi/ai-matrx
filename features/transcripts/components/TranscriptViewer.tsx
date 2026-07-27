@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useTranscriptsContext } from "../context/TranscriptsContext";
+import { useTranscripts } from "../hooks/useTranscripts";
 import AdvancedTranscriptViewer, {
   TranscriptSegment,
 } from "@/components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer";
@@ -58,7 +58,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export function TranscriptViewer() {
-  const { activeTranscript, updateTranscript } = useTranscriptsContext();
+  const { activeTranscript, updateTranscript } = useTranscripts();
   const toast = useToastManager("transcripts");
 
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);

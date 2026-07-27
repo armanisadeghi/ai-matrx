@@ -8,7 +8,7 @@ import { CreateTranscriptModal } from "./CreateTranscriptModal";
 import { DeleteTranscriptDialog } from "./DeleteTranscriptDialog";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { TranscriptsProcessorHeader } from "./TranscriptsProcessorHeader";
-import { useTranscriptsContext } from "../context/TranscriptsContext";
+import { useTranscripts } from "../hooks/useTranscripts";
 import { useToastManager } from "@/hooks/useToastManager";
 import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -30,7 +30,7 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
     initialize,
     copyTranscript,
     refreshTranscripts,
-  } = useTranscriptsContext();
+  } = useTranscripts();
   const toast = useToastManager("transcripts");
 
   useEffect(() => {

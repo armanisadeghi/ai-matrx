@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, FileText } from 'lucide-react';
-import { useTranscriptsContext } from '../context/TranscriptsContext';
+import { useTranscripts } from "../hooks/useTranscripts";
 import type { TranscriptSegment } from '../types';
 import { useToastManager } from '@/hooks/useToastManager';
 
@@ -24,7 +24,7 @@ export function ImportTranscriptModal({
     onClose,
     segments,
 }: ImportTranscriptModalProps) {
-    const { createTranscript } = useTranscriptsContext();
+    const { createTranscript } = useTranscripts();
     const toast = useToastManager('transcripts');
     
     const [title, setTitle] = useState('');

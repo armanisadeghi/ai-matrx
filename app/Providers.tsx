@@ -35,8 +35,6 @@ import { SelectedImagesProvider } from "@/components/image/context/SelectedImage
 import { UniformHeightProvider } from "@/features/applet/runner/layouts/core/UniformHeightWrapper";
 import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 // disaster
-import { TranscriptsProvider } from "@/features/transcripts/context/TranscriptsContext";
-// disaster
 import { AudioRecoveryProvider } from "@/features/audio/providers/AudioRecoveryProvider";
 // TEMP (Step 2 of audio consolidation): the recording engine is mounted
 // statically here for functional parity while the AudioSystemHost lands in
@@ -134,7 +132,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                   <ModuleHeaderProvider>
                     <UniformHeightProvider>
                       <SelectedImagesProvider>
-                        <TranscriptsProvider>
                           <AudioRecoveryProvider>
                             <RequestRecoveryProvider>
                               {/* App-root audio DEVICE manager (mic/speaker
@@ -238,7 +235,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                               </React.Fragment>
                             </RequestRecoveryProvider>
                           </AudioRecoveryProvider>
-                        </TranscriptsProvider>
                       </SelectedImagesProvider>
                     </UniformHeightProvider>
                   </ModuleHeaderProvider>

@@ -58,6 +58,7 @@ import warRoomWatchReducer from "@/features/war-room/redux/watchSlice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
 import audioPlaybackReducer from "@/lib/redux/slices/audioPlaybackSlice";
 import audioSessionsReducer from "@/lib/redux/slices/audioSessionsSlice";
+import transcriptsReducer from "@/features/transcripts/redux/transcriptsSlice";
 import kgSuggestionsReducer from "@/lib/redux/slices/kgSuggestionsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
 import codeWorkspaceReducer from "@/features/code/redux/codeWorkspaceSlice";
@@ -227,6 +228,7 @@ export const slimReducerMap = {
   recordings: recordingsReducer,
   audioPlayback: audioPlaybackReducer,
   audioSessions: audioSessionsReducer,
+  transcripts: transcriptsReducer,
   codeFiles: codeFilesReducer,
 
   // New VSCode-style workspace (features/code) ----------------------------
