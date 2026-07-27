@@ -504,11 +504,10 @@ export interface DesiredImagePlanEntry {
 }
 
 export interface PageDesiredValues {
+  /** ONE key per card — a card's slice save can never touch a sibling's. */
   social_card?: { og_title?: string; og_description?: string };
-  h1?: string;
-  headings_outline?: DesiredHeadingEntry[];
-  canonical_url?: string;
-  meta_robots?: string;
+  indexability?: { canonical_url?: string; meta_robots?: string };
+  headings?: { outline?: DesiredHeadingEntry[]; notes?: string };
   structured_data_notes?: string;
   image_plan?: DesiredImagePlanEntry[];
   /** Desired alt text per observed image src. */

@@ -1,26 +1,56 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import type { PageSnapshot } from "@/features/marketing/types";
+import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import { isJsonRecord } from "@/features/marketing/types";
 import {
   evaluateHeadingStructure,
   headingInputsFromRaw,
 } from "@/features/marketing/seo/audit/headings";
 import { AuditIssueList } from "@/features/marketing/seo/audit/AuditIssueList";
+import { DesiredSection } from "@/features/marketing/components/pages/desired/DesiredSection";
+import { DesiredOutlineEditor } from "@/features/marketing/components/pages/desired/DesiredOutlineEditor";
+import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";
 import { cn } from "@/lib/utils";
 
-export function HeadingsOutline({ snapshot }: { snapshot: PageSnapshot }) {
+export function HeadingsOutline({
+  page,
+  snapshot,
+}: {
+  page: MarketingPage;
+  snapshot: PageSnapshot;
+}) {
   // Evaluate the RAW headings JSON (keeps empty-text entries the display
   // parser drops) — identical to the scraper's `audit_metrics.headings`.
   const rawHeadings = isJsonRecord(snapshot.headings)
     ? headingInputsFromRaw(snapshot.headings.all)
     : [];
   const evaluation = evaluateHeadingStructure(rawHeadings);
+  const desired = useDesiredValueSlice(page, "headings");
+  const draft = desired.draft ?? {};
+  // The header-structure PLAN — the outline this page SHOULD have, planned
+  // right beside the observed reality (seedable from it).
+  const desiredSection = (
+    <DesiredSection
+      hint="The heading structure this page SHOULD have."
+      dirty={desired.dirty}
+      saving={desired.saving}
+      onSave={() => void desired.save()}
+      onReset={desired.reset}
+      className="-mx-3 -mb-3"
+    >
+      <DesiredOutlineEditor
+        value={draft.outline ?? []}
+        onChange={(outline) => desired.setDraft({ ...draft, outline })}
+        seedFrom={rawHeadings.map((h) => ({ level: h.level, text: h.text }))}
+      />
+    </DesiredSection>
+  );
   if (rawHeadings.length === 0) {
     return (
-      <div className="grid gap-2 p-4">
+      <div className="grid gap-2 p-3">
         <AuditIssueList issues={evaluation.issues} compact />
+        {desiredSection}
       </div>
     );
   }
@@ -74,6 +104,7 @@ export function HeadingsOutline({ snapshot }: { snapshot: PageSnapshot }) {
           </li>
         ))}
       </ol>
+      {desiredSection}
     </div>
   );
 }

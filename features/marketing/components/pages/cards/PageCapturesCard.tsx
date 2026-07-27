@@ -8,6 +8,7 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
+import { CaptureAttachments } from "@/features/marketing/components/pages/CaptureAttachments";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import {
   useDeleteScreenshot,
@@ -151,6 +152,11 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
                       </span>
                     </div>
                   }
+                />
+                <CaptureAttachments
+                  screenshotId={current.id}
+                  orgId={page.organization_id}
+                  className="mt-1.5"
                 />
                 {captures.length > 1 ? (
                   <ul className="mt-1.5 grid gap-1">

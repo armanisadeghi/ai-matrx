@@ -16,6 +16,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { PageContentCard } from "@/features/marketing/components/pages/PageContentCard";
 import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
+import { PageTaskButton } from "@/features/marketing/components/pages/PageTaskButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
@@ -258,6 +259,11 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             <MarketingUrlRow url={page.url} className="mt-0.5" />
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            <PageTaskButton
+              page={page}
+              ariaLabel="Create a task for this page"
+              className="h-8 w-8"
+            />
             <CopyButtons size="icon" {...pageCopy} />
             <FetchPageButton siteId={site.id} url={page.url} pageId={page.id} />
             <Button asChild variant="outline" size="sm" className="h-8">
@@ -399,7 +405,10 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             <SerpPreview page={page} snapshot={snapshot} device={serpDevice} />
           </SectionCard>
           <PageIntentCard
-            key={`${page.id}:${page.updated_at}`}
+            // Reseed ONLY when an intent-owned field changes server-side —
+            // keying on updated_at would wipe in-progress intent edits every
+            // time a sibling card saves desired values (same page row).
+            key={`${page.id}:${page.target_keyword ?? ""}:${page.meta_title_desired ?? ""}:${page.meta_description_desired ?? ""}`}
             page={page}
             brandId={brandId}
             observedTitle={head.title}
@@ -467,6 +476,12 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                     >
                       <AppWindow className="h-3.5 w-3.5" />
                     </button>
+                    <PageTaskButton
+                      page={page}
+                      ariaLabel="Create a task from the social card state"
+                      title={`Improve social card — ${page.path || page.url}`}
+                      description={`Social share tags for ${page.url}:\nTitle: ${head.og.title ?? head.twitter.title ?? "none"}\nDescription: ${head.og.description ?? head.twitter.description ?? "none"}\nImage: ${head.og.image ?? head.twitter.image ?? "none"}`}
+                    />
                   </div>
                 }
                 copy={webCopy({
@@ -506,6 +521,14 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 title={L.indexability}
                 collapsible
                 anchor="indexability"
+                headerExtra={
+                  <PageTaskButton
+                    page={page}
+                    ariaLabel="Create a task from the indexability state"
+                    title={`Fix indexability — ${page.path || page.url}`}
+                    description={`Indexability signals for ${page.url}:\nHTTP status: ${snapshot.http_status ?? "unknown"}\nMeta robots: ${head.metaRobots ?? "not set"}\nCanonical: ${head.canonicalUrl ?? "not set"}\nFinal URL: ${snapshot.final_url ?? page.url}`}
+                  />
+                }
                 copy={webCopy({
                   kind: "web-page-indexability",
                   label: L.indexability,
@@ -650,6 +673,14 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 title={L.headings_outline}
                 collapsible
                 anchor="headings_outline"
+                headerExtra={
+                  <PageTaskButton
+                    page={page}
+                    ariaLabel="Create a task from the heading structure"
+                    title={`Improve heading structure — ${page.path || page.url}`}
+                    description={`Observed headings on ${page.url} (${headings.all.length} total, ${headings.h1Count} H1):\n${headings.all.map((h) => `h${h.level}: ${h.text}`).join("\n")}`}
+                  />
+                }
                 copy={webCopy({
                   kind: "web-page-headings",
                   label: "Headings outline",
@@ -668,7 +699,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                   attributes: { page_id: page.id, count: headings.all.length },
                 })}
               >
-                <HeadingsOutline snapshot={snapshot} />
+                <HeadingsOutline page={page} snapshot={snapshot} />
               </SectionCard>
               <SectionCard
                 title={L.content_stats}
