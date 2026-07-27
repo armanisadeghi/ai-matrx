@@ -1,11 +1,8 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-
-const SandboxStoragePage = lazy(
-  () => import("@/features/settings/pages/SandboxStorageSettingsPage"),
-);
+import SandboxStoragePage from "@/features/settings/pages/SandboxStorageSettingsPage";
 
 export default function SandboxStorageTab() {
   return (

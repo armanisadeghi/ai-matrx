@@ -4,13 +4,10 @@
 // profile page. Renders the same UserProfilePage as the parent Profile
 // tab but scrolls to the Identity section on mount.
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { PROFILE_SECTION_IDS } from "@/features/user-profile/types";
-
-const UserProfilePage = lazy(
-  () => import("@/features/user-profile/components/UserProfilePage"),
-);
+import UserProfilePage from "@/features/user-profile/components/UserProfilePage";
 
 export default function ProfileIdentityTab() {
   return (

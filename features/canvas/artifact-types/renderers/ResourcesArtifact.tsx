@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo } from "react";
+import React, { Suspense,  useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseResourcesMarkdown } from "@/components/mardown-display/blocks/resources/parseResourcesMarkdown";
 import {
@@ -8,11 +8,7 @@ import {
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
-
-const ResourceCollectionBlock = lazy(
-  () =>
-    import("@/components/mardown-display/blocks/resources/ResourceCollectionBlock"),
-);
+import ResourceCollectionBlock from "@/components/mardown-display/blocks/resources/ResourceCollectionBlock";
 
 /**
  * Unified renderer for `resources` artifacts — the ONE renderer used by chat,

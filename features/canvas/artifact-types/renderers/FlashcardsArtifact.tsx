@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import {
@@ -8,17 +8,8 @@ import {
   artifactDedupKey,
 } from "../artifact-renderers";
 import { isMaterializedArtifactId } from "../artifactId";
-
-const FlashcardsBlock = lazy(
-  () =>
-    import("@/components/mardown-display/blocks/flashcards/FlashcardsBlock"),
-);
-
-const CanvasFlashcardsView = lazy(() =>
-  import("@/features/flashcards/components/CanvasFlashcardsView").then((m) => ({
-    default: m.CanvasFlashcardsView,
-  })),
-);
+import FlashcardsBlock from "@/components/mardown-display/blocks/flashcards/FlashcardsBlock";
+import { CanvasFlashcardsView as CanvasFlashcardsView } from "@/features/flashcards/components/CanvasFlashcardsView";
 
 export default function FlashcardsArtifact({
   raw,

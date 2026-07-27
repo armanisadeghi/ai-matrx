@@ -1,14 +1,11 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo } from "react";
+import React, { Suspense,  useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { type ArtifactRendererProps } from "../artifact-renderers";
 import { isMaterializedArtifactId } from "../artifactId";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
-
-const StructuredPlanBlock = lazy(
-  () => import("@/components/mardown-display/blocks/plan/StructuredPlanBlock"),
-);
+import StructuredPlanBlock from "@/components/mardown-display/blocks/plan/StructuredPlanBlock";
 
 /**
  * Unified renderer for `structured_info` artifacts (transcription + tasks

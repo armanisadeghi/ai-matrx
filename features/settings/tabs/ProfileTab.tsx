@@ -1,14 +1,11 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import UserProfilePage from "@/features/user-profile/components/UserProfilePage";
 
 // Lazy-load the actual form so the rest of the settings shell isn't
 // blocked by the avatar uploader's heavy dependency graph.
-const UserProfilePage = lazy(
-  () => import("@/features/user-profile/components/UserProfilePage"),
-);
-
 export default function ProfileTab() {
   return (
     <Suspense

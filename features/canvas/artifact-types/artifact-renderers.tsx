@@ -16,8 +16,38 @@
  * checks before delegating.
  */
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import ComparisonArtifact from "./renderers/ComparisonArtifact";
+import FlashcardsArtifact from "./renderers/FlashcardsArtifact";
+import TimelineArtifact from "./renderers/TimelineArtifact";
+import ResearchArtifact from "./renderers/ResearchArtifact";
+import ResourcesArtifact from "./renderers/ResourcesArtifact";
+import ProgressArtifact from "./renderers/ProgressArtifact";
+import TroubleshootingArtifact from "./renderers/TroubleshootingArtifact";
+import RecipeArtifact from "./renderers/RecipeArtifact";
+import DiagramArtifact from "./renderers/DiagramArtifact";
+import DecisionTreeArtifact from "./renderers/DecisionTreeArtifact";
+import PresentationArtifact from "./renderers/PresentationArtifact";
+import MathProblemArtifact from "./renderers/MathProblemArtifact";
+import QuizArtifact from "./renderers/QuizArtifact";
+import MermaidArtifact from "./renderers/MermaidArtifact";
+import SvgArtifact from "./renderers/SvgArtifact";
+import ChartArtifact from "./renderers/ChartArtifact";
+import MapArtifact from "./renderers/MapArtifact";
+import StatsArtifact from "./renderers/StatsArtifact";
+import DiffArtifact from "./renderers/DiffArtifact";
+import QuestionnaireArtifact from "./renderers/QuestionnaireArtifact";
+import TasksArtifact from "./renderers/TasksArtifact";
+import HtmlArtifact from "./renderers/HtmlArtifact";
+import ReactArtifact from "./renderers/ReactArtifact";
+import TableArtifact from "./renderers/TableArtifact";
+import TranscriptArtifact from "./renderers/TranscriptArtifact";
+import StructuredInfoArtifact from "./renderers/StructuredInfoArtifact";
+import TreeArtifact from "./renderers/TreeArtifact";
+import IframeArtifact from "./renderers/IframeArtifact";
+import CodeArtifact from "./renderers/CodeArtifact";
+import ImageArtifact from "./renderers/ImageArtifact";
 import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
 
 export interface ArtifactRendererProps {
@@ -62,38 +92,38 @@ type ArtifactRendererComponent = React.ComponentType<ArtifactRendererProps>;
  */
 const RENDERERS: Record<
   string,
-  React.LazyExoticComponent<ArtifactRendererComponent>
+  ArtifactRendererComponent
 > = {
-  comparison: lazy(() => import("./renderers/ComparisonArtifact")),
-  flashcards: lazy(() => import("./renderers/FlashcardsArtifact")),
-  timeline: lazy(() => import("./renderers/TimelineArtifact")),
-  research: lazy(() => import("./renderers/ResearchArtifact")),
-  resources: lazy(() => import("./renderers/ResourcesArtifact")),
-  progress: lazy(() => import("./renderers/ProgressArtifact")),
-  troubleshooting: lazy(() => import("./renderers/TroubleshootingArtifact")),
-  recipe: lazy(() => import("./renderers/RecipeArtifact")),
-  diagram: lazy(() => import("./renderers/DiagramArtifact")),
-  "decision-tree": lazy(() => import("./renderers/DecisionTreeArtifact")),
-  presentation: lazy(() => import("./renderers/PresentationArtifact")),
-  math_problem: lazy(() => import("./renderers/MathProblemArtifact")),
-  quiz: lazy(() => import("./renderers/QuizArtifact")),
-  mermaid: lazy(() => import("./renderers/MermaidArtifact")),
-  svg: lazy(() => import("./renderers/SvgArtifact")),
-  chart: lazy(() => import("./renderers/ChartArtifact")),
-  map: lazy(() => import("./renderers/MapArtifact")),
-  stats: lazy(() => import("./renderers/StatsArtifact")),
-  diff: lazy(() => import("./renderers/DiffArtifact")),
-  questionnaire: lazy(() => import("./renderers/QuestionnaireArtifact")),
-  tasks: lazy(() => import("./renderers/TasksArtifact")),
-  html: lazy(() => import("./renderers/HtmlArtifact")),
-  react: lazy(() => import("./renderers/ReactArtifact")),
-  table: lazy(() => import("./renderers/TableArtifact")),
-  transcript: lazy(() => import("./renderers/TranscriptArtifact")),
-  structured_info: lazy(() => import("./renderers/StructuredInfoArtifact")),
-  tree: lazy(() => import("./renderers/TreeArtifact")),
-  iframe: lazy(() => import("./renderers/IframeArtifact")),
-  code: lazy(() => import("./renderers/CodeArtifact")),
-  image: lazy(() => import("./renderers/ImageArtifact")),
+  comparison: ComparisonArtifact,
+  flashcards: FlashcardsArtifact,
+  timeline: TimelineArtifact,
+  research: ResearchArtifact,
+  resources: ResourcesArtifact,
+  progress: ProgressArtifact,
+  troubleshooting: TroubleshootingArtifact,
+  recipe: RecipeArtifact,
+  diagram: DiagramArtifact,
+  "decision-tree": DecisionTreeArtifact,
+  presentation: PresentationArtifact,
+  math_problem: MathProblemArtifact,
+  quiz: QuizArtifact,
+  mermaid: MermaidArtifact,
+  svg: SvgArtifact,
+  chart: ChartArtifact,
+  map: MapArtifact,
+  stats: StatsArtifact,
+  diff: DiffArtifact,
+  questionnaire: QuestionnaireArtifact,
+  tasks: TasksArtifact,
+  html: HtmlArtifact,
+  react: ReactArtifact,
+  table: TableArtifact,
+  transcript: TranscriptArtifact,
+  structured_info: StructuredInfoArtifact,
+  tree: TreeArtifact,
+  iframe: IframeArtifact,
+  code: CodeArtifact,
+  image: ImageArtifact,
 };
 
 export function hasArtifactRenderer(canvasType: string | null | undefined): boolean {

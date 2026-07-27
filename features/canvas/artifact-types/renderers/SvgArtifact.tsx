@@ -1,12 +1,9 @@
 "use client";
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { type ArtifactRendererProps } from "../artifact-renderers";
-
-const SvgBlock = lazy(
-  () => import("@/components/mardown-display/blocks/svg/SvgBlock"),
-);
+import SvgBlock from "@/components/mardown-display/blocks/svg/SvgBlock";
 
 /**
  * Unified renderer for `svg` artifacts — a self-contained vector graphic is

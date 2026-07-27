@@ -1,11 +1,8 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-
-const UserFeedbackPage = lazy(
-  () => import("@/features/settings/pages/FeedbackSettingsPage"),
-);
+import UserFeedbackPage from "@/features/settings/pages/FeedbackSettingsPage";
 
 export default function FeedbackTab() {
   return (

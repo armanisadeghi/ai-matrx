@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, lazy, useCallback, useMemo, useState } from "react";
+import React, { Suspense,  useCallback, useMemo, useState } from "react";
 import { Undo2, ExternalLink, Maximize2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
@@ -17,15 +17,8 @@ import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/pa
 import { createDatasetFromTable } from "@/features/data-tables/create-dataset-from-table";
 import { deriveDatasetNameForChatTable } from "@/features/data-tables/derive-dataset-name";
 import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";
-
-const StreamingTableRenderer = lazy(() =>
-  import("@/components/mardown-display/blocks/table/StreamingTableRenderer").then(
-    (m) => ({ default: m.StreamingTableRenderer }),
-  ),
-);
-const UserTableViewer = lazy(
-  () => import("@/components/user-generated-table-data/UserTableViewer"),
-);
+import { StreamingTableRenderer as StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
+import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 
 const UDT_SYSTEM = "udt_datasets";
 

@@ -37,7 +37,7 @@ export type SettingsTabDef = {
   /** Extra keywords searched alongside label/description. */
   searchKeywords?: string[];
   /** Lazy-loaded tab component. */
-  component: LazyExoticComponent<ComponentType<Record<string, never>>>;
+  component: ComponentType<Record<string, never>>;
   /** True to hide from non-admin users. */
   requiresAdmin?: boolean;
   /** True by default — set false only for onboarding/guest-visible tabs. */

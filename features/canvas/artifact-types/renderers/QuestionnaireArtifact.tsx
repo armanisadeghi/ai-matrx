@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo } from "react";
+import React, { Suspense,  useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { separatedMarkdownParser } from "@/components/mardown-display/markdown-classification/processors/custom/parser-separated";
 import {
@@ -8,11 +8,7 @@ import {
   resolveMarkdownPayload,
 } from "../artifact-renderers";
 import { useArtifactState } from "../persistence/useArtifactState";
-
-const QuestionnaireRenderer = lazy(
-  () =>
-    import("@/components/mardown-display/blocks/questionnaire/QuestionnaireRenderer"),
-);
+import QuestionnaireRenderer from "@/components/mardown-display/blocks/questionnaire/QuestionnaireRenderer";
 
 interface QuestionnaireState extends Record<string, unknown> {
   formState?: Record<string, unknown>;

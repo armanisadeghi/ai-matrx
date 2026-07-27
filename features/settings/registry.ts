@@ -1,4 +1,3 @@
-import { lazy } from "react";
 import {
   Palette,
   Bell,
@@ -39,6 +38,45 @@ import {
   Briefcase,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
+import Placeholder from "./tabs/PlaceholderTab";
+import MessagingTab from "./tabs/MessagingTab";
+import AppearanceTab from "./tabs/AppearanceTab";
+import VoiceTab from "./tabs/VoiceTab";
+import TextToSpeechTab from "./tabs/TextToSpeechTab";
+import DictionaryTab from "./tabs/DictionaryTab";
+import AssistantTab from "./tabs/AssistantTab";
+import EmailTab from "./tabs/EmailTab";
+import TextGenerationTab from "./tabs/TextGenerationTab";
+import ImageGenerationTab from "./tabs/ImageGenerationTab";
+import PhotoEditingTab from "./tabs/PhotoEditingTab";
+import VideoConferenceTab from "./tabs/VideoConferenceTab";
+import MediaDevicesTab from "./tabs/MediaDevicesTab";
+import CodingTab from "./tabs/CodingTab";
+import CodeWorkspaceTab from "./tabs/CodeWorkspaceTab";
+import FlashcardsTab from "./tabs/FlashcardsTab";
+import AiModelsTab from "./tabs/AiModelsTab";
+import AdminServerTab from "./tabs/AdminServerTab";
+import LayoutTab from "./tabs/LayoutTab";
+import SiteWorkbenchTab from "./tabs/SiteWorkbenchTab";
+import WindowsTab from "./tabs/WindowsTab";
+import SystemTab from "./tabs/SystemTab";
+import LanguageTab from "./tabs/LanguageTab";
+import PrivacyTab from "./tabs/PrivacyTab";
+import ProfileTab from "./tabs/ProfileTab";
+import ProfileIdentityTab from "./tabs/ProfileIdentityTab";
+import ProfileContactTab from "./tabs/ProfileContactTab";
+import ProfileAddressesTab from "./tabs/ProfileAddressesTab";
+import ProfileWorkTab from "./tabs/ProfileWorkTab";
+import ProfileEmergencyTab from "./tabs/ProfileEmergencyTab";
+import OrganizationsTab from "./tabs/OrganizationsTab";
+import IntegrationsTab from "./tabs/IntegrationsTab";
+import SandboxStorageTab from "./tabs/SandboxStorageTab";
+import FeedbackTab from "./tabs/FeedbackTab";
+import ExtensionTab from "./tabs/ExtensionTab";
+import ContentTemplatesTab from "./tabs/ContentTemplatesTab";
+import VoiceMicTab from "./tabs/VoiceMicTab";
+import MemoryTab from "./tabs/MemoryTab";
+import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
 import type { SettingsTabDef, ResolvedSettingsTab } from "./types";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
 
@@ -53,54 +91,10 @@ import type { SettingsTreeNode } from "@/components/official/settings/tree/types
  * is assignable.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const lazyTab = (importer: () => Promise<{ default: any }>): any =>
-  lazy(importer);
 
 // ── Placeholder (used only for category-only nodes) ──────────────────────────
-const Placeholder = lazyTab(() => import("./tabs/PlaceholderTab"));
 
 // ── Real tabs ───────────────────────────────────────────────────────────────
-const MessagingTab = lazyTab(() => import("./tabs/MessagingTab"));
-const AppearanceTab = lazyTab(() => import("./tabs/AppearanceTab"));
-const VoiceTab = lazyTab(() => import("./tabs/VoiceTab"));
-const TextToSpeechTab = lazyTab(() => import("./tabs/TextToSpeechTab"));
-const DictionaryTab = lazyTab(() => import("./tabs/DictionaryTab"));
-const AssistantTab = lazyTab(() => import("./tabs/AssistantTab"));
-const EmailTab = lazyTab(() => import("./tabs/EmailTab"));
-const TextGenerationTab = lazyTab(() => import("./tabs/TextGenerationTab"));
-const ImageGenerationTab = lazyTab(() => import("./tabs/ImageGenerationTab"));
-const PhotoEditingTab = lazyTab(() => import("./tabs/PhotoEditingTab"));
-const VideoConferenceTab = lazyTab(() => import("./tabs/VideoConferenceTab"));
-const MediaDevicesTab = lazyTab(() => import("./tabs/MediaDevicesTab"));
-const CodingTab = lazyTab(() => import("./tabs/CodingTab"));
-const CodeWorkspaceTab = lazyTab(() => import("./tabs/CodeWorkspaceTab"));
-const FlashcardsTab = lazyTab(() => import("./tabs/FlashcardsTab"));
-const AiModelsTab = lazyTab(() => import("./tabs/AiModelsTab"));
-const AdminServerTab = lazyTab(() => import("./tabs/AdminServerTab"));
-const LayoutTab = lazyTab(() => import("./tabs/LayoutTab"));
-const SiteWorkbenchTab = lazyTab(() => import("./tabs/SiteWorkbenchTab"));
-const WindowsTab = lazyTab(() => import("./tabs/WindowsTab"));
-const SystemTab = lazyTab(() => import("./tabs/SystemTab"));
-const LanguageTab = lazyTab(() => import("./tabs/LanguageTab"));
-const PrivacyTab = lazyTab(() => import("./tabs/PrivacyTab"));
-const ProfileTab = lazyTab(() => import("./tabs/ProfileTab"));
-const ProfileIdentityTab = lazyTab(() => import("./tabs/ProfileIdentityTab"));
-const ProfileContactTab = lazyTab(() => import("./tabs/ProfileContactTab"));
-const ProfileAddressesTab = lazyTab(() => import("./tabs/ProfileAddressesTab"));
-const ProfileWorkTab = lazyTab(() => import("./tabs/ProfileWorkTab"));
-const ProfileEmergencyTab = lazyTab(() => import("./tabs/ProfileEmergencyTab"));
-const OrganizationsTab = lazyTab(() => import("./tabs/OrganizationsTab"));
-const IntegrationsTab = lazyTab(() => import("./tabs/IntegrationsTab"));
-const SandboxStorageTab = lazyTab(() => import("./tabs/SandboxStorageTab"));
-const FeedbackTab = lazyTab(() => import("./tabs/FeedbackTab"));
-const ExtensionTab = lazyTab(() => import("./tabs/ExtensionTab"));
-const ContentTemplatesTab = lazyTab(() => import("./tabs/ContentTemplatesTab"));
-const VoiceMicTab = lazyTab(() => import("./tabs/VoiceMicTab"));
-const MemoryTab = lazyTab(() => import("./tabs/MemoryTab"));
-const ConversationFiltersTab = lazyTab(
-  () => import("./tabs/ConversationFiltersTab"),
-);
 
 export const settingsRegistry: SettingsTabDef[] = [
   // ── General ───────────────────────────────────────────────────────────────

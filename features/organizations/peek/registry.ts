@@ -10,32 +10,51 @@
  * resource page uses.
  */
 
-import { lazy, type ComponentType, type LazyExoticComponent } from "react";
+import type { ComponentType } from "react";
+import AgentPeek from "./kinds/AgentPeek";
+import FilePeek from "./kinds/FilePeek";
+import NotePeek from "./kinds/NotePeek";
+import AgentAppPeek from "./kinds/AgentAppPeek";
+import SkillPeek from "./kinds/SkillPeek";
+import WorkflowPeek from "./kinds/WorkflowPeek";
+import ContentTemplatePeek from "./kinds/ContentTemplatePeek";
+import ConversationPeek from "./kinds/ConversationPeek";
+import FlashcardPeek from "./kinds/FlashcardPeek";
+import CanvasPeek from "./kinds/CanvasPeek";
+import TaskPeek from "./kinds/TaskPeek";
+import DatasetPeek from "./kinds/DatasetPeek";
+import TranscriptPeek from "./kinds/TranscriptPeek";
+import ShortcutPeek from "./kinds/ShortcutPeek";
+import ListPeek from "./kinds/ListPeek";
+import WorkbookPeek from "./kinds/WorkbookPeek";
+import QuizPeek from "./kinds/QuizPeek";
+import SandboxPeek from "./kinds/SandboxPeek";
+import ProjectPeek from "./kinds/ProjectPeek";
 import type { PeekProps } from "./types";
 
 export const PEEK_REGISTRY: Record<
   string,
-  LazyExoticComponent<ComponentType<PeekProps>>
+  ComponentType<PeekProps>
 > = {
-  agent: lazy(() => import("./kinds/AgentPeek")),
-  file: lazy(() => import("./kinds/FilePeek")),
-  note: lazy(() => import("./kinds/NotePeek")),
-  agent_app: lazy(() => import("./kinds/AgentAppPeek")),
-  skill: lazy(() => import("./kinds/SkillPeek")),
-  workflow: lazy(() => import("./kinds/WorkflowPeek")),
-  content_template: lazy(() => import("./kinds/ContentTemplatePeek")),
-  conversation: lazy(() => import("./kinds/ConversationPeek")),
-  flashcard: lazy(() => import("./kinds/FlashcardPeek")),
-  canvas: lazy(() => import("./kinds/CanvasPeek")),
-  task: lazy(() => import("./kinds/TaskPeek")),
-  dataset: lazy(() => import("./kinds/DatasetPeek")),
-  transcript: lazy(() => import("./kinds/TranscriptPeek")),
-  agent_shortcut: lazy(() => import("./kinds/ShortcutPeek")),
-  picklist: lazy(() => import("./kinds/ListPeek")),
-  workbook: lazy(() => import("./kinds/WorkbookPeek")),
-  quiz: lazy(() => import("./kinds/QuizPeek")),
-  sandbox: lazy(() => import("./kinds/SandboxPeek")),
-  project: lazy(() => import("./kinds/ProjectPeek")),
+  agent: AgentPeek,
+  file: FilePeek,
+  note: NotePeek,
+  agent_app: AgentAppPeek,
+  skill: SkillPeek,
+  workflow: WorkflowPeek,
+  content_template: ContentTemplatePeek,
+  conversation: ConversationPeek,
+  flashcard: FlashcardPeek,
+  canvas: CanvasPeek,
+  task: TaskPeek,
+  dataset: DatasetPeek,
+  transcript: TranscriptPeek,
+  agent_shortcut: ShortcutPeek,
+  picklist: ListPeek,
+  workbook: WorkbookPeek,
+  quiz: QuizPeek,
+  sandbox: SandboxPeek,
+  project: ProjectPeek,
   // Add new kinds here as their peek components land.
 };
 

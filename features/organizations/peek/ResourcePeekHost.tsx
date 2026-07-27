@@ -1,27 +1,21 @@
 "use client";
 
 /**
- * ResourcePeekHost — renders the registered peek for a kind, lazily.
- * Returns null when the kind has no peek or no id is selected.
+ * ResourcePeekHost — thin front door (MarkdownStream pattern, right-way experiment).
+ * ONE dynamic({ssr:false}) edge; everything inside (ResourcePeekHostImpl) is a single
+ * statically-imported piece built once.
  */
 
-import React, { Suspense } from "react";
-import { PEEK_REGISTRY } from "./registry";
+import React from "react";
+import dynamic from "next/dynamic";
 
-export function ResourcePeekHost({
-  kind,
-  id,
-  onClose,
-}: {
-  kind: string;
-  id: string | null;
-  onClose: () => void;
-}) {
-  const Peek = PEEK_REGISTRY[kind];
-  if (!Peek || !id) return null;
-  return (
-    <Suspense fallback={null}>
-      <Peek id={id} open={Boolean(id)} onClose={onClose} />
-    </Suspense>
-  );
+const ResourcePeekHostImplLazy = dynamic(
+  () => import("./ResourcePeekHostImpl").then((m) => ({ default: m.ResourcePeekHostImpl })),
+  { ssr: false, loading: () => null },
+);
+
+export function ResourcePeekHost(
+  props: React.ComponentProps<typeof ResourcePeekHostImplLazy>,
+) {
+  return <ResourcePeekHostImplLazy {...props} />;
 }

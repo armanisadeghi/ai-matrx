@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo } from "react";
+import React, { Suspense,  useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseComparisonJSON } from "@/components/mardown-display/blocks/comparison/parseComparisonJSON";
 import {
@@ -10,10 +10,7 @@ import {
 } from "../artifact-renderers";
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { ComparisonTableState } from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
-
-const ComparisonTableBlock = lazy(
-  () => import("@/components/mardown-display/blocks/comparison/ComparisonTableBlock"),
-);
+import ComparisonTableBlock from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
 
 /**
  * Unified renderer for `comparison` (comparison_table) artifacts — the ONE

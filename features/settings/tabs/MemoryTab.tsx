@@ -1,11 +1,8 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-
-const MemoryManager = lazy(
-  () => import("@/features/memory/components/MemoryManager"),
-);
+import MemoryManager from "@/features/memory/components/MemoryManager";
 
 export default function MemoryTab() {
   return (

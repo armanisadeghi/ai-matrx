@@ -1,11 +1,8 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-
-const ExtensionAuthPage = lazy(
-  () => import("@/features/settings/pages/ExtensionSettingsPage"),
-);
+import ExtensionAuthPage from "@/features/settings/pages/ExtensionSettingsPage";
 
 export default function ExtensionTab() {
   return (

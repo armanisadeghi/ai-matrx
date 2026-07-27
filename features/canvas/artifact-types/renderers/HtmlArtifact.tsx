@@ -1,13 +1,10 @@
 "use client";
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
 import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import type { ArtifactRendererProps } from "../artifact-renderers";
-
-const HtmlInlinePreview = lazy(
-  () => import("@/features/html-pages/components/HtmlInlinePreview"),
-);
+import HtmlInlinePreview from "@/features/html-pages/components/HtmlInlinePreview";
 
 /**
  * Unified renderer for `html` artifacts (chat / canvas / artifact-card / public).

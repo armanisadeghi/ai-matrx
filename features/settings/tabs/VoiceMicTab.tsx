@@ -1,11 +1,8 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-
-const VoiceSettingsPage = lazy(
-  () => import("@/features/settings/pages/VoiceSettingsPage"),
-);
+import VoiceSettingsPage from "@/features/settings/pages/VoiceSettingsPage";
 
 export default function VoiceMicTab() {
   return (

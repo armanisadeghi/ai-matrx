@@ -1,11 +1,8 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-
-const IntegrationsPage = lazy(
-  () => import("@/features/settings/pages/IntegrationsSettingsPage"),
-);
+import IntegrationsPage from "@/features/settings/pages/IntegrationsSettingsPage";
 
 export default function IntegrationsTab() {
   return (
