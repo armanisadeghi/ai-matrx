@@ -50,9 +50,29 @@ import {
   referenceChipLabel,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
-import CreateProjectWithTasksRenderer from "@/features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer";
-import PlanTreeRenderer from "@/features/matrx-envelope/directives/planTree/PlanTreeRenderer";
-import PlanNodePatchRenderer from "@/features/matrx-envelope/directives/planTree/PlanNodePatchRenderer";
+// Directive renderers load as their own chunks, on first render of a matching
+// envelope. This registry is statically reachable from ~109 route entries (via
+// MatrxEnvelopeBlock's importers), so a static renderer import here multiplies
+// the renderer's whole graph — framer-motion included — across all of them.
+// Method B (`code-splitting` skill): id → chunk; never a static value import.
+import dynamic from "next/dynamic";
+
+const CreateProjectWithTasksRenderer = dynamic(
+  () =>
+    import(
+      "@/features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer"
+    ),
+  { ssr: false, loading: () => null },
+);
+const PlanTreeRenderer = dynamic(
+  () => import("@/features/matrx-envelope/directives/planTree/PlanTreeRenderer"),
+  { ssr: false, loading: () => null },
+);
+const PlanNodePatchRenderer = dynamic(
+  () =>
+    import("@/features/matrx-envelope/directives/planTree/PlanNodePatchRenderer"),
+  { ssr: false, loading: () => null },
+);
 
 export interface EnvelopeRendererProps {
   envelope: MatrxEnvelope;
