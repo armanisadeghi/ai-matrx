@@ -287,16 +287,38 @@ export function DiscoveryInbox() {
         // the Pending tab's data is the data actually loaded — other tabs
         // load different rows.
         const pendingLoaded = status === "pending" && items.data !== undefined;
+        const loadedItems =
+          items.data === undefined
+            ? undefined
+            : rows.slice(0, 30).map((item) => ({
+                id: item.id,
+                category: item.category,
+                guessed_kind: item.guessed_kind,
+                confidence: item.confidence,
+                url: item.url,
+                label: itemDisplayValue(item),
+                context: itemContextSnippet(item),
+                status: item.status,
+              }));
         return createMarketingDiscoveryScope({
           ...getBaseValues(),
+          active_status: status,
+          loaded_count: rows.length,
+          category_counts: grouped.map(([category, categoryItems]) => ({
+            category,
+            count: categoryItems.length,
+          })),
           pending_count: pendingCount.data,
           pending_items: pendingLoaded
             ? rows.slice(0, 30).map((item) => ({
+                category: item.category,
                 guessed_kind: item.guessed_kind,
+                confidence: item.confidence,
                 url: item.url,
                 label: itemDisplayValue(item),
               }))
             : undefined,
+          discovered_items: loadedItems,
         });
       }}
     >

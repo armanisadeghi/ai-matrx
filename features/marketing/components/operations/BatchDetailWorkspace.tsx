@@ -243,6 +243,23 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
   const getBatchScope = () =>
     createMarketingBatchesScope({
       batch_id: batchId,
+      batch_site_id: job.site_id,
+      batch_item_total: items.data?.total,
+      batch_items: items.data
+        ? items.data.rows.slice(0, 30).map((row) => ({
+            item: row.item?.label ?? row.item_id,
+            catalog_key: row.item?.key ?? null,
+            status: row.status,
+            subject_type: row.subject_type,
+            subject_id: row.subject_id,
+            provider: row.provider?.label ?? row.provider_id,
+            cost: row.cost,
+            result_id: row.result_id,
+            external_ref: row.external_ref,
+            created_at: row.created_at,
+            error: row.error,
+          }))
+        : undefined,
       batch_summary: {
         status: job.status,
         kind: job.kind,

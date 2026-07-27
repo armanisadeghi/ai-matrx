@@ -411,6 +411,34 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               status: providerReferenceStatus(provider).replace(/_/g, " "),
             })),
           },
+          custom_provider_count: draft.customProviders.length,
+          unsaved_changes: dirty,
+          configuration_issues: issues.map((issue) => ({
+            field: issue.field,
+            message: issue.message,
+          })),
+          // Reference metadata only — account identity + health, never tokens.
+          google_connections: googleInventory.data?.connections.map(
+            (connection) => ({
+              id: connection.id,
+              account:
+                connection.account_name ||
+                connection.account_email ||
+                "Google account",
+              owner_type: connection.owner_type,
+              health: connection.health,
+              diagnosis:
+                connection.health === "connected"
+                  ? null
+                  : diagnoseGoogleConnection(connection).label,
+            }),
+          ),
+          google_resources: googleInventory.data?.resources.map((resource) => ({
+            connection_id: resource.connection_id,
+            resource_type: resource.resource_type,
+            resource_ref: resource.resource_ref,
+            display_name: resource.display_name,
+          })),
           gsc_synced_at: site.gsc_synced_at ?? undefined,
         })
       }

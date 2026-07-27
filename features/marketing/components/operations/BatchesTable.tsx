@@ -174,22 +174,30 @@ export function BatchesTable() {
   // rows (respecting search/filters/sort/page), capped at 20.
   const getBatchesScope = () => {
     const rows = batches.data?.rows ?? [];
-    return createMarketingBatchesScope(
-      rows.length > 0
-        ? {
-            recent_batches: rows.slice(0, 20).map((row) => ({
+    return createMarketingBatchesScope({
+      recent_batches:
+        rows.length > 0
+          ? rows.slice(0, 20).map((row) => ({
               id: row.id,
               status: row.status,
               kind: row.kind,
               site: row.site?.domain ?? row.site_id,
-              provider: row.provider?.label ?? row.provider?.key ?? row.provider_id,
+              provider:
+                row.provider?.label ?? row.provider?.key ?? row.provider_id,
               created_at: row.created_at,
               completed_at: row.completed_at,
               error: row.error,
-            })),
-          }
-        : {},
-    );
+            }))
+          : undefined,
+      batch_total: batches.data?.total,
+      list_query: {
+        search: table.state.search,
+        column_filters: table.state.columnFilters,
+        sort: table.state.sort,
+        page: table.state.page,
+        page_size: table.state.pageSize,
+      },
+    });
   };
 
   return (
