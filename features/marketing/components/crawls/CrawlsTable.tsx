@@ -6,6 +6,14 @@ import { Play, RefreshCw, ScanSearch, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
@@ -166,11 +174,69 @@ export function CrawlsTable() {
     return (
       <QueryError error={crawls.error} onRetry={() => void crawls.refetch()} />
     );
+
+  const rows = crawls.data?.rows ?? [];
+  const pageLocation = webLocation(`Crawls — ${site.root_url}`);
+  const pageHuman = () =>
+    humanLines([
+      ["Site", site.root_url],
+      ["Loaded crawl sessions", rows.length],
+      ["Total recorded", crawls.data?.total ?? 0],
+      ["Search", table.state.search || undefined],
+    ]);
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "sessions",
+      title: "Crawl sessions",
+      description: `${rows.length} loaded of ${crawls.data?.total ?? 0} recorded (current table page + filters).`,
+      levelLabels: {
+        full: `Loaded ${rows.length} (raw)`,
+        compact: "Top 25 (key fields)",
+        brief: "Counts only",
+      },
+      build: (level) =>
+        level === "full"
+          ? { query: table.state, rows }
+          : level === "compact"
+            ? {
+                query: table.state,
+                rows: rows.slice(0, 25).map((row) => ({
+                  id: row.id,
+                  status: row.status,
+                  trigger: row.trigger,
+                  started_at: row.started_at,
+                  finished_at: row.finished_at,
+                  error: row.error,
+                })),
+              }
+            : {
+                total_recorded: crawls.data?.total ?? 0,
+                loaded_rows: rows.length,
+              },
+    },
+  ];
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Crawl sessions — ${site.root_url}`,
+    kind: "marketing-crawls-page",
+    location: pageLocation,
+    description: `Crawl sessions recorded for ${site.root_url}.`,
+    attributes: { site_id: site.id, domain: site.root_url },
+    summary: pageHuman(),
+    sections: groomerSections(),
+  });
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-crawls"
       getScope={() => {
-        const rows = crawls.data?.rows ?? [];
         return createMarketingCrawlsScope({
           ...getBaseValues(),
           recent_sessions:
@@ -191,8 +257,51 @@ export function CrawlsTable() {
         });
       }}
     >
-    <main className="h-full overflow-hidden bg-textured p-3 sm:p-4">
+    <main className="flex h-full min-h-0 flex-col gap-2 overflow-hidden bg-textured p-3 sm:p-4">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
+          Crawl sessions
+          <span className="text-xs font-normal tabular-nums text-muted-foreground">
+            {(crawls.data?.total ?? 0).toLocaleString()}
+          </span>
+        </h1>
+        <div className="flex items-center gap-1.5">
+          <CopyButtons
+            size="icon"
+            label={`Crawls page (${site.root_url})`}
+            human={pageHuman}
+            json={pageFullData}
+            agent={() => ({
+              kind: "marketing-crawls-page",
+              location: pageLocation,
+              description: `Crawl sessions recorded for ${site.root_url}.`,
+              data: pageFullData(),
+              summary: pageHuman(),
+              attributes: { site_id: site.id, domain: site.root_url },
+            })}
+          />
+          <ExportMenu
+            label={`crawls-${site.root_url}`}
+            items={[
+              jsonExportItem(() => rows, "JSON (loaded rows, raw)"),
+              {
+                id: "csv",
+                label: "CSV (loaded rows)",
+                build: () => ({
+                  content: rowsToCsv(
+                    rows as unknown as Array<Record<string, unknown>>,
+                  ),
+                  extension: "csv",
+                  mime: "text/csv",
+                }),
+              },
+            ]}
+          />
+          <AgentCopyGroomerLauncher config={groomerConfig} />
+        </div>
+      </header>
       <MatrxDataTable<CrawlSession>
+        className="min-h-0 flex-1"
         data={crawls.data?.rows ?? []}
         columns={columns}
         getRowId={(row) => row.id}
@@ -240,6 +349,7 @@ export function CrawlsTable() {
           label: "Crawl session",
           listLabel: "All crawl sessions",
           location: webLocation(`Crawls — ${site.root_url}`),
+          showToolbar: false,
           rowKind: "web-crawl-session",
           listKind: "web-crawl-sessions-list",
           rowDescription: "One frozen crawl session for this site.",

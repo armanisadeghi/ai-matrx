@@ -26,9 +26,22 @@ import {
   QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import { webCopy, webLocation } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanAuditSnapshot,
+  humanIssueRow,
+  humanWorstPageRow,
+} from "@/features/marketing/components/audit/format";
 import type {
   AuditIssueRollup,
+  AuditPageRollup,
   AuditSection,
   AuditTrendPoint,
   SiteAuditRollup,
@@ -98,13 +111,15 @@ function PassRateBar({
 function IssueRow({
   issue,
   pagePath,
+  location,
 }: {
   issue: AuditIssueRollup;
   pagePath: (pageId: string) => string;
+  location: string;
 }) {
   const meta = SECTION_META[issue.section];
   return (
-    <div className="flex min-w-0 items-start gap-2.5 px-3 py-2">
+    <div className="group/row flex min-w-0 items-start gap-2.5 px-3 py-2">
       {issue.severity === "error" ? (
         <OctagonAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
       ) : (
@@ -131,6 +146,70 @@ function IssueRow({
       <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
         ×{issue.count}
       </span>
+      <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100">
+        <CopyButtons
+          size="xs"
+          label={`${meta.label} issue`}
+          human={() => humanIssueRow(issue)}
+          json={() => issue}
+          agent={() => ({
+            kind: "web-audit-issue",
+            location,
+            description: `One rolled-up audit issue (${meta.label}) shared across ${issue.count} page(s).`,
+            data: issue,
+            summary: humanIssueRow(issue),
+            attributes: { section: issue.section, severity: issue.severity, count: issue.count },
+          })}
+        />
+      </span>
+    </div>
+  );
+}
+
+function WorstPageRow({
+  page,
+  href,
+  location,
+}: {
+  page: AuditPageRollup;
+  href: string;
+  location: string;
+}) {
+  return (
+    <div className="group/row flex min-w-0 items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/40">
+      <Link href={href} className="flex min-w-0 flex-1 items-center gap-3">
+        <span
+          className={cn(
+            "h-2 w-2 shrink-0 rounded-full",
+            page.indexabilityVerdict === "blocked" || page.errorCount > 0
+              ? "bg-destructive"
+              : "bg-warning",
+          )}
+        />
+        <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+          {page.path}
+        </span>
+        <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
+          {page.errorCount > 0 ? `${page.errorCount}E · ` : ""}
+          {page.warningCount}W
+        </span>
+      </Link>
+      <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100">
+        <CopyButtons
+          size="xs"
+          label={page.path}
+          human={() => humanWorstPageRow(page)}
+          json={() => page}
+          agent={() => ({
+            kind: "web-audit-worst-page",
+            location,
+            description: "One page ranked worst by audit error/warning count.",
+            data: page,
+            summary: humanWorstPageRow(page),
+            attributes: { page_id: page.pageId, errors: page.errorCount, warnings: page.warningCount },
+          })}
+        />
+      </span>
     </div>
   );
 }
@@ -139,12 +218,15 @@ function AuditBody({
   rollup,
   sitePath,
   trendPoints,
+  siteDomain,
 }: {
   rollup: SiteAuditRollup;
   sitePath: string;
   trendPoints: AuditTrendPoint[];
+  siteDomain: string;
 }) {
   const pagePath = (pageId: string) => `${sitePath}/pages/${pageId}`;
+  const pageLocation = webLocation(`Site audit — ${siteDomain}`);
   const copy = webCopy({
     kind: "web-site-audit-rollup",
     label: "Site audit",
@@ -167,6 +249,48 @@ function AuditBody({
     ],
   });
 
+  const metricCopy = (label: string, value: number, detail?: string) => ({
+    label: `${label} (audit)`,
+    human: () => `${label}: ${value.toLocaleString()} (${siteDomain})${detail ? ` — ${detail}` : ""}`,
+    agent: () => ({
+      kind: "web-audit-metric",
+      location: pageLocation,
+      description: `The "${label}" site-audit KPI for ${siteDomain}.`,
+      data: { metric: label, value, detail: detail ?? null },
+      attributes: { metric: label },
+    }),
+  });
+
+  const topIssuesCopy = {
+    label: "Top issues",
+    human: () =>
+      rollup.topIssues.length
+        ? rollup.topIssues.map((i) => `- ${humanIssueRow(i)}`).join("\n\n")
+        : "No issues found across the audited pages.",
+    agent: () => ({
+      kind: "web-audit-issues",
+      location: pageLocation,
+      description: `The top ${rollup.topIssues.length} rolled-up audit issues for ${siteDomain}, ranked by severity then page count.`,
+      data: rollup.topIssues,
+      attributes: { count: rollup.topIssues.length },
+    }),
+  };
+
+  const worstPagesCopy = {
+    label: "Pages needing attention",
+    human: () =>
+      rollup.worstPages.length
+        ? rollup.worstPages.map((p) => `- ${humanWorstPageRow(p)}`).join("\n\n")
+        : "Every audited page is clean.",
+    agent: () => ({
+      kind: "web-audit-worst-pages",
+      location: pageLocation,
+      description: `The ${rollup.worstPages.length} worst-ranked pages by audit error/warning count for ${siteDomain}.`,
+      data: rollup.worstPages,
+      attributes: { count: rollup.worstPages.length },
+    }),
+  };
+
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
@@ -175,36 +299,42 @@ function AuditBody({
             label="Pages"
             value={rollup.totalPages}
             detail="Canonical registry"
+            copy={metricCopy("Pages", rollup.totalPages, "Canonical registry")}
           />
           <MetricCell
             label="Audited"
             value={rollup.auditedPages}
             detail="Latest capture has metrics"
             tone={rollup.auditedPages > 0 ? "good" : "warning"}
+            copy={metricCopy("Audited", rollup.auditedPages, "Latest capture has metrics")}
           />
           <MetricCell
             label="Indexable"
             value={rollup.verdicts.indexable}
             tone="good"
             detail="Verdict: indexable"
+            copy={metricCopy("Indexable", rollup.verdicts.indexable, "Verdict: indexable")}
           />
           <MetricCell
             label="Needs review"
             value={rollup.verdicts.check}
             tone={rollup.verdicts.check ? "warning" : "default"}
             detail="Verdict: check"
+            copy={metricCopy("Needs review", rollup.verdicts.check, "Verdict: check")}
           />
           <MetricCell
             label="Blocked"
             value={rollup.verdicts.blocked}
             tone={rollup.verdicts.blocked ? "bad" : "default"}
             detail="Errors or noindex"
+            copy={metricCopy("Blocked", rollup.verdicts.blocked, "Errors or noindex")}
           />
           <MetricCell
             label="Not yet audited"
             value={rollup.uncomputedPages}
             tone={rollup.uncomputedPages ? "warning" : "default"}
             detail="Never crawled / pre-stamping"
+            copy={metricCopy("Not yet audited", rollup.uncomputedPages, "Never crawled / pre-stamping")}
           />
         </section>
 
@@ -244,7 +374,7 @@ function AuditBody({
         </SectionCard>
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <SectionCard title="Top issues">
+          <SectionCard title="Top issues" copy={topIssuesCopy}>
             {rollup.topIssues.length === 0 ? (
               <p className="flex items-center gap-2 p-4 text-xs text-success">
                 <CheckCircle className="h-4 w-4" />
@@ -257,13 +387,14 @@ function AuditBody({
                     key={`${issue.section}:${issue.message}`}
                     issue={issue}
                     pagePath={pagePath}
+                    location={pageLocation}
                   />
                 ))}
               </div>
             )}
           </SectionCard>
 
-          <SectionCard title="Pages needing attention">
+          <SectionCard title="Pages needing attention" copy={worstPagesCopy}>
             {rollup.worstPages.length === 0 ? (
               <p className="flex items-center gap-2 p-4 text-xs text-success">
                 <CheckCircle className="h-4 w-4" />
@@ -272,28 +403,12 @@ function AuditBody({
             ) : (
               <div className="divide-y divide-border">
                 {rollup.worstPages.map((page) => (
-                  <Link
+                  <WorstPageRow
                     key={page.pageId}
+                    page={page}
                     href={pagePath(page.pageId)}
-                    className="flex min-w-0 items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/40"
-                  >
-                    <span
-                      className={cn(
-                        "h-2 w-2 shrink-0 rounded-full",
-                        page.indexabilityVerdict === "blocked" ||
-                          page.errorCount > 0
-                          ? "bg-destructive"
-                          : "bg-warning",
-                      )}
-                    />
-                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
-                      {page.path}
-                    </span>
-                    <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
-                      {page.errorCount > 0 ? `${page.errorCount}E · ` : ""}
-                      {page.warningCount}W
-                    </span>
-                  </Link>
+                    location={pageLocation}
+                  />
                 ))}
               </div>
             )}

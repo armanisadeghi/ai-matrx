@@ -21,6 +21,13 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
 import {
   Facebook,
   Instagram,
@@ -222,6 +229,53 @@ export function DiscoveryInbox() {
       count: rows.length,
     },
   });
+
+  const pageLocation = `AI Matrx — Marketing — Discovery inbox — ${site.name}`;
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "pending_count",
+      title: "Pending count",
+      description: "The brand-wide pending discovery count (all sites).",
+      build: () => ({ pending_count: pendingCount.data ?? null }),
+    },
+    {
+      id: "items",
+      title: `Discovered items (${status})`,
+      description: `${rows.length} items currently loaded for the "${status}" tab.`,
+      cuttable: true,
+      levelLabels: {
+        full: `All ${rows.length} (raw)`,
+        compact: "Top 25",
+        brief: "Counts by category",
+      },
+      build: (level) =>
+        level === "full"
+          ? rows
+          : level === "compact"
+            ? rows.slice(0, 25)
+            : grouped.map(([category, items]) => ({
+                category,
+                count: items.length,
+              })),
+    },
+  ];
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Discovery inbox — ${site.name}`,
+    kind: "marketing-discovery-page",
+    location: pageLocation,
+    description: `Machine-discovered brand candidates for ${site.name} (${status} tab).`,
+    attributes: { site_id: site.id, brand_id: site.brand_id, status },
+    summary: inboxCopy.human(),
+    sections: groomerSections(),
+  });
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
 
   return (
     <SurfaceRuntimeProvider

@@ -154,6 +154,7 @@ export function MetricCell({
   variant = "strip",
   anchor,
   href,
+  copy,
 }: {
   label: string;
   value: string | number;
@@ -165,9 +166,15 @@ export function MetricCell({
   anchor?: string;
   /** Turns the whole cell into a navigation card — the KPI IS the link. */
   href?: string;
+  /**
+   * Hover-revealed xs Copy / Copy-for-AI pair for this KPI. Build with
+   * `webCopy` from `features/marketing/lib/copy-payloads`. Not shown when
+   * `href` is set (the cell is itself a navigation link).
+   */
+  copy?: Pick<CopyButtonsProps, "label" | "human" | "agent">;
 }) {
   const className = cn(
-    "min-w-0",
+    "group/metric relative min-w-0",
     variant === "strip"
       ? "border-r border-border/70 px-3 py-2 last:border-r-0"
       : "rounded-xl border border-border/70 bg-gradient-to-br from-card to-muted/40 p-3 shadow-sm",
@@ -233,6 +240,11 @@ export function MetricCell({
   return (
     <div data-surface-value={anchor} className={className}>
       {body}
+      {copy ? (
+        <span className="absolute right-1 top-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/metric:opacity-100">
+          <CopyButtons size="xs" {...copy} />
+        </span>
+      ) : null}
     </div>
   );
 }

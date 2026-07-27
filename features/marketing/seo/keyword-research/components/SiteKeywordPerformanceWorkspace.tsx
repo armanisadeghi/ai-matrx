@@ -15,38 +15,27 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
 import { syncBingSearchPerformance } from "@/features/marketing/bing/service";
 import { extractErrorMessage } from "@/utils/errors";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import {
+  formatCount as integer,
+  formatDecimal as decimal,
+  formatMoney as money,
+  humanKeywordPerformanceList,
+  humanKeywordPerformanceRow,
+  humanMatchingQueriesStat,
+  projectKeywordPerformanceRow,
+  providerLabel,
+} from "@/features/marketing/seo/keyword-research/format";
 import { KeywordCompetitionBadge } from "./KeywordMetrics";
 
 import type { SiteKeywordPerformanceRow } from "../types";
 import { useSiteKeywordPerformance } from "../useSiteKeywordPerformance";
-
-const PROVIDER_LABELS: Record<string, string> = {
-  gsc: "Google Search Console",
-  bing_webmaster: "Bing Webmaster",
-};
-
-function providerLabel(provider: string | null): string {
-  if (!provider) return "Unknown source";
-  return PROVIDER_LABELS[provider] ?? provider;
-}
-
-function integer(value: number | null): string {
-  return value === null ? "—" : Intl.NumberFormat().format(Math.round(value));
-}
-
-function decimal(value: number | null, digits = 1): string {
-  return value === null ? "—" : value.toFixed(digits);
-}
-
-function money(value: number | null): string {
-  return value === null
-    ? "—"
-    : Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 2,
-      }).format(value);
-}
 
 export function SiteKeywordPerformanceWorkspace() {
   const { site, sitePath } = useMarketingSite();
@@ -238,6 +227,78 @@ export function SiteKeywordPerformanceWorkspace() {
     );
   }
 
+  const pageLocation = `Marketing — Organic keyword performance for ${site.domain}`;
+  const rows = performance.data?.rows ?? [];
+  const total = performance.data?.total ?? 0;
+
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "summary",
+      title: "Summary",
+      description: "Matching query count + active sources.",
+      build: () => ({
+        matching_queries: total,
+        bing_connected: Boolean(bingBinding?.enabled),
+        site: site.domain,
+      }),
+    },
+    {
+      id: "keyword_rows",
+      title: "Keyword performance rows",
+      description: `${rows.length} loaded of ${total} total (current table page + filters).`,
+      cuttable: true,
+      levelLabels: {
+        full: `Loaded ${rows.length} (raw)`,
+        compact: "Top 25 (key fields)",
+        brief: "Counts only",
+      },
+      build: (level) =>
+        level === "full"
+          ? { query: table.state, rows }
+          : level === "compact"
+            ? {
+                query: table.state,
+                rows: rows.slice(0, 25).map(projectKeywordPerformanceRow),
+              }
+            : { total_recorded: total, loaded_rows: rows.length },
+    },
+  ];
+
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
+  const pageHuman = () =>
+    [
+      `Organic keyword performance — ${site.domain}`,
+      humanMatchingQueriesStat(total, site.domain),
+      humanKeywordPerformanceList(rows, total),
+    ].join("\n\n");
+
+  const pageAgentPayload = (): AgentPayloadInput => ({
+    kind: "marketing-keyword-performance-page",
+    location: pageLocation,
+    description: `The full organic keyword performance workspace for ${site.domain}.`,
+    data: pageFullData(),
+    summary: humanMatchingQueriesStat(total, site.domain),
+    attributes: { site_id: site.id, domain: site.domain },
+  });
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Keyword performance — ${site.domain}`,
+    kind: "marketing-keyword-performance-page",
+    location: pageLocation,
+    description: `The full organic keyword performance workspace for ${site.domain}.`,
+    attributes: { site_id: site.id, domain: site.domain },
+    summary: humanMatchingQueriesStat(total, site.domain),
+    sections: groomerSections(),
+  });
+
   return (
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3 sm:p-4">
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
@@ -273,20 +334,42 @@ export function SiteKeywordPerformanceWorkspace() {
               <Link href={marketingRoutes.connectionsBing()}>Connect Bing Webmaster</Link>
             </Button>
           )}
-          <div className="rounded-md border border-border bg-muted/30 px-3 py-1.5 text-right">
+          <div className="group/stat relative rounded-md border border-border bg-muted/30 px-3 py-1.5 text-right">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Matching queries
             </p>
             <p className="text-lg font-semibold tabular-nums">
-              {Intl.NumberFormat().format(performance.data?.total ?? 0)}
+              {Intl.NumberFormat().format(total)}
             </p>
+            <div className="absolute left-1 top-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/stat:opacity-100">
+              <CopyButtons
+                size="xs"
+                label="Matching queries"
+                human={() => humanMatchingQueriesStat(total, site.domain)}
+                agent={() => ({
+                  kind: "keyword-performance-summary",
+                  location: pageLocation,
+                  description: `Matching query count for ${site.domain}.`,
+                  data: { matching_queries: total, site: site.domain },
+                  summary: humanMatchingQueriesStat(total, site.domain),
+                })}
+              />
+            </div>
           </div>
+          <CopyButtons
+            size="icon"
+            label={`Keyword performance page (${site.domain})`}
+            human={pageHuman}
+            json={pageFullData}
+            agent={pageAgentPayload}
+          />
+          <AgentCopyGroomerLauncher config={groomerConfig} />
         </div>
       </section>
 
       <section className="min-h-[36rem] rounded-lg border border-border bg-card p-2">
         <MatrxDataTable<SiteKeywordPerformanceRow>
-          data={performance.data?.rows ?? []}
+          data={rows}
           columns={columns}
           getRowId={(row) =>
             `${row.provider ?? "gsc"}:${row.keyword_id ?? "unmapped"}:${row.query ?? "unknown"}`
@@ -296,10 +379,33 @@ export function SiteKeywordPerformanceWorkspace() {
           query={{
             mode: "controlled",
             state: table.state,
-            totalItems: performance.data?.total ?? 0,
+            totalItems: total,
             onStateChange: table.onStateChange,
           }}
           toolbar={{ searchPlaceholder: "Search query or ranking page…" }}
+          copy={{
+            label: "Keyword",
+            listLabel: "Keyword performance view",
+            location: pageLocation,
+            rowKind: "keyword-performance",
+            listKind: "keyword-performance-rows",
+            humanRow: humanKeywordPerformanceRow,
+            agentRow: projectKeywordPerformanceRow,
+            rowAttributes: (row) => ({
+              provider: row.provider ?? undefined,
+              query: row.query ?? undefined,
+              workflow_status: row.workflow_status ?? undefined,
+            }),
+            listAttributes: (visible) => ({
+              page: table.state.page,
+              loaded_rows: visible.length,
+              total_recorded: total,
+              search: table.state.search || undefined,
+            }),
+          }}
+          window={{
+            title: (row) => row.query ?? "Search query",
+          }}
           emptyState={{
             icon: <Search className="h-8 w-8 text-muted-foreground" />,
             title: "No search queries stored yet",

@@ -45,6 +45,16 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import {
   LoadingSurface,
   QueryError,
@@ -53,6 +63,14 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { RankSparkline } from "./RankSparkline";
+import {
+  humanHistory,
+  humanLandscape,
+  humanLandscapeResult,
+  humanRankPortfolio,
+  humanRankPortfolioItem,
+  projectRankPortfolioItem,
+} from "./format";
 import { usePortfolio, useRankTargetHistory, useRunRankCheck } from "./useRanks";
 import { TRACKING_MODES } from "./types";
 import type { AiAnswerEngine, RankPortfolioItem, RankProvider } from "./types";
@@ -200,13 +218,57 @@ function AddTargetForm({
   );
 }
 
-function HistoryDialog({ targetId, onClose }: { targetId: string; onClose: () => void }) {
+function HistoryDialog({
+  targetId,
+  keyword,
+  siteDomain,
+  onClose,
+}: {
+  targetId: string;
+  keyword: string;
+  siteDomain: string;
+  onClose: () => void;
+}) {
   const { points, landscape, loading, error } = useRankTargetHistory(targetId);
+  const [showAllLandscape, setShowAllLandscape] = useState(false);
+  const location = `Marketing — Rank history for "${keyword}" (${siteDomain})`;
+  const landscapeResults = landscape?.results ?? [];
+  const visibleLandscape = showAllLandscape
+    ? landscapeResults
+    : landscapeResults.slice(0, 30);
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Position history</DialogTitle>
+          <div className="flex items-center justify-between gap-2 pr-6">
+            <DialogTitle>Position history — {keyword}</DialogTitle>
+            {!loading && !error ? (
+              <CopyButtons
+                size="icon"
+                label={`Position history (${keyword})`}
+                human={() =>
+                  [
+                    humanHistory(points),
+                    landscape
+                      ? humanLandscape(landscape.results, landscape.observed_at)
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join("\n\n")
+                }
+                json={() => ({ points, landscape })}
+                agent={() => ({
+                  kind: "rank-target-history",
+                  location,
+                  description: `Position history and competitive SERP landscape for "${keyword}".`,
+                  data: { points, landscape },
+                  summary: humanHistory(points),
+                  attributes: { keyword, target_id: targetId },
+                })}
+              />
+            ) : null}
+          </div>
         </DialogHeader>
         {loading ? (
           <LoadingSurface label="Loading history…" />
@@ -249,27 +311,64 @@ function HistoryDialog({ targetId, onClose }: { targetId: string; onClose: () =>
             </div>
             {landscape && landscape.results.length > 0 ? (
               <div>
-                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Competitive SERP landscape ({formatDate(landscape.observed_at)})
-                </p>
-                <div className="max-h-56 overflow-y-auto rounded-md border border-border">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Competitive SERP landscape ({formatDate(landscape.observed_at)})
+                  </p>
+                  {landscapeResults.length > 30 ? (
+                    <button
+                      type="button"
+                      className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                      onClick={() => setShowAllLandscape((current) => !current)}
+                    >
+                      {showAllLandscape ? "top 30" : `all ${landscapeResults.length}`}
+                    </button>
+                  ) : null}
+                </div>
+                <div
+                  className={cn(
+                    "overflow-y-auto rounded-md border border-border",
+                    showAllLandscape ? "max-h-96" : "max-h-56",
+                  )}
+                >
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-10">#</TableHead>
                         <TableHead>Domain</TableHead>
                         <TableHead>Title</TableHead>
+                        <TableHead className="w-8" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {landscape.results.slice(0, 30).map((result) => (
-                        <TableRow key={result.absolute_rank}>
+                      {visibleLandscape.map((result) => (
+                        <TableRow key={result.absolute_rank} className="group/serp">
                           <TableCell className="text-xs">{result.absolute_rank}</TableCell>
                           <TableCell className="max-w-[160px] truncate text-xs">
                             {result.domain ?? "—"}
                           </TableCell>
                           <TableCell className="max-w-[300px] truncate text-xs text-muted-foreground">
                             {result.title ?? result.url ?? "—"}
+                          </TableCell>
+                          <TableCell>
+                            <CopyButtons
+                              size="xs"
+                              className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/serp:opacity-100"
+                              label={`SERP result #${result.absolute_rank}`}
+                              human={() => humanLandscapeResult(result)}
+                              json={() => result}
+                              agent={() => ({
+                                kind: "rank-serp-result",
+                                location,
+                                description: `One competitive SERP landscape result for "${keyword}".`,
+                                data: result,
+                                summary: humanLandscapeResult(result),
+                                attributes: {
+                                  absolute_rank: result.absolute_rank,
+                                  domain: result.domain ?? undefined,
+                                },
+                              })}
+                            />
                           </TableCell>
                         </TableRow>
                       ))}
@@ -289,7 +388,9 @@ export function RanksWorkspace() {
   const { site } = useMarketingSite();
   const { items, loading, error, reload, addTarget, updateTarget, removeTarget } =
     usePortfolio(site.id);
-  const [historyTargetId, setHistoryTargetId] = useState<string | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<RankPortfolioItem | null>(
+    null,
+  );
 
   // A completed live check lands its fresh row on the run's stream event —
   // reload the whole portfolio so position/movement/best-position stay
@@ -297,6 +398,7 @@ export function RanksWorkspace() {
   const { checking, run } = useRunRankCheck(() => void reload());
 
   const rows = items;
+  const pageLocation = `Marketing — Rank portfolio for ${site.domain}`;
 
   if (loading && rows.length === 0) {
     return <LoadingSurface label="Loading rank portfolio…" />;
@@ -305,20 +407,99 @@ export function RanksWorkspace() {
     return <QueryError error={new Error(error)} onRetry={() => void reload()} />;
   }
 
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "portfolio",
+      title: "Rank portfolio",
+      description: `${rows.length} tracked keywords.`,
+      levelLabels: {
+        full: `All ${rows.length} (raw)`,
+        compact: "Compact fields",
+        brief: "Counts only",
+      },
+      build: (level) =>
+        level === "full"
+          ? rows
+          : level === "compact"
+            ? rows.map(projectRankPortfolioItem)
+            : {
+                tracked: rows.length,
+                active: rows.filter((item) => item.is_active).length,
+              },
+    },
+  ];
+
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
+  const pageAgentPayload = (): AgentPayloadInput => ({
+    kind: "marketing-ranks-page",
+    location: pageLocation,
+    description: `The full rank tracking portfolio for ${site.domain}.`,
+    data: pageFullData(),
+    summary: humanRankPortfolio(rows),
+    attributes: { site_id: site.id, domain: site.domain, tracked: rows.length },
+  });
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Rank portfolio — ${site.domain}`,
+    kind: "marketing-ranks-page",
+    location: pageLocation,
+    description: `The full rank tracking portfolio for ${site.domain}.`,
+    attributes: { site_id: site.id, domain: site.domain },
+    summary: humanRankPortfolio(rows),
+    sections: groomerSections(),
+  });
+
   return (
     <div className="grid gap-4 p-4">
       <SectionCard
         title="Rank portfolio"
         headerExtra={
-          <button
-            type="button"
-            onClick={() => void reload()}
-            className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground"
-            aria-label="Refresh"
-            title="Refresh"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <CopyButtons
+              size="icon"
+              label="Rank portfolio"
+              human={() => humanRankPortfolio(rows)}
+              json={() => rows}
+              agent={pageAgentPayload}
+            />
+            <ExportMenu
+              label={`rank-portfolio-${site.domain}`}
+              items={[
+                jsonExportItem(() => rows, "JSON (all rows, raw)"),
+                {
+                  id: "csv",
+                  label: "CSV (all rows)",
+                  build: () => ({
+                    content: rowsToCsv(
+                      rows.map(
+                        projectRankPortfolioItem,
+                      ) as unknown as Array<Record<string, unknown>>,
+                    ),
+                    extension: "csv",
+                    mime: "text/csv",
+                  }),
+                },
+              ]}
+            />
+            <AgentCopyGroomerLauncher config={groomerConfig} />
+            <button
+              type="button"
+              onClick={() => void reload()}
+              className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground"
+              aria-label="Refresh"
+              title="Refresh"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+          </div>
         }
       >
         <AddTargetForm onAdd={async (input) => void (await addTarget(input))} />
@@ -352,7 +533,7 @@ export function RanksWorkspace() {
                         <button
                           type="button"
                           className="text-sm font-medium text-foreground hover:underline"
-                          onClick={() => setHistoryTargetId(item.target_id)}
+                          onClick={() => setHistoryTarget(item)}
                         >
                           {item.keyword}
                         </button>
@@ -386,6 +567,24 @@ export function RanksWorkspace() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <CopyButtons
+                            size="icon"
+                            label={item.keyword}
+                            human={() => humanRankPortfolioItem(item)}
+                            json={() => item}
+                            agent={() => ({
+                              kind: "rank-portfolio-item",
+                              location: pageLocation,
+                              description: `One tracked rank target for ${site.domain}.`,
+                              data: item,
+                              summary: humanRankPortfolioItem(item),
+                              attributes: {
+                                keyword: item.keyword,
+                                provider: item.provider,
+                                is_active: item.is_active,
+                              },
+                            })}
+                          />
                           <Button
                             size="sm"
                             variant="outline"
@@ -428,8 +627,13 @@ export function RanksWorkspace() {
           </Table>
         </div>
       </SectionCard>
-      {historyTargetId ? (
-        <HistoryDialog targetId={historyTargetId} onClose={() => setHistoryTargetId(null)} />
+      {historyTarget ? (
+        <HistoryDialog
+          targetId={historyTarget.target_id}
+          keyword={historyTarget.keyword}
+          siteDomain={site.domain}
+          onClose={() => setHistoryTarget(null)}
+        />
       ) : null}
     </div>
   );

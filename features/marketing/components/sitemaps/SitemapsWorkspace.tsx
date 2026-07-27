@@ -17,6 +17,13 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import type {
+  AgentCopyGroomerConfig,
+  AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSitemapsScope } from "@/features/surfaces/manifests/marketing-sitemaps.manifest";
@@ -37,7 +44,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { syncSitemaps } from "@/features/marketing/crawler/direct-client";
-import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { webCopy, webLocation } from "@/features/marketing/lib/copy-payloads";
 import type { SiteSitemap } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
@@ -113,6 +120,7 @@ export function SitemapsWorkspace() {
   const rows = sitemaps.data ?? [];
   const indexes = rows.filter((sitemap) => sitemap.kind === "sitemapindex");
   const urlsets = rows.filter((sitemap) => sitemap.kind !== "sitemapindex");
+  const pageLocation = webLocation(`Sitemaps — ${site.root_url}`);
 
   const listCopy = webCopy({
     kind: "web-sitemaps-list",
@@ -144,6 +152,51 @@ export function SitemapsWorkspace() {
     attributes: { site_id: site.id, count: rows.length },
   });
 
+  const groomerSections = (): AgentCopyGroomerSection[] => [
+    {
+      id: "coverage",
+      title: "Coverage rollup",
+      description: "Sitemap counts + page-registry coverage.",
+      build: () => coverage.data ?? null,
+    },
+    {
+      id: "sitemaps",
+      title: "Sitemap documents",
+      description: `${rows.length} recorded sitemap documents.`,
+      cuttable: true,
+      levelLabels: {
+        full: `All ${rows.length} (raw)`,
+        compact: "Top 25",
+        brief: "Counts only",
+      },
+      build: (level) =>
+        level === "full"
+          ? rows
+          : level === "compact"
+            ? rows.slice(0, 25)
+            : { indexes: indexes.length, url_sets: urlsets.length },
+    },
+  ];
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: `Sitemaps — ${site.root_url}`,
+    kind: "marketing-sitemaps-page",
+    location: pageLocation,
+    description: `Every sitemap document and the coverage rollup for ${site.root_url}.`,
+    attributes: { site_id: site.id, domain: site.root_url },
+    summary: listCopy.human(),
+    sections: groomerSections(),
+  });
+
+  const pageFullData = (): Record<string, unknown> => {
+    const full: Record<string, unknown> = {};
+    for (const section of groomerSections()) {
+      const value = section.build("full");
+      if (value !== null && value !== undefined) full[section.id] = value;
+    }
+    return full;
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-sitemaps"
@@ -168,8 +221,11 @@ export function SitemapsWorkspace() {
       <div className="grid w-full gap-3">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h1 className="text-base font-semibold text-foreground">
+            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
               Sitemaps
+              <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                {rows.length}
+              </span>
             </h1>
             <p className="text-xs text-muted-foreground">
               Every sitemap this site publishes, and how its URLs flow into the
@@ -177,7 +233,25 @@ export function SitemapsWorkspace() {
             </p>
           </div>
           <div className="flex items-center gap-1.5">
-            <CopyButtons size="icon" {...listCopy} />
+            <CopyButtons size="icon" {...listCopy} json={() => pageFullData()} />
+            <ExportMenu
+              label={`sitemaps-${site.root_url}`}
+              items={[
+                jsonExportItem(pageFullData, "JSON (page data)"),
+                {
+                  id: "csv",
+                  label: "CSV (sitemaps)",
+                  build: () => ({
+                    content: rowsToCsv(
+                      rows as unknown as Array<Record<string, unknown>>,
+                    ),
+                    extension: "csv",
+                    mime: "text/csv",
+                  }),
+                },
+              ]}
+            />
+            <AgentCopyGroomerLauncher config={groomerConfig} />
             <Button
               size="sm"
               className="h-8 gap-1.5"
@@ -199,17 +273,53 @@ export function SitemapsWorkspace() {
             label="Sitemaps"
             value={(coverage.data?.sitemaps ?? rows.length).toLocaleString()}
             detail={`${indexes.length} index, ${urlsets.length} URL sets`}
+            copy={webCopy({
+              kind: "web-sitemaps-metric",
+              label: "Sitemaps",
+              description: "Total recorded sitemap documents for this site.",
+              surface: `Sitemaps — Sitemaps count — ${site.root_url}`,
+              data: {
+                sitemaps: coverage.data?.sitemaps ?? rows.length,
+                indexes: indexes.length,
+                url_sets: urlsets.length,
+              },
+              lines: [
+                ["Sitemaps", coverage.data?.sitemaps ?? rows.length],
+                ["Indexes", indexes.length],
+                ["URL sets", urlsets.length],
+              ],
+              attributes: { site_id: site.id },
+            })}
           />
           <MetricCell
             label="Pages in sitemaps"
             value={coverage.data?.pagesInSitemaps.toLocaleString() ?? "—"}
             detail="Canonical registry entries"
+            copy={webCopy({
+              kind: "web-sitemaps-metric",
+              label: "Pages in sitemaps",
+              description: "Canonical registry pages listed in a sitemap.",
+              surface: `Sitemaps — Pages in sitemaps — ${site.root_url}`,
+              data: { pages_in_sitemaps: coverage.data?.pagesInSitemaps ?? null },
+              lines: [["Pages in sitemaps", coverage.data?.pagesInSitemaps ?? null]],
+              attributes: { site_id: site.id },
+            })}
           />
           <MetricCell
             label="Never crawled"
             value={coverage.data?.neverCrawled.toLocaleString() ?? "—"}
             detail="Listed but not yet captured"
             tone={coverage.data?.neverCrawled ? "warning" : "good"}
+            copy={webCopy({
+              kind: "web-sitemaps-metric",
+              label: "Never crawled",
+              description:
+                "Pages listed in a sitemap that have never been captured by a crawl.",
+              surface: `Sitemaps — Never crawled — ${site.root_url}`,
+              data: { never_crawled: coverage.data?.neverCrawled ?? null },
+              lines: [["Never crawled", coverage.data?.neverCrawled ?? null]],
+              attributes: { site_id: site.id },
+            })}
           />
           <MetricCell
             label="Last synced"
@@ -220,6 +330,22 @@ export function SitemapsWorkspace() {
             }
             detail="From robots.txt + indexes"
             tone={coverage.data?.lastSyncedAt ? "default" : "warning"}
+            copy={webCopy({
+              kind: "web-sitemaps-metric",
+              label: "Last synced",
+              description: "When sitemaps were last synced for this site.",
+              surface: `Sitemaps — Last synced — ${site.root_url}`,
+              data: { last_synced_at: coverage.data?.lastSyncedAt ?? null },
+              lines: [
+                [
+                  "Last synced",
+                  coverage.data?.lastSyncedAt
+                    ? formatDate(coverage.data.lastSyncedAt)
+                    : "Never",
+                ],
+              ],
+              attributes: { site_id: site.id },
+            })}
           />
         </section>
 

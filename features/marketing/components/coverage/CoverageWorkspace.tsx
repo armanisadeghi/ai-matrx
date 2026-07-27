@@ -168,7 +168,20 @@ export function CoverageWorkspace() {
               canonical page registry. Every tile opens the filtered page list.
             </p>
           </div>
-          <CopyButtons size="icon" {...matrixCopy} />
+          <div className="flex items-center gap-1">
+            <CopyButtons
+              size="icon"
+              label={matrixCopy.label}
+              human={matrixCopy.human}
+              json={() => data}
+              agent={matrixCopy.agent}
+            />
+            <ExportMenu
+              label={`coverage-matrix-${site.domain}`}
+              items={[jsonExportItem(() => data, "Matrix (.json)")]}
+            />
+            <AgentCopyGroomerLauncher config={groomerConfig} />
+          </div>
         </header>
 
         <section className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
@@ -177,24 +190,32 @@ export function CoverageWorkspace() {
             description="Every URL any source recorded"
             value={data?.totalPages ?? null}
             href={pagesHref()}
+            siteDomain={site.domain}
+            location={pageLocation}
           />
           <CoverageTile
             label={COVERAGE_FILTER_COPY.in_sitemap.label}
             description={COVERAGE_FILTER_COPY.in_sitemap.description}
             value={data?.inSitemaps ?? null}
             href={pagesHref("in_sitemap")}
+            siteDomain={site.domain}
+            location={pageLocation}
           />
           <CoverageTile
             label={COVERAGE_FILTER_COPY.crawled.label}
             description={COVERAGE_FILTER_COPY.crawled.description}
             value={data?.crawled ?? null}
             href={pagesHref("crawled")}
+            siteDomain={site.domain}
+            location={pageLocation}
           />
           <CoverageTile
             label={COVERAGE_FILTER_COPY.never_crawled.label}
             description={COVERAGE_FILTER_COPY.never_crawled.description}
             value={data?.neverCrawled ?? null}
             href={pagesHref("never_crawled")}
+            siteDomain={site.domain}
+            location={pageLocation}
           />
           <CoverageTile
             label={COVERAGE_FILTER_COPY.sitemap_not_crawled.label}
@@ -202,6 +223,8 @@ export function CoverageWorkspace() {
             value={data?.sitemapNotCrawled ?? null}
             href={pagesHref("sitemap_not_crawled")}
             tone="attention"
+            siteDomain={site.domain}
+            location={pageLocation}
           />
           <CoverageTile
             label={COVERAGE_FILTER_COPY.crawled_no_sitemap.label}
@@ -209,6 +232,8 @@ export function CoverageWorkspace() {
             value={data?.crawledNoSitemap ?? null}
             href={pagesHref("crawled_no_sitemap")}
             tone="attention"
+            siteDomain={site.domain}
+            location={pageLocation}
           />
         </section>
 
@@ -224,6 +249,8 @@ export function CoverageWorkspace() {
                 description={PROVENANCE_COPY[provenance].description}
                 value={data?.byProvenance[provenance] ?? null}
                 href={`${sitePath}/pages?f_provenance=select:${provenance}`}
+                siteDomain={site.domain}
+                location={pageLocation}
               />
             ))}
           </div>
@@ -246,6 +273,8 @@ export function CoverageWorkspace() {
                 description={COVERAGE_FILTER_COPY.in_gsc.description}
                 value={data?.inGsc ?? null}
                 href={pagesHref("in_gsc")}
+                siteDomain={site.domain}
+                location={pageLocation}
               />
               <CoverageTile
                 label={COVERAGE_FILTER_COPY.gsc_no_sitemap.label}
@@ -253,6 +282,8 @@ export function CoverageWorkspace() {
                 value={data?.gscNoSitemap ?? null}
                 href={pagesHref("gsc_no_sitemap")}
                 tone="attention"
+                siteDomain={site.domain}
+                location={pageLocation}
               />
               <CoverageTile
                 label={COVERAGE_FILTER_COPY.sitemap_no_gsc.label}
@@ -260,6 +291,8 @@ export function CoverageWorkspace() {
                 value={data?.sitemapNoGsc ?? null}
                 href={pagesHref("sitemap_no_gsc")}
                 tone="attention"
+                siteDomain={site.domain}
+                location={pageLocation}
               />
             </div>
           ) : (
