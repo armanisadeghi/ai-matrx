@@ -48,12 +48,7 @@ import {
  * decorate a random credential. Every value is a token class, never a hex.
  */
 export type CredentialAccent =
-  | "primary"
-  | "info"
-  | "success"
-  | "warning"
-  | "secondary"
-  | "muted";
+  "primary" | "info" | "success" | "warning" | "secondary" | "muted";
 
 export const ACCENT_ICON_CLASS: Record<CredentialAccent, string> = {
   primary: "text-primary",
@@ -103,9 +98,36 @@ const DEFINITION_LOOK: Record<string, FamilyLook> = {
 
 /** Words that must not be title-cased into "Api" / "Url" / "Ssh". */
 const ACRONYMS = new Set([
-  "ai", "api", "aws", "cdn", "ci", "cd", "db", "dns", "ftp", "gcp", "http",
-  "https", "id", "ip", "jwt", "mfa", "oauth", "otp", "pat", "s3", "smtp",
-  "ssh", "sso", "ssl", "tls", "totp", "ui", "uri", "url", "vpn",
+  "ai",
+  "api",
+  "aws",
+  "cdn",
+  "ci",
+  "cd",
+  "db",
+  "dns",
+  "ftp",
+  "gcp",
+  "http",
+  "https",
+  "id",
+  "ip",
+  "jwt",
+  "mfa",
+  "oauth",
+  "otp",
+  "pat",
+  "s3",
+  "smtp",
+  "ssh",
+  "sso",
+  "ssl",
+  "tls",
+  "totp",
+  "ui",
+  "uri",
+  "url",
+  "vpn",
 ]);
 
 /**
@@ -197,7 +219,9 @@ export function hostOfUrl(raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
   try {
-    const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+    const url = new URL(
+      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`,
+    );
     return url.host.replace(/^www\./i, "") || null;
   } catch {
     return null;
@@ -268,7 +292,8 @@ export function credentialIdentity(
     (definition ? FAMILY_LOOK[definition.payload.family] : undefined) ??
     FAMILY_LOOK.generic;
 
-  const kindLabel = definition?.payload.label ?? humanizeKey(item.definition_key);
+  const kindLabel =
+    definition?.payload.label ?? humanizeKey(item.definition_key);
   const firstUrl = item.login_urls[0];
   const host = firstUrl ? hostOfUrl(firstUrl) : null;
   const identityField = identityFieldOf(item);
@@ -286,15 +311,21 @@ export function credentialIdentity(
       (candidate) =>
         typeof candidate === "string" &&
         candidate.trim().length > 0 &&
-        candidate.trim().toLowerCase() !== item.display_name.trim().toLowerCase(),
+        candidate.trim().toLowerCase() !==
+          item.display_name.trim().toLowerCase(),
     ) ?? null;
+  const metaLine =
+    subtitle && !echoesName(subtitle, item.display_name)
+      ? subtitle.trim()
+      : null;
 
   return {
     icon: look.icon,
     accent: look.accent,
     iconClass: ACCENT_ICON_CLASS[look.accent],
     kindLabel,
-    subtitle: subtitle ? subtitle.trim() : null,
+    subtitle: metaLine,
     host,
+    metaLine,
   };
 }

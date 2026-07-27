@@ -12,7 +12,7 @@ ONE definition-driven vault for both principals — personal and organization �
 
 `components/VaultWorkspace.tsx` is the ONLY vault UI. It receives a `VaultPrincipal` (`{type:'user'}` or `{type:'organization', organizationId}`); which actions render is decided by each item's `capabilities` (`can_use` / `can_edit` / `can_reveal` / `can_manage`) — never by principal-specific component forks. Surfaces:
 
-- Personal: [`app/(transitional)/settings/secrets/page.tsx`](../../app/(transitional)/settings/secrets/page.tsx)
+- Personal: [`app/(transitional)/settings/secrets/page.tsx`](<../../app/(transitional)/settings/secrets/page.tsx>)
 - Organization: `OrgManage.tsx` (`features/organizations/components/`) renders `<VaultWorkspace principal={{type:'organization',…}} canManage={…}>` in its Vault section.
 
 The pre-unification duplicate stacks (`service.ts`, `hooks.ts`, `organization-service.ts`, `organization-hooks.ts`, `OrganizationVaultSection.tsx`) are **deleted** — do not recreate a per-principal fork.
@@ -21,13 +21,13 @@ The pre-unification duplicate stacks (`service.ts`, `hooks.ts`, `organization-se
 
 Every field carries exactly three controls (independent; catalog definitions provide defaults):
 
-| Control | Values | Meaning |
-|---|---|---|
-| `handling` | `visible` | Shown to any authorized viewer (still encrypted at rest); FE shows it via `POST /api/vault/resolve` under `can_use`. |
-| | `revealable` | Masked; explicit audited reveal via `POST /api/vault/items/{id}/reveal` under `can_reveal`. |
-| | `sealed` | NO human path, ever — only trusted execution resolves it. The API refuses structurally. |
-| `editable` | bool | Whether a human may change the value (integration-managed tokens are `false`). |
-| `inject_into_sandbox` | bool | Whether the field enters authorized sandbox environments. **REQUIRES an env alias in `key`** — see below. |
+| Control               | Values       | Meaning                                                                                                              |
+| --------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `handling`            | `visible`    | Shown to any authorized viewer (still encrypted at rest); FE shows it via `POST /api/vault/resolve` under `can_use`. |
+|                       | `revealable` | Masked; explicit audited reveal via `POST /api/vault/items/{id}/reveal` under `can_reveal`.                          |
+|                       | `sealed`     | NO human path, ever — only trusted execution resolves it. The API refuses structurally.                              |
+| `editable`            | bool         | Whether a human may change the value (integration-managed tokens are `false`).                                       |
+| `inject_into_sandbox` | bool         | Whether the field enters authorized sandbox environments. **REQUIRES an env alias in `key`** — see below.            |
 
 `user_secrets.key` is the **optional env alias** (`VALID_KEY_RE`); `field_key` is the stable lowercase-snake identity within the item. Legacy single-value rows are one-field `env_value` items.
 
@@ -49,11 +49,11 @@ filter. **None of them is a bare RLS-filtered read** — that is the defect THE
 VIEW LAW exists to prevent, and RLS widening must never silently flood a
 personal vault:
 
-| Scope | Query | Notes |
-|---|---|---|
-| `mine` | `eq(user_id, me)` | Keeps the explicit owner filter. |
-| `shared` | my own `user_secret_grants` rows (`can_use`) → `in(id, thoseItemIds)` + `neq(user_id, me)` | Items OTHER people shared with me. Create/import are hidden here — the items are owned by someone else. |
-| `organization` | `eq(organization_id, org)` | Unchanged. |
+| Scope          | Query                                                                                      | Notes                                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `mine`         | `eq(user_id, me)`                                                                          | Keeps the explicit owner filter.                                                                        |
+| `shared`       | my own `user_secret_grants` rows (`can_use`) → `in(id, thoseItemIds)` + `neq(user_id, me)` | Items OTHER people shared with me. Create/import are hidden here — the items are owned by someone else. |
+| `organization` | `eq(organization_id, org)`                                                                 | Unchanged.                                                                                              |
 
 The personal surface shows a Mine / Shared with me switcher; the organization
 surface is always its own scope.
@@ -110,16 +110,17 @@ worked example.
 
 ## Files and entry points
 
-| File | Role |
-|---|---|
-| [`types.ts`](./types.ts) | Generated wire shapes (aidream OpenAPI) + normalized `VaultItem`/`VaultField`, principal descriptor, masked column lists, definition types (Zod-inferred from the Remote Catalogs `credentialDefinitionSchema` — never redeclared), `effectiveFields` (preset fields FULLY replace base fields). |
-| [`vault-service.ts`](./vault-service.ts) | THE service: `/api/vault/*` client + direct-Supabase masked reads + catalog definition loader. |
-| [`vault-hooks.ts`](./vault-hooks.ts) | THE hook set: `useVault` (list + all mutations + toasts/busy), `useVaultDefinitions`, `useVaultAudit`, `useTransientSecret`. |
-| [`components/VaultWorkspace.tsx`](./components/VaultWorkspace.tsx) | List/search/family-filter, item cards, detail + create + import dialogs (Credenza = Dialog/Drawer responsive). |
-| [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx) | Catalog picker (family groups, search, presets) + definition-driven form + Custom builder (with `KEY=value` paste-to-fill). |
-| [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx) | Fields (reveal/copy/edit/inject/delete, add field), rename, rotate, share (org access-mode + member grants; personal email grants via `lookup_user_by_email`), transfer, fork, soft delete, audit trail. |
-| [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`. |
-| [`utils.ts`](./utils.ts) | `parseEnvAssignment` — single dotenv-line parser (paste-to-fill). |
+| File                                                                           | Role                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`types.ts`](./types.ts)                                                       | Generated wire shapes (aidream OpenAPI) + normalized `VaultItem`/`VaultField`, principal descriptor, masked column lists, definition types (Zod-inferred from the Remote Catalogs `credentialDefinitionSchema` — never redeclared), `effectiveFields` (preset fields FULLY replace base fields). |
+| [`credential-identity.ts`](./credential-identity.ts)                           | Pure, metadata-only identity builder shared by Vault list/detail surfaces: icon/accent, human credential kind, host, and a deduplicated subtitle/meta line.                                                                                                                                      |
+| [`vault-service.ts`](./vault-service.ts)                                       | THE service: `/api/vault/*` client + direct-Supabase masked reads + catalog definition loader.                                                                                                                                                                                                   |
+| [`vault-hooks.ts`](./vault-hooks.ts)                                           | THE hook set: `useVault` (list + all mutations + toasts/busy), `useVaultDefinitions`, `useVaultAudit`, `useTransientSecret`.                                                                                                                                                                     |
+| [`components/VaultWorkspace.tsx`](./components/VaultWorkspace.tsx)             | List/search/family-filter, item cards, detail + create + import dialogs (Credenza = Dialog/Drawer responsive).                                                                                                                                                                                   |
+| [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | Catalog picker (family groups, search, presets) + definition-driven form + Custom builder (with `KEY=value` paste-to-fill).                                                                                                                                                                      |
+| [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Fields (reveal/copy/edit/inject/delete, add field), rename, rotate, share (org access-mode + member grants; personal email grants via `lookup_user_by_email`), transfer, fork, soft delete, audit trail.                                                                                         |
+| [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                   |
+| [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` — single dotenv-line parser (paste-to-fill).                                                                                                                                                                                                                                |
 
 ## Invariants
 
@@ -167,6 +168,7 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 - **2026-07-26** — Sharing, ownership, and destination-login build (ratified plan): Mine / Shared-with-me / Organization scopes, each a deliberate query; per-recipient grant CRUD replacing the destructive save-the-whole-list share panel; give-ownership to another user by exact email; create-for-someone with server-side password generation; plaintext destination metadata with the loud Not-encrypted section, browser-fill toggle, and one-click promotion of an encrypted `site_url`/`panel_url` into `login_urls`. Also pinned `--default-non-nullable false` in aidream's type generator — openapi-typescript v7 had started marking every defaulted property required, churning ~1800 lines and breaking partial-patch call sites.
 - **2026-07-23** — Phase 4 MCP/OAuth cutover: MCP tokens moved to sealed vault items; browser token paths deleted; refresh/persist/disconnect run in aidream `/api/mcp-connections/*`. Live finding: the legacy pgcrypto store NEVER held a token (its shared key was never configured) — all 4 connections stamped `expired` for re-auth.
 - **2026-07-23** — Alignment with final vault API: field-metadata PATCH (env alias set/clear, description, active, one-way seal with confirm; deleted the interim direct `inject_into_sandbox` write) and per-recipient share grantees with a Can-manage toggle (org members + personal email lookup); types regenerated.
+- **2026-07-26** — Repaired the credential identity return contract: `metaLine` is always returned and duplicate name-like subtitles are suppressed, restoring a clean type-check for Vault list/detail consumers.
 - **2026-07-23** — Phase 3 unification: ONE definition-driven `VaultWorkspace` for both principals (catalog picker + presets + custom builder, reveal/copy with transient auto-clear, env import, share/transfer/fork/rotate/audit, capability-driven actions); data split direct-Supabase masked reads vs `/api/vault/*` value ops; deleted the duplicated personal/org services, hooks, and `OrganizationVaultSection`; regenerated `api-types.ts` from local aidream OpenAPI.
 - **2026-07-23** — Linked the cross-repository Unified Credential Vault plan.
 - **2026-07-21** — Paste-to-fill for single dotenv assignments (reusable parser).
