@@ -13,6 +13,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D105 — files default to `internal` (org-readable): 11,003 rows. Product call, Arman (2026-07-26)
+
+`files.files.visibility` and `files.folders.visibility` both `DEFAULT 'internal'::platform.visibility`, so **every upload that doesn't pass an explicit visibility is readable by everyone in the owning org**. Live counts (non-deleted): `internal` 11,003 · `personal` 10,463 · `public` 1,238 · `link` 1.
+
+This was invisible until 2026-07-26, because the client folded `internal` into `personal` and rendered it as "Only you" (fixed in `22e8d79ea`). The UI now tells the truth, which means ~11k files that read "Only you" yesterday read "Organization" today. **Nothing about who can access them changed** — `iam.has_access_for_base` has always honored `internal`; only the label was wrong.
+
+Not filed as a bug because it may be intended (org collaboration by default). **Decision needed from Arman**: (a) leave the default and accept that uploads are org-visible; (b) flip the default to `personal` and let sharing be explicit — new rows only, no backfill; or (c) flip the default AND backfill existing `internal` rows that were never deliberately set, which is unknowable from the row alone (no audit of who set what) and so would have to be a blunt date-cutoff sweep. Do not act on this without an explicit answer — (c) can silently revoke access people are currently relying on.
+
 ### D104 — no footer anywhere in `(public)`; legal docs are near-unreachable (2026-07-26)
 
 `app/(public)/layout.tsx` renders `PublicHeader` and no footer; no public footer component exists in the repo. `/privacy-policy` and `/terms-and-conditions` are linked only from OAuth consent screens, SMS compliance constants, and the hand-rolled footer on `app/page.tsx:122-131` (which links Privacy but NOT Terms). Fix: one shared public footer component (Privacy, Terms, Contact) mounted in `(public)/layout.tsx` and reused by `app/page.tsx`. Product call on placement/links: Arman.
