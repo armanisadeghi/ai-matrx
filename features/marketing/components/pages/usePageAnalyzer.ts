@@ -73,7 +73,7 @@ function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
   return event.event === "data" ? (event.data as Record<string, unknown>) : null;
 }
 
-export function usePageAnalyzer(pageId: string) {
+export function usePageAnalyzer(pageId: string, organizationId: string) {
   const dispatch = useAppDispatch();
   const [state, setState] = useState<PageAnalyzerState>({ status: "idle" });
 
@@ -86,6 +86,9 @@ export function usePageAnalyzer(pageId: string) {
           path: PAGE_ANALYZE_PATH,
           method: "POST",
           body: { page_id: pageId, force_refresh: forceRefresh },
+          // The page's owning site is the entity-local authority. Never let a
+          // different active org (or the personal-org fallback) scope this run.
+          scopeOverrides: { organization_id: organizationId },
           stream: true,
           onStreamEvent: (event) => {
             const data = streamData(event);
@@ -128,7 +131,7 @@ export function usePageAnalyzer(pageId: string) {
         }));
       }
     },
-    [dispatch, pageId],
+    [dispatch, organizationId, pageId],
   );
 
   return { state, run };

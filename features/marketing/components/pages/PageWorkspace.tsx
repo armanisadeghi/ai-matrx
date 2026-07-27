@@ -90,7 +90,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const pagespeedRows = usePagePerformance(site.id, pageId);
   const analyticsRows = usePageWebAnalytics(site.id, pageId);
   // Lifted so the surface scope emits the same artifact the card renders.
-  const analyzer = usePageAnalyzer(pageId);
+  const analyzer = usePageAnalyzer(pageId, site.organization_id);
   // The saved target keyword resolved against the keyword library — shares
   // the react-query cache with IntentForm; feeds `target_keyword_data` into
   // the surface scope so agents get the market data, never just the phrase.
