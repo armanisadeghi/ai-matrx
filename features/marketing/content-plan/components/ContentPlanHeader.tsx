@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 
@@ -83,6 +84,7 @@ export function ContentPlanHeader() {
 
   return (
     <div className="flex w-full min-w-0 items-center gap-1.5">
+      <ActiveContextLensChip className="shrink-0" />
       <Select value={siteId ?? ""} onValueChange={setSiteId}>
         <SelectTrigger className="h-7 w-48 truncate border-none bg-transparent text-sm font-medium shadow-none sm:w-64">
           <SelectValue

@@ -5,10 +5,11 @@
  * duplicate these at a callsite.
  */
 
-import type {
-  RankPortfolioItem,
-  RankTargetHistoryPoint,
-  SerpLandscapeResult,
+import {
+  trackingModeLabelForItem,
+  type RankPortfolioItem,
+  type RankTargetHistoryPoint,
+  type SerpLandscapeResult,
 } from "@/features/marketing/components/ranks/types";
 
 export function formatCount(value: number | null | undefined): string {
@@ -35,8 +36,10 @@ export function humanRankPortfolioItem(item: RankPortfolioItem): string {
   const lastChecked = item.last_checked_at
     ? ` · last checked ${item.last_checked_at.slice(0, 10)}`
     : "";
+  const trackIn = trackingModeLabelForItem(item);
+  const location = item.location_name ? `, ${item.location_name}` : "";
   return [
-    `"${item.keyword}" — ${item.provider} (${item.search_type}${item.location_name ? `, ${item.location_name}` : ""})`,
+    `"${item.keyword}" — ${trackIn}${location}`,
     `- Position: ${position}${movement}${best}${lastChecked}`,
     `- Group: ${item.group ?? "—"} · Active: ${item.is_active ? "yes" : "no"} · Cadence: every ${item.cadence_days}d`,
   ].join("\n");
@@ -54,8 +57,7 @@ export function humanRankPortfolio(items: RankPortfolioItem[]): string {
 export function projectRankPortfolioItem(item: RankPortfolioItem) {
   return {
     keyword: item.keyword,
-    provider: item.provider,
-    search_type: item.search_type,
+    track_in: trackingModeLabelForItem(item),
     location_name: item.location_name,
     latest_position: item.latest_position,
     movement: item.movement,

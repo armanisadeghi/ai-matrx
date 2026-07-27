@@ -1,41 +1,11 @@
 /**
  * Rank tracking (WS-10 / M-34..M-37) — wire types for
- * `aidream/services/seo/rank_tracking.py`. The generated OpenAPI bundle now
- * carries these routes, so every wire shape is an alias of
- * `types/python-generated/api-types.ts` (the source of truth — never
- * hand-mirror). Only the shapes genuinely absent from the OpenAPI bundle
- * stay hand-typed below (each one says why).
+ * `aidream/services/seo/rank_tracking.py`. New backend routes (see
+ * `useRanks.ts`), not yet regenerated into `api-types.ts` — hand-typed here
+ * until the deploy sync runs.
  */
 
-import type { components } from "@/types/python-generated/api-types";
 import type { SeoCollectionReceipt } from "@/features/marketing/seo/rank/types";
-
-/** Portfolio row — `GET/POST /seo/sites/{site_id}/rank-targets`. */
-export type RankPortfolioItem = components["schemas"]["RankPortfolioItem"];
-/** Add-target body — `POST /seo/sites/{site_id}/rank-targets`. */
-export type AddRankTargetInput = components["schemas"]["RankTargetAddBody"];
-/** Patch body — `PATCH /seo/rank-targets/{target_id}`. */
-export type UpdateRankTargetInput = components["schemas"]["RankTargetPatchBody"];
-/** `DELETE /seo/rank-targets/{target_id}` response. */
-export type RankTargetRemovedResponse =
-  components["schemas"]["RankTargetRemovedResponse"];
-/** `GET /seo/rank-targets/{target_id}/history` row. */
-export type RankTargetHistoryPoint =
-  components["schemas"]["RankTargetHistoryPoint"];
-/** `GET /seo/rank-targets/{target_id}/landscape` response. */
-export type SerpLandscape = components["schemas"]["SerpLandscape"];
-export type SerpLandscapeResult = components["schemas"]["SerpLandscapeResult"];
-
-// ---------------------------------------------------------------------------
-// Hand-typed remainder — NOT in the OpenAPI bundle:
-// - RankProvider / AiAnswerEngine: the API models `provider` / `engine` as
-//   plain `string`; these unions are the FE-side vocabulary the UI offers.
-// - TrackingModeOption / TRACKING_MODES: frontend-only UI composition of
-//   provider + engine + search_type into user-facing tracking modes.
-// - RankCheckCompletedEvent: an in-band stream event payload on
-//   `POST /seo/rank-targets/{target_id}/check` — stream event shapes are not
-//   emitted into the OpenAPI schema set.
-// ---------------------------------------------------------------------------
 
 export type RankProvider = "brave" | "serpapi" | "dataforseo";
 export type AiAnswerEngine = "chat_gpt" | "perplexity" | "gemini" | "claude";
@@ -52,23 +22,174 @@ export interface TrackingModeOption {
 }
 
 export const TRACKING_MODES: TrackingModeOption[] = [
-  { id: "google_national", label: "Google — National", provider: "serpapi", search_type: "organic", location: "none",
-    hint: "Country-level Google organic rankings (no city bias)." },
-  { id: "google_location", label: "Google — Local area", provider: "serpapi", search_type: "organic", location: "required",
-    hint: "Google organic rankings as seen from a specific city." },
-  { id: "google_local_pack", label: "Google — Map pack", provider: "serpapi", search_type: "local_pack", location: "required",
-    hint: "Position in the Google local 3-pack for a place." },
-  { id: "brave", label: "Brave", provider: "brave", search_type: "organic", location: "none",
-    hint: "Brave's own index (country-level)." },
-  { id: "ai_chat_gpt", label: "ChatGPT (AI answers)", provider: "dataforseo", engine: "chat_gpt", search_type: "ai_answer", location: "optional",
-    hint: "Runs the prompt through ChatGPT with web search; tracks whether you are cited or mentioned." },
-  { id: "ai_perplexity", label: "Perplexity (AI answers)", provider: "dataforseo", engine: "perplexity", search_type: "ai_answer", location: "optional",
-    hint: "Citation + mention tracking in Perplexity answers." },
-  { id: "ai_gemini", label: "Gemini (AI answers)", provider: "dataforseo", engine: "gemini", search_type: "ai_answer", location: "optional",
-    hint: "Citation + mention tracking in Gemini answers." },
-  { id: "ai_claude", label: "Claude (AI answers)", provider: "dataforseo", engine: "claude", search_type: "ai_answer", location: "optional",
-    hint: "Citation + mention tracking in Claude answers." },
+  {
+    id: "google_national",
+    label: "Google — National",
+    provider: "serpapi",
+    search_type: "organic",
+    location: "none",
+    hint: "Country-level Google organic rankings (no city bias).",
+  },
+  {
+    id: "google_location",
+    label: "Google — Local area",
+    provider: "serpapi",
+    search_type: "organic",
+    location: "required",
+    hint: "Google organic rankings as seen from a specific city.",
+  },
+  {
+    id: "google_local_pack",
+    label: "Google — Map pack",
+    provider: "serpapi",
+    search_type: "local_pack",
+    location: "required",
+    hint: "Position in the Google local 3-pack for a place.",
+  },
+  {
+    id: "brave",
+    label: "Brave",
+    provider: "brave",
+    search_type: "organic",
+    location: "none",
+    hint: "Brave's own index (country-level).",
+  },
+  {
+    id: "ai_chat_gpt",
+    label: "ChatGPT (AI answers)",
+    provider: "dataforseo",
+    engine: "chat_gpt",
+    search_type: "ai_answer",
+    location: "optional",
+    hint: "Runs the prompt through ChatGPT with web search; tracks whether you are cited or mentioned.",
+  },
+  {
+    id: "ai_perplexity",
+    label: "Perplexity (AI answers)",
+    provider: "dataforseo",
+    engine: "perplexity",
+    search_type: "ai_answer",
+    location: "optional",
+    hint: "Citation + mention tracking in Perplexity answers.",
+  },
+  {
+    id: "ai_gemini",
+    label: "Gemini (AI answers)",
+    provider: "dataforseo",
+    engine: "gemini",
+    search_type: "ai_answer",
+    location: "optional",
+    hint: "Citation + mention tracking in Gemini answers.",
+  },
+  {
+    id: "ai_claude",
+    label: "Claude (AI answers)",
+    provider: "dataforseo",
+    engine: "claude",
+    search_type: "ai_answer",
+    location: "optional",
+    hint: "Citation + mention tracking in Claude answers.",
+  },
 ];
+
+/** User-facing label for how a portfolio row is tracked — never expose raw provider names. */
+export function trackingModeLabelForItem(
+  item: Pick<
+    RankPortfolioItem,
+    "provider" | "engine" | "search_type" | "location_name"
+  >,
+): string {
+  if (item.provider === "brave") return "Brave";
+  if (item.search_type === "local_pack") return "Google — Map pack";
+  if (item.search_type === "ai_answer") {
+    const ai = TRACKING_MODES.find(
+      (mode) => mode.search_type === "ai_answer" && mode.engine === item.engine,
+    );
+    return ai?.label ?? "AI answers";
+  }
+  if (item.provider === "serpapi" && item.search_type === "organic") {
+    return item.location_name?.trim()
+      ? "Google — Local area"
+      : "Google — National";
+  }
+  return "Rank tracking";
+}
+
+export interface RankPortfolioItem {
+  target_id: string;
+  site_id: string;
+  keyword_id: string;
+  keyword: string;
+  provider: string;
+  engine: string;
+  language: string;
+  device: string;
+  search_type: string;
+  location_name: string | null;
+  target_domain: string | null;
+  target_page_id: string | null;
+  group: string | null;
+  tags: string[];
+  notes: string | null;
+  cadence_days: number;
+  is_active: boolean;
+  created_at: string;
+  latest_position: number | null;
+  latest_absolute_position: number | null;
+  previous_position: number | null;
+  movement: number | null;
+  best_position: number | null;
+  last_checked_at: string | null;
+}
+
+export interface RankTargetHistoryPoint {
+  observed_at: string;
+  organic_rank: number | null;
+  absolute_rank: number | null;
+  matched_url: string | null;
+  matched_domain: string | null;
+  result_type: string;
+}
+
+export interface SerpLandscapeResult {
+  absolute_rank: number;
+  organic_rank: number | null;
+  result_type: string;
+  url: string | null;
+  domain: string | null;
+  title: string | null;
+  snippet: string | null;
+}
+
+export interface SerpLandscape {
+  snapshot_id: string | null;
+  observed_at: string | null;
+  results: SerpLandscapeResult[];
+}
+
+export interface AddRankTargetInput {
+  keyword: string;
+  provider: RankProvider;
+  language?: string;
+  device?: "desktop" | "mobile";
+  country?: string;
+  target_page_id?: string | null;
+  group?: string | null;
+  tags?: string[] | null;
+  notes?: string | null;
+  cadence_days?: number;
+  location_name?: string | null;
+  search_type?: "organic" | "local_pack" | "ai_answer";
+  engine?: AiAnswerEngine | null;
+}
+
+export interface UpdateRankTargetInput {
+  is_active?: boolean;
+  group?: string | null;
+  tags?: string[] | null;
+  notes?: string | null;
+  cadence_days?: number;
+}
 
 export interface RankCheckCompletedEvent {
   kind: "seo.rank_check_completed";

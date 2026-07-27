@@ -153,6 +153,9 @@ plan CRUD through it.
   entity dialog and NewNodeDialog labels tidied; node types humanized via
   `NODE_TYPE_LABELS`. Skeletons replace bare "Loading…" text. PillarMap
   untouched.
+- 2026-07-26 — Claude: **Content plan header gets working-context chip** —
+  `ActiveContextLensChip` (same as `/chat`) sits left of the site picker in
+  `ContentPlanHeader`; writes global app context only, never local plan state.
 - 2026-07-26 — Claude: pillar map redesigned for 400+ nodes — 3 switchable
   pure layouts (`pillar-map/layouts.ts` + tests), full dimension encoding
   (shape/color/size/outline/badge) with legend, collapse/expand super-nodes,

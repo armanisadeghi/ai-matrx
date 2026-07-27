@@ -9,7 +9,6 @@
 
 import { useState } from "react";
 import {
-  BrainCircuit,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -63,8 +62,6 @@ import {
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
-import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
-import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { RankSparkline } from "./RankSparkline";
 import {
   humanHistory,
@@ -74,12 +71,17 @@ import {
   humanRankPortfolioItem,
   projectRankPortfolioItem,
 } from "./format";
-import { usePortfolio, useRankTargetHistory, useRunRankCheck } from "./useRanks";
+import {
+  usePortfolio,
+  useRankTargetHistory,
+  useRunRankCheck,
+} from "./useRanks";
 import { TRACKING_MODES } from "./types";
 import type { AiAnswerEngine, RankPortfolioItem, RankProvider } from "./types";
 
 function MovementBadge({ movement }: { movement: number | null }) {
-  if (movement === null) return <span className="text-xs text-muted-foreground">—</span>;
+  if (movement === null)
+    return <span className="text-xs text-muted-foreground">—</span>;
   if (movement === 0)
     return (
       <Badge variant="outline" className="gap-1">
@@ -101,11 +103,17 @@ function MovementBadge({ movement }: { movement: number | null }) {
 
 function PositionCell({ item }: { item: RankPortfolioItem }) {
   if (item.latest_position === null) {
-    return <span className="text-xs text-muted-foreground">Not ranked / never checked</span>;
+    return (
+      <span className="text-xs text-muted-foreground">
+        Not ranked / never checked
+      </span>
+    );
   }
   return (
     <div className="flex flex-col">
-      <span className="text-sm font-semibold text-foreground">#{item.latest_position}</span>
+      <span className="text-sm font-semibold text-foreground">
+        #{item.latest_position}
+      </span>
       {item.last_checked_at ? (
         <span className="text-[10px] text-muted-foreground">
           {formatDate(item.last_checked_at)}
@@ -127,7 +135,6 @@ function AddTargetForm({
     engine?: AiAnswerEngine | null;
   }) => Promise<void>;
 }) {
-  const { site } = useMarketingSite();
   const [keyword, setKeyword] = useState("");
   const [modeId, setModeId] = useState<string>("google_national");
   const [locationName, setLocationName] = useState("");
@@ -139,7 +146,9 @@ function AddTargetForm({
     const trimmed = keyword.trim();
     if (!trimmed) return;
     if (mode.location === "required" && !locationName.trim()) {
-      toast.error(`${mode.label} needs a location (e.g. "Los Angeles, California, United States")`);
+      toast.error(
+        `${mode.label} needs a location (e.g. "Los Angeles, California, United States")`,
+      );
       return;
     }
     setSubmitting(true);
@@ -149,44 +158,45 @@ function AddTargetForm({
         provider: mode.provider,
         engine: mode.engine ?? undefined,
         search_type: mode.search_type,
-        location_name: mode.location === "none" ? undefined : locationName.trim() || undefined,
+        location_name:
+          mode.location === "none"
+            ? undefined
+            : locationName.trim() || undefined,
         cadence_days: cadenceDays,
       });
       setKeyword("");
       setLocationName("");
       toast.success(`Tracking "${trimmed}"`);
     } catch (err) {
-      toast.error("Could not add rank target", { description: extractErrorMessage(err) });
+      toast.error("Could not add rank target", {
+        description: extractErrorMessage(err),
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="grid gap-2 border-b border-border p-3 md:grid-cols-[1fr_140px_1fr_100px_auto] md:items-end">
-      <div className="grid gap-1">
+    <div className="grid gap-2 border-b border-border p-3 md:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)_minmax(0,1fr)_6.25rem_auto] md:items-end">
+      <div className="grid min-w-0 gap-1">
         <span className="text-[11px] font-medium text-muted-foreground">
           {mode.search_type === "ai_answer" ? "Prompt to track" : "Keyword"}
         </span>
-        {/* The canonical keyword input — Enter still submits unless the
-            suggestion dropdown consumed the keypress. */}
-        <div
+        <Input
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          placeholder="e.g. botox cost"
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.defaultPrevented) void submit();
+            if (e.key === "Enter") void submit();
           }}
-        >
-          <KeywordInput
-            value={keyword}
-            onChange={setKeyword}
-            scope={{ siteId: site.id, brandId: site.brand_id }}
-            placeholder="e.g. botox cost"
-          />
-        </div>
+        />
       </div>
-      <div className="grid gap-1">
-        <span className="text-[11px] font-medium text-muted-foreground">Track in</span>
+      <div className="grid min-w-0 gap-1">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Track in
+        </span>
         <Select value={modeId} onValueChange={setModeId}>
-          <SelectTrigger title={mode.hint}>
+          <SelectTrigger className="min-w-0" title={mode.hint}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -198,20 +208,30 @@ function AddTargetForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-1">
+      <div className="grid min-w-0 gap-1">
         <span className="text-[11px] font-medium text-muted-foreground">
           {mode.search_type === "ai_answer" ? "City" : "Location"}{" "}
-          {mode.location === "required" ? "(required)" : mode.location === "optional" ? "(optional)" : "(n/a)"}
+          {mode.location === "required"
+            ? "(required)"
+            : mode.location === "optional"
+              ? "(optional)"
+              : "(n/a)"}
         </span>
         <Input
           value={locationName}
           onChange={(e) => setLocationName(e.target.value)}
-          placeholder={mode.search_type === "ai_answer" ? "Los Angeles" : "Los Angeles, California, United States"}
+          placeholder={
+            mode.search_type === "ai_answer"
+              ? "Los Angeles"
+              : "Los Angeles, California, United States"
+          }
           disabled={mode.location === "none"}
         />
       </div>
-      <div className="grid gap-1">
-        <span className="text-[11px] font-medium text-muted-foreground">Cadence (days)</span>
+      <div className="grid min-w-0 gap-1">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Cadence (days)
+        </span>
         <Input
           type="number"
           min={1}
@@ -220,8 +240,17 @@ function AddTargetForm({
           onChange={(e) => setCadenceDays(Number(e.target.value) || 7)}
         />
       </div>
-      <Button size="sm" className="h-9 gap-1.5" disabled={!keyword.trim() || submitting} onClick={() => void submit()}>
-        {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+      <Button
+        size="sm"
+        className="h-9 shrink-0 gap-1.5"
+        disabled={!keyword.trim() || submitting}
+        onClick={() => void submit()}
+      >
+        {submitting ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Plus className="h-3.5 w-3.5" />
+        )}
         Track
       </Button>
     </div>
@@ -299,16 +328,23 @@ function HistoryDialog({
                 <TableBody>
                   {points.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-xs text-muted-foreground">
+                      <TableCell
+                        colSpan={3}
+                        className="text-center text-xs text-muted-foreground"
+                      >
                         No observations yet — run a check.
                       </TableCell>
                     </TableRow>
                   ) : (
                     [...points].reverse().map((point) => (
                       <TableRow key={point.observed_at}>
-                        <TableCell className="text-xs">{formatDate(point.observed_at)}</TableCell>
                         <TableCell className="text-xs">
-                          {point.organic_rank === null ? "not ranked" : `#${point.organic_rank}`}
+                          {formatDate(point.observed_at)}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {point.organic_rank === null
+                            ? "not ranked"
+                            : `#${point.organic_rank}`}
                         </TableCell>
                         <TableCell className="max-w-[280px] truncate text-xs text-muted-foreground">
                           {point.matched_url ?? "—"}
@@ -323,7 +359,8 @@ function HistoryDialog({
               <div>
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Competitive SERP landscape ({formatDate(landscape.observed_at)})
+                    Competitive SERP landscape (
+                    {formatDate(landscape.observed_at)})
                   </p>
                   {landscapeResults.length > 30 ? (
                     <button
@@ -331,7 +368,9 @@ function HistoryDialog({
                       className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                       onClick={() => setShowAllLandscape((current) => !current)}
                     >
-                      {showAllLandscape ? "top 30" : `all ${landscapeResults.length}`}
+                      {showAllLandscape
+                        ? "top 30"
+                        : `all ${landscapeResults.length}`}
                     </button>
                   ) : null}
                 </div>
@@ -352,8 +391,13 @@ function HistoryDialog({
                     </TableHeader>
                     <TableBody>
                       {visibleLandscape.map((result) => (
-                        <TableRow key={result.absolute_rank} className="group/serp">
-                          <TableCell className="text-xs">{result.absolute_rank}</TableCell>
+                        <TableRow
+                          key={result.absolute_rank}
+                          className="group/serp"
+                        >
+                          <TableCell className="text-xs">
+                            {result.absolute_rank}
+                          </TableCell>
                           <TableCell className="max-w-[160px] truncate text-xs">
                             {result.domain ?? "—"}
                           </TableCell>
@@ -396,9 +440,15 @@ function HistoryDialog({
 
 export function RanksWorkspace() {
   const { site } = useMarketingSite();
-  const openKeywordWindow = useOpenKeywordWindow();
-  const { items, loading, error, reload, addTarget, updateTarget, removeTarget } =
-    usePortfolio(site.id);
+  const {
+    items,
+    loading,
+    error,
+    reload,
+    addTarget,
+    updateTarget,
+    removeTarget,
+  } = usePortfolio(site.id);
   const [historyTarget, setHistoryTarget] = useState<RankPortfolioItem | null>(
     null,
   );
@@ -415,7 +465,9 @@ export function RanksWorkspace() {
     return <LoadingSurface label="Loading rank portfolio…" />;
   }
   if (error) {
-    return <QueryError error={new Error(error)} onRetry={() => void reload()} />;
+    return (
+      <QueryError error={new Error(error)} onRetry={() => void reload()} />
+    );
   }
 
   const groomerSections = (): AgentCopyGroomerSection[] => [
@@ -490,9 +542,9 @@ export function RanksWorkspace() {
                   label: "CSV (all rows)",
                   build: () => ({
                     content: rowsToCsv(
-                      rows.map(
-                        projectRankPortfolioItem,
-                      ) as unknown as Array<Record<string, unknown>>,
+                      rows.map(projectRankPortfolioItem) as unknown as Array<
+                        Record<string, unknown>
+                      >,
                     ),
                     extension: "csv",
                     mime: "text/csv",
@@ -519,7 +571,6 @@ export function RanksWorkspace() {
             <TableHeader>
               <TableRow>
                 <TableHead>Keyword</TableHead>
-                <TableHead>Provider</TableHead>
                 <TableHead>Position</TableHead>
                 <TableHead>Movement</TableHead>
                 <TableHead>Best</TableHead>
@@ -531,7 +582,10 @@ export function RanksWorkspace() {
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-xs text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center text-xs text-muted-foreground"
+                  >
                     No keywords tracked yet — add one above.
                   </TableCell>
                 </TableRow>
@@ -549,7 +603,6 @@ export function RanksWorkspace() {
                           {item.keyword}
                         </button>
                       </TableCell>
-                      <TableCell className="text-xs capitalize">{item.provider}</TableCell>
                       <TableCell>
                         <PositionCell item={item} />
                       </TableCell>
@@ -557,7 +610,9 @@ export function RanksWorkspace() {
                         <MovementBadge movement={item.movement} />
                       </TableCell>
                       <TableCell className="text-xs">
-                        {item.best_position === null ? "—" : `#${item.best_position}`}
+                        {item.best_position === null
+                          ? "—"
+                          : `#${item.best_position}`}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {item.group ?? "—"}
@@ -567,7 +622,9 @@ export function RanksWorkspace() {
                           checked={item.is_active}
                           onCheckedChange={async (checked) => {
                             try {
-                              await updateTarget(item.target_id, { is_active: checked });
+                              await updateTarget(item.target_id, {
+                                is_active: checked,
+                              });
                             } catch (err) {
                               toast.error("Could not update rank target", {
                                 description: extractErrorMessage(err),
@@ -578,23 +635,6 @@ export function RanksWorkspace() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                            aria-label="Keyword Intelligence"
-                            title="Keyword Intelligence"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openKeywordWindow({
-                                phrase: item.keyword,
-                                siteId: site.id,
-                                brandId: site.brand_id ?? undefined,
-                              });
-                            }}
-                          >
-                            <BrainCircuit className="h-3.5 w-3.5" />
-                          </Button>
                           <CopyButtons
                             size="icon"
                             label={item.keyword}
@@ -608,7 +648,6 @@ export function RanksWorkspace() {
                               summary: humanRankPortfolioItem(item),
                               attributes: {
                                 keyword: item.keyword,
-                                provider: item.provider,
                                 is_active: item.is_active,
                               },
                             })}
