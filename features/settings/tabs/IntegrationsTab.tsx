@@ -1,11 +1,11 @@
 "use client";
 
-import { Suspense } from "react";
-import dynamic from "next/dynamic";
-import { TabLoading } from "@/features/settings/components/TabLoading";
+import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
-const IntegrationsPage = dynamic(() => import("@/features/settings/pages/IntegrationsSettingsPage"), { ssr: false, loading: TabLoading });
+const IntegrationsPage = lazy(
+  () => import("@/features/settings/pages/IntegrationsSettingsPage"),
+);
 
 export default function IntegrationsTab() {
   return (

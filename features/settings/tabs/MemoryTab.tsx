@@ -1,11 +1,11 @@
 "use client";
 
-import { Suspense } from "react";
-import dynamic from "next/dynamic";
-import { TabLoading } from "@/features/settings/components/TabLoading";
+import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
-const MemoryManager = dynamic(() => import("@/features/memory/components/MemoryManager"), { ssr: false, loading: TabLoading });
+const MemoryManager = lazy(
+  () => import("@/features/memory/components/MemoryManager"),
+);
 
 export default function MemoryTab() {
   return (

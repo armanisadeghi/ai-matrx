@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense } from "react";
-import dynamic from "next/dynamic";
-import { TabLoading } from "@/features/settings/components/TabLoading";
+import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { PROFILE_SECTION_IDS } from "@/features/user-profile/types";
 
-const UserProfilePage = dynamic(() => import("@/features/user-profile/components/UserProfilePage"), { ssr: false, loading: TabLoading });
+const UserProfilePage = lazy(
+  () => import("@/features/user-profile/components/UserProfilePage"),
+);
 
 export default function ProfileEmergencyTab() {
   return (

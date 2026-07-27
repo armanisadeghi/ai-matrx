@@ -1,11 +1,11 @@
 "use client";
 
-import { Suspense } from "react";
-import dynamic from "next/dynamic";
-import { TabLoading } from "@/features/settings/components/TabLoading";
+import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
-const UserFeedbackPage = dynamic(() => import("@/features/settings/pages/FeedbackSettingsPage"), { ssr: false, loading: TabLoading });
+const UserFeedbackPage = lazy(
+  () => import("@/features/settings/pages/FeedbackSettingsPage"),
+);
 
 export default function FeedbackTab() {
   return (
