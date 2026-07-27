@@ -17,6 +17,8 @@
 //
 // One active read-aloud at a time is all these surfaces need.
 
+import { activateAudio } from "@/features/audio/activation";
+
 export interface VoicePlaybackState {
   /** True while audio is loading or playing (i.e. there is something to stop). */
   active: boolean;
@@ -112,6 +114,10 @@ export function requestVoicePlayback(next: VoicePlaybackRequest): void {
   ) {
     return;
   }
+  // A REAL read-aloud request is audio engagement — mount the lazy audio
+  // system so the app-root speaker owner exists to consume it. Surfaces also
+  // publish `enabled:false` on mount/teardown; those must NOT engage.
+  if (next.enabled && next.conversationId) activateAudio();
   request = next;
   emitRequest();
 }

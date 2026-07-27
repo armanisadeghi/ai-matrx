@@ -34,6 +34,13 @@ export type RecordingContext =
 export interface RecordingsState {
   isRecording: boolean;
   isPaused: boolean;
+  /**
+   * True between stop() and the finalize callback firing. The recorder is a
+   * single shared instance; a new recording must not start in this window.
+   * Mirrored from the engine so the context-free `useGlobalRecording` hook can
+   * expose it without touching the engine graph.
+   */
+  isFinalizing: boolean;
   isTranscribing: boolean;
   startedAtMs: number | null;
   durationSec: number;
@@ -47,6 +54,7 @@ export interface RecordingsState {
 const initialState: RecordingsState = {
   isRecording: false,
   isPaused: false,
+  isFinalizing: false,
   isTranscribing: false,
   startedAtMs: null,
   durationSec: 0,
@@ -90,7 +98,11 @@ const slice = createSlice({
       // context lingers briefly while transcription wraps up so consumers can
       // identify which session just ended; cleared by recordingFinalized.
     },
+    finalizingChanged(state, action: PayloadAction<boolean>) {
+      state.isFinalizing = action.payload;
+    },
     recordingFinalized(state) {
+      state.isFinalizing = false;
       state.isTranscribing = false;
       state.context = null;
       state.startedAtMs = null;
@@ -117,6 +129,7 @@ const slice = createSlice({
       state.lastError = action.payload;
       state.isRecording = false;
       state.isPaused = false;
+      state.isFinalizing = false;
       state.isTranscribing = false;
       state.audioLevel = 0;
     },
@@ -128,6 +141,7 @@ export const {
   recordingPaused,
   recordingResumed,
   recordingStopped,
+  finalizingChanged,
   recordingFinalized,
   audioLevelChanged,
   durationTicked,

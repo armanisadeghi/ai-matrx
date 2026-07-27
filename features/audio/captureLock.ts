@@ -31,6 +31,8 @@
  *    commit a half-finished blob); the user deliberately started something else.
  */
 
+import { activateAudio } from "@/features/audio/activation";
+
 export interface CaptureHolder {
   /** Stable identifier for the claiming recorder instance / owner. */
   id: string;
@@ -64,6 +66,10 @@ function notify(): void {
  * over itself) does not stop the holder — it just refreshes the registration.
  */
 export function claimCapture(holder: CaptureHolder): void {
+  // Any capture claim = audio engagement. Mounts the lazy audio system so the
+  // session registry / Audio panel mirrors exist even for raw recorders
+  // (voice messages, flashcards) that never go through the global engine.
+  activateAudio();
   if (current && current.id !== holder.id) {
     const previous = current;
     // Clear before stopping so a re-entrant claim/release from inside the

@@ -40,7 +40,6 @@ import { TranscriptsProvider } from "@/features/transcripts/context/TranscriptsC
 import { AudioRecoveryProvider } from "@/features/audio/providers/AudioRecoveryProvider";
 // disaster
 import { GlobalRecordingProvider } from "@/providers/GlobalRecordingProvider";
-import { RecordingPill } from "@/components/global/RecordingPill";
 import { RequestRecoveryProvider } from "@/features/request-recovery/providers/RequestRecoveryProvider";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
@@ -142,7 +141,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                               <AudioDeviceProvider />
                               <GlobalRecordingProvider>
                                 {children}
-                                <RecordingPill />
                                 <RecoveryWindow />
                                 <RecoveryNudge />
                                 {/* <DeferredSingletons /> */}

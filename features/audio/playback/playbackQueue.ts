@@ -13,6 +13,7 @@
  * for the window-panel UI; consumers drive it through `useAudioPlayback`.
  */
 
+import { activateAudio } from "@/features/audio/activation";
 import { claimPlayback, releasePlayback } from "./playbackLock";
 import type {
   ActivePlayback,
@@ -214,6 +215,9 @@ export interface EnqueueResult {
 
 /** Add a request to the queue. Plays immediately if nothing is active. */
 export function enqueuePlayback(request: PlaybackRequest): EnqueueResult {
+  // First engagement mounts the lazy audio system (mirrors + panel UI). The
+  // queue itself plays fine without it; the host replays state on mount.
+  activateAudio();
   const id = nextId();
   const item: PlaybackItem = {
     ...request,
@@ -237,6 +241,7 @@ export async function pausePlayback(): Promise<void> {
 }
 
 export async function resumePlayback(): Promise<void> {
+  activateAudio();
   if (!active || !currentId) return;
   await active.resume();
   patch(currentId, { status: "playing" });
@@ -260,6 +265,7 @@ export async function skipPlayback(): Promise<void> {
 
 /** Play (or replay) a specific item now, taking over anything active. */
 export async function playPlaybackItem(id: string): Promise<void> {
+  activateAudio();
   const item = items.find((i) => i.id === id);
   if (!item) return;
   // Replay finished/errored items by resetting them to queued.
