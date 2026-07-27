@@ -31,7 +31,7 @@ vision: []
 
 `/marketing/{ranks,analytics,campaigns,competitors,content-studio,reports,social,email}` render `MarketingComingSoon` and load nothing. Authoring manifests for them would be fiction (violates "never declare what nothing emits"). They get surfaces when the features ship. Two manifests were found describing pages that never existed (`documents` described a RAG viewer; `agent-builder` declared a nonexistent test-prompt input) — **audit the live page before trusting an inherited manifest.**
 
-## Remaining work — the board drives everything (live: ~18 verified / ~28 partial / ~33 stub / ~54 unregistered after overlay registration; read fresh counts from the board)
+## Remaining work — the board drives everything (live 2026-07-27 after the fleet push: **50 verified / 15 partial / 19 stub / 54 unregistered**; 84 manifests, 2,057 value rows — always read fresh counts from the board)
 
 1. **Unregistered real pages → manifests** (full recipe incl. route prefix + registry + sync). Ranked by user dwell: `/education` (~90 routes; plan a parent + children tree), `/images` (21), `/podcast` (26), `/rag` (11 — DB row `matrx-user/rag` is `is_active=false`; reactivate when registering), `/schedules`, `/scopes` + `/context-items`, `/workbooks`, `/knowledge`, `/shapes`, `/legal/ca-wc`, `/artifacts`, `/reports`, `/markdown-studio`, `/seo/keyword-research`, `/voice`, `/surfaces`, `/tools` (hub), `/chat/voice` (`matrx-user/chat-voice` — already load-bearing at runtime), `/transcripts/scribe/[sessionId]` (`transcript-scribe-live` — name hardcoded in `ScribeLiveScreen`), `/sandbox` (`matrx-user/sandboxes`).
 2. **matrx-admin fleet** — all 33 admin surfaces are unregistered; they map 1:1 to live `/administration/*` routes. Biggest single block on the board.
