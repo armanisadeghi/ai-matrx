@@ -293,11 +293,14 @@ export function ScopeFieldInput({
           onChange={(v) => {
             isDirtyRef.current = true;
             setValue(v);
-            if (hasCustom) scheduleCommit(v);
+            if (hasCustom || row.value_type === "markdown") scheduleCommit(v);
           }}
           onCommit={(v) => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = null;
+            pendingRef.current = null;
             isDirtyRef.current = false;
-            commit(v);
+            void commit(v);
           }}
           referenceConfig={
             row.value_type === "reference" ? referenceConfigFromItem(row) : null

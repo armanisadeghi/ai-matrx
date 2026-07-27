@@ -19,6 +19,8 @@
  * callers with an explicit Save button can pass the same setter to both.
  */
 
+import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -35,6 +37,21 @@ import type { VariableCustomComponent } from "@/features/agents/types/agent-defi
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
 import { ReferenceValuePicker } from "@/features/scopes/components/reference/ReferenceValuePicker";
 import type { ReferenceItemConfig } from "@/features/scopes/utils/referenceCell";
+
+const BasicContentEditor = dynamic(
+  () =>
+    import("@/components/content-refine/BasicContentEditor").then(
+      (module) => module.BasicContentEditor,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    ),
+  },
+);
 
 export interface ContextValueInputProps {
   id?: string;
@@ -183,6 +200,44 @@ export function ContextValueInput({
           onCommit?.(next);
         }}
       />
+    );
+  }
+
+  if (valueType === "markdown") {
+    const current = typeof value === "string" ? value : "";
+    const preferredHeight = compact ? 200 : 320;
+    const editorHeight = Math.min(
+      Math.max(resolvedMinHeight, preferredHeight),
+      maxHeight,
+    );
+
+    return (
+      <div
+        id={id}
+        role="group"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
+        className={cn(
+          "min-h-0 overflow-hidden rounded-md",
+          disabled && "opacity-60",
+          className,
+        )}
+        style={{ height: editorHeight }}
+      >
+        <BasicContentEditor
+          content={current}
+          onChange={onChange}
+          onChangeFlush={(next) => {
+            onChange(next);
+            onCommit?.(next);
+          }}
+          initialEditorMode="split"
+          readOnly={disabled}
+          placeholder={placeholder ?? "Write Markdown…"}
+          className="min-h-0 flex-1"
+        />
+      </div>
     );
   }
 
