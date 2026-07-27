@@ -22,6 +22,7 @@
 // chunk first loads. See DeferredSingletons.tsx for the live import.
 
 import React from "react";
+// disaster
 import StoreProvider from "@/providers/StoreProvider";
 // disaster
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -46,7 +47,7 @@ import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNu
 
 // disaster - REPLACED WITH DeferredSingletonWrapper
 // import DeferredSingletons from "./DeferredSingletons";
-import { DeferredSingletonWrapper } from "@/features/deferred-singletons/DeferredSingletonWrapper";
+import { DeferredSingletonWrapper } from "./DeferredSingletonWrapper";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
 // WindowPersistenceManager provides the React context that WindowPanel
@@ -60,6 +61,7 @@ import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
 // than waiting on idle. Imports only metadata + local-cache helpers — none
 // of the heavy window-panel core files are pulled into this graph.
 // Needs research & testing
+// disaster
 import { WindowPersistenceManager } from "@/features/window-panels/WindowPersistenceManager";
 // ExtensionBridgeSubscriber bridges matrx-extend Chrome extension envelopes
 // (Broadcast channel `matrx-extension-bridge:<userId>`) into the
@@ -69,6 +71,7 @@ import { WindowPersistenceManager } from "@/features/window-panels/WindowPersist
 // in-app caller would. Mounted at the provider root so it's always
 // active for signed-in users; short-circuits when no user is present.
 // See docs/MATRX_EXTEND_CONNECTION.md and lib/extension-bridge/.
+// disaster
 import { ExtensionBridgeSubscriber } from "@/lib/extension-bridge/ExtensionBridgeSubscriber";
 import GlobalTaskShortcut from "@/features/tasks/widgets/GlobalTaskShortcut";
 import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromSourceDialog";
@@ -76,6 +79,7 @@ import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromS
 // "never import from a barrel index.ts", and the barrel drags the entire Files UI
 // into every authenticated route to obtain these three hosts.
 import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
+// disaster
 import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
 import { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
