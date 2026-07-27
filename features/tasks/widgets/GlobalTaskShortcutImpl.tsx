@@ -49,13 +49,13 @@ export default function GlobalTaskShortcutImpl({ onClose }: Props) {
   const submit = async () => {
     const t = title.trim();
     if (!t) return;
-    const id = await createAndAssociate({
+    const created = await createAndAssociate({
       title: t,
       description: description.trim() || null,
       project_id: projectId || undefined,
     });
-    if (id) {
-      dispatch(setSelectedTaskId(id));
+    if (created) {
+      dispatch(setSelectedTaskId(created.taskId));
       onClose();
     }
   };

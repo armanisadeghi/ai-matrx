@@ -159,14 +159,16 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
       label: label ?? newTitle.trim(),
       metadata,
     };
-    const taskId = await createAndAssociate({
+    const created = await createAndAssociate({
       title: newTitle.trim(),
       description: newDescription.trim() || null,
       priority: prePopulate?.priority ?? null,
       source,
     });
-    if (taskId) {
-      onAssociated?.(taskId);
+    if (created) {
+      // Only report "associated" when the edge actually landed — the hook
+      // already surfaced a loud toast for a failed link.
+      if (!created.linkError) onAssociated?.(created.taskId);
       setOpen(false);
     }
   };

@@ -42,13 +42,13 @@ export default function TaskQuickAddBar({
   const submit = async () => {
     const title = value.trim();
     if (!title) return;
-    const taskId = await createAndAssociate({
+    const created = await createAndAssociate({
       title,
       project_id: projectId,
       source,
     });
-    if (taskId) {
-      onCreated?.(taskId);
+    if (created) {
+      onCreated?.(created.taskId);
       setValue("");
       scheduleRefocus();
     }

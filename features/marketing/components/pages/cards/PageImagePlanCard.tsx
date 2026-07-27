@@ -2,11 +2,13 @@
 
 /**
  * PageImagePlanCard — plan the images this page SHOULD have: per-planned-
- * image description, alt text, placement, and status, saved in
+ * image description, alt text, placement, style preset, and status, saved in
  * `desired_values.image_plan` through the shared slice contract. Each entry
- * can be generated directly by the surface's `image_producer` agent
- * (headless run → durable file_id back onto the entry, rendered via the
- * canonical media pipeline) or turned into a task.
+ * generates with ONE click through the default two-step mini-pipeline
+ * (prompt generator → Matrx Image Ultra); the split-button menu offers the
+ * premium all-in-one agent and the surface's `image_producer` role binding
+ * as overrides. Generated file_ids persist onto the entry immediately and
+ * render via the canonical media pipeline.
  *
  * NOTE: the scraper currently stores only image COUNTS ({count, missing_alt})
  * — there is no observed per-image inventory to mirror yet. When the crawler
@@ -14,12 +16,32 @@
  */
 
 import { useState } from "react";
-import { ImagePlus, ListTodo, Loader2, Sparkles, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ImagePlus,
+  ListTodo,
+  Loader2,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
@@ -29,7 +51,12 @@ import { useDesiredValueSlice } from "@/features/marketing/components/pages/desi
 import { useOpenTaskQuickCreateWindow } from "@/features/overlays/openers/taskQuickCreateWindow";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
-import { generatePageImage } from "@/features/marketing/lib/generate-page-image";
+import {
+  generatePageImage,
+  generatePageImageAllInOne,
+  generatePageImageTwoStep,
+  type PageImageResult,
+} from "@/features/marketing/lib/generate-page-image";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type {
   DesiredImagePlanEntry,
@@ -37,6 +64,25 @@ import type {
 } from "@/features/marketing/types";
 
 const IMAGE_PRODUCER_ROLE = "image_producer";
+
+/** Style presets offered in the compact per-entry select (custom allowed). */
+const STYLE_PRESETS = [
+  "Hero / Banner",
+  "Infographic",
+  "Informational Diagram",
+  "Data Visual",
+  "Photorealistic Photo",
+  "Product Photography & Mockup",
+  "Editorial Illustration",
+  "Social Share Card",
+  "Cinematic Photo",
+  "Professional Educational Concept",
+] as const;
+
+const STYLE_NONE = "__none__";
+const STYLE_CUSTOM = "__custom__";
+
+type GenerateMode = "two-step" | "all-in-one" | "surface";
 
 function newEntry(): DesiredImagePlanEntry {
   return {
@@ -57,6 +103,10 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
   const { roles } = useSurfaceAgentRoles(MARKETING_PAGE_SURFACE_NAME);
   const imageAgentId = roles[IMAGE_PRODUCER_ROLE]?.effectiveAgentId ?? null;
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  /** Entries whose style select sits in free-text "Custom…" mode. */
+  const [customStyleIds, setCustomStyleIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const updateEntry = (id: string, patch: Partial<DesiredImagePlanEntry>) => {
     desired.setDraft(
@@ -66,49 +116,103 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
     );
   };
 
+  const styleSelectValue = (entry: DesiredImagePlanEntry): string => {
+    if (customStyleIds.has(entry.id)) return STYLE_CUSTOM;
+    if (!entry.style) return STYLE_NONE;
+    return (STYLE_PRESETS as readonly string[]).includes(entry.style)
+      ? entry.style
+      : STYLE_CUSTOM;
+  };
+
+  const onStyleSelect = (entry: DesiredImagePlanEntry, value: string) => {
+    setCustomStyleIds((prev) => {
+      const next = new Set(prev);
+      if (value === STYLE_CUSTOM) next.add(entry.id);
+      else next.delete(entry.id);
+      return next;
+    });
+    if (value === STYLE_NONE) updateEntry(entry.id, { style: undefined });
+    else if (value !== STYLE_CUSTOM) updateEntry(entry.id, { style: value });
+  };
+
   const buildSpec = (entry: DesiredImagePlanEntry) =>
     [
       `Generate ONE image for the web page ${page.url} (path ${page.path || "/"}).`,
       `Description: ${entry.description || "(none provided)"}`,
       entry.alt ? `Intended alt text: ${entry.alt}` : null,
       entry.placement ? `Placement on the page: ${entry.placement}` : null,
+      entry.style ? `Style: ${entry.style}` : null,
       "Return the image itself as your output.",
     ]
       .filter(Boolean)
       .join("\n");
 
-  const generate = async (entry: DesiredImagePlanEntry) => {
-    if (!imageAgentId) return;
+  const persistGeneratedFile = async (entryId: string, fileId: string) => {
+    // Persist immediately — a generated artifact must never sit only in
+    // local state. Save the whole plan with the updated entry.
+    const nextEntries = entries.map((item) =>
+      item.id === entryId
+        ? { ...item, file_id: fileId, status: "generated" as const }
+        : item,
+    );
+    desired.setDraft(nextEntries);
+    await desired.save();
+    toast.success("Image generated and saved to the plan");
+  };
+
+  const generate = async (entry: DesiredImagePlanEntry, mode: GenerateMode) => {
     if (!entry.description.trim()) {
       toast.error("Describe the image before generating it.");
       return;
     }
     setGeneratingId(entry.id);
     try {
-      const fileId = await dispatch(
-        generatePageImage({
-          agentId: imageAgentId,
-          prompt: buildSpec(entry),
-          surfaceKey: MARKETING_PAGE_SURFACE_NAME,
-        }),
-      );
-      if (!fileId) {
-        toast.error("Image generation returned no image", {
-          description:
-            "The agent run finished without an image output. Check the agent bound to the Image producer role.",
-        });
+      if (mode === "surface") {
+        if (!imageAgentId) {
+          toast.error("No agent bound to the Image producer role", {
+            description:
+              "Bind one in this surface's config, or use the default pipeline.",
+          });
+          return;
+        }
+        const fileId = await dispatch(
+          generatePageImage({
+            agentId: imageAgentId,
+            prompt: buildSpec(entry),
+            surfaceKey: MARKETING_PAGE_SURFACE_NAME,
+          }),
+        );
+        if (!fileId) {
+          toast.error("Image generation returned no image", {
+            description:
+              "The agent run finished without an image output. Check the agent bound to the Image producer role.",
+          });
+          return;
+        }
+        await persistGeneratedFile(entry.id, fileId);
         return;
       }
-      // Persist immediately — a generated artifact must never sit only in
-      // local state. Save the whole plan with the updated entry.
-      const nextEntries = entries.map((item) =>
-        item.id === entry.id
-          ? { ...item, file_id: fileId, status: "generated" as const }
-          : item,
+
+      const args = {
+        spec: buildSpec(entry),
+        style: entry.style ?? "",
+        surfaceKey: MARKETING_PAGE_SURFACE_NAME,
+      };
+      const result: PageImageResult = await dispatch(
+        mode === "all-in-one"
+          ? generatePageImageAllInOne(args)
+          : generatePageImageTwoStep(args),
       );
-      desired.setDraft(nextEntries);
-      await desired.save();
-      toast.success("Image generated and saved to the plan");
+      if (!result.ok) {
+        toast.error(
+          result.step === "prompt"
+            ? "Image generation failed at the prompt step"
+            : "Image generation failed at the image step",
+          { description: result.message },
+        );
+        return;
+      }
+      await persistGeneratedFile(entry.id, result.fileId);
     } finally {
       setGeneratingId(null);
     }
@@ -118,7 +222,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
     kind: "web-page-image-plan",
     label: "Image plan",
     description:
-      "The planned images for this page: descriptions, alt text, placement, status, and generated file ids.",
+      "The planned images for this page: descriptions, alt text, placement, style, status, and generated file ids.",
     surface: `Image plan — ${page.url}`,
     data: { url: page.url, image_plan: entries },
     lines: [
@@ -154,8 +258,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
         <div className="grid gap-2 p-3">
           <p className="text-xs text-muted-foreground">
             No images planned yet. Describe the images this page should have —
-            then generate them with the Image producer agent or hand them off
-            as tasks.
+            then generate them in one click or hand them off as tasks.
           </p>
           <div>
             <Button
@@ -182,6 +285,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
           <div className="grid gap-3">
             {entries.map((entry) => {
               const generating = generatingId === entry.id;
+              const selectValue = styleSelectValue(entry);
               return (
                 <div
                   key={entry.id}
@@ -244,26 +348,93 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                         />
                       </div>
                     </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Style</Label>
+                        <Select
+                          value={selectValue}
+                          onValueChange={(value) => onStyleSelect(entry, value)}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Style preset" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={STYLE_NONE}>
+                              Agent&apos;s choice
+                            </SelectItem>
+                            {STYLE_PRESETS.map((preset) => (
+                              <SelectItem key={preset} value={preset}>
+                                {preset}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value={STYLE_CUSTOM}>Custom…</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {selectValue === STYLE_CUSTOM ? (
+                        <div className="space-y-1">
+                          <Label className="text-xs">Custom style</Label>
+                          <Input
+                            value={entry.style ?? ""}
+                            onChange={(event) =>
+                              updateEntry(entry.id, {
+                                style: event.target.value || undefined,
+                              })
+                            }
+                            placeholder="Describe the style yourself"
+                          />
+                        </div>
+                      ) : null}
+                    </div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7"
-                        disabled={!imageAgentId || generating}
-                        title={
-                          imageAgentId
-                            ? "Generate this image with the Image producer agent"
-                            : "Bind an agent to the Image producer role in surface config first"
-                        }
-                        onClick={() => void generate(entry)}
-                      >
-                        {generating ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                        )}
-                        {entry.file_id ? "Regenerate" : "Generate"}
-                      </Button>
+                      <div className="inline-flex">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 rounded-r-none"
+                          disabled={generating}
+                          title="Generate: prompt generator → Matrx Image Ultra"
+                          onClick={() => void generate(entry, "two-step")}
+                        >
+                          {generating ? (
+                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                          )}
+                          {entry.file_id ? "Regenerate" : "Generate"}
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 rounded-l-none border-l-0 px-1.5"
+                              disabled={generating}
+                              aria-label="More generation options"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem
+                              onSelect={() => void generate(entry, "all-in-one")}
+                            >
+                              All-in-one (premium)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={!imageAgentId}
+                              title={
+                                imageAgentId
+                                  ? undefined
+                                  : "Bind an agent to the Image producer role in surface config first"
+                              }
+                              onSelect={() => void generate(entry, "surface")}
+                            >
+                              Surface role agent
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                       <Button
                         size="sm"
                         variant="ghost"

@@ -83,7 +83,7 @@ export default function QuickCreateTaskButton(props: QuickCreateTaskButtonProps)
 
   const submit = async () => {
     if (!title.trim()) return;
-    const taskId = await createAndAssociate({
+    const created = await createAndAssociate({
       title: title.trim(),
       description: description.trim() || null,
       priority: (priority || null) as "low" | "medium" | "high" | null,
@@ -91,8 +91,8 @@ export default function QuickCreateTaskButton(props: QuickCreateTaskButtonProps)
       project_id: projectId || undefined,
       source,
     });
-    if (taskId) {
-      onCreated?.(taskId);
+    if (created) {
+      onCreated?.(created.taskId);
       setOpen(false);
     }
   };

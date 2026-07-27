@@ -163,14 +163,16 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
   const handleCreate = async () => {
     const title = (newTitle || query).trim();
     if (!title) return;
-    const taskId = await createAndAssociate({
+    const created = await createAndAssociate({
       title,
       description: newDescription.trim() || null,
       priority: prePopulate?.priority ?? null,
       source: source ?? undefined,
     });
-    if (taskId) {
-      onAssociated?.(taskId);
+    if (created) {
+      // Only report "associated" when the edge actually landed — the hook
+      // already surfaced a loud toast for a failed link.
+      if (!created.linkError) onAssociated?.(created.taskId);
       setOpen(false);
     }
   };
@@ -322,9 +324,9 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
                   onClick={async () => {
                     const title = query.trim();
                     if (!title) return;
-                    const taskId = await createAndAssociate({ title });
-                    if (taskId) {
-                      onAssociated?.(taskId);
+                    const created = await createAndAssociate({ title });
+                    if (created) {
+                      onAssociated?.(created.taskId);
                       setOpen(false);
                     }
                   }}

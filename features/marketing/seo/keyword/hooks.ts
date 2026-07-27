@@ -16,6 +16,8 @@ import { listKeywordEdges, listKeywordsWithMarket } from "@/features/marketing/s
 import { extractErrorMessage } from "@/utils/errors";
 
 import {
+  getPageSearchTotals,
+  listPageQueryStats,
   listPageTopQueries,
   listSitePerformanceForKeyword,
   normalizeKeywordPhrase,
@@ -34,6 +36,16 @@ export const seoKeywordKeys = {
     [...seoKeywordKeys.all, "site-performance", siteId, keywordId] as const,
   pageQueries: (pageId: string) =>
     [...seoKeywordKeys.all, "page-queries", pageId] as const,
+  pageSearchTotals: (pageId: string, days: number | null) =>
+    [...seoKeywordKeys.all, "page-search-totals", pageId, days ?? "all"] as const,
+  pageQueryStats: (pageId: string, days: number | null, limit: number) =>
+    [
+      ...seoKeywordKeys.all,
+      "page-query-stats",
+      pageId,
+      days ?? "all",
+      limit,
+    ] as const,
 };
 
 /** Resolve a (caller-debounced) phrase against the keyword plane. */
@@ -93,6 +105,35 @@ export function usePageTopQueries(pageId: string | null | undefined) {
   return useQuery({
     queryKey: seoKeywordKeys.pageQueries(pageId ?? ""),
     queryFn: ({ signal }) => listPageTopQueries(pageId as string, 12, signal),
+    enabled: Boolean(pageId),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Range totals (clicks/impressions/CTR/position) for one page. */
+export function usePageSearchTotals(
+  pageId: string | null | undefined,
+  days: number | null,
+) {
+  return useQuery({
+    queryKey: seoKeywordKeys.pageSearchTotals(pageId ?? "", days),
+    queryFn: ({ signal }) => getPageSearchTotals(pageId as string, days, signal),
+    enabled: Boolean(pageId),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Range-aware per-query breakdown for one page (higher limit than the
+ * top-queries evidence list; carries a loud truncation flag). */
+export function usePageQueryStats(
+  pageId: string | null | undefined,
+  days: number | null,
+  limit = 50,
+) {
+  return useQuery({
+    queryKey: seoKeywordKeys.pageQueryStats(pageId ?? "", days, limit),
+    queryFn: ({ signal }) =>
+      listPageQueryStats(pageId as string, days, limit, signal),
     enabled: Boolean(pageId),
     staleTime: 5 * 60_000,
   });

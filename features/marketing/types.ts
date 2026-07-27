@@ -501,6 +501,8 @@ export interface DesiredImagePlanEntry {
   placement: string;
   status: DesiredImagePlanStatus;
   file_id: string | null;
+  /** Style preset (or custom style text) fed to the image pipeline. */
+  style?: string;
 }
 
 export interface PageDesiredValues {
@@ -510,6 +512,9 @@ export interface PageDesiredValues {
   headings?: { outline?: DesiredHeadingEntry[]; notes?: string };
   structured_data_notes?: string;
   image_plan?: DesiredImagePlanEntry[];
+  /** Desired alt text for EXISTING crawled images, keyed by the image `src`
+   *  from the snapshot inventory (`web.snapshot.images.items[].src`). */
+  image_alts?: Record<string, string>;
   additional_content_notes?: string;
 }
 

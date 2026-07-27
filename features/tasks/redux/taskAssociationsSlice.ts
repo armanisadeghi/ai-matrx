@@ -243,7 +243,14 @@ export const dissociateFromTask = createAsyncThunk<
  *   - Refetches both sides of the association if one was created
  */
 export const createTaskWithAssociation = createAsyncThunk<
-  { taskId: string; task: TaskRecord } | null,
+  {
+    taskId: string;
+    task: TaskRecord;
+    /** Non-null when a source edge was requested but the association write
+     *  failed — the task EXISTS but is NOT linked. Callers must not claim
+     *  "linked" when this is set. */
+    sourceLinkError: string | null;
+  } | null,
   {
     title: string;
     description?: string | null;
@@ -278,6 +285,7 @@ export const createTaskWithAssociation = createAsyncThunk<
   if (!task) return null;
 
   // Entity → task edge (org resolves from the task inside assoc_add).
+  let sourceLinkError: string | null = null;
   if (input.entity_type && input.entity_id) {
     const linked = await associationsService.add({
       sourceType: input.entity_type,
@@ -288,6 +296,9 @@ export const createTaskWithAssociation = createAsyncThunk<
       metadata: input.metadata ?? {},
     });
     if (isScopesRpcErr(linked)) {
+      sourceLinkError = linked.error.code
+        ? `${linked.error.message} (${linked.error.code})`
+        : linked.error.message;
       console.error("[createTaskWithAssociation] source edge failed:", {
         message: linked.error.message,
         code: linked.error.code,
@@ -348,7 +359,7 @@ export const createTaskWithAssociation = createAsyncThunk<
       }),
     );
   }
-  return { taskId: record.id, task: record };
+  return { taskId: record.id, task: record, sourceLinkError };
 });
 
 export const createTasksBulk = createAsyncThunk<

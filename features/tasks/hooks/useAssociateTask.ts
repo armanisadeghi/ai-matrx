@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   associateWithTask,
@@ -30,6 +31,14 @@ export interface CreateAndAssociateInput {
   organization_id?: string | null;
   scope_ids?: string[];
   source?: TaskSource;
+}
+
+export interface CreateAndAssociateResult {
+  taskId: string;
+  /** Non-null when a source link was requested but the association write
+   *  failed — the task was created but is NOT linked. UIs must not claim
+   *  "linked" when this is set. */
+  linkError: string | null;
 }
 
 export interface BulkItemsInput {
@@ -114,7 +123,9 @@ export function useAssociateTask() {
   );
 
   const createAndAssociate = useCallback(
-    async (input: CreateAndAssociateInput): Promise<string | null> => {
+    async (
+      input: CreateAndAssociateInput,
+    ): Promise<CreateAndAssociateResult | null> => {
       setIsBusy(true);
       setError(null);
       try {
@@ -140,7 +151,16 @@ export function useAssociateTask() {
             metadata: input.source?.metadata ?? {},
           }),
         ).unwrap();
-        return res?.taskId ?? null;
+        if (!res) return null;
+        if (res.sourceLinkError) {
+          // Loud recovery: the task exists but the edge write failed — every
+          // consumer surface must hear about it, never a silent "linked" lie.
+          setError(res.sourceLinkError);
+          toast.error("Task created, but NOT linked", {
+            description: res.sourceLinkError,
+          });
+        }
+        return { taskId: res.taskId, linkError: res.sourceLinkError };
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to create task");
         return null;

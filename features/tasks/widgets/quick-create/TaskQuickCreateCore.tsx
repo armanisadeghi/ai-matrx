@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import * as icons from "lucide-react";
 import {
+  AlertTriangle,
   Plus,
   Save,
   X,
@@ -174,6 +175,9 @@ export function TaskQuickCreateCore({
     hasParent ? "both" : "message",
   );
   const [savedTaskId, setSavedTaskId] = useState<string | null>(null);
+  /** Non-null when the task saved but one or more link writes failed — the
+   *  banner must say "not linked", never claim a link that doesn't exist. */
+  const [linkFailure, setLinkFailure] = useState<string | null>(null);
   const [scopesTouched, setScopesTouched] = useState(false);
 
   // Until the user touches the scope picker, selections FOLLOW the live app
@@ -257,7 +261,7 @@ export function TaskQuickCreateCore({
 
     const { primary, secondary } = effectiveSources;
 
-    const taskId = await createAndAssociate({
+    const created = await createAndAssociate({
       title: title.trim(),
       description: refine.workingContent.trim() || null,
       priority: (priority || null) as "low" | "medium" | "high" | null,
@@ -275,10 +279,16 @@ export function TaskQuickCreateCore({
         : undefined,
     });
 
-    if (!taskId) {
+    if (!created) {
       toast.error("Could not create task");
       return;
     }
+    const { taskId } = created;
+
+    // Honest link outcome: the hook already toasts a failed PRIMARY edge;
+    // collect every failure so the banner can never claim a link that
+    // doesn't exist (loud recovery — a silent skip is the bug class).
+    let failure = created.linkError;
 
     if (secondary?.entity_type && secondary.entity_id) {
       try {
@@ -287,14 +297,20 @@ export function TaskQuickCreateCore({
           entity_id: secondary.entity_id,
           label: secondary.label,
         });
-      } catch {
-        /* best-effort */
+      } catch (e) {
+        const message =
+          e instanceof Error
+            ? e.message
+            : `Could not link ${entityTypeLabel(secondary.entity_type)}`;
+        failure = failure ? `${failure} · ${message}` : message;
+        toast.error("Task created, but NOT linked", { description: message });
       }
     }
 
     dispatch(setSelectedTaskId(taskId));
+    setLinkFailure(failure);
     setSavedTaskId(taskId);
-    toast.success("Task created");
+    if (!failure) toast.success("Task created");
   }, [
     canSave,
     createAndAssociate,
@@ -342,23 +358,45 @@ export function TaskQuickCreateCore({
         className,
       )}
     >
-      {/* Post-save banner */}
-      {savedTaskId && (
-        <div className="shrink-0 flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs">
-          <Check className="h-3.5 w-3.5 text-green-600" />
-          <span className="font-medium">Task created</span>
-          {source && (
-            <span className="text-muted-foreground">
-              · linked to{" "}
-              {entityTypeLabel(
-                linkScope === "conversation" && parent
-                  ? parent.entity_type
-                  : source.entity_type,
+      {/* Post-save banner — only claims "linked" when the edge write landed */}
+      {savedTaskId &&
+        (linkFailure ? (
+          <div className="shrink-0 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <span className="min-w-0">
+              <span className="font-medium">Task created — NOT linked</span>
+              {source && (
+                <>
+                  {" "}
+                  to{" "}
+                  {entityTypeLabel(
+                    linkScope === "conversation" && parent
+                      ? parent.entity_type
+                      : source.entity_type,
+                  )}
+                </>
               )}
+              <span className="block text-muted-foreground break-words">
+                {linkFailure}
+              </span>
             </span>
-          )}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="shrink-0 flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs">
+            <Check className="h-3.5 w-3.5 text-green-600" />
+            <span className="font-medium">Task created</span>
+            {source && (
+              <span className="text-muted-foreground">
+                · linked to{" "}
+                {entityTypeLabel(
+                  linkScope === "conversation" && parent
+                    ? parent.entity_type
+                    : source.entity_type,
+                )}
+              </span>
+            )}
+          </div>
+        ))}
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
       {!savedTaskId && (

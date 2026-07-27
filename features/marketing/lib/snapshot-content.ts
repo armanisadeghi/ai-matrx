@@ -111,17 +111,64 @@ export function parseSnapshotExtracted(
   };
 }
 
+export interface ParsedSnapshotImage {
+  src: string | null;
+  /** `null` = alt attribute absent; `""` = explicitly empty (decorative). */
+  alt: string | null;
+  width: number | null;
+  height: number | null;
+  loading: string | null;
+  title: string | null;
+}
+
 export interface ParsedSnapshotImages {
   count: number | null;
   missingAlt: number | null;
+  /** Per-image inventory when the crawler persisted one (`items` or `images`
+   *  array of `{src, alt, width, height, loading, title}` — all optional).
+   *  Empty when the snapshot only carries the counts. */
+  items: ParsedSnapshotImage[];
 }
 
-/** Normalize `web.snapshot.images` (`{ count, missing_alt }`). */
+function optionalString(
+  record: { [key: string]: Json | undefined },
+  key: string,
+): string | null {
+  const value = record[key];
+  return typeof value === "string" ? value : null;
+}
+
+/**
+ * Normalize `web.snapshot.images` (`{ count, missing_alt }`, optionally with a
+ * per-image inventory under `items` or `images`). Tolerant by design — every
+ * per-image field is optional and non-record entries are skipped.
+ */
 export function parseSnapshotImages(images: Json): ParsedSnapshotImages {
-  if (!isJsonRecord(images)) return { count: null, missingAlt: null };
+  if (!isJsonRecord(images)) {
+    return { count: null, missingAlt: null, items: [] };
+  }
+  const rawItems = Array.isArray(images.items)
+    ? images.items
+    : Array.isArray(images.images)
+      ? images.images
+      : [];
+  const items = rawItems.flatMap((entry): ParsedSnapshotImage[] => {
+    if (!isJsonRecord(entry)) return [];
+    return [
+      {
+        src: optionalString(entry, "src"),
+        alt: optionalString(entry, "alt"),
+        width: finiteNumber(entry, "width"),
+        height: finiteNumber(entry, "height"),
+        loading: optionalString(entry, "loading"),
+        title: optionalString(entry, "title"),
+      },
+    ];
+  });
   return {
     count: finiteNumber(images, "count"),
     missingAlt: finiteNumber(images, "missing_alt"),
+    items,
   };
 }
 

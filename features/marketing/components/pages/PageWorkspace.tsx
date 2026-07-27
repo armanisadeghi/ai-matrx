@@ -8,7 +8,6 @@ import {
   FileQuestion,
   History,
   Monitor,
-  RefreshCw,
   Search,
   Smartphone,
 } from "lucide-react";
@@ -63,8 +62,8 @@ import {
   parseSnapshotHeadings,
 } from "@/features/marketing/lib/snapshot-content";
 import {
-  CondensedFieldGrid,
   formatDate,
+  formatDateOnly,
   LoadingSurface,
   MetricCell,
   QueryError,
@@ -74,6 +73,7 @@ import {
 import { MarketingUrlRow } from "@/features/marketing/components/shared/MarketingUrlRow";
 import { cn } from "@/lib/utils";
 import { PageQueriesCard } from "@/features/marketing/components/pages/cards/PageQueriesCard";
+import { PageSearchConsoleCard } from "@/features/marketing/components/pages/cards/PageSearchConsoleCard";
 import { PageFindingsCard } from "@/features/marketing/components/pages/cards/PageFindingsCard";
 import { PageLinksCard } from "@/features/marketing/components/pages/cards/PageLinksCard";
 import { PageBacklinksCard } from "@/features/marketing/components/pages/cards/PageBacklinksCard";
@@ -89,6 +89,7 @@ import { PageAnalyzerCard } from "@/features/marketing/components/pages/cards/Pa
 import { PageDraftContentCard } from "@/features/marketing/components/pages/cards/PageDraftContentCard";
 import { PageTasksCard } from "@/features/marketing/components/pages/cards/PageTasksCard";
 import { PageKeywordsCard } from "@/features/marketing/components/pages/cards/PageKeywordsCard";
+import { PageTargetPerformanceCard } from "@/features/marketing/components/pages/cards/PageTargetPerformanceCard";
 import { PageImagePlanCard } from "@/features/marketing/components/pages/cards/PageImagePlanCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
@@ -326,6 +327,20 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               {page.path || "/"}
             </h1>
             <MarketingUrlRow url={page.url} className="mt-0.5" />
+            <p className="mt-1 truncate text-[11px] text-muted-foreground">
+              <span data-surface-value="first_seen">
+                First seen {formatDateOnly(page.first_seen)}
+              </span>
+              <span aria-hidden="true"> · </span>
+              <span data-surface-value="last_seen">
+                Last seen {formatDateOnly(page.last_seen)}
+              </span>
+              <span aria-hidden="true"> · </span>
+              <span data-surface-value="snapshot_captured_at">
+                Captured{" "}
+                {snapshot ? formatDateOnly(snapshot.captured_at) : "never"}
+              </span>
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <PageTaskButton
@@ -365,20 +380,22 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             anchor="word_count"
           />
           <MetricCell
-            label={L.first_seen}
-            value={formatDate(page.first_seen)}
-            anchor="first_seen"
+            label="Clicks"
+            value={searchPerformance.gsc_clicks_28d?.toLocaleString() ?? "—"}
+            detail="Search, 28d"
+            anchor="gsc_metrics_28d"
           />
           <MetricCell
-            label={L.last_seen}
-            value={formatDate(page.last_seen)}
-            anchor="last_seen"
+            label="Impressions"
+            value={
+              searchPerformance.gsc_impressions_28d?.toLocaleString() ?? "—"
+            }
+            detail="Search, 28d"
           />
           <MetricCell
-            label={L.snapshot_captured_at}
-            value={snapshot ? formatDate(snapshot.captured_at) : "None"}
-            detail={snapshot ? "Latest snapshot" : "No accepted snapshot"}
-            anchor="snapshot_captured_at"
+            label="Avg position"
+            value={searchPerformance.gsc_position_28d?.toFixed(1) ?? "—"}
+            detail="Search, 28d"
           />
         </section>
 
@@ -494,6 +511,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           brandId={brandId}
           suggestions={analyzerKeywordSuggestions}
         />
+
+        <PageTargetPerformanceCard page={page} />
 
         {snapshot ? (
           <>
@@ -648,98 +667,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               />
             </div>
             <div className="grid gap-3 xl:grid-cols-3">
-              <SectionCard
-                title={L.gsc_metrics_28d}
-                collapsible
-                anchor="gsc_metrics_28d"
-                headerExtra={
-                  <button
-                    type="button"
-                    disabled
-                    aria-label="Refresh Search Console data for this page"
-                    title="A page-scoped Search Console collection command is not available yet"
-                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground opacity-40"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  </button>
-                }
-                copy={webCopy({
-                  kind: "web-page-search-console",
-                  label: "Google Search Console",
-                  description:
-                    "Stored 28-day Google Search Console performance for this canonical page.",
-                  surface: `Google Search Console — ${page.url}`,
-                  data: {
-                    url: page.url,
-                    ...searchPerformance,
-                    ctr_28d: searchCtr,
-                    site_synced_at: site.gsc_synced_at,
-                  },
-                  lines: [
-                    ["URL", page.url],
-                    ["Clicks (28d)", searchPerformance.gsc_clicks_28d],
-                    [
-                      "Impressions (28d)",
-                      searchPerformance.gsc_impressions_28d,
-                    ],
-                    ["CTR (28d)", searchCtr],
-                    [
-                      "Average position (28d)",
-                      searchPerformance.gsc_position_28d,
-                    ],
-                    ["Site last synced", site.gsc_synced_at],
-                  ],
-                  attributes: { page_id: page.id },
-                })}
-              >
-                <div className="grid gap-3 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
-                      <Search className="h-3.5 w-3.5 text-primary" />
-                      Last 28 days
-                    </span>
-                    <Badge
-                      variant={searchPerformance.in_gsc ? "success" : "outline"}
-                    >
-                      {searchPerformance.in_gsc ? "Reporting" : "No page data"}
-                    </Badge>
-                  </div>
-                  <CondensedFieldGrid
-                    fields={[
-                      {
-                        label: "Clicks",
-                        value:
-                          searchPerformance.gsc_clicks_28d?.toLocaleString() ??
-                          "—",
-                      },
-                      {
-                        label: "Impressions",
-                        value:
-                          searchPerformance.gsc_impressions_28d?.toLocaleString() ??
-                          "—",
-                      },
-                      {
-                        label: "CTR",
-                        value:
-                          searchCtr === null
-                            ? "—"
-                            : `${(searchCtr * 100).toFixed(2)}%`,
-                      },
-                      {
-                        label: "Average position",
-                        value:
-                          searchPerformance.gsc_position_28d?.toFixed(1) ?? "—",
-                      },
-                    ]}
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Site collection last completed{" "}
-                    {formatDate(site.gsc_synced_at)}. The existing refresh
-                    command syncs the whole site, so it is intentionally not
-                    presented here as a page-only refresh.
-                  </p>
-                </div>
-              </SectionCard>
+              <PageSearchConsoleCard page={page} />
               <PagespeedCard page={page} />
               <PageAnalyticsCard page={page} />
             </div>
@@ -804,7 +732,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                   attributes: { page_id: page.id },
                 })}
               >
-                <ContentStats snapshot={snapshot} />
+                <ContentStats snapshot={snapshot} page={page} />
               </SectionCard>
             </div>
             {snapshot.markdown_file_id ? (

@@ -124,10 +124,63 @@ describe("parseSnapshotImages", () => {
     expect(parseSnapshotImages({ count: 23, missing_alt: 2 })).toEqual({
       count: 23,
       missingAlt: 2,
+      items: [],
     });
     expect(parseSnapshotImages(null)).toEqual({
       count: null,
       missingAlt: null,
+      items: [],
     });
+  });
+
+  it("reads the optional per-image inventory (items or images)", () => {
+    const parsed = parseSnapshotImages({
+      count: 2,
+      missing_alt: 1,
+      items: [
+        {
+          src: "/hero.webp",
+          alt: "Hero",
+          width: 1200,
+          height: 630,
+          loading: "lazy",
+          title: "Hero image",
+        },
+        { src: "/logo.svg" },
+        "not-a-record",
+      ],
+    });
+    expect(parsed.count).toBe(2);
+    expect(parsed.items).toEqual([
+      {
+        src: "/hero.webp",
+        alt: "Hero",
+        width: 1200,
+        height: 630,
+        loading: "lazy",
+        title: "Hero image",
+      },
+      {
+        src: "/logo.svg",
+        alt: null,
+        width: null,
+        height: null,
+        loading: null,
+        title: null,
+      },
+    ]);
+    expect(
+      parseSnapshotImages({ count: 1, images: [{ src: "/a.png", alt: "" }] })
+        .items,
+    ).toEqual([
+      {
+        src: "/a.png",
+        alt: "",
+        width: null,
+        height: null,
+        loading: null,
+        title: null,
+      },
+    ]);
   });
 });
