@@ -27,9 +27,11 @@ Every field carries exactly three controls (independent; catalog definitions pro
 | | `revealable` | Masked; explicit audited reveal via `POST /api/vault/items/{id}/reveal` under `can_reveal`. |
 | | `sealed` | NO human path, ever — only trusted execution resolves it. The API refuses structurally. |
 | `editable` | bool | Whether a human may change the value (integration-managed tokens are `false`). |
-| `inject_into_sandbox` | bool | Whether the field enters authorized sandbox environments (needs an env alias in `key`). |
+| `inject_into_sandbox` | bool | Whether the field enters authorized sandbox environments. **REQUIRES an env alias in `key`** — see below. |
 
 `user_secrets.key` is the **optional env alias** (`VALID_KEY_RE`); `field_key` is the stable lowercase-snake identity within the item. Legacy single-value rows are one-field `env_value` items.
+
+**Sandbox injection REQUIRES an env alias — never offer the toggle without one.** A container environment is a NAME→value map; a field with no `key` has nowhere to land, so the resolver drops it. The server refuses `inject_into_sandbox=true` with no alias (422, `SandboxInjectionWithoutEnvKeyError`) and a DB CHECK makes the state unrepresentable. This UI must never build that request: every sandbox switch is **disabled until an env key exists**, and the create dialogs list it as a validation problem. Until 2026-07-26 the toggle was live on keyless fields and flipping it "succeeded" while the value silently never reached any sandbox — the exact class this rule kills. Note that catalog definitions `env_value` and `visible_config` ship `inject_into_sandbox: true` with no default alias, so prompting for the key is the NORMAL path there, not an edge case.
 
 Field metadata (inject flag, env alias set/clear, description, `is_active`, handling, `editable`) is edited via `PATCH /api/vault/items/{id}/fields/{fid}` — there is NO direct client write path to `users.user_secrets` (all client write grants were revoked in Phase 1). **Sealing is a one-way door:** the UI confirms with a cannot-be-undone warning, a sealed field shows a lock and no unseal control, and the server 403s any change away from `sealed`. Sharing carries per-recipient grants (`grantees: [{user_id, can_use, can_manage}]`).
 
@@ -161,6 +163,7 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- **2026-07-26** — Closed the silent sandbox-injection gap: every sandbox switch (item detail, add-field, both create dialogs) is disabled until the field has an env key, the create dialogs surface it as a validation problem, and no build path can send `inject_into_sandbox=true` with a null alias. Backed by an aidream write refusal + a DB CHECK.
 - **2026-07-26** — Sharing, ownership, and destination-login build (ratified plan): Mine / Shared-with-me / Organization scopes, each a deliberate query; per-recipient grant CRUD replacing the destructive save-the-whole-list share panel; give-ownership to another user by exact email; create-for-someone with server-side password generation; plaintext destination metadata with the loud Not-encrypted section, browser-fill toggle, and one-click promotion of an encrypted `site_url`/`panel_url` into `login_urls`. Also pinned `--default-non-nullable false` in aidream's type generator — openapi-typescript v7 had started marking every defaulted property required, churning ~1800 lines and breaking partial-patch call sites.
 - **2026-07-23** — Phase 4 MCP/OAuth cutover: MCP tokens moved to sealed vault items; browser token paths deleted; refresh/persist/disconnect run in aidream `/api/mcp-connections/*`. Live finding: the legacy pgcrypto store NEVER held a token (its shared key was never configured) — all 4 connections stamped `expired` for re-auth.
 - **2026-07-23** — Alignment with final vault API: field-metadata PATCH (env alias set/clear, description, active, one-way seal with confirm; deleted the interim direct `inject_into_sandbox` write) and per-recipient share grantees with a Can-manage toggle (org members + personal email lookup); types regenerated.
