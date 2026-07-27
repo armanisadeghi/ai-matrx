@@ -25,7 +25,7 @@ export function ScribeUnsortedScreen({ onBack }: ScribeUnsortedScreenProps) {
   }, [dispatch]);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-textured">
+    <div className="flex h-full flex-col overflow-hidden bg-textured">
       <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="flex h-12 w-full items-center gap-2">
           <button

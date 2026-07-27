@@ -1328,10 +1328,23 @@ button.shell-nav-flyout-item {
 
 /* The mobile audio studio owns the entire viewport: no shell header, no dock.
    Collapse the header grid row and neutralize the main's header offset + dock
-   padding so the route's own h-dvh layout fits exactly. The dock is portaled
-   into #glass-layer outside .shell-root, so it needs body:has() to cross the
-   portal (same pattern noted in section 11). */
-.shell-root[data-pathname^="/transcripts/scribe"] {
+   padding so the route's own full-height layout fits exactly. The dock is
+   portaled into #glass-layer outside .shell-root, so it needs body:has() to
+   cross the portal (same pattern noted in section 11).
+
+   The second selector is NOT redundant. Section 13's mobile reset re-declares
+   `grid-template-rows` on `.shell-root:has(#shell-sidebar-toggle:checked)` —
+   an id inside :has() makes that (1,1,0), which out-specifies this rule's
+   (0,2,0) no matter how late it appears. So every user whose sidebar cookie
+   said "expanded" got the 2.75rem header row back on mobile, rendering as a
+   blank strip (the header itself is display:none below) and pushing the
+   route's full-height column 2.75rem past the bottom of its own grid track,
+   where `overflow-hidden` silently amputated it. Matching the :has() here
+   makes this (1,2,0) and wins in both states. */
+.shell-root[data-pathname^="/transcripts/scribe"],
+.shell-root[data-pathname^="/transcripts/scribe"]:has(
+    #shell-sidebar-toggle:checked
+  ) {
   grid-template-rows: 0 1fr;
 }
 .shell-root[data-pathname^="/transcripts/scribe"] .shell-header {

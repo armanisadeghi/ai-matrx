@@ -457,11 +457,6 @@ user is actually looking at right now.
 /** The four scopes the extractor's picker can point an agent at. */
 export type PdfExtractorScopeKind = "full" | "current" | "range" | "selection";
 
-/** Convenience accessor — the chunked-run surface inherits these values verbatim. */
-export function getPdfExtractorSurfaceSpecificValues(): readonly SurfaceValue[] {
-  return surfaceSpecific;
-}
-
 /**
  * Type-safe payload helper. The PDF Extractor surface code calls this
  * when assembling its `ApplicationScope` so TypeScript catches missing

@@ -267,7 +267,9 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
 
   return (
     <ScribeCitationProvider sessionId={sessionId}>
-      <div className="flex h-dvh flex-col overflow-hidden bg-textured">
+      {/* h-full, not h-dvh — the Scribe layout column already owns the height
+          of the shell's `main` grid track (see app/(core)/transcripts/scribe/layout.tsx). */}
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
         {/* Header (shell chrome is hidden on this route — see shell.css) */}
         <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur">
           <div className="flex h-12 w-full items-center gap-2">

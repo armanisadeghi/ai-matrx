@@ -134,7 +134,7 @@ export function ScribeSessionsList({
   });
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-textured">
+    <div className="flex h-full flex-col overflow-hidden bg-textured">
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-card/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="flex h-12 items-center">
           <h1 className="text-base font-semibold text-foreground">Sessions</h1>

@@ -39,8 +39,11 @@ export default async function ScribeLayout({
   return (
     <>
       <StudioHydrator seeds={seeds} initialSessionId={null} />
-      <div className="flex h-dvh w-full justify-center bg-muted/20">
-        <div className="h-dvh w-full max-w-2xl overflow-hidden md:border-x md:border-border">
+      {/* h-full, NOT h-dvh: `.shell-root` is already `position: fixed; inset: 0`
+          and this column lives in its `main` grid track, so 100dvh double-counts
+          the viewport and overflows whatever the track actually is. */}
+      <div className="flex h-full w-full justify-center bg-muted/20">
+        <div className="h-full w-full max-w-2xl overflow-hidden md:border-x md:border-border">
           <Suspense fallback={null}>{children}</Suspense>
         </div>
       </div>
