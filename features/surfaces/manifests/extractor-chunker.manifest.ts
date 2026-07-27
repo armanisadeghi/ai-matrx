@@ -31,9 +31,9 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
-import { getPdfExtractorSurfaceSpecificValues } from "./pdf-extractor.manifest";
 
 /**
  * Chunk-only values the Content Extractor adds on top of the widget
@@ -51,6 +51,17 @@ import { getPdfExtractorSurfaceSpecificValues } from "./pdf-extractor.manifest";
  * "Dynamic chunks" first. Per-chunk text inputs are the primary input
  * on this surface; everything inherited is secondary.
  */
+/**
+ * The chunker's own sections. Parent group keys (`pdf_document`, `pdf_text`,
+ * …) are NOT declared here — inherited values auto-collapse into
+ * `inherited:matrx-user/pdf-extractor`.
+ */
+const groups: SurfaceValueGroup[] = [
+  { key: "chunk_input", label: "Chunk input", sortOrder: 100 },
+  { key: "chunk_position", label: "Chunk position", sortOrder: 200 },
+  { key: "chunk_run", label: "Job and run", sortOrder: 300 },
+];
+
 const surfaceSpecific: SurfaceValue[] = [
   {
     name: "clean_text",
@@ -60,6 +71,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 4000,
+    group: "chunk_input",
     sortOrder: 50,
   },
   {
@@ -70,6 +82,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5000,
+    group: "chunk_input",
     sortOrder: 60,
   },
   {
@@ -80,46 +93,51 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "document",
     alwaysAvailable: false,
     typicalCharCount: 0,
+    group: "chunk_input",
     sortOrder: 70,
   },
   {
     name: "chunk_index",
     label: "Chunk index",
     description:
-      "0-based index of the current chunk within this run. Useful when an agent needs ordering context across the run.",
+      "0-based index of the current chunk within this run. NOT YET EMITTED — the server chunk builder (aidream `_build_surface_vars`) does not put it in the surface bag; see the manifest header. Resolves empty until that lands.",
     valueType: "number",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 4,
+    group: "chunk_position",
     sortOrder: 80,
   },
   {
     name: "chunk_count",
     label: "Total chunks",
     description:
-      "Total number of chunks this run will produce. Same value for every chunk in a run.",
+      "Total number of chunks this run will produce; same value for every chunk. NOT YET EMITTED by the server chunk builder — resolves empty until that lands.",
     valueType: "number",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 4,
+    group: "chunk_position",
     sortOrder: 90,
   },
   {
     name: "job_id",
     label: "Extraction job ID",
     description:
-      "UUID of the `page_extraction_jobs` row driving this run. Stable across all chunks of all runs of this template.",
+      "UUID of the `page_extraction_jobs` row driving this run. Stable across all chunks of all runs of this template. NOT YET EMITTED by the server chunk builder — resolves empty until that lands.",
     valueType: "string",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 36,
+    group: "chunk_run",
     sortOrder: 95,
   },
   {
     name: "run_id",
     label: "Extraction run ID",
     description:
-      "UUID of the `page_extraction_runs` row for the in-flight run. Changes every time the user clicks Run.",
+      "UUID of the `page_extraction_runs` row for the in-flight run. Changes every time the user clicks Run. NOT YET EMITTED by the server chunk builder — resolves empty until that lands.",
     valueType: "string",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 36,
+    group: "chunk_run",
     sortOrder: 99,
   },
 
@@ -131,10 +149,11 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_page",
     label: "First page of current chunk",
     description:
-      "1-indexed page number of the first page in the current chunk. Useful for ordering or sub-page anchoring. Always populated when running a Job.",
+      "1-indexed page number of the first page in the current chunk. NOT YET EMITTED by the server chunk builder (only the formatted `page_numbers` range is) — resolves empty until that lands.",
     valueType: "number",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 4,
+    group: "chunk_position",
     sortOrder: 400,
   },
   {
@@ -145,16 +164,136 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 16,
+    group: "chunk_position",
     sortOrder: 410,
+  },
+  {
+    name: "filename",
+    label: "Job name (sent as filename)",
+    description:
+      "The server chunk builder sends the JOB's name here, not the source document's filename (aidream `execute_page_chunk` passes `job[\"name\"]`). Always populated during a run. Do not treat it as a document filename — it is the template's label.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 60,
+    group: "chunk_run",
+    sortOrder: 300,
+  },
+
+  // ── Inherited keys the chunked run never emits ───────────────────────
+  // The parent guarantees these on the interactive extractor surface. The
+  // chunked run assembles its own small bag server-side and includes none
+  // of them, so re-declaring them `alwaysAvailable: false` stops the scope
+  // helper from promising a guarantee this surface cannot keep.
+  {
+    name: "full_document_text",
+    label: "Full document text (not sent per chunk)",
+    description:
+      "Inherited from PDF Extractor. A chunked run deliberately sends only the current chunk (that is the whole point) — this is never populated here. Use `clean_text` / `raw_text`.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 0,
+    autoContext: false,
+    group: "chunk_input",
+    sortOrder: 700,
+  },
+  {
+    name: "current_page_text",
+    label: "Current page text (not sent per chunk)",
+    description:
+      "Inherited from PDF Extractor. Not populated in a chunked run — the chunk's text arrives as `clean_text` / `raw_text`.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 0,
+    autoContext: false,
+    group: "chunk_input",
+    sortOrder: 710,
+  },
+  {
+    name: "active_scope_text",
+    label: "Selected scope content (not sent per chunk)",
+    description:
+      "Inherited from PDF Extractor's scope picker, which does not exist in a chunked run — never populated here.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 0,
+    autoContext: false,
+    group: "chunk_input",
+    sortOrder: 720,
+  },
+  {
+    name: "file_id",
+    label: "File ID (not sent per chunk)",
+    description:
+      "Inherited from PDF Extractor. The Job row knows its `file_id`, but the server chunk builder does not put it in the surface bag — not populated here today.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    autoContext: false,
+    group: "chunk_run",
+    sortOrder: 730,
+  },
+  {
+    name: "total_pages",
+    label: "Total pages (not sent per chunk)",
+    description:
+      "Inherited from PDF Extractor. Not emitted by the server chunk builder — use `page_numbers` for the chunk's own span.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    autoContext: false,
+    group: "chunk_position",
+    sortOrder: 740,
+  },
+  {
+    name: "scope_kind",
+    label: "Scope kind (not applicable here)",
+    description:
+      "Inherited from PDF Extractor. A chunked run has no scope picker — never populated here.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 0,
+    autoContext: false,
+    group: "chunk_position",
+    sortOrder: 750,
+  },
+  {
+    name: "using_clean_text",
+    label: "Using AI-cleaned text (implied by the Job)",
+    description:
+      "Inherited from PDF Extractor. Not emitted per chunk — the Job's `source_variations` decides whether you get `clean_text`, `raw_text`, or both, and receiving one tells you which.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    autoContext: false,
+    group: "chunk_input",
+    sortOrder: 760,
   },
 ];
 
 export const extractorChunkerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/extractor-chunker",
   readiness: "partial",
-  readinessNote: "Inherits pdf-extractor; no groups, completeness not audited",
+  readinessNote:
+    "Groups + completeness audited against the server chunk builder. Still partial because the RUNTIME EMITTER is server-side (aidream `_build_surface_vars`) and emits only `page_numbers`, `filename` (the JOB name), the requested source variations, and the `selection`/`content` aliases — `chunk_index`, `chunk_count`, `job_id`, `run_id`, `current_page`, `file_id` are declared here (they are real concepts this surface owns and the FE type contract exports) but resolve empty until that builder is extended. Promote to verified in the same change that lands them.",
   inheritsFrom: "matrx-user/pdf-extractor",
   label: "Extractor Chunker",
+  urlPattern: "/tools/pdf-extractor/[documentId]",
+  intro: `<surface_intro>
+The Extractor Chunker runs ONE agent across a document chunk-by-chunk and persists
+every structured response anchored to the pages it came from. A Job declares the
+agent, the page scope, chunk size and overlap, which source variations to send
+(AI-cleaned text, raw OCR, a native PDF of the chunk), and a variable mapping from
+these surface values to the agent's own variable names.
+
+You are seeing ONE chunk, not the document. \`clean_text\` / \`raw_text\` are the
+chunk's content and \`page_numbers\` is the page span it covers — those two are the
+primary input. \`pdf_page\` is a native PDF attachment of exactly those pages,
+activated by mapping it to a Document-typed agent variable. Everything inherited
+from the PDF Extractor surface describes the interactive reader, not a chunked run,
+and is not sent per chunk. Note that \`filename\` carries the JOB's name here, not
+the source document's filename.
+</surface_intro>`,
+  groups,
   values: mergeBaselineValues(
     // Baseline:
     //   `selection` + `content` — back-compat aliases. The runtime
@@ -171,12 +310,13 @@ export const extractorChunkerManifest: SurfaceManifest = {
       "text_after",
       "context",
     ),
-    // Inherited widget values FIRST, then chunk-specific entries. The
-    // merge step is last-write-wins by `name`, so any entry in
-    // `surfaceSpecific` that re-declares an inherited name (e.g.
-    // `page_numbers`, `current_page` whose semantics differ in
-    // chunked context) overrides the widget version.
-    [...getPdfExtractorSurfaceSpecificValues(), ...surfaceSpecific],
+    // Only OWN values here. The parent's vocabulary arrives through
+    // `inheritsFrom` and auto-collapses into the synthesized
+    // `inherited:matrx-user/pdf-extractor` group — re-listing it would
+    // drag the parent's group keys onto this surface, which children
+    // must never declare. Own entries that re-declare an inherited name
+    // (`page_numbers`, `current_page`, `filename`, …) still win.
+    surfaceSpecific,
   ),
 };
 
@@ -196,35 +336,35 @@ export const extractorChunkerManifest: SurfaceManifest = {
  * `runtime.applicationScope` + `runtime.surfaceName`.
  */
 export function createExtractorChunkerScope(values: {
-  // alwaysAvailable: true → required (chunk-specific)
-  chunk_index: number;
-  chunk_count: number;
-  job_id: string;
-  run_id: string;
-  // alwaysAvailable: true → required (inherited from pdf-extractor)
-  full_document_text: string;
-  current_page_text: string;
-  active_scope_text: string;
+  // alwaysAvailable: true → required
+  page_numbers: string;
+  /** The JOB's name — see the value's description; NOT the document filename. */
   filename: string;
-  file_id: string;
-  total_pages: number;
-  current_page: number;
-  scope_kind: "full" | "current" | "range" | "selection";
-  using_clean_text: boolean;
+  /** Aliases the server chunk builder always fills from the primary variation. */
+  selection: string;
+  content: string;
   // alwaysAvailable: false → optional (chunk-specific)
   clean_text?: string;
   raw_text?: string;
+  chunk_index?: number;
+  chunk_count?: number;
+  job_id?: string;
+  run_id?: string;
+  current_page?: number;
+  // alwaysAvailable: false → optional (inherited, never sent per chunk)
+  full_document_text?: string;
+  current_page_text?: string;
+  active_scope_text?: string;
+  file_id?: string;
+  total_pages?: number;
+  scope_kind?: "full" | "current" | "range" | "selection";
+  using_clean_text?: boolean;
   // `pdf_page` is a native attachment source, assembled server-side after the
   // chunk's page set is known. It is intentionally not an ApplicationScope
   // object or a string variable.
-  // alwaysAvailable: false → optional (inherited from pdf-extractor)
   page_range_text?: string;
   selected_text?: string;
   processed_document_id?: string;
-  page_numbers?: string;
-  // baseline back-compat aliases (selection ≈ active_scope_text, content ≈ full_document_text)
-  selection?: string;
-  content?: string;
   text_before?: string;
   text_after?: string;
   context?: Record<string, unknown>;

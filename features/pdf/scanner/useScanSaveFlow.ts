@@ -52,6 +52,14 @@ export interface UseScanSaveFlowResult {
   processing: ProcessingState | null;
   /** Label captured at save time (session.label clears on success). */
   savedLabel: string;
+  /**
+   * Ids of the saved artifact, set the moment the save stream resolves.
+   * Both null before a successful save. Exposed (rather than kept in a ref)
+   * because the `matrx-user/scanner` surface emitter declares `file_id` /
+   * `processed_document_id` — a declared value with no synchronous source
+   * is a defect.
+   */
+  savedIds: { fileId: string | null; docId: string | null };
   navigating: boolean;
   /** Kick off the save. No-op while a save is already running. */
   saveNow: () => void;
@@ -70,6 +78,10 @@ export function useScanSaveFlow(
 
   const [processing, setProcessing] = useState<ProcessingState | null>(null);
   const [savedLabel, setSavedLabel] = useState("");
+  const [savedIds, setSavedIds] = useState<{
+    fileId: string | null;
+    docId: string | null;
+  }>({ fileId: null, docId: null });
   const [navigating, setNavigating] = useState(false);
   const [contextPromptOpen, setContextPromptOpen] = useState(false);
 
@@ -154,7 +166,9 @@ export function useScanSaveFlow(
       if (finalizeStartedRef.current) return;
       finalizeStartedRef.current = true;
       stopPolling();
-      setProcessing((p) => (p ? { ...p, active: "done", finalizing: true } : p));
+      setProcessing((p) =>
+        p ? { ...p, active: "done", finalizing: true } : p,
+      );
       void verifyCleanContentReady(docId).then(() => {
         pendingDocIdRef.current = docId;
         maybeNavigate();
@@ -216,7 +230,10 @@ export function useScanSaveFlow(
           .catch(() => {
             // Transient read failure — next tick retries.
           });
-        if (Date.now() - pollStartedAtRef.current > PROCESSING_POLL_TIMEOUT_MS) {
+        if (
+          Date.now() - pollStartedAtRef.current >
+          PROCESSING_POLL_TIMEOUT_MS
+        ) {
           console.error(
             `[scanner] processing poll timed out for doc ${docId} — navigating anyway`,
           );
@@ -236,6 +253,7 @@ export function useScanSaveFlow(
     contextDoneRef.current = true; // prompt is opt-in from the processing view
     const labelAtSave = session.label.trim() || defaultScanLabel();
     setSavedLabel(labelAtSave);
+    setSavedIds({ fileId: null, docId: null });
     setProcessing({
       active: "build",
       buildDetail: `Cropping and combining ${uploaded.length} item${uploaded.length === 1 ? "" : "s"}…`,
@@ -318,6 +336,10 @@ export function useScanSaveFlow(
     promise
       .then((result) => {
         session.clearAfterSave();
+        setSavedIds({
+          fileId: result.file_id ?? null,
+          docId: result.doc_id ?? null,
+        });
         setProcessing((p) =>
           p
             ? {
@@ -377,6 +399,7 @@ export function useScanSaveFlow(
   return {
     processing,
     savedLabel,
+    savedIds,
     navigating,
     saveNow,
     contextPromptOpen,

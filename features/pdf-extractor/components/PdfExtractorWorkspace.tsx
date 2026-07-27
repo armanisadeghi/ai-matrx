@@ -125,7 +125,8 @@ export function PdfExtractorFloatingWorkspace({
 
   const activeTab = extractor.activeTab;
   const activeSourceId =
-    activeTab?.document?.sourceKind === "cld_file" && activeTab.document.sourceId
+    activeTab?.document?.sourceKind === "cld_file" &&
+    activeTab.document.sourceId
       ? activeTab.document.sourceId
       : null;
   const { file: activeSourceFile, status: activeSourceStatus } = useFile(
@@ -212,7 +213,9 @@ export function PdfExtractorFloatingWorkspace({
               page_range_text: "",
               filename: doc?.name ?? "",
               file_id:
-                activeSourceAvailable && doc?.sourceKind === "cld_file" && doc.sourceId
+                activeSourceAvailable &&
+                doc?.sourceKind === "cld_file" &&
+                doc.sourceId
                   ? doc.sourceId
                   : "",
               processed_document_id: doc?.id ?? "",

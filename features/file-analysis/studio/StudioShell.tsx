@@ -23,6 +23,8 @@ import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
 import { useFile } from "@/features/files/handler/hooks/useFile";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createAnalysisStudioScope } from "@/features/surfaces/manifests/analysis-studio.manifest";
 import { ThumbnailStrip } from "./ThumbnailStrip";
 import { InspectorRail, type StudioInspectorTab } from "./InspectorRail";
 import type { PdfRegion } from "@/features/pdf/components/viewer/annotation-layer/types";
@@ -43,7 +45,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
     update: updateAnnotation,
     remove: removeAnnotation,
   } = useAnnotations(fileId);
-  const { pages } = usePages(fileId);
+  const { pages, active: activePages } = usePages(fileId);
   useFileAnalysis(fileId); // warm the cache for the inspector panels
 
   // ── URL-driven state ─────────────────────────────────────────────────
@@ -147,172 +149,242 @@ export function StudioShell({ fileId }: StudioShellProps) {
     [annotationsByPage],
   );
 
+  // ── Surface emitter — `matrx-user/analysis-studio` ────────────────────
+  // Built at TRIGGER time (the header Agents chrome calls this only when the
+  // user hits Run), so every value is live rather than a stale render copy.
+  const getAnalysisStudioScope = () => {
+    const active = annotations.filter((a) => a.status === "active");
+    const filename = file?.meta.fileName ?? "";
+    const mimeType = file?.meta.mime ?? "";
+    const categories: Record<string, number> = {};
+    for (const a of active) {
+      categories[a.label_category] = (categories[a.label_category] ?? 0) + 1;
+    }
+    const asRow = (a: (typeof active)[number]) => ({
+      id: a.id,
+      page_number: a.page_number,
+      label: a.label,
+      label_category: a.label_category,
+      extracted_text: a.extracted_text ?? "",
+    });
+
+    return createAnalysisStudioScope({
+      file_id: fileId,
+      filename,
+      mime_type: mimeType,
+      total_pages: pages.length,
+      active_page_count: activePages.length,
+      document_summary: {
+        file_id: fileId,
+        filename,
+        mime_type: mimeType,
+        total_pages: pages.length,
+        active_page_count: activePages.length,
+      },
+      current_page: pageNumber,
+      inspector_tab: activeTab,
+      canvas_mode: mode,
+      studio_view_state: {
+        current_page: pageNumber,
+        inspector_tab: activeTab,
+        canvas_mode: mode,
+        selected_annotation_id: selectedAnnotationId ?? "",
+      },
+      selected_annotation_id: selectedAnnotationId ?? undefined,
+      annotation_count: active.length,
+      annotation_pages: annotationPages,
+      current_page_annotations: active
+        .filter((a) => a.page_number === pageNumber)
+        .map(({ page_number: _page, ...rest }) => {
+          void _page;
+          return {
+            id: rest.id,
+            label: rest.label,
+            label_category: rest.label_category,
+            extracted_text: rest.extracted_text ?? "",
+          };
+        }),
+      annotations: active.map(asRow),
+      annotation_categories: categories,
+      selection:
+        typeof window !== "undefined"
+          ? (window.getSelection()?.toString().trim() ?? "")
+          : "",
+    });
+  };
+
   return (
-    <div className="flex h-full w-full flex-col bg-background pt-[var(--shell-header-h)]">
-      {/* Top bar — a tool row, not a page header (that's the "Back to file"
-       * link + shell chrome above). Cleared below the glass shell header by
-       * the wrapper's top padding, so no manual edge padding is needed. */}
-      <div className="flex shrink-0 items-center gap-2 matrx-glass-thin-border px-3 py-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push(`/files/f/${fileId}`)}
-          className="h-7 text-xs"
-        >
-          <ArrowLeft className="h-3 w-3 mr-1" /> Back to file
-        </Button>
-        <h1 className="truncate text-sm font-semibold">
-          {file?.meta.fileName ?? "Document"}{" "}
-          <span className="text-muted-foreground">— Analysis Studio</span>
-        </h1>
-        <PdfSurfaceSwitcher
-          current="analysis-studio"
-          fileId={fileId}
-          size="sm"
-        />
-        {annotationPages.length ? (
-          <button
-            type="button"
-            onClick={() => {
-              const firstNotCurrent =
-                annotationPages.find((p) => p !== pageNumber) ??
-                annotationPages[0];
-              if (firstNotCurrent) handlePageChange(firstNotCurrent);
-              setActiveTab("annotations");
-            }}
-            title={`Your annotations live on pages: ${annotationPages.join(", ")}`}
-            className="flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/analysis-studio"
+      getScope={getAnalysisStudioScope}
+      isEditable={false}
+    >
+      <div className="flex h-full w-full flex-col bg-background pt-[var(--shell-header-h)]">
+        {/* Top bar — a tool row, not a page header (that's the "Back to file"
+         * link + shell chrome above). Cleared below the glass shell header by
+         * the wrapper's top padding, so no manual edge padding is needed. */}
+        <div className="flex shrink-0 items-center gap-2 matrx-glass-thin-border px-3 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push(`/files/f/${fileId}`)}
+            className="h-7 text-xs"
           >
-            <span className="tabular-nums">{annotations.length}</span>
-            <span className="uppercase tracking-wider">
-              annotation{annotations.length === 1 ? "" : "s"}
-            </span>
-            <span className="text-emerald-600/70 dark:text-emerald-300/70">
-              · pages {annotationPages.join(", ")}
-            </span>
-          </button>
-        ) : null}
-        <div className="ml-auto flex items-center gap-1">
-          <ModeButton
-            active={mode === "view"}
-            onClick={() => setMode("view")}
-            icon={<Eye className="h-3 w-3" />}
-            label="View"
-            tooltip="Read-only. Pointer events pass through to the PDF (text selection, links). No drawing, no region clicks."
+            <ArrowLeft className="h-3 w-3 mr-1" /> Back to file
+          </Button>
+          <h1 className="truncate text-sm font-semibold">
+            {file?.meta.fileName ?? "Document"}{" "}
+            <span className="text-muted-foreground">— Analysis Studio</span>
+          </h1>
+          <PdfSurfaceSwitcher
+            current="analysis-studio"
+            fileId={fileId}
+            size="sm"
           />
-          <ModeButton
-            active={mode === "select"}
-            onClick={() => setMode("select")}
-            icon={<MousePointer2 className="h-3 w-3" />}
-            label="Select"
-            tooltip="Click an existing annotation rectangle to select + edit it. Empty clicks deselect."
-          />
-          <ModeButton
-            active={mode === "draw"}
-            onClick={() => setMode("draw")}
-            icon={<Edit3 className="h-3 w-3" />}
-            label="Draw"
-            tooltip="Drag any rectangle over the PDF to create a new annotation. Server snaps to the tightest text-block bounds + opens the label picker."
-          />
+          {annotationPages.length ? (
+            <button
+              type="button"
+              onClick={() => {
+                const firstNotCurrent =
+                  annotationPages.find((p) => p !== pageNumber) ??
+                  annotationPages[0];
+                if (firstNotCurrent) handlePageChange(firstNotCurrent);
+                setActiveTab("annotations");
+              }}
+              title={`Your annotations live on pages: ${annotationPages.join(", ")}`}
+              className="flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+            >
+              <span className="tabular-nums">{annotations.length}</span>
+              <span className="uppercase tracking-wider">
+                annotation{annotations.length === 1 ? "" : "s"}
+              </span>
+              <span className="text-emerald-600/70 dark:text-emerald-300/70">
+                · pages {annotationPages.join(", ")}
+              </span>
+            </button>
+          ) : null}
+          <div className="ml-auto flex items-center gap-1">
+            <ModeButton
+              active={mode === "view"}
+              onClick={() => setMode("view")}
+              icon={<Eye className="h-3 w-3" />}
+              label="View"
+              tooltip="Read-only. Pointer events pass through to the PDF (text selection, links). No drawing, no region clicks."
+            />
+            <ModeButton
+              active={mode === "select"}
+              onClick={() => setMode("select")}
+              icon={<MousePointer2 className="h-3 w-3" />}
+              label="Select"
+              tooltip="Click an existing annotation rectangle to select + edit it. Empty clicks deselect."
+            />
+            <ModeButton
+              active={mode === "draw"}
+              onClick={() => setMode("draw")}
+              icon={<Edit3 className="h-3 w-3" />}
+              label="Draw"
+              tooltip="Drag any rectangle over the PDF to create a new annotation. Server snaps to the tightest text-block bounds + opens the label picker."
+            />
+          </div>
+        </div>
+
+        {/* 3-pane CSS-grid layout. The inspector is the workhorse here — it
+         * holds Outline + Text + PII + Tables + Images + Regions + Dupes +
+         * Classify + Info + Notes + Findings + Redact + Search — so it gets
+         * MORE space than the PDF, not 50/50.
+         *
+         * `minmax(0, …fr)` is critical: bare `1fr` defaults to a `min-content`
+         * floor on grid items, which let the PDF push the inspector off the
+         * right edge of the viewport when its internal scroll content was
+         * naturally wider than its allotment. `minmax(0, …)` clamps the
+         * minimum so the fr-ratio is actually respected.
+         */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:grid md:overflow-visible md:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1.4fr)] lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1.4fr)] xl:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1.5fr)]">
+          {/* Left rail — thumbnails. Annotation counts surface as green
+           * badges on each thumbnail so the user can scan + jump to pages
+           * with pinned data. */}
+          <aside className="hidden min-w-0 overflow-hidden border-r border-border bg-card/40 md:block">
+            <ThumbnailStrip
+              fileId={fileId}
+              activePageNumber={pageNumber}
+              onSelectPage={handleSelectPage}
+              annotationCounts={annotationsByPage}
+            />
+          </aside>
+
+          {/* Center canvas */}
+          <main className="relative h-[55dvh] shrink-0 min-w-0 overflow-hidden border-b border-border md:h-auto md:shrink md:border-b-0 md:border-r">
+            <PdfRegionContextMenu
+              fileId={fileId}
+              annotations={annotations}
+              updateAnnotation={updateAnnotation}
+              removeAnnotation={removeAnnotation}
+              onSelectAnnotation={handleSelectAnnotation}
+            >
+              <AnnotatablePdfCanvas
+                fileId={fileId}
+                pageNumber={pageNumber}
+                onPageChange={handlePageChange}
+                regions={regions}
+                selectedId={selectedAnnotationId}
+                categoryOf={categoryOf}
+                mode={mode}
+                createAnnotation={createAnnotation}
+                onAnnotationCreated={(a) => {
+                  handleSelectAnnotation(a.id);
+                  // Jump to the annotation's page so the user always sees
+                  // their just-created rectangle on screen.
+                  if (a.page_number !== pageNumber) {
+                    handlePageChange(a.page_number);
+                  }
+                }}
+                onRegionClick={(id) => handleSelectAnnotation(id)}
+                onBackgroundClick={() => handleSelectAnnotation(null)}
+              />
+            </PdfRegionContextMenu>
+            {/* Active-mode banner — concrete instructions so the user always
+             * knows what's clickable. Floats inside the canvas so it doesn't
+             * eat layout space. */}
+            <div
+              className={cn(
+                "pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white shadow transition-opacity",
+                mode === "draw"
+                  ? "bg-sky-500/90 opacity-100"
+                  : mode === "select"
+                    ? "bg-emerald-500/90 opacity-100"
+                    : "bg-slate-500/70 opacity-90",
+              )}
+            >
+              {mode === "draw"
+                ? "Draw mode — drag a rectangle over any text to label it"
+                : mode === "select"
+                  ? "Select mode — click an existing annotation to edit"
+                  : "View mode — read-only · switch to Draw or Select to interact"}
+            </div>
+          </main>
+
+          {/* Right rail — inspector. Inherits 1.4fr from the parent grid so
+           * it gets MORE space than the PDF — this is where the user spends
+           * most of their time. `overflow-hidden` belt-and-suspenders against
+           * any internal content trying to push the cell wider than its
+           * fr-allotment. */}
+          <aside className="min-h-[45dvh] min-w-0 md:min-h-0 md:overflow-hidden">
+            <InspectorRail
+              fileId={fileId}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              pageNumber={pageNumber}
+              selectedPageId={
+                pages.find((p) => p.page_index + 1 === pageNumber)?.id ?? null
+              }
+              onJumpToPage={handleSelectPage}
+              selectedAnnotationId={selectedAnnotationId}
+              onSelectAnnotation={handleSelectAnnotation}
+            />
+          </aside>
         </div>
       </div>
-
-      {/* 3-pane CSS-grid layout. The inspector is the workhorse here — it
-       * holds Outline + Text + PII + Tables + Images + Regions + Dupes +
-       * Classify + Info + Notes + Findings + Redact + Search — so it gets
-       * MORE space than the PDF, not 50/50.
-       *
-       * `minmax(0, …fr)` is critical: bare `1fr` defaults to a `min-content`
-       * floor on grid items, which let the PDF push the inspector off the
-       * right edge of the viewport when its internal scroll content was
-       * naturally wider than its allotment. `minmax(0, …)` clamps the
-       * minimum so the fr-ratio is actually respected.
-       */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:grid md:overflow-visible md:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1.4fr)] lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1.4fr)] xl:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1.5fr)]">
-        {/* Left rail — thumbnails. Annotation counts surface as green
-         * badges on each thumbnail so the user can scan + jump to pages
-         * with pinned data. */}
-        <aside className="hidden min-w-0 overflow-hidden border-r border-border bg-card/40 md:block">
-          <ThumbnailStrip
-            fileId={fileId}
-            activePageNumber={pageNumber}
-            onSelectPage={handleSelectPage}
-            annotationCounts={annotationsByPage}
-          />
-        </aside>
-
-        {/* Center canvas */}
-        <main className="relative h-[55dvh] shrink-0 min-w-0 overflow-hidden border-b border-border md:h-auto md:shrink md:border-b-0 md:border-r">
-          <PdfRegionContextMenu
-            fileId={fileId}
-            annotations={annotations}
-            updateAnnotation={updateAnnotation}
-            removeAnnotation={removeAnnotation}
-            onSelectAnnotation={handleSelectAnnotation}
-          >
-            <AnnotatablePdfCanvas
-              fileId={fileId}
-              pageNumber={pageNumber}
-              onPageChange={handlePageChange}
-              regions={regions}
-              selectedId={selectedAnnotationId}
-              categoryOf={categoryOf}
-              mode={mode}
-              createAnnotation={createAnnotation}
-              onAnnotationCreated={(a) => {
-                handleSelectAnnotation(a.id);
-                // Jump to the annotation's page so the user always sees
-                // their just-created rectangle on screen.
-                if (a.page_number !== pageNumber) {
-                  handlePageChange(a.page_number);
-                }
-              }}
-              onRegionClick={(id) => handleSelectAnnotation(id)}
-              onBackgroundClick={() => handleSelectAnnotation(null)}
-            />
-          </PdfRegionContextMenu>
-          {/* Active-mode banner — concrete instructions so the user always
-           * knows what's clickable. Floats inside the canvas so it doesn't
-           * eat layout space. */}
-          <div
-            className={cn(
-              "pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white shadow transition-opacity",
-              mode === "draw"
-                ? "bg-sky-500/90 opacity-100"
-                : mode === "select"
-                  ? "bg-emerald-500/90 opacity-100"
-                  : "bg-slate-500/70 opacity-90",
-            )}
-          >
-            {mode === "draw"
-              ? "Draw mode — drag a rectangle over any text to label it"
-              : mode === "select"
-                ? "Select mode — click an existing annotation to edit"
-                : "View mode — read-only · switch to Draw or Select to interact"}
-          </div>
-        </main>
-
-        {/* Right rail — inspector. Inherits 1.4fr from the parent grid so
-         * it gets MORE space than the PDF — this is where the user spends
-         * most of their time. `overflow-hidden` belt-and-suspenders against
-         * any internal content trying to push the cell wider than its
-         * fr-allotment. */}
-        <aside className="min-h-[45dvh] min-w-0 md:min-h-0 md:overflow-hidden">
-          <InspectorRail
-            fileId={fileId}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            pageNumber={pageNumber}
-            selectedPageId={
-              pages.find((p) => p.page_index + 1 === pageNumber)?.id ?? null
-            }
-            onJumpToPage={handleSelectPage}
-            selectedAnnotationId={selectedAnnotationId}
-            onSelectAnnotation={handleSelectAnnotation}
-          />
-        </aside>
-      </div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

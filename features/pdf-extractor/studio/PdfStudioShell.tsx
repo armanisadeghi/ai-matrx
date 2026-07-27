@@ -144,9 +144,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       ? activeDoc.sourceId
       : null;
   const { file: activeSourceFile, status: activeSourceStatus } = useFile(
-    activeSourceFileId
-      ? { kind: "file_id", fileId: activeSourceFileId }
-      : null,
+    activeSourceFileId ? { kind: "file_id", fileId: activeSourceFileId } : null,
   );
   const activeSourceAvailable =
     activeSourceStatus === "ready" &&
@@ -691,7 +689,9 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         : pageRow.rawText
       : "";
     const fileId =
-      activeSourceAvailable && activeDoc.sourceKind === "cld_file" && activeDoc.sourceId
+      activeSourceAvailable &&
+      activeDoc.sourceKind === "cld_file" &&
+      activeDoc.sourceId
         ? activeDoc.sourceId
         : "";
     const pageNumbers =
@@ -729,7 +729,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         pipelineRunning ||
         aiCleanRunning ||
         extractionRunProgress.status === "running",
-      pipeline_status: activeProcessingStatus?.status ?? liveStatus ?? "",
+      pipeline_status: activeProcessingStatus ?? liveStatus ?? "",
     });
   };
 

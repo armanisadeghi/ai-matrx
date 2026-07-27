@@ -390,6 +390,12 @@ function AiActionsPanel({
       page_numbers: pageNumbers || undefined,
       scope_kind: scope,
       using_clean_text: usingClean,
+      raw_document_text: doc.content ?? "",
+      page_texts: pages.map((p) => ({
+        page_number: p.pageNumber,
+        text: getPageText(p),
+        cleaned: usingClean && !!p.cleanedText,
+      })),
     });
   };
 
