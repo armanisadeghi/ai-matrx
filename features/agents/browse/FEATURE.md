@@ -30,7 +30,25 @@ This page takes the best half of each and fixes what **neither** did:
 
 ## The three fixes, concretely
 
-### 0. Full server-side filtering + sorting (round 2)
+### 0. Full server-side filtering + sorting
+
+**APP POLICY: every column sorts AND filters. No exceptions.** Both are served
+by `agx_list_scoped`, so they apply to the whole result set — never to the 25
+rows on screen. Where a column has a finite value set the filter offers real
+OPTIONS with counts from `agx_list_facets`; date columns (Updated, Created)
+filter by relative bucket (`agx_since_bucket`), because a date column's finite
+value set is "how recently", not "which exact timestamp".
+
+**Sorting is on the DATABASE column, never the rendered cell.** That is why the
+favorite star lives in its own leading column rather than inside Name — a star
+glyph in the Name cell would disturb alphabetical ordering, and Favorite
+deserves to be sortable and filterable in its own right.
+
+The column headers and the Filters panel write the SAME `p_filters` bag keyed
+by column id, so setting "Analysis & Research" from the Category header and
+from the panel are literally the same query. One filter model, two entry points.
+
+### 0b. Filtering mechanics
 
 Every narrowing control maps to an `agx_list_scoped` parameter, so a filter
 applies to all 2,000 rows — never to the 25 on screen. Filters & Sort lives in
@@ -55,7 +73,19 @@ a permanent lie that trains people to ignore the number.
 Facets deliberately ignore the category/tag selection itself: a facet list that
 drops the option you just deselected traps the user inside their own filter.
 
-### 1. Style persists, query does not
+### 1. Row interaction
+
+- **The whole row is clickable** and shows a pointer cursor; it opens the agent.
+  Interactive cells (favorite star, the actions kebab, an open inline editor)
+  stop propagation so they never navigate.
+- **What you can see, you can change.** Name, Description, Category (dropdown)
+  and Tags (chips, free-text with existing values as suggestions) edit inline.
+  Edits stay local until the floating Save pill commits them, then persist via
+  one UPDATE per row. `"tags"` was added to the canonical
+  `MatrxDataTable` `CellEditType` for this — extended, not forked.
+- Row actions live behind a vertical kebab (⋮), one affordance per row.
+
+### 2. Style persists, query does not
 
 `useListViewPrefs("agents-browse")` (`lib/list-views/`) stores **view, density, sort, direction, page size, hidden columns** in the synced `userPreferences.listViews` module.
 
@@ -69,7 +99,7 @@ selection resets). Without it, every user with ANY stored blob keeps
 
 > **Known wart:** preferences hydrate after first paint, so a cards-preferring user sees the table for a beat before it flips. Same class as the old transcripts "first paint is always grid". Fixing it properly means an SSR-readable preference, not a `localStorage` shortcut.
 
-### 2. One menu, every action — and it reads like Chrome's
+### 3. One menu, every action — and it reads like Chrome's
 
 `agentActionRegistry.tsx` builds ONE `ItemMenuConfig` consumed identically by
 the table row menu, card kebab, compact-row kebab, and right-click.
@@ -94,7 +124,7 @@ Actions the surface exposes outside the menu (the card's star, the row's inline 
 
 The table shows exactly ONE affordance per row. `MatrxDataTable`'s own row-copy icons and side-panel icon are switched off (`copy.showRow: false`, `detail.enabled: false`) because the menu already carries Copy link, Copy for AI, and Quick look — three more ways to do the same thing is the dilution this page exists to end.
 
-### 3. Scopes, and the data they were hiding
+### 4. Scopes, and the data they were hiding
 
 `agx_list_scoped` (migration `migrations/agx_list_scoped.sql`) is a real server-side scoped reader with a real `total_count`.
 
@@ -129,7 +159,9 @@ Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" eve
 | `components/AgentBrowseTable.tsx` | Default view — `MatrxDataTable` in **controlled** mode |
 | `components/BrowseFilterPanel.tsx` | Filters & Sort popover over server facets |
 | `components/ColumnPicker.tsx` | Column visibility, persisted |
-| `components/AgentBrowseCards.tsx` / `AgentBrowseRows.tsx` | Card + dense views |
+| `components/AgentBrowseCards.tsx` | Card view |
+| `components/AgentBrowseRows.tsx` | Dense view — full-width rows, aligned zones |
+| `components/ClassicViewNotice.tsx` | TEMPORARY cutover banner → `/agents/classic` |
 | `components/BrowseScopeTabs.tsx` | The four scopes + org dropdown |
 | `components/BrowseToolbar.tsx` | Search, filters, view switcher, density |
 | `components/AddToSetDialog.tsx` | Dialog shell over the existing `useAgentSetsList` + `addAgentToSet` (the existing `AddToSetMenu` renders its own trigger, so it can't be reached from a menu entry) |
@@ -166,6 +198,12 @@ hostile at 2,000.
 
 ## Change log
 
+- **2026-07-26 (round 3)** — Promoted to `/agents/all`; old gallery moved to
+  `/agents/classic` behind a dismissible notice. `agx_list_scoped` v3: one
+  jsonb filter bag, every column sortable + filterable, date buckets, facets
+  for every finite column. Full-row click, inline edit (name / description /
+  category / tags) with a new `tags` cell-edit type on the canonical table,
+  vertical kebab, favorite promoted to its own column. Compact list rebuilt.
 - **2026-07-26 (round 2)** — Full server-side filtering + sorting restored and
   extended: `agx_list_scoped` v2 (categories, tags, tri-state favorites,
   favorites-first) + `agx_list_facets`. Filter/sort popover rebuilt on shared

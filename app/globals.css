@@ -2098,3 +2098,13 @@
     transparent 100%
   );
 }
+
+/* Sonner backstop: a toast measured while the window was hidden/zero-width
+   records a garbage --initial-height (thousands of px) that later renders as a
+   giant blank box swallowing clicks (height: var(--initial-height) applies in
+   expanded/stacked states). The Toaster wrapper self-heals the var on
+   resize/visibilitychange (components/ui/sonner.tsx); this cap bounds the
+   blast radius if a case slips through. */
+[data-sonner-toast] {
+  max-height: min(40rem, 90vh);
+}

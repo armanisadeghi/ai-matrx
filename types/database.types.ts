@@ -28321,6 +28321,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      agx_since_bucket: { Args: { p_bucket: string }; Returns: string }
       agx_sync_linked_agents: {
         Args: {
           p_from_id: string

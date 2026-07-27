@@ -17,11 +17,24 @@
 // `defaultHidden` is a starting point, never a restriction — anything here is
 // one click away in the column picker, and the choice is persisted per user.
 
-import Link from "next/link";
 import { Star, Archive, Building2 } from "lucide-react";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import type { AgentBrowseRow } from "./types";
+
+/**
+ * A date column's finite value set is "how recently", not "which exact
+ * timestamp" — so Updated / Created filter by relative bucket, served by
+ * `agx_since_bucket` in SQL. No column is exempt from filtering.
+ */
+export const DATE_FILTER_OPTIONS = [
+  { value: "1h", label: "Last hour" },
+  { value: "24h", label: "Last 24 hours" },
+  { value: "7d", label: "Last 7 days" },
+  { value: "30d", label: "Last 30 days" },
+  { value: "90d", label: "Last 90 days" },
+  { value: "1y", label: "Last year" },
+];
 
 export interface BrowseColumnSpec {
   id: string;
@@ -251,7 +264,8 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       id: "updated",
       accessorKey: "updated_at",
       header: "Updated",
-      filter: false, // dates filter by range in the panel, not by value list
+      filter: "select",
+      filterOptions: DATE_FILTER_OPTIONS,
       width: 120,
       align: "right",
       cell: (row) => timeCell(row.updated_at),
@@ -266,7 +280,8 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       id: "created",
       accessorKey: "created_at",
       header: "Created",
-      filter: false,
+      filter: "select",
+      filterOptions: DATE_FILTER_OPTIONS,
       width: 120,
       align: "right",
       cell: (row) => timeCell(row.created_at),

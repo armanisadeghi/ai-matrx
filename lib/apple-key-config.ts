@@ -75,8 +75,8 @@ export function getAppleKeyExpiryMessage(): string {
     const daysLeft = getDaysUntilAppleKeyExpiry();
 
     if (daysLeft <= 0) {
-        return `⛔ Apple Sign-In secret key EXPIRED on ${formattedDate}. Apple sign-in is broken for all users! Please regenerate immediately in the Apple Developer Console and update Supabase.`;
+        return `Apple Sign-In secret key EXPIRED on ${formattedDate}. Apple sign-in is broken for all users! Please regenerate immediately in the Apple Developer Console and update Supabase.`;
     }
 
-    return `⚠️ Apple Sign-In secret key expires on ${formattedDate} (${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining). Please regenerate it in the Apple Developer Console and update Supabase.`;
+    return `Apple Sign-In secret key expires on ${formattedDate} (${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining). Please regenerate it in the Apple Developer Console and update Supabase.`;
 }

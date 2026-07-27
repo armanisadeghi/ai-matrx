@@ -131,8 +131,9 @@ export function AgentBrowseTable({
       // Every column sorts — the RPC's ORDER BY whitelist covers all of them.
       sortable: true,
       // Finite value sets get real options WITH counts, so the user picks from
-      // what exists instead of guessing at a text box.
-      filterOptions: facetValues?.map((v) => ({
+      // what exists instead of guessing at a text box. Columns that declare
+      // their own fixed options (the date buckets) keep them.
+      filterOptions: spec.column.filterOptions ?? facetValues?.map((v) => ({
         value: v.value,
         label:
           v.value === "__none__"
