@@ -23,6 +23,7 @@
 
 import React from "react";
 import StoreProvider from "@/providers/StoreProvider";
+// disaster
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { BaseReduxState } from "@/types/reduxTypes";
 import { RefProvider } from "@/lib/refs";
@@ -34,13 +35,18 @@ import { UniformHeightProvider } from "@/features/applet/runner/layouts/core/Uni
 import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 // disaster
 import { TranscriptsProvider } from "@/features/transcripts/context/TranscriptsContext";
+// disaster
 import { AudioRecoveryProvider } from "@/features/audio/providers/AudioRecoveryProvider";
+// disaster
 import { GlobalRecordingProvider } from "@/providers/GlobalRecordingProvider";
 import { RecordingPill } from "@/components/global/RecordingPill";
 import { RequestRecoveryProvider } from "@/features/request-recovery/providers/RequestRecoveryProvider";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
+
+// disaster - REPLACED WITH DeferredSingletonWrapper
 // import DeferredSingletons from "./DeferredSingletons";
+import { DeferredSingletonWrapper } from "@/features/deferred-singletons/DeferredSingletonWrapper";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
 // WindowPersistenceManager provides the React context that WindowPanel
@@ -81,7 +87,6 @@ import { AudioOutputHost } from "@/providers/AudioOutputHost";
 import { AudioPlaybackHost } from "@/features/audio/playback/AudioPlaybackHost";
 import { AudioSessionHost } from "@/features/audio/session/AudioSessionHost";
 import { AudioDeviceProvider } from "@/providers/AudioDeviceProvider";
-import DeferredSingletonWrapper from "./DeferredSingletonWrapper";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
 // imported by `build-tool-injection.ts` (the CLIENT-side consumer) — NOT here.
