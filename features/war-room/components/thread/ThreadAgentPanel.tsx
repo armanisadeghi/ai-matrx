@@ -82,6 +82,8 @@ import {
   registerWarRoomToolBinding,
   clearWarRoomToolBinding,
 } from "@/features/agents/war-room-tools/binding-registry";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildWarRoomThreadScope } from "@/features/war-room/lib/war-room-scope";
 
 console.log(
   "[Track War Room] 8c, ThreadAgentPanel.tsx — module evaluated (chunk loaded)",
@@ -358,7 +360,24 @@ export default function ThreadAgentPanel({
     prevStatusRef.current = status;
   }, [status, sessionId, dispatch]);
 
+  // ── Surface emitter (`matrx-user/war-room-thread`) ──────────────────────
+  // Mounted INSIDE the room shell's provider, so it nests deeper and wins while
+  // the tile's agent panel is open — the thread surface is exactly where thread
+  // agents run. Built at TRIGGER time from the live store (never a render
+  // snapshot); the assistant agent id is panel-local so it rides in as an extra.
+  const getThreadScope = useCallback(
+    () =>
+      buildWarRoomThreadScope(store.getState(), threadId, {
+        assistantAgentId: activeAgentId,
+      }),
+    [store, threadId, activeAgentId],
+  );
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/war-room-thread"
+      getScope={getThreadScope}
+    >
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Agent picker + co-edited working document — shared header, exactly as
           ScribeScreen stacks them above the body. Both shrink-0; the working
@@ -379,6 +398,7 @@ export default function ThreadAgentPanel({
         />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

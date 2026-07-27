@@ -25,7 +25,43 @@
 import type {
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceValueGroup,
 } from "@/features/surfaces/types";
+
+/**
+ * Canonical grouping, shared by BOTH document surfaces so the two can never
+ * drift into different sections for an identical value set.
+ */
+export const CONVERSATION_DOCUMENT_GROUPS: SurfaceValueGroup[] = [
+  {
+    key: "active_scope",
+    label: "Working selection",
+    sortOrder: 100,
+    description:
+      "What the user is acting on right now — the selection or the whole body, plus the surrounding heading and cursor.",
+  },
+  {
+    key: "document_identity",
+    label: "Document identity",
+    sortOrder: 200,
+    description:
+      "Which document this is and where it durably persists.",
+  },
+  {
+    key: "document_state",
+    label: "Document state",
+    sortOrder: 300,
+    description:
+      "Live editor state: unsaved/saving/conflict standing, the concurrency version, and size signals.",
+  },
+  {
+    key: "conversation_link",
+    label: "Conversation link",
+    sortOrder: 400,
+    description:
+      "The conversation this document hangs off — a reference plus what the link makes available. Never the conversation's own content.",
+  },
+];
 
 export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
   // ── Selection / scope mirror (210-259) ─────────────────────────────────
@@ -38,6 +74,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 4000,
     sortOrder: 210,
+    group: "active_scope",
   },
   {
     name: "active_scope_kind",
@@ -48,6 +85,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 10,
     sortOrder: 220,
+    group: "active_scope",
   },
   {
     name: "current_heading",
@@ -58,6 +96,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 60,
     sortOrder: 230,
+    group: "active_scope",
   },
   {
     name: "current_section_text",
@@ -68,6 +107,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 1500,
     sortOrder: 240,
+    group: "active_scope",
   },
   {
     name: "cursor_offset",
@@ -78,6 +118,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 6,
     sortOrder: 250,
+    group: "active_scope",
   },
 
   // ── Document identity & metadata (300-359) ─────────────────────────────
@@ -90,6 +131,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 36,
     sortOrder: 300,
+    group: "document_identity",
   },
   {
     name: "document_title",
@@ -100,6 +142,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 60,
     sortOrder: 310,
+    group: "document_identity",
   },
   {
     name: "document_kind",
@@ -110,6 +153,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 8,
     sortOrder: 320,
+    group: "document_identity",
   },
   {
     name: "binding_kind",
@@ -120,6 +164,31 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 20,
     sortOrder: 330,
+    group: "document_identity",
+  },
+  {
+    name: "binding_id",
+    label: "Bound source ID",
+    description:
+      "UUID of the durable row this document persists into, whatever the binding kind is (working-document row, note, or studio document). Empty when the document is ephemeral (`binding_kind` = none). Broader than `document_id`, which is only the working-document row.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 332,
+    group: "document_identity",
+    autoContext: false,
+  },
+  {
+    name: "binding_label",
+    label: "Bound source label",
+    description:
+      "Display label of the bound source, latched when the binding was made (e.g. the note's title). Empty when unbound or never labeled.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    sortOrder: 334,
+    group: "document_identity",
+    autoContext: false,
   },
   {
     name: "is_dirty",
@@ -130,6 +199,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 5,
     sortOrder: 340,
+    group: "document_state",
   },
   {
     name: "word_count",
@@ -140,6 +210,78 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 6,
     sortOrder: 350,
+    group: "document_state",
+  },
+  {
+    name: "char_count",
+    label: "Character count",
+    description:
+      "Character length of the document body. Zero when empty. The cheap size signal an action can check before pulling the whole body.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 352,
+    group: "document_state",
+    autoContext: false,
+  },
+  {
+    name: "is_saving",
+    label: "Save in flight",
+    description:
+      "True while a persist to the bound durable source is in flight. False when idle. Always emitted — the editor always knows its persist state.",
+    valueType: "boolean",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 354,
+    group: "document_state",
+    autoContext: false,
+  },
+  {
+    name: "is_materialized",
+    label: "Durable row exists",
+    description:
+      "True once the durable row actually exists. False while the document is enabled with a reserved id but no row yet (materialize-on-write). Always emitted. An action that writes the row directly must tolerate false.",
+    valueType: "boolean",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 356,
+    group: "document_state",
+    autoContext: false,
+  },
+  {
+    name: "document_version",
+    label: "Document version",
+    description:
+      "The durable row `version` the local content is based on — the optimistic-concurrency token. Zero while the document has no durable row. Always emitted.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 3,
+    sortOrder: 358,
+    group: "document_state",
+    autoContext: false,
+  },
+  {
+    name: "has_conflict",
+    label: "Unresolved edit conflict",
+    description:
+      "True when the user's save was refused because a concurrent edit (usually the agent this turn) advanced the row, and the conflict is still unresolved. Auto-save is blocked while true — an agent should not write the document until the user reconciles. Always emitted.",
+    valueType: "boolean",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 359,
+    group: "document_state",
+  },
+  {
+    name: "editor_mode",
+    label: "Editor mode",
+    description:
+      'Which editing surface the user has open — "plain" (raw markdown textarea) or the rich/preview mode. Always emitted; tells an action whether the user is looking at source or rendered output.',
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 10,
+    sortOrder: 357,
+    group: "document_state",
+    autoContext: false,
   },
 
   // ── Conversation relationship (360-389) ────────────────────────────────
@@ -154,6 +296,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 36,
     sortOrder: 360,
+    group: "conversation_link",
   },
   {
     name: "conversation_context",
@@ -164,6 +307,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 1500,
     sortOrder: 370,
+    group: "conversation_link",
   },
   {
     name: "active_scope_ids",
@@ -174,6 +318,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 360,
     sortOrder: 380,
+    group: "conversation_link",
   },
 ];
 
@@ -191,6 +336,11 @@ export function createConversationDocumentScope(values: {
   active_scope_kind: "selection" | "document" | "empty";
   document_kind: ConversationDocumentKind;
   conversation_id: string;
+  is_saving: boolean;
+  is_materialized: boolean;
+  document_version: number;
+  has_conflict: boolean;
+  editor_mode: string;
   // alwaysAvailable: false → optional
   selection?: string;
   text_before?: string;
@@ -204,8 +354,11 @@ export function createConversationDocumentScope(values: {
   document_id?: string;
   document_title?: string;
   binding_kind?: string;
+  binding_id?: string;
+  binding_label?: string;
   is_dirty?: boolean;
   word_count?: number;
+  char_count?: number;
   conversation_context?: Record<string, unknown>;
   active_scope_ids?: string[];
 }): SurfaceScopePayload {

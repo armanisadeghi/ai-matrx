@@ -18,7 +18,7 @@
 // (loadWarRoomSession) with real loading / empty / not-found states; all data
 // flows through the warRoom thunks + selectors.
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
@@ -36,7 +36,9 @@ import {
   Minimize2,
   X,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildWarRoomRoomScope } from "@/features/war-room/lib/war-room-scope";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   DropdownMenu,
@@ -74,6 +76,7 @@ import { useActiveThreadRestore } from "./useActiveThreadRestore";
 import { useRoomUrlSync } from "./useRoomUrlSync";
 import {
   RoomViewProvider,
+  resolveStagedId,
   useRoomView,
   type RoomMode,
   type Density,
@@ -122,7 +125,40 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const session = useAppSelector(selectSessionById(sessionId));
   const tilesStatus = useAppSelector(selectThreadsStatusForRoom(sessionId));
-  const { mode } = useRoomView();
+  const roomView = useRoomView();
+  const { mode } = roomView;
+
+  // ── Surface emitter (`matrx-user/war-room`) ──────────────────────────────
+  // The shell owns the room's session state AND the ephemeral cockpit view
+  // state, so it is the one place that can emit the full room scope. Built at
+  // TRIGGER time from the live store + the live view context — never a render
+  // snapshot. The thread agent panel nests a DEEPER provider, so while a tile's
+  // agent is open the thread surface wins (by design).
+  const store = useAppStore();
+  const visibleThreadIdsForStage = useAppSelector(
+    selectOrderedGalleryThreadIds(sessionId),
+  );
+  const getRoomScope = useCallback(
+    () =>
+      buildWarRoomRoomScope(store.getState(), sessionId, {
+        mode: roomView.mode,
+        projectedTab: roomView.projectedTab,
+        density: roomView.density,
+        stagedThreadId: resolveStagedId(
+          roomView.chosenStageId,
+          visibleThreadIdsForStage,
+        ),
+      }),
+    [
+      store,
+      sessionId,
+      roomView.mode,
+      roomView.projectedTab,
+      roomView.density,
+      roomView.chosenStageId,
+      visibleThreadIdsForStage,
+    ],
+  );
 
   // Restore the room VIEW on open, two complementary layers:
   //   • URL params (thread + view + density) — the fast, shareable layer; a
@@ -197,6 +233,10 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   }, [ready, mode, sessionId]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/war-room"
+      getScope={getRoomScope}
+    >
     <div className="@container h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       {/* ── Header — pr-14 clears the shell's fixed top-right avatar ── */}
       <header className="shrink-0 border-b border-border pl-1.5 pr-14 h-11 flex items-center gap-1.5">
@@ -336,6 +376,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
           nothing; registers its imperative API in roomRecordingBridge. */}
       <RoomRecordingController />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

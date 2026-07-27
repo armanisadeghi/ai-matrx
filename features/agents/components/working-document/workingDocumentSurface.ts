@@ -86,6 +86,16 @@ export interface BuildConversationDocumentContextDataArgs {
   title?: string;
   binding?: WorkingDocumentBinding;
   isDirty?: boolean;
+  /** True while a persist to the bound durable source is in flight. */
+  isSaving?: boolean;
+  /** True once the durable row exists (materialize-on-write). */
+  isMaterialized?: boolean;
+  /** Durable row `version` the local content is based on (concurrency token). */
+  version?: number;
+  /** True while a refused-save conflict is unresolved (writes are blocked). */
+  hasConflict?: boolean;
+  /** Which editing surface the user has open ("plain" | rich/preview). */
+  editorMode?: string;
   /** Host conversation context dict (instanceContext entries by key). */
   conversationContext?: Record<string, unknown>;
   /** Active scope UUIDs selected in the host conversation. */
@@ -109,6 +119,11 @@ export function buildConversationDocumentContextData(
     title,
     binding,
     isDirty = false,
+    isSaving = false,
+    isMaterialized = false,
+    version = 0,
+    hasConflict = false,
+    editorMode = "plain",
     conversationContext,
     activeScopeIds,
   } = args;
@@ -162,8 +177,16 @@ export function buildConversationDocumentContextData(
     document_id: documentId,
     document_title: title || undefined,
     binding_kind: binding?.kind || undefined,
+    binding_id: binding?.id || undefined,
+    binding_label: binding?.label || undefined,
     is_dirty: isDirty,
+    is_saving: isSaving,
+    is_materialized: isMaterialized,
+    document_version: version,
+    has_conflict: hasConflict,
+    editor_mode: editorMode,
     word_count: docHasContent ? countWords(text) : undefined,
+    char_count: text.length,
 
     conversation_context:
       conversationContext && Object.keys(conversationContext).length > 0

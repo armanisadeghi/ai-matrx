@@ -16,15 +16,22 @@
 import type { SurfaceManifest } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import {
+  CONVERSATION_DOCUMENT_GROUPS,
   CONVERSATION_DOCUMENT_VALUES,
   createConversationDocumentScope,
 } from "./_conversation-document.manifest";
 
 export const scratchpadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scratchpad",
-  readiness: "partial",
-  readinessNote: "Shared value set + emitter; no groups, completeness not audited",
+  readiness: "verified",
   label: "Scratchpad",
+  intro: `<surface_intro>
+You are INSIDE the user's scratchpad — their private per-conversation notes. In chat the cloud agent only READS this; but here, acting on the user's own request, it is just text and you may rewrite, bullet, tabulate, or clean it up.
+Act on active_text (the highlighted selection when there is one, otherwise the whole body); active_scope_kind tells you which. current_heading / current_section_text bound a section, and cursor_offset locates the caret for insert-at-cursor actions.
+document_state tells you whether it is safe to write: has_conflict true means a concurrent edit is unresolved and auto-save is blocked; is_dirty means unsaved local edits; document_version is the concurrency token for a direct row write.
+The conversation is a REFERENCE, not your content: conversation_id links back to the chat, and conversation_context / active_scope_ids expose what the chat agent sees when the host supplied them.
+</surface_intro>`,
+  groups: CONVERSATION_DOCUMENT_GROUPS,
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     CONVERSATION_DOCUMENT_VALUES,

@@ -21,9 +21,14 @@ import { selectInstanceContextEntries } from "@/features/agents/redux/execution-
 import { selectScopeSelectionsContext } from "@/lib/redux/slices/appContextSlice";
 import {
   selectWorkingDocBinding,
+  selectWorkingDocConflict,
   selectWorkingDocContent,
+  selectWorkingDocMaterialized,
+  selectWorkingDocSaving,
   selectWorkingDocTitle,
+  selectWorkingDocVersion,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { getWorkingDocViewState } from "./workingDocumentViewStore";
 import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   buildConversationDocumentContextData,
@@ -50,6 +55,14 @@ export function useWorkingDocumentSurfaceScope(
   const binding = useAppSelector(selectWorkingDocBinding(conversationId, kind));
   const canonicalContent = useAppSelector(
     selectWorkingDocContent(conversationId, kind),
+  );
+  const saving = useAppSelector(selectWorkingDocSaving(conversationId, kind));
+  const materialized = useAppSelector(
+    selectWorkingDocMaterialized(conversationId, kind),
+  );
+  const version = useAppSelector(selectWorkingDocVersion(conversationId, kind));
+  const conflict = useAppSelector(
+    selectWorkingDocConflict(conversationId, kind),
   );
 
   // Default host context, derived from Redux by conversationId. The host can
@@ -88,6 +101,13 @@ export function useWorkingDocumentSurfaceScope(
       title,
       binding,
       isDirty: text !== canonicalContent,
+      isSaving: saving,
+      isMaterialized: materialized,
+      version,
+      hasConflict: conflict !== null,
+      // View state lives in a module store (not Redux) — read it at trigger
+      // time so the emitted mode is what the user is actually looking at.
+      editorMode: getWorkingDocViewState(conversationId).editorMode,
       conversationContext,
       activeScopeIds,
     }) as SurfaceScopePayload;
@@ -99,6 +119,10 @@ export function useWorkingDocumentSurfaceScope(
     title,
     binding,
     canonicalContent,
+    saving,
+    materialized,
+    version,
+    conflict,
     contextEntries,
     scopeSelections,
     surfaceContext,
