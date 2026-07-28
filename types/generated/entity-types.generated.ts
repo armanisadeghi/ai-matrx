@@ -433,6 +433,7 @@ export type ReferencePickableEntityToken =
   | "shared_canvas_item"
   | "skill"
   | "skill_render_definition"
+  | "structured_list"
   | "studio_session"
   | "study_goal"
   | "study_media"
@@ -1130,7 +1131,7 @@ export const ENTITY_TYPE_METADATA = {
   "sms_notification": { token: "sms_notification", schema: "communication", table: "sms_notifications", label: "SMS Notification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "sms_notification_preference": { token: "sms_notification_preference", schema: "communication", table: "sms_notification_preferences", label: "SMS Notification Preference", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "sms_phone_number": { token: "sms_phone_number", schema: "communication", table: "sms_phone_numbers", label: "SMS Phone Number", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "structured_list": { token: "structured_list", schema: "workbench", table: "udt_structured_lists", label: "Structured List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "structured_list": { token: "structured_list", schema: "workbench", table: "udt_structured_lists", label: "Structured List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "list_name", contentRole: "utility", referenceCategory: null },
   "studio_documents": { token: "studio_documents", schema: "transcripts", table: "studio_documents", label: "Studio Document", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "studio_recording_chunks": { token: "studio_recording_chunks", schema: "transcripts", table: "studio_recording_chunks", label: "Studio Recording Chunk", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "studio_recording_segments": { token: "studio_recording_segments", schema: "transcripts", table: "studio_recording_segments", label: "Studio Recording Segment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },

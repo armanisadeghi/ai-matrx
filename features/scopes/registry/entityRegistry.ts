@@ -51,6 +51,7 @@ import {
   Layers3,
   LayoutTemplate,
   ListChecks,
+  ListOrdered,
   Megaphone,
   ListTodo,
   MessagesSquare,
@@ -89,11 +90,7 @@ export const DEFAULT_ORG_COLUMN = "organization_id";
 // `content_role` column, these assignments move into the generated metadata.
 
 export type ContentRole =
-  | "utility"
-  | "source"
-  | "destination"
-  | "hybrid"
-  | "container";
+  "utility" | "source" | "destination" | "hybrid" | "container";
 
 export interface ContentRoleMeta {
   id: ContentRole;
@@ -196,7 +193,8 @@ export interface EntityOverlay {
     search?: string;
     limit?: number;
   }) => Promise<
-    { ok: true; data: { id: string; title: string }[] } | { ok: false; error: string }
+    | { ok: true; data: { id: string; title: string }[] }
+    | { ok: false; error: string }
   >;
 }
 
@@ -209,8 +207,8 @@ export interface EntityOverlay {
 // Every token below is verified live against `platform.entity_types` +
 // information_schema (schema/table/title column all confirmed). Non-canonical
 // names (agent_app, picklist, website, canvas, research, sandbox) are
-// deliberately ABSENT — they are not registered tokens, so they can never be a
-// valid association edge endpoint.
+// deliberately ABSENT — they are not registered tokens (`picklist` → use
+// `structured_list`), so they can never be a valid association edge endpoint.
 const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // ─── Agents / Apps / Skills (utilities) ───────────────────────────────────
   agent: {
@@ -226,14 +224,38 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     titleColumn: "label",
     contentRole: "utility",
   },
-  app: { Icon: AppWindow, labelPlural: "Agent Apps", titleColumn: "name", contentRole: "utility" },
-  skill: { Icon: Sparkles, labelPlural: "Skills", titleColumn: "label", contentRole: "utility" },
-  workflow: { Icon: Workflow, labelPlural: "Workflows", titleColumn: "name", contentRole: "utility" },
+  app: {
+    Icon: AppWindow,
+    labelPlural: "Agent Apps",
+    titleColumn: "name",
+    contentRole: "utility",
+  },
+  skill: {
+    Icon: Sparkles,
+    labelPlural: "Skills",
+    titleColumn: "label",
+    contentRole: "utility",
+  },
+  workflow: {
+    Icon: Workflow,
+    labelPlural: "Workflows",
+    titleColumn: "name",
+    contentRole: "utility",
+  },
   content_template: {
     Icon: LayoutTemplate,
     labelPlural: "Content Templates",
     titleColumn: "label",
     contentRole: "utility",
+  },
+  // Pick Lists / user lists (`/lists`) — canonical token is structured_list
+  // (legacy names picklist / udt_picklists / user_lists are dead).
+  structured_list: {
+    Icon: ListOrdered,
+    labelPlural: "Lists",
+    titleColumn: "list_name",
+    contentRole: "utility",
+    hrefFor: (id) => `/lists/${id}`,
   },
 
   // ─── Sources ──────────────────────────────────────────────────────────────
@@ -244,7 +266,12 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     contentRole: "source",
     hrefFor: (id) => `/files/f/${id}`,
   },
-  folder: { Icon: Folder, labelPlural: "Folders", titleColumn: "folder_name", contentRole: "source" },
+  folder: {
+    Icon: Folder,
+    labelPlural: "Folders",
+    titleColumn: "folder_name",
+    contentRole: "source",
+  },
   transcript: {
     Icon: AudioLines,
     labelPlural: "Transcripts",
@@ -388,8 +415,16 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // ─── Container display only (candidates come from the scope tree, not a
   //     generic table read — so NO titleColumn → not listable as candidates) ──
   scope: { Icon: Tag, labelPlural: "Scopes", contentRole: "container" },
-  scope_type: { Icon: Layers3, labelPlural: "Scope Types", contentRole: "container" },
-  organization: { Icon: Building2, labelPlural: "Organizations", contentRole: "container" },
+  scope_type: {
+    Icon: Layers3,
+    labelPlural: "Scope Types",
+    contentRole: "container",
+  },
+  organization: {
+    Icon: Building2,
+    labelPlural: "Organizations",
+    contentRole: "container",
+  },
 };
 
 /** Fallback icon when a token has no overlay entry yet. */
@@ -460,10 +495,9 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
     hrefFor: overlay?.hrefFor ?? null,
     scopeable: meta.scopeable,
     category: meta.category,
-    contentRole:
-      isContentRole(meta.contentRole)
-        ? meta.contentRole
-        : (overlay?.contentRole ?? "destination"),
+    contentRole: isContentRole(meta.contentRole)
+      ? meta.contentRole
+      : (overlay?.contentRole ?? "destination"),
     listCandidates: overlay?.listCandidates ?? null,
     canListCandidates:
       titleColumn !== null || overlay?.listCandidates !== undefined,
