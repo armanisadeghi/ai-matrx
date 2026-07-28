@@ -13,6 +13,33 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D112 — canonical list rows are mouse-only: no keyboard or screen-reader path to open a record (2026-07-27)
+
+Every list built on the canonical entry-list shell opens a record via a click handler
+on the bare `<tr>`. Verified live on `/crm`: the row has `cursor: pointer` but
+`role=null`, `tabindex=null`, and the name cell is plain text, not a link. The only
+focusable control in the row is the `…` kebab (`aria-label="Actions for <name>"`).
+
+So a keyboard user cannot open any record from any list page, a screen reader
+announces no affordance, and middle-click / cmd-click "open in new tab" does not work
+anywhere in the app.
+
+**Not a CRM defect — the gold standard has it too.** `features/agents/browse/components/AgentBrowseTable.tsx`
+has exactly the same shape (aria-labels on the favorite toggle and the kebab, nothing
+on the row). CRM matched the canonical pattern correctly; the pattern is what is wrong.
+Fixing it in one feature would be a divergence, which is why it is filed instead of
+patched.
+
+Fix, once, in the shared primitive: render the primary/title cell as a real
+`next/link` to the row's href (the entity registry already supplies `hrefFor`), keeping
+the row click as a convenience. That gets keyboard focus, screen-reader semantics, and
+open-in-new-tab for every list at once. The `/shapes` list hit the agent-driving half of
+this in 2026-07-18 and patched only itself with `aria-label="Open <label>"` — that
+narrower fix should be superseded by the link.
+
+Touches `components/matrx/MatrxDataTable` + the browse table; audit
+`AgentBrowseRows`/`AgentBrowseCards` for the same gap.
+
 ### D110 — stray or broken Cloudflare Workers build is red on frontend releases (2026-07-27)
 
 GitHub check `Workers Builds: ai-matrx-admin` failed on release `v0.4.154`
