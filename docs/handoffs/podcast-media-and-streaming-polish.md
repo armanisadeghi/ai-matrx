@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-23
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
 vision: []
 ---
@@ -43,19 +43,19 @@ must NOT be duplicated here: generation pipeline (gates/casts/chapters/languages
 - Cover-art grid: `features/podcasts/generator/components/MediaOptionsGrid.tsx`
 - Kind Request primitive (streaming): `features/content-ir/react/actions/{useKindRequest.ts,KindRequestDialog.tsx}`;
   the "Need an idea?" consumer `features/podcasts/generator/components/TopicIdeaHelper.tsx`
-- Defects: `FOUND_DEFECTS.md` D82 (untitled episode), D83 (duration), D85 (concurrency root cause)
+- Defects: `FOUND_DEFECTS.md` D82b (untitled episode), D83 (duration), D85 (concurrency root cause)
 - Deploy: FE `scripts/release.sh` (Vercel → aimatrx.com); aidream auto-deploys from `main`.
   Confirm aidream live by probing `https://server.app.matrxserver.com/openapi.json` for the field you shipped.
 - Test route + login: `/podcast/studio/create` → generate; log in `admin@admin.com` / `Password1234#`
 
 ## Remaining work
 
-1. **D82 — flashcard→podcast still publishes "Untitled Episode" (aidream, NOT fixed).** The
+1. **D82b — flashcard→podcast still publishes "Untitled Episode" (aidream, NOT fixed).** The
    education/flashcard path (`features/flashcards/data/podcastOverview.ts`) sends a full-content deck;
    the script agent returns an empty title and aidream persists it as `"Untitled Episode"` with no
    description/art. Fix in aidream: derive a title when the agent omits one, and never persist an
    empty title (an untitled episode is a failed run). Reproduces on the next such run. Full repro +
-   row ids in `FOUND_DEFECTS.md` D82.
+   row ids in `FOUND_DEFECTS.md` D82b.
 2. **D83 — `pc_episodes.duration_seconds` never written (aidream).** 44/48 episodes null; every
    server-rendered list/RSS has no runtime. Write duration at publish time in the generator. (FE now
    recovers it client-side from the audio element, but lists can't without downloading every file.)
