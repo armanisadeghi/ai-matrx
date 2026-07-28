@@ -1,92 +1,76 @@
+---
+status: active
+updated: 2026-07-28
+repos: [matrx-frontend]
+vision: [.claude/skills/code-splitting/SKILL.md]
+---
+
 # Handoff — Build-Graph Fragmentation Campaign (memory, build time, chunk consolidation)
 
-**Status:** active · **Owner:** unassigned (previous agent session ended) · **Last groomed:** 2026-07-27
-**Read first:** `.claude/skills/code-splitting/SKILL.md` (rule 3, "THE FRAGMENTATION LAW") — it is the doctrine this campaign produced. Nothing below overrides it.
-
----
+**Read first:** `.claude/skills/code-splitting/SKILL.md` (rule 3, "THE FRAGMENTATION LAW") — the doctrine this campaign produced. Nothing below overrides it. This doc also absorbed `docs/_current/bundle-optimization-tracker.md` (deleted 2026-07-28) — its still-open items live in Remaining work; its resolved/disproven claims are in Done and Gotchas.
 
 ## 1. Vision
 
-**Original vision (Arman's, and now measured fact):** the production build's binding constraints are **memory and build time** — NOT bundle size, NOT lighthouse scores. The Vercel Turbo machine has 60 GB; this app once built in 4–5 minutes and crept to 20–40 as code-splitting boundaries accumulated. The way you protect memory/time is to keep client code **in one piece, compiled once, behind ONE `next/dynamic({ssr:false})` boundary at the edge of each surface**. The model is [`components/MarkdownStream.tsx`](../../components/MarkdownStream.tsx): an enormous rendering engine (block registry, artifacts, editors) as one statically-imported graph behind one edge.
+**Arman's, and now measured fact:** the production build's binding constraints are **memory and build time** — NOT bundle size, NOT lighthouse. The Vercel Turbo machine has 60 GB; the app once built in 4–5 min and crept to 20–40 as split boundaries accumulated. Protection = keep client code **in one piece, compiled once, behind ONE `next/dynamic({ssr:false})` boundary at the edge of each surface** — the model is [`components/MarkdownStream.tsx`](../../components/MarkdownStream.tsx) ("a million lines as ONE piece behind ONE edge; fragmenting the client graph is what balloons memory").
 
-**Why (the mechanism):** every `next/dynamic()` call manufactures a *loadable component* — a react-loadable-manifest entry whose chunk group is resolved per consuming context. `React.lazy` is only an async edge inside the parent's existing chunk graph (no manifest entry). Build memory/time scale with **chunk-group count × consuming contexts**. Scattered dynamics ("fragmentation") multiply that product; consolidation collapses it.
+**Mechanism:** every `next/dynamic()` manufactures a loadable — a manifest entry whose chunk group resolves per consuming context. `React.lazy` is only an async edge inside the parent's chunk graph. Build memory/time scale with **chunk-group count × consuming contexts**.
 
-**Refinements added during the work (in order, each explicit):**
+**Refinements (each explicit, in order):**
+1. **Controlled experiment 2026-07-27** (identical 60 GB machines, cold cache, v0.4.122 base): baseline GREEN 12m · +~190 lazy→dynamic conversions **OOM DNF** (reverted v0.4.137) · same surfaces **consolidated** (5 edges replacing ~90 boundaries) **GREEN 8m, −108 MB — 33% faster than baseline**.
+2. **Tiering (Arman's browser concern, adopted):** the light majority of a surface goes static; genuinely heavy engines (monaco/syntax-highlighter, mermaid, reactflow, CodeMirror, Univer, pdfjs) keep individual boundaries — as **`React.lazy`** when inside an already-`ssr:false` gate.
+3. **Sanctioned exceptions:** `lazyOverlay`'s ~156 one-at-a-time overlay entries; true SSR-safety boundaries (commented in place).
+4. **Measure every batch:** one release per batch; read Vercel build duration + build-system report. Never land a fleet blind.
 
-1. **The controlled experiment (2026-07-27)** that turned the vision into numbers — identical 60 GB Turbo machines, cold cache, v0.4.122 base:
-   - baseline: GREEN, 12 min
-   - baseline + ~190 lazy→dynamic conversions: **OOM SIGKILL, DNF** (this mistaken campaign was fully reverted in v0.4.137; the whole story is in the memory file and the skill)
-   - baseline + the same surfaces **consolidated** (all-static inside one edge per surface, 5 edges replacing ~90 boundaries): **GREEN, 8 min, −108 MB output — 33 % faster than untouched baseline**
-2. **Tiering (Arman's browser concern, adopted as policy):** consolidation must not bombard the browser. The *light majority* of a surface goes static (one fetch, no chunk waterfall); the *genuinely heavy engines* (monaco/syntax-highlighter, mermaid, reactflow, CodeMirror, Univer, pdfjs) **keep individual boundaries** so a page never downloads an engine it isn't using. Inside an already-`ssr:false` gate, those retained boundaries should be **`React.lazy`** (build-cheap), not `next/dynamic`.
-3. **Sanctioned exceptions:** `features/overlays/OverlayController.tsx`'s ~156 `lazyOverlay` entries (windows open one-at-a-time — per-item chunks are correct) and true SSR-safety boundaries (see Gotchas).
-4. **Measure every batch:** one release per batch, read the Vercel build duration + "Build system report" per release. Never land a fleet of changes blind.
+## 2. Resources
 
----
+- Doctrine + patterns + leak-hunt method: `.claude/skills/code-splitting/SKILL.md`. Full incident history: memory `project_build_oom_findings`.
+- Front-door pattern: `Foo.tsx` (thin `"use client"` shell, `dynamic(() => import("./FooImpl"), {ssr:false})`, exports props type) over `FooImpl.tsx` (all static). Canonical: `MarkdownStream.tsx`, `ChatSidebar.tsx`. Consolidated registry exemplar: `components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry.tsx` (72 static / 8 `React.lazy`, header comment names why).
+- Build config: `next.config.js` (`experimental.cpus: 4` + `turbopackMemoryLimit` 40 GiB are load-bearing; heavily commented). Profiles `MATRX_PROFILE` across 3 Vercel projects. Turbopack fs-tracing guard + `pnpm build:trace` local profiling: `docs/BUILD-TIME-TURBOPACK.md`.
+- Ship loop: edit → `pnpm type-check` → `git commit --only <your files>` (parallel sessions share the tree) → `./scripts/release.sh` → read that release's Vercel duration + build-system report (Vercel MCP `list_deployments` / `get_deployment_build_logs`; apples-to-apples = same machine line, same `MATRX_PROFILE` line, cold vs warm cache).
+- Baseline as of 2026-07-28: v0.4.191 cold build **12 min**, "No memory or disk space problems detected."
 
-## 2. Current state (gap analysis)
+## 3. Remaining work (priority order)
 
-### Done — deployed and verified
-- **Revert of the mistaken lazy→dynamic campaign** (v0.4.137) — production went from 14 consecutive OOM build failures back to green.
-- **Batch 1** (v0.4.142, commit `eea65ef88`) — LIVE, **production built in 9 min**:
-  - `features/canvas/artifact-types/artifact-renderers.tsx` — 30 renderers static (see batch 3 tiering below); out-of-gate edge = `ArtifactRenderDynamic.tsx` + component-free `artifact-renderer-keys.ts` (consumer: `features/artifacts/components/CmsArtifactDetail.tsx`).
-  - `features/settings/registry.ts` — 39 tabs static; route edges = `features/settings/route-shell/SettingsTabContent.tsx` / `SettingsRouteSidebar.tsx` front doors over new `*Impl.tsx` files (overlay path already edged by `lazyOverlay`).
-  - `features/organizations/peek/registry.ts` — 19 peeks static; edge = `features/organizations/peek/ResourcePeekHost.tsx` front door over `ResourcePeekHostImpl.tsx`.
-- **Batch 2** (v0.4.144, commit `c073b527c`) — stacked-boundary removals: `SmartAgentVariables.tsx` (6 dynamics → static; was 6 × 65 contexts), `JsonInspector.tsx` (3 light panes static, CodeMirror `JsonEditorPane` keeps its boundary), `ContextValueBody.tsx` (stopped double-wrapping the `MarkdownStream`/`JsonInspector` front doors), `ChatSidebar.tsx` → front door + `ChatSidebarImpl.tsx` (4 always-together parts static), `UtilitiesOverlay.tsx` (NotesView static).
-- **Batch 3** (v0.4.147, commit `44bdc0f14`... check `git log`) — the flagship:
-  - `components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry.tsx` — **72 of 80 block components static; 8 heavy keep `React.lazy`**: `CodeBlock`, `HtmlInlinePreview`, `ReactCodeBlock`, `StreamingDiffBlock`, `SearchReplaceBlock` (react-syntax-highlighter), `MatrxFileBlock` (Univer/previewers), `InteractiveDiagramBlock` (reactflow), `MermaidBlock` (mermaid).
-  - `artifact-renderers.tsx` re-tiered: `mermaid`/`diagram`/`react`/`code` renderers back to `React.lazy` (batch 1 had made them static, which put mermaid/reactflow into the always-fetched markdown chunk — runtime regression, fixed).
-- **Doctrine + record:** Fragmentation Law written into `.claude/skills/code-splitting/SKILL.md` (rule 3 + anti-pattern table + checklist); full incident + backlog in the agent memory file `project_build_oom_findings`.
-- **Hotfix** (last release of this session): `features/public-chat/components/sidebar/SidebarChats.tsx` — production `/p/chat` crashed with "cannot add postgres_changes callbacks after subscribe()" (static realtime topic, a pre-existing landmine on the supabase-realtime skill's suspicious list, surfaced by batch 2's mount-timing change). Fixed with `uniqueChannelTopic()`. **VERIFY on production `/p/chat` after deploy — this was in flight when the session ended.**
+1. **react-markdown ×10 duplicate wrappers** — each duplicates the unified/remark graph into its own chunk group: 9 under `components/mardown-display/**` (`MarkdownRenderer`, `BasicMarkdownContent`, `ConfigurableMarkdownContent`, `MarkdownInput`, `MarkdownTextDisplay`, `NewRichTextEditor`, `LinkComponentWithFetch`, `ThinkingTraceMarkdown`, `CandidateProfile`) + `features/rag/.../CleanedMarkdownPane.tsx` (also `components/message-display/*`, `features/files/.../MarkdownPreview.tsx`, `features/research/.../DocumentViewer.tsx` per 2026-07-28 re-grep). Fix: ONE shared lazy react-markdown module. Likely the biggest single-dep win remaining. Own release; measure.
+2. **File-previewer triple registry (~23 sites)** — `features/files/components/core/FilePreview/FilePreview.tsx` (11) + `components/mardown-display/blocks/matrx-file/UniversalInlineFile.tsx` (7) + `features/code/editor/BinaryFileViewer.tsx` (5) re-split the same previewer modules. Fix: one shared previewer switch, static except `PdfPreview` (pdfjs) and maybe `HtmlPreview`.
+3. **`features/canvas/core/CanvasRenderer.tsx` — ~18 inner dynamics** beneath 3 already-dynamic shells, loading the same block components as BlockComponentRegistry (triple-lazied). Tier like batch 3.
+4. **Monaco:** ~6 duplicate wrappers over one dep + **dead code** `features/code-editor/components/unused/*` (ProCodeEditor, CodeEditor, AdvancedCodeEditor, LiveCodeEditor — still statically in the graph, verified present 2026-07-28) — delete, then one monaco edge.
+5. **Batch 2 leftover — `AgentConversationDisplay.tsx`** (3 dynamics × 65 contexts): its `AgentAssistantMessage` dynamic carries a "static import 500s the route — jspdf → fflate node worker" comment. Verify whether `next.config.js` `turbopack.resolveAlias` jspdf-browser pin made it stale (branch test: static-import, dev SSR render of `/chat`). If safe, all three + `AgentEmptyMessageDisplay`'s 2 inner dynamics go static.
+6. **`features/admin/AdminFeatureProvider.tsx`** — 4 dynamics in an always-mounted provider → Method C wrapper→core.
+7. **react-syntax-highlighter heavy entry** (verified still true 2026-07-28): all 8 importers use `Prism` (every refractor grammar) — switch to `PrismLight` + register only used languages (~ts, js, tsx, python, json, bash, sql). Analyzer had it at ~563 modules × 715 routes.
+8. **Cartesia shell-leak** — `constants/voice-options.ts` still statically imports `lib/cartesia/voices.ts` (2,243 LOC) (verified 2026-07-28); analyzer had `@cartesia/cartesia-js` in 716 routes. **Re-verify shell reach first** (data is from 2026-04) — if still shell-reachable, cut at the import root with a lazy loader.
+9. **lucide-react parse pile** — 3,671 importing files; the 2026-04 analyzer had 1,712 icon modules × 731 routes (~20% of every route's graph by module count). The proposed fix is inlining shell-used icons (the `@lobehub/icons` playbook). **Stale data — rerun `pnpm build:analyze:save` + `scripts/analyze-routes.py` before acting.**
+10. **react-leaflet per-export wrapping** — `app/(public)/free/zip-code-heatmap/components/ZipCodeMap.tsx` (ships in slim!) + `app/(dev)/demos/tests/_maps/OpenStreetMapComponent.tsx` → one map impl module each.
+11. Small: `components/mardown-display/blocks/json/JsonBlock.tsx` view modes, `components/ssr/route-display/RouteDisplaySwitcher.tsx`, `NotesWindow` inner singles, `ContentManagerMenu.lazy.tsx`.
+12. **`(dev)` helper-leak audit** — prod code importing helpers under `app/(dev)/` bypasses profile parking.
+13. **Dead `webpack:` block in `next.config.js`** — Next 16 builds with Turbopack only; the whole `webpack:` block + `utils/next-config/webpackConfig.js` is a prod no-op that misleads agents. Port anything real to `turbopack:{}` or delete.
+14. **Lint guard design** — nothing stops re-fragmentation. Do NOT resurrect the reverted `reactLazyBan` (wrong rule). A right guard flags *new registries of ≥4 dynamics* — design carefully or skip.
+15. **Authed production click-through** of batch 1–3 surfaces still owed: `/settings/*` tabs, org resources → Peek, `/artifacts/[id]`, chat with mixed block types. (Guest `/p/chat` verified 2026-07-28; agent sessions can't type login passwords — needs Arman or a logged-in browser session.)
 
-Build trajectory: 21m50s (v0.4.122) → 9 min (batch 1 alone) → 10–13 min band with ~10 heavy feature releases layered on. Zero build failures since the revert.
+Remaining ranked targets from the 3-agent audit (verify before acting): PublicProviders → CanvasSideSheetInner (1.4 MB × (public) routes), matrx-envelope registry framer-motion (109 routes), KindInstanceRender → SafeBlockRenderer, rootReducer lazy injection (architectural), transcript-parser importing AdvancedTranscriptViewer. Arman is skeptical of the CodeBlock/IconResolver "defeated split" findings — verify chains personally.
 
-### Partial
-- **Batch 2 leftover:** `features/agents/components/messages-display/AgentConversationDisplay.tsx` (3 dynamics that render together, × 65 contexts) was deliberately **skipped**: its `AgentAssistantMessage` dynamic carries a load-bearing comment ("static import 500s the route — jspdf → fflate node worker"). Before consolidating, verify whether `next.config.js`'s `turbopack.resolveAlias` jspdf-browser pin has made that comment stale (test: static-import it in a branch, run a dev SSR render of `/chat`). If safe, all three go static; `AgentEmptyMessageDisplay.tsx`'s own 2 inner dynamics flatten too.
-- **Production verification pass** of batches 1–3 surfaces (authed): `/settings/*` tabs, org resources → Peek, `/artifacts/[id]`, chat with mixed block types, `/p/chat` sidebar. Local dev-server checks passed pre-release; production click-through was still owed when the session ended.
+## 4. Done
 
-### Not started — the ranked backlog (from a 3-subagent audit; full details in memory `project_build_oom_findings`)
-1. **`react-markdown` duplicate wrappers × 10** — 9 inside `components/mardown-display/**` (`MarkdownRenderer`, `BasicMarkdownContent`, `ConfigurableMarkdownContent`, `MarkdownInput`, `MarkdownTextDisplay`, `NewRichTextEditor`, `LinkComponentWithFetch`, `ThinkingTraceMarkdown`, `CandidateProfile`) + `features/rag/.../CleanedMarkdownPane.tsx`. Each duplicates the unified/remark graph into its own chunk group. Fix: ONE shared `LazyReactMarkdown` module; likely the biggest single-dep win remaining.
-2. **File-previewer triple registry (~23 sites)** — `features/files/components/core/FilePreview/FilePreview.tsx` (11) + `components/mardown-display/blocks/matrx-file/UniversalInlineFile.tsx` (7) + `features/code/editor/BinaryFileViewer.tsx` (5) re-split the *same* previewer modules. Fix: one shared previewer switch, static except `PdfPreview` (pdfjs) and maybe `HtmlPreview`.
-3. **`features/canvas/core/CanvasRenderer.tsx` — ~18 inner dynamics** beneath 3 already-dynamic shells (`AdaptiveLayout`, both `ConversationShell`s) loading the same block components as BlockComponentRegistry (triple-lazied). Tier like batch 3.
-4. **Monaco:** ~6 duplicate wrappers over one dep + **dead code** `features/code-editor/components/unused/*` (ProCodeEditor, CodeEditor, AdvancedCodeEditor, LiveCodeEditor) still statically in the graph — delete, then one monaco edge.
-5. **`features/admin/AdminFeatureProvider.tsx`** — 4 dynamics in an always-mounted provider → Method C wrapper→core.
-6. **react-leaflet per-export wrapping** — `app/(public)/free/zip-code-heatmap/components/ZipCodeMap.tsx` (ships in slim profile!) + `app/(dev)/demos/tests/_maps/OpenStreetMapComponent.tsx` → one map impl module each.
-7. Small: `components/mardown-display/blocks/json/JsonBlock.tsx` view modes, `components/ssr/route-display/RouteDisplaySwitcher.tsx`, `NotesWindow` inner singles, `ContentManagerMenu.lazy.tsx`.
-8. **`(dev)` helper-leak audit** — prod code imports helpers under `app/(dev)/` ("fake demos" debt); profile parking does NOT catch those.
-9. **Lint guard for the new doctrine** — there is currently NO automated guard against someone re-fragmenting (the earlier `reactLazyBan` was reverted along with the campaign — do NOT resurrect it; it enforced the *wrong* rule). A right guard would flag *new registries of ≥4 dynamics* — design carefully or skip.
+- Mistaken lazy→dynamic campaign fully reverted (v0.4.137) — 14 straight OOM builds back to green.
+- Batch 1 (v0.4.142): artifact-renderers, settings registry (39 tabs), org peek registry (19) consolidated behind front doors. Production 9 min.
+- Batch 2 (v0.4.144): SmartAgentVariables, JsonInspector, ContextValueBody, ChatSidebar front door, UtilitiesOverlay.
+- Batch 3 (v0.4.147): BlockComponentRegistry 72 static / 8 `React.lazy`; artifact-renderers re-tiered (mermaid/reactflow back to lazy).
+- `/p/chat` SidebarChats static-realtime-topic crash hotfixed (`uniqueChannelTopic`) — verified live on production 2026-07-28, zero console errors.
+- Doctrine written: code-splitting skill rule 3 + CLAUDE.md invariant rewritten around the Fragmentation Law.
+- From the absorbed tracker: lobehub/icons removed (22→9 min win); pdfjs-dist dep dedup; layout `import type` sweep (reduxTypes/emptyGlobalCache); thin-shell+Impl refactor of 7 shell singletons; `heavyImplStaticImportBan` + `canonicalMenuStaticImportBan` eslint guards; prompt-builtins shell leak died with `UnifiedContextMenu`'s deletion (verified gone 2026-07-28); heavy `from 'lodash'` imports are at zero; `reactCompiler` contradiction resolved (`true`, matches CLAUDE.md).
 
-### Known issues / risks
-- **The OOM ceiling still exists.** ~60 GB machine, `next.config.js` `experimental.cpus: 4` + `turbopackMemoryLimit` 40 GiB are load-bearing. If builds fail again: read the SIGKILL **phase line** first (mid-compile = Turbopack pool; "Collecting page data" = worker pool) before blaming the last commit; a green build followed by red supersets means borderline-nondeterministic.
-- Batch 1's `artifact-renderer-keys.ts` duplicates the RENDERERS key list — **keep in lockstep** with `artifact-renderers.tsx` when adding a type.
-- `MATRX_PROFILE` on the ai-matrx Vercel project resolves to `core` (main + admin). The slim cutover (env pin per project) was prepared but **not flipped** — an available escape hatch if memory tightens, Arman's call.
+## 5. Gotchas
 
----
-
-## 3. Architecture / orientation
-
-- **Front-door pattern:** `Foo.tsx` (thin `"use client"` shell: `dynamic(() => import("./FooImpl"), {ssr:false, loading})`, exports props type) over `FooImpl.tsx` (everything static). Grep `*Impl.tsx` for examples; canonical: `MarkdownStream.tsx`/`MarkdownStreamImpl.tsx`, `CanvasSideSheet.tsx`, `ChatSidebar.tsx`.
-- **Registries:** id → component maps. Consolidated ones import components statically and keep heavy entries as `React.lazy` (see `BlockComponentRegistry.tsx` header comment — it names the 8 and why). `lazyOverlay` (`features/overlays/boundary/lazyOverlay.tsx`) is the sanctioned per-item splitter for overlays only.
-- **Build config:** `next.config.js` — memory knobs under `experimental` (heavily commented, read before touching); build profiles `MATRX_PROFILE` (three Vercel projects: ai-matrx / ai-matrx-manage / ai-matrx-demos); releases only build for `release:`-prefixed commits via `scripts/vercel-ignore-build.sh`.
-- **Ship loop:** edit → `pnpm type-check` (the ONLY type gate; the build ignores type errors) → `git commit --only <your files>` (parallel agent sessions share this tree — never `git add -A`) → `./scripts/release.sh --message "..."` → watch the Vercel build duration + build-system report for that release. One batch per release.
-- **Measuring:** Vercel MCP (`list_deployments`, `get_deployment_build_logs`) or `vercel ls ai-matrx --prod`. Apples-to-apples = same machine line ("Turbo Build Machine 30 cores, 60 GB"), same profile line (`[matrx] MATRX_PROFILE=...`), cold-vs-warm cache line.
-
-## 4. Next steps (in order)
-1. Confirm the `/p/chat` hotfix release went READY; open `https://aimatrx.com/p/chat` and verify no error boundary and the sidebar loads (guest + signed-in).
-2. Production click-through of batch 1–3 surfaces (list in "Partial" above).
-3. Backlog item 1 (react-markdown ×10) as its own release; read the build time.
-4. Backlog item 2 (previewer triple registry), then 3 (CanvasRenderer), then 4 (monaco + dead-code delete) — one release each, measure each.
-5. Resolve the `AgentConversationDisplay` jspdf question and finish batch 2.
-6. Sweep items 5–8; groom this doc after every batch (collapse done work to one line); delete the doc when the backlog is empty.
-
-## 5. Gotchas & context
-- **Never mass-convert `React.lazy` → `next/dynamic`.** That exact move OOM-killed 14 straight production builds on 2026-07-27 and was fully reverted. The skill's rule 3 has the numbers; treat it as law.
-- **In-gate `React.lazy` is cheaper for the build than `dynamic`** — inside any `ssr:false` subtree, prefer static; where a boundary is genuinely needed for runtime weight, use `React.lazy`.
-- **Don't stack `ssr:false` boundaries** down one render path; don't wrap an existing front door (e.g. `MarkdownStream`) in another `dynamic`.
-- **SSR-safety boundaries are real:** some dynamics exist because a static import breaks SSR (jspdf/fflate node-worker class). Never flatten one without testing the server render; they're commented in place.
-- **Realtime:** any `.channel(` work → `supabase-realtime` skill first; static topics crash on remount (the `/p/chat` incident).
-- **Parallel sessions** work this repo simultaneously: check `git status` before committing, use `git commit --only`, expect the index to contain someone else's staged files.
-- **Dev servers:** never start one raw; only via `.claude/launch.json` preview configs, and expect another session's server to be occupying the machine.
-- The experiment worktrees (control / mine-only / right-way) live under the session scratchpad and are disposable; the right-way patch is fully landed on main.
+- **Never mass-convert `React.lazy` → `next/dynamic`** (the OOM incident). In-gate, prefer static; where runtime weight demands a boundary, `React.lazy`.
+- **Don't stack `ssr:false` boundaries** down one render path; don't re-wrap existing front doors.
+- **SSR-safety boundaries are real** (jspdf/fflate class) — never flatten one without a server-render test.
+- **The OOM ceiling still exists** (~60 GB; `cpus: 4` + 40 GiB limit load-bearing). Builds fail again → read the SIGKILL **phase line** first (mid-compile = Turbopack pool; "Collecting page data" = worker pool); green-then-red supersets = borderline-nondeterministic, not the last commit.
+- **Disproven — do not re-suggest:** adding `@tabler/icons-react` / `react-icons/*` to `optimizePackageImports` (already in Next's default list — verified against Next source; the flag doesn't reduce Turbopack parse cost anyway); "disk size = bundle size" (monaco + onnx runtimes are CDN-loaded); deleting zero-importer files as a *bundle* win (build-time micro-win only).
+- Batch 1's `artifact-renderer-keys.ts` duplicates the RENDERERS key list — keep in lockstep with `artifact-renderers.tsx`.
+- `MATRX_PROFILE` on ai-matrx resolves `core`; the slim cutover is prepared but not flipped — escape hatch, Arman's call.
+- Any `.channel(` work → `supabase-realtime` skill first (the `/p/chat` incident class).
+- Parallel sessions share this tree: `git commit --only`, expect foreign staged files; dev servers only via `.claude/launch.json`.
 
 ## Change log
+- `2026-07-28` — claude: took over; verified `/p/chat` hotfix live + 12-min green baseline; absorbed `docs/_current/bundle-optimization-tracker.md` (stale items re-verified against code, resolved items collapsed, tracker deleted).
 - `2026-07-27` — claude: doc created at campaign handoff (batches 1–3 + hotfix shipped; backlog ranked).
